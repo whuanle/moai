@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>12.0</LangVersion>
+    </PropertyGroup>
+
+    <!--<ItemGroup>
+      <Compile Remove="Data\**" />
+      <Compile Remove="Entities\**" />
+      <EmbeddedResource Remove="Data\**" />
+      <EmbeddedResource Remove="Entities\**" />
+      <None Remove="Data\**" />
+      <None Remove="Entities\**" />
+    </ItemGroup>-->
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\database\MaomiAI.Database.Shared\MaomiAI.Database.Shared.csproj" />
+        <ProjectReference Include="..\..\src\infra\MaomiAI.Infra.Core\MaomiAI.Infra.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.0.30" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="CodeTemplates\EFCore\DbContext.t4">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="CodeTemplates\EFCore\EntityType.t4">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="CodeTemplates\EFCore\EntityTypeConfiguration.t4">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+
+</Project>

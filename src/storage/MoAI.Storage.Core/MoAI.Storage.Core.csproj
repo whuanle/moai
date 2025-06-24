@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Storage</RootNamespace>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+    <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+    <ProjectReference Include="..\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+    <ProjectReference Include="..\MoAI.Store.Api\MoAI.Store.Api.csproj" />
+  </ItemGroup>
+
+</Project>

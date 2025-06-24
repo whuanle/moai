@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Database</RootNamespace>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,35 @@
+﻿{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console"
+    ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft.AspNetCore.HttpLogging": "Information",
+        "ProtoBuf.Grpc.Server.ServicesExtensions.CodeFirstServiceMethodProvider": "Warning",
+        "Microsoft.EntityFrameworkCore": "Information",
+        "Microsoft.AspNetCore": "Warning",
+        "System.Net.Http.HttpClient.TenantManagerClient.LogicalHandler": "Warning",
+        "Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted": "Warning",
+        "System": "Information",
+        "Microsoft": "Information",
+        "Grpc": "Information",
+        "MySqlConnector": "Information"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithThreadId"
+    ]
+  }
+}

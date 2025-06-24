@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PostgreScaffold": {
+      "commandName": "Project",
+      "workingDirectory": "./"
+    }
+  }
+}

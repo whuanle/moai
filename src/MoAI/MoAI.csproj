@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="FastEndpoints.Swagger" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+		<PackageReference Include="Maomi.I18n.AspNetCore" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+		<PackageReference Include="Microsoft.Extensions.ApiDescription.Server">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+		<PackageReference Include="Scalar.AspNetCore" />
+		<PackageReference Include="Serilog.AspNetCore" />
+		<PackageReference Include="Serilog.Formatting.Compact" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
+		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
+		<ProjectReference Include="..\public\MoAI.Public.Core\MoAI.Public.Core.csproj" />
+		<ProjectReference Include="..\storage\MoAI.Storage.Core\MoAI.Storage.Core.csproj" />
+	</ItemGroup>
+
+</Project>

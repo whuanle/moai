@@ -1,0 +1,49 @@
+﻿// <copyright file="MainModule.cs" company="MaomiAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using Maomi;
+using Maomi.I18n;
+using MoAI.Database;
+using MoAI.Filters;
+using MoAI.Infra;
+using MoAI.Modules;
+using MoAI.Public;
+using MoAI.Storage;
+
+namespace MaomiAI;
+
+/// <summary>
+/// MainModule.
+/// </summary>
+[InjectModule<InfraCoreModule>]
+[InjectModule<DatabaseCoreModule>]
+[InjectModule<StorageCoreModule>]
+[InjectModule<PublicCoreModule>]
+[InjectModule<ApiModule>]
+public partial class MainModule : IModule
+{
+    private readonly IConfiguration _configuration;
+    private readonly SystemOptions _systemOptions;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MainModule"/> class.
+    /// </summary>
+    /// <param name="configuration"></param>
+    public MainModule(IConfiguration configuration)
+    {
+        _configuration = configuration;
+        _systemOptions = configuration.Get<SystemOptions>()!;
+    }
+
+    /// <inheritdoc/>
+    public void ConfigureServices(ServiceContext context)
+    {
+        // 添加HTTP上下文访问器
+        context.Services.AddHttpContextAccessor();
+        context.Services.AddExceptionHandler<MaomiExceptionHandler>();
+        context.Services.AddI18nAspNetCore();
+    }
+}

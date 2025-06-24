@@ -1,0 +1,2 @@
+DBType: postgres
+Database: Database=maomiai;Host=0.0.0.0;Password=123456;Port=5432;Username=postgres

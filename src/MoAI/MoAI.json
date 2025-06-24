@@ -1,0 +1,297 @@
+{
+  "x-generator": "NSwag v14.4.0.0 (NJsonSchema v11.3.2.0 (Newtonsoft.Json v13.0.0.0))",
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AI API",
+    "description": "MoAI openapi document.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "User-defined service address"
+    }
+  ],
+  "paths": {
+    "/api/public/encryption": {
+      "post": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "加密接口，通过.",
+        "operationId": "EncryptionEndpoint",
+        "requestBody": {
+          "x-name": "SimpleString",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimpleString"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleString"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/serverinfo": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "获取服务器信息.",
+        "operationId": "ServerInfoEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryServerInfoCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SimpleString": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SimpleOfString"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SimpleOfString": {
+        "type": "object",
+        "description": "简单类型.",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "string",
+            "description": "任何类型.",
+            "nullable": true
+          }
+        }
+      },
+      "BusinessValidationResult": {
+        "type": "object",
+        "description": "错误响应模型.",
+        "additionalProperties": false,
+        "required": [
+          "requestId",
+          "code",
+          "detail"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "description": "请求上下文 ID."
+          },
+          "code": {
+            "type": "integer",
+            "description": "错误码.",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string",
+            "description": "错误消息."
+          },
+          "errors": {
+            "type": "array",
+            "description": "具体错误列表.",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/BusinessExceptionError"
+            }
+          },
+          "extensions": {
+            "type": "object",
+            "description": "扩展.",
+            "nullable": true,
+            "additionalProperties": {}
+          }
+        }
+      },
+      "BusinessExceptionError": {
+        "type": "object",
+        "description": "错误信息.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "errors"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称."
+          },
+          "errors": {
+            "type": "array",
+            "description": "错误信息列表.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "QueryServerInfoCommandResponse": {
+        "type": "object",
+        "description": "服务器信息.",
+        "additionalProperties": false,
+        "required": [
+          "isInit",
+          "serviceUrl",
+          "publicStoreUrl",
+          "rsaPublic"
+        ],
+        "properties": {
+          "isInit": {
+            "type": "boolean",
+            "description": "已经初始化."
+          },
+          "serviceUrl": {
+            "type": "string",
+            "description": "系统访问地址."
+          },
+          "publicStoreUrl": {
+            "type": "string",
+            "description": "公共存储地址，静态资源时可直接访问."
+          },
+          "rsaPublic": {
+            "type": "string",
+            "description": "RSA 公钥，用于加密密码等信息传输到服务器."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "JWTBearerAuth": {
+        "type": "http",
+        "description": "Enter a JWT token to authorize the requests...",
+        "scheme": "Bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

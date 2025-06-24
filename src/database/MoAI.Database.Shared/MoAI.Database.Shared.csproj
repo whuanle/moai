@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Database</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="LinqKit.Core" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" />
+		<PackageReference Include="StackExchange.Redis" />
+		<PackageReference Include="StackExchange.Redis.Extensions.Core" />
+		<PackageReference Include="StackExchange.Redis.Extensions.System.Text.Json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+	</ItemGroup>
+</Project>
