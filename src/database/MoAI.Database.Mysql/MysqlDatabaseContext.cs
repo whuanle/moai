@@ -9,9 +9,8 @@ public class MysqlDatabaseContext : DatabaseContext
     /// </summary>
     /// <param name="options"></param>
     /// <param name="serviceProvider"></param>
-    /// <param name="contextOptions"></param>
-    public MysqlDatabaseContext(DbContextOptions options, IServiceProvider serviceProvider, DatabaseOptions contextOptions)
-        : base(options, serviceProvider, contextOptions)
+    public MysqlDatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
+        : base(options, serviceProvider)
     {
     }
 
@@ -19,9 +18,8 @@ public class MysqlDatabaseContext : DatabaseContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .ApplyConfigurationsFromAssembly(_contextOptions.ConfigurationAssembly)
-            .ApplyConfigurationsFromAssembly(_contextOptions.EntityAssembly);
-        OnModelCreatingPartial(modelBuilder);
+            .ApplyConfigurationsFromAssembly(typeof(MysqlDatabaseContext).Assembly)
+            .ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
 
         modelBuilder
             .UseCollation("utf8mb4_general_ci")

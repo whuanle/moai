@@ -41,10 +41,10 @@ public partial class SettingConfiguration : IEntityTypeConfiguration<SettingEnti
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.Name)
+        entity.Property(e => e.Key)
             .HasMaxLength(50)
             .HasComment("配置名称")
-            .HasColumnName("name");
+            .HasColumnName("key");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("最后更新时间")

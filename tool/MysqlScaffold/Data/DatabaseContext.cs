@@ -12,19 +12,27 @@ namespace MoAI.Database;
 public partial class DatabaseContext : DbContext
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly DatabaseOptions _contextOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseContext"/> class.
     /// </summary>
     /// <param name="options"></param>
     /// <param name="serviceProvider"></param>
-    /// <param name="contextOptions"></param>
-    public DatabaseContext(DatabaseOptions<DatabaseContext> options, IServiceProvider serviceProvider, DatabaseOptions contextOptions)
+    public DatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
         : base(options)
     {
         _serviceProvider = serviceProvider;
-        _contextOptions = contextOptions;
+
+        // 配置过滤器.
+        ChangeTracker.Tracked += (state, args) =>
+        {
+            AuditFilter(args);
+        };
+
+        ChangeTracker.StateChanged += (state, args) =>
+        {
+            AuditFilter(args);
+        };
     }
 
     /// <summary>
@@ -85,9 +93,7 @@ public partial class DatabaseContext : DbContext
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder
-            .ApplyConfigurationsFromAssembly(_contextOptions.ConfigurationAssembly)
-            .ApplyConfigurationsFromAssembly(_contextOptions.EntityAssembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
         OnModelCreatingPartial(modelBuilder);
         modelBuilder
             .UseCollation("utf8mb4_general_ci")

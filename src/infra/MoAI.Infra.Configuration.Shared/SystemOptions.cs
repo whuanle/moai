@@ -48,7 +48,6 @@ public class SystemOptions
     /// </summary>
     public string RabbitMQ { get; init; } = string.Empty;
 
-
     /// <summary>
     /// 文档向量化存储.
     /// </summary>
@@ -60,8 +59,8 @@ public class SystemOptionsStorage
     public string Type { get; init; } = string.Empty;
     public string FilePath { get; init; } = string.Empty;
 
-    public SystemOptionsStorageS3 Public { get; init; } = new SystemOptionsStorageS3();
-    public SystemOptionsStorageS3 Private { get; init; } = new SystemOptionsStorageS3();
+    public SystemOptionsStorageS3 S3Public { get; init; } = new SystemOptionsStorageS3();
+    public SystemOptionsStorageS3 S3Private { get; init; } = new SystemOptionsStorageS3();
 }
 
 public class SystemOptionsStorageS3

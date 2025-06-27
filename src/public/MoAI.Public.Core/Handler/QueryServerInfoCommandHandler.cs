@@ -38,7 +38,7 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
 
     public async Task<QueryServerInfoCommandResponse> Handle(QueryServerInfoCommand request, CancellationToken cancellationToken)
     {
-        var existRoot = await _databaseContext.Settings.Where(x => x.Name == "root_id").AnyAsync();
+        var existRoot = await _databaseContext.Settings.Where(x => x.Key == "root_id").AnyAsync();
 
         var endpoint = new Uri(new Uri(_systemOptions.Server), "statics");
 

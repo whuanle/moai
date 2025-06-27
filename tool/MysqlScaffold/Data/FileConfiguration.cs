@@ -52,6 +52,12 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开")
+            .HasColumnName("is_public");
+        entity.Property(e => e.IsUploaded)
+            .HasComment("是否已经上传")
+            .HasColumnName("is_uploaded");
         entity.Property(e => e.ObjectKey)
             .HasMaxLength(1024)
             .HasComment("文件路径")

@@ -4,14 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI.Database.Audits;
-using MoAI.Database.Entities;
-using MoAI.Infra.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.Extensions.DependencyInjection;
-using MoAI.Infra.Models;
-using System.Linq.Expressions;
+using MoAI.Database.Entities;
 
 namespace MoAI.Database;
 
@@ -21,19 +16,16 @@ namespace MoAI.Database;
 public partial class DatabaseContext : DbContext
 {
     protected readonly IServiceProvider _serviceProvider;
-    protected readonly DatabaseOptions _contextOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseContext"/> class.
     /// </summary>
     /// <param name="options"></param>
     /// <param name="serviceProvider"></param>
-    /// <param name="contextOptions"></param>
-    public DatabaseContext(DbContextOptions options, IServiceProvider serviceProvider, DatabaseOptions contextOptions)
+    public DatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
         : base(options)
     {
         _serviceProvider = serviceProvider;
-        _contextOptions = contextOptions;
 
         // 配置过滤器.
         ChangeTracker.Tracked += (state, args) =>
@@ -105,89 +97,8 @@ public partial class DatabaseContext : DbContext
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder
-            .ApplyConfigurationsFromAssembly(_contextOptions.ConfigurationAssembly)
-            .ApplyConfigurationsFromAssembly(_contextOptions.EntityAssembly);
-
         OnModelCreatingPartial(modelBuilder);
     }
 
     protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
-}
-
-/// <summary>
-/// 数据库上下文.
-/// </summary>
-public partial class DatabaseContext
-{
-    protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
-    {
-        SeedData(modelBuilder);
-
-        QueryFilter(modelBuilder);
-    }
-
-    protected static void QueryFilter(ModelBuilder modelBuilder)
-    {
-        // 给实体配置查询时自动加上 IsDeleted == false;
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (entityType.ClrType.IsAssignableTo(typeof(IDeleteAudited)))
-            {
-                // 构造 x => x.IsDeleted == 0
-                var parameter = Expression.Parameter(entityType.ClrType, "x");
-                MemberExpression property = Expression.Property(parameter, nameof(IDeleteAudited.IsDeleted));
-                ConstantExpression constant = Expression.Constant(0L);
-                BinaryExpression comparison = Expression.Equal(property, constant);
-
-                var lambdaExpression = Expression.Lambda(comparison, parameter);
-
-                entityType.SetQueryFilter(lambdaExpression);
-            }
-        }
-    }
-
-    // 定义种子数据
-    protected void SeedData(ModelBuilder modelBuilder)
-    {
-        //modelBuilder.Entity<UserEntity>().HasData(
-        //    new UserEntity
-        //    {
-        //    });
-    }
-
-    // 审计属性过滤
-    protected void AuditFilter(EntityEntryEventArgs args)
-    {
-        var userContext = _serviceProvider.GetService<UserContext>();
-
-        if (args.Entry.State == EntityState.Unchanged)
-        {
-            return;
-        }
-
-        if (args.Entry.State == EntityState.Added && args.Entry.Entity is ICreationAudited creationAudited)
-        {
-            creationAudited.CreateUserId = userContext?.UserId ?? default(int);
-            creationAudited.CreateTime = DateTimeOffset.Now;
-            if (args.Entry.Entity is IModificationAudited modificationAudited)
-            {
-                modificationAudited.UpdateUserId = userContext?.UserId ?? default(int);
-                modificationAudited.UpdateTime = DateTimeOffset.Now;
-            }
-        }
-        else if (args.Entry.State == EntityState.Modified && args.Entry.Entity is IModificationAudited modificationAudited)
-        {
-            modificationAudited.UpdateUserId = userContext?.UserId ?? default(int);
-            modificationAudited.UpdateTime = DateTimeOffset.Now;
-        }
-        else if (args.Entry.State == EntityState.Deleted && args.Entry.Entity is IDeleteAudited deleteAudited)
-        {
-            args.Entry.State = EntityState.Modified;
-
-            deleteAudited.IsDeleted = DateTimeOffset.Now.Ticks;
-            deleteAudited.UpdateUserId = userContext?.UserId ?? default(int);
-            deleteAudited.UpdateTime = DateTimeOffset.Now;
-        }
-    }
 }

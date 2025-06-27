@@ -27,6 +27,12 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasMaxLength(50)
             .HasComment("文件类型")
             .HasColumnName("content_type");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开")
+            .HasColumnName("is_public");
+        entity.Property(e => e.IsUploaded)
+            .HasComment("是否已经上传")
+            .HasColumnName("is_uploaded");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("创建时间")

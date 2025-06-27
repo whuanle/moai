@@ -9,4 +9,8 @@
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="MimeKit" />
+	</ItemGroup>
+
 </Project>

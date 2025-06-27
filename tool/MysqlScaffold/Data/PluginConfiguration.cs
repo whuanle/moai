@@ -38,7 +38,6 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasComment("注释")
             .HasColumnName("description");
         entity.Property(e => e.Headers)
-            .HasDefaultValueSql("'{}'")
             .HasComment("头部")
             .HasColumnType("text")
             .HasColumnName("headers");
@@ -59,7 +58,6 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasComment("插件名称")
             .HasColumnName("plugin_name");
         entity.Property(e => e.Queries)
-            .HasDefaultValueSql("'{}'")
             .HasComment("query参数")
             .HasColumnType("text")
             .HasColumnName("queries");

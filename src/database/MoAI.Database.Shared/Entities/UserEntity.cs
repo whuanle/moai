@@ -57,7 +57,7 @@ public partial class UserEntity : IFullAudited
     /// <summary>
     /// 计算密码值的salt.
     /// </summary>
-    public string PasswordHalt { get; set; } = default!;
+    public string PasswordSalt { get; set; } = default!;
 
     /// <summary>
     /// 软删除.

@@ -59,4 +59,6 @@ app.UseFastEndpoints((Action<Config>?)(c =>
     c.Serializer.Options.Converters.Add(new System.Text.Json.LongStringConverter());
 }));
 
+app.MapControllers();
+
 app.Run();

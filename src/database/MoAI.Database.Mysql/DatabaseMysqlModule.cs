@@ -41,14 +41,6 @@ public class DatabaseMysqlModule : IModule
             return;
         }
 
-        DatabaseOptions? dbContextOptions = new()
-        {
-            ConfigurationAssembly = typeof(DatabaseMysqlModule).Assembly,
-            EntityAssembly = typeof(DatabaseContext).Assembly
-        };
-
-        context.Services.AddSingleton(dbContextOptions);
-
         Action<DbContextOptionsBuilder> contextOptionsBuilder = o =>
         {
             o.UseMySql(systemOptions.Database, ServerVersion.AutoDetect(systemOptions.Database))
@@ -90,10 +82,10 @@ public class DatabaseMysqlModule : IModule
             DbContextOptionsBuilder<MysqlDatabaseContext> options = new();
             contextOptionsBuilder.Invoke(options);
 
-            using MysqlDatabaseContext? dbContext = new MysqlDatabaseContext(options.Options, ioc, dbContextOptions);
+            using MysqlDatabaseContext? dbContext = new MysqlDatabaseContext(options.Options, ioc);
 
             // 如果数据库不存在，则会创建数据库及其所有表。
-            dbContext.Database.Migrate();
+            //dbContext.Database.Migrate();
             dbContext.Database.EnsureCreated();
         }
         catch (Exception ex)

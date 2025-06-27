@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Storage</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="AWSSDK.S3" />
+	  <PackageReference Include="AWSSDK.SecurityToken" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+	  <ProjectReference Include="..\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -39,6 +39,10 @@ public partial class FileEntity : IFullAudited
     /// </summary>
     public string ContentType { get; set; } = default!;
 
+    public bool IsPublic { get; set; }
+
+    public bool IsUploaded { get; set; }
+
     /// <summary>
     /// 创建人.
     /// </summary>

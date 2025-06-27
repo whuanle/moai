@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra.Defaults;
+using MoAI.Infra.Models;
 using MoAI.Infra.Service;
 using MoAI.Infra.Services;
 using System.Security.Cryptography;
@@ -45,6 +46,9 @@ public class InfraCoreModule : IModule
 
         context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
         ConfigureRsaPrivate(context);
+
+        // 注册默认服务，会被上层模块覆盖
+        context.Services.AddScoped<UserContext, DefaultUserContext>();
     }
 
     // 生成 RSA 私钥

@@ -17,7 +17,7 @@ public partial class SettingEntity : IFullAudited
     /// <summary>
     /// 配置名称.
     /// </summary>
-    public string Name { get; set; } = default!;
+    public string Key { get; set; } = default!;
 
     /// <summary>
     /// 配置值.

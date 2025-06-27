@@ -70,10 +70,10 @@ public partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
             .HasMaxLength(255)
             .HasComment("密码")
             .HasColumnName("password");
-        entity.Property(e => e.PasswordHalt)
+        entity.Property(e => e.PasswordSalt)
             .HasMaxLength(255)
             .HasComment("计算密码值的salt")
-            .HasColumnName("password_halt");
+            .HasColumnName("password_salt");
         entity.Property(e => e.Phone)
             .HasMaxLength(20)
             .HasComment("手机号")

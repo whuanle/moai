@@ -40,6 +40,16 @@ public partial class FileEntity : IFullAudited
     public string ContentType { get; set; } = default!;
 
     /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 是否已经上传.
+    /// </summary>
+    public bool IsUploaded { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

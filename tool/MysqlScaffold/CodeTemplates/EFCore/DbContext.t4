@@ -53,7 +53,6 @@ namespace <#= NamespaceHint #>;
 public partial class <#= Options.ContextName #> : DbContext
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly DatabaseOptions _contextOptions;
 
 <#
     if (!Options.SuppressOnConfiguring)
@@ -71,12 +70,10 @@ public partial class <#= Options.ContextName #> : DbContext
     /// </summary>
     /// <param name="options"></param>
     /// <param name="serviceProvider"></param>
-    /// <param name="contextOptions"></param>
-    public <#= Options.ContextName #>(DbContextOptions options, IServiceProvider serviceProvider, DatabaseOptions contextOptions)
+    public <#= Options.ContextName #>(DbContextOptions options, IServiceProvider serviceProvider)
         : base(options)
     {
         _serviceProvider = serviceProvider;
-        _contextOptions = contextOptions;
 
         // 配置过滤器.
         ChangeTracker.Tracked += (state, args) =>
@@ -126,9 +123,7 @@ public partial class <#= Options.ContextName #> : DbContext
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder
-            .ApplyConfigurationsFromAssembly(_contextOptions.ConfigurationAssembly)
-            .ApplyConfigurationsFromAssembly(_contextOptions.EntityAssembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
         OnModelCreatingPartial(modelBuilder);
 <#
     var anyConfiguration = false;
