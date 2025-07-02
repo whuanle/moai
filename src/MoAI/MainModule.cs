@@ -1,4 +1,4 @@
-﻿// <copyright file="MainModule.cs" company="MaomiAI">
+﻿// <copyright file="MainModule.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -6,12 +6,15 @@
 
 using Maomi;
 using Maomi.I18n;
+using MoAI.Admin;
 using MoAI.Database;
 using MoAI.Filters;
 using MoAI.Infra;
+using MoAI.Login;
 using MoAI.Modules;
 using MoAI.Public;
 using MoAI.Storage;
+using MoAI.User;
 
 namespace MaomiAI;
 
@@ -22,6 +25,9 @@ namespace MaomiAI;
 [InjectModule<DatabaseCoreModule>]
 [InjectModule<StorageCoreModule>]
 [InjectModule<PublicCoreModule>]
+[InjectModule<LoginCoreModule>]
+[InjectModule<AdminCoreModule>]
+[InjectModule<UserCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

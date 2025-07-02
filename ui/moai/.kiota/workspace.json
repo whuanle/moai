@@ -1,0 +1,74 @@
+{
+  "version": "1.0.0",
+  "clients": {
+    "ApiClient": {
+      "language": "TypeScript",
+      "typeAccessModifier": "Public",
+      "structuredMimeTypes": [
+        "application/json",
+        "text/plain;q=0.9",
+        "application/x-www-form-urlencoded;q=0.2",
+        "multipart/form-data;q=0.1"
+      ],
+      "clientNamespaceName": "Api",
+      "usesBackingStore": false,
+      "includeAdditionalData": true,
+      "excludeBackwardCompatible": false,
+      "disabledValidationRules": [],
+      "descriptionLocation": "http://127.0.0.1:5000/openapi/v1.json",
+      "includePatterns": [
+        "/",
+        "/api",
+        "/api/public",
+        "/api/public/encryption",
+        "/api/public/serverinfo",
+        "/api/team",
+        "/api/team/check_name",
+        "/api/team/config",
+        "/api/team/config/uploadavatar",
+        "/api/team/create",
+        "/api/team/joined_list",
+        "/api/team/member",
+        "/api/team/member/invite",
+        "/api/team/member/remove",
+        "/api/team/setadmin",
+        "/api/team/{-id}",
+        "/api/team/{-id}/adminlist",
+        "/api/team/{-id}/delete",
+        "/api/team/{-id}/memberlist",
+        "/api/team/{-id}/teamdetail",
+        "/api/team/{-id}/teamitem",
+        "/api/team/{-id}/update",
+        "/api/user",
+        "/api/user/checkname",
+        "/api/user/login",
+        "/api/user/refresh_token",
+        "/api/user/register",
+        "/api/user/resetpassword",
+        "/api/user/uploadavatar"
+      ],
+      "excludePatterns": [],
+      "outputPath": "./src/ApiClient"
+    },
+    "MaomiClient": {
+      "language": "TypeScript",
+      "typeAccessModifier": "Public",
+      "structuredMimeTypes": [
+        "application/json",
+        "text/plain;q=0.9",
+        "application/x-www-form-urlencoded;q=0.2",
+        "multipart/form-data;q=0.1"
+      ],
+      "clientNamespaceName": "ApiSdk",
+      "usesBackingStore": false,
+      "includeAdditionalData": false,
+      "excludeBackwardCompatible": false,
+      "disabledValidationRules": [],
+      "descriptionLocation": "http://127.0.0.1:5000/openapi/v1.json",
+      "includePatterns": [],
+      "excludePatterns": [],
+      "outputPath": "./src/client"
+    }
+  },
+  "plugins": {}
+}

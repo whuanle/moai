@@ -46,6 +46,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<FileEntity> Files { get; set; }
 
     /// <summary>
+    /// oauth2.0系统.
+    /// </summary>
+    public virtual DbSet<OauthConnectionEntity> OauthConnections { get; set; }
+
+    /// <summary>
     /// 插件.
     /// </summary>
     public virtual DbSet<PluginEntity> Plugins { get; set; }

@@ -1,4 +1,4 @@
-﻿// <copyright file="RedisValueExtensions.cs" company="MaomiAI">
+﻿// <copyright file="RedisValueExtensions.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -96,7 +96,6 @@ public static class RedisValueExtensions
     /// <param name="jsonSerializerOptions"></param>
     /// <returns><see cref="RedisValue"/>.</returns>
     public static RedisValue ToRedisValue<T>(this T t, JsonSerializerOptions? jsonSerializerOptions = null)
-        where T : class
     {
         var text = System.Text.Json.JsonSerializer.Serialize<T>(t, jsonSerializerOptions);
         return new RedisValue(text);

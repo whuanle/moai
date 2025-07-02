@@ -1,7 +1,7 @@
-﻿// <copyright file="FileStoreHelper.cs" company="MaomiAI">
+﻿// <copyright file="FileStoreHelper.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/AIDotNet/MaomiAI
+// Github link: https://github.com/whuanle/moai
 // </copyright>
 
 #pragma warning disable CA1054 // 类 URI 参数不应为字符串

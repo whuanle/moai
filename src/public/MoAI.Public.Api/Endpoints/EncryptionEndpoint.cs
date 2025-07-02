@@ -1,4 +1,4 @@
-﻿// <copyright file="EncryptionEndpoint.cs" company="MaomiAI">
+﻿// <copyright file="EncryptionEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -35,7 +35,7 @@ public class EncryptionEndpoint : Endpoint<SimpleString, SimpleString>
     {
         return Task.FromResult(new SimpleString
         {
-            Data = _rsaProvider.Encrypt(request.Data)
+            Value = _rsaProvider.Encrypt(request.Value)
         });
     }
 }

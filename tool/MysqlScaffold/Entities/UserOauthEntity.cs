@@ -20,9 +20,14 @@ public partial class UserOauthEntity : IFullAudited
     public int UserId { get; set; }
 
     /// <summary>
-    /// 飞书、微信.....
+    /// 供应商id.
     /// </summary>
-    public string SourceType { get; set; } = default!;
+    public int ProviderId { get; set; }
+
+    /// <summary>
+    /// 用户id.
+    /// </summary>
+    public string Sub { get; set; } = default!;
 
     /// <summary>
     /// 创建人.

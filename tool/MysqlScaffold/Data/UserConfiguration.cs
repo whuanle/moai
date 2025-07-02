@@ -17,7 +17,7 @@ public partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("users", tb => tb.HasComment("用户"));
+        entity.ToTable("user", tb => tb.HasComment("用户"));
 
         entity.HasIndex(e => e.Email, "idx_users_email");
 

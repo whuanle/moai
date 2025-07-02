@@ -1,4 +1,4 @@
-﻿// <copyright file="RabbitMQModule.cs" company="MaomiAI">
+﻿// <copyright file="RabbitMQModule.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -21,7 +21,7 @@ public class MessageModule : IModule
         //    {
         //        options.WorkId = 1;
         //        options.AutoQueueDeclare = true;
-        //        options.AppName = "MaomiAI";
+        //        options.AppName = "MoAI";
         //        options.Rabbit = (ConnectionFactory options) =>
         //        {
         //            options.Uri = new Uri(_systemOptions.RabbitMQ!);

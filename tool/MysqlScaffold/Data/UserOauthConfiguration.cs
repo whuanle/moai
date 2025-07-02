@@ -36,10 +36,14 @@ public partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauth
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.SourceType)
-            .HasMaxLength(20)
-            .HasComment("飞书、微信....")
-            .HasColumnName("source_type");
+        entity.Property(e => e.ProviderId)
+            .HasComment("供应商id")
+            .HasColumnType("int(11)")
+            .HasColumnName("provider_id");
+        entity.Property(e => e.Sub)
+            .HasMaxLength(50)
+            .HasComment("用户id")
+            .HasColumnName("sub");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("最后更新时间")

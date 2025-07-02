@@ -46,7 +46,7 @@ public partial class DatabaseContext
     protected void SeedData(ModelBuilder modelBuilder)
     {
         const string defaultPassword = "YWJjZDEyMzQ1Ng==";
-        var (hashPassword, salt) = PBKDF2Helper.ToHash(Convert.ToBase64String(Encoding.UTF8.GetBytes(defaultPassword)));
+        var (hashPassword, salt) = PBKDF2Helper.ToHash(Encoding.UTF8.GetString(Convert.FromBase64String(defaultPassword)));
 
         // 生成用户数据
         modelBuilder.Entity<UserEntity>().HasData(
@@ -61,12 +61,15 @@ public partial class DatabaseContext
                 Phone = "12345678901",
             });
 
-        //// 生成系统初始化配置.
-        //modelBuilder.Entity<SettingEntity>().HasData(
-        //    new SettingEntity
-        //    {
-        //        Id = 1
-        //    }));
+        // 生成系统初始化配置.
+        modelBuilder.Entity<SettingEntity>().HasData(
+            new SettingEntity
+            {
+                Id = 1,
+                Key = "root",
+                Value = "1",
+                Description = "超级管理员id"
+            });
     }
 
     // 审计属性过滤

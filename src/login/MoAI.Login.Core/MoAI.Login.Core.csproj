@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Login</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+	  <PackageReference Include="Refit.HttpClientFactory" />
+	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+	  <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+	  <ProjectReference Include="..\MoAI.Login.Api\MoAI.Login.Api.csproj" />
+	</ItemGroup>
+
+
+</Project>

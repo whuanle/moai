@@ -97,6 +97,1010 @@
         }
       }
     },
+    "/api/account/login": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "用户登录.",
+        "operationId": "LoginEndpoint",
+        "requestBody": {
+          "x-name": "LoginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/oauth_bind_account": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "使用 OAuth 绑定已存在的账号.",
+        "operationId": "OAuthBindExistAccountEndpoint",
+        "requestBody": {
+          "x-name": "OAuthBindExistAccountCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthBindExistAccountCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/account/oauth_login": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "OAuth登录.",
+        "operationId": "OAuthLoginEndpoint",
+        "requestBody": {
+          "x-name": "OAuthLoginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthLoginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthLoginCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/oauth_register": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "OAuth 注册.",
+        "operationId": "OAuthRegisterEndpoint",
+        "requestBody": {
+          "x-name": "OAuthRegisterCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthRegisterCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/oauth_prividers": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "获取第三方登录列表.",
+        "operationId": "QueryAllOAuthPrividerEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAllOAuthPrividerCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/userinfo": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "查询用户基本信息.",
+        "operationId": "QueryUserInfoEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryUserInfoCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/account/refresh_token": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "刷新token.",
+        "operationId": "RefreshTokenEndpoint",
+        "requestBody": {
+          "x-name": "RefreshTokenCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshTokenCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/register": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "注册账号.",
+        "operationId": "RegisterUserEndpoint",
+        "requestBody": {
+          "x-name": "RegisterUserCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/oauth/create": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": ".",
+        "operationId": "CreateOAuthConnectionlEndpoint",
+        "requestBody": {
+          "x-name": "CreateOAuthConnectionCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOAuthConnectionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/oauth/delete": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": ".",
+        "operationId": "DeleteOAuthConnectionEndpoint",
+        "requestBody": {
+          "x-name": "DeleteOAuthConnectionCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteOAuthConnectionCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteOAuthConnectionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/oauth/detail_list": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": ".",
+        "operationId": "QueryAllOAuthPrividerDetailEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAllOAuthPrividerDetailCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/oauth/update": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": ".",
+        "operationId": "UpdateOAuthConnectionlEndpoint",
+        "requestBody": {
+          "x-name": "UpdateOAuthConnectionCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOAuthConnectionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/public/serverinfo": {
       "get": {
         "tags": [
@@ -525,7 +1529,7 @@
         "description": "简单类型.",
         "additionalProperties": false,
         "properties": {
-          "data": {
+          "value": {
             "type": "string",
             "description": "任何类型.",
             "nullable": true
@@ -592,6 +1596,597 @@
             }
           }
         }
+      },
+      "LoginCommandResponse": {
+        "type": "object",
+        "description": "登录结果.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "userName",
+          "accessToken",
+          "refreshToken",
+          "tokenType",
+          "expiresIn"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户ID.",
+            "format": "int32"
+          },
+          "userName": {
+            "type": "string",
+            "description": "用户名."
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "访问令牌."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "刷新令牌."
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "令牌类型."
+          },
+          "expiresIn": {
+            "type": "string",
+            "description": "过期时间（秒）.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1415926535897934852"
+          }
+        }
+      },
+      "LoginCommand": {
+        "type": "object",
+        "description": "登录.",
+        "additionalProperties": false,
+        "required": [
+          "userName",
+          "password"
+        ],
+        "properties": {
+          "userName": {
+            "type": "string",
+            "description": "用户名或邮箱."
+          },
+          "password": {
+            "type": "string",
+            "description": "密码，使用 RSA 公钥加密."
+          },
+          "oAuthBindId": {
+            "type": "string",
+            "description": "登录绑定 OAuth 用户 ID.",
+            "nullable": true
+          }
+        }
+      },
+      "EmptyCommandResponse": {
+        "type": "object",
+        "description": "空数据.",
+        "additionalProperties": false
+      },
+      "OAuthBindExistAccountCommand": {
+        "type": "object",
+        "description": "使用 OAuth 绑定已存在的账号.",
+        "additionalProperties": false,
+        "required": [
+          "oAuthBindId"
+        ],
+        "properties": {
+          "oAuthBindId": {
+            "type": "string",
+            "description": "id."
+          }
+        }
+      },
+      "OAuthLoginCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "isBindUser",
+          "oAuthId"
+        ],
+        "properties": {
+          "isBindUser": {
+            "type": "boolean",
+            "description": "如果已经绑定用户."
+          },
+          "oAuthId": {
+            "type": "string",
+            "description": "id."
+          },
+          "oAuthBindId": {
+            "type": "string",
+            "description": "如果此 id 没有绑定过用户，则返回此 id，使用此 id 绑定或注册用户.",
+            "nullable": true
+          },
+          "loginCommandResponse": {
+            "description": "IsBindUser == true 时，返回用户登录信息.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoginCommandResponse"
+              }
+            ]
+          }
+        }
+      },
+      "OAuthLoginCommand": {
+        "type": "object",
+        "description": "使用 OAuth 登录.",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "oAuthId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Code."
+          },
+          "oAuthId": {
+            "type": "string",
+            "description": "id."
+          }
+        }
+      },
+      "OAuthRegisterCommand": {
+        "type": "object",
+        "description": "使用第三方账号一键注册.",
+        "additionalProperties": false,
+        "required": [
+          "oAuthBindId"
+        ],
+        "properties": {
+          "oAuthBindId": {
+            "type": "string",
+            "description": "登录绑定 OAuth 用户 ID."
+          }
+        }
+      },
+      "QueryAllOAuthPrividerCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryAllOAuthPrividerCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryAllOAuthPrividerCommandResponseItem": {
+        "type": "object",
+        "description": "QueryAllOAuthPrividerCommandResponseItem.",
+        "additionalProperties": false,
+        "required": [
+          "oAuthId",
+          "name",
+          "iconUrl",
+          "provider",
+          "redirectUrl"
+        ],
+        "properties": {
+          "oAuthId": {
+            "type": "string",
+            "description": "id."
+          },
+          "name": {
+            "type": "string",
+            "description": "提供商名称"
+          },
+          "iconUrl": {
+            "type": "string",
+            "description": "提供商图标地址"
+          },
+          "provider": {
+            "type": "string",
+            "description": "提供商标识"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "description": "授权地址."
+          }
+        }
+      },
+      "QueryUserInfoCommandResponse": {
+        "type": "object",
+        "description": "用户基本信息响应.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "userName",
+          "nickName",
+          "avatar",
+          "isRoot",
+          "isAdmin"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 ID.",
+            "format": "int32"
+          },
+          "userName": {
+            "type": "string",
+            "description": "用户名."
+          },
+          "nickName": {
+            "type": "string",
+            "description": "昵称."
+          },
+          "avatar": {
+            "type": "string",
+            "description": "头像路径."
+          },
+          "isRoot": {
+            "type": "boolean",
+            "description": "是否超级管理员."
+          },
+          "isAdmin": {
+            "type": "boolean",
+            "description": "是否管理员."
+          }
+        }
+      },
+      "RefreshTokenCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "userName",
+          "accessToken",
+          "refreshToken",
+          "tokenType",
+          "expiresIn"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户ID.",
+            "format": "int32"
+          },
+          "userName": {
+            "type": "string",
+            "description": "用户名."
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "访问令牌."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "刷新令牌."
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "令牌类型."
+          },
+          "expiresIn": {
+            "type": "string",
+            "description": "过期时间（秒）.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1415926535897934852"
+          }
+        }
+      },
+      "RefreshTokenCommand": {
+        "type": "object",
+        "description": "刷新 token.",
+        "additionalProperties": false,
+        "required": [
+          "refreshToken"
+        ],
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "刷新令牌.",
+            "minLength": 1,
+            "nullable": false
+          }
+        }
+      },
+      "SimpleInt": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SimpleOfInt32"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SimpleOfInt32": {
+        "type": "object",
+        "description": "简单类型.",
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "integer",
+            "description": "任何类型.",
+            "format": "int32"
+          }
+        }
+      },
+      "RegisterUserCommand": {
+        "type": "object",
+        "description": "注册用户.",
+        "additionalProperties": false,
+        "required": [
+          "userName",
+          "email",
+          "password",
+          "nickName",
+          "phone"
+        ],
+        "properties": {
+          "userName": {
+            "type": "string",
+            "description": "用户名.",
+            "maxLength": 20,
+            "minLength": 5,
+            "nullable": false
+          },
+          "email": {
+            "type": "string",
+            "description": "邮箱.",
+            "format": "email",
+            "maxLength": 50,
+            "minLength": 5,
+            "pattern": "^[^@]+@[^@]+$",
+            "nullable": false
+          },
+          "password": {
+            "type": "string",
+            "description": "密码，接口请求时，使用 RSA 公钥加密密码.",
+            "minLength": 1,
+            "nullable": false
+          },
+          "nickName": {
+            "type": "string",
+            "description": "昵称.",
+            "maxLength": 20,
+            "minLength": 3,
+            "nullable": false
+          },
+          "phone": {
+            "type": "string",
+            "description": "手机号.",
+            "minLength": 1,
+            "pattern": "^(?:\\+?1)?\\d{10,15}$",
+            "nullable": false
+          }
+        }
+      },
+      "CreateOAuthConnectionCommand": {
+        "type": "object",
+        "description": "创建 OAuth2.0 连接配置.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "provider",
+          "key",
+          "secret",
+          "iconUrl",
+          "wellKnown"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "认证名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "pattern": "^[\\u4e00-\\u9fa5a-zA-Z0-9]+$",
+            "nullable": false
+          },
+          "provider": {
+            "type": "string",
+            "description": "提供商.",
+            "minLength": 1,
+            "nullable": false
+          },
+          "key": {
+            "type": "string",
+            "description": "应用key.",
+            "minLength": 1,
+            "nullable": false
+          },
+          "secret": {
+            "type": "string",
+            "description": "密钥.",
+            "minLength": 1,
+            "nullable": false
+          },
+          "iconUrl": {
+            "type": "string",
+            "description": "图标地址.",
+            "format": "uri",
+            "minLength": 1,
+            "nullable": false
+          },
+          "wellKnown": {
+            "type": "string",
+            "description": "发现端口.",
+            "format": "uri",
+            "minLength": 1,
+            "nullable": false
+          }
+        }
+      },
+      "DeleteOAuthConnectionCommand": {
+        "type": "object",
+        "description": "删除认证方式.",
+        "additionalProperties": false,
+        "required": [
+          "oAuthConnectionId"
+        ],
+        "properties": {
+          "oAuthConnectionId": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          }
+        }
+      },
+      "QueryAllOAuthPrividerDetailCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryAllOAuthPrividerDetailCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryAllOAuthPrividerDetailCommandResponseItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "oAuthId",
+              "name",
+              "iconUrl",
+              "provider",
+              "key",
+              "wellKnown",
+              "redirectUri"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "oAuthId": {
+                "type": "string",
+                "description": "OAuathId."
+              },
+              "name": {
+                "type": "string",
+                "description": "提供商名称"
+              },
+              "iconUrl": {
+                "type": "string",
+                "description": "提供商图标地址"
+              },
+              "provider": {
+                "type": "string",
+                "description": "提供商标识"
+              },
+              "key": {
+                "type": "string"
+              },
+              "wellKnown": {
+                "type": "string",
+                "description": "发现端口"
+              },
+              "redirectUri": {
+                "type": "string",
+                "description": "回调地址."
+              }
+            }
+          }
+        ]
+      },
+      "AuditsInfo": {
+        "type": "object",
+        "description": "数据子项.",
+        "x-abstract": true,
+        "additionalProperties": false,
+        "required": [
+          "createTime",
+          "createUserId",
+          "createUserName",
+          "updateTime",
+          "updateUserId",
+          "updateUserName"
+        ],
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1751497623847"
+          },
+          "createUserId": {
+            "type": "integer",
+            "description": "创建人ID.",
+            "format": "int32"
+          },
+          "createUserName": {
+            "type": "string",
+            "description": "创建者 名字."
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1751497623847"
+          },
+          "updateUserId": {
+            "type": "integer",
+            "description": "更新人ID.",
+            "format": "int32"
+          },
+          "updateUserName": {
+            "type": "string",
+            "description": "更新人 名字."
+          }
+        }
+      },
+      "UpdateOAuthConnectionCommand": {
+        "required": [
+          "oAuthConnectionId"
+        ],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CreateOAuthConnectionCommand"
+          },
+          {
+            "type": "object",
+            "description": "更新 OAuth2.0 连接配置.",
+            "additionalProperties": false,
+            "required": [
+              "oAuthConnectionId"
+            ],
+            "properties": {
+              "oAuthConnectionId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32",
+                "minLength": 1,
+                "nullable": false
+              }
+            }
+          }
+        ]
       },
       "QueryServerInfoCommandResponse": {
         "type": "object",

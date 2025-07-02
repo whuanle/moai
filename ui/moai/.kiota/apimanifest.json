@@ -1,0 +1,113 @@
+{
+  "applicationName": "application",
+  "apiDependencies": {
+    "ApiClient": {
+      "apiDescriptionUrl": "http://127.0.0.1:5000/openapi/v1.json",
+      "apiDeploymentBaseUrl": "http://127.0.0.1:5000/",
+      "requests": [
+        {
+          "method": "POST",
+          "uriTemplate": "api/user/login"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/user/checkname"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/user/refresh_token"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/user/register"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/user/resetpassword"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/user/uploadavatar"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/check_name"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/joined_list"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/create"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/setadmin"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/{-id}/update"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/{-id}/teamdetail"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/{-id}/teamitem"
+        },
+        {
+          "method": "DELETE",
+          "uriTemplate": "api/team/{-id}/delete"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/{-id}/adminlist"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/{-id}/memberlist"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/config/uploadavatar"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/member/remove"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/team/member/invite"
+        },
+        {
+          "method": "POST",
+          "uriTemplate": "api/public/encryption"
+        },
+        {
+          "method": "GET",
+          "uriTemplate": "api/public/serverinfo"
+        }
+      ],
+      "extensions": {
+        "x-ms-kiota-hash": "7692A2190F6F64BC561D03E8581D4F189D3BFDC3CC12FDA10765B6A42ED276C7",
+        "x-ms-kiota-version": "1.25.1"
+      }
+    },
+    "MaomiClient": {
+      "apiDescriptionUrl": "http://127.0.0.1:5000/openapi/v1.json",
+      "apiDeploymentBaseUrl": "http://127.0.0.1:5000/",
+      "requests": [
+        {
+          "method": "GET",
+          "uriTemplate": "/migration-placeholder"
+        }
+      ],
+      "extensions": {
+        "x-ms-kiota-hash": "434E3236375224D1CAEDBA54ED251B98D687596B3C499F11C1FE5867EB8E9D5A",
+        "x-ms-kiota-version": "1.23.0"
+      }
+    }
+  }
+}

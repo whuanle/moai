@@ -19,10 +19,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\admin\MoAI.Admin.Core\MoAI.Admin.Core.csproj" />
 		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
 		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
+		<ProjectReference Include="..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />
 		<ProjectReference Include="..\public\MoAI.Public.Core\MoAI.Public.Core.csproj" />
 		<ProjectReference Include="..\storage\MoAI.Storage.Core\MoAI.Storage.Core.csproj" />
+		<ProjectReference Include="..\user\MoAI.User.Core\MoAI.User.Core.csproj" />
 	</ItemGroup>
 
 </Project>
