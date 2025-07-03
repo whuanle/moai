@@ -85,7 +85,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
         // 绑定账号
         var oauthEntity = new UserOauthEntity
         {
-            UserId =_userContext.UserId,
+            UserId = _userContext.UserId,
             ProviderId = oauthConnectionEntity.Id,
             Sub = oauthBindUserProfile.Profile.Sub,
         };

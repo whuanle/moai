@@ -7,8 +7,6 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra;
-using MoAI.Storage.Queries.Response;
-using MoAI.Store.Enums;
 using MoAI.Store.Queries.Response;
 using MoAI.Store.Services;
 

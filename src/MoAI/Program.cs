@@ -6,7 +6,6 @@
 
 using FastEndpoints;
 using MaomiAI;
-using Microsoft.Extensions.FileProviders;
 using MoAI.Infra.Models;
 using Scalar.AspNetCore;
 using System.Text.Json;

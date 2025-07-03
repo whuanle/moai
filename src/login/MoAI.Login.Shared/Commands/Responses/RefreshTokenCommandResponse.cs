@@ -4,8 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MediatR;
-
 namespace MoAI.Login.Commands.Responses;
 
 public class RefreshTokenCommandResponse

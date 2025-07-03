@@ -4,19 +4,19 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Models;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Login.Commands;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using MoAI.Database.Models;
 
 namespace MoAI.Login.Handlers;
 
@@ -57,7 +57,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
             throw new BusinessException("注册功能已被禁用，请联系管理员。") { StatusCode = 403 };
         }
 
-            // 使用 RSA 解密还原密码
+        // 使用 RSA 解密还原密码
         string restorePassword = default!;
         try
         {

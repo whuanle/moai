@@ -7,11 +7,10 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Maomi;
-using MoAI.Infra;
-using MoAI.Swaggers;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using MoAI.Infra;
+using MoAI.Swaggers;
 using Newtonsoft.Json.Serialization;
 using NJsonSchema;
 using NJsonSchema.Generation.TypeMappers;

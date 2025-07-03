@@ -25,9 +25,9 @@ public class ConfigureMVCModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddControllers( o =>
+        context.Services.AddControllers(o =>
         {
-            
+
         });
 
         context.Services.AddCors(options =>

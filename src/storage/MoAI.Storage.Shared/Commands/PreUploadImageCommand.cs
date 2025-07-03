@@ -7,7 +7,6 @@
 using MediatR;
 using MoAI.Storage.Commands.Response;
 using MoAI.Store.Enums;
-using System.Text.Json.Serialization;
 
 namespace MoAI.Storage.Commands;
 

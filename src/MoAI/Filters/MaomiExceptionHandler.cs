@@ -4,9 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using Microsoft.AspNetCore.Diagnostics;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using Microsoft.AspNetCore.Diagnostics;
 
 namespace MoAI.Filters;
 

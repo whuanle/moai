@@ -6,7 +6,6 @@
 
 using FastEndpoints;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 

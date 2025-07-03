@@ -4,9 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
-using System.Reflection;
 
 namespace MoAI.Database.Models;
 

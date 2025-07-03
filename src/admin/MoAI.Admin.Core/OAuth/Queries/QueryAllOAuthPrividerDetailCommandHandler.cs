@@ -9,11 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Admin.OAuth.Queries.Responses;
 using MoAI.Database;
 using MoAI.Infra;
-using MoAI.Infra.Exceptions;
-using MoAI.Login.Models;
 using MoAI.Login.Queries;
 using MoAI.User.Queries;
-using MoAI.User.Queries.Responses;
 
 namespace MoAI.Login.Querie;
 

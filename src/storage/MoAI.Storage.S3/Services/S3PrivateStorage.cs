@@ -126,7 +126,7 @@ public class S3PrivateStorage : IPrivateFileStorage, IDisposable
     }
 
     /// <inheritdoc/>
-    public async Task DownloadAsync(string objectKey,string filePath)
+    public async Task DownloadAsync(string objectKey, string filePath)
     {
         GetObjectRequest? request = new()
         {

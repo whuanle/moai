@@ -5,7 +5,6 @@
 // </copyright>
 
 using FluentValidation.Results;
-using MoAI.Infra.Models;
 
 namespace MoAI.Infra.Models;
 

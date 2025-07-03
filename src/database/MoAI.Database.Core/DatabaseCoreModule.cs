@@ -5,8 +5,6 @@
 // </copyright>
 
 using Maomi;
-using MoAI.Infra;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra;

@@ -4,9 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI.Store.Enums;
 using MediatR;
 using MoAI.Storage.Queries.Response;
+using MoAI.Store.Enums;
 
 namespace MoAI.Store.Queries;
 

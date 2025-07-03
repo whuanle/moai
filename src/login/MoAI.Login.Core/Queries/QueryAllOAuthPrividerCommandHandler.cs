@@ -8,7 +8,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra;
-using MoAI.Infra.Exceptions;
 using MoAI.Login.Models;
 using MoAI.Login.Queries;
 using MoAI.Login.Queries.Responses;
@@ -39,7 +38,7 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
     {
         var items = await _databaseContext.OauthConnections
             .Where(c => c.IsDeleted == 0)
-            .Select(c => new 
+            .Select(c => new
             {
                 Key = c.Key,
                 OAuthId = c.Uuid,

@@ -12,7 +12,6 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Commands.Response;
-using MoAI.Store.Enums;
 using MoAI.Store.Services;
 
 namespace MoAI.Store.Commands;

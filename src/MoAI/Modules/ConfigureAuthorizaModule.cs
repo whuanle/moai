@@ -1,8 +1,8 @@
 ﻿using Maomi;
-using MoAI.Infra;
-using MoAI.Infra.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using MoAI.Infra;
+using MoAI.Infra.Services;
 
 namespace MoAI.Modules;
 

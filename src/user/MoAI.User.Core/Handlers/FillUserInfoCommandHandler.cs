@@ -7,7 +7,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Infra.Models;
 using MoAI.User.Queries;
 using MoAI.User.Queries.Responses;
 

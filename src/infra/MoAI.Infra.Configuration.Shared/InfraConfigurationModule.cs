@@ -9,7 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MoAI.Infra.Service;
 using System.Security.Cryptography;
 
 namespace MoAI.Infra;

@@ -7,8 +7,6 @@
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using MoAI.Infra.Models;
-using MoAI.Login.Commands;
 using MoAI.Login.Queries;
 using MoAI.Login.Queries.Responses;
 

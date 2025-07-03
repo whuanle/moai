@@ -6,11 +6,9 @@
 
 using FastEndpoints;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using MoAI.Admin;
 using MoAI.Infra.Models;
 using MoAI.Login.Commands;
-using MoAI.Login.Queries;
 
 namespace MoAI.Login.Endpoints;
 

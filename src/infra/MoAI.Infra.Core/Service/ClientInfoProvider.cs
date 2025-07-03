@@ -5,10 +5,10 @@
 // </copyright>
 
 using Maomi;
+using Microsoft.AspNetCore.Http;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
-using Microsoft.AspNetCore.Http;
 
 namespace MoAI.Infra.Defaults;
 

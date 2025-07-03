@@ -30,7 +30,7 @@ public static class AppConst
 
     public static string PrivateRSA = Path.Combine(ConfigsPath, "rsa_private.key");
 
-    
+
     /// <summary>
     /// 不在业务逻辑中发生的日志，统一使用这个名称做日志命名.<br />
     /// 例如在模块类中的打印的日志.

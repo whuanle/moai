@@ -5,7 +5,6 @@
 // </copyright>
 
 using Maomi;
-using Microsoft.Extensions.Configuration;
 
 namespace MoAI.Public;
 

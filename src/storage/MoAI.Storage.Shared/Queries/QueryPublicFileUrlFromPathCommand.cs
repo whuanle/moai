@@ -4,8 +4,8 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI.Store.Queries.Response;
 using MediatR;
+using MoAI.Store.Queries.Response;
 
 namespace MoAI.Store.Queries;
 

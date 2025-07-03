@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MediatR;
 using MoAI.Infra.Models;
 
 namespace MoAI.Admin.OAuth.Queries.Responses;

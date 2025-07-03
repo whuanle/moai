@@ -1,5 +1,4 @@
-﻿using MediatR;
-using MoAI.Infra.Models;
+﻿using MoAI.Infra.Models;
 
 namespace MoAI.User.Queries.Responses;
 public class FillUserInfoCommandResponse

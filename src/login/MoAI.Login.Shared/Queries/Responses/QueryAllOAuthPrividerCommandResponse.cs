@@ -4,8 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MediatR;
-
 namespace MoAI.Login.Queries.Responses;
 
 public class QueryAllOAuthPrividerCommandResponse
