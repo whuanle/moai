@@ -1,0 +1,42 @@
+﻿// <copyright file="UpdateOAuthConnectionCommandHandler.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using MoAI.Admin.SystemSettings.Queries;
+using MoAI.Database;
+using MoAI.Infra.Models;
+
+namespace MoAI.Admin.SystemSettings.Commands;
+
+public class SetSystemSettingsCommandHandler : IRequestHandler<SetSystemSettingsCommand, EmptyCommandResponse>
+{
+    private readonly DatabaseContext _databaseContext;
+
+    public SetSystemSettingsCommandHandler(DatabaseContext databaseContext)
+    {
+        _databaseContext = databaseContext;
+    }
+
+    public async Task<EmptyCommandResponse> Handle(SetSystemSettingsCommand request, CancellationToken cancellationToken)
+    {
+        var settings = await _databaseContext.Settings.ToArrayAsync();
+
+        foreach (var item in settings)
+        {
+            var setting = request.Settings.FirstOrDefault(x => x.Key == item.Key);
+            if (setting != null)
+            {
+                item.Value = setting.Value;
+            }
+        }
+
+        _databaseContext.UpdateRange(settings);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        return EmptyCommandResponse.Default;
+    }
+}

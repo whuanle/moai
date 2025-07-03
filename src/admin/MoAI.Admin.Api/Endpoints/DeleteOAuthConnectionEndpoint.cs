@@ -15,7 +15,7 @@ using MoAI.Login.Queries;
 namespace MoAI.Login.Endpoints;
 
 /// <summary>
-/// <inheritdoc cref="DeleteOAuthConnectionCommand"/>.
+/// 删除认证方式.
 /// </summary>
 [HttpDelete($"{ApiPrefix.OAuth}/delete")]
 public class DeleteOAuthConnectionEndpoint : Endpoint<DeleteOAuthConnectionCommand, EmptyCommandResponse>

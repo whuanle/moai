@@ -7,7 +7,12 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+	  <ProjectReference Include="..\..\login\MoAI.Login.Shared\MoAI.Login.Shared.csproj" />
 	  <ProjectReference Include="..\..\user\MoAI.User.Shared\MoAI.User.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="SystemSettings\Commands\Responses\" />
 	</ItemGroup>
 
 </Project>

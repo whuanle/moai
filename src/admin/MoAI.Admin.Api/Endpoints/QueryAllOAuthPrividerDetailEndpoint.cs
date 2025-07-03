@@ -16,7 +16,7 @@ using MoAI.Login.Queries;
 namespace MoAI.Login.Endpoints;
 
 /// <summary>
-/// <inheritdoc cref="QueryAllOAuthPrividerDetailCommandResponse"/>.
+/// 查询所有认证方式.
 /// </summary>
 [HttpGet($"{ApiPrefix.OAuth}/detail_list")]
 public class QueryAllOAuthPrividerDetailEndpoint : EndpointWithoutRequest<QueryAllOAuthPrividerDetailCommandResponse>

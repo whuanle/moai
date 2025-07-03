@@ -3,9 +3,12 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database.Audits;
 using MoAI.Database.Entities;
+using MoAI.Database.Models;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
+using System.ComponentModel;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace MoAI.Database;
@@ -15,6 +18,10 @@ namespace MoAI.Database;
 /// </summary>
 public partial class DatabaseContext
 {
+    /// <summary>
+    /// OnModelCreatingPartial.
+    /// </summary>
+    /// <param name="modelBuilder"></param>
     protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         SeedData(modelBuilder);
@@ -22,6 +29,10 @@ public partial class DatabaseContext
         QueryFilter(modelBuilder);
     }
 
+    /// <summary>
+    /// 查询过滤.
+    /// </summary>
+    /// <param name="modelBuilder"></param>
     protected static void QueryFilter(ModelBuilder modelBuilder)
     {
         // 给实体配置查询时自动加上 IsDeleted == false;
@@ -42,8 +53,11 @@ public partial class DatabaseContext
         }
     }
 
-    // 定义种子数据
-    protected void SeedData(ModelBuilder modelBuilder)
+    /// <summary>
+    /// 定义种子数据.
+    /// </summary>
+    /// <param name="modelBuilder"></param>
+    protected static void SeedData(ModelBuilder modelBuilder)
     {
         const string defaultPassword = "YWJjZDEyMzQ1Ng==";
         var (hashPassword, salt) = PBKDF2Helper.ToHash(Encoding.UTF8.GetString(Convert.FromBase64String(defaultPassword)));
@@ -52,7 +66,7 @@ public partial class DatabaseContext
         modelBuilder.Entity<UserEntity>().HasData(
             new UserEntity
             {
-                Id = 1,
+                Id = SystemSettingKeys.RootValue,
                 UserName = "admin",
                 NickName = "admin",
                 Email = "admin@admin.com",
@@ -62,17 +76,46 @@ public partial class DatabaseContext
             });
 
         // 生成系统初始化配置.
-        modelBuilder.Entity<SettingEntity>().HasData(
-            new SettingEntity
+        var fields = typeof(SystemSettingKeys).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+        var fieldDictionary = fields.ToDictionary(x => x.Name, x => x);
+
+        int id = 1;
+        foreach (var field in fields.Where(x => !x.Name.EndsWith("Value", StringComparison.CurrentCultureIgnoreCase)))
+        {
+            var valueField = fieldDictionary.GetValueOrDefault($"{field.Name}Value");
+            if (valueField == null)
             {
-                Id = 1,
-                Key = "root",
-                Value = "1",
-                Description = "超级管理员id"
-            });
+                continue;
+            }
+
+            var key = field.GetValue(null)?.ToString() ?? string.Empty;
+            var value = valueField.GetValue(null)?.ToString() ?? string.Empty;
+
+            var descriptionAttribute = field.GetCustomAttribute<DescriptionAttribute>();
+
+            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value) || descriptionAttribute == null)
+            {
+                continue;
+            }
+
+            modelBuilder.Entity<SettingEntity>().HasData(
+                new SettingEntity
+                {
+                    Id = id,
+                    Key = key,
+                    Value = value,
+                    Description = descriptionAttribute.Description
+                });
+
+            id++;
+        }
     }
 
-    // 审计属性过滤
+    /// <summary>
+    /// 审计属性过滤.
+    /// </summary>
+    /// <param name="args"></param>
     protected void AuditFilter(EntityEntryEventArgs args)
     {
         var userContext = _serviceProvider.GetService<UserContext>();

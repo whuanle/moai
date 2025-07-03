@@ -17,25 +17,25 @@ using MoAI.Login.Queries;
 namespace MoAI.Login.Endpoints;
 
 /// <summary>
-/// 更新 OAuth2.0 连接配置.
+/// 查询系统配置.
 /// </summary>
-[HttpPut($"{ApiPrefix.OAuth}/update")]
-public class UpdateOAuthConnectionlEndpoint : Endpoint<UpdateOAuthConnectionCommand, EmptyCommandResponse>
+[HttpGet($"{ApiPrefix.Settings}")]
+public class QuerySystemSettingsEndpoint : EndpointWithoutRequest<QuerySystemSettingsCommandResponse>
 {
     private readonly IMediator _mediator;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateOAuthConnectionlEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="QuerySystemSettingsEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public UpdateOAuthConnectionlEndpoint(IMediator mediator)
+    public QuerySystemSettingsEndpoint(IMediator mediator)
     {
         _mediator = mediator;
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateOAuthConnectionCommand req, CancellationToken ct)
+    public override async Task<QuerySystemSettingsCommandResponse> ExecuteAsync(CancellationToken ct)
     {
-        return await _mediator.Send(req, ct);
+        return await _mediator.Send(new QuerySystemSettingsCommand(), ct);
     }
 }

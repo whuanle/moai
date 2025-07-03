@@ -20,6 +20,7 @@ namespace MoAI.Infra;
 /// InfraCoreModule.
 /// </summary>
 [InjectModule<InfraConfigurationModule>]
+[InjectModule<InfraExternalHttpModule>]
 public class InfraCoreModule : IModule
 {
     private readonly IConfigurationManager _configurationManager;

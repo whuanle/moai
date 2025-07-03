@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
 	</ItemGroup>
 
 </Project>

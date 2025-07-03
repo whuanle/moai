@@ -1,4 +1,4 @@
-﻿// <copyright file="UpdateOAuthConnectionlEndpoint.cs" company="MoAI">
+﻿// <copyright file="SetSystemSettingsEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -17,24 +17,24 @@ using MoAI.Login.Queries;
 namespace MoAI.Login.Endpoints;
 
 /// <summary>
-/// 更新 OAuth2.0 连接配置.
+/// 更新系统设置.
 /// </summary>
-[HttpPut($"{ApiPrefix.OAuth}/update")]
-public class UpdateOAuthConnectionlEndpoint : Endpoint<UpdateOAuthConnectionCommand, EmptyCommandResponse>
+[HttpPut($"{ApiPrefix.Settings}")]
+public class SetSystemSettingsEndpoint : Endpoint<SetSystemSettingsCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateOAuthConnectionlEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="SetSystemSettingsEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public UpdateOAuthConnectionlEndpoint(IMediator mediator)
+    public SetSystemSettingsEndpoint(IMediator mediator)
     {
         _mediator = mediator;
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateOAuthConnectionCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(SetSystemSettingsCommand req, CancellationToken ct)
     {
         return await _mediator.Send(req, ct);
     }

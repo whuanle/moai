@@ -6,6 +6,7 @@
 
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Login.Models;
 
 namespace MoAI.Login.Commands;
 
@@ -22,7 +23,7 @@ public class CreateOAuthConnectionCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 提供商.
     /// </summary>
-    public string Provider { get; init; } = default!;
+    public OAuthPrivider Provider { get; init; } = default!;
 
     /// <summary>
     /// 应用key.

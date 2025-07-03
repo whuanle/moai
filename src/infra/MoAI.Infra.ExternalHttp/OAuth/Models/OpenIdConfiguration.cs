@@ -1,91 +1,12 @@
-﻿// <copyright file="IOAuthClient.cs" company="MoAI">
+﻿// <copyright file="OpenIdConfiguration.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Refit;
 using System.Text.Json.Serialization;
 
-namespace MoAI.Login.Http;
-
-public interface IOAuthClient
-{
-    public HttpClient Client { get; }
-
-    [Get("/{**path}")]
-    [QueryUriFormat(UriFormat.Unescaped)]
-    Task<OpenIdConfiguration> GetWellKnownAsync(string path);
-}
-
-public interface IOAuthClientAccessToken
-{
-    public HttpClient Client { get; }
-
-    [Post("/{**path}")]
-    [QueryUriFormat(UriFormat.Unescaped)]
-    Task<OpenIdAuthorizationResponse> GetAccessTokenAsync(string path, [Body] OpenIdAuthorizationRequest request);
-
-    [Get("/{**path}")]
-    [QueryUriFormat(UriFormat.Unescaped)]
-    Task<OpenIdUserProfile> GetUserInfoAsync(string path, [Query] string accessToken);
-}
-
-public class OpenIdUserProfile
-{
-    [JsonPropertyName("sub")]
-    public string Sub { get; set; }
-
-    [JsonPropertyName("iss")]
-    public string Issuer { get; set; }
-
-    [JsonPropertyName("aud")]
-    public string Audience { get; set; }
-
-    [JsonPropertyName("preferred_username")]
-    public string PreferredUsername { get; set; }
-
-    [JsonPropertyName("name")]
-    public string Name { get; set; }
-
-    [JsonPropertyName("picture")]
-    public string Picture { get; set; }
-}
-
-public class OpenIdAuthorizationResponse
-{
-    [JsonPropertyName("access_token")]
-    public string AccessToken { get; set; }
-
-    [JsonPropertyName("id_token")]
-    public string IdToken { get; set; }
-
-    [JsonPropertyName("refresh_token")]
-    public string RefreshToken { get; set; }
-
-    [JsonPropertyName("token_type")]
-    public string TokenType { get; set; }
-
-    [JsonPropertyName("expires_in")]
-    public int ExpiresIn { get; set; }
-
-    [JsonPropertyName("scope")]
-    public string Scope { get; set; }
-}
-public class OpenIdAuthorizationRequest
-{
-    [JsonPropertyName("grant_type")]
-    public string GrantType { get; set; }
-
-    [JsonPropertyName("client_id")]
-    public string ClientId { get; set; }
-
-    [JsonPropertyName("client_secret")]
-    public string ClientSecret { get; set; }
-
-    [JsonPropertyName("code")]
-    public string Code { get; set; }
-}
+namespace MoAI.Infra.OAuth.Models;
 
 public class OpenIdConfiguration
 {

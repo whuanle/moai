@@ -85,6 +85,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.User.Shared", "src\use
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.User.Core", "src\user\MoAI.User.Core\MoAI.User.Core.csproj", "{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Infra.ExternalHttp", "src\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj", "{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -195,6 +197,10 @@ Global
 		{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -232,6 +238,7 @@ Global
 		{C08B18EF-3862-46BD-8960-819D5A264628} = {AA88CCE9-B014-4A62-B426-9B3196A30E92}
 		{0289FDFC-DA54-4370-BB35-200920D05D89} = {B3374A84-387D-4FD1-98DA-0C0A39C9E7D4}
 		{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33} = {B3374A84-387D-4FD1-98DA-0C0A39C9E7D4}
+		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D} = {0A6758B4-9689-498B-A8A6-EC76CCA22A86}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B16D43C7-ED65-4A2E-9AE5-F3660DDC7334}

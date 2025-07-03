@@ -7,6 +7,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Models;
 using MoAI.Infra;
 using MoAI.Infra.Services;
 using MoAI.Public.Queries;
@@ -36,9 +37,10 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
         _databaseContext = databaseContext;
     }
 
+    /// <inheritdoc/>
     public async Task<QueryServerInfoCommandResponse> Handle(QueryServerInfoCommand request, CancellationToken cancellationToken)
     {
-        var existRoot = await _databaseContext.Settings.Where(x => x.Key == "root_id").AnyAsync();
+        var settings = SystemSettingKeys.ParseSettings(await _databaseContext.Settings.ToDictionaryAsync(x => x.Key, x => x.Value));
 
         var endpoint = new Uri(new Uri(_systemOptions.Server), "statics");
 
@@ -47,7 +49,8 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
             PublicStoreUrl = endpoint.ToString(),
             ServiceUrl = _systemOptions.Server,
             RsaPublic = _rsaProvider.GetPublicKey(),
-            IsInit = existRoot
+            MaxUploadFileSize = int.Parse(settings[SystemSettingKeys.MaxUploadFileSize]),
+            DisableRegister = settings[SystemSettingKeys.DisableRegister] == "true" || settings[SystemSettingKeys.DisableRegister] == "1"
         };
     }
 }

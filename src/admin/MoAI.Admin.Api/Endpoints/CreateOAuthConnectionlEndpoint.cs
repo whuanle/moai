@@ -15,7 +15,7 @@ using MoAI.Login.Queries;
 namespace MoAI.Login.Endpoints;
 
 /// <summary>
-/// <inheritdoc cref="CreateOAuthConnectionCommand"/>.
+/// 创建 OAuth2.0 连接配置.
 /// </summary>
 [HttpPost($"{ApiPrefix.OAuth}/create")]
 public class CreateOAuthConnectionlEndpoint : Endpoint<CreateOAuthConnectionCommand, EmptyCommandResponse>

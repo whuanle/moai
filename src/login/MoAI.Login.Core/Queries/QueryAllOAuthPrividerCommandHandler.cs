@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Login.Models;
 using MoAI.Login.Queries;
 using MoAI.Login.Queries.Responses;
 
@@ -55,6 +56,13 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
         {
             var frontUrl = _systemOptions.Server + $"/oauth_login";
             var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={item.OAuthId}";
+
+            if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
+            {
+                // https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=cli_a5d611352af9d00b&redirect_uri=https%3A%2F%2Fexample.com%2Fapi%2Foauth%2Fcallback&scope=bitable:app:readonly%20contact:contact&state=RANDOMSTRING
+                redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile%20contact:user.base:readonly&state={item.OAuthId}";
+            }
+
             //var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&response_type=code&scope=openid%20profile&state={item.OAuthId}";
 
             list.Add(new QueryAllOAuthPrividerCommandResponseItem

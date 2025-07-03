@@ -10,8 +10,9 @@ using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;
-using MoAI.Login.Http;
+using MoAI.Login.Models;
 
 namespace MoAI.Login.Handlers;
 
@@ -48,13 +49,19 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             throw new BusinessException("认证名称已存在，请更换后重试.");
         }
 
+        if (request.Provider == OAuthPrivider.Feishu)
+        {
+            await AddFeishuConnectionAsync(request, cancellationToken);
+            return EmptyCommandResponse.Default;
+        }
+
         var oauthRedirectUrl = await GetRedirectUrl(request.WellKnown);
 
         var connection = new Database.Entities.OauthConnectionEntity
         {
             Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
-            Provider = request.Provider,
+            Provider = request.Provider.ToString(),
             Key = request.Key,
             Secret = request.Secret,
             IconUrl = request.IconUrl?.ToString() ?? string.Empty,
@@ -81,6 +88,24 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
+    }
+
+    private async Task AddFeishuConnectionAsync(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
+    {
+        var fsConnection = new Database.Entities.OauthConnectionEntity
+        {
+            Uuid = Guid.NewGuid().ToString("N"),
+            Name = request.Name,
+            Provider = request.Provider.ToString(),
+            Key = request.Key,
+            Secret = request.Secret,
+            IconUrl = request.IconUrl?.ToString() ?? string.Empty,
+            RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
+            WellKnown = string.Empty
+        };
+
+        _databaseContext.OauthConnections.Add(fsConnection);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<string> GetRedirectUrl(Uri wellKnownUrl)

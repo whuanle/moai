@@ -10,6 +10,7 @@ using MoAI.Admin.OAuth.Queries.Responses;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Login.Models;
 using MoAI.Login.Queries;
 using MoAI.User.Queries;
 using MoAI.User.Queries.Responses;
@@ -60,6 +61,15 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
 
         foreach (var item in items)
         {
+            //if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    item
+            //}
+            //else
+            //{
+            //    item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
+            //}
+
             item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
         }
 

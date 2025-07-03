@@ -10,8 +10,9 @@ using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;
-using MoAI.Login.Http;
+using MoAI.Login.Models;
 
 namespace MoAI.Login.Handlers;
 
@@ -58,26 +59,32 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
             }
         }
 
-        connection.Provider = request.Provider;
+        connection.Provider = request.Provider.ToString();
         connection.Key = request.Key;
+        connection.IconUrl = request.IconUrl?.ToString() ?? string.Empty;
 
         if (!string.IsNullOrEmpty(request.Secret))
         {
             connection.Secret = request.Secret;
         }
 
-        connection.IconUrl = request.IconUrl?.ToString() ?? string.Empty;
-        connection.WellKnown = request.WellKnown.ToString();
+        if (request.Provider == OAuthPrivider.Feishu)
+        {
+            connection.RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
+        }
+        else
+        {
+            connection.WellKnown = request.WellKnown.ToString();
 
-        var oauthRedirectUrl = await GetRedirectUrl(request.WellKnown);
+            var oauthRedirectUrl = await GetRedirectUrl(request.WellKnown);
 
-        //var frontUrl = _systemOptions.Server + $"/oauth_login";
-        //var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
-        connection.RedirectUri = oauthRedirectUrl;
+            //var frontUrl = _systemOptions.Server + $"/oauth_login";
+            //var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
+            connection.RedirectUri = oauthRedirectUrl;
+        }
 
         _databaseContext.Update(connection);
         await _databaseContext.SaveChangesAsync(cancellationToken);
-
         return EmptyCommandResponse.Default;
     }
 

@@ -7,7 +7,6 @@
 
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
-	  <PackageReference Include="Refit.HttpClientFactory" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
 	</ItemGroup>
 

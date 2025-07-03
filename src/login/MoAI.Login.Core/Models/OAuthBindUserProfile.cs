@@ -1,9 +1,4 @@
-﻿using MoAI.Login.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MoAI.Infra.OAuth.Models;
 
 namespace MoAI.Login.Models;
 
