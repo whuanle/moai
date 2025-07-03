@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Detail_listRequestBuilder extends BaseRequestBuilder<Detail_listRequestBuilder> {
     /**
-     * .
+     * 查询所有认证方式.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAllOAuthPrividerDetailCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,7 +22,7 @@ export interface Detail_listRequestBuilder extends BaseRequestBuilder<Detail_lis
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAllOAuthPrividerDetailCommandResponse | undefined>;
     /**
-     * .
+     * 查询所有认证方式.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

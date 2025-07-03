@@ -1,4 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// <copyright file="DatabaseContext.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using Microsoft.EntityFrameworkCore;
 using MoAI.Database.Entities;
 
 namespace MoAI.Database;
@@ -100,7 +106,6 @@ public partial class DatabaseContext : DbContext
         modelBuilder
             .UseCollation("utf8mb4_general_ci")
             .HasCharSet("utf8mb4");
-
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

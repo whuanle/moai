@@ -142,6 +142,15 @@ export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KeyValueOfStringAndString}
+ */
+// @ts-ignore
+export function createKeyValueOfStringAndStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKeyValueOfStringAndString;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {LoginCommand}
  */
 // @ts-ignore
@@ -185,7 +194,7 @@ export interface CreateOAuthConnectionCommand extends Parsable {
     /**
      * 提供商.
      */
-    provider?: string | null;
+    provider?: OAuthPrivider | null;
     /**
      * 密钥.
      */
@@ -270,6 +279,24 @@ export function createQueryServerInfoCommandResponseFromDiscriminatorValue(parse
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySystemSettingsCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySystemSettingsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySystemSettingsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySystemSettingsCommandResponseItem}
+ */
+// @ts-ignore
+export function createQuerySystemSettingsCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySystemSettingsCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryUserInfoCommandResponse}
  */
 // @ts-ignore
@@ -302,6 +329,15 @@ export function createRefreshTokenCommandResponseFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createRegisterUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoRegisterUserCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetSystemSettingsCommand}
+ */
+// @ts-ignore
+export function createSetSystemSettingsCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetSystemSettingsCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -416,7 +452,7 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
         "iconUrl": n => { createOAuthConnectionCommand.iconUrl = n.getStringValue(); },
         "key": n => { createOAuthConnectionCommand.key = n.getStringValue(); },
         "name": n => { createOAuthConnectionCommand.name = n.getStringValue(); },
-        "provider": n => { createOAuthConnectionCommand.provider = n.getStringValue(); },
+        "provider": n => { createOAuthConnectionCommand.provider = n.getEnumValue<OAuthPrivider>(OAuthPrividerObject); },
         "secret": n => { createOAuthConnectionCommand.secret = n.getStringValue(); },
         "wellKnown": n => { createOAuthConnectionCommand.wellKnown = n.getStringValue(); },
     }
@@ -438,6 +474,17 @@ export function deserializeIntoDeleteOAuthConnectionCommand(deleteOAuthConnectio
 // @ts-ignore
 export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partial<EmptyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoKeyValueOfStringAndString(keyValueOfStringAndString: Partial<KeyValueOfStringAndString> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "key": n => { keyValueOfStringAndString.key = n.getStringValue(); },
+        "value": n => { keyValueOfStringAndString.value = n.getStringValue(); },
     }
 }
 /**
@@ -497,6 +544,7 @@ export function deserializeIntoOAuthLoginCommandResponse(oAuthLoginCommandRespon
     return {
         "isBindUser": n => { oAuthLoginCommandResponse.isBindUser = n.getBooleanValue(); },
         "loginCommandResponse": n => { oAuthLoginCommandResponse.loginCommandResponse = n.getObjectValue<LoginCommandResponse>(createLoginCommandResponseFromDiscriminatorValue); },
+        "name": n => { oAuthLoginCommandResponse.name = n.getStringValue(); },
         "oAuthBindId": n => { oAuthLoginCommandResponse.oAuthBindId = n.getStringValue(); },
         "oAuthId": n => { oAuthLoginCommandResponse.oAuthId = n.getStringValue(); },
     }
@@ -570,10 +618,35 @@ export function deserializeIntoQueryAllOAuthPrividerDetailCommandResponseItem(qu
 // @ts-ignore
 export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCommandResponse: Partial<QueryServerInfoCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "isInit": n => { queryServerInfoCommandResponse.isInit = n.getBooleanValue(); },
+        "disableRegister": n => { queryServerInfoCommandResponse.disableRegister = n.getBooleanValue(); },
+        "maxUploadFileSize": n => { queryServerInfoCommandResponse.maxUploadFileSize = n.getNumberValue(); },
         "publicStoreUrl": n => { queryServerInfoCommandResponse.publicStoreUrl = n.getStringValue(); },
         "rsaPublic": n => { queryServerInfoCommandResponse.rsaPublic = n.getStringValue(); },
         "serviceUrl": n => { queryServerInfoCommandResponse.serviceUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySystemSettingsCommandResponse(querySystemSettingsCommandResponse: Partial<QuerySystemSettingsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "settings": n => { querySystemSettingsCommandResponse.settings = n.getCollectionOfObjectValues<QuerySystemSettingsCommandResponseItem>(createQuerySystemSettingsCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySystemSettingsCommandResponseItem(querySystemSettingsCommandResponseItem: Partial<QuerySystemSettingsCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(querySystemSettingsCommandResponseItem),
+        "description": n => { querySystemSettingsCommandResponseItem.description = n.getStringValue(); },
+        "id": n => { querySystemSettingsCommandResponseItem.id = n.getNumberValue(); },
+        "key": n => { querySystemSettingsCommandResponseItem.key = n.getStringValue(); },
+        "value": n => { querySystemSettingsCommandResponseItem.value = n.getStringValue(); },
     }
 }
 /**
@@ -635,6 +708,16 @@ export function deserializeIntoRegisterUserCommand(registerUserCommand: Partial<
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSetSystemSettingsCommand(setSystemSettingsCommand: Partial<SetSystemSettingsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "settings": n => { setSystemSettingsCommand.settings = n.getCollectionOfObjectValues<KeyValueOfStringAndString>(createKeyValueOfStringAndStringFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSimpleInt(simpleInt: Partial<SimpleInt> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoSimpleOfInt32(simpleInt),
@@ -685,6 +768,16 @@ export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectio
  * 空数据.
  */
 export interface EmptyCommandResponse extends Parsable {
+}
+export interface KeyValueOfStringAndString extends Parsable {
+    /**
+     * The key property
+     */
+    key?: string | null;
+    /**
+     * The value property
+     */
+    value?: string | null;
 }
 /**
  * 登录.
@@ -764,6 +857,10 @@ export interface OAuthLoginCommandResponse extends Parsable {
      */
     loginCommandResponse?: LoginCommandResponse | null;
     /**
+     * 用户在第三方登录的名字.
+     */
+    name?: string | null;
+    /**
      * 如果此 id 没有绑定过用户，则返回此 id，使用此 id 绑定或注册用户.
      */
     oAuthBindId?: string | null;
@@ -772,6 +869,7 @@ export interface OAuthLoginCommandResponse extends Parsable {
      */
     oAuthId?: string | null;
 }
+export type OAuthPrivider = (typeof OAuthPrividerObject)[keyof typeof OAuthPrividerObject];
 /**
  * 使用第三方账号一键注册.
  */
@@ -857,9 +955,13 @@ export interface QueryAllOAuthPrividerDetailCommandResponseItem extends AuditsIn
  */
 export interface QueryServerInfoCommandResponse extends Parsable {
     /**
-     * 已经初始化.
+     * 禁止注册.
      */
-    isInit?: boolean | null;
+    disableRegister?: boolean | null;
+    /**
+     * 最大可上传文件大小，单位为字节.
+     */
+    maxUploadFileSize?: number | null;
     /**
      * 公共存储地址，静态资源时可直接访问.
      */
@@ -872,6 +974,30 @@ export interface QueryServerInfoCommandResponse extends Parsable {
      * 系统访问地址.
      */
     serviceUrl?: string | null;
+}
+export interface QuerySystemSettingsCommandResponse extends Parsable {
+    /**
+     * The settings property
+     */
+    settings?: QuerySystemSettingsCommandResponseItem[] | null;
+}
+export interface QuerySystemSettingsCommandResponseItem extends AuditsInfo, Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * id.
+     */
+    id?: number | null;
+    /**
+     * 配置名称.
+     */
+    key?: string | null;
+    /**
+     * 配置值.
+     */
+    value?: string | null;
 }
 /**
  * 用户基本信息响应.
@@ -1021,7 +1147,7 @@ export function serializeCreateOAuthConnectionCommand(writer: SerializationWrite
         writer.writeStringValue("iconUrl", createOAuthConnectionCommand.iconUrl);
         writer.writeStringValue("key", createOAuthConnectionCommand.key);
         writer.writeStringValue("name", createOAuthConnectionCommand.name);
-        writer.writeStringValue("provider", createOAuthConnectionCommand.provider);
+        writer.writeEnumValue<OAuthPrivider>("provider", createOAuthConnectionCommand.provider);
         writer.writeStringValue("secret", createOAuthConnectionCommand.secret);
         writer.writeStringValue("wellKnown", createOAuthConnectionCommand.wellKnown);
     }
@@ -1043,6 +1169,17 @@ export function serializeDeleteOAuthConnectionCommand(writer: SerializationWrite
 // @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeKeyValueOfStringAndString(writer: SerializationWriter, keyValueOfStringAndString: Partial<KeyValueOfStringAndString> | undefined | null = {}) : void {
+    if (keyValueOfStringAndString) {
+        writer.writeStringValue("key", keyValueOfStringAndString.key);
+        writer.writeStringValue("value", keyValueOfStringAndString.value);
     }
 }
 /**
@@ -1102,6 +1239,7 @@ export function serializeOAuthLoginCommandResponse(writer: SerializationWriter, 
     if (oAuthLoginCommandResponse) {
         writer.writeBooleanValue("isBindUser", oAuthLoginCommandResponse.isBindUser);
         writer.writeObjectValue<LoginCommandResponse>("loginCommandResponse", oAuthLoginCommandResponse.loginCommandResponse, serializeLoginCommandResponse);
+        writer.writeStringValue("name", oAuthLoginCommandResponse.name);
         writer.writeStringValue("oAuthBindId", oAuthLoginCommandResponse.oAuthBindId);
         writer.writeStringValue("oAuthId", oAuthLoginCommandResponse.oAuthId);
     }
@@ -1175,10 +1313,35 @@ export function serializeQueryAllOAuthPrividerDetailCommandResponseItem(writer: 
 // @ts-ignore
 export function serializeQueryServerInfoCommandResponse(writer: SerializationWriter, queryServerInfoCommandResponse: Partial<QueryServerInfoCommandResponse> | undefined | null = {}) : void {
     if (queryServerInfoCommandResponse) {
-        writer.writeBooleanValue("isInit", queryServerInfoCommandResponse.isInit);
+        writer.writeBooleanValue("disableRegister", queryServerInfoCommandResponse.disableRegister);
+        writer.writeNumberValue("maxUploadFileSize", queryServerInfoCommandResponse.maxUploadFileSize);
         writer.writeStringValue("publicStoreUrl", queryServerInfoCommandResponse.publicStoreUrl);
         writer.writeStringValue("rsaPublic", queryServerInfoCommandResponse.rsaPublic);
         writer.writeStringValue("serviceUrl", queryServerInfoCommandResponse.serviceUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySystemSettingsCommandResponse(writer: SerializationWriter, querySystemSettingsCommandResponse: Partial<QuerySystemSettingsCommandResponse> | undefined | null = {}) : void {
+    if (querySystemSettingsCommandResponse) {
+        writer.writeCollectionOfObjectValues<QuerySystemSettingsCommandResponseItem>("settings", querySystemSettingsCommandResponse.settings, serializeQuerySystemSettingsCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySystemSettingsCommandResponseItem(writer: SerializationWriter, querySystemSettingsCommandResponseItem: Partial<QuerySystemSettingsCommandResponseItem> | undefined | null = {}) : void {
+    if (querySystemSettingsCommandResponseItem) {
+        serializeAuditsInfo(writer, querySystemSettingsCommandResponseItem)
+        writer.writeStringValue("description", querySystemSettingsCommandResponseItem.description);
+        writer.writeNumberValue("id", querySystemSettingsCommandResponseItem.id);
+        writer.writeStringValue("key", querySystemSettingsCommandResponseItem.key);
+        writer.writeStringValue("value", querySystemSettingsCommandResponseItem.value);
     }
 }
 /**
@@ -1240,6 +1403,16 @@ export function serializeRegisterUserCommand(writer: SerializationWriter, regist
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSetSystemSettingsCommand(writer: SerializationWriter, setSystemSettingsCommand: Partial<SetSystemSettingsCommand> | undefined | null = {}) : void {
+    if (setSystemSettingsCommand) {
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndString>("settings", setSystemSettingsCommand.settings, serializeKeyValueOfStringAndString);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSimpleInt(writer: SerializationWriter, simpleInt: Partial<SimpleInt> | undefined | null = {}) : void {
     if (simpleInt) {
         serializeSimpleOfInt32(writer, simpleInt)
@@ -1286,6 +1459,12 @@ export function serializeUpdateOAuthConnectionCommand(writer: SerializationWrite
         writer.writeNumberValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
     }
 }
+export interface SetSystemSettingsCommand extends Parsable {
+    /**
+     * The settings property
+     */
+    settings?: KeyValueOfStringAndString[] | null;
+}
 export interface SimpleInt extends Parsable, SimpleOfInt32 {
 }
 /**
@@ -1317,5 +1496,16 @@ export interface UpdateOAuthConnectionCommand extends CreateOAuthConnectionComma
      */
     oAuthConnectionId?: number | null;
 }
+/**
+ * OAuth 提供商.
+ */
+export const OAuthPrividerObject = {
+    Custom: "custom",
+    Feishu: "feishu",
+    GitHub: "gitHub",
+    GitLab: "gitLab",
+    Gitee: "gitee",
+    WeChat: "weChat",
+} as const;
 /* tslint:enable */
 /* eslint-enable */

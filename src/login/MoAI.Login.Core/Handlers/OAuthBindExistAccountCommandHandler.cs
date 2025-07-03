@@ -25,8 +25,6 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
 {
     private readonly UserContext _userContext;
     private readonly DatabaseContext _databaseContext;
-    private readonly IOAuthClient _authClient;
-    private readonly IOAuthClientAccessToken _authClientAccessToken;
     private readonly ILogger<OAuthBindExistAccountCommandHandler> _logger;
     private readonly IRedisDatabase _redisDatabase;
 
@@ -35,16 +33,12 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
     /// </summary>
     /// <param name="userContext"></param>
     /// <param name="databaseContext"></param>
-    /// <param name="authClient"></param>
-    /// <param name="authClientAccessToken"></param>
     /// <param name="logger"></param>
     /// <param name="redisDatabase"></param>
-    public OAuthBindExistAccountCommandHandler(UserContext userContext, DatabaseContext databaseContext, IOAuthClient authClient, IOAuthClientAccessToken authClientAccessToken, ILogger<OAuthBindExistAccountCommandHandler> logger, IRedisDatabase redisDatabase)
+    public OAuthBindExistAccountCommandHandler(UserContext userContext, DatabaseContext databaseContext, ILogger<OAuthBindExistAccountCommandHandler> logger, IRedisDatabase redisDatabase)
     {
         _userContext = userContext;
         _databaseContext = databaseContext;
-        _authClient = authClient;
-        _authClientAccessToken = authClientAccessToken;
         _logger = logger;
         _redisDatabase = redisDatabase;
     }

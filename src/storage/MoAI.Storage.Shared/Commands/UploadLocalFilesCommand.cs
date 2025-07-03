@@ -28,16 +28,22 @@ public class UploadLocalFilesCommand : IRequest<UploadLocalFilesCommandResponse>
 public class FileUploadItem
 {
     public string FileName { get; init; } = string.Empty;
+
     public string FilePath { get; init; } = string.Empty;
+
     public string ObjectKey { get; init; } = string.Empty;
+
     public string MD5 { get; init; } = string.Empty;
+
     public string ContentType { get; init; } = string.Empty;
 }
 
 public class FileUploadResult
 {
     public string FileName { get; init; } = string.Empty;
+
     public string ObjectKey { get; init; } = string.Empty;
+
     public int FileId { get; init; }
 }
 

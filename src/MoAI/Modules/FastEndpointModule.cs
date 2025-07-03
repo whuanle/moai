@@ -47,13 +47,13 @@ public class FastEndpointModule : IModule
                     s.Title = "AI API";
                     s.Version = "v1";
                     s.Description = "MoAI openapi document.";
-                    //s.AddAuth("Bearer", new()
-                    //{
+
+                    // s.AddAuth("Bearer", new()
+                    // {
                     //    Type = OpenApiSecuritySchemeType.Http,
                     //    Scheme = JwtBearerDefaults.AuthenticationScheme,
                     //    BearerFormat = "JWT",
-                    //});
-
+                    // });
                     s.MarkNonNullablePropsAsRequired();
                     s.PostProcess = d =>
                     {
@@ -102,7 +102,8 @@ public class FastEndpointModule : IModule
                     // 这里配置的转换器不会起效，只能用于生成文档，需要 UseFastEndpoints 配置请求和响应序列化
                     // https://maomi.whuanle.cn/10.web.html#%E6%A8%A1%E5%9E%8B%E7%B1%BB%E5%B1%9E%E6%80%A7%E7%B1%BB%E5%9E%8B%E5%A4%84%E7%90%86
                     s.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-                    //s.Converters.Add(new DateTimeOffsetConverter());
+
+                    // s.Converters.Add(new DateTimeOffsetConverter());
                     s.Converters.Add(JsonMetadataServices.DecimalConverter);
                 };
 

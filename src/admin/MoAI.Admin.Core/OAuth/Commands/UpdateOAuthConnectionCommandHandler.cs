@@ -38,6 +38,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
         _systemOptions = systemOptions;
     }
 
+    /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
         var connection = await _databaseContext.OauthConnections
@@ -78,8 +79,8 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
 
             var oauthRedirectUrl = await GetRedirectUrl(request.WellKnown);
 
-            //var frontUrl = _systemOptions.Server + $"/oauth_login";
-            //var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
+            // var frontUrl = _systemOptions.Server + $"/oauth_login";
+            // var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
             connection.RedirectUri = oauthRedirectUrl;
         }
 

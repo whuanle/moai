@@ -9,5 +9,6 @@ namespace MoAI.Infra.Service;
 public interface IAESProvider
 {
     string Decrypt(string cipherText);
+
     string Encrypt(string plainText);
 }

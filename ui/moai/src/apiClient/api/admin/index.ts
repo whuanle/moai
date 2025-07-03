@@ -4,6 +4,8 @@
 // @ts-ignore
 import { OauthRequestBuilderNavigationMetadata, type OauthRequestBuilder } from './oauth/index.js';
 // @ts-ignore
+import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -14,6 +16,10 @@ export interface AdminRequestBuilder extends BaseRequestBuilder<AdminRequestBuil
      * The oauth property
      */
     get oauth(): OauthRequestBuilder;
+    /**
+     * The settings property
+     */
+    get settings(): SettingsRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -25,6 +31,9 @@ export const AdminRequestBuilderUriTemplate = "{+baseurl}/api/admin";
 export const AdminRequestBuilderNavigationMetadata: Record<Exclude<keyof AdminRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     oauth: {
         navigationMetadata: OauthRequestBuilderNavigationMetadata,
+    },
+    settings: {
+        requestsMetadata: SettingsRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

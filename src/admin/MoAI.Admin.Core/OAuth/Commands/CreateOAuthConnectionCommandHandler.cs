@@ -80,8 +80,8 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
          */
 
         // 对方回调示例 http://localhost:4000/aaaaaa?a=1&code=545b56c8be398326a78b&state=ABCD
-        //var frontUrl = _systemOptions.Server + $"/oauth_login";
-        //var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
+        // var frontUrl = _systemOptions.Server + $"/oauth_login";
+        // var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
         connection.RedirectUri = oauthRedirectUrl;
 
         _databaseContext.OauthConnections.Add(connection);
@@ -101,7 +101,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             Secret = request.Secret,
             IconUrl = request.IconUrl?.ToString() ?? string.Empty,
             RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
-            WellKnown = string.Empty
+            WellKnown = request.WellKnown.ToString(),
         };
 
         _databaseContext.OauthConnections.Add(fsConnection);
@@ -111,7 +111,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     private async Task<string> GetRedirectUrl(Uri wellKnownUrl)
     {
         // 获取端点信息
-        _authClient.Client.BaseAddress = new Uri(wellKnownUrl.Host);
+        _authClient.Client.BaseAddress = new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority));
         var wellKnown = await _authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
 
         return wellKnown.AuthorizationEndpoint;

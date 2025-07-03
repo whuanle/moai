@@ -1,4 +1,10 @@
-﻿using Maomi;
+﻿// <copyright file="MainExtensions.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using Maomi;
 using MoAI.Infra;
 using MoAI.Storage.Core.Extensions;
 using Serilog;
@@ -42,8 +48,7 @@ public static class MainExtensions
     public static IApplicationBuilder UseMaomiAI(this IApplicationBuilder builder)
     {
         // 使用认证中间件
-        //app.UseMiddleware<CustomAuthorizaMiddleware>();
-
+        // app.UseMiddleware<CustomAuthorizaMiddleware>();
         var systemOptions = builder.ApplicationServices.GetRequiredService<SystemOptions>();
         if ("local".Equals(systemOptions.Storage.Type, StringComparison.OrdinalIgnoreCase))
         {
@@ -52,5 +57,4 @@ public static class MainExtensions
 
         return builder;
     }
-
 }

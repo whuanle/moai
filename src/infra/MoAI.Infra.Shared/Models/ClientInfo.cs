@@ -9,5 +9,6 @@ namespace MoAI.Infra.Models;
 public class ClientInfo
 {
     public string IP { get; set; }
+
     public string UserAgent { get; set; }
 }

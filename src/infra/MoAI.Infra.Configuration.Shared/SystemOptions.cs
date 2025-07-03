@@ -57,9 +57,11 @@ public class SystemOptions
 public class SystemOptionsStorage
 {
     public string Type { get; init; } = string.Empty;
+
     public string FilePath { get; init; } = string.Empty;
 
     public SystemOptionsStorageS3 S3Public { get; init; } = new SystemOptionsStorageS3();
+
     public SystemOptionsStorageS3 S3Private { get; init; } = new SystemOptionsStorageS3();
 }
 

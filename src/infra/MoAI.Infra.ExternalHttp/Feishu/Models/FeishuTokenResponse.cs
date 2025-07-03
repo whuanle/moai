@@ -1,33 +1,40 @@
-﻿using Refit;
+﻿// <copyright file="FeishuTokenResponse.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using Refit;
+using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Feishu.Models;
 
 public class FeishuTokenResponse
 {
-    [AliasAs("code")]
+    [JsonPropertyName("code")]
     public int Code { get; set; }
 
-    [AliasAs("access_token")]
+    [JsonPropertyName("access_token")]
     public string AccessToken { get; set; }
 
-    [AliasAs("expires_in")]
+    [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }
 
-    [AliasAs("refresh_token")]
+    [JsonPropertyName("refresh_token")]
     public string RefreshToken { get; set; }
 
-    [AliasAs("refresh_token_expires_in")]
+    [JsonPropertyName("refresh_token_expires_in")]
     public int RefreshTokenExpiresIn { get; set; }
 
-    [AliasAs("token_type")]
+    [JsonPropertyName("token_type")]
     public string TokenType { get; set; }
 
-    [AliasAs("scope")]
+    [JsonPropertyName("scope")]
     public string Scope { get; set; }
 
-    [AliasAs("error")]
+    [JsonPropertyName("error")]
     public string Error { get; set; }
 
-    [AliasAs("error_description")]
+    [JsonPropertyName("error_description")]
     public string ErrorDescription { get; set; }
 }

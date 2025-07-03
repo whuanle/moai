@@ -1,4 +1,4 @@
-﻿// <copyright file="AppConsts.cs" company="MoAI">
+﻿// <copyright file="AppConst.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -29,7 +29,6 @@ public static class AppConst
     public static string ConfigsTemplate = Path.Combine(AppPath, "configs_template");
 
     public static string PrivateRSA = Path.Combine(ConfigsPath, "rsa_private.key");
-
 
     /// <summary>
     /// 不在业务逻辑中发生的日志，统一使用这个名称做日志命名.<br />

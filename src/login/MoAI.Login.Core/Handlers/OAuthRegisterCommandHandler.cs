@@ -1,4 +1,10 @@
-﻿using MediatR;
+﻿// <copyright file="OAuthRegisterCommandHandler.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -81,9 +87,9 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         var registerUserCommand = new RegisterUserCommand()
         {
             UserName = existingUser ? Guid.NewGuid().ToString("N") : oauthBindUserProfile.Profile.PreferredUsername,
-            Email = string.Empty,
+            Email = Guid.NewGuid().ToString("N") + "@default.com",
             NickName = oauthBindUserProfile.Profile.PreferredUsername,
-            Phone = string.Empty,
+            Phone = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString(),
             Password = _rsaProvider.Encrypt(Guid.NewGuid().ToString("N"))
         };
 

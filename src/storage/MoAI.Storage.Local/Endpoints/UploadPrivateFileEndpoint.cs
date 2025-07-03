@@ -1,30 +1,33 @@
-﻿//using FastEndpoints;
-
-//namespace MoAI.Storage.Endpoints;
+﻿// <copyright file="UploadPrivateFileEndpoint.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+// namespace MoAI.Storage.Endpoints;
 
 ///// <summary>
 ///// 兼容 S3 接口的文件上传端点.
 ///// </summary>
-//[FastEndpoints.HttpPut($"{ApiPrefix.Prefix}/private/upload")]
-//public class UploadPrivateFileEndpoint : Endpoint<AAA>
-//{
+// [FastEndpoints.HttpPut($"{ApiPrefix.Prefix}/private/upload")]
+// public class UploadPrivateFileEndpoint : Endpoint<AAA>
+// {
 //    public override async Task HandleAsync(AAA aaa, CancellationToken ct)
 //    {
 //        if (Files.Count > 0)
 //        {
 //            var file = Files[0];
 
-//            await SendStreamAsync(
+// await SendStreamAsync(
 //                stream: file.OpenReadStream(),
 //                fileName: "test.png",
 //                fileLengthBytes: file.Length,
 //                contentType: "image/png");
 
-//            return;
+// return;
 //        }
 //        var url = base.BaseURL;
 
-//        await foreach (var section in FormFileSectionsAsync(ct))
+// await foreach (var section in FormFileSectionsAsync(ct))
 //        {
 //            if (section is not null)
 //            {
@@ -35,6 +38,6 @@
 //            }
 //        }
 
-//        await SendOkAsync("upload complete!");
+// await SendOkAsync("upload complete!");
 //    }
-//}
+// }

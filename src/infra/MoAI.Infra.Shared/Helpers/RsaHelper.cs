@@ -1,4 +1,10 @@
-﻿using System.Security.Cryptography;
+﻿// <copyright file="RsaHelper.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using System.Security.Cryptography;
 using System.Text;
 
 namespace MoAI.Infra.Helpers;
@@ -17,7 +23,8 @@ public static class RsaHelper
     {
         StringBuilder builder = new();
         builder.AppendLine("-----BEGIN PUBLIC KEY-----");
-        builder.AppendLine(Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo(),
+        builder.AppendLine(Convert.ToBase64String(
+            rsa.ExportSubjectPublicKeyInfo(),
             Base64FormattingOptions.InsertLineBreaks));
         builder.AppendLine("-----END PUBLIC KEY-----");
         return builder.ToString();
@@ -26,12 +33,12 @@ public static class RsaHelper
     public static void ImportPublichKeyPck8(this RSA rsa, string publicKey)
     {
         publicKey = publicKey
-            .Replace("-----BEGIN RSA PUBLIC KEY-----", "")
-            .Replace("-----END RSA PUBLIC KEY-----", "")
-            .Replace("-----BEGIN PUBLIC KEY-----", "")
-            .Replace("-----END PUBLIC KEY-----", "")
-            .Replace("\r", "")
-            .Replace("\n", "");
+            .Replace("-----BEGIN RSA PUBLIC KEY-----", string.Empty)
+            .Replace("-----END RSA PUBLIC KEY-----", string.Empty)
+            .Replace("-----BEGIN PUBLIC KEY-----", string.Empty)
+            .Replace("-----END PUBLIC KEY-----", string.Empty)
+            .Replace("\r", string.Empty)
+            .Replace("\n", string.Empty);
 
         rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out int bytesRead);
     }

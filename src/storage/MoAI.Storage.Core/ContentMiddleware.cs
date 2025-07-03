@@ -39,7 +39,6 @@ public class ContentMiddleware : IMiddleware
 
         // /contents/{objectKey}?token={token}
         // token = {objectKey}/{timestamp}
-
         var objectKey = context.Request.RouteValues["key"]?.ToString();
         var token = context.Request.RouteValues["token"]?.ToString();
 

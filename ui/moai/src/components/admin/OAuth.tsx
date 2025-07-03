@@ -5,6 +5,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   Space,
   Popconfirm,
   message,
@@ -28,6 +29,7 @@ import {
   CreateOAuthConnectionCommand,
   UpdateOAuthConnectionCommand,
   DeleteOAuthConnectionCommand,
+  OAuthPrividerObject,
 } from "../../apiClient/models";
 import { proxyFormRequestError } from "../../helper/RequestError";
 
@@ -38,11 +40,16 @@ function OAuth() {
     QueryAllOAuthPrividerDetailCommandResponseItem[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] =
     useState<QueryAllOAuthPrividerDetailCommandResponseItem | null>(null);
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+
+  // 调试信息
+  console.log("OAuthPrividerObject:", OAuthPrividerObject);
+  console.log("OAuthPrividerObject entries:", Object.entries(OAuthPrividerObject));
 
   const fetchOAuthList = async () => {
     setLoading(true);
@@ -53,36 +60,33 @@ function OAuth() {
         setData(response.items);
       }
     } catch (error) {
-      message.error("获取OAuth列表失败");
+      messageApi.error("获取OAuth列表失败");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreate = async (values: any) => {
+    setSubmitLoading(true);
     try {
       const client = GetApiClient();
       await client.api.admin.oauth.create.post(values);
-      message.success("新增成功");
+      messageApi.success("新增成功");
       setModalVisible(false);
       form.resetFields();
       fetchOAuthList();
     } catch (error) {
-      console.log("Register error:", error);
-      const typedError = error as {
-        detail?: string;
-        errors?: Record<string, string[]>;
-      };
-      if (typedError.errors && Object.keys(typedError.errors).length > 0) {
-        messageApi.error("添加");
-        proxyFormRequestError(error, messageApi, form);
-      }
+      console.log("Create OAuth error:", error);
+      proxyFormRequestError(error, messageApi, form);
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
   const handleEdit = async (values: any) => {
     if (!editingItem) return;
 
+    setSubmitLoading(true);
     try {
       const client = GetApiClient();
       const updateData = { ...values, oAuthConnectionId: editingItem.id };
@@ -93,7 +97,10 @@ function OAuth() {
       form.resetFields();
       fetchOAuthList();
     } catch (error) {
-      message.error("编辑失败");
+      console.log("Edit OAuth error:", error);
+      proxyFormRequestError(error, messageApi, form);
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -101,10 +108,10 @@ function OAuth() {
     try {
       const client = GetApiClient();
       await client.api.admin.oauth.deletePath.delete({ oAuthConnectionId: id });
-      message.success("删除成功");
+      messageApi.success("删除成功");
       fetchOAuthList();
     } catch (error) {
-      message.error("删除失败");
+      messageApi.error("删除失败");
     }
   };
 
@@ -126,10 +133,12 @@ function OAuth() {
     setModalVisible(false);
     setEditingItem(null);
     form.resetFields();
+    setSubmitLoading(false);
   };
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
+      console.log("Form values:", values);
       if (editingItem) {
         handleEdit(values);
       } else {
@@ -279,6 +288,7 @@ function OAuth() {
           okText="确定"
           cancelText="取消"
           destroyOnClose
+          confirmLoading={submitLoading}
         >
           <Form form={form} layout="vertical" style={{ marginTop: "16px" }}>
             <Row gutter={16}>
@@ -295,9 +305,15 @@ function OAuth() {
                 <Form.Item
                   name="provider"
                   label="提供商"
-                  rules={[{ required: true, message: "请输入提供商" }]}
+                  rules={[{ required: true, message: "请选择提供商" }]}
                 >
-                  <Input placeholder="请输入提供商" />
+                  <Select placeholder="请选择提供商">
+                    {Object.entries(OAuthPrividerObject).map(([key, value]) => (
+                      <Select.Option key={key} value={value}>
+                        {value}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>

@@ -4,8 +4,6 @@
 // @ts-ignore
 import { ApiRequestBuilderNavigationMetadata, type ApiRequestBuilder } from './api/index.js';
 // @ts-ignore
-import { TestRequestBuilderRequestsMetadata, type TestRequestBuilder } from './test/index.js';
-// @ts-ignore
 import { apiClientProxifier, ParseNodeFactoryRegistry, SerializationWriterFactoryRegistry, type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type RequestAdapter } from '@microsoft/kiota-abstractions';
 // @ts-ignore
 import { FormParseNodeFactory, FormSerializationWriterFactory } from '@microsoft/kiota-serialization-form';
@@ -58,10 +56,6 @@ export interface MoAIClient extends BaseRequestBuilder<MoAIClient> {
      * The api property
      */
     get api(): ApiRequestBuilder;
-    /**
-     * The test property
-     */
-    get test(): TestRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -73,9 +67,6 @@ export const MoAIClientUriTemplate = "{+baseurl}";
 export const MoAIClientNavigationMetadata: Record<Exclude<keyof MoAIClient, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     api: {
         navigationMetadata: ApiRequestBuilderNavigationMetadata,
-    },
-    test: {
-        requestsMetadata: TestRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

@@ -6,11 +6,16 @@
 
 using MaomiAI;
 using MediatR;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
+using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Feishu;
+using MoAI.Infra.Feishu.Models;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.OAuth.Models;
 using MoAI.Login.Commands;
@@ -42,6 +47,8 @@ state=STATE
     private readonly IRedisDatabase _redisDatabase;
     private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<OAuthLoginCommandHandler> _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OAuthLoginCommandHandler"/> class.
@@ -53,7 +60,9 @@ state=STATE
     /// <param name="redisDatabase"></param>
     /// <param name="tokenProvider"></param>
     /// <param name="logger"></param>
-    public OAuthLoginCommandHandler(DatabaseContext databaseContext, IMediator mediator, IOAuthClient authClient, IOAuthClientAccessToken authClientAccessToken, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthLoginCommandHandler> logger)
+    /// <param name="serviceProvider"></param>
+    /// <param name="systemOptions"></param>
+    public OAuthLoginCommandHandler(DatabaseContext databaseContext, IMediator mediator, IOAuthClient authClient, IOAuthClientAccessToken authClientAccessToken, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthLoginCommandHandler> logger, IServiceProvider serviceProvider, SystemOptions systemOptions)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
@@ -62,6 +71,8 @@ state=STATE
         _redisDatabase = redisDatabase;
         _tokenProvider = tokenProvider;
         _logger = logger;
+        _serviceProvider = serviceProvider;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
@@ -100,6 +111,7 @@ state=STATE
             {
                 IsBindUser = false,
                 OAuthBindId = oauthBindId,
+                Name = oauthUserProfile.Name,
                 OAuthId = oauthConnectionEntity.Uuid,
             };
         }
@@ -131,12 +143,56 @@ state=STATE
             OAuthBindId = null,
             IsBindUser = true,
             LoginCommandResponse = result,
-            OAuthId = oauthConnectionEntity.Uuid
+            OAuthId = oauthConnectionEntity.Uuid,
+            Name = oauthUserProfile.Name
         };
     }
 
     private async Task<OAuthBindUserProfile> GetOpenIdUserInfo(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
     {
+        if (OAuthPrivider.Feishu.ToString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
+        {
+            var feishuClient = _serviceProvider.GetRequiredService<IFeishuClient>();
+            var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
+            {
+                Code = request.Code,
+                GrantType = "authorization_code",
+                ClientId = clientEntity.Key,
+                ClientSecret = clientEntity.Secret,
+                RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login").ToString(),
+                CodeVerifier = request.Code,
+                Scope = ""
+            });
+
+            if (feishuAccessToken.Code != 0)
+            {
+                throw new BusinessException("飞书接口错误");
+            }
+
+            var feishuUserInfo = await feishuClient.UserInfo("Bearer " + feishuAccessToken.AccessToken);
+            if (feishuUserInfo.Code != 0)
+            {
+                throw new BusinessException("飞书接口错误");
+            }
+
+            return new OAuthBindUserProfile
+            {
+                OAuthId = clientEntity.Id,
+                Name = feishuUserInfo.Data.Name,
+                Profile = new OpenIdUserProfile
+                {
+                    Sub = feishuUserInfo.Data.OpenId,
+                    Name = feishuUserInfo.Data.Name,
+                    Audience = clientEntity.Key,
+                    Issuer = "https://open.feishu.cn",
+                    Picture = feishuUserInfo.Data.AvatarUrl,
+                    PreferredUsername = feishuUserInfo.Data.Name,
+                },
+
+                AccessToken = feishuAccessToken.AccessToken
+            };
+        }
+
         // 获取端点信息
         var wellKnownUrl = new Uri(clientEntity.WellKnown);
         _authClient.Client.BaseAddress = new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority));
@@ -160,6 +216,7 @@ state=STATE
         return new OAuthBindUserProfile
         {
             OAuthId = clientEntity.Id,
+            Name = userProfile.Name,
             Profile = userProfile,
             AccessToken = openIdAccessToken.AccessToken
         };

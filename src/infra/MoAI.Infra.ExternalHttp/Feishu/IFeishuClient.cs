@@ -1,5 +1,12 @@
-﻿using MoAI.Infra.Feishu.Models;
+﻿// <copyright file="IFeishuClient.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using MoAI.Infra.Feishu.Models;
 using Refit;
+using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Feishu;
 
@@ -10,4 +17,64 @@ public interface IFeishuClient
     [Post("/open-apis/authen/v2/oauth/token")]
     Task<FeishuTokenResponse> GetUserAccessTokenAsync(
         [Body(BodySerializationMethod.Serialized)] FeishuTokenRequest request);
+
+    [Get("/open-apis/authen/v1/user_info")]
+    Task<FeishuApiResponse<FeishuUserInfo>> UserInfo([Header("Authorization")] string authorization);
+}
+
+public class FeishuApiResponse<T>
+{
+    [JsonPropertyName("code")]
+    public int Code { get; set; }
+
+    [JsonPropertyName("msg")]
+    public string Msg { get; set; }
+
+    [JsonPropertyName("data")]
+    public T Data { get; set; }
+}
+
+public class FeishuUserInfo
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
+
+    [JsonPropertyName("en_name")]
+    public string EnName { get; set; }
+
+    [JsonPropertyName("avatar_url")]
+    public string AvatarUrl { get; set; }
+
+    [JsonPropertyName("avatar_thumb")]
+    public string AvatarThumb { get; set; }
+
+    [JsonPropertyName("avatar_middle")]
+    public string AvatarMiddle { get; set; }
+
+    [JsonPropertyName("avatar_big")]
+    public string AvatarBig { get; set; }
+
+    [JsonPropertyName("open_id")]
+    public string OpenId { get; set; }
+
+    [JsonPropertyName("union_id")]
+    public string UnionId { get; set; }
+
+    [JsonPropertyName("email")]
+    public string Email { get; set; }
+
+    [JsonPropertyName("enterprise_email")]
+    public string EnterpriseEmail { get; set; }
+
+    [JsonPropertyName("user_id")]
+    public string UserId { get; set; }
+
+    [JsonPropertyName("mobile")]
+    public string Mobile { get; set; }
+
+    [JsonPropertyName("tenant_key")]
+    public string TenantKey { get; set; }
+
+    [JsonPropertyName("employee_no")]
+    public string EmployeeNo { get; set; }
 }

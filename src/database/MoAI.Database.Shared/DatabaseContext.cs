@@ -1,4 +1,4 @@
-﻿// <copyright file="MaomiaiContext.cs" company="MoAI">
+﻿// <copyright file="DatabaseContext.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -105,5 +105,5 @@ public partial class DatabaseContext : DbContext
         OnModelCreatingPartial(modelBuilder);
     }
 
-    protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

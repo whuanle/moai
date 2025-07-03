@@ -1,4 +1,4 @@
-﻿// <copyright file="QueryOAuthRedirectUriCommandHandler.cs" company="MoAI">
+﻿// <copyright file="QueryAllOAuthPrividerDetailCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -58,15 +58,14 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
 
         foreach (var item in items)
         {
-            //if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
-            //{
+            // if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
+            // {
             //    item
-            //}
-            //else
-            //{
+            // }
+            // else
+            // {
             //    item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
-            //}
-
+            // }
             item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
         }
 

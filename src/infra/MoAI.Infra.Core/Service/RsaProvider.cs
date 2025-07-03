@@ -18,7 +18,6 @@ public class RsaProvider : IRsaProvider
 {
     private readonly RSA _rsaPrivate;
     private readonly RsaSecurityKey _rsaSecurityKey;
-    private bool disposedValue;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RsaProvider"/> class.

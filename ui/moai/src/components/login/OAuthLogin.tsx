@@ -46,12 +46,14 @@ interface BindAccountState {
   currentUsername?: string;
   oAuthBindId?: string;
   isBinding: boolean;
+  name?: string;
 }
 
 interface RegisterAccountState {
   showRegisterOptions: boolean;
   oAuthBindId?: string;
   isRegistering: boolean;
+  name?: string;
 }
 
 export default function OAuthLogin() {
@@ -68,6 +70,7 @@ export default function OAuthLogin() {
     useState<RegisterAccountState>({
       showRegisterOptions: false,
       isRegistering: false,
+      name: "",
     });
 
   const [showBindConfirm, setShowBindConfirm] = useState(false);
@@ -222,6 +225,7 @@ export default function OAuthLogin() {
               showBindOptions: true,
               currentUsername,
               oAuthBindId: oauthLoginResponse.oAuthBindId || undefined,
+              name: oauthLoginResponse.name || undefined,
               isBinding: false,
             });
             setLoading(false);
@@ -232,6 +236,7 @@ export default function OAuthLogin() {
               showRegisterOptions: true,
               oAuthBindId: oauthLoginResponse.oAuthBindId || undefined,
               isRegistering: false,
+              name: oauthLoginResponse.name || undefined,
             });
             setLoading(false);
             return;
@@ -371,10 +376,14 @@ export default function OAuthLogin() {
             <Col>
               <Card>
                 <Typography.Title level={4}>账号注册</Typography.Title>
+                <br />
+                <Typography.Text>
+                  当前第三方账号名称：{registerAccountState.name}
+                  <br />
+                </Typography.Text>
                 <Typography.Text>
                   检测到您当前没有登录任何账号，请选择如何处理OAuth账号：
                 </Typography.Text>
-                <br />
                 <Space
                   direction="vertical"
                   style={{ width: "100%", marginTop: 16 }}

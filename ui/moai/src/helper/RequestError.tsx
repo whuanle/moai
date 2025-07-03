@@ -21,22 +21,30 @@ export const proxyRequestError = (error: any, messageApi: MessageInstance) => {
     messageApi: MessageInstance,
     form: FormInstance
   ) => {
-    console.error("Login error:", error);
+    console.error("Form error:", error);
     const businessError = error as BusinessValidationResult;
     if (businessError === undefined || businessError == null) {
       messageApi.error(error!.toString());
-  
       return;
     }
   
-    messageApi.error(businessError.detail);
+    // 显示主要错误信息
+    if (businessError.detail) {
+      messageApi.error(businessError.detail);
+    }
   
+    // 处理字段级别的错误
     if (businessError.errors && businessError.errors.length > 0) {
-      const adaptedErrors = businessError.errors.map((err) => ({
-        name: err.name ?? [],
-        errors: err.errors ?? [],
-      }));
-      form.setFields(adaptedErrors);
+      const adaptedErrors = businessError.errors
+        .filter(err => err.name && err.errors && err.errors.length > 0)
+        .map((err) => ({
+          name: err.name!,
+          errors: err.errors!,
+        }));
+      
+      if (adaptedErrors.length > 0) {
+        form.setFields(adaptedErrors);
+      }
     }
   };
   

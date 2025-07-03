@@ -19,7 +19,7 @@ namespace MoAI.Database;
 /// <summary>
 /// DatabaseCoreModule.
 /// </summary>
-//[InjectModule<DatabasePostgresModule>]
+// [InjectModule<DatabasePostgresModule>]
 [InjectModule<DatabaseMysqlModule>]
 public class DatabaseCoreModule : IModule
 {
@@ -54,28 +54,28 @@ public class DatabaseCoreModule : IModule
         });
 
         //// 如果使用内存数据库
-        //if ("inmemory".Equals(systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
-        //{
+        // if ("inmemory".Equals(systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
+        // {
         //    DatabaseOptions? dbContextOptions = new()
         //    {
         //        ConfigurationAssembly = typeof(DatabaseCoreModule).Assembly,
         //        EntityAssembly = typeof(DatabaseContext).Assembly
         //    };
 
-        //    context.Services.AddSingleton(dbContextOptions);
+        // context.Services.AddSingleton(dbContextOptions);
 
-        //    // 注册内存数据库
+        // // 注册内存数据库
         //    context.Services.AddDbContext<DatabaseContext>(options =>
         //    {
         //        options.UseInMemoryDatabase(systemOptions.Database);
         //    });
 
-        //    // 创建数据库
+        // // 创建数据库
         //    using ServiceProvider? serviceProvider = context.Services.BuildServiceProvider();
         //    using IServiceScope? scope = serviceProvider.CreateScope();
         //    DatabaseContext? dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         //    dbContext.Database.EnsureCreated();
-        //}
+        // }
     }
 
     private static void AddStackExchangeRedis(IServiceCollection services, RedisConfiguration redisConfiguration)

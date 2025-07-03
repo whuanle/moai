@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 namespace MoAI.Infra.Service;
+
 public class AESProvider : IAESProvider
 {
     private readonly string _key;

@@ -1,4 +1,4 @@
-﻿// <copyright file="UpdateOAuthConnectionCommandHandler.cs" company="MoAI">
+﻿// <copyright file="SetSystemSettingsCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -16,6 +16,10 @@ public class SetSystemSettingsCommandHandler : IRequestHandler<SetSystemSettings
 {
     private readonly DatabaseContext _databaseContext;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SetSystemSettingsCommandHandler"/> class.
+    /// </summary>
+    /// <param name="databaseContext"></param>
     public SetSystemSettingsCommandHandler(DatabaseContext databaseContext)
     {
         _databaseContext = databaseContext;

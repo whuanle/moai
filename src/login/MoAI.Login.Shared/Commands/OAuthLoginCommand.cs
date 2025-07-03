@@ -43,6 +43,11 @@ public class OAuthLoginCommandResponse
     public string? OAuthBindId { get; init; }
 
     /// <summary>
+    /// 用户在第三方登录的名字.
+    /// </summary>
+    public string Name { get; init; } = default!;
+
+    /// <summary>
     /// IsBindUser == true 时，返回用户登录信息.
     /// </summary>
     public LoginCommandResponse? LoginCommandResponse { get; init; } = default!;

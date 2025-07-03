@@ -1,4 +1,4 @@
-﻿// <copyright file="S3Store.cs" company="MoAI">
+﻿// <copyright file="S3PublicStorage.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -64,8 +64,7 @@ public class S3PublicStorage : IPublicFileStorage, IDisposable
         }
 
         // 可以在对象 metadata 中添加最大的文件大小信息
-        //request.Headers["x-amz-meta-max-file-size"] = fileObject.MaxFileSize.ToString();
-
+        // request.Headers["x-amz-meta-max-file-size"] = fileObject.MaxFileSize.ToString();
         string url = await _s3Client.GetPreSignedURLAsync(request);
         return url;
     }
@@ -110,6 +109,7 @@ public class S3PublicStorage : IPublicFileStorage, IDisposable
             {
                 continue;
             }
+
             urls.Add(objectKey, new Uri(endpoint, objectKey));
         }
 

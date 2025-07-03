@@ -1,4 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// <copyright file="DatabaseContext.Configuration.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database.Audits;
@@ -22,7 +28,7 @@ public partial class DatabaseContext
     /// OnModelCreatingPartial.
     /// </summary>
     /// <param name="modelBuilder"></param>
-    protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
+    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         SeedData(modelBuilder);
 

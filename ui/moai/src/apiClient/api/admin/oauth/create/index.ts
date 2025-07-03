@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface CreateRequestBuilder extends BaseRequestBuilder<CreateRequestBuilder> {
     /**
-     * .
+     * 创建 OAuth2.0 连接配置.
      * @param body 创建 OAuth2.0 连接配置.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface CreateRequestBuilder extends BaseRequestBuilder<CreateRequestBu
      */
      post(body: CreateOAuthConnectionCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * .
+     * 创建 OAuth2.0 连接配置.
      * @param body 创建 OAuth2.0 连接配置.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

@@ -84,7 +84,7 @@ public class DatabaseMysqlModule : IModule
             using MysqlDatabaseContext? dbContext = new MysqlDatabaseContext(options.Options, ioc);
 
             // 如果数据库不存在，则会创建数据库及其所有表。
-            //dbContext.Database.Migrate();
+            // dbContext.Database.Migrate();
             dbContext.Database.EnsureCreated();
         }
         catch (Exception ex)

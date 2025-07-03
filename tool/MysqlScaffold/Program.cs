@@ -20,9 +20,8 @@ public class Program
         Console.OutputEncoding = Encoding.UTF8;
         Console.WriteLine("当前工作目录: " + Directory.GetCurrentDirectory());
 
-        //Console.WriteLine("请在目录下执行 dotnet run，请勿直接启动该项目");
-        //Console.WriteLine("使用前先删除 Data、Entities 两个目录，用完后也要删除");
-
+        // Console.WriteLine("请在目录下执行 dotnet run，请勿直接启动该项目");
+        // Console.WriteLine("使用前先删除 Data、Entities 两个目录，用完后也要删除");
         DirectoryInfo? assemblyDirectory = Directory.GetParent(typeof(Program).Assembly.Location);
         if (assemblyDirectory!.FullName.Contains("bin", StringComparison.CurrentCultureIgnoreCase))
         {

@@ -1,4 +1,4 @@
-﻿// <copyright file="SystemOptions.cs" company="MoAI">
+﻿// <copyright file="DatabaseStore.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -8,7 +8,6 @@ namespace MoAI.Infra.Models;
 
 public class DatabaseStore
 {
-
     /// <summary>
     /// 系统数据库类型.
     /// </summary>

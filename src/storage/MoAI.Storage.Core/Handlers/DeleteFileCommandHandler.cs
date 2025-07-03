@@ -12,8 +12,13 @@ namespace MoAI.Storage.Handlers;
 
 public class DeleteFileCommandHandler : IRequestHandler<DeleteFileCommand, EmptyCommandResponse>
 {
-    public async Task<EmptyCommandResponse> Handle(DeleteFileCommand request, CancellationToken cancellationToken)
+    public static EmptyCommandResponse Handle(DeleteFileCommand request, CancellationToken cancellationToken)
     {
         return EmptyCommandResponse.Default;
+    }
+
+    Task<EmptyCommandResponse> IRequestHandler<DeleteFileCommand, EmptyCommandResponse>.Handle(DeleteFileCommand request, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }
