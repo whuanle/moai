@@ -7,10 +7,14 @@
 using FastEndpoints;
 using MediatR;
 using MoAI.Admin;
+using MoAI.Admin.OAuth.Endpoints;
 using MoAI.Admin.SystemSettings.Commands;
 using MoAI.Admin.SystemSettings.Queries;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.Models;
+using MoAI.Public.Queries;
 
-namespace MoAI.Login.Endpoints;
+namespace MoAI.Admin.SystemSetting.Endpoints;
 
 /// <summary>
 /// 查询系统配置.
@@ -19,19 +23,29 @@ namespace MoAI.Login.Endpoints;
 public class QuerySystemSettingsEndpoint : EndpointWithoutRequest<QuerySystemSettingsCommandResponse>
 {
     private readonly IMediator _mediator;
+    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QuerySystemSettingsEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public QuerySystemSettingsEndpoint(IMediator mediator)
+    /// <param name="userContext"></param>
+    public QuerySystemSettingsEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
+        _userContext = userContext;
     }
 
     /// <inheritdoc/>
     public override async Task<QuerySystemSettingsCommandResponse> ExecuteAsync(CancellationToken ct)
     {
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { UserId = _userContext.UserId });
+
+        if (!isAdmin.IsRoot)
+        {
+            throw new BusinessException("没有操作权限") { StatusCode = 403 };
+        }
+
         return await _mediator.Send(new QuerySystemSettingsCommand(), ct);
     }
 }

@@ -13,6 +13,7 @@
 
 	<ItemGroup>
 	  <Folder Include="SystemSettings\Commands\Responses\" />
+	  <Folder Include="User\Commands\Responses\" />
 	</ItemGroup>
 
 </Project>

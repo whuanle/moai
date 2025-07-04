@@ -16,8 +16,6 @@ import { Refresh_tokenRequestBuilderRequestsMetadata, type Refresh_tokenRequestB
 // @ts-ignore
 import { RegisterRequestBuilderRequestsMetadata, type RegisterRequestBuilder } from './register/index.js';
 // @ts-ignore
-import { type UserinfoRequestBuilder, UserinfoRequestBuilderRequestsMetadata } from './userinfo/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -52,10 +50,6 @@ export interface AccountRequestBuilder extends BaseRequestBuilder<AccountRequest
      * The register property
      */
     get register(): RegisterRequestBuilder;
-    /**
-     * The userinfo property
-     */
-    get userinfo(): UserinfoRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -85,9 +79,6 @@ export const AccountRequestBuilderNavigationMetadata: Record<Exclude<keyof Accou
     },
     register: {
         requestsMetadata: RegisterRequestBuilderRequestsMetadata,
-    },
-    userinfo: {
-        requestsMetadata: UserinfoRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

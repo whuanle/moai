@@ -7,10 +7,13 @@
 using FastEndpoints;
 using MediatR;
 using MoAI.Admin;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Commands;
+using MoAI.Login.Queries;
+using MoAI.Public.Queries;
 
-namespace MoAI.Login.Endpoints;
+namespace MoAI.Admin.OAuth.Endpoints;
 
 /// <summary>
 /// 创建 OAuth2.0 连接配置.
@@ -19,19 +22,29 @@ namespace MoAI.Login.Endpoints;
 public class CreateOAuthConnectionlEndpoint : Endpoint<CreateOAuthConnectionCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
+    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateOAuthConnectionlEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public CreateOAuthConnectionlEndpoint(IMediator mediator)
+    /// <param name="userContext"></param>
+    public CreateOAuthConnectionlEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
+        _userContext = userContext;
     }
 
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(CreateOAuthConnectionCommand req, CancellationToken ct)
     {
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { UserId = _userContext.UserId });
+
+        if (!isAdmin.IsAdmin)
+        {
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+        }
+
         return await _mediator.Send(req, ct);
     }
 }

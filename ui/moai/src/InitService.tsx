@@ -119,7 +119,7 @@ export const GetAccessToken = async (): Promise<string | null> => {
 export const GetUserDetailInfo = async () => {
   try {
     const client = GetApiClient();
-    const response = await client.api.account.userinfo.get();
+    const response = await client.api.public.userinfo.get();
     return response;
   } catch (error) {
     console.error("Error fetching user detail info:", error);

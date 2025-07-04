@@ -32,7 +32,7 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import "./App.css";
-import { CheckToken, RefreshServerInfo, GetUserDetailInfo, SetUserDetailInfo, GetUserDetailInfoFromCache } from "./InitPage";
+import { CheckToken, RefreshServerInfo, GetUserDetailInfo, SetUserDetailInfo, GetUserDetailInfoFromCache } from "./InitService";
 import { GetApiClient } from "./components/ServiceClient";
 import useAppStore from "./stateshare/store";
 import Dashboard from "./components/dashboard/Dashboard";
@@ -46,6 +46,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userDetailInfo, setUserDetailInfo] = useState(GetUserDetailInfoFromCache());
+  const [isAdmin, setIsAdmin] = useState(false);
   const serverInfo = useAppStore.getState().getServerInfo();
 
   // 获取子菜单的 key
@@ -85,6 +86,8 @@ function App() {
         if (detailInfo) {
           SetUserDetailInfo(detailInfo);
           setUserDetailInfo(detailInfo);
+          // 设置管理员状态
+          setIsAdmin(detailInfo.isAdmin === true);
         }
       }
     };
@@ -128,25 +131,34 @@ function App() {
     },
   ];
 
-  const inlineMenuItems = [
-    {
-      key: "1",
-      icon: <HomeOutlined />,
-      label: <Link to="/app/index">首页</Link>,
-    },
-    {
-      key: "2",
-      icon: <UserOutlined />,
-      label: <Link to="/app/admin">管理面板</Link>,
-      children: [
-        {
-          key: "2.1",
-          icon: <UserOutlined />,
-          label: <Link to="/app/admin/oauth">OAuth</Link>,
-        },
-      ],
-    },
-  ];
+  // 动态生成菜单项，根据管理员权限显示或隐藏管理面板
+  const getMenuItems = () => {
+    const baseItems = [
+      {
+        key: "1",
+        icon: <HomeOutlined />,
+        label: <Link to="/app/index">首页</Link>,
+      },
+    ];
+
+    // 只有管理员才能看到管理面板
+    if (isAdmin) {
+      baseItems.push({
+        key: "2",
+        icon: <UserOutlined />,
+        label: <Link to="/app/admin">管理面板</Link>,
+        children: [
+          {
+            key: "2.1",
+            icon: <UserOutlined />,
+            label: <Link to="/app/admin/oauth">OAuth</Link>,
+          },
+        ],
+      });
+    }
+
+    return baseItems;
+  };
 
   return (
     <>
@@ -190,7 +202,7 @@ function App() {
               mode="inline"
               className="menu-inline"
               selectedKeys={[getSelectedKey()]}
-              items={inlineMenuItems}
+              items={getMenuItems()}
             />
           </Sider>
           <Layout style={{ padding: "0 0px 0px" }}>

@@ -10,4 +10,5 @@ internal static class ApiPrefix
 {
     public const string OAuth = "/admin/oauth";
     public const string Settings = "/admin/settings";
+    public const string User = "/admin/user";
 }

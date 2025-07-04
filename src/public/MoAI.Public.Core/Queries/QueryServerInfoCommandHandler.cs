@@ -10,10 +10,9 @@ using MoAI.Database;
 using MoAI.Database.Models;
 using MoAI.Infra;
 using MoAI.Infra.Services;
-using MoAI.Public.Queries;
 using MoAI.Public.Queries.Response;
 
-namespace MoAI.Public.Handler;
+namespace MoAI.Public.Queries;
 
 /// <summary>
 /// <inheritdoc cref="QueryServerInfoCommand"/>

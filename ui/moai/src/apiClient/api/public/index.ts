@@ -6,6 +6,8 @@ import { EncryptionRequestBuilderRequestsMetadata, type EncryptionRequestBuilder
 // @ts-ignore
 import { ServerinfoRequestBuilderRequestsMetadata, type ServerinfoRequestBuilder } from './serverinfo/index.js';
 // @ts-ignore
+import { type UserinfoRequestBuilder, UserinfoRequestBuilderRequestsMetadata } from './userinfo/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -20,6 +22,10 @@ export interface PublicRequestBuilder extends BaseRequestBuilder<PublicRequestBu
      * The serverinfo property
      */
     get serverinfo(): ServerinfoRequestBuilder;
+    /**
+     * The userinfo property
+     */
+    get userinfo(): UserinfoRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -34,6 +40,9 @@ export const PublicRequestBuilderNavigationMetadata: Record<Exclude<keyof Public
     },
     serverinfo: {
         requestsMetadata: ServerinfoRequestBuilderRequestsMetadata,
+    },
+    userinfo: {
+        requestsMetadata: UserinfoRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

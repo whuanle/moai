@@ -97,6 +97,82 @@
         }
       }
     },
+    "/api/public/userinfo": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "查询用户基本信息.",
+        "operationId": "QueryUserInfoEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryUserInfoCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/account/login": {
       "post": {
         "tags": [
@@ -509,82 +585,6 @@
         }
       }
     },
-    "/api/account/userinfo": {
-      "get": {
-        "tags": [
-          "Account"
-        ],
-        "summary": "查询用户基本信息.",
-        "operationId": "QueryUserInfoEndpoint",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryUserInfoCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/account/refresh_token": {
       "post": {
         "tags": [
@@ -751,6 +751,436 @@
             }
           }
         }
+      }
+    },
+    "/api/admin/user/delete_user": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "删除用户.",
+        "operationId": "DeleteUserEndpoint",
+        "requestBody": {
+          "x-name": "DeleteUserCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteUserCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/user/disable_user": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "禁用用户.",
+        "operationId": "DisableUserEndpoint",
+        "requestBody": {
+          "x-name": "DeleteUserCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteUserCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/user/set_admin": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "设置管理员.",
+        "operationId": "SetUserAdminEndpoint",
+        "requestBody": {
+          "x-name": "SetUserAdminCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserAdminCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "查询系统配置.",
+        "operationId": "QuerySystemSettingsEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuerySystemSettingsCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "更新系统设置.",
+        "operationId": "SetSystemSettingsEndpoint",
+        "requestBody": {
+          "x-name": "SetSystemSettingsCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSystemSettingsCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
       }
     },
     "/api/admin/oauth/create": {
@@ -950,169 +1380,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryAllOAuthPrividerDetailCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin/settings": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "查询系统配置.",
-        "operationId": "QuerySystemSettingsEndpoint",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuerySystemSettingsCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "更新系统设置.",
-        "operationId": "SetSystemSettingsEndpoint",
-        "requestBody": {
-          "x-name": "SetSystemSettingsCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetSystemSettingsCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -1690,6 +1957,46 @@
           }
         }
       },
+      "QueryUserInfoCommandResponse": {
+        "type": "object",
+        "description": "用户基本信息响应.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "userName",
+          "nickName",
+          "avatar",
+          "isRoot",
+          "isAdmin"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 ID.",
+            "format": "int32"
+          },
+          "userName": {
+            "type": "string",
+            "description": "用户名."
+          },
+          "nickName": {
+            "type": "string",
+            "description": "昵称."
+          },
+          "avatar": {
+            "type": "string",
+            "description": "头像路径."
+          },
+          "isRoot": {
+            "type": "boolean",
+            "description": "是否超级管理员."
+          },
+          "isAdmin": {
+            "type": "boolean",
+            "description": "是否管理员."
+          }
+        }
+      },
       "LoginCommandResponse": {
         "type": "object",
         "description": "登录结果.",
@@ -1895,46 +2202,6 @@
           }
         }
       },
-      "QueryUserInfoCommandResponse": {
-        "type": "object",
-        "description": "用户基本信息响应.",
-        "additionalProperties": false,
-        "required": [
-          "userId",
-          "userName",
-          "nickName",
-          "avatar",
-          "isRoot",
-          "isAdmin"
-        ],
-        "properties": {
-          "userId": {
-            "type": "integer",
-            "description": "用户 ID.",
-            "format": "int32"
-          },
-          "userName": {
-            "type": "string",
-            "description": "用户名."
-          },
-          "nickName": {
-            "type": "string",
-            "description": "昵称."
-          },
-          "avatar": {
-            "type": "string",
-            "description": "头像路径."
-          },
-          "isRoot": {
-            "type": "boolean",
-            "description": "是否超级管理员."
-          },
-          "isAdmin": {
-            "type": "boolean",
-            "description": "是否管理员."
-          }
-        }
-      },
       "RefreshTokenCommandResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2066,6 +2333,175 @@
             "minLength": 1,
             "pattern": "^(?:\\+?1)?\\d{10,15}$",
             "nullable": false
+          }
+        }
+      },
+      "DeleteUserCommand": {
+        "type": "object",
+        "description": "删除用户.",
+        "additionalProperties": false,
+        "required": [
+          "userIds"
+        ],
+        "properties": {
+          "userIds": {
+            "type": "array",
+            "description": "用户ID.",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "SetUserAdminCommand": {
+        "type": "object",
+        "description": "设置用户是否为管理员.",
+        "additionalProperties": false,
+        "required": [
+          "userIds",
+          "isAdmin"
+        ],
+        "properties": {
+          "userIds": {
+            "type": "array",
+            "description": "用户ID.",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "isAdmin": {
+            "type": "boolean",
+            "description": "是否为管理员."
+          }
+        }
+      },
+      "QuerySystemSettingsCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "settings"
+        ],
+        "properties": {
+          "settings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuerySystemSettingsCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QuerySystemSettingsCommandResponseItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "key",
+              "value",
+              "description"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "key": {
+                "type": "string",
+                "description": "配置名称."
+              },
+              "value": {
+                "type": "string",
+                "description": "配置值."
+              },
+              "description": {
+                "type": "string",
+                "description": "描述."
+              }
+            }
+          }
+        ]
+      },
+      "AuditsInfo": {
+        "type": "object",
+        "description": "数据子项.",
+        "x-abstract": true,
+        "additionalProperties": false,
+        "required": [
+          "createTime",
+          "createUserId",
+          "createUserName",
+          "updateTime",
+          "updateUserId",
+          "updateUserName"
+        ],
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1751635311991"
+          },
+          "createUserId": {
+            "type": "integer",
+            "description": "创建人ID.",
+            "format": "int32"
+          },
+          "createUserName": {
+            "type": "string",
+            "description": "创建者 名字."
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1751635311991"
+          },
+          "updateUserId": {
+            "type": "integer",
+            "description": "更新人ID.",
+            "format": "int32"
+          },
+          "updateUserName": {
+            "type": "string",
+            "description": "更新人 名字."
+          }
+        }
+      },
+      "SetSystemSettingsCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "settings"
+        ],
+        "properties": {
+          "settings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueOfStringAndString"
+            }
+          }
+        }
+      },
+      "KeyValueOfStringAndString": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -2234,134 +2670,6 @@
             }
           }
         ]
-      },
-      "AuditsInfo": {
-        "type": "object",
-        "description": "数据子项.",
-        "x-abstract": true,
-        "additionalProperties": false,
-        "required": [
-          "createTime",
-          "createUserId",
-          "createUserName",
-          "updateTime",
-          "updateUserId",
-          "updateUserName"
-        ],
-        "properties": {
-          "createTime": {
-            "type": "string",
-            "description": "创建时间.",
-            "format": "int64",
-            "minimum": 0.0,
-            "example": "1751551615389"
-          },
-          "createUserId": {
-            "type": "integer",
-            "description": "创建人ID.",
-            "format": "int32"
-          },
-          "createUserName": {
-            "type": "string",
-            "description": "创建者 名字."
-          },
-          "updateTime": {
-            "type": "string",
-            "description": "更新时间.",
-            "format": "int64",
-            "minimum": 0.0,
-            "example": "1751551615389"
-          },
-          "updateUserId": {
-            "type": "integer",
-            "description": "更新人ID.",
-            "format": "int32"
-          },
-          "updateUserName": {
-            "type": "string",
-            "description": "更新人 名字."
-          }
-        }
-      },
-      "QuerySystemSettingsCommandResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "settings"
-        ],
-        "properties": {
-          "settings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuerySystemSettingsCommandResponseItem"
-            }
-          }
-        }
-      },
-      "QuerySystemSettingsCommandResponseItem": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "id",
-              "key",
-              "value",
-              "description"
-            ],
-            "properties": {
-              "id": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "key": {
-                "type": "string",
-                "description": "配置名称."
-              },
-              "value": {
-                "type": "string",
-                "description": "配置值."
-              },
-              "description": {
-                "type": "string",
-                "description": "描述."
-              }
-            }
-          }
-        ]
-      },
-      "SetSystemSettingsCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "settings"
-        ],
-        "properties": {
-          "settings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/KeyValueOfStringAndString"
-            }
-          }
-        }
-      },
-      "KeyValueOfStringAndString": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "key": {
-            "type": "string",
-            "nullable": true
-          },
-          "value": {
-            "type": "string",
-            "nullable": true
-          }
-        }
       },
       "UpdateOAuthConnectionCommand": {
         "required": [

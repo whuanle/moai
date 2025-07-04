@@ -5,9 +5,9 @@
 // </copyright>
 
 using MediatR;
-using MoAI.Login.Queries.Responses;
+using MoAI.Public.Queries.Response;
 
-namespace MoAI.Login.Queries;
+namespace MoAI.Public.Queries;
 
 /// <summary>
 /// 查询用户基本信息的请求.

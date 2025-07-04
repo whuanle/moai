@@ -8,6 +8,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Public.Api\MoAI.Public.Api.csproj" />
 	</ItemGroup>
 

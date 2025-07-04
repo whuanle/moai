@@ -39,14 +39,15 @@ public class TokenProvider : ITokenProvider
     /// <inheritdoc/>
     public (string AccessToken, string RefreshToken) GenerateTokens(UserContext userContext)
     {
-        Claim[] claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userContext.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.Name, userContext.UserName),
             new Claim(JwtRegisteredClaimNames.Nickname, userContext.NickName),
             new Claim(JwtRegisteredClaimNames.Email, userContext.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("token_type", "access")
+            new Claim(JwtRegisteredClaimNames.Aud, "MoAI"),
+            new Claim("token_type", "access_token")
         };
 
         var rsaKey = new RsaSecurityKey(_rsaProvider.GetPrivateRsa());

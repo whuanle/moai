@@ -13,4 +13,11 @@
 	  <ProjectReference Include="..\MoAI.Admin.Api\MoAI.Admin.Api.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Admin\Handlers\" />
+	  <Folder Include="Admin\Queries\" />
+	  <Folder Include="User\Commands\Responses\" />
+	  <Folder Include="User\Queries\Responses\" />
+	</ItemGroup>
+
 </Project>

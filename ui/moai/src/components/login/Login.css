@@ -92,9 +92,11 @@
 
 /* 第三方登录按钮样式 */
 .oauth-provider-button {
-  width: 40px;
   height: 40px;
-  padding: 0;
+  min-width: 40px;
+  max-width: 90px;
+  width: auto;
+  padding: 0 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,8 +117,10 @@
 }
 
 .oauth-provider-icon {
-  width: 20px;
-  height: 20px;
+  height: 24px;
+  max-height: 32px;
+  width: auto;
+  max-width: 70px;
   object-fit: contain;
   transition: transform 0.3s ease;
 }
@@ -148,13 +152,17 @@
   }
   
   .oauth-provider-button {
-    width: 36px;
     height: 36px;
+    min-width: 36px;
+    max-width: 80px;
+    width: auto;
+    padding: 0 5px;
   }
   
   .oauth-provider-icon {
-    width: 18px;
-    height: 18px;
+    height: 20px;
+    max-height: 28px;
+    max-width: 60px;
   }
 }
 

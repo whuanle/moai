@@ -133,6 +133,15 @@ export function createDeleteOAuthConnectionCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DeleteUserCommand}
+ */
+// @ts-ignore
+export function createDeleteUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDeleteUserCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {EmptyCommandResponse}
  */
 // @ts-ignore
@@ -342,6 +351,15 @@ export function createSetSystemSettingsCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetUserAdminCommand}
+ */
+// @ts-ignore
+export function createSetUserAdminCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetUserAdminCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SimpleInt}
  */
 // @ts-ignore
@@ -392,6 +410,15 @@ export interface DeleteOAuthConnectionCommand extends Parsable {
      * id.
      */
     oAuthConnectionId?: number | null;
+}
+/**
+ * 删除用户.
+ */
+export interface DeleteUserCommand extends Parsable {
+    /**
+     * 用户ID.
+     */
+    userIds?: number[] | null;
 }
 /**
  * The deserialization information for the current model
@@ -465,6 +492,16 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
 export function deserializeIntoDeleteOAuthConnectionCommand(deleteOAuthConnectionCommand: Partial<DeleteOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "oAuthConnectionId": n => { deleteOAuthConnectionCommand.oAuthConnectionId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDeleteUserCommand(deleteUserCommand: Partial<DeleteUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "userIds": n => { deleteUserCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
     }
 }
 /**
@@ -711,6 +748,17 @@ export function deserializeIntoRegisterUserCommand(registerUserCommand: Partial<
 export function deserializeIntoSetSystemSettingsCommand(setSystemSettingsCommand: Partial<SetSystemSettingsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "settings": n => { setSystemSettingsCommand.settings = n.getCollectionOfObjectValues<KeyValueOfStringAndString>(createKeyValueOfStringAndStringFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSetUserAdminCommand(setUserAdminCommand: Partial<SetUserAdminCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isAdmin": n => { setUserAdminCommand.isAdmin = n.getBooleanValue(); },
+        "userIds": n => { setUserAdminCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
     }
 }
 /**
@@ -1167,6 +1215,16 @@ export function serializeDeleteOAuthConnectionCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeDeleteUserCommand(writer: SerializationWriter, deleteUserCommand: Partial<DeleteUserCommand> | undefined | null = {}) : void {
+    if (deleteUserCommand) {
+        writer.writeCollectionOfPrimitiveValues<number>("userIds", deleteUserCommand.userIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
     }
@@ -1413,6 +1471,17 @@ export function serializeSetSystemSettingsCommand(writer: SerializationWriter, s
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSetUserAdminCommand(writer: SerializationWriter, setUserAdminCommand: Partial<SetUserAdminCommand> | undefined | null = {}) : void {
+    if (setUserAdminCommand) {
+        writer.writeBooleanValue("isAdmin", setUserAdminCommand.isAdmin);
+        writer.writeCollectionOfPrimitiveValues<number>("userIds", setUserAdminCommand.userIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSimpleInt(writer: SerializationWriter, simpleInt: Partial<SimpleInt> | undefined | null = {}) : void {
     if (simpleInt) {
         serializeSimpleOfInt32(writer, simpleInt)
@@ -1464,6 +1533,19 @@ export interface SetSystemSettingsCommand extends Parsable {
      * The settings property
      */
     settings?: KeyValueOfStringAndString[] | null;
+}
+/**
+ * 设置用户是否为管理员.
+ */
+export interface SetUserAdminCommand extends Parsable {
+    /**
+     * 是否为管理员.
+     */
+    isAdmin?: boolean | null;
+    /**
+     * 用户ID.
+     */
+    userIds?: number[] | null;
 }
 export interface SimpleInt extends Parsable, SimpleOfInt32 {
 }

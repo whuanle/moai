@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-namespace MoAI.Login.Queries.Responses;
+namespace MoAI.Public.Queries.Response;
 
 /// <summary>
 /// 用户基本信息响应.

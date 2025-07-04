@@ -25,7 +25,7 @@ import {
   GetUserInfo,
   RefreshServerInfo,
   SetUserInfo,
-} from "../../InitPage";
+} from "../../InitService";
 import {
   OAuthLoginCommand,
   OAuthLoginCommandResponse,

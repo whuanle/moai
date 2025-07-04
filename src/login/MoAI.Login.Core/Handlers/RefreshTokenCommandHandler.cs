@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
+using MoAI.Database.Models;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Login.Commands;
@@ -22,7 +23,7 @@ namespace MaomiAI.User.Core.Handlers;
 public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, RefreshTokenCommandResponse>
 {
     private readonly ITokenProvider _tokenProvider;
-    private readonly DatabaseContext _dbContext;
+    private readonly DatabaseContext _databaseContext;
     private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
     /// <summary>
@@ -34,7 +35,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     public RefreshTokenCommandHandler(ITokenProvider tokenProvider, DatabaseContext dbContext, ILogger<RefreshTokenCommandHandler> logger)
     {
         _tokenProvider = tokenProvider;
-        _dbContext = dbContext;
+        _databaseContext = dbContext;
         _logger = logger;
     }
 
@@ -56,7 +57,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             throw new BusinessException("非 refresh_token.") { StatusCode = 401 };
         }
 
-        var user = await _dbContext.Users.Where(x => x.Id == refreshTokenUserContext.UserId)
+        var user = await _databaseContext.Users.Where(x => x.Id == refreshTokenUserContext.UserId)
                       .FirstOrDefaultAsync(cancellationToken);
 
         if (user == null)
@@ -67,6 +68,20 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         if (user.IsDisable)
         {
             throw new BusinessException("用户已被禁用") { StatusCode = 401 };
+        }
+
+        List<string> roles = new List<string>();
+
+        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == SystemSettingKeys.Root && x.Value == user.Id.ToString());
+
+        if (isRoot)
+        {
+            roles.Add(SystemSettingKeys.Root);
+            roles.Add("admin");
+        }
+        else if (user.IsAdmin)
+        {
+            roles.Add("admin");
         }
 
         var userContext = new DefaultUserContext

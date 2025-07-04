@@ -7,10 +7,10 @@
 using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.Login.Queries;
-using MoAI.Login.Queries.Responses;
+using MoAI.Public.Queries;
+using MoAI.Public.Queries.Response;
 
-namespace MoAI.Login.Endpoints;
+namespace MoAI.Public.Endpoints;
 
 /// <summary>
 /// 查询用户基本信息.

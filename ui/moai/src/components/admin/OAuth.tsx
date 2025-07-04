@@ -31,7 +31,7 @@ import {
   DeleteOAuthConnectionCommand,
   OAuthPrividerObject,
 } from "../../apiClient/models";
-import { proxyFormRequestError } from "../../helper/RequestError";
+import { proxyFormRequestError, proxyRequestError } from "../../helper/RequestError";
 
 const { Title } = Typography;
 
@@ -60,7 +60,7 @@ function OAuth() {
         setData(response.items);
       }
     } catch (error) {
-      messageApi.error("获取OAuth列表失败");
+      proxyRequestError(error, messageApi, "获取OAuth列表失败");
     } finally {
       setLoading(false);
     }

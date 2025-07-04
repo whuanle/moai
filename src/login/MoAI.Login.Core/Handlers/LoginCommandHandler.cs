@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Models;
 using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
@@ -27,7 +28,7 @@ namespace MoAI.Login.Handlers;
 /// </summary>
 public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandResponse>
 {
-    private readonly DatabaseContext _dbContext;
+    private readonly DatabaseContext _databaseContext;
     private readonly SystemOptions _systemOptions;
     private readonly IRedisDatabase _redisDatabase;
     private readonly IRsaProvider _rsaProvider;
@@ -45,7 +46,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
     /// <param name="logger"></param>
     public LoginCommandHandler(DatabaseContext dbContext, SystemOptions systemOptions, IRedisDatabase redisDatabase, IRsaProvider rsaProvider, ITokenProvider tokenProvider, ILogger<LoginCommandHandler> logger)
     {
-        _dbContext = dbContext;
+        _databaseContext = dbContext;
         _systemOptions = systemOptions;
         _redisDatabase = redisDatabase;
         _rsaProvider = rsaProvider;
@@ -69,7 +70,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
             throw new BusinessException("登录失败次数过多，请稍后再试.") { StatusCode = 403 };
         }
 
-        var user = await _dbContext.Users.Where(u =>
+        var user = await _databaseContext.Users.Where(u =>
                                   u.UserName == request.UserName || u.Email == request.UserName)
                               .FirstOrDefaultAsync(cancellationToken);
 
@@ -101,6 +102,20 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
 
         // 登录成功，清除失败计数
         await _redisDatabase.Database.KeyDeleteAsync(cacheKey);
+
+        List<string> roles = new List<string>();
+
+        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == SystemSettingKeys.Root && x.Value == user.Id.ToString());
+
+        if (isRoot)
+        {
+            roles.Add(SystemSettingKeys.Root);
+            roles.Add("admin");
+        }
+        else if (user.IsAdmin)
+        {
+            roles.Add("admin");
+        }
 
         var userContext = new DefaultUserContext
         {
@@ -142,7 +157,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
             throw new BusinessException("检验第三方账号失败，请重新跳转登录.");
         }
 
-        var oauthUser = await _dbContext.UserOauths
+        var oauthUser = await _databaseContext.UserOauths
             .FirstOrDefaultAsync(o => o.Sub == oauthBIndUserProfile.Profile.Sub);
 
         if (oauthUser != null)
@@ -157,7 +172,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
             return;
         }
 
-        var oauthConnectionEntity = await _dbContext.OauthConnections
+        var oauthConnectionEntity = await _databaseContext.OauthConnections
             .FirstOrDefaultAsync(c => c.Id == oauthBIndUserProfile.OAuthId);
 
         if (oauthConnectionEntity == null)
@@ -172,8 +187,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
             Sub = oauthBIndUserProfile.Profile.Sub,
         };
 
-        await _dbContext.UserOauths.AddAsync(oauthEntity, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _databaseContext.UserOauths.AddAsync(oauthEntity, cancellationToken);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         await _redisDatabase.Database.KeyDeleteAsync(redisKey);
     }

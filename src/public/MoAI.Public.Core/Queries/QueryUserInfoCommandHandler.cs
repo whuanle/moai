@@ -7,12 +7,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Models;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
-using MoAI.Login.Queries.Responses;
+using MoAI.Public.Queries.Response;
 using MoAI.Store.Queries;
 
-namespace MoAI.Login.Queries;
+namespace MoAI.Public.Queries;
 
 /// <summary>
 /// 处理查询用户信息的命令.
@@ -57,7 +58,7 @@ public class QueryUserInfoCommandHandler : IRequestHandler<QueryUserInfoCommand,
             avatarUrl = string.Empty;
         }
 
-        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == "root" && x.Value == user.Id.ToString());
+        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == SystemSettingKeys.Root && x.Value == user.Id.ToString());
 
         return new QueryUserInfoCommandResponse
         {
@@ -65,7 +66,8 @@ public class QueryUserInfoCommandHandler : IRequestHandler<QueryUserInfoCommand,
             UserName = user.UserName,
             NickName = user.NickName,
             Avatar = avatarUrl,
-            IsRoot = isRoot
+            IsRoot = isRoot,
+            IsAdmin = isRoot ? true : user.IsAdmin
         };
     }
 }

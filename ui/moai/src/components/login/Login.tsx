@@ -21,7 +21,7 @@ import {
   GetServiceInfo,
   RefreshServerInfo,
   SetUserInfo,
-} from "../../InitPage";
+} from "../../InitService";
 import { proxyFormRequestError } from "../../helper/RequestError";
 import { QueryAllOAuthPrividerCommandResponseItem } from "../../apiClient/models";
 import "./Login.css";

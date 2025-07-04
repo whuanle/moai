@@ -6,9 +6,11 @@
 
 using Maomi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using MoAI.Infra;
 using MoAI.Infra.Services;
+using Microsoft.AspNetCore.Identity;
 
 namespace MoAI.Modules;
 
