@@ -72,6 +72,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
         if (request.Provider == OAuthPrivider.Feishu)
         {
             connection.RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
+            connection.WellKnown = "https://accounts.feishu.cn";
         }
         else
         {

@@ -10,6 +10,8 @@ import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } fro
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
+import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -32,6 +34,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The storage property
      */
     get storage(): StorageRequestBuilder;
+    /**
+     * The user property
+     */
+    get user(): UserRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -52,6 +58,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,
+    },
+    user: {
+        navigationMetadata: UserRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

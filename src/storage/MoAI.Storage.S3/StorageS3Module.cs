@@ -18,11 +18,11 @@ public class StorageS3Module : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        var systemOptions = context.Configuration.Get<SystemOptions>();
-        if ("S3".Equals(systemOptions!.Storage.Type, StringComparison.OrdinalIgnoreCase))
-        {
-            context.Services.AddScoped<IPrivateFileStorage, S3PrivateStorage>();
-            context.Services.AddScoped<IPublicFileStorage, S3PublicStorage>();
-        }
+        //var systemOptions = context.Configuration.Get<SystemOptions>();
+        //if ("S3".Equals(systemOptions!.Storage.Type, StringComparison.OrdinalIgnoreCase))
+        //{
+        //    context.Services.AddScoped<IPrivateFileStorage, S3PrivateStorage>();
+        //    context.Services.AddScoped<IPublicFileStorage, S3PublicStorage>();
+        //}
     }
 }

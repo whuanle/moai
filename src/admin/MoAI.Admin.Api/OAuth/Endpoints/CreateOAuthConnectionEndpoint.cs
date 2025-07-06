@@ -19,17 +19,17 @@ namespace MoAI.Admin.OAuth.Endpoints;
 /// 创建 OAuth2.0 连接配置.
 /// </summary>
 [HttpPost($"{ApiPrefix.OAuth}/create")]
-public class CreateOAuthConnectionlEndpoint : Endpoint<CreateOAuthConnectionCommand, EmptyCommandResponse>
+public class CreateOAuthConnectionEndpoint : Endpoint<CreateOAuthConnectionCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreateOAuthConnectionlEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="CreateOAuthConnectionEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public CreateOAuthConnectionlEndpoint(IMediator mediator, UserContext userContext)
+    public CreateOAuthConnectionEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

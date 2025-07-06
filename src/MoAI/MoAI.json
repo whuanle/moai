@@ -8,11 +8,189 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5000",
+      "url": "http://127.0.0.1:5000",
       "description": "User-defined service address"
     }
   ],
   "paths": {
+    "/api/storage/pre_upload_image": {
+      "post": {
+        "tags": [
+          "Storage"
+        ],
+        "summary": "获取预上传文件签名地址，只能用于上传公开类文件，如头像等.",
+        "operationId": "PreUploadImageendpoint",
+        "requestBody": {
+          "x-name": "PreUploadImageCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreUploadImageCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreUploadFileCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/storage/complate_url": {
+      "post": {
+        "tags": [
+          "Storage"
+        ],
+        "summary": "完成文件上传，私有和公有文件都可以使用.",
+        "operationId": "ComplateUploadEndpoint",
+        "requestBody": {
+          "x-name": "ComplateFileUploadCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplateFileUploadCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplateFileCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/public/encryption": {
       "post": {
         "tags": [
@@ -110,7 +288,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryUserInfoCommandResponse"
+                  "$ref": "#/components/schemas/UserStateInfo"
                 }
               }
             }
@@ -171,6 +349,77 @@
             "JWTBearerAuth": []
           }
         ]
+      }
+    },
+    "/api/public/serverinfo": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "获取服务器信息.",
+        "operationId": "ServerInfoEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryServerInfoCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/account/login": {
@@ -850,12 +1099,12 @@
         "summary": "禁用用户.",
         "operationId": "DisableUserEndpoint",
         "requestBody": {
-          "x-name": "DeleteUserCommand",
+          "x-name": "DisableUserCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeleteUserCommand"
+                "$ref": "#/components/schemas/DisableUserCommand"
               }
             }
           },
@@ -869,6 +1118,184 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/user/user_list": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "查询用户列表.",
+        "operationId": "QueryUserListEndpoint",
+        "requestBody": {
+          "x-name": "QueryUserListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryUserListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryUserListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/user/reset_password": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "重置用户密码.",
+        "operationId": "ResetUserPasswordEndpoint",
+        "requestBody": {
+          "x-name": "ResetUserPasswordCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUserPasswordCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleString"
                 }
               }
             }
@@ -1189,7 +1616,7 @@
           "Admin"
         ],
         "summary": "创建 OAuth2.0 连接配置.",
-        "operationId": "CreateOAuthConnectionlEndpoint",
+        "operationId": "CreateOAuthConnectionEndpoint",
         "requestBody": {
           "x-name": "CreateOAuthConnectionCommand",
           "description": "",
@@ -1531,25 +1958,38 @@
         ]
       }
     },
-    "/api/public/serverinfo": {
-      "get": {
+    "/api/user/update_user": {
+      "post": {
         "tags": [
-          "Public"
+          "User"
         ],
-        "summary": "获取服务器信息.",
-        "operationId": "ServerInfoEndpoint",
+        "summary": "更新用户信息.",
+        "operationId": "UpdateUserInfoEndpoint",
+        "requestBody": {
+          "x-name": "UpdateUserInfoCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserInfoCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
         "responses": {
           "200": {
             "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryServerInfoCommandResponse"
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
           },
-          "400": {
+          "401": {
             "description": "An error occurred in the request.",
             "content": {
               "application/json": {
@@ -1559,7 +1999,7 @@
               }
             }
           },
-          "401": {
+          "400": {
             "description": "An error occurred in the request.",
             "content": {
               "application/json": {
@@ -1599,7 +2039,190 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/user/update_password": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "更新密码.",
+        "operationId": "UpdateUserPasswordEndpoint",
+        "requestBody": {
+          "x-name": "UpdateUserPasswordCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPasswordCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/user/upload_avatar": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "上传头像.",
+        "operationId": "UploadtUserAvatarEndpoint",
+        "requestBody": {
+          "x-name": "UploadtUserAvatarCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadtUserAvatarCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
       }
     },
     "/api/storage/upload/public/{objectKey}": {
@@ -1607,6 +2230,7 @@
         "tags": [
           "Upload"
         ],
+        "summary": "上传公有文件.",
         "operationId": "Upload_UploadPublicFile",
         "parameters": [
           {
@@ -1733,7 +2357,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
       }
     },
     "/api/storage/upload/private/{objectKey}": {
@@ -1741,6 +2370,7 @@
         "tags": [
           "Upload"
         ],
+        "summary": "上传私有文件.",
         "operationId": "Upload_UploadPrivateFile",
         "parameters": [
           {
@@ -1867,32 +2497,99 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
       }
     }
   },
   "components": {
     "schemas": {
-      "SimpleString": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SimpleOfString"
+      "PreUploadFileCommandResponse": {
+        "type": "object",
+        "description": "预上传文件.",
+        "additionalProperties": false,
+        "required": [
+          "visibility",
+          "isExist",
+          "fileId"
+        ],
+        "properties": {
+          "visibility": {
+            "description": "文件可见性.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileVisibility"
+              }
+            ]
           },
-          {
-            "type": "object",
-            "additionalProperties": false
+          "isExist": {
+            "type": "boolean",
+            "description": "文件已存在,如果文件已存在则直接使用 FileId，无需再次上传."
+          },
+          "fileId": {
+            "type": "integer",
+            "description": "文件ID.",
+            "format": "int32"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "预签名上传地址，当 IsExist = true 时字段为空.",
+            "format": "uri",
+            "nullable": true
+          },
+          "expiration": {
+            "type": "string",
+            "description": "签名过期时间，当 IsExist = true 时字段为空.",
+            "format": "int64",
+            "minimum": 0.0,
+            "nullable": true,
+            "example": "1751762227405"
           }
+        }
+      },
+      "FileVisibility": {
+        "type": "string",
+        "description": "存储类型.",
+        "x-enumNames": [
+          "Public",
+          "Private"
+        ],
+        "enum": [
+          "public",
+          "private"
         ]
       },
-      "SimpleOfString": {
+      "PreUploadImageCommand": {
         "type": "object",
-        "description": "简单类型.",
+        "description": "上传图像，例如头像、公有图像等，文件公开访问，都根路径下.",
         "additionalProperties": false,
+        "required": [
+          "fileName",
+          "contentType",
+          "fileSize",
+          "mD5"
+        ],
         "properties": {
-          "value": {
+          "fileName": {
             "type": "string",
-            "description": "任何类型.",
-            "nullable": true
+            "description": "文件名称."
+          },
+          "contentType": {
+            "type": "string",
+            "description": "文件类型."
+          },
+          "fileSize": {
+            "type": "integer",
+            "description": "文件大小.",
+            "format": "int32"
+          },
+          "mD5": {
+            "type": "string",
+            "description": "文件 MD5."
           }
         }
       },
@@ -1957,43 +2654,140 @@
           }
         }
       },
-      "QueryUserInfoCommandResponse": {
+      "ComplateFileCommandResponse": {
         "type": "object",
-        "description": "用户基本信息响应.",
+        "description": "完成文件上传.",
+        "additionalProperties": false
+      },
+      "ComplateFileUploadCommand": {
+        "type": "object",
+        "description": "结束上传文件.",
+        "additionalProperties": false,
+        "required": [
+          "isSuccess",
+          "fileId"
+        ],
+        "properties": {
+          "isSuccess": {
+            "type": "boolean",
+            "description": "上传成功或失败."
+          },
+          "fileId": {
+            "type": "integer",
+            "description": "文件ID.",
+            "format": "int32"
+          }
+        }
+      },
+      "SimpleString": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SimpleOfString"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SimpleOfString": {
+        "type": "object",
+        "description": "简单类型.",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "任何类型.",
+            "nullable": true
+          }
+        }
+      },
+      "UserStateInfo": {
+        "type": "object",
         "additionalProperties": false,
         "required": [
           "userId",
           "userName",
+          "email",
           "nickName",
-          "avatar",
-          "isRoot",
-          "isAdmin"
+          "avatarPath",
+          "phone",
+          "isDisable",
+          "isAdmin",
+          "isDeleted"
         ],
         "properties": {
           "userId": {
             "type": "integer",
-            "description": "用户 ID.",
+            "description": "用户ID.",
             "format": "int32"
           },
           "userName": {
             "type": "string",
             "description": "用户名."
           },
+          "email": {
+            "type": "string",
+            "description": "邮箱."
+          },
           "nickName": {
             "type": "string",
             "description": "昵称."
           },
-          "avatar": {
+          "avatarPath": {
             "type": "string",
             "description": "头像路径."
           },
-          "isRoot": {
+          "phone": {
+            "type": "string",
+            "description": "手机号."
+          },
+          "isDisable": {
             "type": "boolean",
-            "description": "是否超级管理员."
+            "description": "禁用."
           },
           "isAdmin": {
             "type": "boolean",
             "description": "是否管理员."
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "description": "已被删除."
+          }
+        }
+      },
+      "QueryServerInfoCommandResponse": {
+        "type": "object",
+        "description": "服务器信息.",
+        "additionalProperties": false,
+        "required": [
+          "serviceUrl",
+          "publicStoreUrl",
+          "rsaPublic",
+          "maxUploadFileSize",
+          "disableRegister"
+        ],
+        "properties": {
+          "serviceUrl": {
+            "type": "string",
+            "description": "系统访问地址."
+          },
+          "publicStoreUrl": {
+            "type": "string",
+            "description": "公共存储地址，静态资源时可直接访问."
+          },
+          "rsaPublic": {
+            "type": "string",
+            "description": "RSA 公钥，用于加密密码等信息传输到服务器."
+          },
+          "maxUploadFileSize": {
+            "type": "integer",
+            "description": "最大可上传文件大小，单位为字节.",
+            "format": "int32"
+          },
+          "disableRegister": {
+            "type": "boolean",
+            "description": "禁止注册."
           }
         }
       },
@@ -2354,6 +3148,238 @@
           }
         }
       },
+      "DisableUserCommand": {
+        "type": "object",
+        "description": "禁用启用用户.",
+        "additionalProperties": false,
+        "required": [
+          "userIds",
+          "isDisable"
+        ],
+        "properties": {
+          "userIds": {
+            "type": "array",
+            "description": "用户ID.",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "isDisable": {
+            "type": "boolean",
+            "description": "是否禁用."
+          }
+        }
+      },
+      "QueryUserListCommandResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PagedResultOfQueryUserListCommandResponseItem"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "PagedResultOfQueryUserListCommandResponseItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PagedParamter"
+          },
+          {
+            "type": "object",
+            "description": "分页结果.",
+            "additionalProperties": false,
+            "required": [
+              "items",
+              "total"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "description": "项目集合.",
+                "items": {
+                  "$ref": "#/components/schemas/QueryUserListCommandResponseItem"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "description": "总数.",
+                "format": "int32"
+              }
+            }
+          }
+        ]
+      },
+      "QueryUserListCommandResponseItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "userName",
+              "email",
+              "nickName",
+              "avatarPath",
+              "phone",
+              "isDisable",
+              "isAdmin"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "用户ID.",
+                "format": "int32"
+              },
+              "userName": {
+                "type": "string",
+                "description": "用户名."
+              },
+              "email": {
+                "type": "string",
+                "description": "邮箱."
+              },
+              "nickName": {
+                "type": "string",
+                "description": "昵称."
+              },
+              "avatarPath": {
+                "type": "string",
+                "description": "头像路径."
+              },
+              "phone": {
+                "type": "string",
+                "description": "手机号."
+              },
+              "isDisable": {
+                "type": "boolean",
+                "description": "禁用."
+              },
+              "isAdmin": {
+                "type": "boolean",
+                "description": "是否管理员."
+              }
+            }
+          }
+        ]
+      },
+      "AuditsInfo": {
+        "type": "object",
+        "description": "数据子项.",
+        "x-abstract": true,
+        "additionalProperties": false,
+        "required": [
+          "createTime",
+          "createUserId",
+          "createUserName",
+          "updateTime",
+          "updateUserId",
+          "updateUserName"
+        ],
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1751762227405"
+          },
+          "createUserId": {
+            "type": "integer",
+            "description": "创建人ID.",
+            "format": "int32"
+          },
+          "createUserName": {
+            "type": "string",
+            "description": "创建者 名字."
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1751762227405"
+          },
+          "updateUserId": {
+            "type": "integer",
+            "description": "更新人ID.",
+            "format": "int32"
+          },
+          "updateUserName": {
+            "type": "string",
+            "description": "更新人 名字."
+          }
+        }
+      },
+      "PagedParamter": {
+        "type": "object",
+        "description": "分页参数.",
+        "additionalProperties": false,
+        "required": [
+          "pageNo",
+          "pageSize"
+        ],
+        "properties": {
+          "pageNo": {
+            "type": "integer",
+            "description": "页码，从1开始.",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "每页大小.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryUserListCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PagedParamter"
+          },
+          {
+            "type": "object",
+            "description": "查询用户列表.",
+            "additionalProperties": false,
+            "properties": {
+              "userId": {
+                "type": "integer",
+                "description": "指定用户的 id.",
+                "format": "int32",
+                "nullable": true
+              },
+              "search": {
+                "type": "string",
+                "description": "搜索参数.",
+                "nullable": true
+              },
+              "isAdmin": {
+                "type": "boolean",
+                "description": "只看管理员.",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "ResetUserPasswordCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "userId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "SetUserAdminCommand": {
         "type": "object",
         "description": "设置用户是否为管理员.",
@@ -2427,54 +3453,6 @@
             }
           }
         ]
-      },
-      "AuditsInfo": {
-        "type": "object",
-        "description": "数据子项.",
-        "x-abstract": true,
-        "additionalProperties": false,
-        "required": [
-          "createTime",
-          "createUserId",
-          "createUserName",
-          "updateTime",
-          "updateUserId",
-          "updateUserName"
-        ],
-        "properties": {
-          "createTime": {
-            "type": "string",
-            "description": "创建时间.",
-            "format": "int64",
-            "minimum": 0.0,
-            "example": "1751635311991"
-          },
-          "createUserId": {
-            "type": "integer",
-            "description": "创建人ID.",
-            "format": "int32"
-          },
-          "createUserName": {
-            "type": "string",
-            "description": "创建者 名字."
-          },
-          "updateTime": {
-            "type": "string",
-            "description": "更新时间.",
-            "format": "int64",
-            "minimum": 0.0,
-            "example": "1751635311991"
-          },
-          "updateUserId": {
-            "type": "integer",
-            "description": "更新人ID.",
-            "format": "int32"
-          },
-          "updateUserName": {
-            "type": "string",
-            "description": "更新人 名字."
-          }
-        }
       },
       "SetSystemSettingsCommand": {
         "type": "object",
@@ -2698,38 +3676,79 @@
           }
         ]
       },
-      "QueryServerInfoCommandResponse": {
+      "UpdateUserInfoCommand": {
         "type": "object",
-        "description": "服务器信息.",
+        "description": "修改用户信息.",
         "additionalProperties": false,
         "required": [
-          "serviceUrl",
-          "publicStoreUrl",
-          "rsaPublic",
-          "maxUploadFileSize",
-          "disableRegister"
+          "userId",
+          "userName",
+          "email",
+          "nickName",
+          "phone"
         ],
         "properties": {
-          "serviceUrl": {
-            "type": "string",
-            "description": "系统访问地址."
-          },
-          "publicStoreUrl": {
-            "type": "string",
-            "description": "公共存储地址，静态资源时可直接访问."
-          },
-          "rsaPublic": {
-            "type": "string",
-            "description": "RSA 公钥，用于加密密码等信息传输到服务器."
-          },
-          "maxUploadFileSize": {
+          "userId": {
             "type": "integer",
-            "description": "最大可上传文件大小，单位为字节.",
+            "description": "用户ID.",
             "format": "int32"
           },
-          "disableRegister": {
-            "type": "boolean",
-            "description": "禁止注册."
+          "userName": {
+            "type": "string",
+            "description": "用户名."
+          },
+          "email": {
+            "type": "string",
+            "description": "邮箱."
+          },
+          "nickName": {
+            "type": "string",
+            "description": "昵称."
+          },
+          "phone": {
+            "type": "string",
+            "description": "手机号."
+          }
+        }
+      },
+      "UpdateUserPasswordCommand": {
+        "type": "object",
+        "description": "重置密码.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "password"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          },
+          "password": {
+            "type": "string",
+            "description": "新的密码，提前使用 rsa 公有加密."
+          }
+        }
+      },
+      "UploadtUserAvatarCommand": {
+        "type": "object",
+        "description": "上传用户头像.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "fileId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          },
+          "fileId": {
+            "type": "integer",
+            "description": "文件id.",
+            "format": "int32"
           }
         }
       }

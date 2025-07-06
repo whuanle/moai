@@ -77,6 +77,24 @@ export interface BusinessValidationResult extends ApiError, Parsable {
 export interface BusinessValidationResult_extensions extends Parsable {
 }
 /**
+ * 完成文件上传.
+ */
+export interface ComplateFileCommandResponse extends Parsable {
+}
+/**
+ * 结束上传文件.
+ */
+export interface ComplateFileUploadCommand extends Parsable {
+    /**
+     * 文件ID.
+     */
+    fileId?: number | null;
+    /**
+     * 上传成功或失败.
+     */
+    isSuccess?: boolean | null;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AuditsInfo}
@@ -115,6 +133,24 @@ export function createBusinessValidationResultFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ComplateFileCommandResponse}
+ */
+// @ts-ignore
+export function createComplateFileCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoComplateFileCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ComplateFileUploadCommand}
+ */
+// @ts-ignore
+export function createComplateFileUploadCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoComplateFileUploadCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateOAuthConnectionCommand}
  */
 // @ts-ignore
@@ -138,6 +174,15 @@ export function createDeleteOAuthConnectionCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createDeleteUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoDeleteUserCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DisableUserCommand}
+ */
+// @ts-ignore
+export function createDisableUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDisableUserCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -243,6 +288,42 @@ export function createOAuthRegisterCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PagedParamter}
+ */
+// @ts-ignore
+export function createPagedParamterFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPagedParamter;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PagedResultOfQueryUserListCommandResponseItem}
+ */
+// @ts-ignore
+export function createPagedResultOfQueryUserListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPagedResultOfQueryUserListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadFileCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadFileCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadFileCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadImageCommand}
+ */
+// @ts-ignore
+export function createPreUploadImageCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadImageCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAllOAuthPrividerCommandResponse}
  */
 // @ts-ignore
@@ -306,11 +387,29 @@ export function createQuerySystemSettingsCommandResponseItemFromDiscriminatorVal
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryUserInfoCommandResponse}
+ * @returns {QueryUserListCommand}
  */
 // @ts-ignore
-export function createQueryUserInfoCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryUserInfoCommandResponse;
+export function createQueryUserListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryUserListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryUserListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryUserListCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryUserListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserListCommandResponseItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -338,6 +437,15 @@ export function createRefreshTokenCommandResponseFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createRegisterUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoRegisterUserCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ResetUserPasswordCommand}
+ */
+// @ts-ignore
+export function createResetUserPasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoResetUserPasswordCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -401,6 +509,42 @@ export function createSimpleStringFromDiscriminatorValue(parseNode: ParseNode | 
 // @ts-ignore
 export function createUpdateOAuthConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateOAuthConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateUserInfoCommand}
+ */
+// @ts-ignore
+export function createUpdateUserInfoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateUserInfoCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateUserPasswordCommand}
+ */
+// @ts-ignore
+export function createUpdateUserPasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateUserPasswordCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UploadtUserAvatarCommand}
+ */
+// @ts-ignore
+export function createUploadtUserAvatarCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUploadtUserAvatarCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UserStateInfo}
+ */
+// @ts-ignore
+export function createUserStateInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUserStateInfo;
 }
 /**
  * 删除认证方式.
@@ -474,6 +618,26 @@ export function deserializeIntoBusinessValidationResult_extensions(businessValid
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoComplateFileCommandResponse(complateFileCommandResponse: Partial<ComplateFileCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoComplateFileUploadCommand(complateFileUploadCommand: Partial<ComplateFileUploadCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { complateFileUploadCommand.fileId = n.getNumberValue(); },
+        "isSuccess": n => { complateFileUploadCommand.isSuccess = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "iconUrl": n => { createOAuthConnectionCommand.iconUrl = n.getStringValue(); },
@@ -502,6 +666,17 @@ export function deserializeIntoDeleteOAuthConnectionCommand(deleteOAuthConnectio
 export function deserializeIntoDeleteUserCommand(deleteUserCommand: Partial<DeleteUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "userIds": n => { deleteUserCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDisableUserCommand(disableUserCommand: Partial<DisableUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isDisable": n => { disableUserCommand.isDisable = n.getBooleanValue(); },
+        "userIds": n => { disableUserCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
     }
 }
 /**
@@ -601,6 +776,56 @@ export function deserializeIntoOAuthRegisterCommand(oAuthRegisterCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPagedParamter(pagedParamter: Partial<PagedParamter> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pageNo": n => { pagedParamter.pageNo = n.getNumberValue(); },
+        "pageSize": n => { pagedParamter.pageSize = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPagedResultOfQueryUserListCommandResponseItem(pagedResultOfQueryUserListCommandResponseItem: Partial<PagedResultOfQueryUserListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoPagedParamter(pagedResultOfQueryUserListCommandResponseItem),
+        "items": n => { pagedResultOfQueryUserListCommandResponseItem.items = n.getCollectionOfObjectValues<QueryUserListCommandResponseItem>(createQueryUserListCommandResponseItemFromDiscriminatorValue); },
+        "total": n => { pagedResultOfQueryUserListCommandResponseItem.total = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadFileCommandResponse(preUploadFileCommandResponse: Partial<PreUploadFileCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadFileCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadFileCommandResponse.fileId = n.getNumberValue(); },
+        "isExist": n => { preUploadFileCommandResponse.isExist = n.getBooleanValue(); },
+        "uploadUrl": n => { preUploadFileCommandResponse.uploadUrl = n.getStringValue(); },
+        "visibility": n => { preUploadFileCommandResponse.visibility = n.getEnumValue<FileVisibility>(FileVisibilityObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadImageCommand(preUploadImageCommand: Partial<PreUploadImageCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadImageCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadImageCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadImageCommand.fileSize = n.getNumberValue(); },
+        "mD5": n => { preUploadImageCommand.mD5 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAllOAuthPrividerCommandResponse(queryAllOAuthPrividerCommandResponse: Partial<QueryAllOAuthPrividerCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAllOAuthPrividerCommandResponse.items = n.getCollectionOfObjectValues<QueryAllOAuthPrividerCommandResponseItem>(createQueryAllOAuthPrividerCommandResponseItemFromDiscriminatorValue); },
@@ -691,14 +916,40 @@ export function deserializeIntoQuerySystemSettingsCommandResponseItem(querySyste
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryUserInfoCommandResponse(queryUserInfoCommandResponse: Partial<QueryUserInfoCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoQueryUserListCommand(queryUserListCommand: Partial<QueryUserListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "avatar": n => { queryUserInfoCommandResponse.avatar = n.getStringValue(); },
-        "isAdmin": n => { queryUserInfoCommandResponse.isAdmin = n.getBooleanValue(); },
-        "isRoot": n => { queryUserInfoCommandResponse.isRoot = n.getBooleanValue(); },
-        "nickName": n => { queryUserInfoCommandResponse.nickName = n.getStringValue(); },
-        "userId": n => { queryUserInfoCommandResponse.userId = n.getNumberValue(); },
-        "userName": n => { queryUserInfoCommandResponse.userName = n.getStringValue(); },
+        ...deserializeIntoPagedParamter(queryUserListCommand),
+        "isAdmin": n => { queryUserListCommand.isAdmin = n.getBooleanValue(); },
+        "search": n => { queryUserListCommand.search = n.getStringValue(); },
+        "userId": n => { queryUserListCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryUserListCommandResponse(queryUserListCommandResponse: Partial<QueryUserListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoPagedResultOfQueryUserListCommandResponseItem(queryUserListCommandResponse),
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCommandResponseItem: Partial<QueryUserListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryUserListCommandResponseItem),
+        "avatarPath": n => { queryUserListCommandResponseItem.avatarPath = n.getStringValue(); },
+        "email": n => { queryUserListCommandResponseItem.email = n.getStringValue(); },
+        "id": n => { queryUserListCommandResponseItem.id = n.getNumberValue(); },
+        "isAdmin": n => { queryUserListCommandResponseItem.isAdmin = n.getBooleanValue(); },
+        "isDisable": n => { queryUserListCommandResponseItem.isDisable = n.getBooleanValue(); },
+        "nickName": n => { queryUserListCommandResponseItem.nickName = n.getStringValue(); },
+        "phone": n => { queryUserListCommandResponseItem.phone = n.getStringValue(); },
+        "userName": n => { queryUserListCommandResponseItem.userName = n.getStringValue(); },
     }
 }
 /**
@@ -738,6 +989,16 @@ export function deserializeIntoRegisterUserCommand(registerUserCommand: Partial<
         "password": n => { registerUserCommand.password = n.getStringValue(); },
         "phone": n => { registerUserCommand.phone = n.getStringValue(); },
         "userName": n => { registerUserCommand.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoResetUserPasswordCommand(resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "userId": n => { resetUserPasswordCommand.userId = n.getNumberValue(); },
     }
 }
 /**
@@ -813,10 +1074,78 @@ export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectio
     }
 }
 /**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateUserInfoCommand(updateUserInfoCommand: Partial<UpdateUserInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "email": n => { updateUserInfoCommand.email = n.getStringValue(); },
+        "nickName": n => { updateUserInfoCommand.nickName = n.getStringValue(); },
+        "phone": n => { updateUserInfoCommand.phone = n.getStringValue(); },
+        "userId": n => { updateUserInfoCommand.userId = n.getNumberValue(); },
+        "userName": n => { updateUserInfoCommand.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateUserPasswordCommand(updateUserPasswordCommand: Partial<UpdateUserPasswordCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "password": n => { updateUserPasswordCommand.password = n.getStringValue(); },
+        "userId": n => { updateUserPasswordCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUploadtUserAvatarCommand(uploadtUserAvatarCommand: Partial<UploadtUserAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { uploadtUserAvatarCommand.fileId = n.getNumberValue(); },
+        "userId": n => { uploadtUserAvatarCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { userStateInfo.avatarPath = n.getStringValue(); },
+        "email": n => { userStateInfo.email = n.getStringValue(); },
+        "isAdmin": n => { userStateInfo.isAdmin = n.getBooleanValue(); },
+        "isDeleted": n => { userStateInfo.isDeleted = n.getBooleanValue(); },
+        "isDisable": n => { userStateInfo.isDisable = n.getBooleanValue(); },
+        "nickName": n => { userStateInfo.nickName = n.getStringValue(); },
+        "phone": n => { userStateInfo.phone = n.getStringValue(); },
+        "userId": n => { userStateInfo.userId = n.getNumberValue(); },
+        "userName": n => { userStateInfo.userName = n.getStringValue(); },
+    }
+}
+/**
+ * 禁用启用用户.
+ */
+export interface DisableUserCommand extends Parsable {
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 用户ID.
+     */
+    userIds?: number[] | null;
+}
+/**
  * 空数据.
  */
 export interface EmptyCommandResponse extends Parsable {
 }
+export type FileVisibility = (typeof FileVisibilityObject)[keyof typeof FileVisibilityObject];
 export interface KeyValueOfStringAndString extends Parsable {
     /**
      * The key property
@@ -926,6 +1255,78 @@ export interface OAuthRegisterCommand extends Parsable {
      * 登录绑定 OAuth 用户 ID.
      */
     oAuthBindId?: string | null;
+}
+/**
+ * 分页参数.
+ */
+export interface PagedParamter extends Parsable {
+    /**
+     * 页码，从1开始.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页大小.
+     */
+    pageSize?: number | null;
+}
+/**
+ * 分页结果.
+ */
+export interface PagedResultOfQueryUserListCommandResponseItem extends PagedParamter, Parsable {
+    /**
+     * 项目集合.
+     */
+    items?: QueryUserListCommandResponseItem[] | null;
+    /**
+     * 总数.
+     */
+    total?: number | null;
+}
+/**
+ * 预上传文件.
+ */
+export interface PreUploadFileCommandResponse extends Parsable {
+    /**
+     * 签名过期时间，当 IsExist = true 时字段为空.
+     */
+    expiration?: string | null;
+    /**
+     * 文件ID.
+     */
+    fileId?: number | null;
+    /**
+     * 文件已存在,如果文件已存在则直接使用 FileId，无需再次上传.
+     */
+    isExist?: boolean | null;
+    /**
+     * 预签名上传地址，当 IsExist = true 时字段为空.
+     */
+    uploadUrl?: string | null;
+    /**
+     * 文件可见性.
+     */
+    visibility?: FileVisibility | null;
+}
+/**
+ * 上传图像，例如头像、公有图像等，文件公开访问，都根路径下.
+ */
+export interface PreUploadImageCommand extends Parsable {
+    /**
+     * 文件类型.
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小.
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 MD5.
+     */
+    mD5?: string | null;
 }
 export interface QueryAllOAuthPrividerCommandResponse extends Parsable {
     /**
@@ -1048,29 +1449,53 @@ export interface QuerySystemSettingsCommandResponseItem extends AuditsInfo, Pars
     value?: string | null;
 }
 /**
- * 用户基本信息响应.
+ * 查询用户列表.
  */
-export interface QueryUserInfoCommandResponse extends Parsable {
+export interface QueryUserListCommand extends PagedParamter, Parsable {
+    /**
+     * 只看管理员.
+     */
+    isAdmin?: boolean | null;
+    /**
+     * 搜索参数.
+     */
+    search?: string | null;
+    /**
+     * 指定用户的 id.
+     */
+    userId?: number | null;
+}
+export interface QueryUserListCommandResponse extends PagedResultOfQueryUserListCommandResponseItem, Parsable {
+}
+export interface QueryUserListCommandResponseItem extends AuditsInfo, Parsable {
     /**
      * 头像路径.
      */
-    avatar?: string | null;
+    avatarPath?: string | null;
+    /**
+     * 邮箱.
+     */
+    email?: string | null;
+    /**
+     * 用户ID.
+     */
+    id?: number | null;
     /**
      * 是否管理员.
      */
     isAdmin?: boolean | null;
     /**
-     * 是否超级管理员.
+     * 禁用.
      */
-    isRoot?: boolean | null;
+    isDisable?: boolean | null;
     /**
      * 昵称.
      */
     nickName?: string | null;
     /**
-     * 用户 ID.
+     * 手机号.
      */
-    userId?: number | null;
+    phone?: string | null;
     /**
      * 用户名.
      */
@@ -1136,6 +1561,12 @@ export interface RegisterUserCommand extends Parsable {
      */
     userName?: string | null;
 }
+export interface ResetUserPasswordCommand extends Parsable {
+    /**
+     * The userId property
+     */
+    userId?: number | null;
+}
 /**
  * Serializes information the current object
  * @param writer Serialization writer to use to serialize this model
@@ -1190,6 +1621,26 @@ export function serializeBusinessValidationResult_extensions(writer: Serializati
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeComplateFileCommandResponse(writer: SerializationWriter, complateFileCommandResponse: Partial<ComplateFileCommandResponse> | undefined | null = {}) : void {
+    if (complateFileCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeComplateFileUploadCommand(writer: SerializationWriter, complateFileUploadCommand: Partial<ComplateFileUploadCommand> | undefined | null = {}) : void {
+    if (complateFileUploadCommand) {
+        writer.writeNumberValue("fileId", complateFileUploadCommand.fileId);
+        writer.writeBooleanValue("isSuccess", complateFileUploadCommand.isSuccess);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateOAuthConnectionCommand(writer: SerializationWriter, createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (createOAuthConnectionCommand) {
         writer.writeStringValue("iconUrl", createOAuthConnectionCommand.iconUrl);
@@ -1218,6 +1669,17 @@ export function serializeDeleteOAuthConnectionCommand(writer: SerializationWrite
 export function serializeDeleteUserCommand(writer: SerializationWriter, deleteUserCommand: Partial<DeleteUserCommand> | undefined | null = {}) : void {
     if (deleteUserCommand) {
         writer.writeCollectionOfPrimitiveValues<number>("userIds", deleteUserCommand.userIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeDisableUserCommand(writer: SerializationWriter, disableUserCommand: Partial<DisableUserCommand> | undefined | null = {}) : void {
+    if (disableUserCommand) {
+        writer.writeBooleanValue("isDisable", disableUserCommand.isDisable);
+        writer.writeCollectionOfPrimitiveValues<number>("userIds", disableUserCommand.userIds);
     }
 }
 /**
@@ -1317,6 +1779,56 @@ export function serializeOAuthRegisterCommand(writer: SerializationWriter, oAuth
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePagedParamter(writer: SerializationWriter, pagedParamter: Partial<PagedParamter> | undefined | null = {}) : void {
+    if (pagedParamter) {
+        writer.writeNumberValue("pageNo", pagedParamter.pageNo);
+        writer.writeNumberValue("pageSize", pagedParamter.pageSize);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePagedResultOfQueryUserListCommandResponseItem(writer: SerializationWriter, pagedResultOfQueryUserListCommandResponseItem: Partial<PagedResultOfQueryUserListCommandResponseItem> | undefined | null = {}) : void {
+    if (pagedResultOfQueryUserListCommandResponseItem) {
+        serializePagedParamter(writer, pagedResultOfQueryUserListCommandResponseItem)
+        writer.writeCollectionOfObjectValues<QueryUserListCommandResponseItem>("items", pagedResultOfQueryUserListCommandResponseItem.items, serializeQueryUserListCommandResponseItem);
+        writer.writeNumberValue("total", pagedResultOfQueryUserListCommandResponseItem.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadFileCommandResponse(writer: SerializationWriter, preUploadFileCommandResponse: Partial<PreUploadFileCommandResponse> | undefined | null = {}) : void {
+    if (preUploadFileCommandResponse) {
+        writer.writeStringValue("expiration", preUploadFileCommandResponse.expiration);
+        writer.writeNumberValue("fileId", preUploadFileCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadFileCommandResponse.isExist);
+        writer.writeStringValue("uploadUrl", preUploadFileCommandResponse.uploadUrl);
+        writer.writeEnumValue<FileVisibility>("visibility", preUploadFileCommandResponse.visibility);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadImageCommand(writer: SerializationWriter, preUploadImageCommand: Partial<PreUploadImageCommand> | undefined | null = {}) : void {
+    if (preUploadImageCommand) {
+        writer.writeStringValue("contentType", preUploadImageCommand.contentType);
+        writer.writeStringValue("fileName", preUploadImageCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadImageCommand.fileSize);
+        writer.writeStringValue("mD5", preUploadImageCommand.mD5);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAllOAuthPrividerCommandResponse(writer: SerializationWriter, queryAllOAuthPrividerCommandResponse: Partial<QueryAllOAuthPrividerCommandResponse> | undefined | null = {}) : void {
     if (queryAllOAuthPrividerCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryAllOAuthPrividerCommandResponseItem>("items", queryAllOAuthPrividerCommandResponse.items, serializeQueryAllOAuthPrividerCommandResponseItem);
@@ -1407,14 +1919,40 @@ export function serializeQuerySystemSettingsCommandResponseItem(writer: Serializ
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryUserInfoCommandResponse(writer: SerializationWriter, queryUserInfoCommandResponse: Partial<QueryUserInfoCommandResponse> | undefined | null = {}) : void {
-    if (queryUserInfoCommandResponse) {
-        writer.writeStringValue("avatar", queryUserInfoCommandResponse.avatar);
-        writer.writeBooleanValue("isAdmin", queryUserInfoCommandResponse.isAdmin);
-        writer.writeBooleanValue("isRoot", queryUserInfoCommandResponse.isRoot);
-        writer.writeStringValue("nickName", queryUserInfoCommandResponse.nickName);
-        writer.writeNumberValue("userId", queryUserInfoCommandResponse.userId);
-        writer.writeStringValue("userName", queryUserInfoCommandResponse.userName);
+export function serializeQueryUserListCommand(writer: SerializationWriter, queryUserListCommand: Partial<QueryUserListCommand> | undefined | null = {}) : void {
+    if (queryUserListCommand) {
+        serializePagedParamter(writer, queryUserListCommand)
+        writer.writeBooleanValue("isAdmin", queryUserListCommand.isAdmin);
+        writer.writeStringValue("search", queryUserListCommand.search);
+        writer.writeNumberValue("userId", queryUserListCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryUserListCommandResponse(writer: SerializationWriter, queryUserListCommandResponse: Partial<QueryUserListCommandResponse> | undefined | null = {}) : void {
+    if (queryUserListCommandResponse) {
+        serializePagedResultOfQueryUserListCommandResponseItem(writer, queryUserListCommandResponse)
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryUserListCommandResponseItem(writer: SerializationWriter, queryUserListCommandResponseItem: Partial<QueryUserListCommandResponseItem> | undefined | null = {}) : void {
+    if (queryUserListCommandResponseItem) {
+        serializeAuditsInfo(writer, queryUserListCommandResponseItem)
+        writer.writeStringValue("avatarPath", queryUserListCommandResponseItem.avatarPath);
+        writer.writeStringValue("email", queryUserListCommandResponseItem.email);
+        writer.writeNumberValue("id", queryUserListCommandResponseItem.id);
+        writer.writeBooleanValue("isAdmin", queryUserListCommandResponseItem.isAdmin);
+        writer.writeBooleanValue("isDisable", queryUserListCommandResponseItem.isDisable);
+        writer.writeStringValue("nickName", queryUserListCommandResponseItem.nickName);
+        writer.writeStringValue("phone", queryUserListCommandResponseItem.phone);
+        writer.writeStringValue("userName", queryUserListCommandResponseItem.userName);
     }
 }
 /**
@@ -1454,6 +1992,16 @@ export function serializeRegisterUserCommand(writer: SerializationWriter, regist
         writer.writeStringValue("password", registerUserCommand.password);
         writer.writeStringValue("phone", registerUserCommand.phone);
         writer.writeStringValue("userName", registerUserCommand.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeResetUserPasswordCommand(writer: SerializationWriter, resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined | null = {}) : void {
+    if (resetUserPasswordCommand) {
+        writer.writeNumberValue("userId", resetUserPasswordCommand.userId);
     }
 }
 /**
@@ -1528,6 +2076,60 @@ export function serializeUpdateOAuthConnectionCommand(writer: SerializationWrite
         writer.writeNumberValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
     }
 }
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateUserInfoCommand(writer: SerializationWriter, updateUserInfoCommand: Partial<UpdateUserInfoCommand> | undefined | null = {}) : void {
+    if (updateUserInfoCommand) {
+        writer.writeStringValue("email", updateUserInfoCommand.email);
+        writer.writeStringValue("nickName", updateUserInfoCommand.nickName);
+        writer.writeStringValue("phone", updateUserInfoCommand.phone);
+        writer.writeNumberValue("userId", updateUserInfoCommand.userId);
+        writer.writeStringValue("userName", updateUserInfoCommand.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateUserPasswordCommand(writer: SerializationWriter, updateUserPasswordCommand: Partial<UpdateUserPasswordCommand> | undefined | null = {}) : void {
+    if (updateUserPasswordCommand) {
+        writer.writeStringValue("password", updateUserPasswordCommand.password);
+        writer.writeNumberValue("userId", updateUserPasswordCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUploadtUserAvatarCommand(writer: SerializationWriter, uploadtUserAvatarCommand: Partial<UploadtUserAvatarCommand> | undefined | null = {}) : void {
+    if (uploadtUserAvatarCommand) {
+        writer.writeNumberValue("fileId", uploadtUserAvatarCommand.fileId);
+        writer.writeNumberValue("userId", uploadtUserAvatarCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUserStateInfo(writer: SerializationWriter, userStateInfo: Partial<UserStateInfo> | undefined | null = {}) : void {
+    if (userStateInfo) {
+        writer.writeStringValue("avatarPath", userStateInfo.avatarPath);
+        writer.writeStringValue("email", userStateInfo.email);
+        writer.writeBooleanValue("isAdmin", userStateInfo.isAdmin);
+        writer.writeBooleanValue("isDeleted", userStateInfo.isDeleted);
+        writer.writeBooleanValue("isDisable", userStateInfo.isDisable);
+        writer.writeStringValue("nickName", userStateInfo.nickName);
+        writer.writeStringValue("phone", userStateInfo.phone);
+        writer.writeNumberValue("userId", userStateInfo.userId);
+        writer.writeStringValue("userName", userStateInfo.userName);
+    }
+}
 export interface SetSystemSettingsCommand extends Parsable {
     /**
      * The settings property
@@ -1578,6 +2180,102 @@ export interface UpdateOAuthConnectionCommand extends CreateOAuthConnectionComma
      */
     oAuthConnectionId?: number | null;
 }
+/**
+ * 修改用户信息.
+ */
+export interface UpdateUserInfoCommand extends Parsable {
+    /**
+     * 邮箱.
+     */
+    email?: string | null;
+    /**
+     * 昵称.
+     */
+    nickName?: string | null;
+    /**
+     * 手机号.
+     */
+    phone?: string | null;
+    /**
+     * 用户ID.
+     */
+    userId?: number | null;
+    /**
+     * 用户名.
+     */
+    userName?: string | null;
+}
+/**
+ * 重置密码.
+ */
+export interface UpdateUserPasswordCommand extends Parsable {
+    /**
+     * 新的密码，提前使用 rsa 公有加密.
+     */
+    password?: string | null;
+    /**
+     * 用户 id.
+     */
+    userId?: number | null;
+}
+/**
+ * 上传用户头像.
+ */
+export interface UploadtUserAvatarCommand extends Parsable {
+    /**
+     * 文件id.
+     */
+    fileId?: number | null;
+    /**
+     * 用户 id.
+     */
+    userId?: number | null;
+}
+export interface UserStateInfo extends Parsable {
+    /**
+     * 头像路径.
+     */
+    avatarPath?: string | null;
+    /**
+     * 邮箱.
+     */
+    email?: string | null;
+    /**
+     * 是否管理员.
+     */
+    isAdmin?: boolean | null;
+    /**
+     * 已被删除.
+     */
+    isDeleted?: boolean | null;
+    /**
+     * 禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 昵称.
+     */
+    nickName?: string | null;
+    /**
+     * 手机号.
+     */
+    phone?: string | null;
+    /**
+     * 用户ID.
+     */
+    userId?: number | null;
+    /**
+     * 用户名.
+     */
+    userName?: string | null;
+}
+/**
+ * 存储类型.
+ */
+export const FileVisibilityObject = {
+    Public: "public",
+    Private: "private",
+} as const;
 /**
  * OAuth 提供商.
  */

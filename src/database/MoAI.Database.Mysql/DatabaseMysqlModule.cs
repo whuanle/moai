@@ -7,6 +7,7 @@
 using Maomi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra;
@@ -18,7 +19,7 @@ namespace MoAI.Database;
 /// </summary>
 public class DatabaseMysqlModule : IModule
 {
-    private readonly ILogger _logger;
+    private readonly ILogger<DatabaseMysqlModule> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseMysqlModule"/> class.
@@ -32,8 +33,7 @@ public class DatabaseMysqlModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        using ServiceProvider? ioc = context.Services.BuildServiceProvider();
-        SystemOptions? systemOptions = ioc.GetRequiredService<SystemOptions>();
+        var systemOptions = context.Configuration.GetSection("MoAI").Get<SystemOptions>() ?? throw new InvalidOperationException("SystemOptions is not configured.");
 
         if (!"mysql".Equals(systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
         {
@@ -81,6 +81,7 @@ public class DatabaseMysqlModule : IModule
             DbContextOptionsBuilder<MysqlDatabaseContext> options = new();
             contextOptionsBuilder.Invoke(options);
 
+            using var ioc = context.Services.BuildServiceProvider();
             using MysqlDatabaseContext? dbContext = new MysqlDatabaseContext(options.Options, ioc);
 
             // 如果数据库不存在，则会创建数据库及其所有表。

@@ -15,7 +15,7 @@ namespace MoAI.Store.Queries;
 /// <summary>
 /// 通过 path/objectkey 查询公有文件的访问路径.
 /// </summary>
-public class QueryPublicFileUrlFromPathCommandHandler : IRequestHandler<QueryPublicFileUrlFromPathCommand, QueryPublicFileUrlFromPathResponse>
+public class QueryPublicFileUrlFromPathCommandHandler : IRequestHandler<QueryPublicFileUrlFromKeyCommand, QueryPublicFileUrlFromKeyResponse>
 {
     private readonly SystemOptions _systemOptions;
     private readonly IServiceProvider _serviceProvider;
@@ -32,11 +32,11 @@ public class QueryPublicFileUrlFromPathCommandHandler : IRequestHandler<QueryPub
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPublicFileUrlFromPathResponse> Handle(QueryPublicFileUrlFromPathCommand request, CancellationToken cancellationToken)
+    public async Task<QueryPublicFileUrlFromKeyResponse> Handle(QueryPublicFileUrlFromKeyCommand request, CancellationToken cancellationToken)
     {
         var fileStorage = _serviceProvider.GetRequiredService<IPublicFileStorage>();
         var urls = await fileStorage.GetFileUrlAsync(request.ObjectKeys);
-        return new QueryPublicFileUrlFromPathResponse
+        return new QueryPublicFileUrlFromKeyResponse
         {
             Urls = urls
         };

@@ -6,7 +6,11 @@ import { Delete_userRequestBuilderRequestsMetadata, type Delete_userRequestBuild
 // @ts-ignore
 import { Disable_userRequestBuilderRequestsMetadata, type Disable_userRequestBuilder } from './disable_user/index.js';
 // @ts-ignore
+import { Reset_passwordRequestBuilderRequestsMetadata, type Reset_passwordRequestBuilder } from './reset_password/index.js';
+// @ts-ignore
 import { Set_adminRequestBuilderRequestsMetadata, type Set_adminRequestBuilder } from './set_admin/index.js';
+// @ts-ignore
+import { type User_listRequestBuilder, User_listRequestBuilderRequestsMetadata } from './user_list/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -23,9 +27,17 @@ export interface UserRequestBuilder extends BaseRequestBuilder<UserRequestBuilde
      */
     get disable_user(): Disable_userRequestBuilder;
     /**
+     * The reset_password property
+     */
+    get reset_password(): Reset_passwordRequestBuilder;
+    /**
      * The set_admin property
      */
     get set_admin(): Set_adminRequestBuilder;
+    /**
+     * The user_list property
+     */
+    get user_list(): User_listRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -41,8 +53,14 @@ export const UserRequestBuilderNavigationMetadata: Record<Exclude<keyof UserRequ
     disable_user: {
         requestsMetadata: Disable_userRequestBuilderRequestsMetadata,
     },
+    reset_password: {
+        requestsMetadata: Reset_passwordRequestBuilderRequestsMetadata,
+    },
     set_admin: {
         requestsMetadata: Set_adminRequestBuilderRequestsMetadata,
+    },
+    user_list: {
+        requestsMetadata: User_listRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

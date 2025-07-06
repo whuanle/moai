@@ -15,7 +15,7 @@ using MoAI.Login.Commands;
 using MoAI.Login.Commands.Responses;
 using MoAI.Login.Services;
 
-namespace MaomiAI.User.Core.Handlers;
+namespace MoAI.User.Core.Handlers;
 
 /// <summary>
 /// 刷新 token.

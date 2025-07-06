@@ -66,7 +66,7 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
             // {
             //    item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
             // }
-            item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
+            item.RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login?state={item.OAuthId}").ToString();
         }
 
         await _mediator.Send(new FillUserInfoCommand { Items = items });

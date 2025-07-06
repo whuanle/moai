@@ -53,7 +53,7 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
 
         foreach (var item in items)
         {
-            var frontUrl = _systemOptions.Server + $"/oauth_login";
+            var frontUrl = _systemOptions.WebUI + $"/oauth_login";
             var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={item.OAuthId}";
 
             if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))

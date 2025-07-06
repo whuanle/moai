@@ -37,8 +37,6 @@ public class PreUploadImageCommandHandler : IRequestHandler<PreUploadImageComman
         {
             throw new BusinessException("不支持该类型的图像") { StatusCode = 400 };
         }
-
-        // todo: 通过系统设置限制头像文件大小.
         var preu = new PreUploadFileCommand
         {
             FileName = request.FileName,

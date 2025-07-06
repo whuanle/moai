@@ -5,32 +5,26 @@
 // </copyright>
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using MoAI.Infra;
 
-namespace MoAI.Storage.Core.Extensions;
+namespace MoAI.Storage.Extensions;
 
 public static class ApplicationBuilderExtensions
 {
-    public static void UseLocalFiles(this IApplicationBuilder builder, SystemOptions systemOptions)
+    /// <summary>
+    /// 配置使用本地文件.
+    /// </summary>
+    /// <param name="builder"></param>
+    public static void UseLocalFiles(this IApplicationBuilder builder)
     {
-        var filePath = Path.Combine(systemOptions.Storage.FilePath, "files");
-        var contentPath = Path.Combine(systemOptions.Storage.FilePath, "contents");
+        File.WriteAllText("D:/aaa.txt", contents: DateTimeOffset.Now.ToString());
 
-        if (!Directory.Exists(systemOptions.Storage.FilePath))
-        {
-            Directory.CreateDirectory(systemOptions.Storage.FilePath);
-        }
+        var systemOptions = builder.ApplicationServices.GetRequiredService<SystemOptions>();
 
-        if (!Directory.Exists(filePath))
-        {
-            Directory.CreateDirectory(filePath);
-        }
-
-        if (!Directory.Exists(contentPath))
-        {
-            Directory.CreateDirectory(contentPath);
-        }
+        var filePath = Path.Combine(systemOptions.FilePath, "files");
+        var contentPath = Path.Combine(systemOptions.FilePath, "contents");
 
         // 登录后就能直接看到的文件
         builder.UseStaticFiles(new StaticFileOptions

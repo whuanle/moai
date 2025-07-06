@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-namespace MaomiAI;
+namespace MoAI;
 
 /// <summary>
 /// EnumExtensions.

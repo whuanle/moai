@@ -5,6 +5,7 @@
 // </copyright>
 
 using MediatR;
+using MoAI.Login.Queries.Responses;
 using MoAI.Public.Queries.Response;
 
 namespace MoAI.Public.Queries;
@@ -12,7 +13,7 @@ namespace MoAI.Public.Queries;
 /// <summary>
 /// 查询用户基本信息的请求.
 /// </summary>
-public class QueryUserInfoCommand : IRequest<QueryUserInfoCommandResponse>
+public class QueryUserInfoCommand : IRequest<UserStateInfo>
 {
     /// <summary>
     /// 用户 ID.

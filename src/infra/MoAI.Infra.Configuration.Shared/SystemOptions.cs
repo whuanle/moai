@@ -19,9 +19,19 @@ public class SystemOptions
     public string Server { get; init; } = string.Empty;
 
     /// <summary>
-    /// 文件存储路径.
+    /// 前端地址.
     /// </summary>
-    public SystemOptionsStorage Storage { get; init; } = new SystemOptionsStorage();
+    public string WebUI { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 文件路径.
+    /// </summary>
+    public string FilePath { get; init; } = string.Empty;
+
+    ///// <summary>
+    ///// 文件存储路径.
+    ///// </summary>
+    //public SystemOptionsStorage Storage { get; init; } = new SystemOptionsStorage();
 
     /// <summary>
     /// 加密密钥.

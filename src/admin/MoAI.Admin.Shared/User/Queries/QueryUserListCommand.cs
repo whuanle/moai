@@ -4,6 +4,8 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using MediatR;
+using MoAI.Admin.User.Queries.Responses;
 using MoAI.Infra.Models;
 
 namespace MoAI.Admin.User.Queries;
@@ -11,7 +13,7 @@ namespace MoAI.Admin.User.Queries;
 /// <summary>
 /// 查询用户列表.
 /// </summary>
-public class QueryUserListCommand : PagedParamter
+public class QueryUserListCommand : PagedParamter, IRequest<QueryUserListCommandResponse>
 {
     /// <summary>
     /// 指定用户的 id.

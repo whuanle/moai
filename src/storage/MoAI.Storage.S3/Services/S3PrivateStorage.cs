@@ -29,7 +29,7 @@ public class S3PrivateStorage : IPrivateFileStorage, IDisposable
     /// <param name="systemOptions"></param>
     public S3PrivateStorage(SystemOptions systemOptions)
     {
-        _storageOption = systemOptions.Storage.S3Private;
+        _storageOption = new SystemOptionsStorageS3();
 
         _s3Client = new AmazonS3Client(_storageOption.AccessKeyId, _storageOption.AccessKeySecret, new AmazonS3Config
         {

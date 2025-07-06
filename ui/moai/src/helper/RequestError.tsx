@@ -28,11 +28,17 @@ export const proxyRequestError = (
 export const proxyFormRequestError = (
   error: any,
   messageApi: MessageInstance,
-  form: FormInstance
+  form: FormInstance,
+  defaultMessage?: string
 ) => {
   console.error("Form error:", error);
   const businessError = error as BusinessValidationResult;
   if (businessError === undefined || businessError == null) {
+    if (defaultMessage) {
+      messageApi.error(defaultMessage);
+      return;
+    }
+
     messageApi.error(error!.toString());
     return;
   }

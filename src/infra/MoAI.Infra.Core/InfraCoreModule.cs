@@ -40,34 +40,14 @@ public class InfraCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        var systemOptions = _configurationManager.Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");
+        var systemOptions = _configurationManager.GetSection("MoAI").Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");
 
         context.Services.AddSingleton<IIdProvider>(new DefaultIdProvider(0));
         context.Services.AddHttpContextAccessor();
 
         context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
-        ConfigureRsaPrivate(context);
 
         // 注册默认服务，会被上层模块覆盖
         context.Services.AddScoped<UserContext, DefaultUserContext>();
-    }
-
-    // 生成 RSA 私钥
-    private void ConfigureRsaPrivate(ServiceContext context)
-    {
-        if (!File.Exists(AppConst.PrivateRSA))
-        {
-            using RSA? rsa = RSA.Create(2048);
-            string rsaPrivate = rsa.ExportPkcs8PrivateKeyPem();
-            File.WriteAllText(AppConst.PrivateRSA, rsaPrivate);
-            context.Services.AddSingleton<IRsaProvider>(s => { return new RsaProvider(rsaPrivate); });
-        }
-        else
-        {
-            string? rsaPrivate = File.ReadAllText(Path.Combine(AppConst.AppPath, AppConst.PrivateRSA));
-            context.Services.AddSingleton<IRsaProvider>(s => { return new RsaProvider(rsaPrivate); });
-        }
-
-        _logger.LogCritical("RSA private key file: {RsaPrivateKeyPath}", AppConst.PrivateRSA);
     }
 }

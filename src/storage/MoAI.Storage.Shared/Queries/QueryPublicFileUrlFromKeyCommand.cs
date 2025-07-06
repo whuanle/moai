@@ -12,7 +12,7 @@ namespace MoAI.Store.Queries;
 /// <summary>
 /// 根据文件路径获取文件的访问路径，只支持公有文件.
 /// </summary>
-public class QueryPublicFileUrlFromPathCommand : IRequest<QueryPublicFileUrlFromPathResponse>
+public class QueryPublicFileUrlFromKeyCommand : IRequest<QueryPublicFileUrlFromKeyResponse>
 {
     /// <summary>
     /// 对象 key.

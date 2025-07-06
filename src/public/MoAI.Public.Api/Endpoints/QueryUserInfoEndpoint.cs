@@ -7,6 +7,7 @@
 using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Login.Queries.Responses;
 using MoAI.Public.Queries;
 using MoAI.Public.Queries.Response;
 
@@ -16,7 +17,7 @@ namespace MoAI.Public.Endpoints;
 /// 查询用户基本信息.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/userinfo")]
-public class QueryUserInfoEndpoint : Endpoint<EmptyRequest, QueryUserInfoCommandResponse>
+public class QueryUserInfoEndpoint : Endpoint<EmptyRequest, UserStateInfo>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -33,7 +34,7 @@ public class QueryUserInfoEndpoint : Endpoint<EmptyRequest, QueryUserInfoCommand
     }
 
     /// <inheritdoc/>
-    public override Task<QueryUserInfoCommandResponse> ExecuteAsync(EmptyRequest req, CancellationToken ct)
+    public override Task<UserStateInfo> ExecuteAsync(EmptyRequest req, CancellationToken ct)
     {
         var query = new QueryUserInfoCommand
         {

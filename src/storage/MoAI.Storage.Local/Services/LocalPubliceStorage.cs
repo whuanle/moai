@@ -7,6 +7,8 @@
 using MoAI.Infra;
 using MoAI.Infra.Service;
 using MoAI.Store.Services;
+using System;
+using System.Net;
 
 namespace MoAI.Storage.Services;
 
@@ -24,7 +26,7 @@ public class LocalPubliceStorage : IPublicFileStorage
     public LocalPubliceStorage(SystemOptions systemOptions, IAESProvider aesProvider)
     {
         _systemOptions = systemOptions;
-        _localPath = Path.Combine(systemOptions.Storage.FilePath, "files");
+        _localPath = Path.Combine(systemOptions.FilePath, "files");
         _aesProvider = aesProvider;
     }
 
@@ -87,7 +89,7 @@ public class LocalPubliceStorage : IPublicFileStorage
         var contentType = fileObject.ContentType;
 
         var token = $"{objectKey}|{expires}|{date}|{size}|{contentType}";
-        var tokenEncode = _aesProvider.Encrypt(token);
+        var tokenEncode = WebUtility.UrlEncode(_aesProvider.Encrypt(token));
 
         return new Uri(new Uri(_systemOptions.Server), $"/api/storage/upload/public/{fileObject.ObjectKey}?token={tokenEncode}&expires={expires}&date={date}&size={size}").ToString();
     }
@@ -136,7 +138,7 @@ public class LocalPubliceStorage : IPublicFileStorage
         var filePath = Path.Combine(_localPath, objectKey);
         if (File.Exists(filePath))
         {
-            return new Uri(new Uri(_systemOptions.Server), $"/api/download/private/{objectKey}");
+            return new Uri(new Uri(_systemOptions.Server), $"/api/download/public/{objectKey}");
         }
 
         throw new FileNotFoundException($"File not found: {objectKey}");
@@ -153,7 +155,7 @@ public class LocalPubliceStorage : IPublicFileStorage
             var filePath = Path.Combine(_localPath, objectKey);
             if (File.Exists(filePath))
             {
-                results[objectKey] = new Uri(new Uri(_systemOptions.Server), $"/api/download/private/{objectKey}");
+                results[objectKey] = new Uri(new Uri(_systemOptions.Server), $"/api/download/public/{objectKey}");
             }
             else
             {

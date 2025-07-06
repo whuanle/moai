@@ -46,7 +46,6 @@ public class TokenProvider : ITokenProvider
             new Claim(JwtRegisteredClaimNames.Nickname, userContext.NickName),
             new Claim(JwtRegisteredClaimNames.Email, userContext.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Aud, "MoAI"),
             new Claim("token_type", "access_token")
         };
 
@@ -76,7 +75,7 @@ public class TokenProvider : ITokenProvider
         {
             new Claim(JwtRegisteredClaimNames.Sub, userContext.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("token_type", "refresh")
+            new Claim("token_type", "refresh_token")
         };
 
         var refreshTokenDescriptor = new SecurityTokenDescriptor

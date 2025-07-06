@@ -11,6 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface WithObjectKeyItemRequestBuilder extends BaseRequestBuilder<WithObjectKeyItemRequestBuilder> {
     /**
+     * 上传私有文件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<ArrayBuffer>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -21,11 +22,15 @@ export interface WithObjectKeyItemRequestBuilder extends BaseRequestBuilder<With
      */
      put(requestConfiguration?: RequestConfiguration<WithObjectKeyItemRequestBuilderPutQueryParameters> | undefined) : Promise<ArrayBuffer | undefined>;
     /**
+     * 上传私有文件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toPutRequestInformation(requestConfiguration?: RequestConfiguration<WithObjectKeyItemRequestBuilderPutQueryParameters> | undefined) : RequestInformation;
 }
+/**
+ * 上传私有文件.
+ */
 export interface WithObjectKeyItemRequestBuilderPutQueryParameters {
     date?: string;
     expires?: string;

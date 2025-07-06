@@ -8,7 +8,7 @@ using StackExchange.Redis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
-namespace MaomiAI;
+namespace MoAI;
 
 /// <summary>
 /// RedisValue 扩展.

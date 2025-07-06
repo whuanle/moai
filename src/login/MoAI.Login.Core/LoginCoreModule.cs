@@ -27,5 +27,7 @@ public class LoginCoreModule : IModule
         {
             return s.GetRequiredService<IUserContextProvider>().GetUserContext();
         });
+
+        context.Services.AddScoped<CustomAuthorizaMiddleware>();
     }
 }

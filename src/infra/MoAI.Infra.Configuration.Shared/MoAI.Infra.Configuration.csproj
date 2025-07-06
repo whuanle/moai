@@ -16,9 +16,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="configs_template\logger.json">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
 	  <None Update="configs_template\system.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

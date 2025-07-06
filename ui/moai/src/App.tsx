@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Route, Routes, useNavigate, Link, useLocation, Navigate } from "react-router";
+import {
+  Route,
+  Routes,
+  useNavigate,
+  Link,
+  useLocation,
+  Navigate,
+} from "react-router";
 import {
   Layout,
   Menu,
@@ -32,11 +39,19 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import "./App.css";
-import { CheckToken, RefreshServerInfo, GetUserDetailInfo, SetUserDetailInfo, GetUserDetailInfoFromCache } from "./InitService";
+import {
+  CheckToken,
+  RefreshServerInfo,
+  GetUserDetailInfo,
+  SetUserDetailInfo,
+  GetUserDetailInfoFromCache,
+} from "./InitService";
 import { GetApiClient } from "./components/ServiceClient";
 import useAppStore from "./stateshare/store";
 import Dashboard from "./components/dashboard/Dashboard";
 import OAuth from "./components/admin/OAuth";
+import UserManager from "./components/admin/UserManager";
+import UserSetting from "./components/user/UserSetting";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -45,7 +60,9 @@ function App() {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
   const location = useLocation();
-  const [userDetailInfo, setUserDetailInfo] = useState(GetUserDetailInfoFromCache());
+  const [userDetailInfo, setUserDetailInfo] = useState(
+    GetUserDetailInfoFromCache()
+  );
   const [isAdmin, setIsAdmin] = useState(false);
   const serverInfo = useAppStore.getState().getServerInfo();
 
@@ -54,8 +71,10 @@ function App() {
     switch (path) {
       case "dashboard":
         return "0";
+      case "user":
+        return "2";
       case "admin":
-        return "1";
+        return "10";
       default:
         return "0";
     }
@@ -64,7 +83,19 @@ function App() {
   // 获取当前选中的菜单项
   const getSelectedKey = () => {
     const path = location.pathname;
+    if (path.includes("/admin/oauth")) {
+      return "10.1";
+    }
+    if (path.includes("/admin/usermanager")) {
+      return "10.2";
+    }
     if (path.includes("/admin")) {
+      return "10";
+    }
+    if (path.includes("/user/usersetting")) {
+      return "2.1";
+    }
+    if (path.includes("/user")) {
       return "2";
     }
     return "1";
@@ -103,14 +134,15 @@ function App() {
     };
   }, []);
 
-  
   // 获取完整的头像URL
   const getAvatarUrl = (avatarPath: string | null | undefined) => {
     if (!avatarPath) return null;
-    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    if (avatarPath.startsWith("http://") || avatarPath.startsWith("https://")) {
       return avatarPath;
     }
-    return serverInfo?.publicStoreUrl ? `${serverInfo.publicStoreUrl}/${avatarPath}` : avatarPath;
+    return serverInfo?.publicStoreUrl
+      ? `${serverInfo.publicStoreUrl}/${avatarPath}`
+      : avatarPath;
   };
 
   // 注销登录
@@ -139,19 +171,36 @@ function App() {
         icon: <HomeOutlined />,
         label: <Link to="/app/index">首页</Link>,
       },
+      {
+        key: "2",
+        icon: <UserOutlined />,
+        label: "个人中心",
+        children: [
+          {
+            key: "2.1",
+            icon: <UserOutlined />,
+            label: <Link to="/app/user/usersetting">个人信息</Link>,
+          },
+        ],
+      },
     ];
 
     // 只有管理员才能看到管理面板
     if (isAdmin) {
       baseItems.push({
-        key: "2",
-        icon: <UserOutlined />,
-        label: <Link to="/app/admin">管理面板</Link>,
+        key: "10",
+        icon: <SettingOutlined />,
+        label: "管理面板",
         children: [
           {
-            key: "2.1",
-            icon: <UserOutlined />,
+            key: "10.1",
+            icon: <ApiOutlined />,
             label: <Link to="/app/admin/oauth">OAuth</Link>,
+          },
+          {
+            key: "10.2",
+            icon: <TeamOutlined />,
+            label: <Link to="/app/admin/usermanager">用户管理</Link>,
           },
         ],
       });
@@ -182,7 +231,22 @@ function App() {
             placement="bottomRight"
             arrow
           >
-            <div style={{ cursor: "pointer", display: "flex", alignItems: "center", padding: "4px 8px", borderRadius: "6px", transition: "background-color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}>
+            <div
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                padding: "4px 8px",
+                borderRadius: "6px",
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#f5f5f5")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
               <Avatar
                 size={40}
                 src={getAvatarUrl(userDetailInfo?.avatar)}
@@ -213,6 +277,11 @@ function App() {
                 <Route path="admin">
                   <Route index element={<Navigate to="oauth" replace />} />
                   <Route path="oauth" element={<OAuth />} />
+                  <Route path="usermanager" element={<UserManager />} />
+                </Route>
+                <Route path="user">
+                  <Route index element={<Navigate to="usersetting" replace />} />
+                  <Route path="usersetting" element={<UserSetting />} />
                 </Route>
               </Routes>
             </Content>

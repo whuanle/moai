@@ -6,26 +6,30 @@
 
 using Maomi;
 using MoAI.Infra;
-using MoAI.Storage.Core.Extensions;
+using MoAI.Login.Services;
+using MoAI.Storage.Extensions;
 using Serilog;
+using System.Security.Cryptography;
 
-namespace MaomiAI;
+namespace MoAI;
 
-public static class MainExtensions
+public static partial class MainExtensions
 {
     public static IHostApplicationBuilder UseMaomiAI(this IHostApplicationBuilder builder)
     {
-        // 不存在时，使用默认日志文件配置，剩下的由 MoAI.Infra.Configuration 导入配置
         if (!Directory.Exists(AppConst.ConfigsPath))
         {
-            var loggerConfigPath = Path.Combine(AppConst.ConfigsTemplate, "logger.json");
-            if (File.Exists(loggerConfigPath))
-            {
-                builder.Configuration.AddJsonFile(loggerConfigPath);
-            }
+            InitConfigurationDirectory();
         }
 
+        ImportSystemConfiguration(builder);
+
+        var systemOptions = builder.Configuration.GetSection("MoAI").Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");
+
+        builder.Services.AddSingleton(systemOptions);
+
         builder.Services.AddSingleton<IConfigurationManager>(builder.Configuration);
+
         builder.Logging.ClearProviders();
         builder.Services.AddSerilog((services, configuration) =>
         {
@@ -35,25 +39,14 @@ public static class MainExtensions
 
         builder.Services.AddModule<MainModule>();
 
-        builder.Logging.ClearProviders();
-        builder.Services.AddSerilog((services, configuration) =>
-        {
-            configuration.ReadFrom.Services(services);
-            configuration.ReadFrom.Configuration(builder.Configuration);
-        });
-
         return builder;
     }
 
     public static IApplicationBuilder UseMaomiAI(this IApplicationBuilder builder)
     {
         // 使用认证中间件
-        // app.UseMiddleware<CustomAuthorizaMiddleware>();
-        var systemOptions = builder.ApplicationServices.GetRequiredService<SystemOptions>();
-        if ("local".Equals(systemOptions.Storage.Type, StringComparison.OrdinalIgnoreCase))
-        {
-            builder.UseLocalFiles(systemOptions);
-        }
+        builder.UseMiddleware<CustomAuthorizaMiddleware>();
+        builder.UseLocalFiles();
 
         return builder;
     }

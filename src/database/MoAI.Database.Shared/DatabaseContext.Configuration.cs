@@ -79,6 +79,7 @@ public partial class DatabaseContext
                 Password = hashPassword,
                 PasswordSalt = salt,
                 Phone = "12345678901",
+                IsAdmin = true
             });
 
         // 生成系统初始化配置.

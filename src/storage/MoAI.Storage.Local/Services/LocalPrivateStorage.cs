@@ -7,6 +7,7 @@
 using MoAI.Infra;
 using MoAI.Infra.Service;
 using MoAI.Store.Services;
+using System.Net;
 
 namespace MoAI.Storage.Services;
 
@@ -27,7 +28,7 @@ public class LocalPrivateStorage : IPrivateFileStorage
     public LocalPrivateStorage(SystemOptions systemOptions, IAESProvider aesProvider)
     {
         _systemOptions = systemOptions;
-        _localPath = Path.Combine(systemOptions.Storage.FilePath, "contents");
+        _localPath = Path.Combine(systemOptions.FilePath, "contents");
         _aesProvider = aesProvider;
     }
 
@@ -90,7 +91,7 @@ public class LocalPrivateStorage : IPrivateFileStorage
         var contentType = fileObject.ContentType;
 
         var token = $"{objectKey}|{expires}|{date}|{size}|{contentType}";
-        var tokenEncode = _aesProvider.Encrypt(token);
+        var tokenEncode = WebUtility.UrlEncode(_aesProvider.Encrypt(token));
 
         return new Uri(new Uri(_systemOptions.Server), $"/api/storage/upload/private/{fileObject.ObjectKey}?token={tokenEncode}&expires={expires}&date={date}&size={size}").ToString();
     }

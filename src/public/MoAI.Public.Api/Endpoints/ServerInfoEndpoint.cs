@@ -16,7 +16,6 @@ namespace MoAI.Public.Endpoints;
 /// <summary>
 /// 获取服务器信息.
 /// </summary>
-[EndpointGroupName("public")]
 [HttpGet($"{ApiPrefix.Prefix}/serverinfo")]
 [AllowAnonymous]
 public class ServerInfoEndpoint : EndpointWithoutRequest<QueryServerInfoCommandResponse>

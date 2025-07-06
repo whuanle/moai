@@ -5,7 +5,7 @@
 // </copyright>
 
 using FastEndpoints;
-using MaomiAI;
+using MoAI;
 using MoAI.Infra.Models;
 using Scalar.AspNetCore;
 using System.Text.Json;

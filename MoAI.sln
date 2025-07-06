@@ -53,7 +53,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "storage", "storage", "{E4C1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Storage.Shared", "src\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj", "{3CAED798-4394-4CC9-9943-1F585C89D448}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Store.Api", "src\storage\MoAI.Store.Api\MoAI.Store.Api.csproj", "{EB7B9196-82FD-4863-B10A-D52DA58F5BAD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Storage.Api", "src\storage\MoAI.Storage.Api\MoAI.Storage.Api.csproj", "{EB7B9196-82FD-4863-B10A-D52DA58F5BAD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Storage.Core", "src\storage\MoAI.Storage.Core\MoAI.Storage.Core.csproj", "{9653298A-4C05-4691-A6AE-AE57F05DA67B}"
 EndProject
@@ -86,6 +86,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.User.Core", "src\user\MoAI.User.Core\MoAI.User.Core.csproj", "{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Infra.ExternalHttp", "src\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj", "{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.User.Api", "src\user\MoAI.User.Api\MoAI.User.Api.csproj", "{E6E52B4D-E70F-4B15-982E-5B36AC9AD616}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -201,6 +203,10 @@ Global
 		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6E52B4D-E70F-4B15-982E-5B36AC9AD616}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6E52B4D-E70F-4B15-982E-5B36AC9AD616}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6E52B4D-E70F-4B15-982E-5B36AC9AD616}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6E52B4D-E70F-4B15-982E-5B36AC9AD616}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -239,6 +245,7 @@ Global
 		{0289FDFC-DA54-4370-BB35-200920D05D89} = {B3374A84-387D-4FD1-98DA-0C0A39C9E7D4}
 		{CA85CB5A-996D-40FE-A6F9-97C9A0F6AB33} = {B3374A84-387D-4FD1-98DA-0C0A39C9E7D4}
 		{6E1C2347-9C9E-44FB-A8C5-6082C3A5498D} = {0A6758B4-9689-498B-A8A6-EC76CCA22A86}
+		{E6E52B4D-E70F-4B15-982E-5B36AC9AD616} = {B3374A84-387D-4FD1-98DA-0C0A39C9E7D4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B16D43C7-ED65-4A2E-9AE5-F3660DDC7334}

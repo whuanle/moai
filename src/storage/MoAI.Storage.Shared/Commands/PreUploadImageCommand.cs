@@ -34,9 +34,4 @@ public class PreUploadImageCommand : IRequest<PreUploadFileCommandResponse>
     /// 文件 MD5.
     /// </summary>
     public string MD5 { get; set; } = default!;
-
-    /// <summary>
-    /// 设置文件类型存放文件分类.
-    /// </summary>
-    public UploadFileType ImageType { get; set; } = default!;
 }

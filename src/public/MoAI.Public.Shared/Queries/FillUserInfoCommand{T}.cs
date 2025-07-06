@@ -6,7 +6,7 @@
 
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.User.Queries.Responses;
+using MoAI.Public.Queries.Response;
 
 namespace MoAI.User.Queries;
 

@@ -8,6 +8,7 @@ using Maomi;
 
 namespace MoAI.User;
 
+[InjectModule<UserApiModule>]
 public class UserCoreModule : IModule
 {
     /// <inheritdoc/>

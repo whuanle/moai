@@ -7,8 +7,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Public.Queries.Response;
 using MoAI.User.Queries;
-using MoAI.User.Queries.Responses;
 
 namespace MoAI.User.Handlers;
 

@@ -23,6 +23,7 @@ namespace MoAI.Storage.Handlers;
 public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand, PreUploadFileCommandResponse>
 {
     private readonly DatabaseContext _dbContext;
+    private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
@@ -30,10 +31,12 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
     /// </summary>
     /// <param name="dbContext"></param>
     /// <param name="serviceProvider"></param>
-    public PreuploadFileCommandHandler(DatabaseContext dbContext, IServiceProvider serviceProvider)
+    /// <param name="mediator"></param>
+    public PreuploadFileCommandHandler(DatabaseContext dbContext, IServiceProvider serviceProvider, IMediator mediator)
     {
         _dbContext = dbContext;
         _serviceProvider = serviceProvider;
+        _mediator = mediator;
     }
 
     /// <inheritdoc/>

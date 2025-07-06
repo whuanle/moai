@@ -1,4 +1,4 @@
-﻿// <copyright file="Class1.cs" company="MoAI">
+﻿// <copyright file="DisableUserEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -7,6 +7,8 @@
 using FastEndpoints;
 using MediatR;
 using MoAI.Admin.User.Commands;
+using MoAI.Admin.User.Queries;
+using MoAI.Admin.User.Queries.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Queries;
@@ -18,7 +20,7 @@ namespace MoAI.Admin.User.Endpoints;
 /// 禁用用户.
 /// </summary>
 [HttpPost($"{ApiPrefix.User}/disable_user")]
-public class DisableUserEndpoint : Endpoint<DeleteUserCommand, EmptyCommandResponse>
+public class DisableUserEndpoint : Endpoint<DisableUserCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -35,7 +37,7 @@ public class DisableUserEndpoint : Endpoint<DeleteUserCommand, EmptyCommandRespo
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(DeleteUserCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(DisableUserCommand req, CancellationToken ct)
     {
         // 用户里面有管理员
         if (req.UserIds.Any(id => id == _userContext.UserId))
