@@ -5,41 +5,58 @@
 // </copyright>
 
 using MediatR;
-using Microsoft.Extensions.DependencyInjection;
+using MoAI.Infra;
+using MoAI.Infra.Helpers;
 using MoAI.Storage.Queries.Response;
 using MoAI.Store.Enums;
-using MoAI.Store.Services;
+using System.Net;
 
 namespace MoAI.Store.Queries;
 
+/// <summary>
+/// <inheritdoc cref="QueryFileDownloadUrlCommand"/>
+/// </summary>
 public class QueryFileDownloadUrlCommandHandler : IRequestHandler<QueryFileDownloadUrlCommand, QueryFileDownloadUrlCommandResponse>
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly SystemOptions _systemOptions;
 
-    public QueryFileDownloadUrlCommandHandler(IServiceProvider serviceProvider)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueryFileDownloadUrlCommandHandler"/> class.
+    /// </summary>
+    /// <param name="systemOptions"></param>
+    public QueryFileDownloadUrlCommandHandler(SystemOptions systemOptions)
     {
-        _serviceProvider = serviceProvider;
+        _systemOptions = systemOptions;
     }
 
+    /// <inheritdoc/>
     public async Task<QueryFileDownloadUrlCommandResponse> Handle(QueryFileDownloadUrlCommand request, CancellationToken cancellationToken)
     {
+        var results = new Dictionary<string, Uri>();
+
         if (request.Visibility == FileVisibility.Public)
         {
-            var fileStorage = _serviceProvider.GetRequiredService<IPublicFileStorage>();
-            var urls = await fileStorage.GetFileUrlAsync(request.ObjectKeys);
-            return new QueryFileDownloadUrlCommandResponse
+            foreach (var file in request.ObjectKeys)
             {
-                Urls = urls
-            };
+                var objectPath = WebUtility.UrlEncode(file.Key);
+                results[file.Key] = new Uri(new Uri(_systemOptions.Server), relativeUri: $"/download/public/{file.Key}");
+            }
         }
         else
         {
-            var fileStorage = _serviceProvider.GetRequiredService<IPublicFileStorage>();
-            var urls = await fileStorage.GetFileUrlAsync(request.ObjectKeys);
-            return new QueryFileDownloadUrlCommandResponse
+            foreach (var file in request.ObjectKeys)
             {
-                Urls = urls
-            };
+                var objectPath = WebUtility.UrlEncode(file.Key);
+
+                var expiry = DateTimeOffset.Now.AddMinutes(5).ToUnixTimeMilliseconds();
+                var token = HashHelper.ComputeSha256Hash($"{file.Value}|{file.Key}|{expiry}");
+                results[file.Key] = new Uri(new Uri(_systemOptions.Server), relativeUri: $"/download/private/{objectPath}?key={file.Key}&expiry={expiry}&token={token}");
+            }
         }
+
+        return new QueryFileDownloadUrlCommandResponse
+        {
+            Urls = results
+        };
     }
 }

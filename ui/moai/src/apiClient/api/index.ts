@@ -6,6 +6,8 @@ import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } f
 // @ts-ignore
 import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from './admin/index.js';
 // @ts-ignore
+import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
+// @ts-ignore
 import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
@@ -26,6 +28,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The admin property
      */
     get admin(): AdminRequestBuilder;
+    /**
+     * The download property
+     */
+    get download(): DownloadRequestBuilder;
     /**
      * The public property
      */
@@ -52,6 +58,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     admin: {
         navigationMetadata: AdminRequestBuilderNavigationMetadata,
+    },
+    download: {
+        navigationMetadata: DownloadRequestBuilderNavigationMetadata,
     },
     public: {
         navigationMetadata: PublicRequestBuilderNavigationMetadata,

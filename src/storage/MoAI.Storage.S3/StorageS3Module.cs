@@ -5,11 +5,6 @@
 // </copyright>
 
 using Maomi;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using MoAI.Infra;
-using MoAI.Storage.Services;
-using MoAI.Store.Services;
 
 namespace MoAI.Storage;
 

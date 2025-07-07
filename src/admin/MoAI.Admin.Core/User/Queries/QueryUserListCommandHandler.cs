@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Admin.User.Queries.Responses;
 using MoAI.Database;
+using MoAI.Infra.Models;
 using MoAI.Storage.Queries;
 using MoAI.Store.Queries;
 using MoAI.User.Queries;
@@ -80,10 +81,11 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
             Items = users
         });
 
-        var userAvatars = users.Select(x => x.AvatarPath).Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
-        var avatarResult = await _mediator.Send(new QueryPublicFileUrlFromKeyCommand
+        var userAvatars = users.Where(x => !string.IsNullOrEmpty(x.AvatarPath)).Distinct().Select(x => new KeyValue<string, string> { Key = x.AvatarPath, Value = x.AvatarPath }).ToHashSet();
+        var avatarResult = await _mediator.Send(new QueryFileDownloadUrlCommand
         {
-           ObjectKeys = userAvatars
+            Visibility = Store.Enums.FileVisibility.Public,
+            ObjectKeys = userAvatars
         });
 
         foreach (var item in users)

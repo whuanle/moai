@@ -5,10 +5,8 @@
 // </copyright>
 
 using Maomi;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra;
-using MoAI.Storage.Services;
 using MoAI.Store.Services;
 
 namespace MoAI.Storage;
@@ -18,28 +16,26 @@ namespace MoAI.Storage;
 /// </summary>
 public class StorageLocalModule : IModule
 {
-    private readonly IConfiguration _configuration;
+    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StorageLocalModule"/> class.
     /// </summary>
-    /// <param name="configuration">配置.</param>
-    public StorageLocalModule(IConfiguration configuration)
+    /// <param name="systemOptions"></param>
+    public StorageLocalModule(SystemOptions systemOptions)
     {
-        _configuration = configuration;
+        _systemOptions = systemOptions!;
     }
 
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        var systemOptions = context.Configuration.GetSection("MoAI").Get<SystemOptions>() ?? throw new InvalidOperationException("SystemOptions is not configured.");
+        var filePath = Path.Combine(_systemOptions.FilePath, "public");
+        var contentPath = Path.Combine(_systemOptions.FilePath, "private");
 
-        var filePath = Path.Combine(systemOptions.FilePath, "files");
-        var contentPath = Path.Combine(systemOptions.FilePath, "contents");
-
-        if (!Directory.Exists(systemOptions.FilePath))
+        if (!Directory.Exists(_systemOptions.FilePath))
         {
-            Directory.CreateDirectory(systemOptions.FilePath);
+            Directory.CreateDirectory(_systemOptions.FilePath);
         }
 
         if (!Directory.Exists(filePath))
@@ -51,8 +47,5 @@ public class StorageLocalModule : IModule
         {
             Directory.CreateDirectory(contentPath);
         }
-
-        context.Services.AddScoped<IPrivateFileStorage, LocalPrivateStorage>();
-        context.Services.AddScoped<IPublicFileStorage, LocalPubliceStorage>();
     }
 }

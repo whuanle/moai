@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
@@ -38,6 +37,7 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
         _mediator = mediator;
     }
 
+    /// <inheritdoc/>
     public async Task<UserStateInfo> Handle(RefreshUserStateCommand request, CancellationToken cancellationToken)
     {
         UserStateInfo userCache = default!;
@@ -58,7 +58,11 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
             var avatarUrl = string.Empty;
             if (!string.IsNullOrEmpty(user.AvatarPath))
             {
-                var fileUrls = await _mediator.Send(new QueryPublicFileUrlFromKeyCommand { ObjectKeys = new List<string>() { user.AvatarPath } });
+                var fileUrls = await _mediator.Send(new QueryFileDownloadUrlCommand
+                {
+                    Visibility = Store.Enums.FileVisibility.Public,
+                    ObjectKeys = new List<KeyValue<string, string>>() { new KeyValue<string, string> { Key = user.AvatarPath, Value = user.AvatarPath } }
+                });
                 avatarUrl = fileUrls.Urls.FirstOrDefault().Value?.ToString() ?? string.Empty;
             }
             else

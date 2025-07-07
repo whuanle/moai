@@ -9,11 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra;
+using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Commands.Response;
 using MoAI.Storage.Helpers;
 using MoAI.Store.Enums;
 using MoAI.Store.Services;
+using System.Net;
 
 namespace MoAI.Storage.Handlers;
 
@@ -25,6 +28,7 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
     private readonly DatabaseContext _dbContext;
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
+    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PreuploadFileCommandHandler"/> class.
@@ -32,11 +36,13 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
     /// <param name="dbContext"></param>
     /// <param name="serviceProvider"></param>
     /// <param name="mediator"></param>
-    public PreuploadFileCommandHandler(DatabaseContext dbContext, IServiceProvider serviceProvider, IMediator mediator)
+    /// <param name="systemOptions"></param>
+    public PreuploadFileCommandHandler(DatabaseContext dbContext, IServiceProvider serviceProvider, IMediator mediator, SystemOptions systemOptions)
     {
         _dbContext = dbContext;
         _serviceProvider = serviceProvider;
         _mediator = mediator;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
@@ -85,16 +91,14 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        IFileStorage fileStorage = request.Visibility == FileVisibility.Public ? _serviceProvider.GetRequiredService<IPublicFileStorage>() : _serviceProvider.GetRequiredService<IPrivateFileStorage>();
-
         // 生成预上传地址
-        var uploadUrl = await fileStorage.GeneratePreSignedUploadUrlAsync(new FileObject
-        {
-            ExpiryDuration = request.Expiration,
-            ObjectKey = request.ObjectKey,
-            ContentType = request.ContentType,
-            MaxFileSize = FileStoreHelper.GetAllowedFileSizeLimit(request.FileSize)
-        });
+        var expiry = DateTimeOffset.Now.Add(request.Expiration).ToUnixTimeMilliseconds();
+        var token = $"{request.ObjectKey}|{expiry}|{request.FileSize}|{request.ContentType}";
+        var tokenEncode = HashHelper.ComputeSha256Hash(token);
+        var visibility = request.Visibility.ToString().ToLower();
+        var objectPath = WebUtility.UrlEncode(request.ObjectKey);
+
+        var uploadUrl = new Uri(new Uri(_systemOptions.Server), $"/api/storage/upload/{visibility}/{objectPath}?expiry={expiry}&size={request.FileSize}&token={tokenEncode}").ToString();
 
         return new PreUploadFileCommandResponse
         {

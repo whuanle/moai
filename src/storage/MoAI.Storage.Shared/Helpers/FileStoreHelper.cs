@@ -7,6 +7,8 @@
 #pragma warning disable CA1054 // 类 URI 参数不应为字符串
 
 using MimeKit;
+using MoAI.Infra.Helpers;
+using MoAI.Store.Services;
 
 namespace MoAI.Storage.Helpers;
 
@@ -97,26 +99,6 @@ public static class FileStoreHelper
         }
 
         return objectKey;
-    }
-
-    /// <summary>
-    /// 根据给定文件大小计算允许的上限值（大出 10%）.
-    /// </summary>
-    /// <param name="fileSize">文件大小（字节）.</param>
-    /// <returns>允许的上限值（字节）.</returns>
-    public static long GetAllowedFileSizeLimit(long fileSize)
-    {
-        return (long)(fileSize * 1.1);
-    }
-
-    /// <summary>
-    /// 根据给定文件大小计算允许的上限值（大出 10%）.
-    /// </summary>
-    /// <param name="fileSize">文件大小（字节）.</param>
-    /// <returns>允许的上限值（字节）.</returns>
-    public static int GetAllowedFileSizeLimit(int fileSize)
-    {
-        return (int)(fileSize * 1.1);
     }
 
     /// <summary>

@@ -14,7 +14,7 @@ using MoAI.Store.Enums;
 namespace MoAI.Storage.Handlers;
 
 /// <summary>
-/// 预上传图片，存储时设置为公开.
+/// 预上传图片，存储时设置为公开，按天来存.
 /// </summary>
 public class PreUploadImageCommandHandler : IRequestHandler<PreUploadImageCommand, PreUploadFileCommandResponse>
 {
@@ -37,6 +37,7 @@ public class PreUploadImageCommandHandler : IRequestHandler<PreUploadImageComman
         {
             throw new BusinessException("不支持该类型的图像") { StatusCode = 400 };
         }
+
         var preu = new PreUploadFileCommand
         {
             FileName = request.FileName,
@@ -45,7 +46,7 @@ public class PreUploadImageCommandHandler : IRequestHandler<PreUploadImageComman
             MD5 = request.MD5,
             Expiration = TimeSpan.FromMinutes(1),
             Visibility = FileVisibility.Public,
-            ObjectKey = FileStoreHelper.GetObjectKey(request.MD5, request.FileName),
+            ObjectKey = FileStoreHelper.GetObjectKey(request.MD5, request.FileName, DateTimeOffset.Now.ToString("yyyyMMdd")),
         };
 
         return await _mediator.Send(preu, cancellationToken);

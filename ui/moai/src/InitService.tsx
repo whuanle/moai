@@ -1,7 +1,7 @@
 import { MoAIClient } from "./apiClient/moAIClient";
 import { RefreshAccessToken, GetApiClient, GetAllowApiClient } from "./components/ServiceClient";
 import { IsTokenExpired } from "./helper/TokenHelper";
-import useAppStore, { ServerInfoModel, UserInfoModel, UserDetailInfoModel } from "./stateshare/store";
+import useAppStore, { ServerInfoModel, UserInfoModel } from "./stateshare/store";
 
 // 加载服务器公共信息
 export const RefreshServerInfo = async (client?: MoAIClient) => {
@@ -125,14 +125,4 @@ export const GetUserDetailInfo = async () => {
     console.error("Error fetching user detail info:", error);
     return null;
   }
-};
-
-// 设置用户详细信息到缓存
-export const SetUserDetailInfo = (userDetailInfo: UserDetailInfoModel) => {
-  useAppStore.getState().setUserDetailInfo(userDetailInfo);
-};
-
-// 从缓存获取用户详细信息
-export const GetUserDetailInfoFromCache = (): UserDetailInfoModel | null => {
-  return useAppStore.getState().getUserDetailInfo();
 };

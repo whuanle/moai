@@ -47,8 +47,6 @@ public partial class MainModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        File.WriteAllText("D:/bbb.txt", contents: DateTimeOffset.Now.ToString());
-
         // 添加HTTP上下文访问器
         context.Services.AddHttpContextAccessor();
         context.Services.AddExceptionHandler<MaomiExceptionHandler>();

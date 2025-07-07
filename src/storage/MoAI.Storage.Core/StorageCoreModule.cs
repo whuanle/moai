@@ -19,6 +19,5 @@ public class StorageCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddScoped<ContentMiddleware>();
     }
 }

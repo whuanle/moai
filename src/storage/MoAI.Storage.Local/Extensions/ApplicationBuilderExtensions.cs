@@ -11,6 +11,9 @@ using MoAI.Infra;
 
 namespace MoAI.Storage.Extensions;
 
+/// <summary>
+/// ApplicationBuilderExtensions.
+/// </summary>
 public static class ApplicationBuilderExtensions
 {
     /// <summary>
@@ -19,27 +22,15 @@ public static class ApplicationBuilderExtensions
     /// <param name="builder"></param>
     public static void UseLocalFiles(this IApplicationBuilder builder)
     {
-        File.WriteAllText("D:/aaa.txt", contents: DateTimeOffset.Now.ToString());
-
         var systemOptions = builder.ApplicationServices.GetRequiredService<SystemOptions>();
 
-        var filePath = Path.Combine(systemOptions.FilePath, "files");
-        var contentPath = Path.Combine(systemOptions.FilePath, "contents");
+        var filePath = Path.Combine(systemOptions.FilePath, "public");
 
         // 登录后就能直接看到的文件
         builder.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(filePath),
-            RequestPath = "/files",
-        });
-
-        builder.UseMiddleware<ContentMiddleware>();
-
-        // 需要验证签名才能访问的文件
-        builder.UseStaticFiles(new StaticFileOptions
-        {
-            FileProvider = new PhysicalFileProvider(contentPath),
-            RequestPath = "/contents",
+            RequestPath = "/download/public",
         });
     }
 }

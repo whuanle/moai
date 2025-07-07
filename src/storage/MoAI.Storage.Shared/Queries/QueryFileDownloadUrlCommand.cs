@@ -5,6 +5,7 @@
 // </copyright>
 
 using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Storage.Queries.Response;
 using MoAI.Store.Enums;
 
@@ -21,12 +22,12 @@ public class QueryFileDownloadUrlCommand : IRequest<QueryFileDownloadUrlCommandR
     public FileVisibility Visibility { get; init; }
 
     /// <summary>
-    /// 过期时间.
+    /// 过期时间，公用文件不需要填写.
     /// </summary>
     public TimeSpan ExpiryDuration { get; init; }
 
     /// <summary>
     /// 对象列表.
     /// </summary>
-    public IReadOnlyCollection<string> ObjectKeys { get; init; } = new List<string>();
+    public IReadOnlyCollection<KeyValue<string, string>> ObjectKeys { get; init; } = new List<KeyValue<string, string>>();
 }

@@ -128,7 +128,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ComplateFileCommandResponse"
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -2225,6 +2225,116 @@
         ]
       }
     },
+    "/download/private/{filename}": {
+      "get": {
+        "tags": [
+          "Download"
+        ],
+        "summary": "下载文件.",
+        "operationId": "Download_DownloadPrivateFile",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "expiry",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "int64",
+              "minimum": 0.0,
+              "example": "1415926535897934852"
+            },
+            "x-position": 3
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/storage/upload/public/{objectKey}": {
       "put": {
         "tags": [
@@ -2251,20 +2361,12 @@
             "x-position": 2
           },
           {
-            "name": "expires",
+            "name": "expiry",
             "in": "query",
             "schema": {
               "type": "string"
             },
             "x-position": 3
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 4
           },
           {
             "name": "size",
@@ -2273,7 +2375,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 5
+            "x-position": 4
           },
           {
             "name": "Content-Type",
@@ -2282,7 +2384,7 @@
             "schema": {
               "type": "string"
             },
-            "x-position": 6
+            "x-position": 5
           },
           {
             "name": "Content-Length",
@@ -2292,7 +2394,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 7
+            "x-position": 6
           }
         ],
         "responses": {
@@ -2391,20 +2493,12 @@
             "x-position": 2
           },
           {
-            "name": "expires",
+            "name": "expiry",
             "in": "query",
             "schema": {
               "type": "string"
             },
             "x-position": 3
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 4
           },
           {
             "name": "size",
@@ -2413,7 +2507,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 5
+            "x-position": 4
           },
           {
             "name": "Content-Type",
@@ -2422,7 +2516,7 @@
             "schema": {
               "type": "string"
             },
-            "x-position": 6
+            "x-position": 5
           },
           {
             "name": "Content-Length",
@@ -2432,7 +2526,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 7
+            "x-position": 6
           }
         ],
         "responses": {
@@ -2547,7 +2641,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1751762227405"
+            "example": "1751898127425"
           }
         }
       },
@@ -2654,9 +2748,9 @@
           }
         }
       },
-      "ComplateFileCommandResponse": {
+      "EmptyCommandResponse": {
         "type": "object",
-        "description": "完成文件上传.",
+        "description": "空数据.",
         "additionalProperties": false
       },
       "ComplateFileUploadCommand": {
@@ -2857,11 +2951,6 @@
             "nullable": true
           }
         }
-      },
-      "EmptyCommandResponse": {
-        "type": "object",
-        "description": "空数据.",
-        "additionalProperties": false
       },
       "OAuthBindExistAccountCommand": {
         "type": "object",
@@ -3287,7 +3376,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1751762227405"
+            "example": "1751898127425"
           },
           "createUserId": {
             "type": "integer",
@@ -3303,7 +3392,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1751762227405"
+            "example": "1751898127425"
           },
           "updateUserId": {
             "type": "integer",

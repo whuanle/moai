@@ -154,6 +154,7 @@ export const UploadPublicFile = async (
     headers: {
       "Content-Type": file.type,
       "x-amz-meta-max-file-size": file.size.toString(),
+      "Authorization": `Bearer ${localStorage.getItem("userinfo.accessToken")}`,
     },
   });
 

@@ -6,6 +6,7 @@
 
 using FastEndpoints;
 using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Commands.Response;
 
@@ -15,7 +16,7 @@ namespace MoAI.Storage.Controllers;
 /// 完成文件上传，私有和公有文件都可以使用.
 /// </summary>
 [FastEndpoints.HttpPost($"{ApiPrefix.Prefix}/complate_url")]
-public class ComplateUploadEndpoint : Endpoint<ComplateFileUploadCommand, ComplateFileCommandResponse>
+public class ComplateUploadEndpoint : Endpoint<ComplateFileUploadCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
 
@@ -29,6 +30,6 @@ public class ComplateUploadEndpoint : Endpoint<ComplateFileUploadCommand, Compla
     }
 
     /// <inheritdoc/>
-    public override Task<ComplateFileCommandResponse> ExecuteAsync(ComplateFileUploadCommand req, CancellationToken ct)
+    public override Task<EmptyCommandResponse> ExecuteAsync(ComplateFileUploadCommand req, CancellationToken ct)
         => _mediator.Send(req, ct);
 }

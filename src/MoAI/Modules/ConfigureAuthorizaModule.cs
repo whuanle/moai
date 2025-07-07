@@ -6,11 +6,9 @@
 
 using Maomi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using MoAI.Infra;
 using MoAI.Infra.Services;
-using Microsoft.AspNetCore.Identity;
 
 namespace MoAI.Modules;
 
@@ -19,17 +17,15 @@ namespace MoAI.Modules;
 /// </summary>
 public class ConfigureAuthorizaModule : IModule
 {
-    private readonly IConfiguration _configuration;
     private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfigureAuthorizaModule"/> class.
     /// </summary>
-    /// <param name="configuration"></param>
-    public ConfigureAuthorizaModule(IConfiguration configuration)
+    /// <param name="systemOptions"></param>
+    public ConfigureAuthorizaModule(SystemOptions systemOptions)
     {
-        _configuration = configuration;
-        _systemOptions = configuration.Get<SystemOptions>()!;
+        _systemOptions = systemOptions!;
     }
 
     /// <inheritdoc/>

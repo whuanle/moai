@@ -4,12 +4,13 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI.User.Shared.Commands;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Login.Commands;
+using MoAI.User.Shared.Commands;
 
 namespace MoAI.User.Core.Handlers;
 
@@ -56,6 +57,8 @@ public class UploadtUserAvatarCommandHandler : IRequestHandler<UploadtUserAvatar
 
         _databaseContext.Update(user);
         await _databaseContext.SaveChangesAsync();
+
+        await _mediator.Send(new RefreshUserStateCommand { UserId = request.UserId });
 
         return EmptyCommandResponse.Default;
     }

@@ -12,29 +12,36 @@ import {
   Row,
   Col,
   Divider,
+  Spin,
+  Modal,
 } from 'antd';
 import {
   UserOutlined,
   UploadOutlined,
   SaveOutlined,
   EditOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import { GetApiClient, UploadPublicFile } from '../ServiceClient';
-import { GetUserDetailInfo, SetUserDetailInfo } from '../../InitService';
+import { GetUserDetailInfo, GetServiceInfo } from '../../InitService';
 import { proxyRequestError } from '../../helper/RequestError';
 import { FileTypeHelper } from '../../helper/FileTypeHelper';
+import { RsaHelper } from '../../helper/RsaHalper';
 import useAppStore from '../../stateshare/store';
 
 const { Title } = Typography;
 
 export default function UserSetting() {
   const [form] = Form.useForm();
+  const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [userInfoLoading, setUserInfoLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const serverInfo = useAppStore.getState().getServerInfo();
+  const userInfo = useAppStore((state) => state.userDetailInfo);
 
   useEffect(() => {
     fetchUserInfo();
@@ -44,10 +51,12 @@ export default function UserSetting() {
     try {
       const userDetailInfo = await GetUserDetailInfo();
       if (userDetailInfo) {
-        setUserInfo(userDetailInfo);
+        useAppStore.getState().setUserDetailInfo(userDetailInfo);
         form.setFieldsValue({
           userName: userDetailInfo.userName,
           nickName: userDetailInfo.nickName,
+          email: userDetailInfo.email,
+          phone: userDetailInfo.phone,
         });
       }
     } catch (error) {
@@ -56,34 +65,72 @@ export default function UserSetting() {
   };
 
   const handleSave = async (values: any) => {
-    setLoading(true);
+    // 检查用户名或邮箱是否发生变化
+    const userNameChanged = values.userName !== userInfo?.userName;
+    const emailChanged = values.email !== userInfo?.email;
+    
+    if (userNameChanged || emailChanged) {
+      // 显示确认对话框
+      Modal.confirm({
+        title: '确认修改',
+        content: '确认修改用户名或邮箱吗？',
+        okText: '确认',
+        cancelText: '取消',
+        onOk: async () => {
+          await performSave(values);
+        },
+      });
+    } else {
+      // 直接保存
+      await performSave(values);
+    }
+  };
+
+  const performSave = async (values: any) => {
+    setUserInfoLoading(true);
     try {
       const client = GetApiClient();
-      // 这里需要调用更新用户信息的API
-      // await client.api.account.update_user_info.post(values);
+      await client.api.user.update_user.post({
+        userName: values.userName,
+        nickName: values.nickName,
+        email: values.email,
+        phone: values.phone,
+        userId: userInfo?.userId || 0,
+      });
       
-      // 更新本地用户信息
-      const updatedUserInfo = { ...userInfo, ...values };
-      SetUserDetailInfo(updatedUserInfo);
-      setUserInfo(updatedUserInfo);
+      // 更新后刷新用户信息
+      await fetchUserInfo();
       
       messageApi.success('保存成功');
       setEditing(false);
     } catch (error) {
       proxyRequestError(error, messageApi, '保存失败');
     } finally {
-      setLoading(false);
+      setUserInfoLoading(false);
     }
   };
 
-  const getAvatarUrl = (avatarPath: string | null | undefined) => {
-    if (!avatarPath) return null;
-    if (avatarPath.startsWith("http://") || avatarPath.startsWith("https://")) {
-      return avatarPath;
+  const handlePasswordChange = async (values: any) => {
+    setPasswordLoading(true);
+    try {
+      const serviceInfo = await GetServiceInfo();
+      const encryptedPassword = RsaHelper.encrypt(
+        serviceInfo.rsaPublic,
+        values.newPassword
+      );
+
+      const client = GetApiClient();
+      await client.api.user.update_password.post({
+        password: encryptedPassword,
+      });
+
+      messageApi.success('密码修改成功');
+      passwordForm.resetFields();
+    } catch (error) {
+      proxyRequestError(error, messageApi, '密码修改失败');
+    } finally {
+      setPasswordLoading(false);
     }
-    return serverInfo?.publicStoreUrl
-      ? `${serverInfo.publicStoreUrl}/${avatarPath}`
-      : avatarPath;
   };
 
   // 检查文件是否为图片
@@ -124,13 +171,8 @@ export default function UserSetting() {
         userId: userInfo?.userId || 0,
       });
 
-      // 更新本地用户信息
-      const updatedUserInfo = { 
-        ...userInfo, 
-        avatar: uploadResult.visibility === 'public' ? file.name : null 
-      };
-      SetUserDetailInfo(updatedUserInfo);
-      setUserInfo(updatedUserInfo);
+      // 上传成功后刷新用户信息
+      await fetchUserInfo();
       
       messageApi.success('头像上传成功');
     } catch (error) {
@@ -159,7 +201,7 @@ export default function UserSetting() {
               <div style={{ textAlign: 'center', padding: '20px' }}>
                 <Avatar
                   size={120}
-                  src={getAvatarUrl(userInfo?.avatar)}
+                  src={userInfo?.avatarPath}
                   icon={<UserOutlined />}
                   style={{ marginBottom: '16px' }}
                 />
@@ -192,12 +234,12 @@ export default function UserSetting() {
             </Col>
 
             <Col span={16}>
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleSave}
-                disabled={!editing}
-              >
+              <Spin spinning={userInfoLoading} tip="保存中...">
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleSave}
+                >
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item
@@ -205,7 +247,7 @@ export default function UserSetting() {
                       label="用户名"
                       rules={[{ required: true, message: '请输入用户名' }]}
                     >
-                      <Input prefix={<UserOutlined />} placeholder="请输入用户名" />
+                      <Input prefix={<UserOutlined />} placeholder="请输入用户名" disabled={!editing} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -213,7 +255,7 @@ export default function UserSetting() {
                       name="nickName"
                       label="昵称"
                     >
-                      <Input placeholder="请输入昵称" />
+                      <Input placeholder="请输入昵称" disabled={!editing} />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -227,7 +269,7 @@ export default function UserSetting() {
                         { type: 'email', message: '请输入正确的邮箱格式' }
                       ]}
                     >
-                      <Input placeholder="请输入邮箱" disabled />
+                      <Input placeholder="请输入邮箱" disabled={!editing} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -235,7 +277,7 @@ export default function UserSetting() {
                       name="phone"
                       label="手机号"
                     >
-                      <Input placeholder="请输入手机号" disabled />
+                      <Input placeholder="请输入手机号" disabled={!editing} />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -249,8 +291,9 @@ export default function UserSetting() {
                         <Button
                           type="primary"
                           icon={<SaveOutlined />}
-                          htmlType="submit"
-                          loading={loading}
+                          htmlType="button"
+                            loading={userInfoLoading}
+                            
                         >
                           保存
                         </Button>
@@ -260,24 +303,96 @@ export default function UserSetting() {
                             form.setFieldsValue({
                               userName: userInfo?.userName,
                               nickName: userInfo?.nickName,
+                              email: userInfo?.email,
+                              phone: userInfo?.phone,
                             });
                           }}
+                          disabled={userInfoLoading}
                         >
                           取消
                         </Button>
                       </>
-                    ) : (
-                      <Button
-                        type="primary"
-                        icon={<EditOutlined />}
-                        onClick={() => setEditing(true)}
-                      >
-                        编辑信息
-                      </Button>
-                    )}
+                    ) : null}
                   </Space>
                 </Form.Item>
               </Form>
+              
+              {!editing && (
+                <div style={{ marginTop: '16px' }}>
+                  <Button
+                    type="primary"
+                    icon={<EditOutlined />}
+                    onClick={() => setEditing(true)}
+                  >
+                    编辑信息
+                  </Button>
+                </div>
+              )}
+              </Spin>
+
+              <Divider />
+
+              {/* 修改密码区域 */}
+              <div style={{ marginTop: '24px' }}>
+                <Typography.Title level={4} style={{ marginBottom: '16px' }}>
+                  <LockOutlined style={{ marginRight: '8px' }} />
+                  修改密码
+                </Typography.Title>
+                
+                <Form
+                  form={passwordForm}
+                  layout="vertical"
+                  onFinish={handlePasswordChange}
+                  style={{ maxWidth: '400px' }}
+                >
+                  <Form.Item
+                    name="newPassword"
+                    label="新密码"
+                    rules={[
+                      { required: true, message: '请输入新密码' },
+                      { min: 6, message: '密码至少6个字符' }
+                    ]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined />}
+                      placeholder="请输入新密码"
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="confirmPassword"
+                    label="确认新密码"
+                    dependencies={['newPassword']}
+                    rules={[
+                      { required: true, message: '请确认新密码' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('newPassword') === value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error('两次输入的密码不一致'));
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined />}
+                      placeholder="请再次输入新密码"
+                    />
+                  </Form.Item>
+
+                  <Form.Item>
+                    <Button
+                      type="primary"
+                      icon={<LockOutlined />}
+                      htmlType="submit"
+                      loading={passwordLoading}
+                    >
+                      修改密码
+                    </Button>
+                  </Form.Item>
+                </Form>
+              </div>
             </Col>
           </Row>
         </Card>

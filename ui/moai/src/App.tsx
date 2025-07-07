@@ -42,9 +42,7 @@ import "./App.css";
 import {
   CheckToken,
   RefreshServerInfo,
-  GetUserDetailInfo,
-  SetUserDetailInfo,
-  GetUserDetailInfoFromCache,
+  GetUserDetailInfo
 } from "./InitService";
 import { GetApiClient } from "./components/ServiceClient";
 import useAppStore from "./stateshare/store";
@@ -60,11 +58,10 @@ function App() {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
   const location = useLocation();
-  const [userDetailInfo, setUserDetailInfo] = useState(
-    GetUserDetailInfoFromCache()
-  );
+
   const [isAdmin, setIsAdmin] = useState(false);
   const serverInfo = useAppStore.getState().getServerInfo();
+  const userDetailInfo = useAppStore((state) => state.userDetailInfo);
 
   // 获取子菜单的 key
   const getSubMenuKey = (path: string) => {
@@ -115,8 +112,7 @@ function App() {
         // 获取用户详细信息
         const detailInfo = await GetUserDetailInfo();
         if (detailInfo) {
-          SetUserDetailInfo(detailInfo);
-          setUserDetailInfo(detailInfo);
+          useAppStore.getState().setUserDetailInfo(detailInfo);
           // 设置管理员状态
           setIsAdmin(detailInfo.isAdmin === true);
         }
@@ -249,7 +245,7 @@ function App() {
             >
               <Avatar
                 size={40}
-                src={getAvatarUrl(userDetailInfo?.avatar)}
+                src={getAvatarUrl(userDetailInfo?.avatarPath)}
                 icon={<UserOutlined />}
                 style={{ marginRight: 8 }}
               />

@@ -30,11 +30,10 @@ public class UpdateUserPasswordEndpoint : Endpoint<UpdateUserPasswordCommand, Em
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateUserPasswordCommand req, CancellationToken ct)
     {
-        if (req.UserId != _userContext.UserId)
+        return await _mediator.Send(new UpdateUserPasswordCommand
         {
-            throw new BusinessException("没有操作权限") { StatusCode = 403 };
-        }
-
-        return await _mediator.Send(req, ct);
+            UserId = _userContext.UserId,
+            Password = req.Password
+        }, ct);
     }
 }

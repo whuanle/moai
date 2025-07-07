@@ -59,7 +59,7 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasColumnName("endpoint");
         entity.Property(e => e.Files)
             .HasComment("支持文件上传")
-            .HasColumnName("files");
+            .HasColumnName("public");
         entity.Property(e => e.FunctionCall)
             .HasComment("支持函数")
             .HasColumnName("function_call");

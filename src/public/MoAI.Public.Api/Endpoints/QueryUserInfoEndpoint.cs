@@ -17,7 +17,7 @@ namespace MoAI.Public.Endpoints;
 /// 查询用户基本信息.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/userinfo")]
-public class QueryUserInfoEndpoint : Endpoint<EmptyRequest, UserStateInfo>
+public class QueryUserInfoEndpoint : EndpointWithoutRequest<UserStateInfo>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -34,7 +34,7 @@ public class QueryUserInfoEndpoint : Endpoint<EmptyRequest, UserStateInfo>
     }
 
     /// <inheritdoc/>
-    public override Task<UserStateInfo> ExecuteAsync(EmptyRequest req, CancellationToken ct)
+    public override Task<UserStateInfo> ExecuteAsync(CancellationToken ct)
     {
         var query = new QueryUserInfoCommand
         {

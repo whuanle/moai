@@ -23,15 +23,24 @@ namespace MoAI.Database;
 [InjectModule<DatabaseMysqlModule>]
 public class DatabaseCoreModule : IModule
 {
+    private readonly SystemOptions _systemOptions;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DatabaseCoreModule"/> class.
+    /// </summary>
+    /// <param name="systemOptions"></param>
+    public DatabaseCoreModule(SystemOptions systemOptions)
+    {
+        _systemOptions = systemOptions!;
+    }
+
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        var systemOptions = context.Configuration.GetSection("MoAI").Get<SystemOptions>() ?? throw new InvalidOperationException("SystemOptions is not configured.");
-
         // 添加 redis
         AddStackExchangeRedis(context.Services, new RedisConfiguration
         {
-            ConnectionString = systemOptions.Redis,
+            ConnectionString = _systemOptions.Redis,
             PoolSize = 10,
             KeyPrefix = "maomi:",
             ConnectTimeout = 5000,

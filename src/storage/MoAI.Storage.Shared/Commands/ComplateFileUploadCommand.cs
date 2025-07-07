@@ -5,6 +5,7 @@
 // </copyright>
 
 using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Storage.Commands.Response;
 
 namespace MoAI.Storage.Commands;
@@ -12,7 +13,7 @@ namespace MoAI.Storage.Commands;
 /// <summary>
 /// 结束上传文件.
 /// </summary>
-public class ComplateFileUploadCommand : IRequest<ComplateFileCommandResponse>
+public class ComplateFileUploadCommand : IRequest<EmptyCommandResponse>
 {
     /// <summary>
     /// 上传成功或失败.

@@ -20,29 +20,30 @@ namespace MoAI.Database;
 public class DatabaseMysqlModule : IModule
 {
     private readonly ILogger<DatabaseMysqlModule> _logger;
+    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseMysqlModule"/> class.
     /// </summary>
     /// <param name="logger"></param>
-    public DatabaseMysqlModule(ILogger<DatabaseMysqlModule> logger)
+    /// <param name="systemOptions"></param>
+    public DatabaseMysqlModule(ILogger<DatabaseMysqlModule> logger, SystemOptions systemOptions)
     {
         _logger = logger;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        var systemOptions = context.Configuration.GetSection("MoAI").Get<SystemOptions>() ?? throw new InvalidOperationException("SystemOptions is not configured.");
-
-        if (!"mysql".Equals(systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
+        if (!"mysql".Equals(_systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         Action<DbContextOptionsBuilder> contextOptionsBuilder = o =>
         {
-            o.UseMySql(systemOptions.Database, ServerVersion.AutoDetect(systemOptions.Database))
+            o.UseMySql(_systemOptions.Database, ServerVersion.AutoDetect(_systemOptions.Database))
                 .ConfigureWarnings(
                     b => b.Ignore([
                         CoreEventId.ServiceProviderCreated,

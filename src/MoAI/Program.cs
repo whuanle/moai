@@ -11,6 +11,10 @@ using Scalar.AspNetCore;
 using System.Text.Json;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel((options) =>
+{
+    options.Limits.MaxRequestBodySize = 1024 * 1024 * 1024; // 1GB
+});
 
 builder.UseMaomiAI();
 
@@ -28,6 +32,28 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowSpecificOrigins");
 
 app.UseStaticFiles();
+
+#if DEBUG
+
+#pragma warning disable CA1031 // 不捕获常规异常类型
+
+app.Use(async (HttpContext context, RequestDelegate next) =>
+{
+    await Task.CompletedTask;
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await next(context);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An unhandled exception occurred while processing the request.");
+    }
+});
+
+#pragma warning restore CA1031
+
+#endif
 
 app.UseDefaultExceptionHandler();
 

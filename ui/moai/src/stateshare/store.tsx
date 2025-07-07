@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { UserStateInfo } from '../apiClient/models'
 
 export interface ServerInfoModel {
   /**
@@ -42,38 +43,11 @@ export interface UserInfoModel {
   userName?: string | null;
 }
 
-export interface UserDetailInfoModel {
-  /**
-   * 头像路径.
-   */
-  avatar?: string | null;
-  /**
-   * 是否管理员.
-   */
-  isAdmin?: boolean | null;
-  /**
-   * 是否超级管理员.
-   */
-  isRoot?: boolean | null;
-  /**
-   * 昵称.
-   */
-  nickName?: string | null;
-  /**
-   * 用户 ID.
-   */
-  userId?: number | null;
-  /**
-   * 用户名.
-   */
-  userName?: string | null;
-}
-
 interface AppState {
   currentTeam: any
   serverInfo: ServerInfoModel | null
   userInfo: UserInfoModel | null
-  userDetailInfo: UserDetailInfoModel | null
+  userDetailInfo: UserStateInfo | null
   
   // Server info actions
   setServerInfo: (serverInfo: ServerInfoModel) => void
@@ -86,8 +60,8 @@ interface AppState {
   clearUserInfo: () => void
   
   // User detail info actions
-  setUserDetailInfo: (userDetailInfo: UserDetailInfoModel) => void
-  getUserDetailInfo: () => UserDetailInfoModel | null
+  setUserDetailInfo: (userDetailInfo: UserStateInfo) => void
+  getUserDetailInfo: () => UserStateInfo | null
   clearUserDetailInfo: () => void
 }
 
@@ -193,57 +167,17 @@ const useAppStore = create<AppState>((set, get) => ({
     set({ userInfo: null });
   },
   
-  // User detail info actions
-  setUserDetailInfo: (userDetailInfo: UserDetailInfoModel) => {
-    // Save to localStorage
-    if (userDetailInfo.avatar) localStorage.setItem("userdetailinfo.avatar", userDetailInfo.avatar);
-    if (userDetailInfo.isAdmin !== null && userDetailInfo.isAdmin !== undefined) localStorage.setItem("userdetailinfo.isAdmin", userDetailInfo.isAdmin.toString());
-    if (userDetailInfo.isRoot !== null && userDetailInfo.isRoot !== undefined) localStorage.setItem("userdetailinfo.isRoot", userDetailInfo.isRoot.toString());
-    if (userDetailInfo.nickName) localStorage.setItem("userdetailinfo.nickName", userDetailInfo.nickName);
-    if (userDetailInfo.userId) localStorage.setItem("userdetailinfo.userId", userDetailInfo.userId.toString());
-    if (userDetailInfo.userName) localStorage.setItem("userdetailinfo.userName", userDetailInfo.userName);
-    
-    // Update store state
+  // User detail info actions (no browser storage)
+  setUserDetailInfo: (userDetailInfo: UserStateInfo) => {
     set({ userDetailInfo });
   },
   
   getUserDetailInfo: () => {
     const state = get();
-    if (state.userDetailInfo) {
-      return state.userDetailInfo;
-    }
-    
-    // Try to load from localStorage
-    const avatar = localStorage.getItem("userdetailinfo.avatar");
-    const isAdminStr = localStorage.getItem("userdetailinfo.isAdmin");
-    const isRootStr = localStorage.getItem("userdetailinfo.isRoot");
-    const nickName = localStorage.getItem("userdetailinfo.nickName");
-    const userIdStr = localStorage.getItem("userdetailinfo.userId");
-    const userName = localStorage.getItem("userdetailinfo.userName");
-    
-    if (avatar || nickName || userName) {
-      const userDetailInfo: UserDetailInfoModel = {
-        avatar,
-        isAdmin: isAdminStr ? isAdminStr === 'true' : null,
-        isRoot: isRootStr ? isRootStr === 'true' : null,
-        nickName,
-        userId: userIdStr ? Number(userIdStr) : null,
-        userName
-      };
-      set({ userDetailInfo });
-      return userDetailInfo;
-    }
-    
-    return null;
+    return state.userDetailInfo;
   },
   
   clearUserDetailInfo: () => {
-    localStorage.removeItem("userdetailinfo.avatar");
-    localStorage.removeItem("userdetailinfo.isAdmin");
-    localStorage.removeItem("userdetailinfo.isRoot");
-    localStorage.removeItem("userdetailinfo.nickName");
-    localStorage.removeItem("userdetailinfo.userId");
-    localStorage.removeItem("userdetailinfo.userName");
     set({ userDetailInfo: null });
   },
   

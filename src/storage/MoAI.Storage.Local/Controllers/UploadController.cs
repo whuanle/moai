@@ -8,10 +8,12 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MimeKit;
+using Microsoft.Net.Http.Headers;
 using MoAI.Infra;
-using MoAI.Infra.Service;
-using MoAI.Store.Services;
+using MoAI.Infra.Helpers;
+using MoAI.Public.Queries;
+using MoAI.Storage.Helper;
+using System.IO.Pipelines;
 using System.Net;
 
 namespace MoAI.Storage.Controllers;
@@ -23,30 +25,18 @@ namespace MoAI.Storage.Controllers;
 [Authorize]
 public class UploadController : ControllerBase
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IAESProvider _aesProvider;
     private readonly IMediator _mediator;
     private readonly SystemOptions _systemOptions;
-    private readonly IPrivateFileStorage _privateFileStorage;
-    private readonly IPublicFileStorage _publicFileStorage;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UploadController"/> class.
     /// </summary>
-    /// <param name="httpContextAccessor"></param>
-    /// <param name="aesProvider"></param>
     /// <param name="mediator"></param>
     /// <param name="systemOptions"></param>
-    /// <param name="privateFileStorage"></param>
-    /// <param name="publicFileStorage"></param>
-    public UploadController(IHttpContextAccessor httpContextAccessor, IAESProvider aesProvider, IMediator mediator, SystemOptions systemOptions, IPrivateFileStorage privateFileStorage, IPublicFileStorage publicFileStorage)
+    public UploadController(IMediator mediator, SystemOptions systemOptions)
     {
-        _httpContextAccessor = httpContextAccessor;
-        _aesProvider = aesProvider;
         _mediator = mediator;
         _systemOptions = systemOptions;
-        _privateFileStorage = privateFileStorage;
-        _publicFileStorage = publicFileStorage;
     }
 
     /// <summary>
@@ -54,55 +44,43 @@ public class UploadController : ControllerBase
     /// </summary>
     /// <param name="objectKey"></param>
     /// <param name="token"></param>
-    /// <param name="expires"></param>
-    /// <param name="date"></param>
+    /// <param name="expiry"></param>
     /// <param name="size"></param>
     /// <param name="contentType"></param>
     /// <param name="contentLength"></param>
-    /// <param name="ct"></param>
     /// <returns></returns>
     [HttpPut("public/{objectKey}")]
     public async Task<IActionResult> UploadPublicFile(
         [FromRoute] string objectKey,
         [FromQuery] string token,
-        [FromQuery] string expires,
-        [FromQuery] string date,
+        [FromQuery] string expiry,
         [FromQuery] int size,
         [FromHeader(Name = "Content-Type")] string contentType,
-        [FromHeader(Name = "Content-Length")] int contentLength,
-        CancellationToken ct)
+        [FromHeader(Name = "Content-Length")] int contentLength)
     {
-        var newToken = $"{objectKey}|{expires}|{date}|{size}|{contentType}";
-        var newTokenEncode = WebUtility.UrlEncode(_aesProvider.Encrypt(newToken));
-        if (newToken != token)
+        objectKey = WebUtility.UrlDecode(encodedValue: objectKey);
+
+        var text = $"{objectKey}|{expiry}|{size}|{contentType}";
+        var sumToken = HashHelper.ComputeSha256Hash(text);
+
+        if (token != sumToken)
         {
             return new UnauthorizedResult();
         }
 
-        if (contentLength > size)
+        var serverInfo = await _mediator.Send(new QueryServerInfoCommand());
+
+        if (contentLength != size || contentLength == 0 || contentLength > serverInfo.MaxUploadFileSize)
         {
-            return new BadRequestObjectResult($"File size exceeds the limit of {size} bytes.");
+            return new BadRequestObjectResult($"File size exceeds the limit of {size} bytes or file is empty.");
         }
 
-        // 判断路径和文件是否存在
-        // 如果文件大小不一致，则删除以前的
-        // 上传保存文件
+        var filePath = Path.Combine(_systemOptions.FilePath, "public", objectKey);
 
-        // 读取 body 流
-        var request = _httpContextAccessor.HttpContext?.Request;
-        if (request == null)
-        {
-            return BadRequest("Request context is not available.");
-        }
+        PipeReader contentReader = PipeReader.Create(Request.Body, new StreamPipeReaderOptions(leaveOpen: true));
+        var cancellationToken = HttpContext.RequestAborted;
 
-        if (!request.Body.CanSeek)
-        {
-            return BadRequest("Request body stream must be seekable.");
-        }
-
-        request.Body.Seek(0, SeekOrigin.Begin);
-
-        await _publicFileStorage.UploadFileAsync(request.Body, objectKey);
+        await FileUploadHelper.SaveViaPipeReaderAsync(filePath, contentLength, contentReader,  cancellationToken);
 
         return Ok();
     }
@@ -112,55 +90,43 @@ public class UploadController : ControllerBase
     /// </summary>
     /// <param name="objectKey"></param>
     /// <param name="token"></param>
-    /// <param name="expires"></param>
-    /// <param name="date"></param>
+    /// <param name="expiry"></param>
     /// <param name="size"></param>
     /// <param name="contentType"></param>
     /// <param name="contentLength"></param>
-    /// <param name="ct"></param>
     /// <returns></returns>
     [HttpPut("private/{objectKey}")]
     public async Task<IActionResult> UploadPrivateFile(
         [FromRoute] string objectKey,
         [FromQuery] string token,
-        [FromQuery] string expires,
-        [FromQuery] string date,
+        [FromQuery] string expiry,
         [FromQuery] int size,
         [FromHeader(Name = "Content-Type")] string contentType,
-        [FromHeader(Name = "Content-Length")] int contentLength,
-        CancellationToken ct)
+        [FromHeader(Name = "Content-Length")] int contentLength)
     {
-        var newToken = $"{objectKey}|{expires}|{date}|{size}|{contentType}";
-        var newTokenEncode = WebUtility.UrlEncode(_aesProvider.Encrypt(newToken));
-        if (newToken != token)
+        objectKey = WebUtility.UrlDecode(encodedValue: objectKey);
+
+        var text = $"{objectKey}|{expiry}|{size}|{contentType}";
+        var sumToken = HashHelper.ComputeSha256Hash(text);
+
+        if (token != sumToken)
         {
             return new UnauthorizedResult();
         }
 
-        if (contentLength > size)
+        var serverInfo = await _mediator.Send(new QueryServerInfoCommand());
+
+        if (contentLength != size || contentLength == 0 || contentLength > serverInfo.MaxUploadFileSize)
         {
-            return new BadRequestObjectResult($"File size exceeds the limit of {size} bytes.");
+            return new BadRequestObjectResult($"File size exceeds the limit of {size} bytes or file is empty.");
         }
 
-        // 判断路径和文件是否存在
-        // 如果文件大小不一致，则删除以前的
-        // 上传保存文件
+        var filePath = Path.Combine(_systemOptions.FilePath, "private", objectKey);
 
-        // 读取 body 流
-        var request = _httpContextAccessor.HttpContext?.Request;
-        if (request == null)
-        {
-            return BadRequest("Request context is not available.");
-        }
+        PipeReader contentReader = PipeReader.Create(Request.Body, new StreamPipeReaderOptions(leaveOpen: true));
+        var cancellationToken = HttpContext.RequestAborted;
 
-        if (!request.Body.CanSeek)
-        {
-            return BadRequest("Request body stream must be seekable.");
-        }
-
-        request.Body.Seek(0, SeekOrigin.Begin);
-
-        await _privateFileStorage.UploadFileAsync(request.Body, objectKey);
+        await FileUploadHelper.SaveViaPipeReaderAsync(filePath, contentLength, contentReader, cancellationToken);
 
         return Ok();
     }
