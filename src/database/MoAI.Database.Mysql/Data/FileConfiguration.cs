@@ -1,9 +1,5 @@
-﻿// <copyright file="FileConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -31,12 +27,6 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasMaxLength(50)
             .HasComment("文件类型")
             .HasColumnName("content_type");
-        entity.Property(e => e.IsPublic)
-            .HasComment("是否公开")
-            .HasColumnName("is_public");
-        entity.Property(e => e.IsUploaded)
-            .HasComment("是否已经上传")
-            .HasColumnName("is_uploaded");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("创建时间")
@@ -52,7 +42,7 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasColumnName("file_md5");
         entity.Property(e => e.FileName)
             .HasMaxLength(50)
-            .HasComment("文件名称")
+            .HasComment("文件名称,对于共用文件无意义,私有文件自行存储文件名称")
             .HasColumnName("file_name");
         entity.Property(e => e.FileSize)
             .HasComment("文件大小")
@@ -62,6 +52,12 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开")
+            .HasColumnName("is_public");
+        entity.Property(e => e.IsUploaded)
+            .HasComment("是否已经上传")
+            .HasColumnName("is_uploaded");
         entity.Property(e => e.ObjectKey)
             .HasMaxLength(1024)
             .HasComment("文件路径")

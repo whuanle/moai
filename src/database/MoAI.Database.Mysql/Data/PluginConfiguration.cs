@@ -1,9 +1,5 @@
-﻿// <copyright file="PluginConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -42,7 +38,6 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasComment("注释")
             .HasColumnName("description");
         entity.Property(e => e.Headers)
-            .HasDefaultValueSql("'{}'")
             .HasComment("头部")
             .HasColumnType("text")
             .HasColumnName("headers");
@@ -63,7 +58,6 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasComment("插件名称")
             .HasColumnName("plugin_name");
         entity.Property(e => e.Queries)
-            .HasDefaultValueSql("'{}'")
             .HasComment("query参数")
             .HasColumnType("text")
             .HasColumnName("queries");

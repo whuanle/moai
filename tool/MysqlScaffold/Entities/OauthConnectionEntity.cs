@@ -1,9 +1,5 @@
-﻿// <copyright file="OauthConnectionEntity.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
@@ -47,6 +43,11 @@ public partial class OauthConnectionEntity : IFullAudited
     /// 图标地址.
     /// </summary>
     public string IconUrl { get; set; } = default!;
+
+    /// <summary>
+    /// 登录跳转地址.
+    /// </summary>
+    public string RedirectUri { get; set; } = default!;
 
     /// <summary>
     /// 发现端口.

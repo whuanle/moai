@@ -61,7 +61,7 @@ public class Program
         processStartInfo.ArgumentList.Add("ef");
         processStartInfo.ArgumentList.Add("dbcontext");
         processStartInfo.ArgumentList.Add("scaffold");
-        processStartInfo.ArgumentList.Add($"\"{configuration["Database"]}\"");
+        processStartInfo.ArgumentList.Add($"\"{configuration["MoAI:Database"]}\"");
         processStartInfo.ArgumentList.Add("Pomelo.EntityFrameworkCore.MySql");
         processStartInfo.ArgumentList.Add("--context-dir");
         processStartInfo.ArgumentList.Add("Data");

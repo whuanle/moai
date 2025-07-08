@@ -17,5 +17,5 @@ public class DeleteFileCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 文件id.
     /// </summary>
-    public Guid FileId { get; init; }
+    public int FileId { get; init; }
 }

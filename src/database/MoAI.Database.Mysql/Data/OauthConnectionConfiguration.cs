@@ -1,9 +1,5 @@
-﻿// <copyright file="OauthConnectionConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -49,7 +45,7 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasComment("应用key")
             .HasColumnName("key");
         entity.Property(e => e.Name)
-            .HasMaxLength(20)
+            .HasMaxLength(50)
             .HasComment("认证名称")
             .HasColumnName("name");
         entity.Property(e => e.Provider)
@@ -58,7 +54,7 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasColumnName("provider");
         entity.Property(e => e.RedirectUri)
             .HasMaxLength(1000)
-            .HasComment("提供商")
+            .HasComment("登录跳转地址")
             .HasColumnName("redirect_uri");
         entity.Property(e => e.Secret)
             .HasMaxLength(100)
@@ -75,7 +71,7 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
         entity.Property(e => e.Uuid)
-            .HasMaxLength(20)
+            .HasMaxLength(50)
             .HasComment("uuid")
             .HasColumnName("uuid");
         entity.Property(e => e.WellKnown)

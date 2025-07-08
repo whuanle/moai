@@ -15,7 +15,7 @@ namespace MoAI;
 
 public static partial class MainExtensions
 {
-    public static IHostApplicationBuilder UseMaomiAI(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder UseMoAI(this IHostApplicationBuilder builder)
     {
         if (!Directory.Exists(AppConst.ConfigsPath))
         {
@@ -42,7 +42,7 @@ public static partial class MainExtensions
         return builder;
     }
 
-    public static IApplicationBuilder UseMaomiAI(this IApplicationBuilder builder)
+    public static IApplicationBuilder UseMoAI(this IApplicationBuilder builder)
     {
         // 使用认证中间件
         builder.UseMiddleware<CustomAuthorizaMiddleware>();

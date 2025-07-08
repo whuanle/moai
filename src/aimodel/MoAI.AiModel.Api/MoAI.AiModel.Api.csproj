@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.AiModel</RootNamespace>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
+    <ProjectReference Include="..\..\public\MoAI.Public.Shared\MoAI.Public.Shared.csproj" />
+    <ProjectReference Include="..\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

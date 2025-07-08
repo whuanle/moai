@@ -1,9 +1,6 @@
-﻿// <copyright file="DatabaseContext.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database.Entities;
 
@@ -84,11 +81,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiEntity> Wikis { get; set; }
 
     /// <summary>
-    /// 知识库配置.
-    /// </summary>
-    public virtual DbSet<WikiConfigEntity> WikiConfigs { get; set; }
-
-    /// <summary>
     /// 知识库文档.
     /// </summary>
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
@@ -96,7 +88,12 @@ public partial class DatabaseContext : DbContext
     /// <summary>
     /// 知识库任务.
     /// </summary>
-    public virtual DbSet<WikiDocumntTaskEntity> WikiDocumntTasks { get; set; }
+    public virtual DbSet<WikiDocumentTaskEntity> WikiDocumentTasks { get; set; }
+
+    /// <summary>
+    /// 知识库成员.
+    /// </summary>
+    public virtual DbSet<WikiUserEntity> WikiUsers { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -106,6 +103,7 @@ public partial class DatabaseContext : DbContext
         modelBuilder
             .UseCollation("utf8mb4_general_ci")
             .HasCharSet("utf8mb4");
+
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

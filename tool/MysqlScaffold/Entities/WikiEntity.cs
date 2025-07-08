@@ -1,9 +1,5 @@
-﻿// <copyright file="WikiEntity.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
@@ -27,6 +23,41 @@ public partial class WikiEntity : IFullAudited
     /// 知识库描述.
     /// </summary>
     public string Description { get; set; } = default!;
+
+    /// <summary>
+    /// 是否公开，公开后所有人都可以搜索到.
+    /// </summary>
+    public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 向量化模型的id.
+    /// </summary>
+    public int EmbeddingModelId { get; set; }
+
+    /// <summary>
+    /// 是否已被锁定配置.
+    /// </summary>
+    public bool IsLock { get; set; }
+
+    /// <summary>
+    /// 使用的分词器.
+    /// </summary>
+    public string EmbeddingModelTokenizer { get; set; } = default!;
+
+    /// <summary>
+    /// 知识库向量维度.
+    /// </summary>
+    public int EmbeddingDimensions { get; set; }
+
+    /// <summary>
+    /// 批处理大小.
+    /// </summary>
+    public int EmbeddingBatchSize { get; set; }
+
+    /// <summary>
+    /// 最大失败重试次数.
+    /// </summary>
+    public int MaxRetries { get; set; }
 
     /// <summary>
     /// 创建人.

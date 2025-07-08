@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Wiki</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.KernelMemory.AI.Anthropic" />
+	  <PackageReference Include="Microsoft.KernelMemory.AI.AzureOpenAI" />
+	  <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" />
+	  <PackageReference Include="Microsoft.KernelMemory.Core" />
+	  <PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\aimodel\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
+	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+	  <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+	  <ProjectReference Include="..\..\public\MoAI.Public.Shared\MoAI.Public.Shared.csproj" />
+	  <ProjectReference Include="..\MoAI.Wiki.Api\MoAI.Wiki.Api.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,9 +1,5 @@
-﻿// <copyright file="AiModelConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -59,7 +55,7 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasColumnName("endpoint");
         entity.Property(e => e.Files)
             .HasComment("支持文件上传")
-            .HasColumnName("public");
+            .HasColumnName("files");
         entity.Property(e => e.FunctionCall)
             .HasComment("支持函数")
             .HasColumnName("function_call");
@@ -70,6 +66,9 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsVision)
+            .HasComment("支持计算机视觉")
+            .HasColumnName("is_vision");
         entity.Property(e => e.Key)
             .HasMaxLength(100)
             .HasComment("密钥")
@@ -100,10 +99,6 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasComment("最后修改人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
-        entity.Property(e => e.Vision)
-            .HasComment("支持计算机视觉")
-            .HasColumnType("int(11)")
-            .HasColumnName("vision");
 
         OnConfigurePartial(entity);
     }

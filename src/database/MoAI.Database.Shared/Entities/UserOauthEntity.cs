@@ -1,9 +1,5 @@
-﻿// <copyright file="UserOauthEntity.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
@@ -26,7 +22,7 @@ public partial class UserOauthEntity : IFullAudited
     /// <summary>
     /// 供应商id.
     /// </summary>
-    public int ProviderId { get; set; } = default!;
+    public int ProviderId { get; set; }
 
     /// <summary>
     /// 用户id.

@@ -2641,7 +2641,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1751898127425"
+            "example": "1751966331523"
           }
         }
       },
@@ -3376,7 +3376,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1751898127425"
+            "example": "1751966331523"
           },
           "createUserId": {
             "type": "integer",
@@ -3392,7 +3392,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1751898127425"
+            "example": "1751966331523"
           },
           "updateUserId": {
             "type": "integer",

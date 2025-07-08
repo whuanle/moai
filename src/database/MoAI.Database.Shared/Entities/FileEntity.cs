@@ -1,9 +1,5 @@
-﻿// <copyright file="FileEntity.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
@@ -19,7 +15,7 @@ public partial class FileEntity : IFullAudited
     public int Id { get; set; }
 
     /// <summary>
-    /// 文件名称.
+    /// 文件名称,对于共用文件无意义,私有文件自行存储文件名称.
     /// </summary>
     public string FileName { get; set; } = default!;
 
@@ -43,8 +39,14 @@ public partial class FileEntity : IFullAudited
     /// </summary>
     public string ContentType { get; set; } = default!;
 
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
     public bool IsPublic { get; set; }
 
+    /// <summary>
+    /// 是否已经上传.
+    /// </summary>
     public bool IsUploaded { get; set; }
 
     /// <summary>

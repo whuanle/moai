@@ -1,9 +1,5 @@
-﻿// <copyright file="WikiDocumntTaskConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -13,10 +9,10 @@ namespace MoAI.Database;
 /// <summary>
 /// 知识库任务.
 /// </summary>
-public partial class WikiDocumntTaskConfiguration : IEntityTypeConfiguration<WikiDocumntTaskEntity>
+public partial class WikiDocumntTaskConfiguration : IEntityTypeConfiguration<WikiDocumentTaskEntity>
 {
     /// <inheritdoc/>
-    public void Configure(EntityTypeBuilder<WikiDocumntTaskEntity> builder)
+    public void Configure(EntityTypeBuilder<WikiDocumentTaskEntity> builder)
     {
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
@@ -87,5 +83,5 @@ public partial class WikiDocumntTaskConfiguration : IEntityTypeConfiguration<Wik
         OnConfigurePartial(entity);
     }
 
-    partial void OnConfigurePartial(EntityTypeBuilder<WikiDocumntTaskEntity> modelBuilder);
+    partial void OnConfigurePartial(EntityTypeBuilder<WikiDocumentTaskEntity> modelBuilder);
 }

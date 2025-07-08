@@ -1,9 +1,5 @@
-﻿// <copyright file="UserOauthConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -41,8 +37,8 @@ public partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauth
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
         entity.Property(e => e.ProviderId)
-            .HasMaxLength(20)
             .HasComment("供应商id")
+            .HasColumnType("int(11)")
             .HasColumnName("provider_id");
         entity.Property(e => e.Sub)
             .HasMaxLength(50)

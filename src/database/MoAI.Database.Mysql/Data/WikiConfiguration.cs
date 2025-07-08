@@ -1,9 +1,5 @@
-﻿// <copyright file="WikiConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -40,10 +36,38 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasMaxLength(255)
             .HasComment("知识库描述")
             .HasColumnName("description");
+        entity.Property(e => e.EmbeddingBatchSize)
+            .HasComment("批处理大小")
+            .HasColumnType("int(11)")
+            .HasColumnName("embedding_batch_size");
+        entity.Property(e => e.EmbeddingDimensions)
+            .HasComment("知识库向量维度")
+            .HasColumnType("int(11)")
+            .HasColumnName("embedding_dimensions");
+        entity.Property(e => e.EmbeddingModelId)
+            .HasComment("向量化模型的id")
+            .HasColumnType("int(11)")
+            .HasColumnName("embedding_model_id");
+        entity.Property(e => e.EmbeddingModelTokenizer)
+            .HasMaxLength(20)
+            .HasDefaultValueSql("''")
+            .HasComment("使用的分词器")
+            .HasColumnName("embedding_model_tokenizer");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsLock)
+            .HasComment("是否已被锁定配置")
+            .HasColumnName("is_lock");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开，公开后所有人都可以搜索到")
+            .HasColumnName("is_public");
+        entity.Property(e => e.MaxRetries)
+            .HasDefaultValueSql("'3'")
+            .HasComment("最大失败重试次数")
+            .HasColumnType("int(11)")
+            .HasColumnName("max_retries");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("知识库名称")

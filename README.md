@@ -114,7 +114,7 @@ Mysql 示例:
       "Public": {
         "Endpoint": "https://cos.ap-guangzhou.myqcloud.com",
         "ForcePathStyle": false,
-        "Bucket": "maomiai-00000",
+        "Bucket": "MoAI-00000",
         "AccessKeyId": "xxx",
         "AccessKeySecret": "xxx"
       },
@@ -138,7 +138,7 @@ Mysql 示例:
 
 ### 日志
 
-你可以在 configs 目录下创建一个 logger.json 文件，MaomiAI 启动时会读取该文件作为日志配置，如果文件不存在则会自动创建一个默认的。
+你可以在 configs 目录下创建一个 logger.json 文件，MoAI 启动时会读取该文件作为日志配置，如果文件不存在则会自动创建一个默认的。
 
 默认配置如下：
 

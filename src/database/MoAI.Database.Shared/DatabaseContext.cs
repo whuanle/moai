@@ -85,11 +85,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiEntity> Wikis { get; set; }
 
     /// <summary>
-    /// 知识库配置.
-    /// </summary>
-    public virtual DbSet<WikiConfigEntity> WikiConfigs { get; set; }
-
-    /// <summary>
     /// 知识库文档.
     /// </summary>
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
@@ -97,7 +92,12 @@ public partial class DatabaseContext : DbContext
     /// <summary>
     /// 知识库任务.
     /// </summary>
-    public virtual DbSet<WikiDocumntTaskEntity> WikiDocumntTasks { get; set; }
+    public virtual DbSet<WikiDocumentTaskEntity> WikiDocumentTasks { get; set; }
+
+    /// <summary>
+    /// 知识库成员.
+    /// </summary>
+    public virtual DbSet<WikiUserEntity> WikiUsers { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

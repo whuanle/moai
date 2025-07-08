@@ -16,7 +16,7 @@ builder.WebHost.ConfigureKestrel((options) =>
     options.Limits.MaxRequestBodySize = 1024 * 1024 * 1024; // 1GB
 });
 
-builder.UseMaomiAI();
+builder.UseMoAI();
 
 WebApplication app = builder.Build();
 
@@ -60,7 +60,7 @@ app.UseDefaultExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMaomiAI();
+app.UseMoAI();
 
 app.UseHttpLogging();
 

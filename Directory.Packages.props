@@ -10,10 +10,17 @@
     <PackageVersion Include="FluentValidation" Version="12.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageVersion Include="LinqKit.Core" Version="1.2.8" />
+    <PackageVersion Include="Maomi.MQ.RabbitMQ" Version="2.1.0" />
     <PackageVersion Include="MediatR" Version="12.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.6" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.6" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.12.1" />
+    <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.98.250508.3" />
+    <PackageVersion Include="Microsoft.KernelMemory.AI.Anthropic" Version="0.98.250508.3" />
+    <PackageVersion Include="Microsoft.KernelMemory.AI.AzureOpenAI" Version="0.98.250508.3" />
+    <PackageVersion Include="Microsoft.KernelMemory.AI.OpenAI" Version="0.98.250508.3" />
+    <PackageVersion Include="Microsoft.KernelMemory.Core" Version="0.98.250508.3" />
+    <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.Postgres" Version="0.98.250508.3" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
     <PackageVersion Include="FastEndpoints" Version="6.2.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
