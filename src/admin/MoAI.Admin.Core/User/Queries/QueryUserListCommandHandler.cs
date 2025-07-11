@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Admin.User.Queries.Responses;
 using MoAI.Database;
 using MoAI.Infra.Models;
-using MoAI.Storage.Queries;
 using MoAI.Store.Queries;
 using MoAI.User.Queries;
 

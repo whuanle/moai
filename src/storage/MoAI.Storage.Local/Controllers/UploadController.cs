@@ -8,7 +8,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 using MoAI.Infra;
 using MoAI.Infra.Helpers;
 using MoAI.Public.Queries;
@@ -80,7 +79,7 @@ public class UploadController : ControllerBase
         PipeReader contentReader = PipeReader.Create(Request.Body, new StreamPipeReaderOptions(leaveOpen: true));
         var cancellationToken = HttpContext.RequestAborted;
 
-        await FileUploadHelper.SaveViaPipeReaderAsync(filePath, contentLength, contentReader,  cancellationToken);
+        await FileUploadHelper.SaveViaPipeReaderAsync(filePath, contentLength, contentReader, cancellationToken);
 
         return Ok();
     }

@@ -4,12 +4,11 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MediatR;
-
 namespace MoAI.Public.Queries.Response;
 
 public class QueryUserIsAdminCommandResponse
 {
     public bool IsAdmin { get; init; }
+
     public bool IsRoot { get; init; }
 }

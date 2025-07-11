@@ -1,4 +1,4 @@
-﻿// <copyright file="UploadtUserAvatarEndpoint.cs" company="MoAI">
+﻿// <copyright file="QueryUserBindAccountEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -6,11 +6,9 @@
 
 using FastEndpoints;
 using MediatR;
-using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.User.Queries;
 using MoAI.User.Queries.Responses;
-using MoAI.User.Shared.Commands;
 
 namespace MoAI.User.Endpoints;
 
@@ -36,9 +34,10 @@ public class QueryUserBindAccountEndpoint : EndpointWithoutRequest<QueryUserBind
 
     public async Task<QueryUserBindAccountCommandResponse> Handle(CancellationToken cancellationToken)
     {
-        return await _mediator.Send(new QueryUserBindAccountCommand
-        {
-            UserId = _userContext.UserId
-        }, cancellationToken);
+        return await _mediator.Send(
+            new QueryUserBindAccountCommand
+            {
+                UserId = _userContext.UserId
+            }, cancellationToken);
     }
 }

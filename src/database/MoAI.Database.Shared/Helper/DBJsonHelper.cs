@@ -41,6 +41,7 @@ public static class DBJsonHelper
     {
         return System.Text.Json.JsonSerializer.Serialize(model, _jsonOptions);
     }
+
     public static T? FromDBString<T>(this string json)
     {
         if (string.IsNullOrWhiteSpace(json))

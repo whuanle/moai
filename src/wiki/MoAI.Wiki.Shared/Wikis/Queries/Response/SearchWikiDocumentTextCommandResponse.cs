@@ -10,5 +10,5 @@ namespace MoAI.Wiki.Wikis.Queries.Response;
 
 public class SearchWikiDocumentTextCommandResponse
 {
-    public SearchResult SearchResult { get; init; }
+    public required SearchResult SearchResult { get; init; }
 }

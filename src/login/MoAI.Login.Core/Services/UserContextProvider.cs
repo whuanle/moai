@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Maomi;
 using Microsoft.AspNetCore.Http;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;

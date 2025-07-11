@@ -5,9 +5,7 @@
 // </copyright>
 
 using Maomi;
-using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra;
-using MoAI.Store.Services;
 
 namespace MoAI.Storage;
 

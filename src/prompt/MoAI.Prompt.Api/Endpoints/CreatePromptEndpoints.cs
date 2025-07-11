@@ -14,7 +14,6 @@ using MoAI.Public.Queries;
 
 namespace MaomiAI.AiModel.Api.Endpoints;
 
-
 /// <summary>
 /// 创建提示词.
 /// </summary>

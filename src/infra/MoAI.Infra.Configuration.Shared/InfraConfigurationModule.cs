@@ -11,7 +11,6 @@ using Microsoft.Extensions.Logging;
 using MoAI.Infra.Service;
 using MoAI.Infra.Services;
 using System.Security.Cryptography;
-using System.Text.Json;
 
 namespace MoAI.Infra;
 
@@ -41,7 +40,7 @@ public class InfraConfigurationModule : IModule
     }
 
     // 生成 RSA 私钥
-    private void ConfigureRsaPrivate(ServiceContext context)
+    private static void ConfigureRsaPrivate(ServiceContext context)
     {
         if (!File.Exists(AppConst.PrivateRSA))
         {

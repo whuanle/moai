@@ -34,10 +34,11 @@ public class UpdateUserPasswordEndpoint : Endpoint<UpdateUserPasswordCommand, Em
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateUserPasswordCommand req, CancellationToken ct)
     {
-        return await _mediator.Send(new UpdateUserPasswordCommand
-        {
-            UserId = _userContext.UserId,
-            Password = req.Password
-        }, ct);
+        return await _mediator.Send(
+            new UpdateUserPasswordCommand
+            {
+                UserId = _userContext.UserId,
+                Password = req.Password
+            }, ct);
     }
 }

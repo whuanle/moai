@@ -7,9 +7,9 @@
 namespace MoAI.Plugin.Queries.Responses;
 
 public class QueryPluginInfoListCommandResponse
-{ 
+{
     /// <summary>
-     /// 列表.
-     /// </summary>
+    /// 列表.
+    /// </summary>
     public IReadOnlyCollection<QueryPluginInfoItem> Items { get; init; } = Array.Empty<QueryPluginInfoItem>();
 }

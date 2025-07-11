@@ -10,5 +10,4 @@ namespace MoAI.Login.Commands;
 
 public class QueryAdminIdsCommand : IRequest<QueryAdminIdsCommandResponse>
 {
-
 }

@@ -10,7 +10,6 @@ using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;

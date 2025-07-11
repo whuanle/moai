@@ -7,7 +7,6 @@
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Routing;
 using MoAI.Public.Queries;
 using MoAI.Public.Queries.Response;
 

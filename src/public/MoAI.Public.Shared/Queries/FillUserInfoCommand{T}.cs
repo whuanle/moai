@@ -16,5 +16,5 @@ namespace MoAI.User.Queries;
 /// <typeparam name="T">带有审计属性的.</typeparam>
 public class FillUserInfoCommand : IRequest<FillUserInfoCommandResponse>
 {
-    public IReadOnlyCollection<AuditsInfo> Items { get; init; }
+    public required IReadOnlyCollection<AuditsInfo> Items { get; init; }
 }

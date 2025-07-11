@@ -7,8 +7,6 @@
 #pragma warning disable CA1054 // 类 URI 参数不应为字符串
 
 using MimeKit;
-using MoAI.Infra.Helpers;
-using MoAI.Store.Services;
 
 namespace MoAI.Storage.Helpers;
 

@@ -20,7 +20,12 @@ public class RefreshAdminsCommandHandler : IRequestHandler<RefreshAdminsCommand,
     private readonly DatabaseContext _databaseContext;
     private readonly IRedisDatabase _redisDatabase;
 
-    public RefreshAdminsCommandHandler(DatabaseContext databaseContext, IRedisDatabase redisDatabase = null)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RefreshAdminsCommandHandler"/> class.
+    /// </summary>
+    /// <param name="databaseContext"></param>
+    /// <param name="redisDatabase"></param>
+    public RefreshAdminsCommandHandler(DatabaseContext databaseContext, IRedisDatabase? redisDatabase = null)
     {
         _databaseContext = databaseContext;
         _redisDatabase = redisDatabase;

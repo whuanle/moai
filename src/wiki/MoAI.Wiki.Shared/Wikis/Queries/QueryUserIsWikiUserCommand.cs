@@ -15,5 +15,6 @@ namespace MoAI.Wiki.Wikis.Queries;
 public class QueryUserIsWikiUserCommand : IRequest<QueryUserIsWikiUserCommandResponse>
 {
     public int WikiId { get; init; }
+
     public int UserId { get; init; }
 }

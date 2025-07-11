@@ -53,7 +53,7 @@ public class QueryWikiConfigCommandHandler : IRequestHandler<QueryWikiConfigComm
             throw new BusinessException("知识库不存在") { StatusCode = 500 };
         }
 
-        await _mediator.Send(new FillUserInfoCommand { Items = result });
+        await _mediator.Send(new FillUserInfoCommand { Items = (IReadOnlyCollection<Infra.Models.AuditsInfo>)result });
         return result;
     }
 }

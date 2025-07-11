@@ -11,20 +11,20 @@ namespace MoAI.Infra.OAuth.Models;
 public class OpenIdAuthorizationResponse
 {
     [JsonPropertyName("access_token")]
-    public string AccessToken { get; set; }
+    public required string AccessToken { get; set; }
 
     [JsonPropertyName("id_token")]
-    public string IdToken { get; set; }
+    public required string IdToken { get; set; }
 
     [JsonPropertyName("refresh_token")]
-    public string RefreshToken { get; set; }
+    public required string RefreshToken { get; set; }
 
     [JsonPropertyName("token_type")]
-    public string TokenType { get; set; }
+    public required string TokenType { get; set; }
 
     [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }
 
     [JsonPropertyName("scope")]
-    public string Scope { get; set; }
+    public required string Scope { get; set; }
 }

@@ -11,6 +11,7 @@ namespace MoAI.Modules;
 
 public class MessageModule : IModule
 {
+    /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
         SystemOptions systemOptions = context.Configuration.Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");

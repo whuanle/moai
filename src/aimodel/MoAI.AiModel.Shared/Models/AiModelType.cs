@@ -56,7 +56,6 @@ public enum AiModelType
     [EnumMember(Value = "realtime")]
     Realtime,
 
-
     /// <summary>
     /// realtime.
     /// </summary>

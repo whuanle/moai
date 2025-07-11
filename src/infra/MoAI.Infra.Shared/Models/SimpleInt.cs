@@ -17,4 +17,14 @@ public class SimpleInt : Simple<int>
     {
         return new SimpleInt { Value = value };
     }
+
+    public int ToInt32()
+    {
+        throw new NotImplementedException();
+    }
+
+    public SimpleInt ToSimpleInt()
+    {
+        throw new NotImplementedException();
+    }
 }

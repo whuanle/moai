@@ -15,6 +15,7 @@ namespace MoAI.Wiki.TextEmbeddingGenerations;
 [InjectOnScoped(ServiceKey = AiProvider.Azure)]
 public class AzureTextEmbeddingGeneration : ITextEmbeddingGeneration
 {
+    /// <inheritdoc/>
     public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, WikiConfig wikiConfig)
     {
         return kernelMemoryBuilder.WithOpenAITextEmbeddingGeneration(new OpenAIConfig

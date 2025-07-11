@@ -6,7 +6,6 @@
 
 using MediatR;
 using MoAI.Login.Queries.Responses;
-using MoAI.Public.Queries.Response;
 
 namespace MoAI.Public.Queries;
 

@@ -5,7 +5,6 @@
 // </copyright>
 
 using MediatR;
-using MoAI.Infra.Models;
 using MoAI.Login.Queries.Responses;
 
 namespace MoAI.Login.Commands;

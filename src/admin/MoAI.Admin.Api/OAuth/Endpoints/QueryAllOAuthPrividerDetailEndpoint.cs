@@ -6,7 +6,6 @@
 
 using FastEndpoints;
 using MediatR;
-using MoAI.Admin;
 using MoAI.Admin.OAuth.Queries.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;

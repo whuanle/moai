@@ -1,22 +1,14 @@
-﻿// <copyright file="UploadController.cs" company="MoAI">
+﻿// <copyright file="DownloadController.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Maomi;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
 using MoAI.Infra;
 using MoAI.Infra.Helpers;
-using MoAI.Public.Queries;
 using MoAI.Storage.Helpers;
-using System.IO.Pipelines;
 
 namespace MoAI.Storage.Controllers;
 

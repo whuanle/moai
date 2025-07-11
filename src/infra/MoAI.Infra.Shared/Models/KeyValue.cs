@@ -4,8 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-
 namespace MoAI.Infra.Models;
 
 public class KeyValue<TKey, TValue>
@@ -26,5 +24,4 @@ public class KeyValue<TKey, TValue>
 
 public class KeyValueString : KeyValue<string, string>
 {
-
 }

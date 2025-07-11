@@ -1,4 +1,4 @@
-﻿// <copyright file="ImportOpenApiPluginCommandValidator.cs" company="MoAI">
+﻿// <copyright file="PreUploadOpenApiFilePluginCommandValidator.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai

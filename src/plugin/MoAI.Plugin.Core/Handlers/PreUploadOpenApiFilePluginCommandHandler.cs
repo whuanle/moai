@@ -1,4 +1,4 @@
-﻿// <copyright file="PreUploadOpenApiFileCommandHandler.cs" company="MoAI">
+﻿// <copyright file="PreUploadOpenApiFilePluginCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -6,9 +6,7 @@
 
 using MaomiAI.Plugin.Shared.Commands.Responses;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.Commands;
 using MoAI.Storage.Commands;

@@ -11,14 +11,14 @@ namespace MoAI.Infra.OAuth.Models;
 public class OpenIdAuthorizationRequest
 {
     [JsonPropertyName("grant_type")]
-    public string GrantType { get; set; }
+    public required string GrantType { get; set; }
 
     [JsonPropertyName("client_id")]
-    public string ClientId { get; set; }
+    public required string ClientId { get; set; }
 
     [JsonPropertyName("client_secret")]
-    public string ClientSecret { get; set; }
+    public required string ClientSecret { get; set; }
 
     [JsonPropertyName("code")]
-    public string Code { get; set; }
+    public required string Code { get; set; }
 }

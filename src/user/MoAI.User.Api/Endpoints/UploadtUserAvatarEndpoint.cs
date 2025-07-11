@@ -8,8 +8,6 @@ using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.User.Queries;
-using MoAI.User.Queries.Responses;
 using MoAI.User.Shared.Commands;
 
 namespace MoAI.User.Endpoints;

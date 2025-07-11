@@ -1,4 +1,4 @@
-﻿// <copyright file="CreateWikiEndpoint.cs" company="MoAI">
+﻿// <copyright file="RemoveWikiUserEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -22,12 +22,18 @@ public class RemoveWikiUserEndpoint : Endpoint<RemoveWikiUserCommand, EmptyComma
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RemoveWikiUserEndpoint"/> class.
+    /// </summary>
+    /// <param name="mediator"></param>
+    /// <param name="userContext"></param>
     public RemoveWikiUserEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
+    /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(RemoveWikiUserCommand req, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand

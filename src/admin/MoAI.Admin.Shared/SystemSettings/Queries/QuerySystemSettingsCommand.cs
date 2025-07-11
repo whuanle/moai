@@ -1,4 +1,4 @@
-﻿// <copyright file="SetSystemSettingsCommand.cs" company="MoAI">
+﻿// <copyright file="QuerySystemSettingsCommand.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -6,7 +6,6 @@
 
 using MediatR;
 using MoAI.Admin.SystemSettings.Queries.Responses;
-using MoAI.Infra.Models;
 
 namespace MoAI.Admin.SystemSettings.Queries;
 

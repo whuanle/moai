@@ -6,9 +6,7 @@
 
 using FastEndpoints;
 using FluentValidation;
-using MoAI.Admin.SystemSettings.Commands;
 using MoAI.Admin.User.Commands;
-using MoAI.Login.Commands;
 
 namespace MoAI.Admin.OAuth.Validators;
 

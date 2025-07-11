@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Refit;
 using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Feishu.Models;
@@ -15,20 +14,20 @@ public class FeishuTokenRequest
     public string GrantType { get; set; } = "authorization_code";
 
     [JsonPropertyName("client_id")]
-    public string ClientId { get; set; }
+    public required string ClientId { get; set; }
 
     [JsonPropertyName("client_secret")]
-    public string ClientSecret { get; set; }
+    public required string ClientSecret { get; set; }
 
     [JsonPropertyName("code")]
-    public string Code { get; set; }
+    public required string Code { get; set; }
 
     [JsonPropertyName("redirect_uri")]
-    public string RedirectUri { get; set; }
+    public required string RedirectUri { get; set; }
 
     [JsonPropertyName("code_verifier")]
-    public string CodeVerifier { get; set; }
+    public required string CodeVerifier { get; set; }
 
     [JsonPropertyName("scope")]
-    public string Scope { get; set; }
+    public required string Scope { get; set; }
 }

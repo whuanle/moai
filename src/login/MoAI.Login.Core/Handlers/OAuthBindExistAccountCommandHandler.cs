@@ -11,7 +11,6 @@ using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;
 using MoAI.Login.Models;
 using StackExchange.Redis.Extensions.Core.Abstractions;

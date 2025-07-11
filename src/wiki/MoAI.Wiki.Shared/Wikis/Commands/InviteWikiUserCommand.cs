@@ -15,5 +15,6 @@ namespace MoAI.Wiki.Wikis.Commands;
 public class InviteWikiUserCommand : IRequest<EmptyCommandResponse>
 {
     public int UserId { get; init; }
+
     public int WikiId { get; init; }
 }

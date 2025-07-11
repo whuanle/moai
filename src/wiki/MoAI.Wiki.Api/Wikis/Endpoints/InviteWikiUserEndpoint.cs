@@ -1,4 +1,4 @@
-﻿// <copyright file="CreateWikiEndpoint.cs" company="MoAI">
+﻿// <copyright file="InviteWikiUserEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -21,11 +21,19 @@ public class InviteWikiUserEndpoint : Endpoint<InviteWikiUserCommand, EmptyComma
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InviteWikiUserEndpoint"/> class.
+    /// </summary>
+    /// <param name="mediator"></param>
+    /// <param name="userContext"></param>
     public InviteWikiUserEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
+
+    /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(InviteWikiUserCommand req, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand

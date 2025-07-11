@@ -1,29 +1,29 @@
-﻿//// <copyright file="S3PrivateStorage.cs" company="MoAI">
-//// Copyright (c) MoAI. All rights reserved.
-//// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//// Github link: https://github.com/whuanle/moai
-//// </copyright>
+﻿// <copyright file="S3PrivateStorage.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
 
-//using Amazon.S3;
-//using Amazon.S3.Model;
-//using Amazon.S3.Transfer;
-//using MoAI.Infra;
-//using MoAI.Store.Services;
-//using System.Diagnostics;
-//using System.Net;
+// using Amazon.S3;
+// using Amazon.S3.Model;
+// using Amazon.S3.Transfer;
+// using MoAI.Infra;
+// using MoAI.Store.Services;
+// using System.Diagnostics;
+// using System.Net;
 
-//namespace MoAI.Storage.Services;
+// namespace MoAI.Storage.Services;
 
 ///// <summary>
 ///// S3 存储对接.
 ///// </summary>
-//public class S3PrivateStorage : IPrivateFileStorage, IDisposable
-//{
+// public class S3PrivateStorage : IPrivateFileStorage, IDisposable
+// {
 //    private readonly SystemOptionsStorageS3 _storageOption;
 //    private readonly AmazonS3Client _s3Client;
 //    private bool disposedValue;
 
-//    /// <summary>
+// /// <summary>
 //    /// Initializes a new instance of the <see cref="S3PrivateStorage"/> class.
 //    /// </summary>
 //    /// <param name="systemOptions"></param>
@@ -31,7 +31,7 @@
 //    {
 //        _storageOption = new SystemOptionsStorageS3();
 
-//        _s3Client = new AmazonS3Client(_storageOption.AccessKeyId, _storageOption.AccessKeySecret, new AmazonS3Config
+// _s3Client = new AmazonS3Client(_storageOption.AccessKeyId, _storageOption.AccessKeySecret, new AmazonS3Config
 //        {
 //            ServiceURL = _storageOption.Endpoint,
 //            ForcePathStyle = _storageOption.ForcePathStyle,
@@ -39,14 +39,14 @@
 //        });
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task UploadFileAsync(Stream inputStream, string objectKey)
 //    {
 //        using TransferUtility? fileTransferUtility = new(_s3Client);
 //        await fileTransferUtility.UploadAsync(inputStream, _storageOption.Bucket, objectKey);
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<string> GeneratePreSignedUploadUrlAsync(FileObject fileObject)
 //    {
 //        GetPreSignedUrlRequest request = new()
@@ -57,19 +57,19 @@
 //            Verb = HttpVerb.PUT,
 //        };
 
-//        // 限制上传的文件类型.
+// // 限制上传的文件类型.
 //        if (!string.IsNullOrWhiteSpace(fileObject.ContentType))
 //        {
 //            request.ContentType = fileObject.ContentType;
 //        }
 
-//        // 可以在对象 metadata 中添加最大的文件大小信息
+// // 可以在对象 metadata 中添加最大的文件大小信息
 //        // request.Headers["x-amz-meta-max-file-size"] = fileObject.MaxFileSize.ToString();
 //        string url = await _s3Client.GetPreSignedURLAsync(request);
 //        return url;
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<Uri> GetFileUrlAsync(string objectKey, TimeSpan expiryDuration)
 //    {
 //        GetPreSignedUrlRequest? request = new()
@@ -80,11 +80,11 @@
 //            Expires = DateTime.Now.Add(expiryDuration)
 //        };
 
-//        var url = await _s3Client.GetPreSignedURLAsync(request);
+// var url = await _s3Client.GetPreSignedURLAsync(request);
 //        return new Uri(url);
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<IReadOnlyDictionary<string, Uri>> GetFileUrlAsync(IEnumerable<string> objectKeys, TimeSpan expiryDuration)
 //    {
 //        IEnumerable<Task<KeyValuePair<string, Uri>>>? tasks = objectKeys.Select(async key =>
@@ -100,12 +100,12 @@
 //            return new KeyValuePair<string, Uri>(key, new Uri(url));
 //        });
 
-//        KeyValuePair<string, Uri>[]? urls = await Task.WhenAll(tasks);
+// KeyValuePair<string, Uri>[]? urls = await Task.WhenAll(tasks);
 
-//        return urls.ToDictionary();
+// return urls.ToDictionary();
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<bool> FileExistsAsync(string objectKey)
 //    {
 //        GetObjectMetadataRequest? request = new()
@@ -124,7 +124,7 @@
 //        }
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task DownloadAsync(string objectKey, string filePath)
 //    {
 //        GetObjectRequest? request = new()
@@ -133,11 +133,11 @@
 //            Key = objectKey
 //        };
 
-//        using var response = await _s3Client.GetObjectAsync(request);
+// using var response = await _s3Client.GetObjectAsync(request);
 //        await response.WriteResponseStreamToFileAsync(filePath, true, CancellationToken.None);
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<IReadOnlyDictionary<string, bool>> FilesExistsAsync(IEnumerable<string> objectKeys)
 //    {
 //        IEnumerable<Task<KeyValuePair<string, bool>>>? tasks = objectKeys.Select(async key =>
@@ -158,11 +158,11 @@
 //            }
 //        });
 
-//        var results = await Task.WhenAll(tasks);
+// var results = await Task.WhenAll(tasks);
 //        return results.ToDictionary();
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<long> GetFileSizeAsync(string objectKey)
 //    {
 //        GetObjectMetadataRequest? request = new()
@@ -171,11 +171,11 @@
 //            Key = objectKey
 //        };
 
-//        try
+// try
 //        {
 //            var response = await _s3Client.GetObjectMetadataAsync(request);
 
-//            return response.ContentLength;
+// return response.ContentLength;
 //        }
 //        catch (AmazonS3Exception ex)
 //        {
@@ -186,11 +186,11 @@
 //        {
 //            Debug.WriteLine(ex);
 
-//            return 0;
+// return 0;
 //        }
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task<IReadOnlyDictionary<string, long>> GetFileSizeAsync(IEnumerable<string> objectKeys)
 //    {
 //        IEnumerable<Task<KeyValuePair<string, long>>>? tasks = objectKeys.Select(async key =>
@@ -207,7 +207,7 @@
 //        return sizes.ToDictionary();
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public async Task DeleteFilesAsync(IEnumerable<string> objectKeys)
 //    {
 //        DeleteObjectsRequest? deleteObjectsRequest = new()
@@ -218,14 +218,14 @@
 //        await _s3Client.DeleteObjectsAsync(deleteObjectsRequest);
 //    }
 
-//    /// <inheritdoc/>
+// /// <inheritdoc/>
 //    public void Dispose()
 //    {
 //        Dispose(disposing: true);
 //        GC.SuppressFinalize(this);
 //    }
 
-//    /// <summary>
+// /// <summary>
 //    /// 释放资源.
 //    /// </summary>
 //    /// <param name="disposing"></param>
@@ -238,7 +238,7 @@
 //                _s3Client.Dispose();
 //            }
 
-//            disposedValue = true;
+// disposedValue = true;
 //        }
 //    }
-//}
+// }

@@ -1,4 +1,4 @@
-﻿// <copyright file="QueryPluginListCommandHandler.cs" company="MoAI">
+﻿// <copyright file="QueryPluginFunctionsListCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -7,12 +7,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Helper;
-using MoAI.Infra.Models;
-using MoAI.Plugin.Models;
 using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
-using MoAI.User.Queries;
 
 namespace MaomiAI.Plugin.Core.Queries;
 
@@ -36,7 +32,7 @@ public class QueryPluginFunctionsListCommandHandler : IRequestHandler<QueryPlugi
     public async Task<QueryPluginFunctionsListCommandResponse> Handle(QueryPluginFunctionsListCommand request, CancellationToken cancellationToken)
     {
         var plugins = await _dbContext.PluginFunctions.Where(x => x.Id == request.PluginId)
-            .Select(x=>new QueryPluginFunctionsListCommandResponseItem
+            .Select(x => new QueryPluginFunctionsListCommandResponseItem
             {
                 PluginId = x.PluginId,
                 FunctionId = x.Id,

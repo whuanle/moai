@@ -8,7 +8,6 @@ using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
-using MoAI.Storage.Commands.Response;
 
 namespace MoAI.Storage.Controllers;
 

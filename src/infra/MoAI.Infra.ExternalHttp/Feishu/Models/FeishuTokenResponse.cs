@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using Refit;
 using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Feishu.Models;
@@ -15,26 +14,26 @@ public class FeishuTokenResponse
     public int Code { get; set; }
 
     [JsonPropertyName("access_token")]
-    public string AccessToken { get; set; }
+    public required string AccessToken { get; set; }
 
     [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }
 
     [JsonPropertyName("refresh_token")]
-    public string RefreshToken { get; set; }
+    public required string RefreshToken { get; set; }
 
     [JsonPropertyName("refresh_token_expires_in")]
     public int RefreshTokenExpiresIn { get; set; }
 
     [JsonPropertyName("token_type")]
-    public string TokenType { get; set; }
+    public required string TokenType { get; set; }
 
     [JsonPropertyName("scope")]
-    public string Scope { get; set; }
+    public required string Scope { get; set; }
 
     [JsonPropertyName("error")]
-    public string Error { get; set; }
+    public required string Error { get; set; }
 
     [JsonPropertyName("error_description")]
-    public string ErrorDescription { get; set; }
+    public required string ErrorDescription { get; set; }
 }

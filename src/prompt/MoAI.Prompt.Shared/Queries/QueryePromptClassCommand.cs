@@ -5,7 +5,6 @@
 // </copyright>
 
 using MediatR;
-using MoAI.Infra.Models;
 using MoAI.Prompt.Queries.Responses;
 
 namespace MoAI.Prompt.Queries;

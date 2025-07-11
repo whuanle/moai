@@ -42,7 +42,6 @@ public class DeleteWikiCommandHandler : IRequestHandler<DeleteWikiCommand, Empty
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         // todo: 发出命令清理内容
-
         return EmptyCommandResponse.Default;
     }
 }

@@ -4,9 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI;
 using MediatR;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -161,7 +159,7 @@ state=STATE
                 ClientSecret = clientEntity.Secret,
                 RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login").ToString(),
                 CodeVerifier = request.Code,
-                Scope = ""
+                Scope = string.Empty
             });
 
             if (feishuAccessToken.Code != 0)

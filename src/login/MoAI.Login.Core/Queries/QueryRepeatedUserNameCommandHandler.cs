@@ -15,6 +15,10 @@ public class QueryRepeatedUserNameCommandHandler : IRequestHandler<QueryRepeated
 {
     private readonly DatabaseContext _dbContext;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueryRepeatedUserNameCommandHandler"/> class.
+    /// </summary>
+    /// <param name="dbContext"></param>
     public QueryRepeatedUserNameCommandHandler(DatabaseContext dbContext)
     {
         _dbContext = dbContext;

@@ -1,13 +1,15 @@
-﻿using FastEndpoints;
+﻿// <copyright file="ClearWikiDocumentEmbeddingEndpoint.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Documents.Commands;
-using MoAI.Wiki.Documents.Commands.Responses;
-using MoAI.Wiki.Documents.Queries;
-using MoAI.Wiki.Documents.Queries.Responses;
 using MoAI.Wiki.Wikis.Queries;
-using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Documents.Endpoints;
 

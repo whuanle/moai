@@ -17,7 +17,7 @@ public class OAuthLoginCommand : IRequest<OAuthLoginCommandResponse>
     /// <summary>
     /// Code.
     /// </summary>
-    public string Code { get; init; }
+    public required string Code { get; init; }
 
     /// <summary>
     /// id.

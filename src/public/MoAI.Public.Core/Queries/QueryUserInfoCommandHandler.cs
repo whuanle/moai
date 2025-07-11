@@ -5,15 +5,8 @@
 // </copyright>
 
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using MoAI.Database;
-using MoAI.Database.Models;
-using MoAI.Infra;
-using MoAI.Infra.Exceptions;
 using MoAI.Login.Queries;
 using MoAI.Login.Queries.Responses;
-using MoAI.Public.Queries.Response;
-using MoAI.Store.Queries;
 
 namespace MoAI.Public.Queries;
 

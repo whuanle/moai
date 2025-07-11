@@ -28,53 +28,53 @@ public class FeishuApiResponse<T>
     public int Code { get; set; }
 
     [JsonPropertyName("msg")]
-    public string Msg { get; set; }
+    public required string Msg { get; set; }
 
     [JsonPropertyName("data")]
-    public T Data { get; set; }
+    public required T Data { get; set; }
 }
 
 public class FeishuUserInfo
 {
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     [JsonPropertyName("en_name")]
-    public string EnName { get; set; }
+    public required string EnName { get; set; }
 
     [JsonPropertyName("avatar_url")]
-    public string AvatarUrl { get; set; }
+    public required string AvatarUrl { get; set; }
 
     [JsonPropertyName("avatar_thumb")]
-    public string AvatarThumb { get; set; }
+    public required string AvatarThumb { get; set; }
 
     [JsonPropertyName("avatar_middle")]
-    public string AvatarMiddle { get; set; }
+    public required string AvatarMiddle { get; set; }
 
     [JsonPropertyName("avatar_big")]
-    public string AvatarBig { get; set; }
+    public required string AvatarBig { get; set; }
 
     [JsonPropertyName("open_id")]
-    public string OpenId { get; set; }
+    public required string OpenId { get; set; }
 
     [JsonPropertyName("union_id")]
-    public string UnionId { get; set; }
+    public required string UnionId { get; set; }
 
     [JsonPropertyName("email")]
-    public string Email { get; set; }
+    public required string Email { get; set; }
 
     [JsonPropertyName("enterprise_email")]
-    public string EnterpriseEmail { get; set; }
+    public required string EnterpriseEmail { get; set; }
 
     [JsonPropertyName("user_id")]
-    public string UserId { get; set; }
+    public required string UserId { get; set; }
 
     [JsonPropertyName("mobile")]
-    public string Mobile { get; set; }
+    public required string Mobile { get; set; }
 
     [JsonPropertyName("tenant_key")]
-    public string TenantKey { get; set; }
+    public required string TenantKey { get; set; }
 
     [JsonPropertyName("employee_no")]
-    public string EmployeeNo { get; set; }
+    public required string EmployeeNo { get; set; }
 }

@@ -1,15 +1,11 @@
-﻿// <copyright file="RefreshAdminsCommandHandler.cs" company="MoAI">
+﻿// <copyright file="QueryAdminIdsCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using MoAI.Database;
-using MoAI.Database.Models;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Models;
 using MoAI.Login.Commands;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
@@ -31,6 +27,7 @@ public class QueryAdminIdsCommandHandler : IRequestHandler<QueryAdminIdsCommand,
         _mediator = mediator;
     }
 
+    /// <inheritdoc/>
     public async Task<QueryAdminIdsCommandResponse> Handle(QueryAdminIdsCommand request, CancellationToken cancellationToken)
     {
         var existAdminIds = await _redisDatabase.Database.KeyExistsAsync("adminids");
@@ -51,7 +48,6 @@ public class QueryAdminIdsCommandHandler : IRequestHandler<QueryAdminIdsCommand,
 
         return new QueryAdminIdsCommandResponse
         {
-
             AdminIds = adminIds.Select(x => int.Parse(x)).ToList(),
             RootId = ((int)rootId)!
         };

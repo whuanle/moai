@@ -7,12 +7,9 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Helper;
-using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
-using MoAI.User.Queries;
 
 namespace MaomiAI.Plugin.Core.Queries;
 

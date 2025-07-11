@@ -1,22 +1,19 @@
-﻿// <copyright file="ImportOpenApiPluginCommandHandler.cs" company="MoAI">
+﻿// <copyright file="UpdateOpenApiPluginCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Plugin.Shared.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Readers;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
 using MoAI.Storage.Commands;
-using MoAI.Storage.Helpers;
 using MoAI.Storage.Queries;
 using MoAI.Store.Enums;
 using System.Transactions;

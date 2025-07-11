@@ -1,7 +1,7 @@
-﻿// <copyright file="QueryPrompListtEndpoints.cs" company="MaomiAI">
-// Copyright (c) MaomiAI. All rights reserved.
+﻿// <copyright file="QueryPrompListEndpoints.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/AIDotNet/MaomiAI
+// Github link: https://github.com/whuanle/moai
 // </copyright>
 
 using FastEndpoints;
@@ -10,8 +10,6 @@ using MaomiAI.Prompt.Queries;
 using MaomiAI.Prompt.Queries.Responses;
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.Prompt.Queries;
-using MoAI.Prompt.Queries.Responses;
 
 namespace MaomiAI.AiModel.Api.Endpoints;
 

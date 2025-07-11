@@ -6,7 +6,6 @@
 
 using Maomi;
 using Microsoft.Extensions.DependencyInjection;
-using MoAI.Infra.Defaults;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Login.Services;

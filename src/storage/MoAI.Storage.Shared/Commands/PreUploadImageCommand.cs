@@ -6,7 +6,6 @@
 
 using MediatR;
 using MoAI.Storage.Commands.Response;
-using MoAI.Store.Enums;
 
 namespace MoAI.Storage.Commands;
 

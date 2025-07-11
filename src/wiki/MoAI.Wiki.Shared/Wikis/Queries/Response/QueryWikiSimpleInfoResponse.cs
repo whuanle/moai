@@ -1,18 +1,14 @@
-﻿// <copyright file="QueryWikiSimpleInfoCommand.cs" company="MaomiAI">
-// Copyright (c) MaomiAI. All rights reserved.
+﻿// <copyright file="QueryWikiSimpleInfoResponse.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/AIDotNet/MaomiAI
+// Github link: https://github.com/whuanle/moai
 // </copyright>
-
 
 // <copyright file="QueryWikiSimpleInfoCommand.cs" company="MaomiAI">
 // Copyright (c) MaomiAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/AIDotNet/MaomiAI
 // </copyright>
-
-using MediatR;
-
 namespace MoAI.Wiki.Wikis.Queries.Response;
 
 public class QueryWikiSimpleInfoResponse

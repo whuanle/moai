@@ -6,7 +6,6 @@
 
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.Storage.Commands.Response;
 
 namespace MoAI.Storage.Commands;
 

@@ -5,9 +5,7 @@
 // </copyright>
 
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Models;
 using MoAI.Login.Commands;
 using MoAI.Public.Queries;
 using MoAI.Public.Queries.Response;

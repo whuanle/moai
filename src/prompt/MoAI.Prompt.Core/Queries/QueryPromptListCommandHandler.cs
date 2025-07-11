@@ -10,7 +10,6 @@ using MaomiAI.Prompt.Queries.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Infra.Exceptions;
 using MoAI.User.Queries;
 
 namespace MoAI.Prompt.Queries;

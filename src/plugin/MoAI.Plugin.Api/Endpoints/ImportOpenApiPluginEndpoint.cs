@@ -1,4 +1,4 @@
-﻿// <copyright file="ComplateOpenApiFileEndpoint.cs" company="MoAI">
+﻿// <copyright file="ImportOpenApiPluginEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -9,7 +9,6 @@ using MediatR;
 using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Plugin;
 using MoAI.Plugin.Commands;
 using MoAI.Public.Queries;
 

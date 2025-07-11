@@ -5,7 +5,6 @@
 // </copyright>
 
 using Maomi;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra;
 using StackExchange.Redis.Extensions.Core;

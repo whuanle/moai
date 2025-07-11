@@ -20,7 +20,7 @@ public class DownloadFileCommandHandler : IRequestHandler<DownloadFileCommand, E
         _systemOptions = systemOptions;
     }
 
-    public async Task<EmptyCommandResponse> Handle(DownloadFileCommand request, CancellationToken cancellationToken)
+    public EmptyCommandResponse Handle(DownloadFileCommand request, CancellationToken cancellationToken)
     {
         var visibility = request.Visibility.ToString().ToLower();
 
@@ -33,5 +33,10 @@ public class DownloadFileCommandHandler : IRequestHandler<DownloadFileCommand, E
         File.Copy(sourceFilePath, request.StoreFilePath, true);
 
         return EmptyCommandResponse.Default;
+    }
+
+    Task<EmptyCommandResponse> IRequestHandler<DownloadFileCommand, EmptyCommandResponse>.Handle(DownloadFileCommand request, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }

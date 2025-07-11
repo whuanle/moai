@@ -18,7 +18,7 @@ public class QueryAllOAuthPrividerDetailCommandResponseItem : AuditsInfo
     /// <summary>
     /// OAuathId.
     /// </summary>
-    public string OAuthId { get; init; }
+    public required string OAuthId { get; init; }
 
     /// <summary>
     /// 提供商名称

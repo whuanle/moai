@@ -5,7 +5,6 @@
 // </copyright>
 
 using MediatR;
-using MoAI.Plugin.Models;
 using MoAI.Plugin.Queries.Responses;
 
 namespace MoAI.Plugin.Queries;

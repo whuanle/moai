@@ -9,7 +9,6 @@ using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Login.Queries.Responses;
 using MoAI.Public.Queries;
-using MoAI.Public.Queries.Response;
 
 namespace MoAI.Public.Endpoints;
 

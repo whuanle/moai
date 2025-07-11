@@ -11,7 +11,6 @@ using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Infra.Service;
 using MoAI.Infra.Services;
 
 namespace MoAI.AiModel.Handlers;

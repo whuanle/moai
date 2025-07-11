@@ -18,6 +18,10 @@ public class ClientInfoProvider : IClientInfoProvider
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly Lazy<ClientInfo> _clientInfo;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ClientInfoProvider"/> class.
+    /// </summary>
+    /// <param name="httpContextAccessor"></param>
     public ClientInfoProvider(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -27,6 +31,7 @@ public class ClientInfoProvider : IClientInfoProvider
          });
     }
 
+    /// <inheritdoc/>
     public ClientInfo GetClientInfo() => _clientInfo.Value;
 
     private ClientInfo ParseClientInfo()
