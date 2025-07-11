@@ -4,11 +4,11 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Document.Shared.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.User.Queries;
+using MoAI.Wiki.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Documents.Queries;

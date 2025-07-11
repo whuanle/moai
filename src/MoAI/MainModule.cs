@@ -12,7 +12,7 @@ using MoAI.Filters;
 using MoAI.Infra;
 using MoAI.Login;
 using MoAI.Modules;
-using MoAI.Public;
+using MoAI.Common;
 using MoAI.Storage;
 using MoAI.User;
 

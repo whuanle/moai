@@ -11,20 +11,20 @@ namespace MoAI.Infra.OAuth.Models;
 public class OpenIdUserProfile
 {
     [JsonPropertyName("sub")]
-    public required string Sub { get; set; }
+    public string Sub { get; set; }
 
     [JsonPropertyName("iss")]
-    public required string Issuer { get; set; }
+    public string Issuer { get; set; }
 
     [JsonPropertyName("aud")]
-    public required string Audience { get; set; }
+    public string Audience { get; set; }
 
     [JsonPropertyName("preferred_username")]
-    public required string PreferredUsername { get; set; }
+    public string PreferredUsername { get; set; }
 
     [JsonPropertyName("name")]
-    public required string Name { get; set; }
+    public string Name { get; set; }
 
     [JsonPropertyName("picture")]
-    public required string Picture { get; set; }
+    public string Picture { get; set; }
 }

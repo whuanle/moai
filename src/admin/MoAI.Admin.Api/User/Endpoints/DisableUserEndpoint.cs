@@ -10,7 +10,7 @@ using MoAI.Admin.User.Commands;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Queries;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MoAI.Admin.User.Endpoints;
 

@@ -24,7 +24,7 @@ public abstract class AuditsInfo
     /// <summary>
     /// 创建者 名字.
     /// </summary>
-    public required string CreateUserName { get; set; }
+    public string CreateUserName { get; set; } = string.Empty;
 
     /// <summary>
     /// 更新时间.
@@ -39,5 +39,5 @@ public abstract class AuditsInfo
     /// <summary>
     /// 更新人 名字.
     /// </summary>
-    public required string UpdateUserName { get; set; }
+    public string UpdateUserName { get; set; } = string.Empty;
 }

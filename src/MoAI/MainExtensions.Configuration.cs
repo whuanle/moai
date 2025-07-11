@@ -8,6 +8,9 @@ using MoAI.Infra;
 
 namespace MoAI;
 
+/// <summary>
+/// MainExtensions.
+/// </summary>
 public static partial class MainExtensions
 {
     // 初始化目录

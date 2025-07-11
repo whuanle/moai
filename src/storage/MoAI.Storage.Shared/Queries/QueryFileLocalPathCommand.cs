@@ -24,5 +24,5 @@ public class QueryFileLocalPathCommand : IRequest<QueryFileLocalPathCommandRespo
 
 public class QueryFileLocalPathCommandResponse
 {
-    public required string FilePath { get; init; }
+    public string FilePath { get; init; }
 }

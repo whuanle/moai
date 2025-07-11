@@ -9,6 +9,7 @@ using MediatR;
 using MoAI.Infra.Models;
 using MoAI.User.Queries;
 using MoAI.User.Queries.Responses;
+using System.Threading;
 
 namespace MoAI.User.Endpoints;
 
@@ -32,12 +33,14 @@ public class QueryUserBindAccountEndpoint : EndpointWithoutRequest<QueryUserBind
         _userContext = userContext;
     }
 
-    public async Task<QueryUserBindAccountCommandResponse> Handle(CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public override async Task<QueryUserBindAccountCommandResponse> ExecuteAsync(CancellationToken ct)
     {
         return await _mediator.Send(
             new QueryUserBindAccountCommand
             {
                 UserId = _userContext.UserId
-            }, cancellationToken);
+            },
+            ct);
     }
 }

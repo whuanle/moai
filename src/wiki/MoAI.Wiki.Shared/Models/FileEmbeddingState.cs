@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-namespace MaomiAI.Document.Shared.Models;
+namespace MoAI.Wiki.Models;
 
 /// <summary>
 /// 向量化状态.

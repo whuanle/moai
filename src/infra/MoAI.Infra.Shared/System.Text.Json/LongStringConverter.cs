@@ -8,6 +8,9 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json;
 
+/// <summary>
+/// LongStringConverter.
+/// </summary>
 public class LongStringConverter : JsonConverter<long>
 {
     // 从 JSON 字符串读取时调用
@@ -17,7 +20,7 @@ public class LongStringConverter : JsonConverter<long>
     {
         if (reader.TokenType == JsonTokenType.String)
         {
-            string stringValue = reader.GetString();
+            string stringValue = reader.GetString() ?? "0";
             if (long.TryParse(stringValue, out long value))
             {
                 return value;

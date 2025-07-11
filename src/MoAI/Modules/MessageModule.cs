@@ -9,6 +9,9 @@ using MoAI.Infra;
 
 namespace MoAI.Modules;
 
+/// <summary>
+/// MessageModule.
+/// </summary>
 public class MessageModule : IModule
 {
     /// <inheritdoc/>

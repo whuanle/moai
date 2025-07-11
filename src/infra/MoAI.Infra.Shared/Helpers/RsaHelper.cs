@@ -30,15 +30,20 @@ public static class RsaHelper
         return builder.ToString();
     }
 
+    /// <summary>
+    /// 导入公钥.
+    /// </summary>
+    /// <param name="rsa"></param>
+    /// <param name="publicKey"></param>
     public static void ImportPublichKeyPck8(this RSA rsa, string publicKey)
     {
         publicKey = publicKey
-            .Replace("-----BEGIN RSA PUBLIC KEY-----", string.Empty)
-            .Replace("-----END RSA PUBLIC KEY-----", string.Empty)
-            .Replace("-----BEGIN PUBLIC KEY-----", string.Empty)
-            .Replace("-----END PUBLIC KEY-----", string.Empty)
-            .Replace("\r", string.Empty)
-            .Replace("\n", string.Empty);
+            .Replace("-----BEGIN RSA PUBLIC KEY-----", string.Empty, StringComparison.CurrentCultureIgnoreCase)
+            .Replace("-----END RSA PUBLIC KEY-----", string.Empty, StringComparison.CurrentCultureIgnoreCase)
+            .Replace("-----BEGIN PUBLIC KEY-----", string.Empty, StringComparison.CurrentCultureIgnoreCase)
+            .Replace("-----END PUBLIC KEY-----", string.Empty, StringComparison.CurrentCultureIgnoreCase)
+            .Replace("\r", string.Empty, StringComparison.CurrentCultureIgnoreCase)
+            .Replace("\n", string.Empty, StringComparison.CurrentCultureIgnoreCase);
 
         rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out int bytesRead);
     }

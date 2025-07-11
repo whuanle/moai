@@ -6,25 +6,38 @@
 
 namespace MoAI.Infra.Models;
 
+/// <summary>
+/// SimpleInt.
+/// </summary>
 public class SimpleInt : Simple<int>
 {
-    public static implicit operator int(SimpleInt value)
-    {
-        return value.Value;
-    }
+    /// <summary>
+    /// int.
+    /// </summary>
+    /// <param name="value"></param>
+    public static implicit operator int(SimpleInt value) => value.Value;
 
-    public static implicit operator SimpleInt(int value)
-    {
-        return new SimpleInt { Value = value };
-    }
+    /// <summary>
+    /// SimpleInt.
+    /// </summary>
+    /// <param name="value"></param>
+    public static implicit operator SimpleInt(int value) => new SimpleInt { Value = value };
 
+    /// <summary>
+    /// ToInt32.
+    /// </summary>
+    /// <returns></returns>
     public int ToInt32()
     {
-        throw new NotImplementedException();
+        return this.Value;
     }
 
+    /// <summary>
+    /// ToSimpleInt.
+    /// </summary>
+    /// <returns></returns>
     public SimpleInt ToSimpleInt()
     {
-        throw new NotImplementedException();
+        return new SimpleInt() { Value = Value };
     }
 }

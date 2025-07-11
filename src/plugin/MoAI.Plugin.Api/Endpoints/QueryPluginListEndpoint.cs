@@ -10,7 +10,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MoAI.Plugin.Endpoints;
 

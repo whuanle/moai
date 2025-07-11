@@ -61,5 +61,5 @@ public class SystemOptions
     /// <summary>
     /// 文档向量化存储.
     /// </summary>
-    public DatabaseStore Wiki { get; init; } = new DatabaseStore();
+    public DatabaseStorage Wiki { get; init; } = new DatabaseStorage();
 }

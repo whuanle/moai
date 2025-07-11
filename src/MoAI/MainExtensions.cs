@@ -12,8 +12,16 @@ using Serilog;
 
 namespace MoAI;
 
+/// <summary>
+/// MainExtensions.
+/// </summary>
 public static partial class MainExtensions
 {
+    /// <summary>
+    /// UseMoAI.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
     public static IHostApplicationBuilder UseMoAI(this IHostApplicationBuilder builder)
     {
         if (!Directory.Exists(AppConst.ConfigsPath))
@@ -41,6 +49,11 @@ public static partial class MainExtensions
         return builder;
     }
 
+    /// <summary>
+    /// UseMoAI.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
     public static IApplicationBuilder UseMoAI(this IApplicationBuilder builder)
     {
         // 使用认证中间件

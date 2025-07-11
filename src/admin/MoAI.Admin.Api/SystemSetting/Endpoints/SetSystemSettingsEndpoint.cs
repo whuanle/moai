@@ -9,7 +9,7 @@ using MediatR;
 using MoAI.Admin.SystemSettings.Commands;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MoAI.Admin.SystemSetting.Endpoints;
 

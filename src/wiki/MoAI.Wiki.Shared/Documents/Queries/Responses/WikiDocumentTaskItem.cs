@@ -9,8 +9,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/AIDotNet/MaomiAI
 // </copyright>
-using MaomiAI.Document.Shared.Models;
 using MoAI.Infra.Models;
+using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Documents.Queries.Responses;
 
@@ -42,7 +42,7 @@ public class WikiDocumentTaskItem : AuditsInfo
     /// <summary>
     /// 文件名称.
     /// </summary>
-    public required string FileName { get; init; }
+    public string FileName { get; init; }
 
     /// <summary>
     /// 文件大小.
@@ -52,7 +52,7 @@ public class WikiDocumentTaskItem : AuditsInfo
     /// <summary>
     /// 文件类型.
     /// </summary>
-    public required string ContentType { get; init; }
+    public string ContentType { get; init; }
 
     /// <summary>
     /// 任务标识，用来判断要执行的任务是否一致.

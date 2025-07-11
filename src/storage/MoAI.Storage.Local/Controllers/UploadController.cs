@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra;
 using MoAI.Infra.Helpers;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 using MoAI.Storage.Helper;
 using System.IO.Pipelines;
 using System.Net;

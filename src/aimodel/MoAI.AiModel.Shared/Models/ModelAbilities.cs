@@ -6,6 +6,9 @@
 
 namespace MoAI.AiModel.Models;
 
+/// <summary>
+/// ModelAbilities.
+/// </summary>
 public class ModelAbilities
 {
     /// <summary>

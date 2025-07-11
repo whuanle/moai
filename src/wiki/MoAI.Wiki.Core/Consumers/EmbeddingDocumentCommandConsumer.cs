@@ -6,7 +6,6 @@
 
 using Maomi.MQ;
 using MaomiAI.Document.Core.Consumers.Events;
-using MaomiAI.Document.Shared.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

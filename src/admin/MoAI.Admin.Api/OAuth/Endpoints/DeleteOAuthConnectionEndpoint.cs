@@ -9,7 +9,7 @@ using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Commands;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MoAI.Admin.OAuth.Endpoints;
 

@@ -13,7 +13,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
-	  <ProjectReference Include="..\..\public\MoAI.Public.Shared\MoAI.Public.Shared.csproj" />
+	  <ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Login.Api\MoAI.Login.Api.csproj" />
 	</ItemGroup>

@@ -6,9 +6,18 @@
 
 namespace MoAI.Infra.Models;
 
+/// <summary>
+/// 客户端信息.
+/// </summary>
 public class ClientInfo
 {
-    public required string IP { get; set; }
+    /// <summary>
+    /// IP.
+    /// </summary>
+    public string IP { get; init; } = string.Empty;
 
-    public required string UserAgent { get; set; }
+    /// <summary>
+    /// UserAgent.
+    /// </summary>
+    public string UserAgent { get; init; } = string.Empty;
 }

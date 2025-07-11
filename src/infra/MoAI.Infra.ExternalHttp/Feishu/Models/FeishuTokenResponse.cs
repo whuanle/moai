@@ -14,26 +14,26 @@ public class FeishuTokenResponse
     public int Code { get; set; }
 
     [JsonPropertyName("access_token")]
-    public required string AccessToken { get; set; }
+    public string AccessToken { get; set; }
 
     [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }
 
     [JsonPropertyName("refresh_token")]
-    public required string RefreshToken { get; set; }
+    public string RefreshToken { get; set; }
 
     [JsonPropertyName("refresh_token_expires_in")]
     public int RefreshTokenExpiresIn { get; set; }
 
     [JsonPropertyName("token_type")]
-    public required string TokenType { get; set; }
+    public string TokenType { get; set; }
 
     [JsonPropertyName("scope")]
-    public required string Scope { get; set; }
+    public string Scope { get; set; }
 
     [JsonPropertyName("error")]
-    public required string Error { get; set; }
+    public string Error { get; set; }
 
     [JsonPropertyName("error_description")]
-    public required string ErrorDescription { get; set; }
+    public string ErrorDescription { get; set; }
 }

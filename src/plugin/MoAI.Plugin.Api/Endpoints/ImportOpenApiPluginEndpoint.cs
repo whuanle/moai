@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MoAI.Plugin.Endpoints;
 

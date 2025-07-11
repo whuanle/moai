@@ -6,7 +6,6 @@
 
 using Maomi.MQ;
 using MaomiAI.Document.Core.Consumers.Events;
-using MaomiAI.Document.Shared.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;
@@ -16,6 +15,7 @@ using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Documents.Commands;
 

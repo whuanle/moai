@@ -10,7 +10,7 @@ using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MaomiAI.AiModel.Api.Endpoints;
 

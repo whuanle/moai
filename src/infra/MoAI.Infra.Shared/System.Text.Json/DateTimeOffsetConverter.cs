@@ -9,6 +9,9 @@ using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.System.Text.Json;
 
+/// <summary>
+/// DateTimeOffsetConverter.
+/// </summary>
 public class DateTimeOffsetConverter : JsonConverter<DateTimeOffset>
 {
     /// <inheritdoc/>

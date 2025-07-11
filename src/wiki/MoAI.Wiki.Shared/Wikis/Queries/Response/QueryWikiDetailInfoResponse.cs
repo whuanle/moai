@@ -26,7 +26,7 @@ public class QueryWikiDetailInfoResponse
     /// <summary>
     /// 团队头像路径.
     /// </summary>
-    public required string AvatarUrl { get; set; }
+    public string AvatarUrl { get; set; }
 
     /// <summary>
     /// 知识库描述.

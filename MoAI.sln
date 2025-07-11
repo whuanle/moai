@@ -39,13 +39,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Infra.Api", "src\infra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Database.Sqlite", "src\database\MoAI.Database.Sqlite\MoAI.Database.Sqlite.csproj", "{E5EC6143-087E-4FE5-A2C1-0C7CE009971E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Public.Shared", "src\public\MoAI.Public.Shared\MoAI.Public.Shared.csproj", "{0088BC11-DBA3-472C-8937-196497E57423}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Common.Shared", "src\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj", "{0088BC11-DBA3-472C-8937-196497E57423}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "public", "public", "{0ECCEF61-D0A7-49D6-8E0F-040C0F96764E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{0ECCEF61-D0A7-49D6-8E0F-040C0F96764E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Public.Api", "src\public\MoAI.Public.Api\MoAI.Public.Api.csproj", "{3E9ECF99-8B07-4388-82D4-DDE5A186112F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Common.Api", "src\common\MoAI.Common.Api\MoAI.Common.Api.csproj", "{3E9ECF99-8B07-4388-82D4-DDE5A186112F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Public.Core", "src\public\MoAI.Public.Core\MoAI.Public.Core.csproj", "{02CC9667-8991-4396-BC93-D20E229A9CEB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.Common.Core", "src\common\MoAI.Common.Core\MoAI.Common.Core.csproj", "{02CC9667-8991-4396-BC93-D20E229A9CEB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI", "src\MoAI\MoAI.csproj", "{3B74DCBE-891C-4336-BDD5-5815961787FB}"
 EndProject

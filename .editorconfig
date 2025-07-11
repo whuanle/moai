@@ -159,3 +159,4 @@ dotnet_diagnostic.CA1303.severity = silent
 dotnet_analyzer_diagnostic.category-Globalization.severity = silent
 dotnet_diagnostic.CA1304.severity = none
 dotnet_diagnostic.CA1056.severity = silent
+dotnet_diagnostic.CA1716.severity = silent

@@ -14,20 +14,20 @@ public class FeishuTokenRequest
     public string GrantType { get; set; } = "authorization_code";
 
     [JsonPropertyName("client_id")]
-    public required string ClientId { get; set; }
+    public string ClientId { get; set; }
 
     [JsonPropertyName("client_secret")]
-    public required string ClientSecret { get; set; }
+    public string ClientSecret { get; set; }
 
     [JsonPropertyName("code")]
-    public required string Code { get; set; }
+    public string Code { get; set; }
 
     [JsonPropertyName("redirect_uri")]
-    public required string RedirectUri { get; set; }
+    public string RedirectUri { get; set; }
 
     [JsonPropertyName("code_verifier")]
-    public required string CodeVerifier { get; set; }
+    public string CodeVerifier { get; set; }
 
     [JsonPropertyName("scope")]
-    public required string Scope { get; set; }
+    public string Scope { get; set; }
 }

@@ -10,7 +10,7 @@ using MoAI.AiModel;
 using MoAI.AiModel.Commands;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Public.Queries;
+using MoAI.Common.Queries;
 
 namespace MaomiAI.AiModel.Api.Endpoints;
 

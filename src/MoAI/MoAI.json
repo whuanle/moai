@@ -1958,6 +1958,82 @@
         ]
       }
     },
+    "/api/user/oauth_list": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "查询用户已经绑定的第三方账号.",
+        "operationId": "QueryUserBindAccountEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryUserBindAccountCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/user/update_user": {
       "post": {
         "tags": [
@@ -2224,380 +2300,6 @@
           }
         ]
       }
-    },
-    "/download/private/{filename}": {
-      "get": {
-        "tags": [
-          "Download"
-        ],
-        "summary": "下载文件.",
-        "operationId": "Download_DownloadPrivateFile",
-        "parameters": [
-          {
-            "name": "filename",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "expiry",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "int64",
-              "minimum": 0.0,
-              "example": "1415926535897934852"
-            },
-            "x-position": 3
-          },
-          {
-            "name": "token",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 4
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/storage/upload/public/{objectKey}": {
-      "put": {
-        "tags": [
-          "Upload"
-        ],
-        "summary": "上传公有文件.",
-        "operationId": "Upload_UploadPublicFile",
-        "parameters": [
-          {
-            "name": "objectKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "token",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "expiry",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 3
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 4
-          },
-          {
-            "name": "Content-Type",
-            "x-originalName": "contentType",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 5
-          },
-          {
-            "name": "Content-Length",
-            "x-originalName": "contentLength",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 6
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/storage/upload/private/{objectKey}": {
-      "put": {
-        "tags": [
-          "Upload"
-        ],
-        "summary": "上传私有文件.",
-        "operationId": "Upload_UploadPrivateFile",
-        "parameters": [
-          {
-            "name": "objectKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "token",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "expiry",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 3
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 4
-          },
-          {
-            "name": "Content-Type",
-            "x-originalName": "contentType",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 5
-          },
-          {
-            "name": "Content-Length",
-            "x-originalName": "contentLength",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 6
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
     }
   },
   "components": {
@@ -2641,7 +2343,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1751966331523"
+            "example": "1752224042629"
           }
         }
       },
@@ -2780,6 +2482,7 @@
           },
           {
             "type": "object",
+            "description": "SimpleString.",
             "additionalProperties": false
           }
         ]
@@ -2798,6 +2501,7 @@
       },
       "UserStateInfo": {
         "type": "object",
+        "description": "UserStateInfo.",
         "additionalProperties": false,
         "required": [
           "userId",
@@ -3038,6 +2742,7 @@
       },
       "QueryAllOAuthPrividerCommandResponse": {
         "type": "object",
+        "description": "QueryAllOAuthPrividerCommandResponse。",
         "additionalProperties": false,
         "required": [
           "items"
@@ -3045,6 +2750,7 @@
         "properties": {
           "items": {
             "type": "array",
+            "description": "集合.",
             "items": {
               "$ref": "#/components/schemas/QueryAllOAuthPrividerCommandResponseItem"
             }
@@ -3150,6 +2856,7 @@
           },
           {
             "type": "object",
+            "description": "SimpleInt.",
             "additionalProperties": false
           }
         ]
@@ -3230,6 +2937,8 @@
           "userIds": {
             "type": "array",
             "description": "用户ID.",
+            "minLength": 1,
+            "nullable": false,
             "items": {
               "type": "integer",
               "format": "int32"
@@ -3249,6 +2958,8 @@
           "userIds": {
             "type": "array",
             "description": "用户ID.",
+            "minLength": 1,
+            "nullable": false,
             "items": {
               "type": "integer",
               "format": "int32"
@@ -3267,6 +2978,7 @@
           },
           {
             "type": "object",
+            "description": "QueryUserListCommandResponse.",
             "additionalProperties": false
           }
         ]
@@ -3308,6 +3020,7 @@
           },
           {
             "type": "object",
+            "description": "QueryUserListCommandResponseItem.",
             "additionalProperties": false,
             "required": [
               "id",
@@ -3376,7 +3089,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1751966331523"
+            "example": "1752224042629"
           },
           "createUserId": {
             "type": "integer",
@@ -3392,7 +3105,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1751966331523"
+            "example": "1752224042629"
           },
           "updateUserId": {
             "type": "integer",
@@ -3458,6 +3171,7 @@
       },
       "ResetUserPasswordCommand": {
         "type": "object",
+        "description": "重置用户密码.",
         "additionalProperties": false,
         "required": [
           "userId"
@@ -3465,7 +3179,10 @@
         "properties": {
           "userId": {
             "type": "integer",
-            "format": "int32"
+            "description": "用户 id.",
+            "format": "int32",
+            "minimum": 0.0,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -3494,12 +3211,13 @@
       },
       "QuerySystemSettingsCommandResponse": {
         "type": "object",
+        "description": "QuerySystemSettingsCommandResponse.",
         "additionalProperties": false,
         "required": [
-          "settings"
+          "items"
         ],
         "properties": {
-          "settings": {
+          "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuerySystemSettingsCommandResponseItem"
@@ -3514,6 +3232,7 @@
           },
           {
             "type": "object",
+            "description": "QuerySystemSettingsCommandResponseItem.",
             "additionalProperties": false,
             "required": [
               "id",
@@ -3545,6 +3264,7 @@
       },
       "SetSystemSettingsCommand": {
         "type": "object",
+        "description": "设置系统配置.",
         "additionalProperties": false,
         "required": [
           "settings"
@@ -3552,22 +3272,38 @@
         "properties": {
           "settings": {
             "type": "array",
+            "description": "系统配置.",
             "items": {
-              "$ref": "#/components/schemas/KeyValueOfStringAndString"
+              "$ref": "#/components/schemas/KeyValueString"
             }
           }
         }
       },
+      "KeyValueString": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/KeyValueOfStringAndString"
+          },
+          {
+            "type": "object",
+            "description": "KeyValueString.",
+            "additionalProperties": false
+          }
+        ]
+      },
       "KeyValueOfStringAndString": {
         "type": "object",
+        "description": "kv.",
         "additionalProperties": false,
         "properties": {
           "key": {
             "type": "string",
+            "description": "Key.",
             "nullable": true
           },
           "value": {
             "type": "string",
+            "description": "Value.",
             "nullable": true
           }
         }
@@ -3595,8 +3331,6 @@
           },
           "provider": {
             "description": "提供商.",
-            "minLength": 1,
-            "nullable": false,
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OAuthPrivider"
@@ -3618,7 +3352,6 @@
           "iconUrl": {
             "type": "string",
             "description": "图标地址.",
-            "format": "uri",
             "minLength": 1,
             "nullable": false
           },
@@ -3677,6 +3410,7 @@
         "properties": {
           "items": {
             "type": "array",
+            "description": "列表.",
             "items": {
               "$ref": "#/components/schemas/QueryAllOAuthPrividerDetailCommandResponseItem"
             }
@@ -3739,9 +3473,6 @@
         ]
       },
       "UpdateOAuthConnectionCommand": {
-        "required": [
-          "oAuthConnectionId"
-        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/CreateOAuthConnectionCommand"
@@ -3757,13 +3488,52 @@
               "oAuthConnectionId": {
                 "type": "integer",
                 "description": "id.",
-                "format": "int32",
-                "minLength": 1,
-                "nullable": false
+                "format": "int32"
               }
             }
           }
         ]
+      },
+      "QueryUserBindAccountCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryUserBindAccountCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryUserBindAccountCommandResponseItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bindId",
+          "name",
+          "providerId",
+          "iconUrl"
+        ],
+        "properties": {
+          "bindId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "providerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "iconUrl": {
+            "type": "string"
+          }
+        }
       },
       "UpdateUserInfoCommand": {
         "type": "object",
