@@ -1,9 +1,16 @@
-﻿using FastEndpoints;
-using MoAI.User.Shared.Commands;
+﻿// <copyright file="UploadtUserAvatarEndpoint.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.User.Commands;
+using MoAI.User.Queries;
+using MoAI.User.Queries.Responses;
+using MoAI.User.Shared.Commands;
 
 namespace MoAI.User.Endpoints;
 

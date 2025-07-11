@@ -1,4 +1,4 @@
-﻿using MaomiAI.AiModel.Shared.Models;
+﻿using MoAI.AiModel.Models;
 
 namespace MoAI.AiModel.Queries.Respones;
 

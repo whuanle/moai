@@ -7,7 +7,7 @@
 using MediatR;
 using MoAI.Infra.Models;
 
-namespace MoAI.User.Shared.Commands;
+namespace MoAI.User.Commands;
 
 /// <summary>
 /// 重置密码.

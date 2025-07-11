@@ -29,5 +29,5 @@ public class QueryFileDownloadUrlCommand : IRequest<QueryFileDownloadUrlCommandR
     /// <summary>
     /// 对象列表.
     /// </summary>
-    public IReadOnlyCollection<KeyValue<string, string>> ObjectKeys { get; init; } = new List<KeyValue<string, string>>();
+    public IReadOnlyCollection<KeyValueString> ObjectKeys { get; init; } = new List<KeyValueString>();
 }

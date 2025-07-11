@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Database;
+using MoAI.Database.Helper;
 
 namespace MoAI.AiModel.Queries;
 
@@ -50,8 +51,8 @@ public class QueryAiModelListCommandHandler : IRequestHandler<QueryAiModelListCo
                     Name = x.Name,
                     DeploymentName = x.DeploymentName,
                     Title = x.Title,
-                    AiModelType = Enum.Parse<AiModelType>(x.AiModelType, true),
-                    Provider = Enum.Parse<AiProvider>(x.AiProvider, true),
+                    AiModelType = x.AiModelType.FromDBString<AiModelType>(),
+                    Provider = x.AiModelType.FromDBString<AiProvider>(),
                     ContextWindowTokens = x.ContextWindowTokens,
                     Endpoint = x.Endpoint,
                     Abilities = new ModelAbilities

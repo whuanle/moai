@@ -61,6 +61,16 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
 
     /// <summary>
+    /// 提示词.
+    /// </summary>
+    public virtual DbSet<PromptEntity> Prompts { get; set; }
+
+    /// <summary>
+    /// 提示词分类.
+    /// </summary>
+    public virtual DbSet<PromptClassEntity> PromptClasses { get; set; }
+
+    /// <summary>
     /// 系统设置.
     /// </summary>
     public virtual DbSet<SettingEntity> Settings { get; set; }

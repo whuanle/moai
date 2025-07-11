@@ -6,7 +6,7 @@
 
 using FastEndpoints;
 using MediatR;
-using MoAI.Admin.SystemSettings.Queries;
+using MoAI.Admin.SystemSettings.Commands;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Public.Queries;

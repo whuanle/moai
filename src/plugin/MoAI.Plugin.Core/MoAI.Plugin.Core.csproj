@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Plugin</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.OpenApi.Readers" />
+	  <PackageReference Include="ModelContextProtocol" />
+	  <PackageReference Include="ModelContextProtocol-SemanticKernel" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+	  <ProjectReference Include="..\..\public\MoAI.Public.Shared\MoAI.Public.Shared.csproj" />
+	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+	  <ProjectReference Include="..\MoAI.Plugin.Api\MoAI.Plugin.Api.csproj" />
+	  <ProjectReference Include="..\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -91,7 +91,7 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingocumentC
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         // 后台处理
-        var embeddingDocumentEvent = new EmbeddingDocumentEvent
+        var embeddingDocumentEvent = new EmbeddingDocumentTask
         {
             DocumentId = request.DocumentId,
             WikiId = request.WikiId,

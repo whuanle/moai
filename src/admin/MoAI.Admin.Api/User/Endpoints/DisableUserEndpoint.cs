@@ -7,8 +7,6 @@
 using FastEndpoints;
 using MediatR;
 using MoAI.Admin.User.Commands;
-using MoAI.Admin.User.Queries;
-using MoAI.Admin.User.Queries.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Queries;

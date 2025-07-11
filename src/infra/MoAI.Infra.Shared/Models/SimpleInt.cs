@@ -8,4 +8,13 @@ namespace MoAI.Infra.Models;
 
 public class SimpleInt : Simple<int>
 {
+    public static implicit operator int(SimpleInt value)
+    {
+        return value.Value;
+    }
+
+    public static implicit operator SimpleInt(int value)
+    {
+        return new SimpleInt { Value = value };
+    }
 }

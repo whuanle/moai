@@ -15,6 +15,9 @@ using System.Transactions;
 
 namespace MoAI.Wiki.Documents.Commands;
 
+/// <summary>
+/// <inheritdoc cref="ClearWikiDocumentEmbeddingCommand"/>
+/// </summary>
 public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWikiDocumentEmbeddingCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;

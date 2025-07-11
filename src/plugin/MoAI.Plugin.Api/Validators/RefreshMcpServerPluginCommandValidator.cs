@@ -1,0 +1,26 @@
+﻿// <copyright file="RefreshMcpServerPluginCommandValidator.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using FastEndpoints;
+using FluentValidation;
+using MoAI.Plugin.Commands;
+
+namespace MoAI.Plugin.Validators;
+
+/// <summary>
+/// RefreshMcpServerPluginCommandValidator.
+/// </summary>
+public class RefreshMcpServerPluginCommandValidator : Validator<RefreshMcpServerPluginCommand>
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RefreshMcpServerPluginCommandValidator"/> class.
+    /// </summary>
+    public RefreshMcpServerPluginCommandValidator()
+    {
+        RuleFor(x => x.PluginId)
+            .NotEmpty().WithMessage("插件id不能为空.");
+    }
+}

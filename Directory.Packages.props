@@ -21,6 +21,10 @@
     <PackageVersion Include="Microsoft.KernelMemory.AI.OpenAI" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.Core" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.Postgres" Version="0.98.250508.3" />
+    <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.24" />
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="2.0.0-preview.31" />
+    <PackageVersion Include="ModelContextProtocol" Version="0.3.0-preview.2" />
+    <PackageVersion Include="ModelContextProtocol-SemanticKernel" Version="0.3.0-preview-01" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
     <PackageVersion Include="FastEndpoints" Version="6.2.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />

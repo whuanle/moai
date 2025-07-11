@@ -6,23 +6,32 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using MoAI.Admin.SystemSettings.Commands;
+using MoAI.Admin.SystemSettings.Queries.Responses;
 using MoAI.Database;
 using MoAI.User.Queries;
 
 namespace MoAI.Admin.SystemSettings.Queries;
 
+/// <summary>
+/// <inheritdoc cref="QuerySystemSettingsCommand"/>
+/// </summary>
 public class QuerySystemSettingsCommandHandler : IRequestHandler<QuerySystemSettingsCommand, QuerySystemSettingsCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QuerySystemSettingsCommandHandler"/> class.
+    /// </summary>
+    /// <param name="databaseContext"></param>
+    /// <param name="mediator"></param>
     public QuerySystemSettingsCommandHandler(DatabaseContext databaseContext, IMediator mediator)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
     }
 
+    /// <inheritdoc/>
     public async Task<QuerySystemSettingsCommandResponse> Handle(QuerySystemSettingsCommand request, CancellationToken cancellationToken)
     {
         var settings = await _databaseContext.Settings.Select(x => new QuerySystemSettingsCommandResponseItem
@@ -39,6 +48,6 @@ public class QuerySystemSettingsCommandHandler : IRequestHandler<QuerySystemSett
 
         await _mediator.Send(new FillUserInfoCommand { Items = settings });
 
-        return new QuerySystemSettingsCommandResponse { Settings = settings };
+        return new QuerySystemSettingsCommandResponse { Items = settings };
     }
 }

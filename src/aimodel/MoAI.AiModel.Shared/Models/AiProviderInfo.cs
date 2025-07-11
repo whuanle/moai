@@ -6,6 +6,9 @@
 
 namespace MoAI.AiModel.Models;
 
+/// <summary>
+/// 模型提供商信息.
+/// </summary>
 public class AiProviderInfo
 {
     /// <summary>

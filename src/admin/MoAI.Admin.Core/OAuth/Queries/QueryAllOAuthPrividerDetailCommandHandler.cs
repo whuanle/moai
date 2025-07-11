@@ -58,14 +58,6 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
 
         foreach (var item in items)
         {
-            // if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
-            // {
-            //    item
-            // }
-            // else
-            // {
-            //    item.RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login?state={item.OAuthId}").ToString();
-            // }
             item.RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login?state={item.OAuthId}").ToString();
         }
 

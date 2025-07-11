@@ -56,7 +56,7 @@ public class QueryWikiDocumentInfoCommandHandler : IRequestHandler<QueryWikiDocu
 
         await _mediator.Send(new FillUserInfoCommand
         {
-            Items = result
+            Items = new List<QueryWikiDocumentListItem> { result }
         });
 
         return result;

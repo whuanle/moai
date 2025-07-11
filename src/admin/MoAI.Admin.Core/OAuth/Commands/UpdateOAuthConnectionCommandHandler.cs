@@ -7,8 +7,10 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;
@@ -60,21 +62,17 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
             }
         }
 
-        connection.Provider = request.Provider.ToString();
         connection.Key = request.Key;
-        connection.IconUrl = request.IconUrl?.ToString() ?? string.Empty;
+        connection.IconUrl = request.IconUrl;
 
         if (!string.IsNullOrEmpty(request.Secret))
         {
             connection.Secret = request.Secret;
         }
 
-        if (request.Provider == OAuthPrivider.Feishu)
-        {
-            connection.RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
-            connection.WellKnown = "https://accounts.feishu.cn";
-        }
-        else
+        var sourceProvider = DBJsonHelper.FromJsonString<OAuthPrivider>(connection.Provider);
+
+        if (sourceProvider == OAuthPrivider.Custom)
         {
             connection.WellKnown = request.WellKnown.ToString();
 
@@ -83,6 +81,11 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
             // var frontUrl = _systemOptions.Server + $"/oauth_login";
             // var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
             connection.RedirectUri = oauthRedirectUrl;
+        }
+        else if (sourceProvider == OAuthPrivider.Feishu)
+        {
+            connection.RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
+            connection.WellKnown = "https://accounts.feishu.cn";
         }
 
         _databaseContext.Update(connection);

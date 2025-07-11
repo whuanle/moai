@@ -7,6 +7,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -41,43 +42,41 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
-        var exist = await _databaseContext.OauthConnections
-            .AnyAsync(x => x.Name == request.Name, cancellationToken);
+        var exist = await _databaseContext.OauthConnections.AnyAsync(x => x.Name == request.Name, cancellationToken);
 
         if (exist)
         {
             throw new BusinessException("认证名称已存在，请更换后重试.");
         }
 
-        if (request.Provider == OAuthPrivider.Feishu)
+        if (request.Provider == OAuthPrivider.Custom)
+        {
+            await AddCustomConnectionAsync(request, cancellationToken);
+        }
+        else if (request.Provider == OAuthPrivider.Feishu)
         {
             await AddFeishuConnectionAsync(request, cancellationToken);
-            return EmptyCommandResponse.Default;
         }
 
+        return EmptyCommandResponse.Default;
+    }
+
+    private async Task AddCustomConnectionAsync(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
+    {
         var oauthRedirectUrl = await GetRedirectUrl(request.WellKnown);
 
         var connection = new Database.Entities.OauthConnectionEntity
         {
             Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
-            Provider = request.Provider.ToString(),
+            Provider = DBJsonHelper.ToJsonString(request.Provider),
             Key = request.Key,
             Secret = request.Secret,
-            IconUrl = request.IconUrl?.ToString() ?? string.Empty,
+            IconUrl = request.IconUrl,
             WellKnown = request.WellKnown.ToString()
         };
 
         // 请求端口，获取重定向地址
-
-        /*
-         https://<HOST>/login/oauth/authorize?
-        client_id=CLIENT_ID&
-        redirect_uri=REDIRECT_URI&
-        response_type=code&
-        scope=openid&
-        state=STATE
-         */
 
         // 对方回调示例 http://localhost:4000/aaaaaa?a=1&code=545b56c8be398326a78b&state=ABCD
         // var frontUrl = _systemOptions.Server + $"/oauth_login";
@@ -86,8 +85,6 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
 
         _databaseContext.OauthConnections.Add(connection);
         await _databaseContext.SaveChangesAsync(cancellationToken);
-
-        return EmptyCommandResponse.Default;
     }
 
     private async Task AddFeishuConnectionAsync(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
@@ -96,10 +93,10 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         {
             Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
-            Provider = request.Provider.ToString(),
+            Provider = DBJsonHelper.ToJsonString(request.Provider),
             Key = request.Key,
             Secret = request.Secret,
-            IconUrl = request.IconUrl?.ToString() ?? string.Empty,
+            IconUrl = request.IconUrl,
             RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
             WellKnown = request.WellKnown.ToString(),
         };

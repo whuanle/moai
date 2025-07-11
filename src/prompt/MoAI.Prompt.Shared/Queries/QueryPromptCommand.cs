@@ -1,0 +1,21 @@
+﻿// <copyright file="QueryPromptCommand.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using MaomiAI.Prompt.Models;
+using MediatR;
+
+namespace MaomiAI.Prompt.Queries;
+
+/// <summary>
+/// 获取提示词.
+/// </summary>
+public class QueryPromptCommand : IRequest<PromptItem>
+{
+    /// <summary>
+    /// 提示词 id.
+    /// </summary>
+    public int PromptId { get; init; }
+}

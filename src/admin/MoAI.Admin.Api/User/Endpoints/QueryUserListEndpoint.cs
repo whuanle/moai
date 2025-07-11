@@ -1,4 +1,4 @@
-﻿// <copyright file="DisableUserEndpoint.cs" company="MoAI">
+﻿// <copyright file="QueryUserListEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -6,16 +6,13 @@
 
 using FastEndpoints;
 using MediatR;
-using MoAI.Admin.User.Commands;
 using MoAI.Admin.User.Queries;
 using MoAI.Admin.User.Queries.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Login.Queries;
 using MoAI.Public.Queries;
 
 namespace MoAI.Admin.User.Endpoints;
-
 
 /// <summary>
 /// 查询用户列表.

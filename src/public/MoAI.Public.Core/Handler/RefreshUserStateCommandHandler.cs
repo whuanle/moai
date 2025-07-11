@@ -61,7 +61,7 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
                 var fileUrls = await _mediator.Send(new QueryFileDownloadUrlCommand
                 {
                     Visibility = Store.Enums.FileVisibility.Public,
-                    ObjectKeys = new List<KeyValue<string, string>>() { new KeyValue<string, string> { Key = user.AvatarPath, Value = user.AvatarPath } }
+                    ObjectKeys = new List<KeyValueString>() { new KeyValueString { Key = user.AvatarPath, Value = user.AvatarPath } }
                 });
                 avatarUrl = fileUrls.Urls.FirstOrDefault().Value?.ToString() ?? string.Empty;
             }

@@ -1,0 +1,43 @@
+﻿// <copyright file="QueryPrompListtEndpoints.cs" company="MaomiAI">
+// Copyright (c) MaomiAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/AIDotNet/MaomiAI
+// </copyright>
+
+using FastEndpoints;
+using MaomiAI.Prompt.Api;
+using MaomiAI.Prompt.Queries;
+using MaomiAI.Prompt.Queries.Responses;
+using MediatR;
+using MoAI.Infra.Models;
+using MoAI.Prompt.Queries;
+using MoAI.Prompt.Queries.Responses;
+
+namespace MaomiAI.AiModel.Api.Endpoints;
+
+/// <summary>
+/// 查询提示词.
+/// </summary>
+[HttpPost($"{ApiPrefix.Prefix}/prompt_list")]
+public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPromptListCommandResponse>
+{
+    private readonly IMediator _mediator;
+    private readonly UserContext _userContext;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueryPrompListEndpoints"/> class.
+    /// </summary>
+    /// <param name="mediator"></param>
+    /// <param name="userContext"></param>
+    public QueryPrompListEndpoints(IMediator mediator, UserContext userContext)
+    {
+        _mediator = mediator;
+        _userContext = userContext;
+    }
+
+    /// <inheritdoc/>
+    public override async Task<QueryPromptListCommandResponse> ExecuteAsync(QueryPromptListCommand req, CancellationToken ct)
+    {
+        return await _mediator.Send(req);
+    }
+}

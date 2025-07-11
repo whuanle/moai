@@ -6,12 +6,14 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using MoAI.Admin.SystemSettings.Queries;
 using MoAI.Database;
 using MoAI.Infra.Models;
 
 namespace MoAI.Admin.SystemSettings.Commands;
 
+/// <summary>
+/// <inheritdoc cref="SetSystemSettingsCommand"/>
+/// </summary>
 public class SetSystemSettingsCommandHandler : IRequestHandler<SetSystemSettingsCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
@@ -25,6 +27,7 @@ public class SetSystemSettingsCommandHandler : IRequestHandler<SetSystemSettings
         _databaseContext = databaseContext;
     }
 
+    /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(SetSystemSettingsCommand request, CancellationToken cancellationToken)
     {
         var settings = await _databaseContext.Settings.ToArrayAsync();

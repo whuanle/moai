@@ -38,7 +38,7 @@ public class CreateOAuthConnectionCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 图标地址.
     /// </summary>
-    public Uri? IconUrl { get; init; } = default!;
+    public string IconUrl { get; init; } = default!;
 
     /// <summary>
     /// 发现端口.

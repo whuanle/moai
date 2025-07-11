@@ -4,9 +4,17 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using MoAI.Login.Queries;
+
 namespace MoAI.Admin.OAuth.Queries.Responses;
 
+/// <summary>
+/// <inheritdoc cref="QueryAllOAuthPrividerDetailCommand"/>
+/// </summary>
 public class QueryAllOAuthPrividerDetailCommandResponse
 {
-    public List<QueryAllOAuthPrividerDetailCommandResponseItem> Items { get; set; } = new List<QueryAllOAuthPrividerDetailCommandResponseItem>();
+    /// <summary>
+    /// 列表.
+    /// </summary>
+    public IReadOnlyCollection<QueryAllOAuthPrividerDetailCommandResponseItem> Items { get; init; } = Array.Empty<QueryAllOAuthPrividerDetailCommandResponseItem>();
 }

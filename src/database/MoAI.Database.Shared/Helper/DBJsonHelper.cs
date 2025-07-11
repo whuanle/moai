@@ -36,4 +36,25 @@ public static class DBJsonHelper
             return default;
         }
     }
+
+    public static string ToDBString<T>(this T model)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(model, _jsonOptions);
+    }
+    public static T? FromDBString<T>(this string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return default;
+        }
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json, _jsonOptions);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return default;
+        }
+    }
 }

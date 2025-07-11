@@ -16,25 +16,25 @@ public static class AppConst
     /// <summary>
     /// 程序根路径.
     /// </summary>
-    public static string AppPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase!;
+    public static readonly string AppPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase!;
 
     /// <summary>
     /// 配置文件路径.
     /// </summary>
-    public static string ConfigsPath = Path.Combine(AppPath, "configs");
+    public static readonly string ConfigsPath = Path.Combine(AppPath, "configs");
 
     /// <summary>
     /// 配置文件模板路径.
     /// </summary>
-    public static string ConfigsTemplate = Path.Combine(AppPath, "configs_template");
-
-    public static string PrivateRSA = Path.Combine(ConfigsPath, "rsa_private.key");
+    public static readonly string ConfigsTemplate = Path.Combine(AppPath, "configs_template");
 
     /// <summary>
-    /// 不在业务逻辑中发生的日志，统一使用这个名称做日志命名.<br />
-    /// 例如在模块类中的打印的日志.
+    /// RSA.
     /// </summary>
-    public const string LoggerName = "MoAI";
+    public static readonly string PrivateRSA = Path.Combine(ConfigsPath, "rsa_private.key");
 
+    /// <summary>
+    /// 源.
+    /// </summary>
     public static readonly ActivitySource ActivitySource = new ActivitySource("MoAI");
 }

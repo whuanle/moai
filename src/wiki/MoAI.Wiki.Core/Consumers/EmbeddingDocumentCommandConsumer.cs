@@ -6,7 +6,6 @@
 
 using Maomi.MQ;
 using MaomiAI.Document.Core.Consumers.Events;
-using MaomiAI.Document.Core.Services;
 using MaomiAI.Document.Shared.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +15,12 @@ using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Configuration;
 using MoAI.AiModel.Models;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra;
-using MoAI.Storage.Commands;
+using MoAI.Storage.Queries;
 using MoAI.Store.Enums;
 using MoAI.Wiki.Models;
+using MoAI.Wiki.Services;
 
 namespace MaomiAI.Document.Core.Consumers;
 
@@ -27,30 +28,33 @@ namespace MaomiAI.Document.Core.Consumers;
 /// 文档向量化.
 /// </summary>
 [Consumer("embedding_document", Qos = 1)]
-public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentEvent>
+public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly SystemOptions _systemOptions;
-    private readonly CustomKernelMemoryBuilder _customKernelMemoryBuilder;
     private readonly IMediator _mediator;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EmbeddingDocumentCommandConsumer> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmbeddingDocumentCommandConsumer"/> class.
     /// </summary>
+    /// <param name="databaseContext"></param>
+    /// <param name="systemOptions"></param>
+    /// <param name="mediator"></param>
     /// <param name="serviceProvider"></param>
     /// <param name="logger"></param>
-    public EmbeddingDocumentCommandConsumer(IServiceProvider serviceProvider, ILogger<EmbeddingDocumentCommandConsumer> logger)
+    public EmbeddingDocumentCommandConsumer(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider, ILogger<EmbeddingDocumentCommandConsumer> logger)
     {
-        _databaseContext = serviceProvider.GetRequiredService<DatabaseContext>();
-        _systemOptions = serviceProvider.GetRequiredService<SystemOptions>();
-        _customKernelMemoryBuilder = serviceProvider.GetRequiredService<CustomKernelMemoryBuilder>();
-        _mediator = serviceProvider.GetRequiredService<IMediator>();
+        _databaseContext = databaseContext;
+        _systemOptions = systemOptions;
+        _mediator = mediator;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
     /// <inheritdoc/>
-    public async Task ExecuteAsync(MessageHeader messageHeader, EmbeddingDocumentEvent message)
+    public async Task ExecuteAsync(MessageHeader messageHeader, EmbeddingDocumentTask message)
     {
         var documentTask = await _databaseContext.WikiDocumentTasks
              .FirstOrDefaultAsync(x => x.DocumentId == message.DocumentId && x.Id == message.TaskId);
@@ -61,90 +65,42 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentEvent
             return;
         }
 
-        documentTask.State = (int)FileEmbeddingState.Processing;
-        documentTask.Message = "任务开始处理";
-        _databaseContext.WikiDocumentTasks.Update(documentTask);
-        await _databaseContext.SaveChangesAsync();
+        await SetStartStateAsync(documentTask);
 
-        var documentFile = await _databaseContext.WikiDocuments
-            .Where(x => x.Id == message.DocumentId)
-            .Join(_databaseContext.Files, a => a.FileId, b => b.Id, (a, b) => new
-            {
-                a.FileId,
-                b.FileName,
-                FilePath = b.ObjectKey,
-            }).FirstOrDefaultAsync();
+        var documenEntity = await _databaseContext.WikiDocuments.Where(x => x.Id == message.DocumentId).FirstOrDefaultAsync();
 
-        if (documentFile == null)
+        if (documenEntity == null)
         {
-            documentTask.State = (int)FileEmbeddingState.Failed;
-            documentTask.Message = "文件不存在";
-            await _databaseContext.SaveChangesAsync();
+            await SetFaildStateAsync(documentTask, "文档不存在");
             return;
         }
 
-        var tempDir = Path.Combine(Path.GetTempPath(), DateTimeOffset.Now.Ticks.ToString());
-        if (!Directory.Exists(tempDir))
-        {
-            Directory.CreateDirectory(tempDir);
-        }
-
-        // 下载文件
-        var filePath = Path.Combine(tempDir, documentFile.FileName);
-
-        await _mediator.Send(new DownloadFileCommand
+        var filePath = await _mediator.Send(new QueryFileLocalPathCommand
         {
             Visibility = FileVisibility.Private,
-            ObjectKey = documentFile.FilePath,
-            StoreFilePath = filePath
+            ObjectKey = documenEntity.ObjectKey,
         });
 
-        var teamWikiConfig = await _databaseContext.Wikis
-        .Where(x => x.Id == documentTask.WikiId)
-        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
-        {
-            WikiConfig = new WikiConfig
-            {
-                EmbeddingDimensions = a.EmbeddingDimensions,
-                EmbeddingBatchSize = a.EmbeddingBatchSize,
-                MaxRetries = a.MaxRetries,
-                EmbeddingModelTokenizer = a.EmbeddingModelTokenizer,
-                EmbeddingModelId = a.EmbeddingModelId,
-            },
-            AiEndpoint = new AiEndpoint
-            {
-                Name = x.Name,
-                DeploymentName = x.DeploymentName,
-                Title = x.Title,
-                AiModelType = Enum.Parse<AiModelType>(x.AiModelType, true),
-                Provider = Enum.Parse<AiProvider>(x.AiProvider, true),
-                ContextWindowTokens = x.ContextWindowTokens,
-                Endpoint = x.Endpoint,
-                Abilities = new ModelAbilities
-                {
-                    Files = x.Files,
-                    FunctionCall = x.FunctionCall,
-                    ImageOutput = x.ImageOutput,
-                    Vision = x.IsVision,
-                },
-                MaxDimension = x.MaxDimension,
-                TextOutput = x.TextOutput,
-                Key = x.Key,
-            }
-        }).FirstOrDefaultAsync();
+        var (wikiConfig, aiEndpoint) = await GetWikiConfigAsync(documenEntity.WikiId);
 
-        if (teamWikiConfig == null)
+        if (wikiConfig == null || aiEndpoint == null)
         {
-            documentTask.State = (int)FileEmbeddingState.Failed;
-            documentTask.Message = "知识库未配置向量化模型";
-            await _databaseContext.SaveChangesAsync();
+            await SetFaildStateAsync(documentTask, "知识库未配置向量化模型");
             return;
         }
 
         // 构建客户端
         var memoryBuilder = new KernelMemoryBuilder().WithSimpleFileStorage(Path.GetTempPath());
 
-        _customKernelMemoryBuilder.ConfigEmbeddingModel(memoryBuilder, teamWikiConfig.AiEndpoint, teamWikiConfig.WikiConfig);
+        var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(aiEndpoint.Provider);
+
+        if (textEmbeddingGeneration == null)
+        {
+            await SetFaildStateAsync(documentTask, "不支持的模型供应商");
+            return;
+        }
+
+        textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
 
         var memoryClient = memoryBuilder.WithoutTextGenerator()
 
@@ -160,7 +116,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentEvent
             })
             .Build();
 
-        // 先删除
+        // 先删除历史记录
         await memoryClient.DeleteDocumentAsync(documentTask.DocumentId.ToString(), index: documentTask.WikiId.ToString());
 
         var docs = new Microsoft.KernelMemory.Document()
@@ -168,10 +124,11 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentEvent
             Id = documentTask.DocumentId.ToString(),
         };
 
-        docs.AddFile(filePath);
-        docs.AddTag("wikiId", documentTask.WikiId.ToString());
-        docs.AddTag("fileId", documentFile.FileId.ToString());
-        docs.AddTag("fileName", documentFile.FileName);
+        // 自行读取流以便自定义文件名称
+        using var documentStream = new FileStream(filePath.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        docs.Files.AddStream(documenEntity.FileName, documentStream);
+        docs.AddTag("wikiId", documenEntity.WikiId.ToString());
+        docs.AddTag("fileId", documenEntity.FileId.ToString());
 
         try
         {
@@ -179,20 +136,16 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentEvent
         }
         catch (Exception ex)
         {
-            documentTask.State = (int)FileEmbeddingState.Failed;
-            documentTask.Message = ex.Message;
-            await _databaseContext.SaveChangesAsync();
+            _logger.LogError(ex, "Document vectorization failed. Document ID: {DocumentId}, Task ID: {TaskId}", documentTask.DocumentId, documentTask.Id);
+            await SetFaildStateAsync(documentTask, ex.Message);
             throw;
         }
 
-        documentTask.State = (int)FileEmbeddingState.Successful;
-        documentTask.Message = "任务处理完成";
-        _databaseContext.WikiDocumentTasks.Update(documentTask);
-        await _databaseContext.SaveChangesAsync();
+        await SetComplateStateAsync(documentTask);
     }
 
     /// <inheritdoc/>
-    public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, EmbeddingDocumentEvent message)
+    public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, EmbeddingDocumentTask message)
     {
         var documentTask = await _databaseContext.WikiDocumentTasks
              .FirstOrDefaultAsync(x => x.DocumentId == message.DocumentId && x.Id == message.TaskId);
@@ -213,9 +166,72 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentEvent
     }
 
     /// <inheritdoc/>
-    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, EmbeddingDocumentEvent? message, Exception? ex)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, EmbeddingDocumentTask? message, Exception? ex)
     {
         _logger.LogError(ex, message: "Document processing failed.{@Message}", message);
         return Task.FromResult(ConsumerState.Ack);
+    }
+
+    private async Task<(WikiConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
+    {
+        var result = await _databaseContext.Wikis
+        .Where(x => x.Id == wikiId)
+        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
+        {
+            WikiConfig = new WikiConfig
+            {
+                EmbeddingDimensions = a.EmbeddingDimensions,
+                EmbeddingBatchSize = a.EmbeddingBatchSize,
+                MaxRetries = a.MaxRetries,
+                EmbeddingModelTokenizer = a.EmbeddingModelTokenizer,
+                EmbeddingModelId = a.EmbeddingModelId,
+            },
+            AiEndpoint = new AiEndpoint
+            {
+                Name = x.Name,
+                DeploymentName = x.DeploymentName,
+                Title = x.Title,
+                AiModelType = x.AiModelType.FromDBString<AiModelType>(),
+                Provider = x.AiProvider.FromDBString<AiProvider>(),
+                ContextWindowTokens = x.ContextWindowTokens,
+                Endpoint = x.Endpoint,
+                Abilities = new ModelAbilities
+                {
+                    Files = x.Files,
+                    FunctionCall = x.FunctionCall,
+                    ImageOutput = x.ImageOutput,
+                    Vision = x.IsVision,
+                },
+                MaxDimension = x.MaxDimension,
+                TextOutput = x.TextOutput,
+                Key = x.Key,
+            }
+        }).FirstOrDefaultAsync();
+
+        return (result?.WikiConfig, result?.AiEndpoint);
+    }
+
+    private async Task SetFaildStateAsync(MoAI.Database.Entities.WikiDocumentTaskEntity documentTask, string message)
+    {
+        documentTask.State = (int)FileEmbeddingState.Failed;
+        documentTask.Message = message;
+        _databaseContext.WikiDocumentTasks.Update(documentTask);
+        await _databaseContext.SaveChangesAsync();
+    }
+
+    private async Task SetStartStateAsync(MoAI.Database.Entities.WikiDocumentTaskEntity documentTask)
+    {
+        documentTask.State = (int)FileEmbeddingState.Processing;
+        documentTask.Message = "任务开始处理";
+        _databaseContext.WikiDocumentTasks.Update(documentTask);
+        await _databaseContext.SaveChangesAsync();
+    }
+
+    private async Task SetComplateStateAsync(MoAI.Database.Entities.WikiDocumentTaskEntity documentTask)
+    {
+        documentTask.State = (int)FileEmbeddingState.Successful;
+        documentTask.Message = "任务处理完成";
+        _databaseContext.WikiDocumentTasks.Update(documentTask);
+        await _databaseContext.SaveChangesAsync();
     }
 }

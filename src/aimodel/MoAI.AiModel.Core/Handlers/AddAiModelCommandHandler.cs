@@ -9,6 +9,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Service;
@@ -29,7 +30,6 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
     /// </summary>
     /// <param name="dbContext"></param>
     /// <param name="rsaProvider"></param>
-    /// <param name="aesProvider"></param>
     public AddAiModelCommandHandler(DatabaseContext dbContext, IRsaProvider rsaProvider)
     {
         _dbContext = dbContext;
@@ -63,8 +63,8 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
             Name = request.Name,
             DeploymentName = request.DeploymentName,
             Title = request.Title,
-            AiModelType = request.AiModelType.ToString(),
-            AiProvider = request.Provider.ToString(),
+            AiModelType = request.AiModelType.ToDBString(),
+            AiProvider = request.Provider.ToDBString(),
             ContextWindowTokens = request.ContextWindowTokens,
             Endpoint = request.Endpoint,
             Key = skKey,

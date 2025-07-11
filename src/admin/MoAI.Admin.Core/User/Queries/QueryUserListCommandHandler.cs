@@ -81,7 +81,7 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
             Items = users
         });
 
-        var userAvatars = users.Where(x => !string.IsNullOrEmpty(x.AvatarPath)).Distinct().Select(x => new KeyValue<string, string> { Key = x.AvatarPath, Value = x.AvatarPath }).ToHashSet();
+        var userAvatars = users.Where(x => !string.IsNullOrEmpty(x.AvatarPath)).Distinct().Select(x => new KeyValueString { Key = x.AvatarPath, Value = x.AvatarPath }).ToHashSet();
         var avatarResult = await _mediator.Send(new QueryFileDownloadUrlCommand
         {
             Visibility = Store.Enums.FileVisibility.Public,

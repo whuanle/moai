@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MoAI.User.Shared.Commands;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
@@ -12,21 +11,31 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
+using MoAI.User.Commands;
 using System.Text.RegularExpressions;
 
 namespace MoAI.User.Handlers;
 
+/// <summary>
+/// <inheritdoc cref="UpdateUserPasswordCommand"/>
+/// </summary>
 public class UpdateUserPasswordCommandHandler : IRequestHandler<UpdateUserPasswordCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IRsaProvider _rsaProvider;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UpdateUserPasswordCommandHandler"/> class.
+    /// </summary>
+    /// <param name="databaseContext"></param>
+    /// <param name="rsaProvider"></param>
     public UpdateUserPasswordCommandHandler(DatabaseContext databaseContext, IRsaProvider rsaProvider)
     {
         _databaseContext = databaseContext;
         _rsaProvider = rsaProvider;
     }
 
+    /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateUserPasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users.Where(x => x.Id == request.UserId).FirstOrDefaultAsync(cancellationToken);
