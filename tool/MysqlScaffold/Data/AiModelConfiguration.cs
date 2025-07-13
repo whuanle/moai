@@ -1,9 +1,5 @@
-﻿// <copyright file="AiModelConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -22,6 +18,10 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
         entity.ToTable("ai_model", tb => tb.HasComment("ai模型"));
+
+        entity.HasIndex(e => e.AiModelType, "ai_model_ai_model_type_index");
+
+        entity.HasIndex(e => e.AiProvider, "ai_model_ai_provider_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

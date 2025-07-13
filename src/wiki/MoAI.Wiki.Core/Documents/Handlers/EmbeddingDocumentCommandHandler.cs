@@ -11,9 +11,9 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Models;
 
@@ -22,7 +22,7 @@ namespace MoAI.Wiki.Documents.Commands;
 /// <summary>
 /// 向量化文档.
 /// </summary>
-public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingocumentCommand, EmptyCommandResponse>
+public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocumentCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly SystemOptions _systemOptions;
@@ -42,7 +42,7 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingocumentC
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(EmbeddingocumentCommand request, CancellationToken cancellationToken)
+    public async Task<EmptyCommandResponse> Handle(EmbeddingDocumentCommand request, CancellationToken cancellationToken)
     {
         var documentTask = await _databaseContext.WikiDocumentTasks
             .AnyAsync(x => x.DocumentId == request.DocumentId && x.State < (int)FileEmbeddingState.Processing);
@@ -82,7 +82,7 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingocumentC
             State = (int)FileEmbeddingState.Wait,
             MaxTokensPerParagraph = request.MaxTokensPerParagraph,
             OverlappingTokens = request.OverlappingTokens,
-            Tokenizer = DBJsonHelper.ToJsonString(request.Tokenizer),
+            Tokenizer = TextToJsonExtensions.ToJsonString(request.Tokenizer),
             Message = "任务已创建"
         };
 

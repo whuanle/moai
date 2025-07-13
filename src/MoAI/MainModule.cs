@@ -7,14 +7,16 @@
 using Maomi;
 using Maomi.I18n;
 using MoAI.Admin;
+using MoAI.AiModel.Core;
+using MoAI.Common;
 using MoAI.Database;
 using MoAI.Filters;
 using MoAI.Infra;
 using MoAI.Login;
 using MoAI.Modules;
-using MoAI.Common;
 using MoAI.Storage;
 using MoAI.User;
+using MoAI.Wiki;
 
 namespace MoAI;
 
@@ -24,10 +26,12 @@ namespace MoAI;
 [InjectModule<InfraCoreModule>]
 [InjectModule<DatabaseCoreModule>]
 [InjectModule<StorageCoreModule>]
-[InjectModule<PublicCoreModule>]
+[InjectModule<CommonCoreModule>]
 [InjectModule<LoginCoreModule>]
 [InjectModule<AdminCoreModule>]
 [InjectModule<UserCoreModule>]
+[InjectModule<AiModelCoreModule>]
+[InjectModule<WikiCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

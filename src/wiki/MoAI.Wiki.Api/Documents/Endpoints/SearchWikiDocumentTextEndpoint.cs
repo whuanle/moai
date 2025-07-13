@@ -15,9 +15,9 @@ using MoAI.Wiki.Wikis.Queries.Response;
 namespace MoAI.Wiki.Documents.Endpoints;
 
 /// <summary>
-/// 查询文档任务列表.
+/// 搜索知识库.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/list")]
+[HttpPost($"{ApiPrefix.Prefix}/document/search")]
 
 public class SearchWikiDocumentTextEndpoint : Endpoint<SearchWikiDocumentTextCommand, SearchWikiDocumentTextCommandResponse>
 {

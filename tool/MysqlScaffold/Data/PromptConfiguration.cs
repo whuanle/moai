@@ -1,9 +1,5 @@
-﻿// <copyright file="PromptConfiguration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -48,6 +44,9 @@ public partial class PromptConfiguration : IEntityTypeConfiguration<PromptEntity
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开")
+            .HasColumnName("is_public");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("名称")

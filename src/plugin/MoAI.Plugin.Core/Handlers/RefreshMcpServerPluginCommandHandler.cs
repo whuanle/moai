@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
 using MoAI.Plugin.Models;
@@ -61,8 +61,8 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
                 Name = pluginEntity.PluginName,
                 Description = pluginEntity.Description,
                 ServerUrl = new Uri(pluginEntity.Server),
-                Header = DBJsonHelper.FromJsonString<IReadOnlyCollection<KeyValueString>>(pluginEntity.Headers)!,
-                Query = DBJsonHelper.FromJsonString<IReadOnlyCollection<KeyValueString>>(pluginEntity.Queries)!,
+                Header = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(pluginEntity.Headers)!,
+                Query = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(pluginEntity.Queries)!,
             };
 
             pluginFunctionEntities = await GetPluginFunctions(importMcpServerPluginCommand);

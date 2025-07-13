@@ -30,8 +30,9 @@ public class QueryFileDownloadUrlCommandHandler : IRequestHandler<QueryFileDownl
     }
 
     /// <inheritdoc/>
-    public QueryFileDownloadUrlCommandResponse Handle(QueryFileDownloadUrlCommand request, CancellationToken cancellationToken)
+    public async Task<QueryFileDownloadUrlCommandResponse> Handle(QueryFileDownloadUrlCommand request, CancellationToken cancellationToken)
     {
+        await Task.CompletedTask;
         var results = new Dictionary<string, Uri>();
 
         if (request.Visibility == FileVisibility.Public)
@@ -58,10 +59,5 @@ public class QueryFileDownloadUrlCommandHandler : IRequestHandler<QueryFileDownl
         {
             Urls = results
         };
-    }
-
-    Task<QueryFileDownloadUrlCommandResponse> IRequestHandler<QueryFileDownloadUrlCommand, QueryFileDownloadUrlCommandResponse>.Handle(QueryFileDownloadUrlCommand request, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
     }
 }

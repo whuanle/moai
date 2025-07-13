@@ -34,6 +34,11 @@ public static class FileUploadHelper
 
         long totalBytesRead = 0;
 
+        if (File.Exists(targetFilePath))
+        {
+            File.Delete(targetFilePath);
+        }
+
         using FileStream outputFileStream = new FileStream(
             path: targetFilePath,
             mode: FileMode.CreateNew,

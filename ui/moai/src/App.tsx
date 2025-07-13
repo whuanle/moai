@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  Route,
-  Routes,
   useNavigate,
   Link,
   useLocation,
+  Outlet,
+  Route,
+  Routes,
   Navigate,
 } from "react-router";
 import {
@@ -50,6 +51,14 @@ import Dashboard from "./components/dashboard/Dashboard";
 import OAuth from "./components/admin/OAuth";
 import UserManager from "./components/admin/UserManager";
 import UserSetting from "./components/user/UserSetting";
+import AIModel from "./components/admin/AiModel";
+import WikiPage from "./components/wiki/WikiPage";
+import WikiLayout from "./components/wiki/WikiLayout";
+import WikiSettings from "./components/wiki/WikiSettings";
+import WikiDocument from "./components/wiki/WikiDocument";
+import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
+import WikiSearch from "./components/wiki/WikiSearch";
+import WikiUser from "./components/wiki/WikiUser";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -67,13 +76,13 @@ function App() {
   const getSubMenuKey = (path: string) => {
     switch (path) {
       case "dashboard":
-        return "0";
+        return "dashboard";
       case "user":
-        return "2";
+        return "user";
       case "admin":
-        return "10";
+        return "admin";
       default:
-        return "0";
+        return "dashboard";
     }
   };
 
@@ -81,21 +90,24 @@ function App() {
   const getSelectedKey = () => {
     const path = location.pathname;
     if (path.includes("/admin/oauth")) {
-      return "10.1";
+      return "admin.oauth";
     }
     if (path.includes("/admin/usermanager")) {
-      return "10.2";
+      return "admin.usermanager";
     }
     if (path.includes("/admin")) {
-      return "10";
+      return "admin";
     }
     if (path.includes("/user/usersetting")) {
-      return "2.1";
+      return "user.setting";
     }
     if (path.includes("/user")) {
-      return "2";
+      return "user";
     }
-    return "1";
+    if (path.includes("/wiki")) {
+      return "wiki";
+    }
+    return "home";
   };
 
   useEffect(() => {
@@ -163,17 +175,22 @@ function App() {
   const getMenuItems = () => {
     const baseItems = [
       {
-        key: "1",
+        key: "home",
         icon: <HomeOutlined />,
         label: <Link to="/app/index">首页</Link>,
       },
       {
-        key: "2",
+        key: "wiki",
+        icon: <BookOutlined />,
+        label: <Link to="/app/wiki/list">知识库</Link>,
+      },
+      {
+        key: "user",
         icon: <UserOutlined />,
         label: "个人中心",
         children: [
           {
-            key: "2.1",
+            key: "user.setting",
             icon: <UserOutlined />,
             label: <Link to="/app/user/usersetting">个人信息</Link>,
           },
@@ -184,19 +201,24 @@ function App() {
     // 只有管理员才能看到管理面板
     if (isAdmin) {
       baseItems.push({
-        key: "10",
+        key: "admin",
         icon: <SettingOutlined />,
         label: "管理面板",
         children: [
           {
-            key: "10.1",
+            key: "admin.oauth",
             icon: <ApiOutlined />,
             label: <Link to="/app/admin/oauth">OAuth</Link>,
           },
           {
-            key: "10.2",
+            key: "admin.usermanager",
             icon: <TeamOutlined />,
             label: <Link to="/app/admin/usermanager">用户管理</Link>,
+          },
+          {
+            key: "admin.aimodel",
+            icon: <RobotOutlined />,
+            label: <Link to="/app/admin/aimodel">AI模型</Link>,
           },
         ],
       });
@@ -266,7 +288,7 @@ function App() {
             />
           </Sider>
           <Layout style={{ padding: "0 0px 0px" }}>
-            <Content className="content">
+          <Content className="content">
               <Routes>
                 <Route index element={<Dashboard />} />
                 <Route path="index" element={<Dashboard />} />
@@ -274,10 +296,23 @@ function App() {
                   <Route index element={<Navigate to="oauth" replace />} />
                   <Route path="oauth" element={<OAuth />} />
                   <Route path="usermanager" element={<UserManager />} />
+                  <Route path="aimodel" element={<AIModel />} />
                 </Route>
                 <Route path="user">
                   <Route index element={<Navigate to="usersetting" replace />} />
                   <Route path="usersetting" element={<UserSetting />} />
+                </Route>
+                <Route path="wiki">
+                  <Route index element={<Navigate to="list" replace />} />
+                  <Route path="list" element={<WikiPage />} />
+                  <Route path=":id" element={<WikiLayout />}>
+                    <Route path="settings" element={<WikiSettings />} />
+                    <Route index element={<WikiDocument />} />
+                    <Route path="document" element={<WikiDocument />} />
+                    <Route path="document/:documentId/embedding" element={<DocumentEmbedding />} />
+                    <Route path="search" element={<WikiSearch />} />
+                    <Route path="user" element={<WikiUser />} />
+                  </Route>
                 </Route>
               </Routes>
             </Content>

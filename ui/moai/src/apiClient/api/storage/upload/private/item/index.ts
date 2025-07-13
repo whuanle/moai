@@ -32,15 +32,14 @@ export interface WithObjectKeyItemRequestBuilder extends BaseRequestBuilder<With
  * 上传私有文件.
  */
 export interface WithObjectKeyItemRequestBuilderPutQueryParameters {
-    date?: string;
-    expires?: string;
+    expiry?: string;
     size?: number;
     token?: string;
 }
 /**
  * Uri template for the request builder.
  */
-export const WithObjectKeyItemRequestBuilderUriTemplate = "{+baseurl}/api/storage/upload/private/{objectKey}{?date*,expires*,size*,token*}";
+export const WithObjectKeyItemRequestBuilderUriTemplate = "{+baseurl}/api/storage/upload/private/{objectKey}{?expiry*,size*,token*}";
 /**
  * Metadata for all the requests in the request builder.
  */

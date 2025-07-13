@@ -1,0 +1,28 @@
+/* Wiki页面样式 */
+.wiki-layout {
+  height: 100vh;
+}
+
+/* 自定义侧边栏样式 */
+.wiki-sider {
+  background: #fff;
+  border-right: 1px solid #f0f0f0;
+}
+
+.wiki-sider-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.wiki-content {
+  padding: 24px;
+  overflow: auto;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .wiki-content {
+    padding: 16px;
+  }
+} 

@@ -4,6 +4,8 @@
 // @ts-ignore
 import { ApiRequestBuilderNavigationMetadata, type ApiRequestBuilder } from './api/index.js';
 // @ts-ignore
+import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
+// @ts-ignore
 import { apiClientProxifier, ParseNodeFactoryRegistry, SerializationWriterFactoryRegistry, type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type RequestAdapter } from '@microsoft/kiota-abstractions';
 // @ts-ignore
 import { FormParseNodeFactory, FormSerializationWriterFactory } from '@microsoft/kiota-serialization-form';
@@ -56,6 +58,10 @@ export interface MoAIClient extends BaseRequestBuilder<MoAIClient> {
      * The api property
      */
     get api(): ApiRequestBuilder;
+    /**
+     * The download property
+     */
+    get download(): DownloadRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -67,6 +73,9 @@ export const MoAIClientUriTemplate = "{+baseurl}";
 export const MoAIClientNavigationMetadata: Record<Exclude<keyof MoAIClient, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     api: {
         navigationMetadata: ApiRequestBuilderNavigationMetadata,
+    },
+    download: {
+        navigationMetadata: DownloadRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

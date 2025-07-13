@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Reset_passwordRequestBuilder extends BaseRequestBuilder<Reset_passwordRequestBuilder> {
     /**
      * 重置用户密码.
-     * @param body The request body
+     * @param body 重置用户密码.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleString>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Reset_passwordRequestBuilder extends BaseRequestBuilder<Reset_p
      put(body: ResetUserPasswordCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SimpleString | undefined>;
     /**
      * 重置用户密码.
-     * @param body The request body
+     * @param body 重置用户密码.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

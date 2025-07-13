@@ -4,6 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using System.ComponentModel;
+using System.Text.Json.Serialization;
+
 namespace MoAI.Login.Models;
 
 /// <summary>
@@ -14,30 +17,28 @@ public enum OAuthPrivider
     /// <summary>
     /// 自定义.
     /// </summary>
+    [JsonPropertyName("custom")]
+    [Description("自定义")]
     Custom = 0,
 
     /// <summary>
     /// 飞书.
     /// </summary>
+    [JsonPropertyName("feishu")]
+    [Description("飞书")]
     Feishu = 1,
+
+    /// <summary>
+    /// 企业微信.
+    /// </summary>
+    [JsonPropertyName("weixinwork")]
+    [Description("企业微信")]
+    WeixinWork = 2,
 
     /// <summary>
     /// GitHub.
     /// </summary>
-    GitHub = 2,
-
-    /// <summary>
-    /// GitLab.
-    /// </summary>
-    GitLab = 3,
-
-    /// <summary>
-    /// Gitee.
-    /// </summary>
-    Gitee = 4,
-
-    /// <summary>
-    /// 微信.
-    /// </summary>
-    WeChat = 5
+    [JsonPropertyName("github")]
+    [Description("Github")]
+    GitHub = 3,
 }

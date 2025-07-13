@@ -5,13 +5,18 @@
 // </copyright>
 
 using Maomi;
+using Maomi.MQ;
+using Maomi.MQ.EventBus;
+using Maomi.MQ.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra;
+using RabbitMQ.Client;
 using StackExchange.Redis.Extensions.Core;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.Core.Implementations;
 using StackExchange.Redis.Extensions.System.Text.Json;
+using System.Reflection;
 
 namespace MoAI.Database;
 
@@ -41,34 +46,26 @@ public class DatabaseCoreModule : IModule
         {
             ConnectionString = _systemOptions.Redis,
             PoolSize = 10,
-            KeyPrefix = "maomi:",
+            KeyPrefix = "moai:",
             ConnectTimeout = 5000,
             IsDefault = true
         });
 
-        //// 如果使用内存数据库
-        // if ("inmemory".Equals(systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
-        // {
-        //    DatabaseOptions? dbContextOptions = new()
-        //    {
-        //        ConfigurationAssembly = typeof(DatabaseCoreModule).Assembly,
-        //        EntityAssembly = typeof(DatabaseContext).Assembly
-        //    };
-
-        // context.Services.AddSingleton(dbContextOptions);
-
-        // // 注册内存数据库
-        //    context.Services.AddDbContext<DatabaseContext>(options =>
-        //    {
-        //        options.UseInMemoryDatabase(systemOptions.Database);
-        //    });
-
-        // // 创建数据库
-        //    using ServiceProvider? serviceProvider = context.Services.BuildServiceProvider();
-        //    using IServiceScope? scope = serviceProvider.CreateScope();
-        //    DatabaseContext? dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-        //    dbContext.Database.EnsureCreated();
-        // }
+        context.Services.AddMaomiMQ(
+            (MqOptionsBuilder options) =>
+            {
+                options.WorkId = 1;
+                options.AutoQueueDeclare = true;
+                options.AppName = _systemOptions.Name;
+                options.Rabbit = (ConnectionFactory options) =>
+                {
+                    options.Uri = new Uri(_systemOptions.RabbitMQ!);
+                    options.ConsumerDispatchConcurrency = 100;
+                    options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+                };
+            },
+            context.Modules.Select(x => x.Assembly).ToArray(),
+            [new ConsumerTypeFilter(), new EventBusTypeFilter()]);
     }
 
     private static void AddStackExchangeRedis(IServiceCollection services, RedisConfiguration redisConfiguration)

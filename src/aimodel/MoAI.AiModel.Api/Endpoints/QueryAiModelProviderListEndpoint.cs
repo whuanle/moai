@@ -8,17 +8,17 @@ using FastEndpoints;
 using MediatR;
 using MoAI.AiModel.Queries;
 using MoAI.AiModel.Queries.Respones;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Common.Queries;
 
 namespace MoAI.AiModel.Endpoints;
 
 /// <summary>
-/// 查询团队的ai服务商列表.
+/// 查询ai服务商列表.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/providerlist")]
-public class QueryAiModelProviderListEndpoint : Endpoint<QueryAiModelProviderListCommand, QueryAiModelProviderListResponse>
+public class QueryAiModelProviderListEndpoint : EndpointWithoutRequest<QueryAiModelProviderListResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -35,7 +35,7 @@ public class QueryAiModelProviderListEndpoint : Endpoint<QueryAiModelProviderLis
     }
 
     /// <inheritdoc/>
-    public override async Task<QueryAiModelProviderListResponse> ExecuteAsync(QueryAiModelProviderListCommand req, CancellationToken ct)
+    public override async Task<QueryAiModelProviderListResponse> ExecuteAsync(CancellationToken ct)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
@@ -47,6 +47,6 @@ public class QueryAiModelProviderListEndpoint : Endpoint<QueryAiModelProviderLis
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
-        return await _mediator.Send(req);
+        return await _mediator.Send(new QueryAiModelProviderListCommand());
     }
 }

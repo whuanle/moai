@@ -6,13 +6,15 @@ import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } f
 // @ts-ignore
 import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from './admin/index.js';
 // @ts-ignore
-import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
+import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
 // @ts-ignore
-import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
+import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
+// @ts-ignore
+import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata } from './wiki/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -29,13 +31,13 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get admin(): AdminRequestBuilder;
     /**
-     * The download property
+     * The aimodel property
      */
-    get download(): DownloadRequestBuilder;
+    get aimodel(): AimodelRequestBuilder;
     /**
-     * The public property
+     * The common property
      */
-    get public(): PublicRequestBuilder;
+    get common(): CommonRequestBuilder;
     /**
      * The storage property
      */
@@ -44,6 +46,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The user property
      */
     get user(): UserRequestBuilder;
+    /**
+     * The wiki property
+     */
+    get wiki(): WikiRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -59,17 +65,20 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     admin: {
         navigationMetadata: AdminRequestBuilderNavigationMetadata,
     },
-    download: {
-        navigationMetadata: DownloadRequestBuilderNavigationMetadata,
+    aimodel: {
+        navigationMetadata: AimodelRequestBuilderNavigationMetadata,
     },
-    public: {
-        navigationMetadata: PublicRequestBuilderNavigationMetadata,
+    common: {
+        navigationMetadata: CommonRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,
     },
     user: {
         navigationMetadata: UserRequestBuilderNavigationMetadata,
+    },
+    wiki: {
+        navigationMetadata: WikiRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

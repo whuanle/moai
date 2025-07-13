@@ -5,6 +5,7 @@
 // </copyright>
 
 using MoAI.Infra.Models;
+using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Wikis.Queries.Response;
 
@@ -31,7 +32,7 @@ public class QueryWikiConfigCommandResponse : AuditsInfo
     /// <summary>
     /// 分词器.
     /// </summary>
-    public string EmbeddingModelTokenizer { get; set; } = default!;
+    public EmbeddingTokenizer EmbeddingModelTokenizer { get; set; } = default!;
 
     /// <summary>
     /// 维度，跟模型有关.

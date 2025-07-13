@@ -19,7 +19,7 @@ public class OpenAiTextEmbeddingGeneration : ITextEmbeddingGeneration
     {
         return kernelMemoryBuilder.WithOpenAITextEmbeddingGeneration(new OpenAIConfig
         {
-            EmbeddingModel = endpoint.DeploymentName,
+            EmbeddingModel = endpoint.Name,
             Endpoint = endpoint.Endpoint,
             APIKey = endpoint.Key,
 

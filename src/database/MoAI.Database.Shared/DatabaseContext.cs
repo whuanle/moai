@@ -45,6 +45,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
+    /// 对话历史.
+    /// </summary>
+    public virtual DbSet<ChatHistoryEntity> ChatHistories { get; set; }
+
+    /// <summary>
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }

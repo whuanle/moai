@@ -13,7 +13,12 @@ import {
   Col,
   Divider,
   Spin,
-  Modal,
+  Descriptions,
+  Statistic,
+  Tag,
+  Tooltip,
+  Alert,
+  Image,
 } from 'antd';
 import {
   UserOutlined,
@@ -21,6 +26,11 @@ import {
   SaveOutlined,
   EditOutlined,
   LockOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  CrownOutlined,
+  SafetyOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { GetApiClient, UploadPublicFile } from '../ServiceClient';
 import { GetUserDetailInfo, GetServiceInfo } from '../../InitService';
@@ -29,7 +39,8 @@ import { FileTypeHelper } from '../../helper/FileTypeHelper';
 import { RsaHelper } from '../../helper/RsaHalper';
 import useAppStore from '../../stateshare/store';
 
-const { Title } = Typography;
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 export default function UserSetting() {
   const [form] = Form.useForm();
@@ -37,8 +48,10 @@ export default function UserSetting() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [passwordEditing, setPasswordEditing] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [userInfoLoading, setUserInfoLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const [messageApi, contextHolder] = message.useMessage();
   const serverInfo = useAppStore.getState().getServerInfo();
   const userInfo = useAppStore((state) => state.userDetailInfo);
@@ -70,20 +83,12 @@ export default function UserSetting() {
     const emailChanged = values.email !== userInfo?.email;
     
     if (userNameChanged || emailChanged) {
-      // 显示确认对话框
-      Modal.confirm({
-        title: '确认修改',
-        content: '确认修改用户名或邮箱吗？',
-        okText: '确认',
-        cancelText: '取消',
-        onOk: async () => {
-          await performSave(values);
-        },
-      });
-    } else {
-      // 直接保存
-      await performSave(values);
+      // 显示提示信息
+      messageApi.info('正在保存用户名或邮箱的修改...');
     }
+    
+    // 直接保存
+    await performSave(values);
   };
 
   const performSave = async (values: any) => {
@@ -110,6 +115,31 @@ export default function UserSetting() {
     }
   };
 
+  // 计算密码强度
+  const calculatePasswordStrength = (password: string): number => {
+    if (!password) return 0;
+    
+    let score = 0;
+    
+    // 长度检查
+    if (password.length >= 6) score += 20;
+    if (password.length >= 8) score += 10;
+    if (password.length >= 12) score += 10;
+    
+    // 字符类型检查
+    if (/[a-z]/.test(password)) score += 15;
+    if (/[A-Z]/.test(password)) score += 15;
+    if (/[0-9]/.test(password)) score += 15;
+    if (/[^a-zA-Z0-9]/.test(password)) score += 15;
+    
+    // 复杂度检查
+    if (password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
+      score += 10;
+    }
+    
+    return Math.min(score, 100);
+  };
+
   const handlePasswordChange = async (values: any) => {
     setPasswordLoading(true);
     try {
@@ -126,6 +156,8 @@ export default function UserSetting() {
 
       messageApi.success('密码修改成功');
       passwordForm.resetFields();
+      setPasswordEditing(false);
+      setPasswordStrength(0);
     } catch (error) {
       proxyRequestError(error, messageApi, '密码修改失败');
     } finally {
@@ -188,137 +220,18 @@ export default function UserSetting() {
     <>
       {contextHolder}
       <div style={{ padding: '24px' }}>
-        <Card>
-          <div style={{ marginBottom: '24px' }}>
-            <Title level={3} style={{ margin: 0 }}>
-              <UserOutlined style={{ marginRight: '8px' }} />
-              个人信息
-            </Title>
-          </div>
-
-          <Row gutter={24}>
-            <Col span={8}>
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <Avatar
-                  size={120}
-                  src={userInfo?.avatarPath}
-                  icon={<UserOutlined />}
-                  style={{ marginBottom: '16px' }}
-                />
-                <div>
-                  <Typography.Title level={4} style={{ margin: '8px 0' }}>
-                    {userInfo?.nickName || userInfo?.userName || '用户'}
-                  </Typography.Title>
-                  <Typography.Text type="secondary">
-                    {userInfo?.userName}
-                  </Typography.Text>
-                </div>
-                <div style={{ marginTop: '16px' }}>
-                  <Upload
-                    name="avatar"
-                    showUploadList={false}
-                    beforeUpload={handleAvatarUpload}
-                    accept="image/*"
-                    disabled={uploading}
-                  >
-                    <Button 
-                      icon={<UploadOutlined />} 
-                      size="small"
-                      loading={uploading}
-                    >
-                      {uploading ? '上传中...' : '更换头像'}
-                    </Button>
-                  </Upload>
-                </div>
-              </div>
-            </Col>
-
-            <Col span={16}>
-              <Spin spinning={userInfoLoading} tip="保存中...">
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onFinish={handleSave}
-                >
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="userName"
-                      label="用户名"
-                      rules={[{ required: true, message: '请输入用户名' }]}
-                    >
-                      <Input prefix={<UserOutlined />} placeholder="请输入用户名" disabled={!editing} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="nickName"
-                      label="昵称"
-                    >
-                      <Input placeholder="请输入昵称" disabled={!editing} />
-                    </Form.Item>
-                  </Col>
-                </Row>
-
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="email"
-                      label="邮箱"
-                      rules={[
-                        { type: 'email', message: '请输入正确的邮箱格式' }
-                      ]}
-                    >
-                      <Input placeholder="请输入邮箱" disabled={!editing} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="phone"
-                      label="手机号"
-                    >
-                      <Input placeholder="请输入手机号" disabled={!editing} />
-                    </Form.Item>
-                  </Col>
-                </Row>
-
-                <Divider />
-
-                <Form.Item>
-                  <Space>
-                    {editing ? (
-                      <>
-                        <Button
-                          type="primary"
-                          icon={<SaveOutlined />}
-                          htmlType="button"
-                            loading={userInfoLoading}
-                            
-                        >
-                          保存
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setEditing(false);
-                            form.setFieldsValue({
-                              userName: userInfo?.userName,
-                              nickName: userInfo?.nickName,
-                              email: userInfo?.email,
-                              phone: userInfo?.phone,
-                            });
-                          }}
-                          disabled={userInfoLoading}
-                        >
-                          取消
-                        </Button>
-                      </>
-                    ) : null}
-                  </Space>
-                </Form.Item>
-              </Form>
-              
-              {!editing && (
-                <div style={{ marginTop: '16px' }}>
+        <Row gutter={[24, 24]}>
+          {/* 用户信息卡片 */}
+          <Col xs={24} lg={16}>
+            <Card
+              title={
+                <Space>
+                  <UserOutlined />
+                  <span>个人信息</span>
+                </Space>
+              }
+              extra={
+                !editing && (
                   <Button
                     type="primary"
                     icon={<EditOutlined />}
@@ -326,76 +239,399 @@ export default function UserSetting() {
                   >
                     编辑信息
                   </Button>
-                </div>
-              )}
-              </Spin>
-
-              <Divider />
-
-              {/* 修改密码区域 */}
-              <div style={{ marginTop: '24px' }}>
-                <Typography.Title level={4} style={{ marginBottom: '16px' }}>
-                  <LockOutlined style={{ marginRight: '8px' }} />
-                  修改密码
-                </Typography.Title>
-                
-                <Form
-                  form={passwordForm}
-                  layout="vertical"
-                  onFinish={handlePasswordChange}
-                  style={{ maxWidth: '400px' }}
-                >
-                  <Form.Item
-                    name="newPassword"
-                    label="新密码"
-                    rules={[
-                      { required: true, message: '请输入新密码' },
-                      { min: 6, message: '密码至少6个字符' }
-                    ]}
-                  >
-                    <Input.Password
-                      prefix={<LockOutlined />}
-                      placeholder="请输入新密码"
-                    />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="confirmPassword"
-                    label="确认新密码"
-                    dependencies={['newPassword']}
-                    rules={[
-                      { required: true, message: '请确认新密码' },
-                      ({ getFieldValue }) => ({
-                        validator(_, value) {
-                          if (!value || getFieldValue('newPassword') === value) {
-                            return Promise.resolve();
+                )
+              }
+              actions={
+                editing
+                  ? [
+                      <Button
+                        key="save"
+                        type="primary"
+                        icon={<SaveOutlined />}
+                        loading={userInfoLoading}
+                        onClick={async () => {
+                          try {
+                            const values = await form.validateFields();
+                            await handleSave(values);
+                          } catch (error) {
+                            console.error('表单验证失败:', error);
                           }
-                          return Promise.reject(new Error('两次输入的密码不一致'));
-                        },
-                      }),
-                    ]}
-                  >
-                    <Input.Password
-                      prefix={<LockOutlined />}
-                      placeholder="请再次输入新密码"
+                        }}
+                      >
+                        保存
+                      </Button>,
+                      <Button
+                        key="cancel"
+                        onClick={() => {
+                          setEditing(false);
+                          form.setFieldsValue({
+                            userName: userInfo?.userName,
+                            nickName: userInfo?.nickName,
+                            email: userInfo?.email,
+                            phone: userInfo?.phone,
+                          });
+                        }}
+                        disabled={userInfoLoading}
+                      >
+                        取消
+                      </Button>,
+                    ]
+                  : []
+              }
+            >
+              <Spin spinning={userInfoLoading} tip="保存中...">
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleSave}
+                  size="large"
+                >
+                  {/* 提示信息区域 */}
+                  {editing && (
+                    <Alert
+                      message="编辑提示"
+                      description="修改用户名或邮箱后，将会影响登录，请确保信息准确无误。"
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
                     />
-                  </Form.Item>
-
-                  <Form.Item>
-                    <Button
-                      type="primary"
-                      icon={<LockOutlined />}
-                      htmlType="submit"
-                      loading={passwordLoading}
-                    >
-                      修改密码
-                    </Button>
-                  </Form.Item>
+                  )}
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name="userName"
+                        label={
+                          <Space>
+                            <UserOutlined />
+                            用户名
+                          </Space>
+                        }
+                        rules={[{ required: true, message: '请输入用户名' }]}
+                      >
+                        <Input 
+                          placeholder="请输入用户名" 
+                          disabled={!editing}
+                          prefix={<UserOutlined />}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name="nickName"
+                        label={
+                          <Space>
+                            <CrownOutlined />
+                            昵称
+                          </Space>
+                        }
+                      >
+                        <Input 
+                          placeholder="请输入昵称" 
+                          disabled={!editing}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name="email"
+                        label={
+                          <Space>
+                            <MailOutlined />
+                            邮箱
+                          </Space>
+                        }
+                        rules={[
+                          { type: 'email', message: '请输入正确的邮箱格式' }
+                        ]}
+                      >
+                        <Input 
+                          placeholder="请输入邮箱" 
+                          disabled={!editing}
+                          prefix={<MailOutlined />}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name="phone"
+                        label={
+                          <Space>
+                            <PhoneOutlined />
+                            手机号
+                          </Space>
+                        }
+                      >
+                        <Input 
+                          placeholder="请输入手机号" 
+                          disabled={!editing}
+                          prefix={<PhoneOutlined />}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                 </Form>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+              </Spin>
+            </Card>
+          </Col>
+
+          {/* 用户头像卡片 */}
+          <Col xs={24} lg={8}>
+            <Card
+              title={
+                <Space>
+                  <UserOutlined />
+                  <span>头像设置</span>
+                </Space>
+              }
+              bodyStyle={{ textAlign: 'center' }}
+            >
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Image
+                  width={120}
+                  height={120}
+                  src={userInfo?.avatarPath || undefined}
+                  fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ19ynY6NxRAAGoydJ1zPw2Zgp2wgjTp0i2czRBUfQU1PFS0XJiMV6irxBiMvLlL4oZzJ4skZR4I/3e6+W3AI5BaXFs3Q/4ws5gq/IMRgFbAyQZGHYcRZ0YGC0x+jCDGfEO/AfH+GAplC7xIMwPEBPYqCD4/9eDgLdAHAb7JhDzA=="
+                  style={{ 
+                    border: '4px solid #f0f0f0',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    objectFit: 'cover'
+                  }}
+                  preview={{
+                    mask: '点击查看大图',
+                    maskClassName: 'custom-mask'
+                  }}
+                />
+                
+                <Descriptions column={1} size="small">
+                  <Descriptions.Item label="用户名">
+                    <Text strong>{userInfo?.userName}</Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="昵称">
+                    <Text>{userInfo?.nickName || '未设置'}</Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="管理员">
+                    <Tag color={userInfo?.isAdmin ? "red" : "default"} icon={userInfo?.isAdmin ? <CrownOutlined /> : <UserOutlined />}>
+                      {userInfo?.isAdmin ? "管理员" : "普通用户"}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="状态">
+                    <Tag color="green" icon={<SafetyOutlined />}>
+                      正常
+                    </Tag>
+                  </Descriptions.Item>
+                </Descriptions>
+
+                <Upload
+                  name="avatar"
+                  showUploadList={false}
+                  beforeUpload={handleAvatarUpload}
+                  accept="image/*"
+                  disabled={uploading}
+                >
+                  <Button 
+                    icon={<UploadOutlined />} 
+                    type="dashed"
+                    loading={uploading}
+                    block
+                  >
+                    {uploading ? '上传中...' : '更换头像'}
+                  </Button>
+                </Upload>
+                
+                <Alert
+                  message="头像上传提示"
+                  description="支持 JPG、PNG、GIF 等格式，文件大小不超过 5MB"
+                  type="info"
+                  showIcon
+                  icon={<InfoCircleOutlined />}
+                />
+              </Space>
+            </Card>
+          </Col>
+
+          {/* 修改密码卡片 */}
+          <Col xs={24}>
+            <Card
+              title={
+                <Space>
+                  <LockOutlined />
+                  <span>安全设置</span>
+                </Space>
+              }
+            >
+              <Row gutter={[24, 24]}>
+                <Col xs={24} md={12}>
+                  <Card
+                    type="inner"
+                    title={
+                      <Space>
+                        <LockOutlined />
+                        修改密码
+                      </Space>
+                    }
+                    extra={
+                      !passwordEditing ? (
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => setPasswordEditing(true)}
+                        >
+                          更新密码
+                        </Button>
+                      ) : (
+                        <Space>
+                          <Button
+                            type="primary"
+                            size="small"
+                            icon={<SaveOutlined />}
+                            loading={passwordLoading}
+                            onClick={() => passwordForm.submit()}
+                          >
+                            保存
+                          </Button>
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              setPasswordEditing(false);
+                              passwordForm.resetFields();
+                              setPasswordStrength(0);
+                            }}
+                            disabled={passwordLoading}
+                          >
+                            取消
+                          </Button>
+                        </Space>
+                      )
+                    }
+                  >
+                    <Form
+                      form={passwordForm}
+                      layout="vertical"
+                      onFinish={handlePasswordChange}
+                    >
+                      <Form.Item
+                        name="newPassword"
+                        label="新密码"
+                        rules={[
+                          { required: true, message: '请输入新密码' },
+                          { min: 6, message: '密码至少6个字符' }
+                        ]}
+                      >
+                        <Input.Password
+                          prefix={<LockOutlined />}
+                          placeholder="请输入新密码"
+                          disabled={!passwordEditing}
+                          onChange={(e) => {
+                            const strength = calculatePasswordStrength(e.target.value);
+                            setPasswordStrength(strength);
+                          }}
+                        />
+                      </Form.Item>
+
+                      <Form.Item
+                        name="confirmPassword"
+                        label="确认新密码"
+                        dependencies={['newPassword']}
+                        rules={[
+                          { required: true, message: '请确认新密码' },
+                          ({ getFieldValue }) => ({
+                            validator(_, value) {
+                              if (!value || getFieldValue('newPassword') === value) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error('两次输入的密码不一致'));
+                            },
+                          }),
+                        ]}
+                      >
+                        <Input.Password
+                          prefix={<LockOutlined />}
+                          placeholder="请再次输入新密码"
+                          disabled={!passwordEditing}
+                        />
+                      </Form.Item>
+
+                      {passwordEditing && (
+                        <Form.Item>
+                          <Button
+                            type="primary"
+                            icon={<LockOutlined />}
+                            htmlType="submit"
+                            loading={passwordLoading}
+                            block
+                          >
+                            修改密码
+                          </Button>
+                        </Form.Item>
+                      )}
+                    </Form>
+                  </Card>
+                </Col>
+
+                <Col xs={24} md={12}>
+                  <Card
+                    type="inner"
+                    title={
+                      <Space>
+                        <SafetyOutlined />
+                        安全提示
+                      </Space>
+                    }
+                  >
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      <Alert
+                        message="密码安全建议"
+                        description="建议使用包含字母、数字和特殊字符的强密码"
+                        type="warning"
+                        showIcon
+                      />
+                      
+                      <Statistic
+                        title="密码安全等级"
+                        value={passwordStrength}
+                        suffix="%"
+                        valueStyle={{ 
+                          color: passwordStrength === 0 ? '#999' : 
+                                 passwordStrength < 30 ? '#ff4d4f' :
+                                 passwordStrength < 60 ? '#faad14' :
+                                 passwordStrength < 80 ? '#52c41a' : '#3f8600'
+                        }}
+                        prefix={passwordStrength === 0 ? '*' : undefined}
+                      />
+                      
+                      {passwordStrength > 0 && (
+                        <Alert
+                          message={
+                            passwordStrength < 30 ? "密码强度：弱" :
+                            passwordStrength < 60 ? "密码强度：中等" :
+                            passwordStrength < 80 ? "密码强度：强" : "密码强度：很强"
+                          }
+                          type={
+                            passwordStrength < 30 ? "error" :
+                            passwordStrength < 60 ? "warning" :
+                            passwordStrength < 80 ? "success" : "success"
+                          }
+                          showIcon
+                        />
+                      )}
+                      
+                      <Paragraph type="secondary" style={{ margin: 0 }}>
+                        <ul>
+                          <li>定期更换密码</li>
+                          <li>不要在多个网站使用相同密码</li>
+                          <li>避免使用个人信息作为密码</li>
+                          <li>启用双重认证（如果支持）</li>
+                        </ul>
+                      </Paragraph>
+                    </Space>
+                  </Card>
+                </Col>
+              </Row>
+            </Card>
+          </Col>
+        </Row>
       </div>
     </>
   );

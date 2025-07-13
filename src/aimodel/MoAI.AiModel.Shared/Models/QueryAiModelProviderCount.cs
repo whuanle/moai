@@ -14,7 +14,7 @@ public class QueryAiModelProviderCount
     /// <summary>
     /// 供应商名称.
     /// </summary>
-    public string Provider { get; init; } = default!;
+    public AiProvider Provider { get; init; } = default!;
 
     /// <summary>
     /// 模型数量.

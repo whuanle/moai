@@ -7,8 +7,10 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
+using System.Transactions;
 
 namespace MoAI.Wiki.Documents.Commands;
 
@@ -34,6 +36,11 @@ public class ComplateUploadWikiDocumentCommandHandler : IRequestHandler<Complate
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(ComplateUploadWikiDocumentCommand request, CancellationToken cancellationToken)
     {
+        using TransactionScope transactionScope = new TransactionScope(
+            scopeOption: TransactionScopeOption.Required,
+            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
+            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+
         _ = await _mediator.Send(new ComplateFileUploadCommand
         {
             FileId = request.FileId,
@@ -42,19 +49,28 @@ public class ComplateUploadWikiDocumentCommandHandler : IRequestHandler<Complate
 
         if (!request.IsSuccess)
         {
-            // 上传失败，删除数据库记录
-            var document = await _databaseContext.WikiDocuments
-                .Where(x => x.Id == request.DocumentId && x.WikiId == request.WikiId)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (document != null)
-            {
-                _databaseContext.WikiDocuments.Remove(document);
-                await _databaseContext.SaveChangesAsync(cancellationToken);
-            }
-
             return EmptyCommandResponse.Default;
         }
+
+        // 上传失败，删除数据库记录
+        var fileEntity = await _databaseContext.Files.Where(x => x.Id == request.FileId).FirstOrDefaultAsync(cancellationToken);
+
+        if (fileEntity == null)
+        {
+            throw new BusinessException("上传文件出错");
+        }
+
+        var documentFile = await _databaseContext.WikiDocuments.AddAsync(new Database.Entities.WikiDocumentEntity
+        {
+            FileId = request.FileId,
+            WikiId = request.WikiId,
+            FileName = fileEntity.FileName,
+            ObjectKey = fileEntity.ObjectKey,
+        });
+
+        await _databaseContext.SaveChangesAsync();
+
+        transactionScope.Complete();
 
         return EmptyCommandResponse.Default;
     }

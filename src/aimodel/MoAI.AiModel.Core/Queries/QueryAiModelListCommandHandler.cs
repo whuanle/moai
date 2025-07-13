@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Database;
-using MoAI.Database.Helper;
+using MoAI.Infra.Extensions;
 
 namespace MoAI.AiModel.Queries;
 
@@ -34,14 +34,14 @@ public class QueryAiModelListCommandHandler : IRequestHandler<QueryAiModelListCo
     {
         var query = _dbContext.AiModels.AsQueryable();
 
-        if (!string.IsNullOrEmpty(request.Provider?.ToString()))
+        if (request.Provider != null)
         {
-            query = query.Where(x => x.AiProvider == request.Provider.ToString());
+            query = query.Where(x => x.AiProvider == request.Provider.ToJsonString());
         }
 
         if (request.AiModelType != null)
         {
-            query = query.Where(x => x.AiModelType == request.AiModelType.ToString());
+            query = query.Where(x => x.AiModelType == request.AiModelType.ToJsonString());
         }
 
         var list = await query
@@ -51,8 +51,8 @@ public class QueryAiModelListCommandHandler : IRequestHandler<QueryAiModelListCo
                     Name = x.Name,
                     DeploymentName = x.DeploymentName,
                     Title = x.Title,
-                    AiModelType = x.AiModelType.FromDBString<AiModelType>(),
-                    Provider = x.AiModelType.FromDBString<AiProvider>(),
+                    AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
+                    Provider = x.AiProvider.JsonToObject<AiProvider>(),
                     ContextWindowTokens = x.ContextWindowTokens,
                     Endpoint = x.Endpoint,
                     Abilities = new ModelAbilities

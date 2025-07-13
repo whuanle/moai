@@ -17,7 +17,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// 向量化文档.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/document/embedding_document")]
-public class EmbeddingocumentEndpoint : Endpoint<EmbeddingocumentCommand, EmptyCommandResponse>
+public class EmbeddingocumentEndpoint : Endpoint<EmbeddingDocumentCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -34,7 +34,7 @@ public class EmbeddingocumentEndpoint : Endpoint<EmbeddingocumentCommand, EmptyC
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(EmbeddingocumentCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(EmbeddingDocumentCommand req, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {

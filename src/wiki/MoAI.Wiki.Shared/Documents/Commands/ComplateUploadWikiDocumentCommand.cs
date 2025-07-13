@@ -28,9 +28,4 @@ public class ComplateUploadWikiDocumentCommand : IRequest<EmptyCommandResponse>
     /// 文件ID.
     /// </summary>
     public int FileId { get; set; }
-
-    /// <summary>
-    /// 文档 id.
-    /// </summary>
-    public int DocumentId { get; set; }
 }

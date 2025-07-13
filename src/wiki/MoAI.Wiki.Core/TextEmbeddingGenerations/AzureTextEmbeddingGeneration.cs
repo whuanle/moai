@@ -18,17 +18,19 @@ public class AzureTextEmbeddingGeneration : ITextEmbeddingGeneration
     /// <inheritdoc/>
     public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, WikiConfig wikiConfig)
     {
-        return kernelMemoryBuilder.WithOpenAITextEmbeddingGeneration(new OpenAIConfig
+        return kernelMemoryBuilder.WithAzureOpenAITextEmbeddingGeneration(new AzureOpenAIConfig
         {
-            EmbeddingModel = endpoint.DeploymentName,
             Endpoint = endpoint.Endpoint,
             APIKey = endpoint.Key,
+            APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
+            Deployment = endpoint.DeploymentName,
+            Auth = AzureOpenAIConfig.AuthTypes.APIKey,
+            Tokenizer = wikiConfig.EmbeddingModelTokenizer,
+            MaxTokenTotal = endpoint.ContextWindowTokens,
 
             MaxEmbeddingBatchSize = wikiConfig.EmbeddingBatchSize,
             MaxRetries = wikiConfig.MaxRetries,
-            EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
             EmbeddingDimensions = wikiConfig.EmbeddingDimensions,
-            EmbeddingModelTokenizer = wikiConfig.EmbeddingModelTokenizer
         });
     }
 }

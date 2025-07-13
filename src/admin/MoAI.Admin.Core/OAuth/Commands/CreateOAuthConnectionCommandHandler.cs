@@ -7,9 +7,9 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;
@@ -69,7 +69,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         {
             Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
-            Provider = DBJsonHelper.ToJsonString(request.Provider),
+            Provider = TextToJsonExtensions.ToJsonString(request.Provider),
             Key = request.Key,
             Secret = request.Secret,
             IconUrl = request.IconUrl,
@@ -93,7 +93,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         {
             Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
-            Provider = DBJsonHelper.ToJsonString(request.Provider),
+            Provider = TextToJsonExtensions.ToJsonString(request.Provider),
             Key = request.Key,
             Secret = request.Secret,
             IconUrl = request.IconUrl,

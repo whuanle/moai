@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
+using MoAI.User.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;
@@ -18,24 +19,24 @@ namespace MoAI.Wiki.Wikis.Queries;
 public class QueryWikiListCommandHandler : IRequestHandler<QueryWikiListCommand, IReadOnlyCollection<QueryWikiSimpleInfoResponse>>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly UserContext _userContext;
+    private readonly IMediator _mediator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryWikiListCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    /// <param name="userContext"></param>
-    public QueryWikiListCommandHandler(DatabaseContext databaseContext, UserContext userContext)
+    /// <param name="mediator"></param>
+    public QueryWikiListCommandHandler(DatabaseContext databaseContext, IMediator mediator)
     {
         _databaseContext = databaseContext;
-        _userContext = userContext;
+        _mediator = mediator;
     }
 
     /// <inheritdoc/>
     public async Task<IReadOnlyCollection<QueryWikiSimpleInfoResponse>> Handle(QueryWikiListCommand request, CancellationToken cancellationToken)
     {
         var response = await _databaseContext.Wikis
-            .Where(x => x.IsPublic || x.CreateUserId == _userContext.UserId || _databaseContext.WikiUsers.Any(a => a.WikiId == x.Id && a.UserId == _userContext.UserId))
+            .Where(x => x.IsPublic || x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Any(a => a.WikiId == x.Id && a.UserId == request.UserId))
             .OrderBy(x => x.Name)
             .Select(x => new QueryWikiSimpleInfoResponse
             {
@@ -43,8 +44,16 @@ public class QueryWikiListCommandHandler : IRequestHandler<QueryWikiListCommand,
                 Name = x.Name,
                 Description = x.Description,
                 IsPublic = x.IsPublic,
+                CreateUserId = x.CreateUserId,
+                UpdateUserId = x.UpdateUserId,
+                CreateTime = x.CreateTime,
+                UpdateTime = x.UpdateTime,
+                IsAdmin = x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Any(a => a.UserId == request.UserId),
+                DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()
             })
             .ToListAsync(cancellationToken);
+
+        await _mediator.Send(new FillUserInfoCommand { Items = response });
 
         return response;
     }

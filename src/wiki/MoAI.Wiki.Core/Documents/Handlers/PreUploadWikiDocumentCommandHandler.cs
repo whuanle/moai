@@ -43,7 +43,7 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
             throw new BusinessException("不支持该文件格式") { StatusCode = 400 };
         }
 
-        var existWiki = await _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).AnyAsync(cancellationToken);
+        var existWiki = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).AnyAsync(cancellationToken);
 
         if (!existWiki)
         {
@@ -51,9 +51,9 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
         }
 
         // 同一个知识库下不能有同名文件.
-        var existFileCount = await _databaseContext.WikiDocuments.Where(x => x.FileName == request.FileName).CountAsync();
+        var existDocument = await _databaseContext.WikiDocuments.Where(x => x.FileName == request.FileName).AnyAsync();
 
-        if (existFileCount > 0)
+        if (existDocument)
         {
             throw new BusinessException("同一个知识库下不能有同名文件") { StatusCode = 409 };
         }
@@ -75,16 +75,6 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
         {
             throw new BusinessException("同一个知识库下不能有同名文件，请联系管理员") { StatusCode = 409 };
         }
-
-        var documentFile = await _databaseContext.WikiDocuments.AddAsync(new Database.Entities.WikiDocumentEntity
-        {
-            FileId = result.FileId,
-            WikiId = request.WikiId,
-            FileName = request.FileName,
-            ObjectKey = objectKey
-        });
-
-        await _databaseContext.SaveChangesAsync();
 
         return new PreloadWikiDocumentResponse
         {

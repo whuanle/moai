@@ -9,8 +9,10 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Database;
+using MoAI.Infra.Extensions;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 namespace MoAI.AiModel.Queries;
 
@@ -39,24 +41,17 @@ public class QueryAiModelProviderListCommandHandler : IRequestHandler<QueryAiMod
             .GroupBy(x => x.AiProvider)
             .Select(x => new QueryAiModelProviderCount
             {
-                Provider = x.Key,
+                Provider = x.Key.JsonToObject<AiProvider>(),
                 Count = x.Count()
             })
             .ToListAsync(cancellationToken);
 
-        foreach (var item in typeof(AiProvider).GetFields(BindingFlags.Public | BindingFlags.Static))
+        foreach (AiProvider item in Enum.GetValues<AiProvider>())
         {
-            string name = item.Name;
-            var jsonName = item.GetCustomAttribute<JsonPropertyNameAttribute>();
-            if (jsonName != null)
-            {
-                name = jsonName.Name;
-            }
-
             providers.Add(new QueryAiModelProviderCount
             {
-                Provider = name,
-                Count = list.FirstOrDefault(x => x.Provider.Equals(name, StringComparison.OrdinalIgnoreCase))?.Count ?? 0
+                Provider = item,
+                Count = list.FirstOrDefault(x => x.Provider == item)?.Count ?? 0
             });
         }
 

@@ -8,7 +8,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.User.Queries;
+using MoAI.Wiki.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;
@@ -37,7 +39,7 @@ public class QueryWikiConfigCommandHandler : IRequestHandler<QueryWikiConfigComm
             {
                 EmbeddingDimensions = x.EmbeddingDimensions,
                 EmbeddingModelId = x.EmbeddingModelId,
-                EmbeddingModelTokenizer = x.EmbeddingModelTokenizer,
+                EmbeddingModelTokenizer = x.EmbeddingModelTokenizer.JsonToObject<EmbeddingTokenizer>(),
                 CreateTime = x.CreateTime,
                 UpdateTime = x.UpdateTime,
                 CreateUserId = x.CreateUserId,
@@ -53,7 +55,7 @@ public class QueryWikiConfigCommandHandler : IRequestHandler<QueryWikiConfigComm
             throw new BusinessException("知识库不存在") { StatusCode = 500 };
         }
 
-        await _mediator.Send(new FillUserInfoCommand { Items = (IReadOnlyCollection<Infra.Models.AuditsInfo>)result });
+        await _mediator.Send(new FillUserInfoCommand { Items = new QueryWikiConfigCommandResponse[] { result } });
         return result;
     }
 }

@@ -18,7 +18,7 @@ public enum AiProvider
     /// 自定义.
     /// </summary>
     [JsonPropertyName("custom")]
-    [EnumMember(Value = "openai")]
+    [EnumMember(Value = "custom")]
     Custom,
 
     /// <summary>

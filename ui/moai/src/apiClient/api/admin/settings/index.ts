@@ -23,7 +23,7 @@ export interface SettingsRequestBuilder extends BaseRequestBuilder<SettingsReque
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QuerySystemSettingsCommandResponse | undefined>;
     /**
      * 更新系统设置.
-     * @param body The request body
+     * @param body 设置系统配置.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -41,7 +41,7 @@ export interface SettingsRequestBuilder extends BaseRequestBuilder<SettingsReque
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
      * 更新系统设置.
-     * @param body The request body
+     * @param body 设置系统配置.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

@@ -14,8 +14,8 @@ using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Configuration;
 using MoAI.AiModel.Models;
 using MoAI.Database;
-using MoAI.Database.Helper;
 using MoAI.Infra;
+using MoAI.Infra.Extensions;
 using MoAI.Storage.Queries;
 using MoAI.Store.Enums;
 using MoAI.Wiki.Models;
@@ -111,7 +111,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
             new TextPartitioningOptions
             {
                 MaxTokensPerParagraph = documentTask.MaxTokensPerParagraph,
-                OverlappingTokens = documentTask.OverlappingTokens
+                OverlappingTokens = documentTask.OverlappingTokens,
             })
             .Build();
 
@@ -190,8 +190,8 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
                 Name = x.Name,
                 DeploymentName = x.DeploymentName,
                 Title = x.Title,
-                AiModelType = x.AiModelType.FromDBString<AiModelType>(),
-                Provider = x.AiProvider.FromDBString<AiProvider>(),
+                AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
+                Provider = x.AiProvider.JsonToObject<AiProvider>(),
                 ContextWindowTokens = x.ContextWindowTokens,
                 Endpoint = x.Endpoint,
                 Abilities = new ModelAbilities

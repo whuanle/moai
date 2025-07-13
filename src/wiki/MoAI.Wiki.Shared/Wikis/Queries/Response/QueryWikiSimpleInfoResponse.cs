@@ -4,14 +4,14 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-// <copyright file="QueryWikiSimpleInfoCommand.cs" company="MaomiAI">
-// Copyright (c) MaomiAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/AIDotNet/MaomiAI
-// </copyright>
+using MoAI.Infra.Models;
+
 namespace MoAI.Wiki.Wikis.Queries.Response;
 
-public class QueryWikiSimpleInfoResponse
+/// <summary>
+/// 知识库信息.
+/// </summary>
+public class QueryWikiSimpleInfoResponse : AuditsInfo
 {
     /// <summary>
     /// 知识库 id.
@@ -32,4 +32,14 @@ public class QueryWikiSimpleInfoResponse
     /// 公开使用，所有人不需要加入团队即可使用此知识库.
     /// </summary>
     public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 是否管理员.
+    /// </summary>
+    public bool IsAdmin { get; init; }
+
+    /// <summary>
+    /// 文档数量.
+    /// </summary>
+    public int DocumentCount { get; init; }
 }

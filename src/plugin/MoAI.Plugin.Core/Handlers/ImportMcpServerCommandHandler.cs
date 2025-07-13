@@ -8,8 +8,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
 using MoAI.Plugin.Models;
@@ -69,8 +69,8 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             OpenapiFileId = 0,
             Title = request.Name,
             Type = (int)PluginType.Mcp,
-            Headers = DBJsonHelper.ToJsonString(request.Header),
-            Queries = DBJsonHelper.ToJsonString(request.Query),
+            Headers = TextToJsonExtensions.ToJsonString(request.Header),
+            Queries = TextToJsonExtensions.ToJsonString(request.Query),
         };
 
         await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);

@@ -67,15 +67,23 @@ public class ComplateFileCommandHandler : IRequestHandler<ComplateFileUploadComm
         // 如果文件已存在且上传失败，则删除该文件
         if (!request.IsSuccess)
         {
-            fileInfo.Delete();
+            if (fileInfo.Exists)
+            {
+                fileInfo.Delete();
+            }
 
             _dbContext.Files.Remove(file);
             await _dbContext.SaveChangesAsync();
+
+            return EmptyCommandResponse.Default;
         }
 
         if (!fileInfo.Exists || file.FileSize != fileInfo.Length)
         {
-            fileInfo.Delete();
+            if (fileInfo.Exists)
+            {
+                fileInfo.Delete();
+            }
 
             _dbContext.Files.Remove(file);
             await _dbContext.SaveChangesAsync();

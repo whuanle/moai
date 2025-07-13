@@ -8,8 +8,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Commands;
 using MoAI.Database;
-using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -73,8 +73,6 @@ public class UpdateAiModelCommandHandler : IRequestHandler<UpdateAiModelCommand,
         aiModel.Name = request.Name;
         aiModel.DeploymentName = request.DeploymentName;
         aiModel.Title = request.Title;
-        aiModel.AiModelType = request.AiModelType.ToDBString();
-        aiModel.AiProvider = request.Provider.ToDBString();
         aiModel.ContextWindowTokens = request.ContextWindowTokens;
         aiModel.Endpoint = request.Endpoint;
         aiModel.MaxDimension = request.MaxDimension;

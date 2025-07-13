@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
 using MoAI.Database;
-using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Services;
 using MoAI.Wiki.Wikis.Queries.Response;
@@ -86,7 +86,7 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
         }
 
         var query = string.IsNullOrEmpty(request.Query) ? string.Empty : request.Query;
-        var searchResult = await memoryClient.SearchAsync(query: query, index: request.WikiId.ToString(), limit: 5, filter: filter);
+        var searchResult = await memoryClient.SearchAsync(query: query, index: request.WikiId.ToString(), limit: 10, filter: filter);
 
         if (searchResult == null)
         {
@@ -121,8 +121,8 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
                 Name = x.Name,
                 DeploymentName = x.DeploymentName,
                 Title = x.Title,
-                AiModelType = x.AiModelType.FromDBString<AiModelType>(),
-                Provider = x.AiProvider.FromDBString<AiProvider>(),
+                AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
+                Provider = x.AiProvider.JsonToObject<AiProvider>(),
                 ContextWindowTokens = x.ContextWindowTokens,
                 Endpoint = x.Endpoint,
                 Abilities = new ModelAbilities

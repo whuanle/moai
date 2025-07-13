@@ -9,7 +9,7 @@ export const RefreshServerInfo = async (client?: MoAIClient) => {
     if (!client) {
       client = GetAllowApiClient();
     }
-    const response = await client.api.public.serverinfo.get();
+    const response = await client.api.common.serverinfo.get();
     if (response) {
       const serverInfo: ServerInfoModel = {
         serviceUrl: response.serviceUrl!,
@@ -119,7 +119,7 @@ export const GetAccessToken = async (): Promise<string | null> => {
 export const GetUserDetailInfo = async () => {
   try {
     const client = GetApiClient();
-    const response = await client.api.public.userinfo.get();
+    const response = await client.api.common.userinfo.get();
     return response;
   } catch (error) {
     console.error("Error fetching user detail info:", error);

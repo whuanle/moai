@@ -14,4 +14,8 @@ namespace MoAI.Wiki.Wikis.Queries;
 /// </summary>
 public class QueryWikiListCommand : IRequest<IReadOnlyCollection<QueryWikiSimpleInfoResponse>>
 {
+    /// <summary>
+    /// 用户id.
+    /// </summary>
+    public int UserId { get; init; }
 }

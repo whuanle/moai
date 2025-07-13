@@ -16,7 +16,6 @@ namespace MoAI.Modules;
 [InjectModule<ConfigureMVCModule>]
 [InjectModule<FastEndpointModule>]
 [InjectModule<ConfigureMediatRModule>]
-[InjectModule<MessageModule>]
 public class ApiModule : IModule
 {
     /// <inheritdoc/>

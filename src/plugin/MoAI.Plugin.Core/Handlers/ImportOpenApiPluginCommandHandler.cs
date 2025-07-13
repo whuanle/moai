@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Readers;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
 using MoAI.Plugin.Models;
@@ -84,8 +84,8 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             OpenapiFileName = request.FileName,
             PluginName = request.Name,
             Description = request.Description,
-            Headers = DBJsonHelper.ToJsonString(Array.Empty<KeyValueString>()),
-            Queries = DBJsonHelper.ToJsonString(Array.Empty<KeyValueString>()),
+            Headers = TextToJsonExtensions.ToJsonString(Array.Empty<KeyValueString>()),
+            Queries = TextToJsonExtensions.ToJsonString(Array.Empty<KeyValueString>()),
             OpenapiFileId = fileEntity.Id,
             Server = apiReaderResult.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty,
             Type = (int)PluginType.OpenApi,

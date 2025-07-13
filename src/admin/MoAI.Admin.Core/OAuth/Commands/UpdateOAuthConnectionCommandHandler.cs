@@ -7,9 +7,9 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.OAuth;
 using MoAI.Login.Commands;
@@ -69,7 +69,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
             connection.Secret = request.Secret;
         }
 
-        var sourceProvider = DBJsonHelper.FromJsonString<OAuthPrivider>(connection.Provider);
+        var sourceProvider = TextToJsonExtensions.JsonToObject<OAuthPrivider>(connection.Provider);
 
         if (sourceProvider == OAuthPrivider.Custom)
         {

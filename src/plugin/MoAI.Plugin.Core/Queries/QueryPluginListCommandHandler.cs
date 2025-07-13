@@ -7,7 +7,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Helper;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 using MoAI.Plugin.Queries;
@@ -63,8 +63,8 @@ public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListComm
                 Title = x.Title,
                 OpenapiFileId = x.OpenapiFileId,
                 OpenapiFileName = x.OpenapiFileName,
-                Header = DBJsonHelper.FromJsonString<IReadOnlyCollection<KeyValueString>>(x.Headers)!,
-                Query = DBJsonHelper.FromJsonString<IReadOnlyCollection<KeyValueString>>(x.Queries)!,
+                Header = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(x.Headers)!,
+                Query = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(x.Queries)!,
                 Type = (PluginType)x.Type,
                 Description = x.Description,
                 CreateTime = x.CreateTime,

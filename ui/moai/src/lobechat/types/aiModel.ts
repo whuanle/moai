@@ -118,6 +118,7 @@ export interface AIBaseModelCard {
   organization?: string;
 
   releasedAt?: string;
+  pricing?: any
 }
 
 export interface AiModelConfig {

@@ -9,8 +9,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -62,8 +62,8 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
             Name = request.Name,
             DeploymentName = request.DeploymentName,
             Title = request.Title,
-            AiModelType = request.AiModelType.ToDBString(),
-            AiProvider = request.Provider.ToDBString(),
+            AiModelType = request.AiModelType.ToJsonString(),
+            AiProvider = request.Provider.ToJsonString(),
             ContextWindowTokens = request.ContextWindowTokens,
             Endpoint = request.Endpoint,
             Key = skKey,
