@@ -59,6 +59,7 @@ public class QueryPluginInfoListCommandHandler : IRequestHandler<QueryPluginInfo
                 Title = x.Title,
                 Type = (PluginType)x.Type,
                 Description = x.Description,
+                IsPublic = x.IsPublic,
             }).ToArrayAsync();
 
         return new QueryPluginInfoListCommandResponse { Items = plugins };

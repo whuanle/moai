@@ -79,12 +79,17 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
 
             // var frontUrl = _systemOptions.Server + $"/oauth_login";
             // var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
-            connection.RedirectUri = oauthRedirectUrl;
+            connection.AuthorizeUrl = oauthRedirectUrl;
         }
         else if (sourceProvider == OAuthPrivider.Feishu)
         {
-            connection.RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
-            connection.WellKnown = "https://accounts.feishu.cn";
+            connection.AuthorizeUrl = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
+            connection.WellKnown = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
+        }
+        else if (sourceProvider == OAuthPrivider.WeixinWork)
+        {
+            connection.AuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize";
+            connection.WellKnown = "https://open.weixin.qq.com/connect/oauth2/authorize";
         }
 
         _databaseContext.Update(connection);

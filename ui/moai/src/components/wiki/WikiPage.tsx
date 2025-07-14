@@ -243,7 +243,7 @@ const WikiCard: React.FC<WikiCardProps> = ({ item, currentUserId, onDelete, onCl
                 {item.title}
               </Text>
                              {item.isAdmin && (
-                 <Tag color="orange">管理员</Tag>
+                 <Tag color="orange">成员</Tag>
                )}
             </Space>
           }
@@ -362,8 +362,18 @@ export default function WikiPage() {
   }, [fetchWikiList]);
 
   const handleCardClick = useCallback((id: number) => {
+    // 找到对应的知识库项
+    const wikiItem = wikiList.find(item => item.id === id);
+    if (!wikiItem) return;
+    
+    // 检查用户是否为该知识库的成员
+    if (!wikiItem.isAdmin && currentUserId !== wikiItem.createUserId) {
+      message.error("您不是该知识库成员");
+      return;
+    }
+    
     navigate(`/app/wiki/${id}`);
-  }, [navigate]);
+  }, [navigate, wikiList, currentUserId]);
 
   const handleDeleteWiki = useCallback((id: number) => {
     deleteWiki(id);

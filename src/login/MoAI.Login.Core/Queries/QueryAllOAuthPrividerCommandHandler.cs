@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra;
+using MoAI.Infra.Extensions;
 using MoAI.Login.Models;
 using MoAI.Login.Queries;
 using MoAI.Login.Queries.Responses;
@@ -45,7 +46,7 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
                 Name = c.Name,
                 IconUrl = c.IconUrl,
                 Provider = c.Provider,
-                RedirectUrl = c.RedirectUri
+                RedirectUrl = c.AuthorizeUrl
             })
             .ToListAsync(cancellationToken);
 
@@ -60,6 +61,18 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
             {
                 // https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=cli_a5d611352af9d00b&redirect_uri=https%3A%2F%2Fexample.com%2Fapi%2Foauth%2Fcallback&scope=bitable:app:readonly%20contact:contact&state=RANDOMSTRING
                 redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=&state={item.OAuthId}";
+            }
+            else if (OAuthPrivider.WeixinWork.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
+            {
+                // 微信的授权地址需要特殊处理
+                // https://open.weixin.qq.com/connect/oauth2/authorize?appid=CORPID&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_base&state=STATE&agentid=AGENTID#wechat_redirect
+                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=snsapi_login&state={item.OAuthId}#wechat_redirect";
+            }
+            else if (OAuthPrivider.DingTalk.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
+            {
+                // 钉钉的授权地址需要特殊处理
+                // https://oapi.dingtalk.com/connect/oauth2/authorize?appid=dingb0f8c4d1c3e5f6a&response_type=code&scope=snsapi_login&state=STATE
+                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&response_type=code&scope=snsapi_login&state={item.OAuthId}";
             }
 
             // var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&response_type=code&scope=openid%20profile&state={item.OAuthId}";

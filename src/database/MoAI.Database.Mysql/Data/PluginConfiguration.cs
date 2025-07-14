@@ -69,6 +69,9 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasMaxLength(50)
             .HasComment("插件标题")
             .HasColumnName("title");
+        entity.Property(e => e.IsPublic)
+            .HasColumnType(typeName: "tinyint(1)")
+            .HasColumnName("is_public");
         entity.Property(e => e.Type)
             .HasComment("system|mcp|openapi")
             .HasColumnType("int(11)")

@@ -20,6 +20,11 @@ public partial class PluginEntity : IFullAudited
     public string PluginName { get; set; } = default!;
 
     /// <summary>
+    /// 公开.
+    /// </summary>
+    public bool IsPublic { get; set; } = default!;
+
+    /// <summary>
     /// 插件标题.
     /// </summary>
     public string Title { get; set; } = default!;

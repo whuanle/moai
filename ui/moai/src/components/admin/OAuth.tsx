@@ -29,11 +29,25 @@ import {
   CreateOAuthConnectionCommand,
   UpdateOAuthConnectionCommand,
   DeleteOAuthConnectionCommand,
-  OAuthPrividerObject,
 } from "../../apiClient/models";
 import { proxyFormRequestError, proxyRequestError } from "../../helper/RequestError";
 
 const { Title } = Typography;
+
+// 固定的OAuth提供商列表
+const OAUTH_PROVIDERS = {
+  custom: "自定义",
+  feishu: "飞书",
+} as const;
+
+// 提供商默认配置
+const PROVIDER_DEFAULTS = {
+  feishu: {
+    wellKnown: "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
+    authorizeUrl: "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
+    iconUrl: "https://lf-package-cn.feishucdn.com/obj/feishu-static/lark/open/website/images/899fa60e60151c73aaea2e25871102dc.svg",
+  }
+} as const;
 
 function OAuth() {
   const [data, setData] = useState<
@@ -46,10 +60,7 @@ function OAuth() {
     useState<QueryAllOAuthPrividerDetailCommandResponseItem | null>(null);
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
-
-  // 调试信息
-  console.log("OAuthPrividerObject:", OAuthPrividerObject);
-  console.log("OAuthPrividerObject entries:", Object.entries(OAuthPrividerObject));
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
 
   const fetchOAuthList = async () => {
     setLoading(true);
@@ -117,6 +128,7 @@ function OAuth() {
 
   const showCreateModal = () => {
     setEditingItem(null);
+    setSelectedProvider("");
     form.resetFields();
     setModalVisible(true);
   };
@@ -125,6 +137,7 @@ function OAuth() {
     record: QueryAllOAuthPrividerDetailCommandResponseItem
   ) => {
     setEditingItem(record);
+    setSelectedProvider(record.provider || "");
     form.setFieldsValue(record);
     setModalVisible(true);
   };
@@ -134,6 +147,23 @@ function OAuth() {
     setEditingItem(null);
     form.resetFields();
     setSubmitLoading(false);
+  };
+
+  const handleProviderChange = (provider: string) => {
+    setSelectedProvider(provider);
+    const defaults = PROVIDER_DEFAULTS[provider as keyof typeof PROVIDER_DEFAULTS];
+    if (defaults) {
+      form.setFieldsValue({
+        wellKnown: defaults.wellKnown,
+        authorizeUrl: defaults.authorizeUrl,
+        iconUrl: defaults.iconUrl,
+      });
+    } else {
+      // 自定义提供商时清空授权地址
+      form.setFieldsValue({
+        authorizeUrl: "",
+      });
+    }
   };
 
   const handleSubmit = () => {
@@ -173,7 +203,9 @@ function OAuth() {
       title: "提供商",
       dataIndex: "provider",
       key: "provider",
-      render: (provider: string) => <Tag color="blue">{provider}</Tag>,
+      render: (provider: string) => (
+        <Tag color="blue">{OAUTH_PROVIDERS[provider as keyof typeof OAUTH_PROVIDERS] || provider}</Tag>
+      ),
     },
     {
       title: "应用Key",
@@ -192,8 +224,8 @@ function OAuth() {
       ),
     },    {
       title: "回调地址",
-      dataIndex: "redirectUri",
-      key: "redirectUri",
+      dataIndex: "authorizeUrl",
+      key: "authorizeUrl",
       render: (redirectUri: string) => (
         <Typography.Text type="secondary" style={{ fontSize: "12px" }}>
           {redirectUri || "-"}
@@ -307,9 +339,12 @@ function OAuth() {
                   label="提供商"
                   rules={[{ required: true, message: "请选择提供商" }]}
                 >
-                  <Select placeholder="请选择提供商">
-                    {Object.entries(OAuthPrividerObject).map(([key, value]) => (
-                      <Select.Option key={key} value={value}>
+                  <Select 
+                    placeholder="请选择提供商"
+                    onChange={handleProviderChange}
+                  >
+                    {Object.entries(OAUTH_PROVIDERS).map(([key, value]) => (
+                      <Select.Option key={key} value={key}>
                         {value}
                       </Select.Option>
                     ))}
@@ -346,18 +381,42 @@ function OAuth() {
 
             <Form.Item
               name="iconUrl"
-              label="图标地址"
+              label="图标地址(建议填写企业应用的图标地址)"
               rules={[{ required: true, message: "请输入图标地址" }]}
             >
               <Input placeholder="请输入图标URL地址" />
             </Form.Item>
 
             <Form.Item
-              name="wellKnown"
-              label="发现端口"
-              rules={[{ required: true, message: "请输入发现端口" }]}
+              name="authorizeUrl"
+              label="授权地址"
+              rules={[
+                { 
+                  required: selectedProvider !== "custom", 
+                  message: "请输入授权地址" 
+                }
+              ]}
             >
-              <Input placeholder="请输入OAuth发现端口地址" />
+              <Input 
+                placeholder="请输入OAuth授权地址" 
+                disabled={true}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="wellKnown"
+              label="发现端口(.well-known)"
+              rules={[
+                { 
+                  required: selectedProvider === "custom", 
+                  message: "请输入发现端口" 
+                }
+              ]}
+            >
+              <Input 
+                placeholder="请输入OAuth发现端口地址" 
+                disabled={selectedProvider !== "custom"}
+              />
             </Form.Item>
           </Form>
         </Modal>

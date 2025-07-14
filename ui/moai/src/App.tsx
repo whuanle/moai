@@ -59,6 +59,7 @@ import WikiDocument from "./components/wiki/WikiDocument";
 import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
 import WikiSearch from "./components/wiki/WikiSearch";
 import WikiUser from "./components/wiki/WikiUser";
+import PluginList from "./components/plugin/PluginList";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -71,20 +72,6 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const serverInfo = useAppStore.getState().getServerInfo();
   const userDetailInfo = useAppStore((state) => state.userDetailInfo);
-
-  // 获取子菜单的 key
-  const getSubMenuKey = (path: string) => {
-    switch (path) {
-      case "dashboard":
-        return "dashboard";
-      case "user":
-        return "user";
-      case "admin":
-        return "admin";
-      default:
-        return "dashboard";
-    }
-  };
 
   // 获取当前选中的菜单项
   const getSelectedKey = () => {
@@ -106,6 +93,9 @@ function App() {
     }
     if (path.includes("/wiki")) {
       return "wiki";
+    }
+    if (path.includes("/plugin")) {
+      return "plugin";
     }
     return "home";
   };
@@ -183,6 +173,11 @@ function App() {
         key: "wiki",
         icon: <BookOutlined />,
         label: <Link to="/app/wiki/list">知识库</Link>,
+      },
+      {
+        key: "plugin",
+        icon: <AppstoreOutlined />,
+        label: <Link to="/app/plugin/list">插件</Link>,
       },
       {
         key: "user",
@@ -313,6 +308,10 @@ function App() {
                     <Route path="search" element={<WikiSearch />} />
                     <Route path="user" element={<WikiUser />} />
                   </Route>
+                </Route>
+                <Route path="plugin">
+                  <Route index element={<Navigate to="list" replace />} />
+                  <Route path="list" element={<PluginList />} />
                 </Route>
               </Routes>
             </Content>

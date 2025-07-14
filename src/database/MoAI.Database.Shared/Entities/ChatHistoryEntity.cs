@@ -25,11 +25,6 @@ public partial class ChatHistoryEntity : IFullAudited
     public string Title { get; set; } = default!;
 
     /// <summary>
-    /// 提示词.
-    /// </summary>
-    public string Prompt { get; set; } = default!;
-
-    /// <summary>
     /// 对话属性.
     /// </summary>
     public string ExecutionSettings { get; set; } = default!;

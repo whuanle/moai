@@ -14,6 +14,7 @@ using MoAI.Filters;
 using MoAI.Infra;
 using MoAI.Login;
 using MoAI.Modules;
+using MoAI.Plugin;
 using MoAI.Storage;
 using MoAI.User;
 using MoAI.Wiki;
@@ -32,6 +33,7 @@ namespace MoAI;
 [InjectModule<UserCoreModule>]
 [InjectModule<AiModelCoreModule>]
 [InjectModule<WikiCoreModule>]
+[InjectModule<PluginCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

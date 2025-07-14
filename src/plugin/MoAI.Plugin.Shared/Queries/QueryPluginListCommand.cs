@@ -25,8 +25,8 @@ public class QueryPluginListCommand : IRequest<QueryPluginListCommandResponse>
     /// </summary>
     public PluginType? Type { get; init; }
 
-    /// <summary>
-    /// 插件列表.
-    /// </summary>
-    public IReadOnlyCollection<int>? PluginIds { get; init; } = Array.Empty<int>();
+    ///// <summary>
+    ///// 插件列表.
+    ///// </summary>
+    //public IReadOnlyCollection<int>? PluginIds { get; init; } = Array.Empty<int>();
 }

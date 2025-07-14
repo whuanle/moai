@@ -90,6 +90,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             Server = apiReaderResult.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty,
             Type = (int)PluginType.OpenApi,
             Title = TruncateString(apiReaderResult.OpenApiDocument.Info.Title, 255),
+            IsPublic = request.IsPublic
         };
 
         await _databaseContext.Plugins.AddAsync(pluginEntity, cancellationToken);

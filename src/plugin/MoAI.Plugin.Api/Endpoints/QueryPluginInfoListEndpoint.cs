@@ -15,7 +15,7 @@ namespace MoAI.Plugin.Endpoints;
 /// <summary>
 /// 获取插件的概要信息.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/plugin_list")]
+[HttpPost($"{ApiPrefix.Prefix}/plugininfo_list")]
 public class QueryPluginInfoListEndpoint : Endpoint<QueryPluginInfoListCommand, QueryPluginInfoListCommandResponse>
 {
     private readonly IMediator _mediator;

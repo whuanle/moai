@@ -52,10 +52,10 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasMaxLength(20)
             .HasComment("提供商")
             .HasColumnName("provider");
-        entity.Property(e => e.RedirectUri)
+        entity.Property(e => e.AuthorizeUrl)
             .HasMaxLength(1000)
             .HasComment("登录跳转地址")
-            .HasColumnName("redirect_uri");
+            .HasColumnName("authorize_url");
         entity.Property(e => e.Secret)
             .HasMaxLength(100)
             .HasComment("密钥")

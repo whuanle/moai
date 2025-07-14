@@ -39,15 +39,15 @@ public class QueryPluginListItem : AuditsInfo
     /// </summary>
     public string Server { get; set; } = default!;
 
-    /// <summary>
-    /// Header 头部信息.
-    /// </summary>
-    public IReadOnlyCollection<KeyValueString> Header { get; init; } = Array.Empty<KeyValueString>();
+    ///// <summary>
+    ///// Header 头部信息.
+    ///// </summary>
+    //public IReadOnlyCollection<KeyValueString> Header { get; init; } = Array.Empty<KeyValueString>();
 
-    /// <summary>
-    /// Query 字典.
-    /// </summary>
-    public IReadOnlyCollection<KeyValueString> Query { get; init; } = Array.Empty<KeyValueString>();
+    ///// <summary>
+    ///// Query 字典.
+    ///// </summary>
+    //public IReadOnlyCollection<KeyValueString> Query { get; init; } = Array.Empty<KeyValueString>();
 
     /// <summary>
     /// system|mcp|openapi.
@@ -62,5 +62,10 @@ public class QueryPluginListItem : AuditsInfo
     /// <summary>
     /// 文件名称.
     /// </summary>
-    public string OpenapiFileName { get; set; } = default!;
+    public string? OpenapiFileName { get; set; } = default!;
+
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; } = default!;
 }

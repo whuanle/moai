@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.AI</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SemanticKernel" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.HuggingFace" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.MistralAI" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

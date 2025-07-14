@@ -37,4 +37,9 @@ public class QueryPluginInfoItem
     /// 描述.
     /// </summary>
     public string Description { get; init; } = default!;
+
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; } = default!;
 }

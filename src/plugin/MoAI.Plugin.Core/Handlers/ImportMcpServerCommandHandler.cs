@@ -71,6 +71,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             Type = (int)PluginType.Mcp,
             Headers = TextToJsonExtensions.ToJsonString(request.Header),
             Queries = TextToJsonExtensions.ToJsonString(request.Query),
+            IsPublic = request.IsPublic
         };
 
         await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);

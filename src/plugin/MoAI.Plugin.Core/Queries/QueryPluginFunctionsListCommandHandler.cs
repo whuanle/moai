@@ -31,7 +31,7 @@ public class QueryPluginFunctionsListCommandHandler : IRequestHandler<QueryPlugi
     /// <inheritdoc/>
     public async Task<QueryPluginFunctionsListCommandResponse> Handle(QueryPluginFunctionsListCommand request, CancellationToken cancellationToken)
     {
-        var plugins = await _dbContext.PluginFunctions.Where(x => x.Id == request.PluginId)
+        var plugins = await _dbContext.PluginFunctions.Where(x => x.PluginId == request.PluginId)
             .Select(x => new QueryPluginFunctionsListCommandResponseItem
             {
                 PluginId = x.PluginId,

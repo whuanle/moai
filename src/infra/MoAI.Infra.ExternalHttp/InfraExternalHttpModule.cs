@@ -8,6 +8,7 @@ using Maomi;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.OAuth;
+using MoAI.Infra.WeixinWork;
 using Refit;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -47,6 +48,11 @@ public class InfraExternalHttpModule : IModule
 
         context.Services.AddRefitClient<IFeishuClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IWeixinWorkClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://qyapi.weixin.qq.com"))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
     }

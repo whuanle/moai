@@ -15,4 +15,8 @@ namespace MoAI.Plugin.Commands;
 /// </summary>
 public class ImportMcpServerPluginCommand : McpServerPluginConnectionOptions, IRequest<SimpleInt>
 {
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; } = default!;
 }

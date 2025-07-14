@@ -47,7 +47,7 @@ public partial class OauthConnectionEntity : IFullAudited
     /// <summary>
     /// 登录跳转地址.
     /// </summary>
-    public string RedirectUri { get; set; } = default!;
+    public string AuthorizeUrl { get; set; } = default!;
 
     /// <summary>
     /// 发现端口.

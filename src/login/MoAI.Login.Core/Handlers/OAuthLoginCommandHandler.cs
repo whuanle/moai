@@ -12,6 +12,7 @@ using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.Feishu.Models;
 using MoAI.Infra.OAuth;
@@ -148,7 +149,7 @@ state=STATE
 
     private async Task<OAuthBindUserProfile> GetOpenIdUserInfo(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
     {
-        if (OAuthPrivider.Feishu.ToString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
+        if (OAuthPrivider.Feishu.ToJsonString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
         {
             var feishuClient = _serviceProvider.GetRequiredService<IFeishuClient>();
             var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
@@ -189,6 +190,10 @@ state=STATE
 
                 AccessToken = feishuAccessToken.AccessToken
             };
+        }
+        else if (OAuthPrivider.WeixinWork.ToJsonString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
+        {
+            // todo: 微信企业号登录
         }
 
         // 获取端点信息

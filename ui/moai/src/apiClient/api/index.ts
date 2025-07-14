@@ -10,6 +10,8 @@ import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } f
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
+import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
+// @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
@@ -38,6 +40,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The common property
      */
     get common(): CommonRequestBuilder;
+    /**
+     * The plugin property
+     */
+    get plugin(): PluginRequestBuilder;
     /**
      * The storage property
      */
@@ -70,6 +76,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
+    },
+    plugin: {
+        navigationMetadata: PluginRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

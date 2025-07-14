@@ -56,11 +56,6 @@ public partial class ChatHistoryConfiguration : IEntityTypeConfiguration<ChatHis
             .HasDefaultValueSql("'[]'")
             .HasComment("插件列表")
             .HasColumnName("plugin_ids");
-        entity.Property(e => e.Prompt)
-            .HasMaxLength(2000)
-            .HasDefaultValueSql("''")
-            .HasComment("提示词")
-            .HasColumnName("prompt");
         entity.Property(e => e.Title)
             .HasMaxLength(100)
             .HasComment("话题标题")

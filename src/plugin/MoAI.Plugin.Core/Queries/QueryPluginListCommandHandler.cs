@@ -49,10 +49,10 @@ public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListComm
             query = query.Where(x => x.Type == (int)request.Type.Value);
         }
 
-        if (request.PluginIds != null && request.PluginIds.Count > 0)
-        {
-            query = query.Where(x => request.PluginIds.Contains(x.Id));
-        }
+        //if (request.PluginIds != null && request.PluginIds.Count > 0)
+        //{
+        //    query = query.Where(x => request.PluginIds.Contains(x.Id));
+        //}
 
         var plugins = await query
             .Select(x => new QueryPluginListItem
@@ -63,14 +63,15 @@ public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListComm
                 Title = x.Title,
                 OpenapiFileId = x.OpenapiFileId,
                 OpenapiFileName = x.OpenapiFileName,
-                Header = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(x.Headers)!,
-                Query = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(x.Queries)!,
+                //Header = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(x.Headers)!,
+                //Query = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(x.Queries)!,
                 Type = (PluginType)x.Type,
                 Description = x.Description,
                 CreateTime = x.CreateTime,
                 CreateUserId = x.CreateUserId,
                 UpdateTime = x.UpdateTime,
                 UpdateUserId = x.UpdateUserId,
+                IsPublic = x.IsPublic
             }).ToArrayAsync();
 
         await _mediator.Send(new FillUserInfoCommand { Items = plugins });

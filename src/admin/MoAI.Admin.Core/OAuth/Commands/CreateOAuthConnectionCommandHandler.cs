@@ -57,6 +57,10 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         {
             await AddFeishuConnectionAsync(request, cancellationToken);
         }
+        else if(request.Provider == OAuthPrivider.WeixinWork)
+        {
+            await AddWeixinWorkConnectionAsync(request, cancellationToken);
+        }
 
         return EmptyCommandResponse.Default;
     }
@@ -73,7 +77,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             Key = request.Key,
             Secret = request.Secret,
             IconUrl = request.IconUrl,
-            WellKnown = request.WellKnown.ToString()
+            WellKnown = request.WellKnown.ToString(),
         };
 
         // 请求端口，获取重定向地址
@@ -81,7 +85,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         // 对方回调示例 http://localhost:4000/aaaaaa?a=1&code=545b56c8be398326a78b&state=ABCD
         // var frontUrl = _systemOptions.Server + $"/oauth_login";
         // var redirectUrl = $"{oauthRedirectUrl}?client_id={connection.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={connection.Uuid}";
-        connection.RedirectUri = oauthRedirectUrl;
+        connection.AuthorizeUrl = oauthRedirectUrl;
 
         _databaseContext.OauthConnections.Add(connection);
         await _databaseContext.SaveChangesAsync(cancellationToken);
@@ -97,11 +101,29 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             Key = request.Key,
             Secret = request.Secret,
             IconUrl = request.IconUrl,
-            RedirectUri = "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
+            AuthorizeUrl = "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
             WellKnown = request.WellKnown.ToString(),
         };
 
         _databaseContext.OauthConnections.Add(fsConnection);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task AddWeixinWorkConnectionAsync(CreateOAuthConnectionCommand request,CancellationToken cancellationToken)
+    {
+        var weixinWorkConnection = new Database.Entities.OauthConnectionEntity
+        {
+            Uuid = Guid.NewGuid().ToString("N"),
+            Name = request.Name,
+            Provider = TextToJsonExtensions.ToJsonString(request.Provider),
+            Key = request.Key,
+            Secret = request.Secret,
+            IconUrl = request.IconUrl,
+            AuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize",
+            WellKnown = "https://open.weixin.qq.com/connect/oauth2/authorize"
+        };
+
+        _databaseContext.OauthConnections.Add(weixinWorkConnection);
         await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 

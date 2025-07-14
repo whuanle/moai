@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
 using MoAI.Plugin.Models;
@@ -50,6 +51,14 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
+        pluginEntity.IsPublic = request.IsPublic;
+        pluginEntity.Description = request.Description;
+        pluginEntity.Queries = request.Query.ToJsonString();
+        pluginEntity.Headers = request.Header.ToJsonString();
+        pluginEntity.Title = request.Name;
+        pluginEntity.PluginName = request.Name;
+        pluginEntity.Server = request.ServerUrl.ToString();
+
         // 检测 MCP Server 是否可用
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
 
@@ -63,12 +72,20 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
             throw new BusinessException("访问 MCP 服务器失败") { StatusCode = 409 };
         }
 
+        foreach (var item in pluginFunctionEntities)
+        {
+            item.PluginId = pluginEntity.Id;
+        }
+
         using TransactionScope transactionScope = new TransactionScope(
             scopeOption: TransactionScopeOption.Required,
             asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
             transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
 
         await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginId == pluginEntity.Id));
+
+        _databaseContext.Plugins.Update(pluginEntity);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync();
@@ -116,14 +133,14 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
         var pluginFunctionEntities = new List<PluginFunctionEntity>();
         foreach (var tool in tools)
         {
-            var pluginEntity = new PluginFunctionEntity
+            var functionEntity = new PluginFunctionEntity
             {
                 Path = tool.Name,
                 Name = tool.Name,
                 Summary = tool.Description
             };
 
-            pluginFunctionEntities.Add(pluginEntity);
+            pluginFunctionEntities.Add(functionEntity);
         }
 
         return pluginFunctionEntities;

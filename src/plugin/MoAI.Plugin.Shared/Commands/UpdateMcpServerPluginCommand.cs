@@ -19,4 +19,9 @@ public class UpdateMcpServerPluginCommand : McpServerPluginConnectionOptions, IR
     ///  插件 id.
     /// </summary>
     public int PluginId { get; init; }
+
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; } = default!;
 }

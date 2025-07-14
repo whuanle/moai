@@ -156,6 +156,11 @@ export default function WikiLayout() {
       label: "内容检索",
     },
     {
+      key: "user",
+      icon: <UserOutlined />,
+      label: "成员",
+    },
+    {
       key: "settings",
       icon: <SettingOutlined />,
       label: "设置",

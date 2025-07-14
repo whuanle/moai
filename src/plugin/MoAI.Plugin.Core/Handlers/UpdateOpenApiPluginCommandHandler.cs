@@ -11,6 +11,7 @@ using Microsoft.OpenApi.Readers;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
 using MoAI.Storage.Commands;
@@ -52,13 +53,18 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
-        if (request.FileId == request.FileId)
+        if (request.FileId == request.FileId || request.FileId == 0)
         {
-            pluginEntity.PluginName = request.Name;
+            pluginEntity.IsPublic = request.IsPublic;
             pluginEntity.Description = request.Description;
+            pluginEntity.Queries = request.Query.ToJsonString();
+            pluginEntity.Headers = request.Header.ToJsonString();
+            pluginEntity.PluginName = request.Name;
+            pluginEntity.Server = request.ServerUrl.ToString();
 
             _databaseContext.Update(pluginEntity);
             await _databaseContext.SaveChangesAsync(cancellationToken);
+            return EmptyCommandResponse.Default;
         }
 
         var fileEntity = await _databaseContext.Files.Where(x => x.Id == request.FileId).FirstOrDefaultAsync();

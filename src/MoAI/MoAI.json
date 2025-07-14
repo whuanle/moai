@@ -4516,6 +4516,990 @@
         ]
       }
     },
+    "/api/plugin/delete_plugin": {
+      "delete": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "删除插件.",
+        "operationId": "DeletePluginGroupEndpoint",
+        "requestBody": {
+          "x-name": "DeletePluginCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePluginCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/import_mcp": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "导入 mcp 服务.",
+        "operationId": "ImportMcpServerPluginEndpoint",
+        "requestBody": {
+          "x-name": "ImportMcpServerPluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMcpServerPluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/pre_upload_openapi": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "预上传 openapi 文件.",
+        "operationId": "PreUploadOpenApiFileEndpoint",
+        "requestBody": {
+          "x-name": "PreUploadOpenApiFilePluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreUploadOpenApiFilePluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreUploadOpenApiFilePluginCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/plugin_detail": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "获取插件的详细信息.",
+        "operationId": "QueryPluginDetailEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginDetailCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginDetailCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginDetailCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/function_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "插件的函数列表.",
+        "operationId": "QueryPluginFunctionsListEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginFunctionsListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginFunctionsListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/plugininfo_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "获取插件的概要信息.",
+        "operationId": "QueryPluginInfoListEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginInfoListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginInfoListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginInfoListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/plugin_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "插件列表.",
+        "operationId": "QueryPluginListEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/refresh_mcp": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "刷新mcp服务器的tool列表.",
+        "operationId": "RefreshMcpServerPluginEndpoint",
+        "requestBody": {
+          "x-name": "RefreshMcpServerPluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshMcpServerPluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/update_mcp": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "修改mcp插件.",
+        "operationId": "UpdateMcpServerPluginEndpoint",
+        "requestBody": {
+          "x-name": "UpdateMcpServerPluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMcpServerPluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/update_openapi": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "修改 openapi 插件.",
+        "operationId": "UpdateOpenApiPluginEndpoint",
+        "requestBody": {
+          "x-name": "UpdateOpenApiPluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpenApiPluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/import_openapi": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "完成 openapi 文件上传.",
+        "operationId": "ImportOpenApiPluginEndpoint",
+        "requestBody": {
+          "x-name": "ImportOpenApiPluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportOpenApiPluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/download/private/{filename}": {
       "get": {
         "tags": [
@@ -4932,7 +5916,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752402745579"
+            "example": "1752498297879"
           }
         }
       },
@@ -5678,7 +6662,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752402745579"
+            "example": "1752498297879"
           },
           "createUserId": {
             "type": "integer",
@@ -5694,7 +6678,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752402745579"
+            "example": "1752498297879"
           },
           "updateUserId": {
             "type": "integer",
@@ -5960,12 +6944,14 @@
           "Custom",
           "Feishu",
           "WeixinWork",
+          "DingTalk",
           "GitHub"
         ],
         "enum": [
           "custom",
           "feishu",
           "weixinWork",
+          "dingTalk",
           "gitHub"
         ]
       },
@@ -6018,7 +7004,7 @@
               "provider",
               "key",
               "wellKnown",
-              "redirectUri"
+              "authorizeUrl"
             ],
             "properties": {
               "id": {
@@ -6049,7 +7035,7 @@
                 "type": "string",
                 "description": "发现端口"
               },
-              "redirectUri": {
+              "authorizeUrl": {
                 "type": "string",
                 "description": "回调地址."
               }
@@ -7229,7 +8215,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752402745579"
+            "example": "1752498297879"
           }
         }
       },
@@ -7656,7 +8642,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752402745579"
+            "example": "1752498297879"
           },
           "tags": {
             "type": "array",
@@ -7707,6 +8693,702 @@
             "type": "string",
             "description": "搜索文本，区配文本.",
             "nullable": true
+          }
+        }
+      },
+      "DeletePluginCommand": {
+        "type": "object",
+        "description": "删除分组.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
+          }
+        }
+      },
+      "ImportMcpServerPluginCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/McpServerPluginConnectionOptions"
+          },
+          {
+            "type": "object",
+            "description": "导入 mcp 服务.",
+            "additionalProperties": false,
+            "required": [
+              "isPublic"
+            ],
+            "properties": {
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "McpServerPluginConnectionOptions": {
+        "type": "object",
+        "description": "MCP 服务器连接配置.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "description",
+          "serverUrl",
+          "header",
+          "query"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "插件名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 255,
+            "minLength": 2,
+            "nullable": false
+          },
+          "serverUrl": {
+            "type": "string",
+            "description": "MCP Service 地址.",
+            "format": "uri"
+          },
+          "header": {
+            "type": "array",
+            "description": "Header 头部信息.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueString"
+            }
+          },
+          "query": {
+            "type": "array",
+            "description": "Query 字典.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueString"
+            }
+          }
+        }
+      },
+      "PreUploadOpenApiFilePluginCommandResponse": {
+        "type": "object",
+        "description": "导入 openapi 文件插件.",
+        "additionalProperties": false,
+        "required": [
+          "visibility",
+          "isExist",
+          "fileId"
+        ],
+        "properties": {
+          "visibility": {
+            "description": "文件可见性.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileVisibility"
+              }
+            ]
+          },
+          "isExist": {
+            "type": "boolean",
+            "description": "文件已存在,如果文件已存在则直接使用 FileId，无需再次上传."
+          },
+          "fileId": {
+            "type": "integer",
+            "description": "文件ID.",
+            "format": "int32"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "预签名上传地址，当 IsExist = true 时字段为空.",
+            "format": "uri",
+            "nullable": true
+          },
+          "expiration": {
+            "type": "string",
+            "description": "签名过期时间，当 IsExist = true 时字段为空.",
+            "format": "int64",
+            "minimum": 0.0,
+            "nullable": true,
+            "example": "1752498297879"
+          }
+        }
+      },
+      "PreUploadOpenApiFilePluginCommand": {
+        "type": "object",
+        "description": "预上传 openapi 文件，支持 json、yaml.",
+        "additionalProperties": false,
+        "required": [
+          "fileName",
+          "contentType",
+          "fileSize",
+          "mD5"
+        ],
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "文件名称."
+          },
+          "contentType": {
+            "type": "string",
+            "description": "文件类型."
+          },
+          "fileSize": {
+            "type": "integer",
+            "description": "文件大小.",
+            "format": "int32"
+          },
+          "mD5": {
+            "type": "string",
+            "description": "文件 MD5."
+          }
+        }
+      },
+      "QueryPluginDetailCommandResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "pluginName",
+              "title",
+              "description",
+              "server",
+              "header",
+              "query",
+              "type",
+              "openapiFileId",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "server": {
+                "type": "string",
+                "description": "服务器地址."
+              },
+              "header": {
+                "type": "array",
+                "description": "Header 头部信息.",
+                "items": {
+                  "$ref": "#/components/schemas/KeyValueString"
+                }
+              },
+              "query": {
+                "type": "array",
+                "description": "Query 字典.",
+                "items": {
+                  "$ref": "#/components/schemas/KeyValueString"
+                }
+              },
+              "type": {
+                "description": "system|mcp|openapi.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PluginType"
+                  }
+                ]
+              },
+              "openapiFileId": {
+                "type": "integer",
+                "description": "文件id.",
+                "format": "int32"
+              },
+              "openapiFileName": {
+                "type": "string",
+                "description": "文件名称.",
+                "nullable": true
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "PluginType": {
+        "type": "string",
+        "description": "插件类型.",
+        "x-enumNames": [
+          "OpenApi",
+          "Mcp",
+          "System"
+        ],
+        "enum": [
+          "openApi",
+          "mcp",
+          "system"
+        ]
+      },
+      "QueryPluginDetailCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "pluginId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pluginId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryPluginFunctionsListCommandResponse": {
+        "type": "object",
+        "description": "函数列表.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "函数列表.",
+            "items": {
+              "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryPluginFunctionsListCommandResponseItem": {
+        "type": "object",
+        "description": "函数.",
+        "additionalProperties": false,
+        "required": [
+          "functionId",
+          "pluginId",
+          "name",
+          "summary",
+          "path"
+        ],
+        "properties": {
+          "functionId": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
+          },
+          "pluginId": {
+            "type": "integer",
+            "description": "插件路径.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "函数名称."
+          },
+          "summary": {
+            "type": "string",
+            "description": "描述."
+          },
+          "path": {
+            "type": "string",
+            "description": "api路径."
+          }
+        }
+      },
+      "QueryPluginFunctionsListCommand": {
+        "type": "object",
+        "description": "获取插件函数列表.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryPluginInfoListCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "列表.",
+            "items": {
+              "$ref": "#/components/schemas/QueryPluginInfoItem"
+            }
+          }
+        }
+      },
+      "QueryPluginInfoItem": {
+        "type": "object",
+        "description": "插件信息.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId",
+          "pluginName",
+          "type",
+          "title",
+          "description",
+          "isPublic"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件Id.",
+            "format": "int32"
+          },
+          "pluginName": {
+            "type": "string",
+            "description": "插件名称."
+          },
+          "type": {
+            "description": "system|mcp|openapi.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginType"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "插件标题."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述."
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
+          }
+        }
+      },
+      "QueryPluginInfoListCommand": {
+        "type": "object",
+        "description": "查询插件信息列表.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称搜索.",
+            "nullable": true
+          },
+          "type": {
+            "description": "筛选类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginType"
+              }
+            ]
+          },
+          "pluginIds": {
+            "type": "array",
+            "description": "插件列表.",
+            "nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "QueryPluginListCommandResponse": {
+        "type": "object",
+        "description": "QueryPluginListCommandResponse.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "列表.",
+            "items": {
+              "$ref": "#/components/schemas/QueryPluginListItem"
+            }
+          }
+        }
+      },
+      "QueryPluginListItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "description": "插件.",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "pluginName",
+              "title",
+              "description",
+              "server",
+              "type",
+              "openapiFileId",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "server": {
+                "type": "string",
+                "description": "服务器地址."
+              },
+              "type": {
+                "description": "system|mcp|openapi.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PluginType"
+                  }
+                ]
+              },
+              "openapiFileId": {
+                "type": "integer",
+                "description": "文件id.",
+                "format": "int32"
+              },
+              "openapiFileName": {
+                "type": "string",
+                "description": "文件名称.",
+                "nullable": true
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "QueryPluginListCommand": {
+        "type": "object",
+        "description": "获取插件列表.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称搜索.",
+            "nullable": true
+          },
+          "type": {
+            "description": "筛选类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginType"
+              }
+            ]
+          }
+        }
+      },
+      "RefreshMcpServerPluginCommand": {
+        "type": "object",
+        "description": "刷新 MCP 服务器的工具列表.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.\n            ",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          }
+        }
+      },
+      "UpdateMcpServerPluginCommand": {
+        "required": [
+          "pluginId"
+        ],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/McpServerPluginConnectionOptions"
+          },
+          {
+            "type": "object",
+            "description": "更新 MCP 插件.",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "插件 id.\n            ",
+                "format": "int32",
+                "minimum": 0.0,
+                "minLength": 1,
+                "nullable": false,
+                "exclusiveMinimum": true
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "UpdateOpenApiPluginCommand": {
+        "type": "object",
+        "description": "更新 openapi 文件，支持 json、yaml.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "description",
+          "pluginId",
+          "fileId",
+          "fileName",
+          "isPublic",
+          "serverUrl",
+          "header",
+          "query"
+        ],
+        "properties": {
+          "fileId": {
+            "type": "integer",
+            "description": "上传的 id.",
+            "format": "int32"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "文件名称."
+          },
+          "name": {
+            "type": "string",
+            "description": "插件名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 255,
+            "minLength": 2,
+            "nullable": false
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
+          },
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
+          },
+          "serverUrl": {
+            "type": "string",
+            "description": "MCP Service 地址.",
+            "format": "uri"
+          },
+          "header": {
+            "type": "array",
+            "description": "Header 头部信息.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueString"
+            }
+          },
+          "query": {
+            "type": "array",
+            "description": "Query 字典.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueString"
+            }
+          }
+        }
+      },
+      "ImportOpenApiPluginCommand": {
+        "type": "object",
+        "description": "导入 openapi 文件，支持 json、yaml.",
+        "additionalProperties": false,
+        "required": [
+          "fileId",
+          "fileName",
+          "name",
+          "description",
+          "isPublic"
+        ],
+        "properties": {
+          "fileId": {
+            "type": "integer",
+            "description": "上传的 id.",
+            "format": "int32"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "文件名称."
+          },
+          "name": {
+            "type": "string",
+            "description": "插件名称."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述."
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
           }
         }
       }

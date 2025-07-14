@@ -457,6 +457,15 @@ export function createDeleteOAuthConnectionCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DeletePluginCommand}
+ */
+// @ts-ignore
+export function createDeletePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDeletePluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {DeleteUserCommand}
  */
 // @ts-ignore
@@ -511,6 +520,24 @@ export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportMcpServerPluginCommand}
+ */
+// @ts-ignore
+export function createImportMcpServerPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportMcpServerPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportOpenApiPluginCommand}
+ */
+// @ts-ignore
+export function createImportOpenApiPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportOpenApiPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {InviteWikiUserCommand}
  */
 // @ts-ignore
@@ -561,6 +588,15 @@ export function createLoginCommandFromDiscriminatorValue(parseNode: ParseNode | 
 // @ts-ignore
 export function createLoginCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoLoginCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {McpServerPluginConnectionOptions}
+ */
+// @ts-ignore
+export function createMcpServerPluginConnectionOptionsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoMcpServerPluginConnectionOptions;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -693,6 +729,24 @@ export function createPreUploadImageCommandFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadOpenApiFilePluginCommand}
+ */
+// @ts-ignore
+export function createPreUploadOpenApiFilePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadOpenApiFilePluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadOpenApiFilePluginCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadOpenApiFilePluginCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadOpenApiFilePluginCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreUploadWikiDocumentCommand}
  */
 // @ts-ignore
@@ -770,6 +824,105 @@ export function createQueryAllOAuthPrividerDetailCommandResponseFromDiscriminato
 // @ts-ignore
 export function createQueryAllOAuthPrividerDetailCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAllOAuthPrividerDetailCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginDetailCommand}
+ */
+// @ts-ignore
+export function createQueryPluginDetailCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginDetailCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginDetailCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginDetailCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginDetailCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginFunctionsListCommand}
+ */
+// @ts-ignore
+export function createQueryPluginFunctionsListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginFunctionsListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginFunctionsListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginFunctionsListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginFunctionsListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginFunctionsListCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryPluginFunctionsListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginFunctionsListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginInfoItem}
+ */
+// @ts-ignore
+export function createQueryPluginInfoItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginInfoItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginInfoListCommand}
+ */
+// @ts-ignore
+export function createQueryPluginInfoListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginInfoListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginInfoListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginInfoListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginInfoListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginListCommand}
+ */
+// @ts-ignore
+export function createQueryPluginListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginListItem}
+ */
+// @ts-ignore
+export function createQueryPluginListItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginListItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -954,6 +1107,15 @@ export function createQueryWikiUsersCommandResponseItemFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {RefreshMcpServerPluginCommand}
+ */
+// @ts-ignore
+export function createRefreshMcpServerPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoRefreshMcpServerPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshTokenCommand}
  */
 // @ts-ignore
@@ -1089,11 +1251,29 @@ export function createUpdateAiModelCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateMcpServerPluginCommand}
+ */
+// @ts-ignore
+export function createUpdateMcpServerPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateMcpServerPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateOAuthConnectionCommand}
  */
 // @ts-ignore
 export function createUpdateOAuthConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateOAuthConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateOpenApiPluginCommand}
+ */
+// @ts-ignore
+export function createUpdateOpenApiPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateOpenApiPluginCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1197,6 +1377,15 @@ export interface DeleteOAuthConnectionCommand extends Parsable {
      * id.
      */
     oAuthConnectionId?: number | null;
+}
+/**
+ * 删除分组.
+ */
+export interface DeletePluginCommand extends Parsable {
+    /**
+     * 插件.
+     */
+    pluginId?: number | null;
 }
 /**
  * 删除用户.
@@ -1457,6 +1646,16 @@ export function deserializeIntoDeleteOAuthConnectionCommand(deleteOAuthConnectio
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoDeletePluginCommand(deletePluginCommand: Partial<DeletePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginId": n => { deletePluginCommand.pluginId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoDeleteUserCommand(deleteUserCommand: Partial<DeleteUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "userIds": n => { deleteUserCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
@@ -1516,6 +1715,31 @@ export function deserializeIntoEmbeddingDocumentCommand(embeddingDocumentCommand
 // @ts-ignore
 export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partial<EmptyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoImportMcpServerPluginCommand(importMcpServerPluginCommand: Partial<ImportMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoMcpServerPluginConnectionOptions(importMcpServerPluginCommand),
+        "isPublic": n => { importMcpServerPluginCommand.isPublic = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoImportOpenApiPluginCommand(importOpenApiPluginCommand: Partial<ImportOpenApiPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { importOpenApiPluginCommand.description = n.getStringValue(); },
+        "fileId": n => { importOpenApiPluginCommand.fileId = n.getNumberValue(); },
+        "fileName": n => { importOpenApiPluginCommand.fileName = n.getStringValue(); },
+        "isPublic": n => { importOpenApiPluginCommand.isPublic = n.getBooleanValue(); },
+        "name": n => { importOpenApiPluginCommand.name = n.getStringValue(); },
     }
 }
 /**
@@ -1586,6 +1810,20 @@ export function deserializeIntoLoginCommandResponse(loginCommandResponse: Partia
         "tokenType": n => { loginCommandResponse.tokenType = n.getStringValue(); },
         "userId": n => { loginCommandResponse.userId = n.getNumberValue(); },
         "userName": n => { loginCommandResponse.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoMcpServerPluginConnectionOptions(mcpServerPluginConnectionOptions: Partial<McpServerPluginConnectionOptions> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { mcpServerPluginConnectionOptions.description = n.getStringValue(); },
+        "header": n => { mcpServerPluginConnectionOptions.header = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "name": n => { mcpServerPluginConnectionOptions.name = n.getStringValue(); },
+        "query": n => { mcpServerPluginConnectionOptions.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "serverUrl": n => { mcpServerPluginConnectionOptions.serverUrl = n.getStringValue(); },
     }
 }
 /**
@@ -1727,6 +1965,33 @@ export function deserializeIntoPreUploadImageCommand(preUploadImageCommand: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPreUploadOpenApiFilePluginCommand(preUploadOpenApiFilePluginCommand: Partial<PreUploadOpenApiFilePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadOpenApiFilePluginCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadOpenApiFilePluginCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadOpenApiFilePluginCommand.fileSize = n.getNumberValue(); },
+        "mD5": n => { preUploadOpenApiFilePluginCommand.mD5 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadOpenApiFilePluginCommandResponse(preUploadOpenApiFilePluginCommandResponse: Partial<PreUploadOpenApiFilePluginCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadOpenApiFilePluginCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadOpenApiFilePluginCommandResponse.fileId = n.getNumberValue(); },
+        "isExist": n => { preUploadOpenApiFilePluginCommandResponse.isExist = n.getBooleanValue(); },
+        "uploadUrl": n => { preUploadOpenApiFilePluginCommandResponse.uploadUrl = n.getStringValue(); },
+        "visibility": n => { preUploadOpenApiFilePluginCommandResponse.visibility = n.getEnumValue<FileVisibility>(FileVisibilityObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPreUploadWikiDocumentCommand(preUploadWikiDocumentCommand: Partial<PreUploadWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "contentType": n => { preUploadWikiDocumentCommand.contentType = n.getStringValue(); },
@@ -1820,14 +2085,156 @@ export function deserializeIntoQueryAllOAuthPrividerDetailCommandResponse(queryA
 export function deserializeIntoQueryAllOAuthPrividerDetailCommandResponseItem(queryAllOAuthPrividerDetailCommandResponseItem: Partial<QueryAllOAuthPrividerDetailCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryAllOAuthPrividerDetailCommandResponseItem),
+        "authorizeUrl": n => { queryAllOAuthPrividerDetailCommandResponseItem.authorizeUrl = n.getStringValue(); },
         "iconUrl": n => { queryAllOAuthPrividerDetailCommandResponseItem.iconUrl = n.getStringValue(); },
         "id": n => { queryAllOAuthPrividerDetailCommandResponseItem.id = n.getNumberValue(); },
         "key": n => { queryAllOAuthPrividerDetailCommandResponseItem.key = n.getStringValue(); },
         "name": n => { queryAllOAuthPrividerDetailCommandResponseItem.name = n.getStringValue(); },
         "oAuthId": n => { queryAllOAuthPrividerDetailCommandResponseItem.oAuthId = n.getStringValue(); },
         "provider": n => { queryAllOAuthPrividerDetailCommandResponseItem.provider = n.getStringValue(); },
-        "redirectUri": n => { queryAllOAuthPrividerDetailCommandResponseItem.redirectUri = n.getStringValue(); },
         "wellKnown": n => { queryAllOAuthPrividerDetailCommandResponseItem.wellKnown = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginDetailCommand(queryPluginDetailCommand: Partial<QueryPluginDetailCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginId": n => { queryPluginDetailCommand.pluginId = n.getNumberValue(); },
+        "userId": n => { queryPluginDetailCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginDetailCommandResponse(queryPluginDetailCommandResponse: Partial<QueryPluginDetailCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryPluginDetailCommandResponse.description = n.getStringValue(); },
+        "header": n => { queryPluginDetailCommandResponse.header = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "isPublic": n => { queryPluginDetailCommandResponse.isPublic = n.getBooleanValue(); },
+        "openapiFileId": n => { queryPluginDetailCommandResponse.openapiFileId = n.getNumberValue(); },
+        "openapiFileName": n => { queryPluginDetailCommandResponse.openapiFileName = n.getStringValue(); },
+        "pluginId": n => { queryPluginDetailCommandResponse.pluginId = n.getNumberValue(); },
+        "pluginName": n => { queryPluginDetailCommandResponse.pluginName = n.getStringValue(); },
+        "query": n => { queryPluginDetailCommandResponse.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "server": n => { queryPluginDetailCommandResponse.server = n.getStringValue(); },
+        "title": n => { queryPluginDetailCommandResponse.title = n.getStringValue(); },
+        "type": n => { queryPluginDetailCommandResponse.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginFunctionsListCommand(queryPluginFunctionsListCommand: Partial<QueryPluginFunctionsListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginId": n => { queryPluginFunctionsListCommand.pluginId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginFunctionsListCommandResponse(queryPluginFunctionsListCommandResponse: Partial<QueryPluginFunctionsListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPluginFunctionsListCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginFunctionsListCommandResponseItem>(createQueryPluginFunctionsListCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginFunctionsListCommandResponseItem(queryPluginFunctionsListCommandResponseItem: Partial<QueryPluginFunctionsListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "functionId": n => { queryPluginFunctionsListCommandResponseItem.functionId = n.getNumberValue(); },
+        "name": n => { queryPluginFunctionsListCommandResponseItem.name = n.getStringValue(); },
+        "path": n => { queryPluginFunctionsListCommandResponseItem.path = n.getStringValue(); },
+        "pluginId": n => { queryPluginFunctionsListCommandResponseItem.pluginId = n.getNumberValue(); },
+        "summary": n => { queryPluginFunctionsListCommandResponseItem.summary = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginInfoItem(queryPluginInfoItem: Partial<QueryPluginInfoItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryPluginInfoItem.description = n.getStringValue(); },
+        "isPublic": n => { queryPluginInfoItem.isPublic = n.getBooleanValue(); },
+        "pluginId": n => { queryPluginInfoItem.pluginId = n.getNumberValue(); },
+        "pluginName": n => { queryPluginInfoItem.pluginName = n.getStringValue(); },
+        "title": n => { queryPluginInfoItem.title = n.getStringValue(); },
+        "type": n => { queryPluginInfoItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginInfoListCommand(queryPluginInfoListCommand: Partial<QueryPluginInfoListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "name": n => { queryPluginInfoListCommand.name = n.getStringValue(); },
+        "pluginIds": n => { queryPluginInfoListCommand.pluginIds = n.getCollectionOfPrimitiveValues<number>(); },
+        "type": n => { queryPluginInfoListCommand.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginInfoListCommandResponse(queryPluginInfoListCommandResponse: Partial<QueryPluginInfoListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPluginInfoListCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginInfoItem>(createQueryPluginInfoItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginListCommand(queryPluginListCommand: Partial<QueryPluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "name": n => { queryPluginListCommand.name = n.getStringValue(); },
+        "type": n => { queryPluginListCommand.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginListCommandResponse(queryPluginListCommandResponse: Partial<QueryPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPluginListCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginListItem>(createQueryPluginListItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginListItem(queryPluginListItem: Partial<QueryPluginListItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryPluginListItem),
+        "description": n => { queryPluginListItem.description = n.getStringValue(); },
+        "isPublic": n => { queryPluginListItem.isPublic = n.getBooleanValue(); },
+        "openapiFileId": n => { queryPluginListItem.openapiFileId = n.getNumberValue(); },
+        "openapiFileName": n => { queryPluginListItem.openapiFileName = n.getStringValue(); },
+        "pluginId": n => { queryPluginListItem.pluginId = n.getNumberValue(); },
+        "pluginName": n => { queryPluginListItem.pluginName = n.getStringValue(); },
+        "server": n => { queryPluginListItem.server = n.getStringValue(); },
+        "title": n => { queryPluginListItem.title = n.getStringValue(); },
+        "type": n => { queryPluginListItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
     }
 }
 /**
@@ -2084,6 +2491,16 @@ export function deserializeIntoQueryWikiUsersCommandResponseItem(queryWikiUsersC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoRefreshMcpServerPluginCommand(refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginId": n => { refreshMcpServerPluginCommand.pluginId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshTokenCommand(refreshTokenCommand: Partial<RefreshTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "refreshToken": n => { refreshTokenCommand.refreshToken = n.getStringValue(); },
@@ -2250,10 +2667,40 @@ export function deserializeIntoUpdateAiModelCommand(updateAiModelCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateMcpServerPluginCommand(updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoMcpServerPluginConnectionOptions(updateMcpServerPluginCommand),
+        "isPublic": n => { updateMcpServerPluginCommand.isPublic = n.getBooleanValue(); },
+        "pluginId": n => { updateMcpServerPluginCommand.pluginId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoCreateOAuthConnectionCommand(updateOAuthConnectionCommand),
         "oAuthConnectionId": n => { updateOAuthConnectionCommand.oAuthConnectionId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateOpenApiPluginCommand(updateOpenApiPluginCommand: Partial<UpdateOpenApiPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { updateOpenApiPluginCommand.description = n.getStringValue(); },
+        "fileId": n => { updateOpenApiPluginCommand.fileId = n.getNumberValue(); },
+        "fileName": n => { updateOpenApiPluginCommand.fileName = n.getStringValue(); },
+        "header": n => { updateOpenApiPluginCommand.header = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "isPublic": n => { updateOpenApiPluginCommand.isPublic = n.getBooleanValue(); },
+        "name": n => { updateOpenApiPluginCommand.name = n.getStringValue(); },
+        "pluginId": n => { updateOpenApiPluginCommand.pluginId = n.getNumberValue(); },
+        "query": n => { updateOpenApiPluginCommand.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "serverUrl": n => { updateOpenApiPluginCommand.serverUrl = n.getStringValue(); },
     }
 }
 /**
@@ -2422,6 +2869,40 @@ export interface EmptyCommandResponse extends Parsable {
 export type FileEmbeddingState = (typeof FileEmbeddingStateObject)[keyof typeof FileEmbeddingStateObject];
 export type FileVisibility = (typeof FileVisibilityObject)[keyof typeof FileVisibilityObject];
 /**
+ * 导入 mcp 服务.
+ */
+export interface ImportMcpServerPluginCommand extends McpServerPluginConnectionOptions, Parsable {
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+}
+/**
+ * 导入 openapi 文件，支持 json、yaml.
+ */
+export interface ImportOpenApiPluginCommand extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 上传的 id.
+     */
+    fileId?: number | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 插件名称.
+     */
+    name?: string | null;
+}
+/**
  * 邀请知识库协作成员，可以管理知识库文档等.
  */
 export interface InviteWikiUserCommand extends Parsable {
@@ -2507,6 +2988,31 @@ export interface LoginCommandResponse extends Parsable {
      * 用户名.
      */
     userName?: string | null;
+}
+/**
+ * MCP 服务器连接配置.
+ */
+export interface McpServerPluginConnectionOptions extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * Header 头部信息.
+     */
+    header?: KeyValueString[] | null;
+    /**
+     * 插件名称.
+     */
+    name?: string | null;
+    /**
+     * Query 字典.
+     */
+    query?: KeyValueString[] | null;
+    /**
+     * MCP Service 地址.
+     */
+    serverUrl?: string | null;
 }
 /**
  * ModelAbilities.
@@ -2622,6 +3128,7 @@ export interface PagedResultOfQueryWikiDocumentListItem extends PagedParamter, P
      */
     total?: number | null;
 }
+export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
 export interface PreloadWikiDocumentResponse extends Parsable {
     /**
      * 签名过期时间，当 IsExist = true 时字段为空.
@@ -2689,6 +3196,52 @@ export interface PreUploadImageCommand extends Parsable {
      * 文件 MD5.
      */
     mD5?: string | null;
+}
+/**
+ * 预上传 openapi 文件，支持 json、yaml.
+ */
+export interface PreUploadOpenApiFilePluginCommand extends Parsable {
+    /**
+     * 文件类型.
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小.
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 MD5.
+     */
+    mD5?: string | null;
+}
+/**
+ * 导入 openapi 文件插件.
+ */
+export interface PreUploadOpenApiFilePluginCommandResponse extends Parsable {
+    /**
+     * 签名过期时间，当 IsExist = true 时字段为空.
+     */
+    expiration?: string | null;
+    /**
+     * 文件ID.
+     */
+    fileId?: number | null;
+    /**
+     * 文件已存在,如果文件已存在则直接使用 FileId，无需再次上传.
+     */
+    isExist?: boolean | null;
+    /**
+     * 预签名上传地址，当 IsExist = true 时字段为空.
+     */
+    uploadUrl?: string | null;
+    /**
+     * 文件可见性.
+     */
+    visibility?: FileVisibility | null;
 }
 /**
  * 预上传知识库文件.
@@ -2801,6 +3354,10 @@ export interface QueryAllOAuthPrividerDetailCommandResponse extends Parsable {
 }
 export interface QueryAllOAuthPrividerDetailCommandResponseItem extends AuditsInfo, Parsable {
     /**
+     * 回调地址.
+     */
+    authorizeUrl?: string | null;
+    /**
      * 提供商图标地址
      */
     iconUrl?: string | null;
@@ -2825,13 +3382,223 @@ export interface QueryAllOAuthPrividerDetailCommandResponseItem extends AuditsIn
      */
     provider?: string | null;
     /**
-     * 回调地址.
-     */
-    redirectUri?: string | null;
-    /**
      * 发现端口
      */
     wellKnown?: string | null;
+}
+export interface QueryPluginDetailCommand extends Parsable {
+    /**
+     * The pluginId property
+     */
+    pluginId?: number | null;
+    /**
+     * The userId property
+     */
+    userId?: number | null;
+}
+export interface QueryPluginDetailCommandResponse extends Parsable {
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * Header 头部信息.
+     */
+    header?: KeyValueString[] | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 文件id.
+     */
+    openapiFileId?: number | null;
+    /**
+     * 文件名称.
+     */
+    openapiFileName?: string | null;
+    /**
+     * id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * Query 字典.
+     */
+    query?: KeyValueString[] | null;
+    /**
+     * 服务器地址.
+     */
+    server?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+    /**
+     * system|mcp|openapi.
+     */
+    type?: PluginType | null;
+}
+/**
+ * 获取插件函数列表.
+ */
+export interface QueryPluginFunctionsListCommand extends Parsable {
+    /**
+     * 插件 id.
+     */
+    pluginId?: number | null;
+}
+/**
+ * 函数列表.
+ */
+export interface QueryPluginFunctionsListCommandResponse extends Parsable {
+    /**
+     * 函数列表.
+     */
+    items?: QueryPluginFunctionsListCommandResponseItem[] | null;
+}
+/**
+ * 函数.
+ */
+export interface QueryPluginFunctionsListCommandResponseItem extends Parsable {
+    /**
+     * id.
+     */
+    functionId?: number | null;
+    /**
+     * 函数名称.
+     */
+    name?: string | null;
+    /**
+     * api路径.
+     */
+    path?: string | null;
+    /**
+     * 插件路径.
+     */
+    pluginId?: number | null;
+    /**
+     * 描述.
+     */
+    summary?: string | null;
+}
+/**
+ * 插件信息.
+ */
+export interface QueryPluginInfoItem extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 插件Id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+    /**
+     * system|mcp|openapi.
+     */
+    type?: PluginType | null;
+}
+/**
+ * 查询插件信息列表.
+ */
+export interface QueryPluginInfoListCommand extends Parsable {
+    /**
+     * 名称搜索.
+     */
+    name?: string | null;
+    /**
+     * 插件列表.
+     */
+    pluginIds?: number[] | null;
+    /**
+     * 筛选类型.
+     */
+    type?: PluginType | null;
+}
+export interface QueryPluginInfoListCommandResponse extends Parsable {
+    /**
+     * 列表.
+     */
+    items?: QueryPluginInfoItem[] | null;
+}
+/**
+ * 获取插件列表.
+ */
+export interface QueryPluginListCommand extends Parsable {
+    /**
+     * 名称搜索.
+     */
+    name?: string | null;
+    /**
+     * 筛选类型.
+     */
+    type?: PluginType | null;
+}
+/**
+ * QueryPluginListCommandResponse.
+ */
+export interface QueryPluginListCommandResponse extends Parsable {
+    /**
+     * 列表.
+     */
+    items?: QueryPluginListItem[] | null;
+}
+/**
+ * 插件.
+ */
+export interface QueryPluginListItem extends AuditsInfo, Parsable {
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 文件id.
+     */
+    openapiFileId?: number | null;
+    /**
+     * 文件名称.
+     */
+    openapiFileName?: string | null;
+    /**
+     * id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 服务器地址.
+     */
+    server?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+    /**
+     * system|mcp|openapi.
+     */
+    type?: PluginType | null;
 }
 /**
  * 服务器信息.
@@ -3150,6 +3917,15 @@ export interface QueryWikiUsersCommandResponseItem extends AuditsInfo, Parsable 
      * 用户名.
      */
     userName?: string | null;
+}
+/**
+ * 刷新 MCP 服务器的工具列表.
+ */
+export interface RefreshMcpServerPluginCommand extends Parsable {
+    /**
+     * 插件 id.            
+     */
+    pluginId?: number | null;
 }
 /**
  * 刷新 token.
@@ -3498,6 +4274,16 @@ export function serializeDeleteOAuthConnectionCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeDeletePluginCommand(writer: SerializationWriter, deletePluginCommand: Partial<DeletePluginCommand> | undefined | null = {}) : void {
+    if (deletePluginCommand) {
+        writer.writeNumberValue("pluginId", deletePluginCommand.pluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeDeleteUserCommand(writer: SerializationWriter, deleteUserCommand: Partial<DeleteUserCommand> | undefined | null = {}) : void {
     if (deleteUserCommand) {
         writer.writeCollectionOfPrimitiveValues<number>("userIds", deleteUserCommand.userIds);
@@ -3557,6 +4343,31 @@ export function serializeEmbeddingDocumentCommand(writer: SerializationWriter, e
 // @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeImportMcpServerPluginCommand(writer: SerializationWriter, importMcpServerPluginCommand: Partial<ImportMcpServerPluginCommand> | undefined | null = {}) : void {
+    if (importMcpServerPluginCommand) {
+        serializeMcpServerPluginConnectionOptions(writer, importMcpServerPluginCommand)
+        writer.writeBooleanValue("isPublic", importMcpServerPluginCommand.isPublic);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeImportOpenApiPluginCommand(writer: SerializationWriter, importOpenApiPluginCommand: Partial<ImportOpenApiPluginCommand> | undefined | null = {}) : void {
+    if (importOpenApiPluginCommand) {
+        writer.writeStringValue("description", importOpenApiPluginCommand.description);
+        writer.writeNumberValue("fileId", importOpenApiPluginCommand.fileId);
+        writer.writeStringValue("fileName", importOpenApiPluginCommand.fileName);
+        writer.writeBooleanValue("isPublic", importOpenApiPluginCommand.isPublic);
+        writer.writeStringValue("name", importOpenApiPluginCommand.name);
     }
 }
 /**
@@ -3627,6 +4438,20 @@ export function serializeLoginCommandResponse(writer: SerializationWriter, login
         writer.writeStringValue("tokenType", loginCommandResponse.tokenType);
         writer.writeNumberValue("userId", loginCommandResponse.userId);
         writer.writeStringValue("userName", loginCommandResponse.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeMcpServerPluginConnectionOptions(writer: SerializationWriter, mcpServerPluginConnectionOptions: Partial<McpServerPluginConnectionOptions> | undefined | null = {}) : void {
+    if (mcpServerPluginConnectionOptions) {
+        writer.writeStringValue("description", mcpServerPluginConnectionOptions.description);
+        writer.writeCollectionOfObjectValues<KeyValueString>("header", mcpServerPluginConnectionOptions.header, serializeKeyValueString);
+        writer.writeStringValue("name", mcpServerPluginConnectionOptions.name);
+        writer.writeCollectionOfObjectValues<KeyValueString>("query", mcpServerPluginConnectionOptions.query, serializeKeyValueString);
+        writer.writeStringValue("serverUrl", mcpServerPluginConnectionOptions.serverUrl);
     }
 }
 /**
@@ -3768,6 +4593,33 @@ export function serializePreUploadImageCommand(writer: SerializationWriter, preU
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePreUploadOpenApiFilePluginCommand(writer: SerializationWriter, preUploadOpenApiFilePluginCommand: Partial<PreUploadOpenApiFilePluginCommand> | undefined | null = {}) : void {
+    if (preUploadOpenApiFilePluginCommand) {
+        writer.writeStringValue("contentType", preUploadOpenApiFilePluginCommand.contentType);
+        writer.writeStringValue("fileName", preUploadOpenApiFilePluginCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadOpenApiFilePluginCommand.fileSize);
+        writer.writeStringValue("mD5", preUploadOpenApiFilePluginCommand.mD5);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadOpenApiFilePluginCommandResponse(writer: SerializationWriter, preUploadOpenApiFilePluginCommandResponse: Partial<PreUploadOpenApiFilePluginCommandResponse> | undefined | null = {}) : void {
+    if (preUploadOpenApiFilePluginCommandResponse) {
+        writer.writeStringValue("expiration", preUploadOpenApiFilePluginCommandResponse.expiration);
+        writer.writeNumberValue("fileId", preUploadOpenApiFilePluginCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadOpenApiFilePluginCommandResponse.isExist);
+        writer.writeStringValue("uploadUrl", preUploadOpenApiFilePluginCommandResponse.uploadUrl);
+        writer.writeEnumValue<FileVisibility>("visibility", preUploadOpenApiFilePluginCommandResponse.visibility);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePreUploadWikiDocumentCommand(writer: SerializationWriter, preUploadWikiDocumentCommand: Partial<PreUploadWikiDocumentCommand> | undefined | null = {}) : void {
     if (preUploadWikiDocumentCommand) {
         writer.writeStringValue("contentType", preUploadWikiDocumentCommand.contentType);
@@ -3861,14 +4713,156 @@ export function serializeQueryAllOAuthPrividerDetailCommandResponse(writer: Seri
 export function serializeQueryAllOAuthPrividerDetailCommandResponseItem(writer: SerializationWriter, queryAllOAuthPrividerDetailCommandResponseItem: Partial<QueryAllOAuthPrividerDetailCommandResponseItem> | undefined | null = {}) : void {
     if (queryAllOAuthPrividerDetailCommandResponseItem) {
         serializeAuditsInfo(writer, queryAllOAuthPrividerDetailCommandResponseItem)
+        writer.writeStringValue("authorizeUrl", queryAllOAuthPrividerDetailCommandResponseItem.authorizeUrl);
         writer.writeStringValue("iconUrl", queryAllOAuthPrividerDetailCommandResponseItem.iconUrl);
         writer.writeNumberValue("id", queryAllOAuthPrividerDetailCommandResponseItem.id);
         writer.writeStringValue("key", queryAllOAuthPrividerDetailCommandResponseItem.key);
         writer.writeStringValue("name", queryAllOAuthPrividerDetailCommandResponseItem.name);
         writer.writeStringValue("oAuthId", queryAllOAuthPrividerDetailCommandResponseItem.oAuthId);
         writer.writeStringValue("provider", queryAllOAuthPrividerDetailCommandResponseItem.provider);
-        writer.writeStringValue("redirectUri", queryAllOAuthPrividerDetailCommandResponseItem.redirectUri);
         writer.writeStringValue("wellKnown", queryAllOAuthPrividerDetailCommandResponseItem.wellKnown);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginDetailCommand(writer: SerializationWriter, queryPluginDetailCommand: Partial<QueryPluginDetailCommand> | undefined | null = {}) : void {
+    if (queryPluginDetailCommand) {
+        writer.writeNumberValue("pluginId", queryPluginDetailCommand.pluginId);
+        writer.writeNumberValue("userId", queryPluginDetailCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginDetailCommandResponse(writer: SerializationWriter, queryPluginDetailCommandResponse: Partial<QueryPluginDetailCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginDetailCommandResponse) {
+        writer.writeStringValue("description", queryPluginDetailCommandResponse.description);
+        writer.writeCollectionOfObjectValues<KeyValueString>("header", queryPluginDetailCommandResponse.header, serializeKeyValueString);
+        writer.writeBooleanValue("isPublic", queryPluginDetailCommandResponse.isPublic);
+        writer.writeNumberValue("openapiFileId", queryPluginDetailCommandResponse.openapiFileId);
+        writer.writeStringValue("openapiFileName", queryPluginDetailCommandResponse.openapiFileName);
+        writer.writeNumberValue("pluginId", queryPluginDetailCommandResponse.pluginId);
+        writer.writeStringValue("pluginName", queryPluginDetailCommandResponse.pluginName);
+        writer.writeCollectionOfObjectValues<KeyValueString>("query", queryPluginDetailCommandResponse.query, serializeKeyValueString);
+        writer.writeStringValue("server", queryPluginDetailCommandResponse.server);
+        writer.writeStringValue("title", queryPluginDetailCommandResponse.title);
+        writer.writeEnumValue<PluginType>("type", queryPluginDetailCommandResponse.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginFunctionsListCommand(writer: SerializationWriter, queryPluginFunctionsListCommand: Partial<QueryPluginFunctionsListCommand> | undefined | null = {}) : void {
+    if (queryPluginFunctionsListCommand) {
+        writer.writeNumberValue("pluginId", queryPluginFunctionsListCommand.pluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginFunctionsListCommandResponse(writer: SerializationWriter, queryPluginFunctionsListCommandResponse: Partial<QueryPluginFunctionsListCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginFunctionsListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryPluginFunctionsListCommandResponseItem>("items", queryPluginFunctionsListCommandResponse.items, serializeQueryPluginFunctionsListCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginFunctionsListCommandResponseItem(writer: SerializationWriter, queryPluginFunctionsListCommandResponseItem: Partial<QueryPluginFunctionsListCommandResponseItem> | undefined | null = {}) : void {
+    if (queryPluginFunctionsListCommandResponseItem) {
+        writer.writeNumberValue("functionId", queryPluginFunctionsListCommandResponseItem.functionId);
+        writer.writeStringValue("name", queryPluginFunctionsListCommandResponseItem.name);
+        writer.writeStringValue("path", queryPluginFunctionsListCommandResponseItem.path);
+        writer.writeNumberValue("pluginId", queryPluginFunctionsListCommandResponseItem.pluginId);
+        writer.writeStringValue("summary", queryPluginFunctionsListCommandResponseItem.summary);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginInfoItem(writer: SerializationWriter, queryPluginInfoItem: Partial<QueryPluginInfoItem> | undefined | null = {}) : void {
+    if (queryPluginInfoItem) {
+        writer.writeStringValue("description", queryPluginInfoItem.description);
+        writer.writeBooleanValue("isPublic", queryPluginInfoItem.isPublic);
+        writer.writeNumberValue("pluginId", queryPluginInfoItem.pluginId);
+        writer.writeStringValue("pluginName", queryPluginInfoItem.pluginName);
+        writer.writeStringValue("title", queryPluginInfoItem.title);
+        writer.writeEnumValue<PluginType>("type", queryPluginInfoItem.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginInfoListCommand(writer: SerializationWriter, queryPluginInfoListCommand: Partial<QueryPluginInfoListCommand> | undefined | null = {}) : void {
+    if (queryPluginInfoListCommand) {
+        writer.writeStringValue("name", queryPluginInfoListCommand.name);
+        writer.writeCollectionOfPrimitiveValues<number>("pluginIds", queryPluginInfoListCommand.pluginIds);
+        writer.writeEnumValue<PluginType>("type", queryPluginInfoListCommand.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginInfoListCommandResponse(writer: SerializationWriter, queryPluginInfoListCommandResponse: Partial<QueryPluginInfoListCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginInfoListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryPluginInfoItem>("items", queryPluginInfoListCommandResponse.items, serializeQueryPluginInfoItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginListCommand(writer: SerializationWriter, queryPluginListCommand: Partial<QueryPluginListCommand> | undefined | null = {}) : void {
+    if (queryPluginListCommand) {
+        writer.writeStringValue("name", queryPluginListCommand.name);
+        writer.writeEnumValue<PluginType>("type", queryPluginListCommand.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginListCommandResponse(writer: SerializationWriter, queryPluginListCommandResponse: Partial<QueryPluginListCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryPluginListItem>("items", queryPluginListCommandResponse.items, serializeQueryPluginListItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginListItem(writer: SerializationWriter, queryPluginListItem: Partial<QueryPluginListItem> | undefined | null = {}) : void {
+    if (queryPluginListItem) {
+        serializeAuditsInfo(writer, queryPluginListItem)
+        writer.writeStringValue("description", queryPluginListItem.description);
+        writer.writeBooleanValue("isPublic", queryPluginListItem.isPublic);
+        writer.writeNumberValue("openapiFileId", queryPluginListItem.openapiFileId);
+        writer.writeStringValue("openapiFileName", queryPluginListItem.openapiFileName);
+        writer.writeNumberValue("pluginId", queryPluginListItem.pluginId);
+        writer.writeStringValue("pluginName", queryPluginListItem.pluginName);
+        writer.writeStringValue("server", queryPluginListItem.server);
+        writer.writeStringValue("title", queryPluginListItem.title);
+        writer.writeEnumValue<PluginType>("type", queryPluginListItem.type);
     }
 }
 /**
@@ -4125,6 +5119,16 @@ export function serializeQueryWikiUsersCommandResponseItem(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeRefreshMcpServerPluginCommand(writer: SerializationWriter, refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined | null = {}) : void {
+    if (refreshMcpServerPluginCommand) {
+        writer.writeNumberValue("pluginId", refreshMcpServerPluginCommand.pluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshTokenCommand(writer: SerializationWriter, refreshTokenCommand: Partial<RefreshTokenCommand> | undefined | null = {}) : void {
     if (refreshTokenCommand) {
         writer.writeStringValue("refreshToken", refreshTokenCommand.refreshToken);
@@ -4291,10 +5295,40 @@ export function serializeUpdateAiModelCommand(writer: SerializationWriter, updat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateMcpServerPluginCommand(writer: SerializationWriter, updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined | null = {}) : void {
+    if (updateMcpServerPluginCommand) {
+        serializeMcpServerPluginConnectionOptions(writer, updateMcpServerPluginCommand)
+        writer.writeBooleanValue("isPublic", updateMcpServerPluginCommand.isPublic);
+        writer.writeNumberValue("pluginId", updateMcpServerPluginCommand.pluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateOAuthConnectionCommand(writer: SerializationWriter, updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (updateOAuthConnectionCommand) {
         serializeCreateOAuthConnectionCommand(writer, updateOAuthConnectionCommand)
         writer.writeNumberValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateOpenApiPluginCommand(writer: SerializationWriter, updateOpenApiPluginCommand: Partial<UpdateOpenApiPluginCommand> | undefined | null = {}) : void {
+    if (updateOpenApiPluginCommand) {
+        writer.writeStringValue("description", updateOpenApiPluginCommand.description);
+        writer.writeNumberValue("fileId", updateOpenApiPluginCommand.fileId);
+        writer.writeStringValue("fileName", updateOpenApiPluginCommand.fileName);
+        writer.writeCollectionOfObjectValues<KeyValueString>("header", updateOpenApiPluginCommand.header, serializeKeyValueString);
+        writer.writeBooleanValue("isPublic", updateOpenApiPluginCommand.isPublic);
+        writer.writeStringValue("name", updateOpenApiPluginCommand.name);
+        writer.writeNumberValue("pluginId", updateOpenApiPluginCommand.pluginId);
+        writer.writeCollectionOfObjectValues<KeyValueString>("query", updateOpenApiPluginCommand.query, serializeKeyValueString);
+        writer.writeStringValue("serverUrl", updateOpenApiPluginCommand.serverUrl);
     }
 }
 /**
@@ -4472,6 +5506,19 @@ export interface UpdateAiModelCommand extends AiEndpoint, Parsable {
     aiModelId?: number | null;
 }
 /**
+ * 更新 MCP 插件.
+ */
+export interface UpdateMcpServerPluginCommand extends McpServerPluginConnectionOptions, Parsable {
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 插件 id.            
+     */
+    pluginId?: number | null;
+}
+/**
  * 更新 OAuth2.0 连接配置.
  */
 export interface UpdateOAuthConnectionCommand extends CreateOAuthConnectionCommand, Parsable {
@@ -4479,6 +5526,47 @@ export interface UpdateOAuthConnectionCommand extends CreateOAuthConnectionComma
      * id.
      */
     oAuthConnectionId?: number | null;
+}
+/**
+ * 更新 openapi 文件，支持 json、yaml.
+ */
+export interface UpdateOpenApiPluginCommand extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 上传的 id.
+     */
+    fileId?: number | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * Header 头部信息.
+     */
+    header?: KeyValueString[] | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 插件名称.
+     */
+    name?: string | null;
+    /**
+     * 插件 id.
+     */
+    pluginId?: number | null;
+    /**
+     * Query 字典.
+     */
+    query?: KeyValueString[] | null;
+    /**
+     * MCP Service 地址.
+     */
+    serverUrl?: string | null;
 }
 /**
  * 修改用户信息.
@@ -4784,7 +5872,16 @@ export const OAuthPrividerObject = {
     Custom: "custom",
     Feishu: "feishu",
     WeixinWork: "weixinWork",
+    DingTalk: "dingTalk",
     GitHub: "gitHub",
+} as const;
+/**
+ * 插件类型.
+ */
+export const PluginTypeObject = {
+    OpenApi: "openApi",
+    Mcp: "mcp",
+    System: "system",
 } as const;
 /* tslint:enable */
 /* eslint-enable */

@@ -45,5 +45,5 @@ public class QueryAllOAuthPrividerDetailCommandResponseItem : AuditsInfo
     /// <summary>
     /// 回调地址.
     /// </summary>
-    public string RedirectUri { get; set; } = default!;
+    public string AuthorizeUrl { get; set; } = default!;
 }

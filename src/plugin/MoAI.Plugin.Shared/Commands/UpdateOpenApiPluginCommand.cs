@@ -35,6 +35,11 @@ public class UpdateOpenApiPluginCommand : IRequest<EmptyCommandResponse>
     public string Description { get; init; } = default!;
 
     /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; } = default!;
+
+    /// <summary>
     /// 插件 id.
     /// </summary>
     public int PluginId { get; init; }

@@ -39,6 +39,14 @@ public static class SystemSettingKeys
     public const string DisableRegister = "disable_register";
     public const bool DisableRegisterValue = false;
 
+    /// <summary>
+    /// AI 对话中用户最大聊天记录数量
+    /// </summary>
+    [Description("AI 对话中用户最大聊天记录数量")]
+    public const string UserMaxAIHistoryCount = "user_max_ai_history_count";
+    public const int UserMaxAIHistoryCountValue = 10;
+
+
     private static readonly IReadOnlyDictionary<string, string> _defaultValues;
 
     static SystemSettingKeys()
