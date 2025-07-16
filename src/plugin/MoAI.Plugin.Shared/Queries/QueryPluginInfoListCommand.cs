@@ -16,6 +16,11 @@ namespace MoAI.Plugin.Queries;
 public class QueryPluginInfoListCommand : IRequest<QueryPluginInfoListCommandResponse>
 {
     /// <summary>
+    /// 用户 id.
+    /// </summary>
+    public int UserId { get; init; } = default!;
+
+    /// <summary>
     /// 名称搜索.
     /// </summary>
     public string? Name { get; init; }

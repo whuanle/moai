@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database.Audits;
 using MoAI.Database.Entities;
 using MoAI.Database.Models;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using System.ComponentModel;
@@ -72,7 +73,7 @@ public partial class DatabaseContext
         modelBuilder.Entity<UserEntity>().HasData(
             new UserEntity
             {
-                Id = SystemSettingKeys.RootValue,
+                Id = ISystemSettingProvider.Root.Value.JsonToObject<int>(),
                 UserName = "admin",
                 NickName = "admin",
                 Email = "admin@admin.com",
@@ -83,36 +84,17 @@ public partial class DatabaseContext
             });
 
         // 生成系统初始化配置.
-        var fields = typeof(SystemSettingKeys).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-
-        var fieldDictionary = fields.ToDictionary(x => x.Name, x => x);
 
         int id = 1;
-        foreach (var field in fields.Where(x => !x.Name.EndsWith("Value", StringComparison.CurrentCultureIgnoreCase)))
+        foreach (var systemSetting in ISystemSettingProvider.Keys)
         {
-            var valueField = fieldDictionary.GetValueOrDefault($"{field.Name}Value");
-            if (valueField == null)
-            {
-                continue;
-            }
-
-            var key = field.GetValue(null)?.ToString() ?? string.Empty;
-            var value = valueField.GetValue(null)?.ToString() ?? string.Empty;
-
-            var descriptionAttribute = field.GetCustomAttribute<DescriptionAttribute>();
-
-            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value) || descriptionAttribute == null)
-            {
-                continue;
-            }
-
             modelBuilder.Entity<SettingEntity>().HasData(
                 new SettingEntity
                 {
                     Id = id,
-                    Key = key,
-                    Value = value,
-                    Description = descriptionAttribute.Description
+                    Key = systemSetting.Key,
+                    Value = systemSetting.Value,
+                    Description = systemSetting.Description
                 });
 
             id++;

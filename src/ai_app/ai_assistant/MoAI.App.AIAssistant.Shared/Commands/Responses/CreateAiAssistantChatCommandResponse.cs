@@ -1,20 +1,18 @@
-﻿using MaomiAI.AI.Models;
-using MaomiAI.AiModel.Shared.Models;
-using MediatR;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// <copyright file="CreateAiAssistantChatCommandResponse.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
 
-namespace MaomiAI.Chat.Shared.Commands.Responses;
+namespace MoAI.App.AIAssistant.Commands.Responses;
 
+/// <summary>
+/// 对话 id.
+/// </summary>
 public class CreateAiAssistantChatCommandResponse
 {
     /// <summary>
     /// 每个聊天对话都有唯一 id.
     /// </summary>
-    public string ChatId { get; init; }
+    public Guid ChatId { get; init; } = default!;
 }

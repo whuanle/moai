@@ -21,6 +21,6 @@ public class DeleteAiModelCommandValidator : Validator<DeleteAiModelCommand>
     public DeleteAiModelCommandValidator()
     {
         RuleFor(x => x.AiModelId)
-            .GreaterThan(0).WithMessage("模型 ID 必须大于 0");
+            .NotEmpty().WithMessage("模型id有误");
     }
 }

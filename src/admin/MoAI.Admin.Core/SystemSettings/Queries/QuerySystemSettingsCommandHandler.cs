@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Admin.SystemSettings.Queries.Responses;
 using MoAI.Database;
+using MoAI.Database.Models;
 using MoAI.User.Queries;
 
 namespace MoAI.Admin.SystemSettings.Queries;
@@ -34,19 +35,34 @@ public class QuerySystemSettingsCommandHandler : IRequestHandler<QuerySystemSett
     /// <inheritdoc/>
     public async Task<QuerySystemSettingsCommandResponse> Handle(QuerySystemSettingsCommand request, CancellationToken cancellationToken)
     {
-        var settings = await _databaseContext.Settings.Select(x => new QuerySystemSettingsCommandResponseItem
+        List<QuerySystemSettingsCommandResponseItem> settings = new();
+
+        var data = await _databaseContext.Settings.Select(x => new QuerySystemSettingsCommandResponseItem
         {
             Id = x.Id,
             Key = x.Key,
             Value = x.Value,
             Description = x.Description ?? string.Empty,
-            CreateTime = x.CreateTime,
-            CreateUserId = x.CreateUserId,
-            UpdateTime = x.UpdateTime,
-            UpdateUserId = x.UpdateUserId,
         }).ToArrayAsync();
 
-        await _mediator.Send(new FillUserInfoCommand { Items = settings });
+        foreach (var item in ISystemSettingProvider.Keys)
+        {
+            var result = data.FirstOrDefault(x => x.Key == item.Key);
+            if (result != null)
+            {
+                settings.Add(result);
+            }
+            else
+            {
+                settings.Add(new QuerySystemSettingsCommandResponseItem
+                {
+                    Id = 0,
+                    Key = item.Key,
+                    Value = item.Value,
+                    Description = item.Description,
+                });
+            }
+        }
 
         return new QuerySystemSettingsCommandResponse { Items = settings };
     }

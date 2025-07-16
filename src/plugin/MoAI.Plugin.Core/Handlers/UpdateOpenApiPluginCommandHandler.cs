@@ -53,15 +53,17 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
-        if (request.FileId == request.FileId || request.FileId == 0)
-        {
-            pluginEntity.IsPublic = request.IsPublic;
-            pluginEntity.Description = request.Description;
-            pluginEntity.Queries = request.Query.ToJsonString();
-            pluginEntity.Headers = request.Header.ToJsonString();
-            pluginEntity.PluginName = request.Name;
-            pluginEntity.Server = request.ServerUrl.ToString();
+        pluginEntity.Title = request.Title;
+        pluginEntity.IsPublic = request.IsPublic;
+        pluginEntity.Description = request.Description;
+        pluginEntity.Queries = request.Query.ToJsonString();
+        pluginEntity.Headers = request.Header.ToJsonString();
+        pluginEntity.PluginName = request.Name;
+        pluginEntity.Server = request.ServerUrl.ToString();
 
+        // 没有覆盖 openapi 文件
+        if (request.FileId == request.FileId || request.FileId == 0 || request.FileId == pluginEntity.OpenapiFileId)
+        {
             _databaseContext.Update(pluginEntity);
             await _databaseContext.SaveChangesAsync(cancellationToken);
             return EmptyCommandResponse.Default;
@@ -99,7 +101,8 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
             asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
             transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
 
-        pluginEntity.Title = TruncateString(apiReaderResult.OpenApiDocument.Info.Title, 255);
+        pluginEntity.OpenapiFileId = fileEntity.Id;
+        pluginEntity.OpenapiFileName = request.FileName;
 
         _databaseContext.Plugins.Update(pluginEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
@@ -138,15 +141,5 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
         var reader = new OpenApiStreamReader();
         var apiReaderResult = await reader.ReadAsync(fileStream);
         return apiReaderResult;
-    }
-
-    private static string TruncateString(string value, int maxLength)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return string.Empty;
-        }
-
-        return value.Length <= maxLength ? value : value[..maxLength];
     }
 }

@@ -23,6 +23,7 @@ import { FormInstance, message } from "antd";
 import { IsTokenExpired } from "../helper/TokenHelper";
 import { GetFileMd5 } from "../helper/Md5Helper";
 import { PreUploadFileCommandResponse } from "@/apiClient/models";
+import { FileTypeHelper } from "../helper/FileTypeHelper";
 // import {
 //   PreUploadFileCommandResponse,
 //   UploadImageType,
@@ -124,7 +125,7 @@ export const UploadPublicFile = async (
 ): Promise<PreUploadFileCommandResponse> => {
   const md5 = await GetFileMd5(file);
   const preUploadResponse = await client.api.storage.pre_upload_image.post({
-    contentType: file.type,
+    contentType: FileTypeHelper.getFileType(file),
     fileName: file.name,
     mD5: md5,
     fileSize: file.size,
@@ -152,7 +153,7 @@ export const UploadPublicFile = async (
     method: "PUT",
     body: file,
     headers: {
-      "Content-Type": file.type,
+      "Content-Type": FileTypeHelper.getFileType(file),
       "x-amz-meta-max-file-size": file.size.toString(),
       "Authorization": `Bearer ${localStorage.getItem("userinfo.accessToken")}`,
     },

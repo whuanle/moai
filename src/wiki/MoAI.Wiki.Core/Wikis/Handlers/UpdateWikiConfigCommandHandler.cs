@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
 
@@ -49,7 +50,7 @@ public class UpdateWikiConfigCommandHandler : IRequestHandler<UpdateWikiConfigCo
 
         wikiEntity.EmbeddingDimensions = request.EmbeddingDimensions;
         wikiEntity.EmbeddingModelId = request.EmbeddingModelId;
-        wikiEntity.EmbeddingModelTokenizer = request.EmbeddingModelTokenizer;
+        wikiEntity.EmbeddingModelTokenizer = request.EmbeddingModelTokenizer.ToJsonString();
         wikiEntity.EmbeddingBatchSize = request.EmbeddingBatchSize;
         wikiEntity.MaxRetries = request.MaxRetries;
 

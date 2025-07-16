@@ -182,7 +182,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
                 EmbeddingDimensions = a.EmbeddingDimensions,
                 EmbeddingBatchSize = a.EmbeddingBatchSize,
                 MaxRetries = a.MaxRetries,
-                EmbeddingModelTokenizer = a.EmbeddingModelTokenizer,
+                EmbeddingModelTokenizer = a.EmbeddingModelTokenizer.JsonToObject<EmbeddingTokenizer>(),
                 EmbeddingModelId = a.EmbeddingModelId,
             },
             AiEndpoint = new AiEndpoint

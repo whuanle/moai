@@ -30,6 +30,11 @@ public class UpdateOpenApiPluginCommand : IRequest<EmptyCommandResponse>
     public string Name { get; init; } = default!;
 
     /// <summary>
+    /// 插件标题，可中文.
+    /// </summary>
+    public string Title { get; init; } = default!;
+
+    /// <summary>
     /// 描述.
     /// </summary>
     public string Description { get; init; } = default!;

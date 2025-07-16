@@ -45,3 +45,22 @@ public interface IOpenAIChatCompletionsObject
     [JsonPropertyName("object")]
     public string Object { get; }
 }
+
+public class OpenAIChatCompletionsFunction: IOpenAIChatCompletionsObject
+{
+    /// <inheritdoc />
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+    /// <inheritdoc />
+    [JsonPropertyName("created")]
+    public long Created { get; init; }
+    /// <inheritdoc />
+    [JsonPropertyName("model")]
+    public string Model { get; init; } = string.Empty;
+    /// <inheritdoc />
+    [JsonPropertyName("system_fingerprint")]
+    public string SystemFingerprint { get; init; } = string.Empty;
+    /// <inheritdoc />
+    [JsonPropertyName("object")]
+    public string Object { get; init; } = "chat.completion";
+}

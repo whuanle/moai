@@ -16,6 +16,7 @@ import {
   Col,
   Popconfirm,
   Tooltip,
+  Radio,
 } from "antd";
 import {
   PlusOutlined,
@@ -27,7 +28,7 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
-import { QueryWikiSimpleInfoResponse, DeleteWikiCommand } from "../../apiClient/models";
+import { DeleteWikiCommand, QueryWikiBaseListCommand } from "../../apiClient/models";
 import { useNavigate } from "react-router";
 import { proxyFormRequestError } from "../../helper/RequestError";
 
@@ -41,7 +42,7 @@ interface WikiItem {
   isPublic: boolean;
   createUserName?: string;
   createTime?: string;
-  isAdmin?: boolean;
+  isUser?: boolean;
   documentCount?: number;
   createUserId?: number;
 }
@@ -102,23 +103,29 @@ const useWikiList = () => {
   const [wikiList, setWikiList] = useState<WikiItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const [filterType, setFilterType] = useState<'none' | 'own' | 'public' | 'user'>('none');
 
-  const fetchWikiList = useCallback(async () => {
+  const fetchWikiList = useCallback(async (filter: 'none' | 'own' | 'public' | 'user' = 'none') => {
     try {
       setLoading(true);
       const client = GetApiClient();
-      const response = await client.api.wiki.query_wiki_list.get();
+      const command: QueryWikiBaseListCommand = {
+        isOwn: filter === 'own' ? true : undefined,
+        isPublic: filter === 'public' ? true : undefined,
+        isUser: filter === 'user' ? true : undefined,
+      };
+      const response = await client.api.wiki.query_wiki_list.post(command);
 
       if (response) {
         const wikiItems: WikiItem[] = response.map(
-          (item: QueryWikiSimpleInfoResponse) => ({
+          (item) => ({
             id: item.wikiId!,
             title: item.name!,
             description: item.description || "",
             isPublic: item.isPublic || false,
             createUserName: item.createUserName || undefined,
             createTime: item.createTime || undefined,
-            isAdmin: item.isAdmin || false,
+            isUser: item.isUser || false,
             documentCount: item.documentCount || 0,
             createUserId: item.createUserId || undefined,
           })
@@ -139,14 +146,27 @@ const useWikiList = () => {
       const deleteCommand: DeleteWikiCommand = { wikiId: id };
       await client.api.wiki.delete_wiki.delete(deleteCommand);
       messageApi.success("删除成功");
-      fetchWikiList();
+      fetchWikiList(filterType);
     } catch (error) {
       console.error("删除知识库失败:", error);
       messageApi.error("删除失败，请重试");
     }
-  }, [messageApi, fetchWikiList]);
+  }, [messageApi, fetchWikiList, filterType]);
 
-  return { wikiList, loading, contextHolder, fetchWikiList, deleteWiki };
+  const handleFilterChange = useCallback((filter: 'none' | 'own' | 'public' | 'user') => {
+    setFilterType(filter);
+    fetchWikiList(filter);
+  }, [fetchWikiList]);
+
+  return { 
+    wikiList, 
+    loading, 
+    contextHolder, 
+    fetchWikiList, 
+    deleteWiki, 
+    filterType, 
+    handleFilterChange 
+  };
 };
 
 // 自定义Hook - 创建Wiki表单管理
@@ -215,36 +235,55 @@ const WikiCard: React.FC<WikiCardProps> = ({ item, currentUserId, onDelete, onCl
       <Card
         hoverable
         onClick={handleCardClick}
-        style={{ cursor: "pointer", height: "100%" }}
-        actions={canDelete ? [
-          <Tooltip title="删除知识库" key="delete">
-            <Popconfirm
-              title="删除知识库"
-              description="确定要删除这个知识库吗？删除后无法恢复。"
-              okText="确认删除"
-              cancelText="取消"
-              onConfirm={() => onDelete(item.id)}
-            >
-              <Button
-                className="wiki-delete-btn"
-                type="text"
-                icon={<DeleteOutlined />}
-                danger
-                onClick={handleDelete}
-              />
-            </Popconfirm>
-          </Tooltip>
-        ] : undefined}
+        style={{ cursor: "pointer", height: "100%", position: "relative" }}
       >
+        {canDelete && (
+          <div style={{ 
+            position: "absolute", 
+            top: 8, 
+            right: 8, 
+            zIndex: 10,
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            borderRadius: "50%",
+            padding: 4
+          }}>
+            <Tooltip title="删除知识库">
+              <Popconfirm
+                title="删除知识库"
+                description="确定要删除这个知识库吗？删除后无法恢复。"
+                okText="确认删除"
+                cancelText="取消"
+                onConfirm={() => onDelete(item.id)}
+              >
+                <Button
+                  className="wiki-delete-btn"
+                  type="text"
+                  icon={<DeleteOutlined style={{ fontSize: '14px' }} />}
+                  danger
+                  size="small"
+                  onClick={handleDelete}
+                  style={{ 
+                    width: 24, 
+                    height: 24, 
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                />
+              </Popconfirm>
+            </Tooltip>
+          </div>
+        )}
         <Card.Meta
           title={
             <Space align="center" style={{ width: "100%" }}>
               <Text strong style={{ fontSize: "16px", flex: 1 }}>
                 {item.title}
               </Text>
-                             {item.isAdmin && (
-                 <Tag color="orange">成员</Tag>
-               )}
+              {item.isUser && (
+                <Tag color="orange">成员</Tag>
+              )}
             </Space>
           }
           description={
@@ -257,33 +296,33 @@ const WikiCard: React.FC<WikiCardProps> = ({ item, currentUserId, onDelete, onCl
                 {item.description}
               </Paragraph>
               
-                             <Space size="small" wrap>
-                 {item.isPublic ? (
-                   <Tag color="green">公开</Tag>
-                 ) : (
-                   <Tag color="blue">私有</Tag>
-                 )}
-                 <Tag color="purple" icon={<FileTextOutlined />}>
-                   {item.documentCount || 0} 文档
-                 </Tag>
-               </Space>
+              <Space size="small" wrap>
+                {item.isPublic ? (
+                  <Tag color="green">公开</Tag>
+                ) : (
+                  <Tag color="blue">私有</Tag>
+                )}
+                <Tag color="purple" icon={<FileTextOutlined />}>
+                  {item.documentCount || 0} 文档
+                </Tag>
+              </Space>
               
-                             <Space direction="vertical" size="small" style={{ marginTop: 8 }}>
-                 <Space size="small">
-                   <UserOutlined />
-                   <Text type="secondary" style={{ fontSize: "12px" }}>
-                     {item.createUserName || "未知用户"}
-                   </Text>
-                 </Space>
-                 {item.createTime && (
-                   <Space size="small">
-                     <ClockCircleOutlined />
-                     <Text type="secondary" style={{ fontSize: "12px" }}>
-                       {formatDateTime(item.createTime)}
-                     </Text>
-                   </Space>
-                 )}
-               </Space>
+              <Space direction="vertical" size="small" style={{ marginTop: 8 }}>
+                <Space size="small">
+                  <UserOutlined />
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {item.createUserName || "未知用户"}
+                  </Text>
+                </Space>
+                {item.createTime && (
+                  <Space size="small">
+                    <ClockCircleOutlined />
+                    <Text type="secondary" style={{ fontSize: "12px" }}>
+                      {formatDateTime(item.createTime)}
+                    </Text>
+                  </Space>
+                )}
+              </Space>
             </Space>
           }
         />
@@ -328,7 +367,7 @@ const CreateWikiModal: React.FC<CreateWikiModalProps> = ({ open, onCancel, onSub
         <Input.TextArea placeholder="请输入描述" maxLength={200} rows={3} />
       </Form.Item>
       <Form.Item label="是否公开" name="isPublic" valuePropName="checked" initialValue={false}>
-        <Switch checkedChildren="公开" unCheckedChildren="私有" disabled />
+        <Switch checkedChildren="公开" unCheckedChildren="私有" />
       </Form.Item>
     </Form>
   </Modal>
@@ -338,7 +377,15 @@ const CreateWikiModal: React.FC<CreateWikiModalProps> = ({ open, onCancel, onSub
 export default function WikiPage() {
   const navigate = useNavigate();
   const { currentUserId, fetchCurrentUser } = useCurrentUser();
-  const { wikiList, loading, contextHolder: listContextHolder, fetchWikiList, deleteWiki } = useWikiList();
+  const { 
+    wikiList, 
+    loading, 
+    contextHolder: listContextHolder, 
+    fetchWikiList, 
+    deleteWiki, 
+    filterType, 
+    handleFilterChange 
+  } = useWikiList();
   const { 
     modalOpen, 
     setModalOpen, 
@@ -346,7 +393,7 @@ export default function WikiPage() {
     contextHolder: formContextHolder, 
     handleSubmit, 
     handleCancel 
-  } = useCreateWikiForm(fetchWikiList);
+  } = useCreateWikiForm(() => fetchWikiList(filterType));
 
   useEffect(() => {
     fetchCurrentUser();
@@ -358,8 +405,8 @@ export default function WikiPage() {
   }, [setModalOpen]);
 
   const handleRefresh = useCallback(() => {
-    fetchWikiList();
-  }, [fetchWikiList]);
+    fetchWikiList(filterType);
+  }, [fetchWikiList, filterType]);
 
   const handleCardClick = useCallback((id: number) => {
     // 找到对应的知识库项
@@ -367,7 +414,7 @@ export default function WikiPage() {
     if (!wikiItem) return;
     
     // 检查用户是否为该知识库的成员
-    if (!wikiItem.isAdmin && currentUserId !== wikiItem.createUserId) {
+    if (!wikiItem.isUser && currentUserId !== wikiItem.createUserId) {
       message.error("您不是该知识库成员");
       return;
     }
@@ -391,30 +438,41 @@ export default function WikiPage() {
         form={form}
       />
 
-             <Card style={{ margin: "24px 24px 0" }}>
-         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-           <Space>
-             <BookOutlined />
-             <Title level={3} style={{ margin: 0 }}>知识库管理</Title>
-           </Space>
-           <Space>
-             <Button
-               type="primary"
-               icon={<PlusOutlined />}
-               onClick={handleAddWiki}
-             >
-               新建知识库
-             </Button>
-             <Button
-               icon={<ReloadOutlined />}
-               onClick={handleRefresh}
-               loading={loading}
-             >
-               刷新
-             </Button>
-           </Space>
-         </div>
-       </Card>
+      <Card style={{ margin: "24px 24px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Space size="large">
+            <Space>
+              <BookOutlined />
+              <Title level={3} style={{ margin: 0 }}>知识库管理</Title>
+            </Space>
+            <Space>
+            <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddWiki}
+              >
+                新建知识库
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+                loading={loading}
+              >
+                刷新
+              </Button>
+              <Radio.Group 
+                value={filterType} 
+                onChange={(e) => handleFilterChange(e.target.value)}
+              >
+                <Radio.Button value="none">全部</Radio.Button>
+                <Radio.Button value="own">只看自己创建</Radio.Button>
+                <Radio.Button value="public">只看公开</Radio.Button>
+                <Radio.Button value="user">只看成员</Radio.Button>
+              </Radio.Group>
+            </Space>
+          </Space>
+        </div>
+      </Card>
 
       <div style={{ padding: "0 24px 24px" }}>
         <Card>

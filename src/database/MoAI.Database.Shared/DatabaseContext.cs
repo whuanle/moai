@@ -45,9 +45,14 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
-    /// 对话历史.
+    /// ai助手表.
     /// </summary>
-    public virtual DbSet<ChatHistoryEntity> ChatHistories { get; set; }
+    public virtual DbSet<AppAssistantChatEntity> AppAssistantChats { get; set; }
+
+    /// <summary>
+    /// 对话历史，不保存实际历史记录.
+    /// </summary>
+    public virtual DbSet<AppAssistantChatHistoryEntity> AppAssistantChatHistories { get; set; }
 
     /// <summary>
     /// 文件列表.
@@ -113,6 +118,7 @@ public partial class DatabaseContext : DbContext
     /// 知识库成员.
     /// </summary>
     public virtual DbSet<WikiUserEntity> WikiUsers { get; set; }
+
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

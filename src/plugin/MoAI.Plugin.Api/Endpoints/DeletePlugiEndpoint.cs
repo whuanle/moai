@@ -1,0 +1,57 @@
+﻿// <copyright file="DeletePlugiEndpoint.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
+using FastEndpoints;
+using MediatR;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.Models;
+using MoAI.Plugin.Commands;
+using MoAI.Plugin.Queries;
+
+namespace MoAI.Plugin.Endpoints;
+
+/// <summary>
+/// 删除插件.
+/// </summary>
+[HttpDelete($"{ApiPrefix.Prefix}/delete_plugin")]
+public class DeletePlugiEndpoint : Endpoint<DeletePluginCommand, EmptyCommandResponse>
+{
+    private readonly IMediator _mediator;
+    private readonly UserContext _userContext;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DeletePlugiEndpoint"/> class.
+    /// </summary>
+    /// <param name="mediator"></param>
+    /// <param name="userContext"></param>
+    public DeletePlugiEndpoint(IMediator mediator, UserContext userContext)
+    {
+        _mediator = mediator;
+        _userContext = userContext;
+    }
+
+    /// <inheritdoc/>
+    public override async Task<EmptyCommandResponse> ExecuteAsync(DeletePluginCommand req, CancellationToken ct)
+    {
+        var isCreator = await _mediator.Send(new QueryUserIsPluginCreatorCommand
+        {
+            PluginId = req.PluginId,
+            UserId = _userContext.UserId
+        });
+
+        if (!isCreator.Value)
+        {
+            throw new BusinessException("无权操作该插件.");
+        }
+
+        return await _mediator.Send(
+            new DeletePluginCommand
+            {
+                PluginId = req.PluginId,
+            },
+            ct);
+    }
+}

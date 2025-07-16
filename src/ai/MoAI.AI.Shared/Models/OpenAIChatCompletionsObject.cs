@@ -52,24 +52,6 @@ public class OpenAIChatCompletionsObject : IOpenAIChatCompletionsObject
     public OpenAIChatCompletionsUsage Usage { get; init; } = new OpenAIChatCompletionsUsage();
 
     /// <summary>
-    /// 生成的完成中的标记数
-    /// </summary>
-    [JsonPropertyName("completion_tokens")]
-    public int CompletionTokens { get; init; }
-
-    /// <summary>
-    /// 提示中的标记数
-    /// </summary>
-    [JsonPropertyName("prompt_tokens")]
-    public int PromptTokens { get; init; }
-
-    /// <summary>
-    /// 请求中使用的标记总数(提示 + 完成)
-    /// </summary>
-    [JsonPropertyName("total_tokens")]
-    public int TotalTokens { get; init; }
-
-    /// <summary>
     /// 对象类型,总是 chat.completion.
     /// </summary>
     [JsonPropertyName("object")]

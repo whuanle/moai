@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Function_listRequestBuilder extends BaseRequestBuilder<Function_listRequestBuilder> {
     /**
      * 插件的函数列表.
-     * @param body 获取插件函数列表.
+     * @param body 获取插件的函数列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryPluginFunctionsListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Function_listRequestBuilder extends BaseRequestBuilder<Function
      post(body: QueryPluginFunctionsListCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryPluginFunctionsListCommandResponse | undefined>;
     /**
      * 插件的函数列表.
-     * @param body 获取插件函数列表.
+     * @param body 获取插件的函数列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

@@ -9,7 +9,7 @@ export class FileTypeHelper {
    */
   public static getFileType(file: File): string {
     // 如果文件对象已经有类型，直接返回
-    if (file.type) {
+    if (file.type && file.type.trim() !== '') {
       return file.type;
     }
 
@@ -152,5 +152,148 @@ export class FileTypeHelper {
     };
 
     return mimeTypes[extension] || 'application/octet-stream';
+  }
+
+  /**
+   * 检查文件是否为知识库支持的文档类型
+   * @param file 文件对象
+   * @returns 是否为支持的文档类型
+   */
+  public static isWikiDocumentSupported(file: File): boolean {
+    const supportedExtensions = ['pdf', 'doc', 'docx', 'txt', 'md'];
+    const extension = this.getFileExtension(file.name);
+    return supportedExtensions.includes(extension);
+  }
+
+  /**
+   * 检查文件是否为图片类型
+   * @param file 文件对象
+   * @returns 是否为图片类型
+   */
+  public static isImage(file: File): boolean {
+    const contentType = this.getFileType(file);
+    return contentType.startsWith('image/');
+  }
+
+  /**
+   * 检查文件是否为文档类型
+   * @param file 文件对象
+   * @returns 是否为文档类型
+   */
+  public static isDocument(file: File): boolean {
+    const contentType = this.getFileType(file);
+    return contentType.startsWith('application/') && 
+           (contentType.includes('pdf') || 
+            contentType.includes('word') || 
+            contentType.includes('excel') || 
+            contentType.includes('powerpoint') ||
+            contentType.includes('rtf'));
+  }
+
+  /**
+   * 检查文件是否为文本类型
+   * @param file 文件对象
+   * @returns 是否为文本类型
+   */
+  public static isText(file: File): boolean {
+    const contentType = this.getFileType(file);
+    return contentType.startsWith('text/');
+  }
+
+  /**
+   * 检查文件是否为代码文件
+   * @param file 文件对象
+   * @returns 是否为代码文件
+   */
+  public static isCode(file: File): boolean {
+    const codeExtensions = [
+      'js', 'ts', 'jsx', 'tsx', 'html', 'css', 'scss', 'less', 'json', 'xml',
+      'py', 'java', 'c', 'cpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt',
+      'scala', 'sh', 'bat', 'ps1', 'yaml', 'yml', 'toml', 'sql'
+    ];
+    const extension = this.getFileExtension(file.name);
+    return codeExtensions.includes(extension);
+  }
+
+  /**
+   * 获取文件类型描述
+   * @param file 文件对象
+   * @returns 文件类型描述
+   */
+  public static getFileTypeDescription(file: File): string {
+    if (this.isImage(file)) {
+      return '图片文件';
+    } else if (this.isDocument(file)) {
+      return '文档文件';
+    } else if (this.isText(file)) {
+      return '文本文件';
+    } else if (this.isCode(file)) {
+      return '代码文件';
+    } else {
+      return '其他文件';
+    }
+  }
+
+  /**
+   * 获取文件扩展名（带点号）
+   * @param fileName 文件名
+   * @returns 文件扩展名（带点号）
+   */
+  public static getFileExtensionWithDot(fileName: string): string {
+    const extension = this.getFileExtension(fileName);
+    return extension ? `.${extension}` : '';
+  }
+
+  /**
+   * 验证文件类型是否匹配
+   * @param file 文件对象
+   * @param expectedTypes 期望的文件类型数组
+   * @returns 是否匹配
+   */
+  public static validateFileType(file: File, expectedTypes: string[]): boolean {
+    const fileType = this.getFileType(file);
+    return expectedTypes.some(type => fileType.includes(type));
+  }
+
+  /**
+   * 获取文件类型图标（基于文件类型）
+   * @param file 文件对象
+   * @returns 文件类型图标名称
+   */
+  public static getFileTypeIcon(file: File): string {
+    if (this.isImage(file)) {
+      return 'image';
+    } else if (this.isDocument(file)) {
+      return 'file-text';
+    } else if (this.isCode(file)) {
+      return 'code';
+    } else if (this.isText(file)) {
+      return 'file-text';
+    } else {
+      return 'file';
+    }
+  }
+
+  /**
+   * 格式化文件类型显示
+   * @param file 文件对象
+   * @returns 格式化的文件类型字符串
+   */
+  public static formatFileType(file: File): string {
+    const contentType = this.getFileType(file);
+    const extension = this.getFileExtension(file.name);
+    
+    // 如果是未知类型，返回扩展名
+    if (contentType === 'application/octet-stream' && extension) {
+      return extension.toUpperCase();
+    }
+    
+    // 返回 MIME 类型的主要部分
+    const parts = contentType.split('/');
+    if (parts.length === 2) {
+      return parts[1].toUpperCase();
+    }
+    
+    return contentType;
   }
 } 

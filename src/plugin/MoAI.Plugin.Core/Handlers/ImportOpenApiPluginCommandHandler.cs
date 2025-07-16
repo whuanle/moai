@@ -89,7 +89,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             OpenapiFileId = fileEntity.Id,
             Server = apiReaderResult.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty,
             Type = (int)PluginType.OpenApi,
-            Title = TruncateString(apiReaderResult.OpenApiDocument.Info.Title, 255),
+            Title = request.Title,
             IsPublic = request.IsPublic
         };
 
@@ -128,15 +128,5 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
         var reader = new OpenApiStreamReader();
         var apiReaderResult = await reader.ReadAsync(fileStream);
         return apiReaderResult;
-    }
-
-    private static string TruncateString(string value, int maxLength)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return string.Empty;
-        }
-
-        return value.Length <= maxLength ? value : value[..maxLength];
     }
 }

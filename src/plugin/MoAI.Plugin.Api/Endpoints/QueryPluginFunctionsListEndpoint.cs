@@ -37,16 +37,22 @@ public class QueryPluginFunctionsListEndpoint : Endpoint<QueryPluginFunctionsLis
     /// <inheritdoc/>
     public override async Task<QueryPluginFunctionsListCommandResponse> ExecuteAsync(QueryPluginFunctionsListCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+        var isCreator = await _mediator.Send(new QueryUserIsPluginCreatorCommand
         {
-            UserId = _userContext.UserId,
+            PluginId = req.PluginId,
+            UserId = _userContext.UserId
         });
 
-        if (!isAdmin.IsAdmin)
+        if (!isCreator.Value)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            throw new BusinessException("无权操作该插件.");
         }
 
-        return await _mediator.Send(req, ct);
+        return await _mediator.Send(
+            new QueryPluginFunctionsListCommand
+            {
+                PluginId = req.PluginId
+            },
+            ct);
     }
 }

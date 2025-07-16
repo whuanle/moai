@@ -50,6 +50,11 @@ public partial class PluginEntity : IFullAudited
     public int Type { get; set; }
 
     /// <summary>
+    /// 公开访问.
+    /// </summary>
+    public bool IsPublic { get; set; }
+
+    /// <summary>
     /// 文件id.
     /// </summary>
     public int OpenapiFileId { get; set; }

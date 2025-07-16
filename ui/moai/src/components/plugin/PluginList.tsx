@@ -54,6 +54,7 @@ import { proxyFormRequestError, proxyRequestError } from "../../helper/RequestEr
 import { formatDateTime } from "../../helper/DateTimeHelper";
 import { GetFileMd5 } from "../../helper/Md5Helper";
 import useAppStore from "../../stateshare/store";
+import { FileTypeHelper } from "../../helper/FileTypeHelper";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -545,7 +546,7 @@ const UploadOpenApiFile = async (
   console.log("文件MD5:", md5);
   
   const preUploadResponse = await client.api.plugin.pre_upload_openapi.post({
-    contentType: file.type,
+    contentType: FileTypeHelper.getFileType(file),
     fileName: file.name,
     fileSize: file.size,
     mD5: md5,
@@ -568,7 +569,7 @@ const UploadOpenApiFile = async (
     method: "PUT",
     body: file,
     headers: {
-      "Content-Type": file.type,
+      "Content-Type": FileTypeHelper.getFileType(file),
       "Authorization": `Bearer ${localStorage.getItem("userinfo.accessToken")}`,
     },
   });

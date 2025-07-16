@@ -21,12 +21,15 @@ public class UpdateAiModelCommandValidator : Validator<UpdateAiModelCommand>
     public UpdateAiModelCommandValidator()
     {
         RuleFor(x => x.AiModelId)
-            .GreaterThan(0).WithMessage("模型id有误");
+            .NotEmpty().WithMessage("模型id有误");
+
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("模型名称不能为空")
             .MaximumLength(50).WithMessage("模型名称不能超过50个字符");
+
         RuleFor(x => x.Key)
             .NotEmpty().WithMessage("密钥不能为空");
+
         RuleFor(x => x.Endpoint)
             .NotEmpty().WithMessage("请求端点不能为空")
             .MaximumLength(500).WithMessage("请求端点不能超过255个字符");

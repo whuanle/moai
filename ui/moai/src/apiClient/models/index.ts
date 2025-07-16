@@ -702,6 +702,15 @@ export function createPagedResultOfQueryWikiDocumentListItemFromDiscriminatorVal
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginBaseInfoItem}
+ */
+// @ts-ignore
+export function createPluginBaseInfoItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginBaseInfoItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreloadWikiDocumentResponse}
  */
 // @ts-ignore
@@ -828,6 +837,24 @@ export function createQueryAllOAuthPrividerDetailCommandResponseItemFromDiscrimi
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginBaseListCommand}
+ */
+// @ts-ignore
+export function createQueryPluginBaseListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginBaseListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginBaseListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginBaseListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginBaseListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryPluginDetailCommand}
  */
 // @ts-ignore
@@ -869,60 +896,6 @@ export function createQueryPluginFunctionsListCommandResponseFromDiscriminatorVa
 // @ts-ignore
 export function createQueryPluginFunctionsListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryPluginFunctionsListCommandResponseItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryPluginInfoItem}
- */
-// @ts-ignore
-export function createQueryPluginInfoItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryPluginInfoItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryPluginInfoListCommand}
- */
-// @ts-ignore
-export function createQueryPluginInfoListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryPluginInfoListCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryPluginInfoListCommandResponse}
- */
-// @ts-ignore
-export function createQueryPluginInfoListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryPluginInfoListCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryPluginListCommand}
- */
-// @ts-ignore
-export function createQueryPluginListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryPluginListCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryPluginListCommandResponse}
- */
-// @ts-ignore
-export function createQueryPluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryPluginListCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryPluginListItem}
- */
-// @ts-ignore
-export function createQueryPluginListItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryPluginListItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -999,20 +972,11 @@ export function createQueryUserListCommandResponseItemFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiConfigCommand}
+ * @returns {QueryWikiBaseListCommand}
  */
 // @ts-ignore
-export function createQueryWikiConfigCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiConfigCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiConfigCommandResponse}
- */
-// @ts-ignore
-export function createQueryWikiConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiConfigCommandResponse;
+export function createQueryWikiBaseListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiBaseListCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1062,20 +1026,20 @@ export function createQueryWikiDocumentTaskListCommandFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiSimpleInfoCommand}
+ * @returns {QueryWikiInfoCommand}
  */
 // @ts-ignore
-export function createQueryWikiSimpleInfoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiSimpleInfoCommand;
+export function createQueryWikiInfoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiInfoCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiSimpleInfoResponse}
+ * @returns {QueryWikiInfoResponse}
  */
 // @ts-ignore
-export function createQueryWikiSimpleInfoResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiSimpleInfoResponse;
+export function createQueryWikiInfoResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiInfoResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1379,7 +1343,7 @@ export interface DeleteOAuthConnectionCommand extends Parsable {
     oAuthConnectionId?: number | null;
 }
 /**
- * 删除分组.
+ * 删除插件.
  */
 export interface DeletePluginCommand extends Parsable {
     /**
@@ -1740,6 +1704,7 @@ export function deserializeIntoImportOpenApiPluginCommand(importOpenApiPluginCom
         "fileName": n => { importOpenApiPluginCommand.fileName = n.getStringValue(); },
         "isPublic": n => { importOpenApiPluginCommand.isPublic = n.getBooleanValue(); },
         "name": n => { importOpenApiPluginCommand.name = n.getStringValue(); },
+        "title": n => { importOpenApiPluginCommand.title = n.getStringValue(); },
     }
 }
 /**
@@ -1749,7 +1714,7 @@ export function deserializeIntoImportOpenApiPluginCommand(importOpenApiPluginCom
 // @ts-ignore
 export function deserializeIntoInviteWikiUserCommand(inviteWikiUserCommand: Partial<InviteWikiUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "userId": n => { inviteWikiUserCommand.userId = n.getNumberValue(); },
+        "userName": n => { inviteWikiUserCommand.userName = n.getStringValue(); },
         "wikiId": n => { inviteWikiUserCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -1824,6 +1789,7 @@ export function deserializeIntoMcpServerPluginConnectionOptions(mcpServerPluginC
         "name": n => { mcpServerPluginConnectionOptions.name = n.getStringValue(); },
         "query": n => { mcpServerPluginConnectionOptions.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "serverUrl": n => { mcpServerPluginConnectionOptions.serverUrl = n.getStringValue(); },
+        "title": n => { mcpServerPluginConnectionOptions.title = n.getStringValue(); },
     }
 }
 /**
@@ -1917,6 +1883,25 @@ export function deserializeIntoPagedResultOfQueryWikiDocumentListItem(pagedResul
         ...deserializeIntoPagedParamter(pagedResultOfQueryWikiDocumentListItem),
         "items": n => { pagedResultOfQueryWikiDocumentListItem.items = n.getCollectionOfObjectValues<QueryWikiDocumentListItem>(createQueryWikiDocumentListItemFromDiscriminatorValue); },
         "total": n => { pagedResultOfQueryWikiDocumentListItem.total = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPluginBaseInfoItem(pluginBaseInfoItem: Partial<PluginBaseInfoItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(pluginBaseInfoItem),
+        "description": n => { pluginBaseInfoItem.description = n.getStringValue(); },
+        "isPublic": n => { pluginBaseInfoItem.isPublic = n.getBooleanValue(); },
+        "openapiFileId": n => { pluginBaseInfoItem.openapiFileId = n.getNumberValue(); },
+        "openapiFileName": n => { pluginBaseInfoItem.openapiFileName = n.getStringValue(); },
+        "pluginId": n => { pluginBaseInfoItem.pluginId = n.getNumberValue(); },
+        "pluginName": n => { pluginBaseInfoItem.pluginName = n.getStringValue(); },
+        "server": n => { pluginBaseInfoItem.server = n.getStringValue(); },
+        "title": n => { pluginBaseInfoItem.title = n.getStringValue(); },
+        "type": n => { pluginBaseInfoItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
     }
 }
 /**
@@ -2100,10 +2085,32 @@ export function deserializeIntoQueryAllOAuthPrividerDetailCommandResponseItem(qu
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryPluginBaseListCommand(queryPluginBaseListCommand: Partial<QueryPluginBaseListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isOwn": n => { queryPluginBaseListCommand.isOwn = n.getBooleanValue(); },
+        "name": n => { queryPluginBaseListCommand.name = n.getStringValue(); },
+        "type": n => { queryPluginBaseListCommand.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+        "userId": n => { queryPluginBaseListCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginBaseListCommandResponse(queryPluginBaseListCommandResponse: Partial<QueryPluginBaseListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPluginBaseListCommandResponse.items = n.getCollectionOfObjectValues<PluginBaseInfoItem>(createPluginBaseInfoItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryPluginDetailCommand(queryPluginDetailCommand: Partial<QueryPluginDetailCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pluginId": n => { queryPluginDetailCommand.pluginId = n.getNumberValue(); },
-        "userId": n => { queryPluginDetailCommand.userId = n.getNumberValue(); },
     }
 }
 /**
@@ -2113,6 +2120,7 @@ export function deserializeIntoQueryPluginDetailCommand(queryPluginDetailCommand
 // @ts-ignore
 export function deserializeIntoQueryPluginDetailCommandResponse(queryPluginDetailCommandResponse: Partial<QueryPluginDetailCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        ...deserializeIntoAuditsInfo(queryPluginDetailCommandResponse),
         "description": n => { queryPluginDetailCommandResponse.description = n.getStringValue(); },
         "header": n => { queryPluginDetailCommandResponse.header = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "isPublic": n => { queryPluginDetailCommandResponse.isPublic = n.getBooleanValue(); },
@@ -2134,6 +2142,7 @@ export function deserializeIntoQueryPluginDetailCommandResponse(queryPluginDetai
 export function deserializeIntoQueryPluginFunctionsListCommand(queryPluginFunctionsListCommand: Partial<QueryPluginFunctionsListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pluginId": n => { queryPluginFunctionsListCommand.pluginId = n.getNumberValue(); },
+        "userId": n => { queryPluginFunctionsListCommand.userId = n.getNumberValue(); },
     }
 }
 /**
@@ -2158,83 +2167,6 @@ export function deserializeIntoQueryPluginFunctionsListCommandResponseItem(query
         "path": n => { queryPluginFunctionsListCommandResponseItem.path = n.getStringValue(); },
         "pluginId": n => { queryPluginFunctionsListCommandResponseItem.pluginId = n.getNumberValue(); },
         "summary": n => { queryPluginFunctionsListCommandResponseItem.summary = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryPluginInfoItem(queryPluginInfoItem: Partial<QueryPluginInfoItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "description": n => { queryPluginInfoItem.description = n.getStringValue(); },
-        "isPublic": n => { queryPluginInfoItem.isPublic = n.getBooleanValue(); },
-        "pluginId": n => { queryPluginInfoItem.pluginId = n.getNumberValue(); },
-        "pluginName": n => { queryPluginInfoItem.pluginName = n.getStringValue(); },
-        "title": n => { queryPluginInfoItem.title = n.getStringValue(); },
-        "type": n => { queryPluginInfoItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryPluginInfoListCommand(queryPluginInfoListCommand: Partial<QueryPluginInfoListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "name": n => { queryPluginInfoListCommand.name = n.getStringValue(); },
-        "pluginIds": n => { queryPluginInfoListCommand.pluginIds = n.getCollectionOfPrimitiveValues<number>(); },
-        "type": n => { queryPluginInfoListCommand.type = n.getEnumValue<PluginType>(PluginTypeObject); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryPluginInfoListCommandResponse(queryPluginInfoListCommandResponse: Partial<QueryPluginInfoListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "items": n => { queryPluginInfoListCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginInfoItem>(createQueryPluginInfoItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryPluginListCommand(queryPluginListCommand: Partial<QueryPluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "name": n => { queryPluginListCommand.name = n.getStringValue(); },
-        "type": n => { queryPluginListCommand.type = n.getEnumValue<PluginType>(PluginTypeObject); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryPluginListCommandResponse(queryPluginListCommandResponse: Partial<QueryPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "items": n => { queryPluginListCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginListItem>(createQueryPluginListItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryPluginListItem(queryPluginListItem: Partial<QueryPluginListItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(queryPluginListItem),
-        "description": n => { queryPluginListItem.description = n.getStringValue(); },
-        "isPublic": n => { queryPluginListItem.isPublic = n.getBooleanValue(); },
-        "openapiFileId": n => { queryPluginListItem.openapiFileId = n.getNumberValue(); },
-        "openapiFileName": n => { queryPluginListItem.openapiFileName = n.getStringValue(); },
-        "pluginId": n => { queryPluginListItem.pluginId = n.getNumberValue(); },
-        "pluginName": n => { queryPluginListItem.pluginName = n.getStringValue(); },
-        "server": n => { queryPluginListItem.server = n.getStringValue(); },
-        "title": n => { queryPluginListItem.title = n.getStringValue(); },
-        "type": n => { queryPluginListItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
     }
 }
 /**
@@ -2268,7 +2200,6 @@ export function deserializeIntoQuerySystemSettingsCommandResponse(querySystemSet
 // @ts-ignore
 export function deserializeIntoQuerySystemSettingsCommandResponseItem(querySystemSettingsCommandResponseItem: Partial<QuerySystemSettingsCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        ...deserializeIntoAuditsInfo(querySystemSettingsCommandResponseItem),
         "description": n => { querySystemSettingsCommandResponseItem.description = n.getStringValue(); },
         "id": n => { querySystemSettingsCommandResponseItem.id = n.getNumberValue(); },
         "key": n => { querySystemSettingsCommandResponseItem.key = n.getStringValue(); },
@@ -2344,26 +2275,12 @@ export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryWikiConfigCommand(queryWikiConfigCommand: Partial<QueryWikiConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoQueryWikiBaseListCommand(queryWikiBaseListCommand: Partial<QueryWikiBaseListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "wikiId": n => { queryWikiConfigCommand.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryWikiConfigCommandResponse(queryWikiConfigCommandResponse: Partial<QueryWikiConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(queryWikiConfigCommandResponse),
-        "embeddingBatchSize": n => { queryWikiConfigCommandResponse.embeddingBatchSize = n.getNumberValue(); },
-        "embeddingDimensions": n => { queryWikiConfigCommandResponse.embeddingDimensions = n.getNumberValue(); },
-        "embeddingModelId": n => { queryWikiConfigCommandResponse.embeddingModelId = n.getNumberValue(); },
-        "embeddingModelTokenizer": n => { queryWikiConfigCommandResponse.embeddingModelTokenizer = n.getEnumValue<EmbeddingTokenizer>(EmbeddingTokenizerObject); },
-        "isLock": n => { queryWikiConfigCommandResponse.isLock = n.getBooleanValue(); },
-        "maxRetries": n => { queryWikiConfigCommandResponse.maxRetries = n.getNumberValue(); },
-        "wikiId": n => { queryWikiConfigCommandResponse.wikiId = n.getNumberValue(); },
+        "isOwn": n => { queryWikiBaseListCommand.isOwn = n.getBooleanValue(); },
+        "isPublic": n => { queryWikiBaseListCommand.isPublic = n.getBooleanValue(); },
+        "isUser": n => { queryWikiBaseListCommand.isUser = n.getBooleanValue(); },
+        "userId": n => { queryWikiBaseListCommand.userId = n.getNumberValue(); },
     }
 }
 /**
@@ -2430,9 +2347,9 @@ export function deserializeIntoQueryWikiDocumentTaskListCommand(queryWikiDocumen
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryWikiSimpleInfoCommand(queryWikiSimpleInfoCommand: Partial<QueryWikiSimpleInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoQueryWikiInfoCommand(queryWikiInfoCommand: Partial<QueryWikiInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "wikiId": n => { queryWikiSimpleInfoCommand.wikiId = n.getNumberValue(); },
+        "wikiId": n => { queryWikiInfoCommand.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -2440,15 +2357,21 @@ export function deserializeIntoQueryWikiSimpleInfoCommand(queryWikiSimpleInfoCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryWikiSimpleInfoResponse(queryWikiSimpleInfoResponse: Partial<QueryWikiSimpleInfoResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoQueryWikiInfoResponse(queryWikiInfoResponse: Partial<QueryWikiInfoResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        ...deserializeIntoAuditsInfo(queryWikiSimpleInfoResponse),
-        "description": n => { queryWikiSimpleInfoResponse.description = n.getStringValue(); },
-        "documentCount": n => { queryWikiSimpleInfoResponse.documentCount = n.getNumberValue(); },
-        "isAdmin": n => { queryWikiSimpleInfoResponse.isAdmin = n.getBooleanValue(); },
-        "isPublic": n => { queryWikiSimpleInfoResponse.isPublic = n.getBooleanValue(); },
-        "name": n => { queryWikiSimpleInfoResponse.name = n.getStringValue(); },
-        "wikiId": n => { queryWikiSimpleInfoResponse.wikiId = n.getNumberValue(); },
+        ...deserializeIntoAuditsInfo(queryWikiInfoResponse),
+        "description": n => { queryWikiInfoResponse.description = n.getStringValue(); },
+        "documentCount": n => { queryWikiInfoResponse.documentCount = n.getNumberValue(); },
+        "embeddingBatchSize": n => { queryWikiInfoResponse.embeddingBatchSize = n.getNumberValue(); },
+        "embeddingDimensions": n => { queryWikiInfoResponse.embeddingDimensions = n.getNumberValue(); },
+        "embeddingModelId": n => { queryWikiInfoResponse.embeddingModelId = n.getNumberValue(); },
+        "embeddingModelTokenizer": n => { queryWikiInfoResponse.embeddingModelTokenizer = n.getEnumValue<EmbeddingTokenizer>(EmbeddingTokenizerObject); },
+        "isLock": n => { queryWikiInfoResponse.isLock = n.getBooleanValue(); },
+        "isPublic": n => { queryWikiInfoResponse.isPublic = n.getBooleanValue(); },
+        "isUser": n => { queryWikiInfoResponse.isUser = n.getBooleanValue(); },
+        "maxRetries": n => { queryWikiInfoResponse.maxRetries = n.getNumberValue(); },
+        "name": n => { queryWikiInfoResponse.name = n.getStringValue(); },
+        "wikiId": n => { queryWikiInfoResponse.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -2597,7 +2520,7 @@ export function deserializeIntoSearchWikiDocumentTextCommandResponse(searchWikiD
 // @ts-ignore
 export function deserializeIntoSetSystemSettingsCommand(setSystemSettingsCommand: Partial<SetSystemSettingsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "settings": n => { setSystemSettingsCommand.settings = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "settings": n => { setSystemSettingsCommand.settings = n.getObjectValue<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
     }
 }
 /**
@@ -2701,6 +2624,7 @@ export function deserializeIntoUpdateOpenApiPluginCommand(updateOpenApiPluginCom
         "pluginId": n => { updateOpenApiPluginCommand.pluginId = n.getNumberValue(); },
         "query": n => { updateOpenApiPluginCommand.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "serverUrl": n => { updateOpenApiPluginCommand.serverUrl = n.getStringValue(); },
+        "title": n => { updateOpenApiPluginCommand.title = n.getStringValue(); },
     }
 }
 /**
@@ -2791,7 +2715,7 @@ export function deserializeIntoWikiConfig(wikiConfig: Partial<WikiConfig> | unde
         "embeddingBatchSize": n => { wikiConfig.embeddingBatchSize = n.getNumberValue(); },
         "embeddingDimensions": n => { wikiConfig.embeddingDimensions = n.getNumberValue(); },
         "embeddingModelId": n => { wikiConfig.embeddingModelId = n.getNumberValue(); },
-        "embeddingModelTokenizer": n => { wikiConfig.embeddingModelTokenizer = n.getStringValue(); },
+        "embeddingModelTokenizer": n => { wikiConfig.embeddingModelTokenizer = n.getEnumValue<EmbeddingTokenizer>(EmbeddingTokenizerObject); },
         "maxRetries": n => { wikiConfig.maxRetries = n.getNumberValue(); },
     }
 }
@@ -2901,17 +2825,21 @@ export interface ImportOpenApiPluginCommand extends Parsable {
      * 插件名称.
      */
     name?: string | null;
+    /**
+     * 插件标题，可中文.
+     */
+    title?: string | null;
 }
 /**
  * 邀请知识库协作成员，可以管理知识库文档等.
  */
 export interface InviteWikiUserCommand extends Parsable {
     /**
-     * The userId property
+     * 被邀请用户.
      */
-    userId?: number | null;
+    userName?: string | null;
     /**
-     * The wikiId property
+     * 知识库 id.
      */
     wikiId?: number | null;
 }
@@ -3002,7 +2930,7 @@ export interface McpServerPluginConnectionOptions extends Parsable {
      */
     header?: KeyValueString[] | null;
     /**
-     * 插件名称.
+     * 插件名称，只能纯字母，用于给 AI 使用.
      */
     name?: string | null;
     /**
@@ -3013,6 +2941,10 @@ export interface McpServerPluginConnectionOptions extends Parsable {
      * MCP Service 地址.
      */
     serverUrl?: string | null;
+    /**
+     * 插件标题，可中文.
+     */
+    title?: string | null;
 }
 /**
  * ModelAbilities.
@@ -3127,6 +3059,47 @@ export interface PagedResultOfQueryWikiDocumentListItem extends PagedParamter, P
      * 总数.
      */
     total?: number | null;
+}
+/**
+ * 插件.
+ */
+export interface PluginBaseInfoItem extends AuditsInfo, Parsable {
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 文件id.
+     */
+    openapiFileId?: number | null;
+    /**
+     * 文件名称.
+     */
+    openapiFileName?: string | null;
+    /**
+     * id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 服务器地址.
+     */
+    server?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+    /**
+     * system|mcp|openapi.
+     */
+    type?: PluginType | null;
 }
 export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
 export interface PreloadWikiDocumentResponse extends Parsable {
@@ -3386,17 +3359,46 @@ export interface QueryAllOAuthPrividerDetailCommandResponseItem extends AuditsIn
      */
     wellKnown?: string | null;
 }
-export interface QueryPluginDetailCommand extends Parsable {
+/**
+ * 获取插件基础信息列表.
+ */
+export interface QueryPluginBaseListCommand extends Parsable {
     /**
-     * The pluginId property
+     * 只查询该用户创建的插件.
      */
-    pluginId?: number | null;
+    isOwn?: boolean | null;
     /**
-     * The userId property
+     * 名称搜索.
+     */
+    name?: string | null;
+    /**
+     * 筛选类型.
+     */
+    type?: PluginType | null;
+    /**
+     * 用户id.
      */
     userId?: number | null;
 }
-export interface QueryPluginDetailCommandResponse extends Parsable {
+/**
+ * QueryPluginListCommandResponse.
+ */
+export interface QueryPluginBaseListCommandResponse extends Parsable {
+    /**
+     * 列表.
+     */
+    items?: PluginBaseInfoItem[] | null;
+}
+/**
+ * 查询该插件的详细信息.
+ */
+export interface QueryPluginDetailCommand extends Parsable {
+    /**
+     * 插件 id.
+     */
+    pluginId?: number | null;
+}
+export interface QueryPluginDetailCommandResponse extends AuditsInfo, Parsable {
     /**
      * 注释.
      */
@@ -3443,13 +3445,17 @@ export interface QueryPluginDetailCommandResponse extends Parsable {
     type?: PluginType | null;
 }
 /**
- * 获取插件函数列表.
+ * 获取插件的函数列表.
  */
 export interface QueryPluginFunctionsListCommand extends Parsable {
     /**
      * 插件 id.
      */
     pluginId?: number | null;
+    /**
+     * 用户 id.
+     */
+    userId?: number | null;
 }
 /**
  * 函数列表.
@@ -3486,121 +3492,6 @@ export interface QueryPluginFunctionsListCommandResponseItem extends Parsable {
     summary?: string | null;
 }
 /**
- * 插件信息.
- */
-export interface QueryPluginInfoItem extends Parsable {
-    /**
-     * 描述.
-     */
-    description?: string | null;
-    /**
-     * 是否公开.
-     */
-    isPublic?: boolean | null;
-    /**
-     * 插件Id.
-     */
-    pluginId?: number | null;
-    /**
-     * 插件名称.
-     */
-    pluginName?: string | null;
-    /**
-     * 插件标题.
-     */
-    title?: string | null;
-    /**
-     * system|mcp|openapi.
-     */
-    type?: PluginType | null;
-}
-/**
- * 查询插件信息列表.
- */
-export interface QueryPluginInfoListCommand extends Parsable {
-    /**
-     * 名称搜索.
-     */
-    name?: string | null;
-    /**
-     * 插件列表.
-     */
-    pluginIds?: number[] | null;
-    /**
-     * 筛选类型.
-     */
-    type?: PluginType | null;
-}
-export interface QueryPluginInfoListCommandResponse extends Parsable {
-    /**
-     * 列表.
-     */
-    items?: QueryPluginInfoItem[] | null;
-}
-/**
- * 获取插件列表.
- */
-export interface QueryPluginListCommand extends Parsable {
-    /**
-     * 名称搜索.
-     */
-    name?: string | null;
-    /**
-     * 筛选类型.
-     */
-    type?: PluginType | null;
-}
-/**
- * QueryPluginListCommandResponse.
- */
-export interface QueryPluginListCommandResponse extends Parsable {
-    /**
-     * 列表.
-     */
-    items?: QueryPluginListItem[] | null;
-}
-/**
- * 插件.
- */
-export interface QueryPluginListItem extends AuditsInfo, Parsable {
-    /**
-     * 注释.
-     */
-    description?: string | null;
-    /**
-     * 是否公开.
-     */
-    isPublic?: boolean | null;
-    /**
-     * 文件id.
-     */
-    openapiFileId?: number | null;
-    /**
-     * 文件名称.
-     */
-    openapiFileName?: string | null;
-    /**
-     * id.
-     */
-    pluginId?: number | null;
-    /**
-     * 插件名称.
-     */
-    pluginName?: string | null;
-    /**
-     * 服务器地址.
-     */
-    server?: string | null;
-    /**
-     * 插件标题.
-     */
-    title?: string | null;
-    /**
-     * system|mcp|openapi.
-     */
-    type?: PluginType | null;
-}
-/**
  * 服务器信息.
  */
 export interface QueryServerInfoCommandResponse extends Parsable {
@@ -3630,14 +3521,14 @@ export interface QueryServerInfoCommandResponse extends Parsable {
  */
 export interface QuerySystemSettingsCommandResponse extends Parsable {
     /**
-     * The items property
+     * 列表.
      */
     items?: QuerySystemSettingsCommandResponseItem[] | null;
 }
 /**
  * QuerySystemSettingsCommandResponseItem.
  */
-export interface QuerySystemSettingsCommandResponseItem extends AuditsInfo, Parsable {
+export interface QuerySystemSettingsCommandResponseItem extends Parsable {
     /**
      * 描述.
      */
@@ -3739,46 +3630,25 @@ export interface QueryUserListCommandResponseItem extends AuditsInfo, Parsable {
     userName?: string | null;
 }
 /**
- * 查询知识库设置信息.
+ * 查询当前用户可以看到的所有知识库.
  */
-export interface QueryWikiConfigCommand extends Parsable {
+export interface QueryWikiBaseListCommand extends Parsable {
     /**
-     * 知识库 id.
+     * 只查询该用户创建的知识库.
      */
-    wikiId?: number | null;
-}
-/**
- * QueryWikiConfigCommandResponse.
- */
-export interface QueryWikiConfigCommandResponse extends AuditsInfo, Parsable {
+    isOwn?: boolean | null;
     /**
-     * 批处理大小.
+     * 只查询公开的知识库.
      */
-    embeddingBatchSize?: number | null;
+    isPublic?: boolean | null;
     /**
-     * 维度，跟模型有关.
+     * 只查询已加入的知识库.
      */
-    embeddingDimensions?: number | null;
+    isUser?: boolean | null;
     /**
-     * 指定进行文档向量化的模型.
+     * 用户id.
      */
-    embeddingModelId?: number | null;
-    /**
-     * 分词器.
-     */
-    embeddingModelTokenizer?: EmbeddingTokenizer | null;
-    /**
-     * 锁定配置，锁定后不能再修改.
-     */
-    isLock?: boolean | null;
-    /**
-     * 最大重试次数.
-     */
-    maxRetries?: number | null;
-    /**
-     * 知识库id.
-     */
-    wikiId?: number | null;
+    userId?: number | null;
 }
 /**
  * 查询单个文档信息.
@@ -3846,7 +3716,7 @@ export interface QueryWikiDocumentTaskListCommand extends Parsable {
 /**
  * 获取知识库简单信息.
  */
-export interface QueryWikiSimpleInfoCommand extends Parsable {
+export interface QueryWikiInfoCommand extends Parsable {
     /**
      * 知识库 id.
      */
@@ -3855,7 +3725,7 @@ export interface QueryWikiSimpleInfoCommand extends Parsable {
 /**
  * 知识库信息.
  */
-export interface QueryWikiSimpleInfoResponse extends AuditsInfo, Parsable {
+export interface QueryWikiInfoResponse extends AuditsInfo, Parsable {
     /**
      * 知识库描述.
      */
@@ -3865,13 +3735,37 @@ export interface QueryWikiSimpleInfoResponse extends AuditsInfo, Parsable {
      */
     documentCount?: number | null;
     /**
-     * 是否管理员.
+     * 批处理大小.
      */
-    isAdmin?: boolean | null;
+    embeddingBatchSize?: number | null;
+    /**
+     * 维度，跟模型有关.
+     */
+    embeddingDimensions?: number | null;
+    /**
+     * 指定进行文档向量化的模型.
+     */
+    embeddingModelId?: number | null;
+    /**
+     * 分词器.
+     */
+    embeddingModelTokenizer?: EmbeddingTokenizer | null;
+    /**
+     * 锁定配置，锁定后不能再修改.
+     */
+    isLock?: boolean | null;
     /**
      * 公开使用，所有人不需要加入团队即可使用此知识库.
      */
     isPublic?: boolean | null;
+    /**
+     * 是否该知识库成员.
+     */
+    isUser?: boolean | null;
+    /**
+     * 最大重试次数.
+     */
+    maxRetries?: number | null;
     /**
      * 知识库名称.
      */
@@ -3886,7 +3780,7 @@ export interface QueryWikiSimpleInfoResponse extends AuditsInfo, Parsable {
  */
 export interface QueryWikiUsersCommand extends Parsable {
     /**
-     * The wikiId property
+     * 查询知识库协作的成员列表.
      */
     wikiId?: number | null;
 }
@@ -3992,11 +3886,11 @@ export interface RegisterUserCommand extends Parsable {
  */
 export interface RemoveWikiUserCommand extends Parsable {
     /**
-     * The userIds property
+     * 被邀请用户.
      */
     userIds?: number[] | null;
     /**
-     * The wikiId property
+     * 知识库 id.
      */
     wikiId?: number | null;
 }
@@ -4368,6 +4262,7 @@ export function serializeImportOpenApiPluginCommand(writer: SerializationWriter,
         writer.writeStringValue("fileName", importOpenApiPluginCommand.fileName);
         writer.writeBooleanValue("isPublic", importOpenApiPluginCommand.isPublic);
         writer.writeStringValue("name", importOpenApiPluginCommand.name);
+        writer.writeStringValue("title", importOpenApiPluginCommand.title);
     }
 }
 /**
@@ -4377,7 +4272,7 @@ export function serializeImportOpenApiPluginCommand(writer: SerializationWriter,
 // @ts-ignore
 export function serializeInviteWikiUserCommand(writer: SerializationWriter, inviteWikiUserCommand: Partial<InviteWikiUserCommand> | undefined | null = {}) : void {
     if (inviteWikiUserCommand) {
-        writer.writeNumberValue("userId", inviteWikiUserCommand.userId);
+        writer.writeStringValue("userName", inviteWikiUserCommand.userName);
         writer.writeNumberValue("wikiId", inviteWikiUserCommand.wikiId);
     }
 }
@@ -4452,6 +4347,7 @@ export function serializeMcpServerPluginConnectionOptions(writer: SerializationW
         writer.writeStringValue("name", mcpServerPluginConnectionOptions.name);
         writer.writeCollectionOfObjectValues<KeyValueString>("query", mcpServerPluginConnectionOptions.query, serializeKeyValueString);
         writer.writeStringValue("serverUrl", mcpServerPluginConnectionOptions.serverUrl);
+        writer.writeStringValue("title", mcpServerPluginConnectionOptions.title);
     }
 }
 /**
@@ -4545,6 +4441,25 @@ export function serializePagedResultOfQueryWikiDocumentListItem(writer: Serializ
         serializePagedParamter(writer, pagedResultOfQueryWikiDocumentListItem)
         writer.writeCollectionOfObjectValues<QueryWikiDocumentListItem>("items", pagedResultOfQueryWikiDocumentListItem.items, serializeQueryWikiDocumentListItem);
         writer.writeNumberValue("total", pagedResultOfQueryWikiDocumentListItem.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePluginBaseInfoItem(writer: SerializationWriter, pluginBaseInfoItem: Partial<PluginBaseInfoItem> | undefined | null = {}) : void {
+    if (pluginBaseInfoItem) {
+        serializeAuditsInfo(writer, pluginBaseInfoItem)
+        writer.writeStringValue("description", pluginBaseInfoItem.description);
+        writer.writeBooleanValue("isPublic", pluginBaseInfoItem.isPublic);
+        writer.writeNumberValue("openapiFileId", pluginBaseInfoItem.openapiFileId);
+        writer.writeStringValue("openapiFileName", pluginBaseInfoItem.openapiFileName);
+        writer.writeNumberValue("pluginId", pluginBaseInfoItem.pluginId);
+        writer.writeStringValue("pluginName", pluginBaseInfoItem.pluginName);
+        writer.writeStringValue("server", pluginBaseInfoItem.server);
+        writer.writeStringValue("title", pluginBaseInfoItem.title);
+        writer.writeEnumValue<PluginType>("type", pluginBaseInfoItem.type);
     }
 }
 /**
@@ -4728,10 +4643,32 @@ export function serializeQueryAllOAuthPrividerDetailCommandResponseItem(writer: 
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryPluginBaseListCommand(writer: SerializationWriter, queryPluginBaseListCommand: Partial<QueryPluginBaseListCommand> | undefined | null = {}) : void {
+    if (queryPluginBaseListCommand) {
+        writer.writeBooleanValue("isOwn", queryPluginBaseListCommand.isOwn);
+        writer.writeStringValue("name", queryPluginBaseListCommand.name);
+        writer.writeEnumValue<PluginType>("type", queryPluginBaseListCommand.type);
+        writer.writeNumberValue("userId", queryPluginBaseListCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginBaseListCommandResponse(writer: SerializationWriter, queryPluginBaseListCommandResponse: Partial<QueryPluginBaseListCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginBaseListCommandResponse) {
+        writer.writeCollectionOfObjectValues<PluginBaseInfoItem>("items", queryPluginBaseListCommandResponse.items, serializePluginBaseInfoItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryPluginDetailCommand(writer: SerializationWriter, queryPluginDetailCommand: Partial<QueryPluginDetailCommand> | undefined | null = {}) : void {
     if (queryPluginDetailCommand) {
         writer.writeNumberValue("pluginId", queryPluginDetailCommand.pluginId);
-        writer.writeNumberValue("userId", queryPluginDetailCommand.userId);
     }
 }
 /**
@@ -4741,6 +4678,7 @@ export function serializeQueryPluginDetailCommand(writer: SerializationWriter, q
 // @ts-ignore
 export function serializeQueryPluginDetailCommandResponse(writer: SerializationWriter, queryPluginDetailCommandResponse: Partial<QueryPluginDetailCommandResponse> | undefined | null = {}) : void {
     if (queryPluginDetailCommandResponse) {
+        serializeAuditsInfo(writer, queryPluginDetailCommandResponse)
         writer.writeStringValue("description", queryPluginDetailCommandResponse.description);
         writer.writeCollectionOfObjectValues<KeyValueString>("header", queryPluginDetailCommandResponse.header, serializeKeyValueString);
         writer.writeBooleanValue("isPublic", queryPluginDetailCommandResponse.isPublic);
@@ -4762,6 +4700,7 @@ export function serializeQueryPluginDetailCommandResponse(writer: SerializationW
 export function serializeQueryPluginFunctionsListCommand(writer: SerializationWriter, queryPluginFunctionsListCommand: Partial<QueryPluginFunctionsListCommand> | undefined | null = {}) : void {
     if (queryPluginFunctionsListCommand) {
         writer.writeNumberValue("pluginId", queryPluginFunctionsListCommand.pluginId);
+        writer.writeNumberValue("userId", queryPluginFunctionsListCommand.userId);
     }
 }
 /**
@@ -4786,83 +4725,6 @@ export function serializeQueryPluginFunctionsListCommandResponseItem(writer: Ser
         writer.writeStringValue("path", queryPluginFunctionsListCommandResponseItem.path);
         writer.writeNumberValue("pluginId", queryPluginFunctionsListCommandResponseItem.pluginId);
         writer.writeStringValue("summary", queryPluginFunctionsListCommandResponseItem.summary);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryPluginInfoItem(writer: SerializationWriter, queryPluginInfoItem: Partial<QueryPluginInfoItem> | undefined | null = {}) : void {
-    if (queryPluginInfoItem) {
-        writer.writeStringValue("description", queryPluginInfoItem.description);
-        writer.writeBooleanValue("isPublic", queryPluginInfoItem.isPublic);
-        writer.writeNumberValue("pluginId", queryPluginInfoItem.pluginId);
-        writer.writeStringValue("pluginName", queryPluginInfoItem.pluginName);
-        writer.writeStringValue("title", queryPluginInfoItem.title);
-        writer.writeEnumValue<PluginType>("type", queryPluginInfoItem.type);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryPluginInfoListCommand(writer: SerializationWriter, queryPluginInfoListCommand: Partial<QueryPluginInfoListCommand> | undefined | null = {}) : void {
-    if (queryPluginInfoListCommand) {
-        writer.writeStringValue("name", queryPluginInfoListCommand.name);
-        writer.writeCollectionOfPrimitiveValues<number>("pluginIds", queryPluginInfoListCommand.pluginIds);
-        writer.writeEnumValue<PluginType>("type", queryPluginInfoListCommand.type);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryPluginInfoListCommandResponse(writer: SerializationWriter, queryPluginInfoListCommandResponse: Partial<QueryPluginInfoListCommandResponse> | undefined | null = {}) : void {
-    if (queryPluginInfoListCommandResponse) {
-        writer.writeCollectionOfObjectValues<QueryPluginInfoItem>("items", queryPluginInfoListCommandResponse.items, serializeQueryPluginInfoItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryPluginListCommand(writer: SerializationWriter, queryPluginListCommand: Partial<QueryPluginListCommand> | undefined | null = {}) : void {
-    if (queryPluginListCommand) {
-        writer.writeStringValue("name", queryPluginListCommand.name);
-        writer.writeEnumValue<PluginType>("type", queryPluginListCommand.type);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryPluginListCommandResponse(writer: SerializationWriter, queryPluginListCommandResponse: Partial<QueryPluginListCommandResponse> | undefined | null = {}) : void {
-    if (queryPluginListCommandResponse) {
-        writer.writeCollectionOfObjectValues<QueryPluginListItem>("items", queryPluginListCommandResponse.items, serializeQueryPluginListItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryPluginListItem(writer: SerializationWriter, queryPluginListItem: Partial<QueryPluginListItem> | undefined | null = {}) : void {
-    if (queryPluginListItem) {
-        serializeAuditsInfo(writer, queryPluginListItem)
-        writer.writeStringValue("description", queryPluginListItem.description);
-        writer.writeBooleanValue("isPublic", queryPluginListItem.isPublic);
-        writer.writeNumberValue("openapiFileId", queryPluginListItem.openapiFileId);
-        writer.writeStringValue("openapiFileName", queryPluginListItem.openapiFileName);
-        writer.writeNumberValue("pluginId", queryPluginListItem.pluginId);
-        writer.writeStringValue("pluginName", queryPluginListItem.pluginName);
-        writer.writeStringValue("server", queryPluginListItem.server);
-        writer.writeStringValue("title", queryPluginListItem.title);
-        writer.writeEnumValue<PluginType>("type", queryPluginListItem.type);
     }
 }
 /**
@@ -4896,7 +4758,6 @@ export function serializeQuerySystemSettingsCommandResponse(writer: Serializatio
 // @ts-ignore
 export function serializeQuerySystemSettingsCommandResponseItem(writer: SerializationWriter, querySystemSettingsCommandResponseItem: Partial<QuerySystemSettingsCommandResponseItem> | undefined | null = {}) : void {
     if (querySystemSettingsCommandResponseItem) {
-        serializeAuditsInfo(writer, querySystemSettingsCommandResponseItem)
         writer.writeStringValue("description", querySystemSettingsCommandResponseItem.description);
         writer.writeNumberValue("id", querySystemSettingsCommandResponseItem.id);
         writer.writeStringValue("key", querySystemSettingsCommandResponseItem.key);
@@ -4972,26 +4833,12 @@ export function serializeQueryUserListCommandResponseItem(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryWikiConfigCommand(writer: SerializationWriter, queryWikiConfigCommand: Partial<QueryWikiConfigCommand> | undefined | null = {}) : void {
-    if (queryWikiConfigCommand) {
-        writer.writeNumberValue("wikiId", queryWikiConfigCommand.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryWikiConfigCommandResponse(writer: SerializationWriter, queryWikiConfigCommandResponse: Partial<QueryWikiConfigCommandResponse> | undefined | null = {}) : void {
-    if (queryWikiConfigCommandResponse) {
-        serializeAuditsInfo(writer, queryWikiConfigCommandResponse)
-        writer.writeNumberValue("embeddingBatchSize", queryWikiConfigCommandResponse.embeddingBatchSize);
-        writer.writeNumberValue("embeddingDimensions", queryWikiConfigCommandResponse.embeddingDimensions);
-        writer.writeNumberValue("embeddingModelId", queryWikiConfigCommandResponse.embeddingModelId);
-        writer.writeEnumValue<EmbeddingTokenizer>("embeddingModelTokenizer", queryWikiConfigCommandResponse.embeddingModelTokenizer);
-        writer.writeBooleanValue("isLock", queryWikiConfigCommandResponse.isLock);
-        writer.writeNumberValue("maxRetries", queryWikiConfigCommandResponse.maxRetries);
-        writer.writeNumberValue("wikiId", queryWikiConfigCommandResponse.wikiId);
+export function serializeQueryWikiBaseListCommand(writer: SerializationWriter, queryWikiBaseListCommand: Partial<QueryWikiBaseListCommand> | undefined | null = {}) : void {
+    if (queryWikiBaseListCommand) {
+        writer.writeBooleanValue("isOwn", queryWikiBaseListCommand.isOwn);
+        writer.writeBooleanValue("isPublic", queryWikiBaseListCommand.isPublic);
+        writer.writeBooleanValue("isUser", queryWikiBaseListCommand.isUser);
+        writer.writeNumberValue("userId", queryWikiBaseListCommand.userId);
     }
 }
 /**
@@ -5058,9 +4905,9 @@ export function serializeQueryWikiDocumentTaskListCommand(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryWikiSimpleInfoCommand(writer: SerializationWriter, queryWikiSimpleInfoCommand: Partial<QueryWikiSimpleInfoCommand> | undefined | null = {}) : void {
-    if (queryWikiSimpleInfoCommand) {
-        writer.writeNumberValue("wikiId", queryWikiSimpleInfoCommand.wikiId);
+export function serializeQueryWikiInfoCommand(writer: SerializationWriter, queryWikiInfoCommand: Partial<QueryWikiInfoCommand> | undefined | null = {}) : void {
+    if (queryWikiInfoCommand) {
+        writer.writeNumberValue("wikiId", queryWikiInfoCommand.wikiId);
     }
 }
 /**
@@ -5068,15 +4915,21 @@ export function serializeQueryWikiSimpleInfoCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryWikiSimpleInfoResponse(writer: SerializationWriter, queryWikiSimpleInfoResponse: Partial<QueryWikiSimpleInfoResponse> | undefined | null = {}) : void {
-    if (queryWikiSimpleInfoResponse) {
-        serializeAuditsInfo(writer, queryWikiSimpleInfoResponse)
-        writer.writeStringValue("description", queryWikiSimpleInfoResponse.description);
-        writer.writeNumberValue("documentCount", queryWikiSimpleInfoResponse.documentCount);
-        writer.writeBooleanValue("isAdmin", queryWikiSimpleInfoResponse.isAdmin);
-        writer.writeBooleanValue("isPublic", queryWikiSimpleInfoResponse.isPublic);
-        writer.writeStringValue("name", queryWikiSimpleInfoResponse.name);
-        writer.writeNumberValue("wikiId", queryWikiSimpleInfoResponse.wikiId);
+export function serializeQueryWikiInfoResponse(writer: SerializationWriter, queryWikiInfoResponse: Partial<QueryWikiInfoResponse> | undefined | null = {}) : void {
+    if (queryWikiInfoResponse) {
+        serializeAuditsInfo(writer, queryWikiInfoResponse)
+        writer.writeStringValue("description", queryWikiInfoResponse.description);
+        writer.writeNumberValue("documentCount", queryWikiInfoResponse.documentCount);
+        writer.writeNumberValue("embeddingBatchSize", queryWikiInfoResponse.embeddingBatchSize);
+        writer.writeNumberValue("embeddingDimensions", queryWikiInfoResponse.embeddingDimensions);
+        writer.writeNumberValue("embeddingModelId", queryWikiInfoResponse.embeddingModelId);
+        writer.writeEnumValue<EmbeddingTokenizer>("embeddingModelTokenizer", queryWikiInfoResponse.embeddingModelTokenizer);
+        writer.writeBooleanValue("isLock", queryWikiInfoResponse.isLock);
+        writer.writeBooleanValue("isPublic", queryWikiInfoResponse.isPublic);
+        writer.writeBooleanValue("isUser", queryWikiInfoResponse.isUser);
+        writer.writeNumberValue("maxRetries", queryWikiInfoResponse.maxRetries);
+        writer.writeStringValue("name", queryWikiInfoResponse.name);
+        writer.writeNumberValue("wikiId", queryWikiInfoResponse.wikiId);
     }
 }
 /**
@@ -5225,7 +5078,7 @@ export function serializeSearchWikiDocumentTextCommandResponse(writer: Serializa
 // @ts-ignore
 export function serializeSetSystemSettingsCommand(writer: SerializationWriter, setSystemSettingsCommand: Partial<SetSystemSettingsCommand> | undefined | null = {}) : void {
     if (setSystemSettingsCommand) {
-        writer.writeCollectionOfObjectValues<KeyValueString>("settings", setSystemSettingsCommand.settings, serializeKeyValueString);
+        writer.writeObjectValue<KeyValueString>("settings", setSystemSettingsCommand.settings, serializeKeyValueString);
     }
 }
 /**
@@ -5329,6 +5182,7 @@ export function serializeUpdateOpenApiPluginCommand(writer: SerializationWriter,
         writer.writeNumberValue("pluginId", updateOpenApiPluginCommand.pluginId);
         writer.writeCollectionOfObjectValues<KeyValueString>("query", updateOpenApiPluginCommand.query, serializeKeyValueString);
         writer.writeStringValue("serverUrl", updateOpenApiPluginCommand.serverUrl);
+        writer.writeStringValue("title", updateOpenApiPluginCommand.title);
     }
 }
 /**
@@ -5419,7 +5273,7 @@ export function serializeWikiConfig(writer: SerializationWriter, wikiConfig: Par
         writer.writeNumberValue("embeddingBatchSize", wikiConfig.embeddingBatchSize);
         writer.writeNumberValue("embeddingDimensions", wikiConfig.embeddingDimensions);
         writer.writeNumberValue("embeddingModelId", wikiConfig.embeddingModelId);
-        writer.writeStringValue("embeddingModelTokenizer", wikiConfig.embeddingModelTokenizer);
+        writer.writeEnumValue<EmbeddingTokenizer>("embeddingModelTokenizer", wikiConfig.embeddingModelTokenizer);
         writer.writeNumberValue("maxRetries", wikiConfig.maxRetries);
     }
 }
@@ -5453,7 +5307,7 @@ export interface SetSystemSettingsCommand extends Parsable {
     /**
      * 系统配置.
      */
-    settings?: KeyValueString[] | null;
+    settings?: KeyValueString | null;
 }
 /**
  * 设置用户是否为管理员.
@@ -5567,6 +5421,10 @@ export interface UpdateOpenApiPluginCommand extends Parsable {
      * MCP Service 地址.
      */
     serverUrl?: string | null;
+    /**
+     * 插件标题，可中文.
+     */
+    title?: string | null;
 }
 /**
  * 修改用户信息.
@@ -5709,7 +5567,7 @@ export interface WikiConfig extends Parsable {
     /**
      * 分词器.
      */
-    embeddingModelTokenizer?: string | null;
+    embeddingModelTokenizer?: EmbeddingTokenizer | null;
     /**
      * 文档处理最大重试次数.
      */

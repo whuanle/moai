@@ -11,5 +11,8 @@ namespace MoAI.Admin.SystemSettings.Queries.Responses;
 /// </summary>
 public class QuerySystemSettingsCommandResponse
 {
+    /// <summary>
+    /// 列表.
+    /// </summary>
     public IReadOnlyCollection<QuerySystemSettingsCommandResponseItem> Items { get; init; } = Array.Empty<QuerySystemSettingsCommandResponseItem>();
 }

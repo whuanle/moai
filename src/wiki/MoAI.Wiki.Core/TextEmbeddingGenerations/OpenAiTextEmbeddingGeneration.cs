@@ -7,6 +7,7 @@
 using Maomi;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
+using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Services;
 
@@ -27,7 +28,7 @@ public class OpenAiTextEmbeddingGeneration : ITextEmbeddingGeneration
             MaxRetries = wikiConfig.MaxRetries,
             EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
             EmbeddingDimensions = wikiConfig.EmbeddingDimensions,
-            EmbeddingModelTokenizer = wikiConfig.EmbeddingModelTokenizer
+            EmbeddingModelTokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString()
         });
     }
 }

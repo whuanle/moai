@@ -17,5 +17,5 @@ public class SetSystemSettingsCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 系统配置.
     /// </summary>
-    public IReadOnlyCollection<KeyValueString> Settings { get; init; } = new List<KeyValueString>();
+    public KeyValueString Settings { get; init; } = default!;
 }

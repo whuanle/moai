@@ -6,11 +6,12 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Common.Queries.Response;
 using MoAI.Database;
 using MoAI.Database.Models;
 using MoAI.Infra;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Services;
-using MoAI.Common.Queries.Response;
 
 namespace MoAI.Common.Queries;
 
@@ -22,6 +23,7 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
     private readonly SystemOptions _systemOptions;
     private readonly IRsaProvider _rsaProvider;
     private readonly DatabaseContext _databaseContext;
+    private readonly ISystemSettingProvider _systemSettingProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryServerInfoCommandHandler"/> class.
@@ -29,17 +31,20 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
     /// <param name="systemOptions"></param>
     /// <param name="rsaProvider"></param>
     /// <param name="databaseContext"></param>
-    public QueryServerInfoCommandHandler(SystemOptions systemOptions, IRsaProvider rsaProvider, DatabaseContext databaseContext)
+    /// <param name="systemSettingProvider"></param>
+    public QueryServerInfoCommandHandler(SystemOptions systemOptions, IRsaProvider rsaProvider, DatabaseContext databaseContext, ISystemSettingProvider systemSettingProvider)
     {
         _systemOptions = systemOptions;
         _rsaProvider = rsaProvider;
         _databaseContext = databaseContext;
+        _systemSettingProvider = systemSettingProvider;
     }
 
     /// <inheritdoc/>
     public async Task<QueryServerInfoCommandResponse> Handle(QueryServerInfoCommand request, CancellationToken cancellationToken)
     {
-        var settings = SystemSettingKeys.ParseSettings(await _databaseContext.Settings.ToDictionaryAsync(x => x.Key, x => x.Value));
+        var maxUploadFileSize = await _systemSettingProvider.GetValueAsync(ISystemSettingProvider.MaxUploadFileSize.Key);
+        var disableRegister = await _systemSettingProvider.GetValueAsync(ISystemSettingProvider.DisableRegister.Key);
 
         var endpoint = new Uri(new Uri(_systemOptions.Server), "statics");
 
@@ -48,8 +53,8 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
             PublicStoreUrl = endpoint.ToString(),
             ServiceUrl = _systemOptions.Server,
             RsaPublic = _rsaProvider.GetPublicKey(),
-            MaxUploadFileSize = int.Parse(settings[SystemSettingKeys.MaxUploadFileSize]),
-            DisableRegister = settings[SystemSettingKeys.DisableRegister] == "true" || settings[SystemSettingKeys.DisableRegister] == "1"
+            MaxUploadFileSize = maxUploadFileSize.JsonToObject<int>(),
+            DisableRegister = disableRegister.JsonToObject<bool>()
         };
     }
 }

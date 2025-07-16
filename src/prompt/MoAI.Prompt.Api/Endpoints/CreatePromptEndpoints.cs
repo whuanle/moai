@@ -7,10 +7,10 @@
 using FastEndpoints;
 using MaomiAI.Prompt.Api;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
-using MoAI.Common.Queries;
 
 namespace MaomiAI.AiModel.Api.Endpoints;
 

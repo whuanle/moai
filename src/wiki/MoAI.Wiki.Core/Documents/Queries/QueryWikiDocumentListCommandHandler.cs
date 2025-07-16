@@ -55,7 +55,7 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
             UpdateTime = a.UpdateTime,
             UpdateUserId = a.UpdateUserId,
             Embedding = _databaseContext.WikiDocumentTasks.Any(x => x.DocumentId == a.Id && x.State == (int)FileEmbeddingState.Successful)
-        }).Take(request.Take).Skip(request.Skip).ToArrayAsync();
+        }).OrderBy(x => x.FileName).Take(request.Take).Skip(request.Skip).ToArrayAsync();
 
         await _mediator.Send(new FillUserInfoCommand
         {

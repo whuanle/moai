@@ -6,6 +6,8 @@
 
 using FastEndpoints;
 using MaomiAI.Prompt.Api;
+using MaomiAI.Prompt.Models;
+using MaomiAI.Prompt.Queries;
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Queries;

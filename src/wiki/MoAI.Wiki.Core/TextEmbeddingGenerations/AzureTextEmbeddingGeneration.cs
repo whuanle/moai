@@ -7,6 +7,7 @@
 using Maomi;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
+using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Services;
 
@@ -25,7 +26,7 @@ public class AzureTextEmbeddingGeneration : ITextEmbeddingGeneration
             APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
             Deployment = endpoint.DeploymentName,
             Auth = AzureOpenAIConfig.AuthTypes.APIKey,
-            Tokenizer = wikiConfig.EmbeddingModelTokenizer,
+            Tokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString(),
             MaxTokenTotal = endpoint.ContextWindowTokens,
 
             MaxEmbeddingBatchSize = wikiConfig.EmbeddingBatchSize,

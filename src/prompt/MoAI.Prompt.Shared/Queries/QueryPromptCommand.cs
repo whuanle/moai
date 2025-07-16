@@ -18,4 +18,9 @@ public class QueryPromptCommand : IRequest<PromptItem>
     /// 提示词 id.
     /// </summary>
     public int PromptId { get; init; }
+
+    /// <summary>
+    /// 用户 id.
+    /// </summary>
+    public int UserId { get; init; }
 }

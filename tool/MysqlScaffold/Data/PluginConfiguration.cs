@@ -45,6 +45,9 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsPublic)
+            .HasComment("公开访问")
+            .HasColumnName("is_public");
         entity.Property(e => e.OpenapiFileId)
             .HasComment("文件id")
             .HasColumnType("int(11)")

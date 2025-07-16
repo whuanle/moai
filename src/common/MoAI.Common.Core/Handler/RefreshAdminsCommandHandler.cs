@@ -36,7 +36,7 @@ public class RefreshAdminsCommandHandler : IRequestHandler<RefreshAdminsCommand,
         await _redisDatabase.Database.KeyDeleteAsync("adminids");
         await _redisDatabase.Database.KeyDeleteAsync("rootid");
 
-        var rootId = await _databaseContext.Settings.FirstOrDefaultAsync(x => x.Key == SystemSettingKeys.Root);
+        var rootId = await _databaseContext.Settings.FirstOrDefaultAsync(x => x.Key == ISystemSettingProvider.Root.Key);
 
         if (rootId == null)
         {

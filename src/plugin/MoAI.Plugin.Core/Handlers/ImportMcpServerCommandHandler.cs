@@ -67,7 +67,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             PluginName = request.Name,
             Server = request.ServerUrl.ToString(),
             OpenapiFileId = 0,
-            Title = request.Name,
+            Title = request.Title,
             Type = (int)PluginType.Mcp,
             Headers = TextToJsonExtensions.ToJsonString(request.Header),
             Queries = TextToJsonExtensions.ToJsonString(request.Query),

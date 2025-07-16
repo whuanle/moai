@@ -6,6 +6,7 @@
 
 using FastEndpoints;
 using MediatR;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
@@ -35,11 +36,21 @@ public class QueryPluginDetailEndpoint : Endpoint<QueryPluginDetailCommand, Quer
     /// <inheritdoc/>
     public override async Task<QueryPluginDetailCommandResponse> ExecuteAsync(QueryPluginDetailCommand req, CancellationToken ct)
     {
+        var isCreator = await _mediator.Send(new QueryUserIsPluginCreatorCommand
+        {
+            PluginId = req.PluginId,
+            UserId = _userContext.UserId
+        });
+
+        if (!isCreator.Value)
+        {
+            throw new BusinessException("无权操作该插件.");
+        }
+
         return await _mediator.Send(
             new QueryPluginDetailCommand
             {
                 PluginId = req.PluginId,
-                UserId = _userContext.UserId
             },
             ct);
     }

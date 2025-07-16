@@ -41,6 +41,7 @@ import {
   PreUploadFileCommandResponse,
 } from "../../apiClient/models";
 import { FileSizeHelper } from "../../helper/FileSizeHelper";
+import { FileTypeHelper } from "../../helper/FileTypeHelper";
 import {
   formatDateTime,
   parseJsonDateTime,
@@ -85,13 +86,13 @@ const useDocumentList = (wikiId: number) => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 20,
     total: 0,
   });
   const [searchText, setSearchText] = useState("");
   const [messageApi, contextHolder] = message.useMessage();
 
-  const fetchDocuments = useCallback(async (page = 1, pageSize = 10, search = "") => {
+  const fetchDocuments = useCallback(async (page = 1, pageSize = 20, search = "") => {
     if (!wikiId) {
       messageApi.error("缺少必要的参数");
       return;
@@ -175,9 +176,15 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
   const [messageApi, contextHolder] = message.useMessage();
 
   const handleFileSelect = useCallback((file: File) => {
+    // 检查是否为支持的文档类型
+    if (!FileTypeHelper.isWikiDocumentSupported(file)) {
+      messageApi.error(`${file.name} 不是支持的文档类型，仅支持 PDF、Word、TXT、Markdown 格式`);
+      return false;
+    }
+    
     setSelectedFiles(prev => [...prev, file]);
     return false;
-  }, []);
+  }, [messageApi]);
 
   const uploadSingleFile = useCallback(async (file: File, index: number) => {
     try {
@@ -227,6 +234,9 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
           uploadStatuses: newStatuses,
         };
       });
+
+      // 上传成功后从文件列表中移除
+      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
 
       return true;
     } catch (error) {
@@ -280,14 +290,8 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
       }
     }
 
-    // 上传完成
-    setBatchUploadStatus(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        isUploading: false,
-      };
-    });
+    // 上传完成，清空上传状态
+    setBatchUploadStatus(null);
 
     messageApi.info("已处理当前文件上传列表");
     onUploadSuccess();
@@ -341,7 +345,7 @@ const UploadPrivateFile = async (
   const md5 = await GetFileMd5(file);
   const preUploadResponse = await client.api.wiki.document.preupload_document.post({
     wikiId,
-    contentType: file.type,
+    contentType: FileTypeHelper.getFileType(file),
     fileName: file.name,
     mD5: md5,
     fileSize: file.size,
@@ -369,7 +373,7 @@ const UploadPrivateFile = async (
     method: "PUT",
     body: file,
     headers: {
-      "Content-Type": file.type,
+      "Content-Type": FileTypeHelper.getFileType(file),
       "x-amz-meta-max-file-size": file.size.toString(),
       "Authorization": `Bearer ${localStorage.getItem("userinfo.accessToken")}`,
     },
@@ -494,10 +498,17 @@ const getTableColumns = (wikiId: number, navigate: any, deleteDocument: (id: num
 const UploadProgress = ({ batchUploadStatus }: { batchUploadStatus: BatchUploadStatus | null }) => {
   if (!batchUploadStatus) return null;
 
+  // 过滤掉已成功的文件，只显示正在上传和失败的文件
+  const activeStatuses = batchUploadStatus.uploadStatuses.filter(
+    status => status.status !== "success"
+  );
+
+  if (activeStatuses.length === 0) return null;
+
   return (
     <Card size="small" title="上传进度" style={{ marginTop: 16 }}>
       <List
-        dataSource={batchUploadStatus.uploadStatuses}
+        dataSource={activeStatuses}
         renderItem={(status, index) => (
           <List.Item>
             <Space direction="vertical" style={{ width: '100%' }}>
@@ -505,9 +516,6 @@ const UploadProgress = ({ batchUploadStatus }: { batchUploadStatus: BatchUploadS
                 <Text ellipsis={{ tooltip: status.file.name }} style={{ maxWidth: 200 }}>
                   {status.file.name}
                 </Text>
-                {status.status === "success" && (
-                  <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                )}
                 {status.status === "error" && (
                   <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
                 )}
@@ -564,7 +572,7 @@ const SelectedFilesList = ({
             <List.Item.Meta
               avatar={<FileTextOutlined />}
               title={file.name}
-              description={`${FileSizeHelper.formatFileSize(file.size)} | ${file.type || '未知类型'}`}
+              description={`${FileSizeHelper.formatFileSize(file.size)} | ${FileTypeHelper.formatFileType(file)}`}
             />
           </List.Item>
         )}
@@ -673,7 +681,7 @@ export default function WikiDocument() {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`,
-            pageSizeOptions: ["10", "20", "50", "100"],
+            pageSizeOptions: ["20", "50", "100"],
           }}
           loading={loading}
           onChange={handleTableChange}

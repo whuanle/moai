@@ -14,7 +14,13 @@ namespace MoAI.Wiki.Wikis.Queries;
 /// </summary>
 public class QueryUserIsWikiUserCommand : IRequest<QueryUserIsWikiUserCommandResponse>
 {
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
     public int WikiId { get; init; }
 
+    /// <summary>
+    /// 用户 id.
+    /// </summary>
     public int UserId { get; init; }
 }

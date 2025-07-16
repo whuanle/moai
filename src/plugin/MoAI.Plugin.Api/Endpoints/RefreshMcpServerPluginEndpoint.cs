@@ -6,10 +6,11 @@
 
 using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
-using MoAI.Common.Queries;
+using MoAI.Plugin.Queries;
 
 namespace MoAI.Plugin.Endpoints;
 
@@ -36,16 +37,22 @@ public class RefreshMcpServerPluginEndpoint : Endpoint<RefreshMcpServerPluginCom
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(RefreshMcpServerPluginCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+        var isCreator = await _mediator.Send(new QueryUserIsPluginCreatorCommand
         {
-            UserId = _userContext.UserId,
+            PluginId = req.PluginId,
+            UserId = _userContext.UserId
         });
 
-        if (!isAdmin.IsAdmin)
+        if (!isCreator.Value)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            throw new BusinessException("无权操作该插件.");
         }
 
-        return await _mediator.Send(req, ct);
+        return await _mediator.Send(
+            new RefreshMcpServerPluginCommand
+            {
+                PluginId = req.PluginId
+            },
+            ct);
     }
 }

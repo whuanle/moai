@@ -54,7 +54,8 @@ public class DeleteAiAssistantChatCommandHandler : IRequestHandler<DeleteAiAssis
 
         await _databaseContext.SoftDeleteAsync(_databaseContext.ChatHistories.Where(x => x.Id == chatEntityId));
 
-        await _redisDatabase.Database.KeyDeleteAsync(ChatIdHelper.GetChatKey(chatId));
+        await _redisDatabase.Database.KeyDeleteAsync(ChatIdHelper.GetChatObjectKey(chatId));
+        await _redisDatabase.Database.KeyDeleteAsync(ChatIdHelper.GetChatHistoryKey(chatId));
         return EmptyCommandResponse.Default;
     }
 }

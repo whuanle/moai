@@ -10,7 +10,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Plugin.Commands;
 
 /// <summary>
-/// 删除分组.
+/// 删除插件.
 /// </summary>
 public class DeletePluginCommand : IRequest<EmptyCommandResponse>
 {

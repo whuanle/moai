@@ -7,6 +7,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Models;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
 namespace MoAI.Admin.SystemSettings.Commands;
@@ -30,19 +32,30 @@ public class SetSystemSettingsCommandHandler : IRequestHandler<SetSystemSettings
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(SetSystemSettingsCommand request, CancellationToken cancellationToken)
     {
-        var settings = await _databaseContext.Settings.ToArrayAsync();
-
-        foreach (var item in settings)
+        var defaultSetting = ISystemSettingProvider.Keys.FirstOrDefault(x => x.Key == request.Settings.Key);
+        if (defaultSetting == default(SystemSettingKey))
         {
-            var setting = request.Settings.FirstOrDefault(x => x.Key == item.Key);
-            if (setting != null)
-            {
-                item.Value = setting.Value;
-            }
+            throw new BusinessException("系统无此配置项");
         }
 
-        _databaseContext.UpdateRange(settings);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+        var setting = await _databaseContext.Settings.FirstOrDefaultAsync(x => x.Key == request.Settings.Key);
+
+        if (setting == null)
+        {
+            await _databaseContext.Settings.AddAsync(new Database.Entities.SettingEntity
+            {
+                Key = defaultSetting.Key,
+                Value = request.Settings.Value,
+                Description = defaultSetting.Description,
+            });
+
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            _databaseContext.Update(setting);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+        }
 
         return EmptyCommandResponse.Default;
     }

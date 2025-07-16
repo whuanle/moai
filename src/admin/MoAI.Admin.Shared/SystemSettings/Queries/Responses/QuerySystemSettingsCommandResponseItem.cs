@@ -11,7 +11,7 @@ namespace MoAI.Admin.SystemSettings.Queries.Responses;
 /// <summary>
 /// QuerySystemSettingsCommandResponseItem.
 /// </summary>
-public class QuerySystemSettingsCommandResponseItem : AuditsInfo
+public class QuerySystemSettingsCommandResponseItem
 {
     /// <summary>
     /// id.

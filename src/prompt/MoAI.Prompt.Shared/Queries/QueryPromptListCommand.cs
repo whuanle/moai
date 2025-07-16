@@ -23,4 +23,14 @@ public class QueryPromptListCommand : IRequest<QueryPromptListCommandResponse>
     /// 筛选名称.
     /// </summary>
     public string? Name { get; init; }
+
+    /// <summary>
+    /// 自己创建的.
+    /// </summary>
+    public bool? IsOwn { get; init; }
+
+    /// <summary>
+    /// 用户 id.
+    /// </summary>
+    public int UserId { get; init; }
 }

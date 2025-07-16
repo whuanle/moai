@@ -14,8 +14,6 @@ import { Plugin_detailRequestBuilderRequestsMetadata, type Plugin_detailRequestB
 // @ts-ignore
 import { Plugin_listRequestBuilderRequestsMetadata, type Plugin_listRequestBuilder } from './plugin_list/index.js';
 // @ts-ignore
-import { Plugininfo_listRequestBuilderRequestsMetadata, type Plugininfo_listRequestBuilder } from './plugininfo_list/index.js';
-// @ts-ignore
 import { Pre_upload_openapiRequestBuilderRequestsMetadata, type Pre_upload_openapiRequestBuilder } from './pre_upload_openapi/index.js';
 // @ts-ignore
 import { Refresh_mcpRequestBuilderRequestsMetadata, type Refresh_mcpRequestBuilder } from './refresh_mcp/index.js';
@@ -55,10 +53,6 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      */
     get plugin_list(): Plugin_listRequestBuilder;
     /**
-     * The plugininfo_list property
-     */
-    get plugininfo_list(): Plugininfo_listRequestBuilder;
-    /**
      * The pre_upload_openapi property
      */
     get pre_upload_openapi(): Pre_upload_openapiRequestBuilder;
@@ -94,9 +88,6 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     import_openapi: {
         requestsMetadata: Import_openapiRequestBuilderRequestsMetadata,
-    },
-    plugininfo_list: {
-        requestsMetadata: Plugininfo_listRequestBuilderRequestsMetadata,
     },
     plugin_detail: {
         requestsMetadata: Plugin_detailRequestBuilderRequestsMetadata,

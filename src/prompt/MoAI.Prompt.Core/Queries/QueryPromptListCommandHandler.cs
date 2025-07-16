@@ -38,6 +38,15 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
     {
         var query = _databaseContext.Prompts.AsQueryable();
 
+        if (request.IsOwn == true)
+        {
+            query = query.Where(x => x.CreateUserId == request.UserId);
+        }
+        else
+        {
+            query = query.Where(x => x.CreateUserId == request.UserId || x.IsPublic);
+        }
+
         if (request.ClassId != null)
         {
             query = query.Where(x => x.PromptClassId == request.ClassId);

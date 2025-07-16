@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Plugin_detailRequestBuilder extends BaseRequestBuilder<Plugin_detailRequestBuilder> {
     /**
      * 获取插件的详细信息.
-     * @param body The request body
+     * @param body 查询该插件的详细信息.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryPluginDetailCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Plugin_detailRequestBuilder extends BaseRequestBuilder<Plugin_d
      post(body: QueryPluginDetailCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryPluginDetailCommandResponse | undefined>;
     /**
      * 获取插件的详细信息.
-     * @param body The request body
+     * @param body 查询该插件的详细信息.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

@@ -22,5 +22,5 @@ public class DeleteAiAssistantChatCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 对话 id.
     /// </summary>
-    public string ChatId { get; init; } = default!;
+    public Guid ChatId { get; init; } = default!;
 }

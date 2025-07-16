@@ -72,11 +72,11 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         List<string> roles = new List<string>();
 
-        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == SystemSettingKeys.Root && x.Value == user.Id.ToString());
+        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == ISystemSettingProvider.Root.Key && x.Value == user.Id.ToString());
 
         if (isRoot)
         {
-            roles.Add(SystemSettingKeys.Root);
+            roles.Add(ISystemSettingProvider.Root.Key);
             roles.Add("admin");
         }
         else if (user.IsAdmin)

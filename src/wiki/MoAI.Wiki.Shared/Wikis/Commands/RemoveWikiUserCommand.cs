@@ -14,7 +14,13 @@ namespace MoAI.Wiki.Wikis.Commands;
 /// </summary>
 public class RemoveWikiUserCommand : IRequest<EmptyCommandResponse>
 {
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
     public int WikiId { get; init; }
 
+    /// <summary>
+    /// 被邀请用户.
+    /// </summary>
     public IReadOnlyCollection<int> UserIds { get; init; } = Array.Empty<int>();
 }

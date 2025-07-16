@@ -38,16 +38,6 @@ public class ImportOpenApiPluginEndpoint : Endpoint<ImportOpenApiPluginCommand, 
     /// <inheritdoc/>
     public override async Task<SimpleInt> ExecuteAsync(ImportOpenApiPluginCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            UserId = _userContext.UserId,
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
-
         return await _mediator.Send(req, ct);
     }
 }

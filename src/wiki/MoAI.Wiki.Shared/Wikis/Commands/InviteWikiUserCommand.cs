@@ -14,7 +14,13 @@ namespace MoAI.Wiki.Wikis.Commands;
 /// </summary>
 public class InviteWikiUserCommand : IRequest<EmptyCommandResponse>
 {
-    public int UserId { get; init; }
+    /// <summary>
+    /// 被邀请用户.
+    /// </summary>
+    public string UserName { get; init; } = default!;
 
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
     public int WikiId { get; init; }
 }

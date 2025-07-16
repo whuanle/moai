@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Outlet } from "react-router";
 import {
   Layout,
@@ -9,16 +9,12 @@ import {
   message,
   Spin,
   Card,
-  Avatar,
-  Tag,
 } from "antd";
 import {
   ArrowLeftOutlined,
   SettingOutlined,
   FileTextOutlined,
-  BookOutlined,
   UserOutlined,
-  ClockCircleOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
@@ -31,27 +27,8 @@ interface WikiInfo {
   wikiId: number;
   name: string;
   description: string;
-  isPublic: boolean;
   createUserName?: string;
-  createTime?: string;
-  documentCount?: number;
 }
-
-// 创建 Context 用于传递刷新函数
-interface WikiContextType {
-  refreshWikiInfo: () => void;
-}
-
-const WikiContext = createContext<WikiContextType | undefined>(undefined);
-
-// 自定义 Hook 用于获取 Context
-export const useWikiContext = () => {
-  const context = useContext(WikiContext);
-  if (!context) {
-    throw new Error('useWikiContext must be used within a WikiLayout');
-  }
-  return context;
-};
 
 export default function WikiLayout() {
   const [wikiInfo, setWikiInfo] = useState<WikiInfo | null>(null);
@@ -79,10 +56,7 @@ export default function WikiLayout() {
           wikiId: response.wikiId!,
           name: response.name!,
           description: response.description || "",
-          isPublic: response.isPublic || false,
           createUserName: response.createUserName || undefined,
-          createTime: response.createTime || undefined,
-          documentCount: response.documentCount || 0,
         });
       }
     } catch (error) {
@@ -91,11 +65,6 @@ export default function WikiLayout() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // 刷新知识库信息的函数
-  const refreshWikiInfo = () => {
-    fetchWikiInfo();
   };
 
   useEffect(() => {
@@ -122,27 +91,6 @@ export default function WikiLayout() {
       return "settings";
     }
     return "detail";
-  };
-
-  const formatDateTime = (dateTimeString?: string): string => {
-    if (!dateTimeString) return "";
-    
-    try {
-      const date = new Date(dateTimeString);
-      if (isNaN(date.getTime())) return dateTimeString;
-      
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-    } catch (error) {
-      return dateTimeString;
-    }
   };
 
   const menuItems = [
@@ -186,7 +134,7 @@ export default function WikiLayout() {
   }
 
   return (
-    <WikiContext.Provider value={{ refreshWikiInfo }}>
+    <>
       {contextHolder}
       <Layout style={{ height: '100vh' }}>
         <Sider width={250} theme="light" style={{ borderRight: '1px solid #f0f0f0' }}>
@@ -200,33 +148,10 @@ export default function WikiLayout() {
               >
                 返回列表
               </Button>
-              <Title level={4} style={{ margin: 0 }}>
+              <Title level={4} style={{ marginTop: 5, marginBottom: 0 }}>
                 {wikiInfo.name}
               </Title>
-              <Space size="small">
-                <Tag color={wikiInfo.isPublic ? "green" : "orange"}>
-                  {wikiInfo.isPublic ? "公开" : "私有"}
-                </Tag>
-                <Tag color="blue" icon={<BookOutlined />}>
-                  {wikiInfo.documentCount} 文档
-                </Tag>
-              </Space>
-              {wikiInfo.createUserName && (
-                <Space size="small">
-                  <UserOutlined />
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {wikiInfo.createUserName}
-                  </Text>
-                </Space>
-              )}
-              {wikiInfo.createTime && (
-                <Space size="small">
-                  <ClockCircleOutlined />
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {formatDateTime(wikiInfo.createTime)}
-                  </Text>
-                </Space>
-              )}
+              <Text>{wikiInfo.description}</Text>
             </Space>
           </div>
           <Menu
@@ -241,6 +166,6 @@ export default function WikiLayout() {
           <Outlet />
         </Content>
       </Layout>
-    </WikiContext.Provider>
+    </>
   );
 } 

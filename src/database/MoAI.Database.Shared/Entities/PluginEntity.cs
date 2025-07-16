@@ -20,11 +20,6 @@ public partial class PluginEntity : IFullAudited
     public string PluginName { get; set; } = default!;
 
     /// <summary>
-    /// 公开.
-    /// </summary>
-    public bool IsPublic { get; set; } = default!;
-
-    /// <summary>
     /// 插件标题.
     /// </summary>
     public string Title { get; set; } = default!;
@@ -53,6 +48,11 @@ public partial class PluginEntity : IFullAudited
     /// system|mcp|openapi.
     /// </summary>
     public int Type { get; set; }
+
+    /// <summary>
+    /// 公开访问.
+    /// </summary>
+    public bool IsPublic { get; set; }
 
     /// <summary>
     /// 文件id.

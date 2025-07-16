@@ -19,7 +19,7 @@ public class WikiConfig
     /// <summary>
     /// 分词器.
     /// </summary>
-    public string EmbeddingModelTokenizer { get; set; } = default!;
+    public EmbeddingTokenizer EmbeddingModelTokenizer { get; set; } = default!;
 
     /// <summary>
     /// 维度，跟模型有关，小于嵌入向量的最大值.

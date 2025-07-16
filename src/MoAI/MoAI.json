@@ -3010,20 +3010,20 @@
         ]
       }
     },
-    "/api/wiki/query_wiki_config": {
+    "/api/wiki/query_wiki_list": {
       "post": {
         "tags": [
           "Wiki"
         ],
-        "summary": "查询知识库配置.",
-        "operationId": "QueryWikiConfigEndpoint",
+        "summary": "获取用户有权访问的知识库列表.",
+        "operationId": "QueryWikiBaseListEndpoint",
         "requestBody": {
-          "x-name": "QueryWikiConfigCommand",
+          "x-name": "QueryWikiBaseListCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryWikiConfigCommand"
+                "$ref": "#/components/schemas/QueryWikiBaseListCommand"
               }
             }
           },
@@ -3036,7 +3036,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryWikiConfigCommandResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueryWikiInfoResponse"
+                  }
                 }
               }
             }
@@ -3107,12 +3110,12 @@
         "summary": "获取知识库的信息.",
         "operationId": "QueryWikiInfoEndpoint",
         "requestBody": {
-          "x-name": "QueryWikiSimpleInfoCommand",
+          "x-name": "QueryWikiInfoCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryWikiSimpleInfoCommand"
+                "$ref": "#/components/schemas/QueryWikiInfoCommand"
               }
             }
           },
@@ -3125,86 +3128,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryWikiSimpleInfoResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/wiki/query_wiki_list": {
-      "get": {
-        "tags": [
-          "Wiki"
-        ],
-        "summary": "获取用户有权访问的知识库列表.",
-        "operationId": "QueryWikiListEndpoint",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/QueryWikiSimpleInfoResponse"
-                  }
+                  "$ref": "#/components/schemas/QueryWikiInfoResponse"
                 }
               }
             }
@@ -4522,7 +4446,7 @@
           "Plugin"
         ],
         "summary": "删除插件.",
-        "operationId": "DeletePluginGroupEndpoint",
+        "operationId": "DeletePlugiEndpoint",
         "requestBody": {
           "x-name": "DeletePluginCommand",
           "description": "",
@@ -4788,6 +4712,95 @@
         ]
       }
     },
+    "/api/plugin/plugin_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "插件列表.",
+        "operationId": "QueryPluginBaseListEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginBaseListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginBaseListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginBaseListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/plugin/plugin_detail": {
       "post": {
         "tags": [
@@ -4904,184 +4917,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/plugin/plugininfo_list": {
-      "post": {
-        "tags": [
-          "Plugin"
-        ],
-        "summary": "获取插件的概要信息.",
-        "operationId": "QueryPluginInfoListEndpoint",
-        "requestBody": {
-          "x-name": "QueryPluginInfoListCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryPluginInfoListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryPluginInfoListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/plugin/plugin_list": {
-      "post": {
-        "tags": [
-          "Plugin"
-        ],
-        "summary": "插件列表.",
-        "operationId": "QueryPluginListEndpoint",
-        "requestBody": {
-          "x-name": "QueryPluginListCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryPluginListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryPluginListCommandResponse"
                 }
               }
             }
@@ -5916,7 +5751,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752498297879"
+            "example": "1752672664786"
           }
         }
       },
@@ -6662,7 +6497,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752498297879"
+            "example": "1752672664786"
           },
           "createUserId": {
             "type": "integer",
@@ -6678,7 +6513,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752498297879"
+            "example": "1752672664786"
           },
           "updateUserId": {
             "type": "integer",
@@ -6792,6 +6627,7 @@
         "properties": {
           "items": {
             "type": "array",
+            "description": "列表.",
             "items": {
               "$ref": "#/components/schemas/QuerySystemSettingsCommandResponseItem"
             }
@@ -6799,41 +6635,34 @@
         }
       },
       "QuerySystemSettingsCommandResponseItem": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
+        "type": "object",
+        "description": "QuerySystemSettingsCommandResponseItem.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "key",
+          "value",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
           },
-          {
-            "type": "object",
-            "description": "QuerySystemSettingsCommandResponseItem.",
-            "additionalProperties": false,
-            "required": [
-              "id",
-              "key",
-              "value",
-              "description"
-            ],
-            "properties": {
-              "id": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "key": {
-                "type": "string",
-                "description": "配置名称."
-              },
-              "value": {
-                "type": "string",
-                "description": "配置值."
-              },
-              "description": {
-                "type": "string",
-                "description": "描述."
-              }
-            }
+          "key": {
+            "type": "string",
+            "description": "配置名称."
+          },
+          "value": {
+            "type": "string",
+            "description": "配置值."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述."
           }
-        ]
+        }
       },
       "SetSystemSettingsCommand": {
         "type": "object",
@@ -6844,11 +6673,12 @@
         ],
         "properties": {
           "settings": {
-            "type": "array",
             "description": "系统配置.",
-            "items": {
-              "$ref": "#/components/schemas/KeyValueString"
-            }
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyValueString"
+              }
+            ]
           }
         }
       },
@@ -7183,6 +7013,9 @@
         }
       },
       "UpdateAiModelCommand": {
+        "required": [
+          "aiModelId"
+        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/AiEndpoint"
@@ -7199,8 +7032,8 @@
                 "type": "integer",
                 "description": "AI 模型 id.",
                 "format": "int32",
-                "minimum": 0.0,
-                "exclusiveMinimum": true
+                "minLength": 1,
+                "nullable": false
               }
             }
           }
@@ -7480,8 +7313,8 @@
             "type": "integer",
             "description": "模型 id.",
             "format": "int32",
-            "minimum": 0.0,
-            "exclusiveMinimum": true
+            "minLength": 1,
+            "nullable": false
           }
         }
       },
@@ -7659,11 +7492,17 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "团队名称."
+            "description": "团队名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "nullable": false
           },
           "description": {
             "type": "string",
-            "description": "团队描述."
+            "description": "团队描述.",
+            "maxLength": 255,
+            "minLength": 2,
+            "nullable": false
           }
         }
       },
@@ -7678,7 +7517,11 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -7687,31 +7530,43 @@
         "description": "邀请知识库协作成员，可以管理知识库文档等.",
         "additionalProperties": false,
         "required": [
-          "userId",
+          "userName",
           "wikiId"
         ],
         "properties": {
-          "userId": {
-            "type": "integer",
-            "format": "int32"
+          "userName": {
+            "type": "string",
+            "description": "被邀请用户.",
+            "minLength": 1,
+            "nullable": false
           },
           "wikiId": {
             "type": "integer",
-            "format": "int32"
+            "description": "知识库 id.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
-      "QueryWikiConfigCommandResponse": {
+      "QueryWikiInfoResponse": {
         "allOf": [
           {
             "$ref": "#/components/schemas/AuditsInfo"
           },
           {
             "type": "object",
-            "description": "QueryWikiConfigCommandResponse.",
+            "description": "知识库信息.",
             "additionalProperties": false,
             "required": [
               "wikiId",
+              "name",
+              "description",
+              "isPublic",
+              "isUser",
+              "documentCount",
               "embeddingModelId",
               "isLock",
               "embeddingModelTokenizer",
@@ -7722,7 +7577,28 @@
             "properties": {
               "wikiId": {
                 "type": "integer",
-                "description": "知识库id.",
+                "description": "知识库 id.",
+                "format": "int32"
+              },
+              "name": {
+                "type": "string",
+                "description": "知识库名称."
+              },
+              "description": {
+                "type": "string",
+                "description": "知识库描述."
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "公开使用，所有人不需要加入团队即可使用此知识库."
+              },
+              "isUser": {
+                "type": "boolean",
+                "description": "是否该知识库成员."
+              },
+              "documentCount": {
+                "type": "integer",
+                "description": "文档数量.",
                 "format": "int32"
               },
               "embeddingModelId": {
@@ -7775,70 +7651,37 @@
           "o200k"
         ]
       },
-      "QueryWikiConfigCommand": {
+      "QueryWikiBaseListCommand": {
         "type": "object",
-        "description": "查询知识库设置信息.",
+        "description": "查询当前用户可以看到的所有知识库.",
         "additionalProperties": false,
         "required": [
-          "wikiId"
+          "userId"
         ],
         "properties": {
-          "wikiId": {
+          "userId": {
             "type": "integer",
-            "description": "知识库 id.",
+            "description": "用户id.",
             "format": "int32"
+          },
+          "isOwn": {
+            "type": "boolean",
+            "description": "只查询该用户创建的知识库.",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "只查询公开的知识库.",
+            "nullable": true
+          },
+          "isUser": {
+            "type": "boolean",
+            "description": "只查询已加入的知识库.",
+            "nullable": true
           }
         }
       },
-      "QueryWikiSimpleInfoResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "description": "知识库信息.",
-            "additionalProperties": false,
-            "required": [
-              "wikiId",
-              "name",
-              "description",
-              "isPublic",
-              "isAdmin",
-              "documentCount"
-            ],
-            "properties": {
-              "wikiId": {
-                "type": "integer",
-                "description": "知识库 id.",
-                "format": "int32"
-              },
-              "name": {
-                "type": "string",
-                "description": "知识库名称."
-              },
-              "description": {
-                "type": "string",
-                "description": "知识库描述."
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "公开使用，所有人不需要加入团队即可使用此知识库."
-              },
-              "isAdmin": {
-                "type": "boolean",
-                "description": "是否管理员."
-              },
-              "documentCount": {
-                "type": "integer",
-                "description": "文档数量.",
-                "format": "int32"
-              }
-            }
-          }
-        ]
-      },
-      "QueryWikiSimpleInfoCommand": {
+      "QueryWikiInfoCommand": {
         "type": "object",
         "description": "获取知识库简单信息.",
         "additionalProperties": false,
@@ -7919,7 +7762,12 @@
         "properties": {
           "wikiId": {
             "type": "integer",
-            "format": "int32"
+            "description": "查询知识库协作的成员列表.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -7934,10 +7782,17 @@
         "properties": {
           "wikiId": {
             "type": "integer",
-            "format": "int32"
+            "description": "知识库 id.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "userIds": {
             "type": "array",
+            "description": "被邀请用户.",
+            "nullable": false,
             "items": {
               "type": "integer",
               "format": "int32"
@@ -7946,6 +7801,9 @@
         }
       },
       "UpdateWikiConfigCommand": {
+        "required": [
+          "wikiId"
+        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/WikiConfig"
@@ -7961,7 +7819,11 @@
               "wikiId": {
                 "type": "integer",
                 "description": "知识库 id.",
-                "format": "int32"
+                "format": "int32",
+                "minimum": 0.0,
+                "minLength": 1,
+                "nullable": false,
+                "exclusiveMinimum": true
               }
             }
           }
@@ -7982,26 +7844,48 @@
           "embeddingModelId": {
             "type": "integer",
             "description": "指定进行文档向量化的模型.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "embeddingModelTokenizer": {
-            "type": "string",
-            "description": "分词器."
+            "description": "分词器.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingTokenizer"
+              }
+            ]
           },
           "embeddingDimensions": {
             "type": "integer",
             "description": "维度，跟模型有关，小于嵌入向量的最大值.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "embeddingBatchSize": {
             "type": "integer",
             "description": "批处理大小.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "maxRetries": {
             "type": "integer",
             "description": "文档处理最大重试次数.",
-            "format": "int32"
+            "format": "int32",
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMaximum": true,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -8019,15 +7903,25 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "name": {
             "type": "string",
-            "description": "知识库名称."
+            "description": "知识库名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "nullable": false
           },
           "description": {
             "type": "string",
-            "description": "知识库描述."
+            "description": "知识库描述.",
+            "maxLength": 255,
+            "minLength": 2,
+            "nullable": false
           },
           "isPublic": {
             "type": "boolean",
@@ -8048,17 +7942,29 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
             "description": "文档id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "taskId": {
             "type": "integer",
             "description": "任务 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -8073,7 +7979,11 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
@@ -8121,12 +8031,20 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
             "description": "文档 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -8146,12 +8064,20 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
             "description": "文档 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "splitMethod": {
             "type": "string",
@@ -8215,7 +8141,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752498297879"
+            "example": "1752672664786"
           }
         }
       },
@@ -8227,22 +8153,32 @@
           "wikiId",
           "fileName",
           "contentType",
-          "fileSize",
-          "mD5"
+          "mD5",
+          "fileSize"
         ],
         "properties": {
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.\n            ",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "fileName": {
             "type": "string",
-            "description": "文件名称."
+            "description": "文件名称.",
+            "maxLength": 100,
+            "minLength": 2,
+            "nullable": false
           },
           "contentType": {
             "type": "string",
-            "description": "文件类型."
+            "description": "文件类型.",
+            "maxLength": 50,
+            "minLength": 2,
+            "nullable": false
           },
           "fileSize": {
             "type": "integer",
@@ -8251,7 +8187,11 @@
           },
           "mD5": {
             "type": "string",
-            "description": "文件 MD5."
+            "description": "文件 MD5.",
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[a-fA-F0-9]{32}$",
+            "nullable": false
           }
         }
       },
@@ -8305,12 +8245,20 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
             "description": "文档 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -8356,6 +8304,9 @@
         ]
       },
       "QueryWikiDocumentListCommand": {
+        "required": [
+          "wikiId"
+        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/PagedParamter"
@@ -8371,7 +8322,11 @@
               "wikiId": {
                 "type": "integer",
                 "description": "知识库 id.",
-                "format": "int32"
+                "format": "int32",
+                "minimum": 0.0,
+                "minLength": 1,
+                "nullable": false,
+                "exclusiveMinimum": true
               },
               "query": {
                 "type": "string",
@@ -8508,12 +8463,20 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
             "description": "文档id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -8642,7 +8605,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752498297879"
+            "example": "1752672664786"
           },
           "tags": {
             "type": "array",
@@ -8681,7 +8644,11 @@
           "wikiId": {
             "type": "integer",
             "description": "知识库 id.\n            ",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
           },
           "documentId": {
             "type": "integer",
@@ -8698,7 +8665,7 @@
       },
       "DeletePluginCommand": {
         "type": "object",
-        "description": "删除分组.",
+        "description": "删除插件.",
         "additionalProperties": false,
         "required": [
           "pluginId"
@@ -8709,8 +8676,6 @@
             "description": "插件.",
             "format": "int32",
             "minimum": 0.0,
-            "minLength": 1,
-            "nullable": false,
             "exclusiveMinimum": true
           }
         }
@@ -8742,6 +8707,7 @@
         "additionalProperties": false,
         "required": [
           "name",
+          "title",
           "description",
           "serverUrl",
           "header",
@@ -8750,7 +8716,15 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "插件名称.",
+            "description": "插件名称，只能纯字母，用于给 AI 使用.",
+            "maxLength": 20,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z]+$",
+            "nullable": false
+          },
+          "title": {
+            "type": "string",
+            "description": "插件标题，可中文.",
             "maxLength": 20,
             "minLength": 2,
             "nullable": false
@@ -8765,7 +8739,9 @@
           "serverUrl": {
             "type": "string",
             "description": "MCP Service 地址.",
-            "format": "uri"
+            "format": "uri",
+            "minLength": 1,
+            "nullable": false
           },
           "header": {
             "type": "array",
@@ -8822,7 +8798,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752498297879"
+            "example": "1752672664786"
           }
         }
       },
@@ -8833,26 +8809,170 @@
         "required": [
           "fileName",
           "contentType",
-          "fileSize",
-          "mD5"
+          "mD5",
+          "fileSize"
         ],
         "properties": {
           "fileName": {
             "type": "string",
-            "description": "文件名称."
+            "description": "文件名称.",
+            "maxLength": 100,
+            "minLength": 2,
+            "nullable": false
           },
           "contentType": {
             "type": "string",
-            "description": "文件类型."
+            "description": "文件类型.",
+            "maxLength": 50,
+            "minLength": 2,
+            "nullable": false
           },
           "fileSize": {
             "type": "integer",
             "description": "文件大小.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 1073741824.0,
+            "exclusiveMinimum": true
           },
           "mD5": {
             "type": "string",
-            "description": "文件 MD5."
+            "description": "文件 MD5.",
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[a-fA-F0-9]{32}$",
+            "nullable": false
+          }
+        }
+      },
+      "QueryPluginBaseListCommandResponse": {
+        "type": "object",
+        "description": "QueryPluginListCommandResponse.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "列表.",
+            "items": {
+              "$ref": "#/components/schemas/PluginBaseInfoItem"
+            }
+          }
+        }
+      },
+      "PluginBaseInfoItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "description": "插件.",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "pluginName",
+              "title",
+              "description",
+              "server",
+              "type",
+              "openapiFileId",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "server": {
+                "type": "string",
+                "description": "服务器地址."
+              },
+              "type": {
+                "description": "system|mcp|openapi.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PluginType"
+                  }
+                ]
+              },
+              "openapiFileId": {
+                "type": "integer",
+                "description": "文件id.",
+                "format": "int32"
+              },
+              "openapiFileName": {
+                "type": "string",
+                "description": "文件名称.",
+                "nullable": true
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "PluginType": {
+        "type": "string",
+        "description": "插件类型.",
+        "x-enumNames": [
+          "OpenApi",
+          "Mcp",
+          "System"
+        ],
+        "enum": [
+          "openApi",
+          "mcp",
+          "system"
+        ]
+      },
+      "QueryPluginBaseListCommand": {
+        "type": "object",
+        "description": "获取插件基础信息列表.",
+        "additionalProperties": false,
+        "required": [
+          "userId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户id.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "名称搜索.",
+            "nullable": true
+          },
+          "type": {
+            "description": "筛选类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginType"
+              }
+            ]
+          },
+          "isOwn": {
+            "type": "boolean",
+            "description": "只查询该用户创建的插件.",
+            "nullable": true
           }
         }
       },
@@ -8938,34 +9058,17 @@
           }
         ]
       },
-      "PluginType": {
-        "type": "string",
-        "description": "插件类型.",
-        "x-enumNames": [
-          "OpenApi",
-          "Mcp",
-          "System"
-        ],
-        "enum": [
-          "openApi",
-          "mcp",
-          "system"
-        ]
-      },
       "QueryPluginDetailCommand": {
         "type": "object",
+        "description": "查询该插件的详细信息.",
         "additionalProperties": false,
         "required": [
-          "userId",
           "pluginId"
         ],
         "properties": {
-          "userId": {
-            "type": "integer",
-            "format": "int32"
-          },
           "pluginId": {
             "type": "integer",
+            "description": "插件 id.",
             "format": "int32"
           }
         }
@@ -9025,211 +9128,22 @@
       },
       "QueryPluginFunctionsListCommand": {
         "type": "object",
-        "description": "获取插件函数列表.",
+        "description": "获取插件的函数列表.",
         "additionalProperties": false,
         "required": [
+          "userId",
           "pluginId"
         ],
         "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          },
           "pluginId": {
             "type": "integer",
             "description": "插件 id.",
             "format": "int32"
-          }
-        }
-      },
-      "QueryPluginInfoListCommandResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "列表.",
-            "items": {
-              "$ref": "#/components/schemas/QueryPluginInfoItem"
-            }
-          }
-        }
-      },
-      "QueryPluginInfoItem": {
-        "type": "object",
-        "description": "插件信息.",
-        "additionalProperties": false,
-        "required": [
-          "pluginId",
-          "pluginName",
-          "type",
-          "title",
-          "description",
-          "isPublic"
-        ],
-        "properties": {
-          "pluginId": {
-            "type": "integer",
-            "description": "插件Id.",
-            "format": "int32"
-          },
-          "pluginName": {
-            "type": "string",
-            "description": "插件名称."
-          },
-          "type": {
-            "description": "system|mcp|openapi.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PluginType"
-              }
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "插件标题."
-          },
-          "description": {
-            "type": "string",
-            "description": "描述."
-          },
-          "isPublic": {
-            "type": "boolean",
-            "description": "是否公开."
-          }
-        }
-      },
-      "QueryPluginInfoListCommand": {
-        "type": "object",
-        "description": "查询插件信息列表.",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "名称搜索.",
-            "nullable": true
-          },
-          "type": {
-            "description": "筛选类型.",
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PluginType"
-              }
-            ]
-          },
-          "pluginIds": {
-            "type": "array",
-            "description": "插件列表.",
-            "nullable": true,
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        }
-      },
-      "QueryPluginListCommandResponse": {
-        "type": "object",
-        "description": "QueryPluginListCommandResponse.",
-        "additionalProperties": false,
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "列表.",
-            "items": {
-              "$ref": "#/components/schemas/QueryPluginListItem"
-            }
-          }
-        }
-      },
-      "QueryPluginListItem": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "description": "插件.",
-            "additionalProperties": false,
-            "required": [
-              "pluginId",
-              "pluginName",
-              "title",
-              "description",
-              "server",
-              "type",
-              "openapiFileId",
-              "isPublic"
-            ],
-            "properties": {
-              "pluginId": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "pluginName": {
-                "type": "string",
-                "description": "插件名称."
-              },
-              "title": {
-                "type": "string",
-                "description": "插件标题."
-              },
-              "description": {
-                "type": "string",
-                "description": "注释."
-              },
-              "server": {
-                "type": "string",
-                "description": "服务器地址."
-              },
-              "type": {
-                "description": "system|mcp|openapi.",
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PluginType"
-                  }
-                ]
-              },
-              "openapiFileId": {
-                "type": "integer",
-                "description": "文件id.",
-                "format": "int32"
-              },
-              "openapiFileName": {
-                "type": "string",
-                "description": "文件名称.",
-                "nullable": true
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "是否公开."
-              }
-            }
-          }
-        ]
-      },
-      "QueryPluginListCommand": {
-        "type": "object",
-        "description": "获取插件列表.",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "名称搜索.",
-            "nullable": true
-          },
-          "type": {
-            "description": "筛选类型.",
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PluginType"
-              }
-            ]
           }
         }
       },
@@ -9245,8 +9159,10 @@
             "type": "integer",
             "description": "插件 id.\n            ",
             "format": "int32",
+            "minimum": 0.0,
             "minLength": 1,
-            "nullable": false
+            "nullable": false,
+            "exclusiveMinimum": true
           }
         }
       },
@@ -9290,12 +9206,13 @@
         "additionalProperties": false,
         "required": [
           "name",
+          "title",
           "description",
           "pluginId",
+          "serverUrl",
           "fileId",
           "fileName",
           "isPublic",
-          "serverUrl",
           "header",
           "query"
         ],
@@ -9312,6 +9229,14 @@
           "name": {
             "type": "string",
             "description": "插件名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z]+$",
+            "nullable": false
+          },
+          "title": {
+            "type": "string",
+            "description": "插件标题，可中文.",
             "maxLength": 20,
             "minLength": 2,
             "nullable": false
@@ -9339,7 +9264,9 @@
           "serverUrl": {
             "type": "string",
             "description": "MCP Service 地址.",
-            "format": "uri"
+            "format": "uri",
+            "minLength": 1,
+            "nullable": false
           },
           "header": {
             "type": "array",
@@ -9362,29 +9289,49 @@
         "description": "导入 openapi 文件，支持 json、yaml.",
         "additionalProperties": false,
         "required": [
-          "fileId",
           "fileName",
           "name",
+          "title",
           "description",
+          "fileId",
           "isPublic"
         ],
         "properties": {
           "fileId": {
             "type": "integer",
             "description": "上传的 id.",
-            "format": "int32"
+            "format": "int32",
+            "minimum": 0.0,
+            "exclusiveMinimum": true
           },
           "fileName": {
             "type": "string",
-            "description": "文件名称."
+            "description": "文件名称.",
+            "maxLength": 100,
+            "minLength": 2,
+            "nullable": false
           },
           "name": {
             "type": "string",
-            "description": "插件名称."
+            "description": "插件名称.",
+            "maxLength": 20,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z]+$",
+            "nullable": false
+          },
+          "title": {
+            "type": "string",
+            "description": "插件标题，可中文.",
+            "maxLength": 20,
+            "minLength": 2,
+            "nullable": false
           },
           "description": {
             "type": "string",
-            "description": "描述."
+            "description": "描述.",
+            "maxLength": 255,
+            "minLength": 2,
+            "nullable": false
           },
           "isPublic": {
             "type": "boolean",

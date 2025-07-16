@@ -14,5 +14,8 @@ namespace MoAI.Wiki.Wikis.Queries;
 /// </summary>
 public class QueryWikiUsersCommand : IRequest<QueryWikiUsersCommandResponse>
 {
+    /// <summary>
+    /// 查询知识库协作的成员列表.
+    /// </summary>
     public int WikiId { get; init; }
 }

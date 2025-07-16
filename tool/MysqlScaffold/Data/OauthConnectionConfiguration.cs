@@ -23,6 +23,10 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
+        entity.Property(e => e.AuthorizeUrl)
+            .HasMaxLength(1000)
+            .HasComment("登录跳转地址")
+            .HasColumnName("authorize_url");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")
@@ -52,10 +56,6 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasMaxLength(20)
             .HasComment("提供商")
             .HasColumnName("provider");
-        entity.Property(e => e.RedirectUri)
-            .HasMaxLength(1000)
-            .HasComment("登录跳转地址")
-            .HasColumnName("redirect_uri");
         entity.Property(e => e.Secret)
             .HasMaxLength(100)
             .HasComment("密钥")

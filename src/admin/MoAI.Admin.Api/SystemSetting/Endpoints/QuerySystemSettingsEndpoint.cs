@@ -8,9 +8,9 @@ using FastEndpoints;
 using MediatR;
 using MoAI.Admin.SystemSettings.Queries;
 using MoAI.Admin.SystemSettings.Queries.Responses;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Common.Queries;
 
 namespace MoAI.Admin.SystemSetting.Endpoints;
 

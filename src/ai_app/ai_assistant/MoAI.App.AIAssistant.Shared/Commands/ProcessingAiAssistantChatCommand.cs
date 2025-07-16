@@ -5,21 +5,20 @@
 // </copyright>
 
 using MediatR;
-using Microsoft.SemanticKernel.ChatCompletion;
 using MoAI.AI.Models;
-using MoAI.Infra.Models;
+using MoAI.App.AIAssistant.Models;
 
 namespace MoAI.App.AIAssistant.Commands;
 
 /// <summary>
-/// 进行对话.
+/// 进行对话，对话时，History 每次做增量传递.
 /// </summary>
-public class ProcessingAiAssistantChatCommand : IStreamRequest<IOpenAIChatCompletionsObject>
+public class ProcessingAiAssistantChatCommand : AIAssistantChatObject, IStreamRequest<IOpenAIChatCompletionsObject>
 {
     /// <summary>
-    /// 对话 id.
+    /// 对话 id，id 为空时自动新建.
     /// </summary>
-    public string ChatId { get; init; } = default!;
+    public Guid? ChatId { get; init; } = default!;
 
     /// <summary>
     /// 当前用户标识.
@@ -27,32 +26,7 @@ public class ProcessingAiAssistantChatCommand : IStreamRequest<IOpenAIChatComple
     public int UserId { get; init; }
 
     /// <summary>
-    /// 话题名称.
+    /// 用户的提问.
     /// </summary>
-    public string Title { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 要使用的 AI 模型.
-    /// </summary>
-    public int ModelId { get; init; }
-
-    /// <summary>
-    /// 要使用的知识库，如果用户不在知识库用户内，则必须是公开的.
-    /// </summary>
-    public int? WikiId { get; init; }
-
-    /// <summary>
-    /// 要使用的插件 id 列表，用户必须有权使用这些插件.
-    /// </summary>
-    public IReadOnlyCollection<int> PluginIds { get; init; } = new List<int>();
-
-    /// <summary>
-    /// 历史对话或者上下文信息，创建对话时，如果有提示词，则第一个对话就是提示词.
-    /// </summary>
-    public ChatHistory ChatHistory { get; init; } = new ChatHistory();
-
-    /// <summary>
-    /// 配置，字典适配不同的 AI 模型.
-    /// </summary>
-    public IReadOnlyCollection<KeyValueString> ExecutionSettings { get; init; } = Array.Empty<KeyValueString>();
+    public string Content { get; init; } = string.Empty;
 }

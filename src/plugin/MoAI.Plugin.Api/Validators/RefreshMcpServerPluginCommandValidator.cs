@@ -21,6 +21,7 @@ public class RefreshMcpServerPluginCommandValidator : Validator<RefreshMcpServer
     public RefreshMcpServerPluginCommandValidator()
     {
         RuleFor(x => x.PluginId)
-            .NotEmpty().WithMessage("插件id不能为空.");
+            .NotEmpty().WithMessage("插件id不正确.")
+            .GreaterThan(0).WithMessage("插件id不正确.");
     }
 }

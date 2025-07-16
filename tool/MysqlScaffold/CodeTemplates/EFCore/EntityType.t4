@@ -108,6 +108,7 @@ public partial class <#= EntityType.Name #>Entity : IFullAudited
             targetTypeName = "DateTimeOffset";
         }
 
+
         var columnType = property.GetAnnotations().FirstOrDefault(x => x.Name == "Relational:ColumnType");
         if(columnType != null)
         {
@@ -119,6 +120,11 @@ public partial class <#= EntityType.Name #>Entity : IFullAudited
                    targetTypeName = "bool?";
                }
             }
+
+        }
+        if(targetTypeName == "byte[]")
+        {
+            targetTypeName = "Guid" + columnType?.Value?.ToString();
         }
 
 #>

@@ -36,7 +36,7 @@ public class QueryPromptCommandHandler : IRequestHandler<QueryPromptCommand, Pro
     public async Task<PromptItem> Handle(QueryPromptCommand request, CancellationToken cancellationToken)
     {
         var prompt = await _databaseContext.Prompts
-            .Where(x => x.Id == request.PromptId)
+            .Where(x => x.Id == request.PromptId && (x.IsPublic || x.CreateUserId == request.UserId))
             .Select(x => new PromptItem
             {
                 Id = x.Id,

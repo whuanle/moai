@@ -20,8 +20,6 @@ public class DeletePluginCommandValidator : Validator<DeletePluginCommand>
     /// </summary>
     public DeletePluginCommandValidator()
     {
-        RuleFor(x => x.PluginId)
-            .NotEmpty().WithMessage("插件id不能为空.")
-            .GreaterThan(0).WithMessage("插件id必须大于0.");
+        RuleFor(x => x.PluginId).GreaterThan(0).WithMessage("插件id不正确.");
     }
 }

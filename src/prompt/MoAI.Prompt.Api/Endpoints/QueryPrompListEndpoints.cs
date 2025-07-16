@@ -36,6 +36,12 @@ public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPro
     /// <inheritdoc/>
     public override async Task<QueryPromptListCommandResponse> ExecuteAsync(QueryPromptListCommand req, CancellationToken ct)
     {
-        return await _mediator.Send(req);
+        var newReq = new QueryPromptListCommand
+        {
+            ClassId = req.ClassId,
+            Name = req.Name,
+            UserId = _userContext.UserId
+        };
+        return await _mediator.Send(newReq, ct);
     }
 }

@@ -39,7 +39,7 @@ public class QueryPluginDetailCommandHandler : IRequestHandler<QueryPluginDetail
     /// <inheritdoc/>
     public async Task<QueryPluginDetailCommandResponse> Handle(QueryPluginDetailCommand request, CancellationToken cancellationToken)
     {
-        var plugin = await _dbContext.Plugins.Where(x => x.Id == request.PluginId && x.CreateUserId == request.UserId)
+        var plugin = await _dbContext.Plugins.Where(x => x.Id == request.PluginId)
             .Select(x => new QueryPluginDetailCommandResponse
             {
                 PluginId = x.Id,

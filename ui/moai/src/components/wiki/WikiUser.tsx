@@ -10,12 +10,8 @@ import {
   Space,
   Avatar,
   Tag,
-  Tooltip,
   Popconfirm,
   Typography,
-  Row,
-  Col,
-  Statistic,
 } from "antd";
 import {
   UserAddOutlined,
@@ -27,10 +23,10 @@ import {
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import { useParams } from "react-router";
-import { useWikiContext } from "./WikiLayout";
 import type { QueryWikiUsersCommandResponseItem } from "../../apiClient/models";
+import { proxyRequestError } from "../../helper/RequestError";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface WikiUserProps {}
 
@@ -46,7 +42,6 @@ export default function WikiUser({}: WikiUserProps) {
   
   const { id } = useParams();
   const apiClient = GetApiClient();
-  const { refreshWikiInfo } = useWikiContext();
 
   useEffect(() => {
     if (id) {
@@ -77,7 +72,7 @@ export default function WikiUser({}: WikiUserProps) {
     }
   };
 
-  const handleInviteUser = async (values: { userId: number }) => {
+  const handleInviteUser = async (values: { userName: string }) => {
     if (!id) {
       messageApi.error("缺少必要的参数");
       return;
@@ -87,17 +82,16 @@ export default function WikiUser({}: WikiUserProps) {
       setInviteLoading(true);
       await apiClient.api.wiki.invite_wiki_user.post({
         wikiId: parseInt(id),
-        userId: values.userId,
+        userName: values.userName,
       });
 
       messageApi.success("邀请用户成功");
       setInviteModalVisible(false);
       inviteForm.resetFields();
       fetchWikiUsers();
-      refreshWikiInfo();
     } catch (error) {
       console.error("Failed to invite user:", error);
-      messageApi.error("邀请用户失败");
+      proxyRequestError(error, messageApi, "邀请用户失败");
     } finally {
       setInviteLoading(false);
     }
@@ -119,7 +113,6 @@ export default function WikiUser({}: WikiUserProps) {
       messageApi.success("移除成员成功");
       setSelectedUserIds([]);
       fetchWikiUsers();
-      refreshWikiInfo();
     } catch (error) {
       console.error("Failed to remove users:", error);
       messageApi.error("移除成员失败");
@@ -128,7 +121,7 @@ export default function WikiUser({}: WikiUserProps) {
     }
   };
 
-  const formatDateTime = (dateTimeString?: string): string => {
+  const formatDateTime = (dateTimeString?: string | null): string => {
     if (!dateTimeString) return "";
     
     try {
@@ -224,30 +217,6 @@ export default function WikiUser({}: WikiUserProps) {
     <>
       {contextHolder}
       <Card>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={8}>
-            <Statistic
-              title="总成员数"
-              value={users.length}
-              prefix={<UserOutlined />}
-            />
-          </Col>
-          <Col span={8}>
-            <Statistic
-              title="创建者"
-              value={users.filter(user => user.createUserId === user.id).length}
-              prefix={<UserOutlined />}
-            />
-          </Col>
-          <Col span={8}>
-            <Statistic
-              title="普通成员"
-              value={users.filter(user => user.createUserId !== user.id).length}
-              prefix={<UserOutlined />}
-            />
-          </Col>
-        </Row>
-
         <Space style={{ marginBottom: 16 }}>
           <Button
             type="primary"
@@ -307,16 +276,15 @@ export default function WikiUser({}: WikiUserProps) {
           onFinish={handleInviteUser}
         >
           <Form.Item
-            name="userId"
-            label="用户ID"
+            name="userName"
+            label="用户账号"
             rules={[
-              { required: true, message: "请输入用户名" },
-              { type: "string", message: "输入正确的用户名" },
+              { required: true, message: "请输入用户账号" },
+              { type: "string", message: "请输入正确的用户账号" },
             ]}
           >
             <Input
-              placeholder="请输入要邀请的用户ID"
-              type="number"
+              placeholder="请输入要邀请的用户账号"
             />
           </Form.Item>
 

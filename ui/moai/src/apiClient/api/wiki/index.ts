@@ -10,8 +10,6 @@ import { DocumentRequestBuilderNavigationMetadata, type DocumentRequestBuilder }
 // @ts-ignore
 import { Invite_wiki_userRequestBuilderRequestsMetadata, type Invite_wiki_userRequestBuilder } from './invite_wiki_user/index.js';
 // @ts-ignore
-import { Query_wiki_configRequestBuilderRequestsMetadata, type Query_wiki_configRequestBuilder } from './query_wiki_config/index.js';
-// @ts-ignore
 import { Query_wiki_infoRequestBuilderRequestsMetadata, type Query_wiki_infoRequestBuilder } from './query_wiki_info/index.js';
 // @ts-ignore
 import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequestBuilder } from './query_wiki_list/index.js';
@@ -46,10 +44,6 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The invite_wiki_user property
      */
     get invite_wiki_user(): Invite_wiki_userRequestBuilder;
-    /**
-     * The query_wiki_config property
-     */
-    get query_wiki_config(): Query_wiki_configRequestBuilder;
     /**
      * The query_wiki_info property
      */
@@ -94,9 +88,6 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     invite_wiki_user: {
         requestsMetadata: Invite_wiki_userRequestBuilderRequestsMetadata,
-    },
-    query_wiki_config: {
-        requestsMetadata: Query_wiki_configRequestBuilderRequestsMetadata,
     },
     query_wiki_info: {
         requestsMetadata: Query_wiki_infoRequestBuilderRequestsMetadata,

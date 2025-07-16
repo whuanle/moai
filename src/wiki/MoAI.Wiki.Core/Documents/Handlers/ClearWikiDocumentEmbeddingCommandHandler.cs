@@ -55,7 +55,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
         })
             .Build();
 
-        if (request.DocumentId != null)
+        if (request.DocumentId != null && request.DocumentId > 0)
         {
             var document = await _databaseContext.WikiDocuments
                 .Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId)
@@ -71,7 +71,8 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
                 await memoryClient.DeleteDocumentAsync(documentId: document.Id.ToString(), index: document.WikiId.ToString());
             }
 
-            await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => x.Id == request.DocumentId));
+            await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentTasks.Where(x => x.DocumentId == request.DocumentId));
+            await _databaseContext.SaveChangesAsync();
         }
         else
         {
@@ -89,9 +90,10 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
                 await memoryClient.DeleteIndexAsync(index: wiki.Id.ToString());
             }
 
-            await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => x.Id == request.DocumentId));
+            await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentTasks.Where(x => x.WikiId == request.WikiId));
 
             await _databaseContext.Wikis.Where(x => x.Id == wiki.Id).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
+            await _databaseContext.SaveChangesAsync();
         }
 
         transactionScope.Complete();

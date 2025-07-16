@@ -21,12 +21,17 @@ public class ImportMcpServerPluginCommandValidator : Validator<ImportMcpServerPl
     public ImportMcpServerPluginCommandValidator()
     {
         RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("插件名称长度在 2-20 之间.")
+            .Length(2, 20).WithMessage("插件名称长度在 2-20 之间.")
+            .Matches("^[a-zA-Z]+$").WithMessage("插件名称只能包含字母.");
+
+        RuleFor(x => x.Title)
             .NotEmpty().WithMessage("插件名称不能为空.")
-            .Length(2, 20).WithMessage("插件名称长度在 2-20 之间");
+            .Length(2, 20).WithMessage("插件名称长度在 2-20 之间.");
 
         RuleFor(x => x.Description)
-            .NotEmpty().WithMessage("插件描述不能为空.")
-            .Length(2, 255).WithMessage("插件描述长度在 2-255 之间");
+            .NotEmpty().WithMessage("插件描述长度在 2-255 之间.")
+            .Length(2, 255).WithMessage("插件描述长度在 2-255 之间.");
 
         RuleFor(x => x.ServerUrl)
             .NotEmpty().WithMessage("MCP Service 地址不能为空.");

@@ -1,16 +1,54 @@
-﻿using Microsoft.Extensions.AI;
+﻿// <copyright file="OpenAIChatCompletionsDelta.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/moai
+// </copyright>
+
 using System.Text.Json.Serialization;
 
 namespace MoAI.AI.Models;
 
-
 public class OpenAIChatCompletionsDelta
 {
     [JsonPropertyName("role")]
-    public string Role { get; init; } = "assistant"; // 默认值为 assistant
+    public string Role { get; init; } = "assistant";
+
+    /// <summary>
+    /// string or array	
+    /// </summary>
     [JsonPropertyName("content")]
-    public string Content { get; init; } = string.Empty; // 默认值为空字符串
+    public object? Content { get; init; } = string.Empty;
+
+    [JsonPropertyName("refusal")]
+    public string? Refusal { get; init; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("tool_calls")]
+    public IReadOnlyCollection<OpenAiToolCall> ToolCalls { get; init; } = Array.Empty<OpenAiToolCall>();
+
+    [JsonPropertyName("function_call")]
+    public object? FunctionCall { get; init; }
 
     [JsonPropertyName("reasoning_content")]
-    public string ReasoningContent { get; init; } = string.Empty; // 推理内容,默认值为空字符串
+    public IReadOnlyCollection<OpenAiToolCall> ReasoningContent { get; init; }= Array.Empty<OpenAiToolCall>();
+}
+
+public class OpenAiToolCall
+{
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "function";
+    [JsonPropertyName("function")]
+    public OpenAiFunctionCall Function { get; init; } = new OpenAiFunctionCall();
+}
+
+public class OpenAiFunctionCall
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+    [JsonPropertyName("arguments")]
+    public object Arguments { get; init; } = new { };
 }

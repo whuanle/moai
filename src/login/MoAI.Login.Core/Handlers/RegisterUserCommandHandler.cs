@@ -46,7 +46,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     public async Task<SimpleInt> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         var disableRegister = await _dbContext.Settings
-            .Where(s => s.Key == SystemSettingKeys.DisableRegister)
+            .Where(s => s.Key == ISystemSettingProvider.DisableRegister.Key)
             .Select(s => s.Value)
             .FirstOrDefaultAsync(cancellationToken);
 

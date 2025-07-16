@@ -10,10 +10,15 @@ using MoAI.Plugin.Queries.Responses;
 namespace MoAI.Plugin.Queries;
 
 /// <summary>
-/// 获取插件函数列表.
+/// 获取插件的函数列表.
 /// </summary>
 public class QueryPluginFunctionsListCommand : IRequest<QueryPluginFunctionsListCommandResponse>
 {
+    /// <summary>
+    /// 用户 id.
+    /// </summary>
+    public int UserId { get; init; } = default!;
+
     /// <summary>
     /// 插件 id.
     /// </summary>

@@ -14,9 +14,14 @@ namespace MoAI.Plugin.Models;
 public class McpServerPluginConnectionOptions
 {
     /// <summary>
-    /// 插件名称.
+    /// 插件名称，只能纯字母，用于给 AI 使用.
     /// </summary>
     public string Name { get; init; } = default!;
+
+    /// <summary>
+    /// 插件标题，可中文.
+    /// </summary>
+    public string Title { get; init; } = default!;
 
     /// <summary>
     /// 描述.

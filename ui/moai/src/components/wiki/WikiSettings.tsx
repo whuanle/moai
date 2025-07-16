@@ -11,11 +11,9 @@ import {
   Space,
   Tooltip,
   App,
-  Tabs,
 } from "antd";
 import { GetApiClient } from "../ServiceClient";
 import { useParams } from "react-router";
-import { useWikiContext } from "./WikiLayout";
 
 export default function WikiSettings() {
   const [infoForm] = Form.useForm();
@@ -28,11 +26,9 @@ export default function WikiSettings() {
   const [modelList, setModelList] = useState<any[]>([]);
   const { id } = useParams();
   const apiClient = GetApiClient();
-  const { refreshWikiInfo } = useWikiContext();
 
   useEffect(() => {
     fetchWikiInfo();
-    fetchWikiConfig();
     fetchModelList();
   }, [id]);
 
@@ -58,7 +54,7 @@ export default function WikiSettings() {
     }
 
     try {
-      setInfoLoading(true);
+      setLoading(true);
       const response = await apiClient.api.wiki.query_wiki_info.post({
         wikiId: parseInt(id!),
       });
@@ -69,28 +65,7 @@ export default function WikiSettings() {
           description: response.description,
           isPublic: response.isPublic,
         });
-      }
-    } catch (error) {
-      console.error("Failed to fetch wiki info:", error);
-      messageApi.error("获取知识库信息失败");
-    } finally {
-      setInfoLoading(false);
-    }
-  };
-
-  const fetchWikiConfig = async () => {
-    if (!id) {
-      messageApi.error("缺少必要的参数");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await apiClient.api.wiki.query_wiki_config.post({
-        wikiId: parseInt(id!),
-      });
-
-      if (response) {
+        
         configForm.setFieldsValue({
           embeddingBatchSize: response.embeddingBatchSize,
           embeddingDimensions: response.embeddingDimensions,
@@ -101,8 +76,8 @@ export default function WikiSettings() {
         });
       }
     } catch (error) {
-      console.error("Failed to fetch wiki config:", error);
-      messageApi.error("获取知识库配置失败");
+      console.error("Failed to fetch wiki info:", error);
+      messageApi.error("获取知识库信息失败");
     } finally {
       setLoading(false);
     }
@@ -118,12 +93,14 @@ export default function WikiSettings() {
       setInfoLoading(true);
       await apiClient.api.wiki.update_wiki_info.post({
         wikiId: parseInt(id!),
-        ...values,
+        name: values.name,
+        description: values.description,
+        isPublic: values.isPublic,
       });
 
       messageApi.success("知识库信息保存成功");
-      // 刷新 WikiLayout 中的知识库信息
-      refreshWikiInfo();
+      // 重新获取知识库信息并更新表单
+      await fetchWikiInfo();
     } catch (error) {
       console.error("Failed to update wiki info:", error);
       messageApi.error("保存知识库信息失败");
@@ -142,7 +119,11 @@ export default function WikiSettings() {
       setLoading(true);
       await apiClient.api.wiki.update_wiki_config.post({
         wikiId: parseInt(id!),
-        ...values,
+        embeddingBatchSize: values.embeddingBatchSize,
+        embeddingDimensions: values.embeddingDimensions,
+        embeddingModelId: values.embeddingModelId,
+        embeddingModelTokenizer: values.embeddingModelTokenizer,
+        maxRetries: values.maxRetries,
       });
 
       messageApi.success("文档处理配置保存成功");
@@ -180,7 +161,7 @@ export default function WikiSettings() {
 
       messageApi.success("知识库向量已清空");
       // 重新获取配置，因为清空后isLock状态可能会改变
-      await fetchWikiConfig();
+      await fetchWikiInfo();
     } catch (error) {
       console.error("Failed to clear wiki vectors:", error);
       messageApi.error("清空向量失败");
@@ -189,12 +170,11 @@ export default function WikiSettings() {
     }
   };
 
-  const items = [
-    {
-      key: 'info',
-      label: '知识库信息',
-      children: (
-        <Card title="知识库信息设置" loading={infoLoading}>
+  return (
+    <>
+      {contextHolder}
+      <div style={{ maxWidth: '800px' }}>
+        <Card title="知识库信息设置" style={{ marginBottom: '16px' }}>
           <Form form={infoForm} layout="vertical" onFinish={handleInfoSubmit}>
             <Form.Item
               name="name"
@@ -230,13 +210,8 @@ export default function WikiSettings() {
             </Form.Item>
           </Form>
         </Card>
-      ),
-    },
-    {
-      key: 'config',
-      label: '文档处理配置',
-      children: (
-        <Card title="文档处理配置" loading={loading}>
+
+        <Card title="文档处理配置">
           <Form form={configForm} layout="vertical" onFinish={handleConfigSubmit}>
             <Form.Item
               name="embeddingBatchSize"
@@ -334,15 +309,6 @@ export default function WikiSettings() {
             </Form.Item>
           </Form>
         </Card>
-      ),
-    },
-  ];
-
-  return (
-    <>
-      {contextHolder}
-      <div style={{ maxWidth: '800px' }}>
-        <Tabs items={items} />
       </div>
     </>
   );

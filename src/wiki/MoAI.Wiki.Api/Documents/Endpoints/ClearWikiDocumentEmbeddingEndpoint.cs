@@ -42,7 +42,7 @@ public class ClearWikiDocumentEmbeddingEndpoint : Endpoint<ClearWikiDocumentEmbe
             WikiId = req.WikiId
         });
 
-        if (!userIsWikiUser.IsWikiUser)
+        if (!userIsWikiUser.IsWikiRoot)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }

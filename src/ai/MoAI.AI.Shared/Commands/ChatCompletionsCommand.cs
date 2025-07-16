@@ -21,12 +21,7 @@ public class ChatCompletionsCommand : IStreamRequest<IOpenAIChatCompletionsObjec
     /// <summary>
     /// Chat id.
     /// </summary>
-    public long ChatId { get; init; }
-
-    /// <summary>
-    /// 聊天id.
-    /// </summary>
-    public string ChatIdHash { get; init; }
+    public Guid ChatId { get; init; }
 
     /// <summary>
     /// 对话 AI 信息.

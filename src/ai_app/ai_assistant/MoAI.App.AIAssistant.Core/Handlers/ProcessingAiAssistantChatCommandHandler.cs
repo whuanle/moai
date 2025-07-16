@@ -1,26 +1,38 @@
-﻿// <copyright file="ProcessingAiAssistantChatCommandHandler.cs" company="MaomiAI">
-// Copyright (c) MaomiAI. All rights reserved.
+﻿// <copyright file="ProcessingAiAssistantChatCommandHandler.cs" company="MoAI">
+// Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/AIDotNet/MaomiAI
+// Github link: https://github.com/whuanle/moai
 // </copyright>
 
 #pragma warning disable SKEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable SKEXP0040 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
 
+using MaomiAI.Chat.Core.Handlers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.KernelMemory;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Plugins.OpenApi;
+using MoAI.AI.Commands;
 using MoAI.AI.Models;
+using MoAI.AiModel.Models;
 using MoAI.App.AIAssistant.Commands;
-using MoAI.App.AIAssistant.Helpers;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
+using MoAI.Plugin.Models;
+using MoAI.Storage.Queries;
+using MoAI.Store.Enums;
+using MoAI.Wiki.Models;
+using MoAI.Wiki.Services;
+using ModelContextProtocol.Client;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Runtime.CompilerServices;
 
@@ -60,43 +72,102 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         _systemOptions = systemOptions;
     }
 
+    /// <inheritdoc/>
     public async IAsyncEnumerable<IOpenAIChatCompletionsObject> Handle(ProcessingAiAssistantChatCommand request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (!ChatIdHelper.TryParseId(request.ChatId, out var chatId))
+        // todo: 暂时限制最大 5 个插件
+        // todo: 支持函数调用前端输出提示
+        Guid chatId = default!;
+        ChatHistory chatMessages = new();
+
+        if (request.ChatId == null || request.ChatId.Value == default)
         {
-            throw new BusinessException("对话记录不存在");
+            var createResult = await _mediator.Send(
+                new CreateAiAssistantChatCommand
+                {
+                    Title = request.Title,
+                    ModelId = request.ModelId,
+                    PluginIds = request.PluginIds,
+                    ExecutionSettings = request.ExecutionSettings,
+                    WikiId = request.WikiId,
+                },
+                cancellationToken);
+
+            chatId = createResult.ChatId;
+        }
+        else
+        {
+            chatId = request.ChatId!.Value;
         }
 
-        var chatEntity = await _databaseContext.ChatHistories.FirstOrDefaultAsync(x => x.ChatId == chatId);
+        var chatObjectEntity = await _databaseContext.AppAssistantChats
+            .Where(x => x.Id == chatId && x.CreateUserId == request.UserId)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (chatEntity == null)
+        if (chatObjectEntity == null)
         {
-            throw new BusinessException("对话不存在");
+            throw new BusinessException("对话不存在或无权访问") { StatusCode = 404 };
         }
 
-        await UpdateChatHistoryEntityAsync(request, chatEntity);
+        await UpdateChatObjectEntityAsync(request, chatObjectEntity);
 
-        // 生成插件列表
-        List<KernelPlugin> functions = new List<KernelPlugin>();
+        // 添加提示词.
+        if (!string.IsNullOrEmpty(request.Prompt))
+        {
+            chatMessages.AddSystemMessage(request.Prompt);
+        }
+
+        // 补全对话上下文
+        var history = await _databaseContext.AppAssistantChatHistories
+            .Where(x => x.ChatId == chatId)
+            .OrderBy(x => x.CreateTime)
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in history)
+        {
+            if (item.Role == AuthorRole.User.Label)
+            {
+                chatMessages.AddAssistantMessage(item.Content);
+            }
+            else if (item.Role == AuthorRole.Assistant.Label)
+            {
+                chatMessages.AddAssistantMessage(item.Content);
+            }
+            else if (item.Role == AuthorRole.System.Label)
+            {
+                chatMessages.AddSystemMessage(item.Content);
+            }
+            else
+            {
+                // 其他角色不处理
+                continue;
+            }
+        }
+
+        chatMessages.AddUserMessage(request.Content);
+
+        // 要给 AI 调用的插件列表
+        List<KernelPlugin> aiPlugins = new List<KernelPlugin>();
 
         var pluginIds = request.PluginIds.Where(x => x > 0).ToHashSet();
 
         if (pluginIds.Count > 0)
         {
-            var fs = await BuildPluginsAsync(chatEntity, pluginIds, cancellationToken);
-            functions.AddRange(fs);
+            await BuildFunctionPluginAsync(request, aiPlugins, pluginIds, cancellationToken);
         }
 
-        var wikiMemoryPlugin = await GetWikiPluginAsync(chatEntity, cancellationToken);
-        functions.Add(wikiMemoryPlugin);
+        if (request.WikiId > 0)
+        {
+            await BuildWikiPluginAsync(request, aiPlugins, cancellationToken);
+        }
 
-        var aiEndpoint = await _databaseContext.TeamAiModels
-            .Where(x => x.TeamId == chatEntity.TeamId && x.Id == chatEntity.ModelId)
+        var aiEndpoint = await _databaseContext.AiModels
+            .Where(x => x.Id == request.ModelId)
             .Select(x => new AiEndpoint
             {
                 Name = x.Name,
                 DeploymentName = x.DeploymentName,
-                DisplayName = x.DisplayName,
+                Title = x.Title,
                 AiModelType = Enum.Parse<AiModelType>(x.AiModelType, true),
                 Provider = Enum.Parse<AiProvider>(x.AiProvider, true),
                 ContextWindowTokens = x.ContextWindowTokens,
@@ -107,7 +178,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
                     Files = x.Files,
                     FunctionCall = x.FunctionCall,
                     ImageOutput = x.ImageOutput,
-                    Vision = x.Vision,
+                    Vision = x.IsVision,
                 },
                 MaxDimension = x.MaxDimension,
                 TextOutput = x.TextOutput
@@ -116,38 +187,111 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
 
         if (aiEndpoint == null)
         {
-            throw new BusinessException("团队模型配置错误") { StatusCode = 500 };
+            throw new BusinessException("未找到模型") { StatusCode = 404 };
+        }
+
+        if (aiEndpoint.AiModelType != AiModelType.Chat)
+        {
+            throw new BusinessException("该模型不支持对话") { StatusCode = 400 };
         }
 
         var command = new ChatCompletionsCommand
         {
-            Id = request.Id,
-            ChatHistory = request.ChatHistory,
-            Plugins = functions,
+            ChatId = chatId,
+            ChatHistory = chatMessages,
+            Plugins = aiPlugins,
             Endpoint = aiEndpoint,
-            ExecutionSetting = request.ExecutionSetting
+            ExecutionSetting = request.ExecutionSettings
         };
+
+        OpenAIChatCompletionsObject completionsObject = default!;
 
         await foreach (var item in _mediator.CreateStream(command, cancellationToken))
         {
+            // 聊天块内容
             if (item is OpenAIChatCompletionsChunk chunk)
             {
-                yield return System.Text.Json.JsonSerializer.Serialize(chunk);
             }
-            else if (item is OpenAIChatCompletions chatObject)
+
+            // 结束聊天
+            else if (item is OpenAIChatCompletionsObject chatObject)
             {
-                // 最后结束的时候传输
-                // todo: 需要统计 token 数量和流量等
-                yield return System.Text.Json.JsonSerializer.Serialize(chatObject);
+                chatObjectEntity.InputTokens += chatObject.Usage.PromptTokens;
+                chatObjectEntity.OutTokens += chatObject.Usage.CompletionTokens;
+                chatObjectEntity.TotalTokens += chatObject.Usage.TotalTokens;
+
+                completionsObject = chatObject;
             }
             else
             {
-                yield return item.ToString() ?? string.Empty;
+            }
+
+            yield return item;
+        }
+
+        _databaseContext.Update(chatObjectEntity);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        var userChatRecord = new AppAssistantChatHistoryEntity
+        {
+            ChatId = chatId,
+            CompletionsId = completionsObject.Id,
+            Content = request.Content,
+            Model = completionsObject.Model,
+            Role = AuthorRole.User.Label
+        };
+
+        var aiChatRecord = new AppAssistantChatHistoryEntity
+        {
+            ChatId = chatId,
+            CompletionsId = completionsObject.Id,
+            Content = completionsObject.Choices.FirstOrDefault()?.Message.Content ?? string.Empty,
+            Model = completionsObject.Model,
+            Role = AuthorRole.Assistant.Label
+        };
+    }
+
+    private async Task BuildFunctionPluginAsync(ProcessingAiAssistantChatCommand request, List<KernelPlugin> aiPlugins, HashSet<int> pluginIds, CancellationToken cancellationToken)
+    {
+        var pluginEntities = await _databaseContext.Plugins.Where(x => pluginIds.Contains(x.Id) && (x.CreateUserId == request.UserId || x.IsPublic)).ToListAsync(cancellationToken);
+
+        var pluginFunctionEntities = await _databaseContext.PluginFunctions
+            .Where(x => pluginIds.Contains(x.PluginId))
+            .GroupBy(x => x.PluginId).ToListAsync(cancellationToken);
+
+        Dictionary<PluginEntity, IReadOnlyCollection<PluginFunctionEntity>> pluginLists = new();
+        foreach (var plugin in pluginEntities)
+        {
+            var pluginFunctions = pluginFunctionEntities.FirstOrDefault(x => x.Key == plugin.Id)?.ToArray();
+            if (pluginFunctions != null && pluginFunctions.Length > 0)
+            {
+                pluginLists.Add(plugin, pluginFunctions);
+            }
+        }
+
+        // 翻译插件为 SK 支持的格式
+        foreach (var item in pluginLists)
+        {
+            if (item.Key.Type == (int)PluginType.Mcp)
+            {
+                var plugin = await GetMCPPluginsAsync(item.Key, item.Value);
+                aiPlugins.Add(plugin);
+            }
+            else if (item.Key.Type == (int)PluginType.OpenApi)
+            {
+                var plugin = await GetOpenApiPluginsAsync(item.Key, item.Value);
+                aiPlugins.Add(plugin);
+            }
+            else if (item.Key.Type == (int)PluginType.System)
+            {
+                //// 系统插件
+                //var systemFunctions = item.Value.Select(x => x.AsKernelFunction()).ToList();
+                //functions.AddRange(systemFunctions);
             }
         }
     }
 
-    private async Task UpdateChatHistoryEntityAsync(ProcessingAiAssistantChatCommand request, ChatHistoryEntity chatEntity)
+    private async Task UpdateChatObjectEntityAsync(ProcessingAiAssistantChatCommand request, AppAssistantChatEntity chatEntity)
     {
         chatEntity.Title = request.Title;
         chatEntity.ExecutionSettings = request.ExecutionSettings.ToJsonString();
@@ -155,17 +299,21 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         chatEntity.ModelId = request.ModelId;
         chatEntity.WikiId = request.WikiId ?? 0;
 
+        if (request.Prompt != null)
+        {
+            chatEntity.Prompt = request.Prompt;
+        }
+
         _databaseContext.Update(chatEntity);
         await _databaseContext.SaveChangesAsync();
     }
 
-    private async Task<KernelPlugin> GetWikiPluginAsync(UserChatEntity chatEntity, CancellationToken cancellationToken)
+    // 将知识库转换为插件
+    private async Task BuildWikiPluginAsync(ProcessingAiAssistantChatCommand request, List<KernelPlugin> aiPlugins, CancellationToken cancellationToken)
     {
         // 读取知识库
-        // todo: 后续是否支持多知识库
-
-        var wikiEntity = await _databaseContext.TeamWikis
-            .Where(x => x.TeamId == chatEntity.TeamId)
+        var wikiEntity = await _databaseContext
+            .Wikis.Where(x => x.Id == request.WikiId! && (x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Where(a => a.UserId == request.UserId).Any()))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (wikiEntity == null)
@@ -174,38 +322,24 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         }
 
         // 获取知识库配置信息
-        var wikiConfigEntity = await _databaseContext.TeamWikiConfigs.FirstOrDefaultAsync(x => x.WikiId == wikiEntity.Id, cancellationToken);
-        if (wikiConfigEntity == null)
+        if (wikiEntity.EmbeddingModelId == 0)
         {
             throw new BusinessException("知识库系统配置错误");
         }
 
         // 该知识库使用的模型
         // todo： 后续判断知识库是否公开等
-        var wikiAiModel = await _databaseContext.TeamAiModels
-            .Where(x => x.Id == wikiConfigEntity.EmbeddingModelId)
-            .FirstOrDefaultAsync(cancellationToken);
+        var wikiAiModel = await _databaseContext.AiModels.Where(x => x.Id == wikiEntity.EmbeddingModelId).FirstOrDefaultAsync(cancellationToken);
         if (wikiAiModel == null)
         {
-            throw new BusinessException("知识库模型配置错误，无法使用知识库");
-        }
-
-        // 如果用户所在团队没有跟该知识库相同的模型类型，则不能使用知识库
-        var userTeamAiModel = await _databaseContext.TeamAiModels
-            .Where(x => x.TeamId == chatEntity.TeamId && x.Name == wikiAiModel.Name)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        // 该团队下无与知识库相同的模型，则无法使用知识库
-        if (userTeamAiModel == null)
-        {
-            throw new BusinessException("团队下无与知识库相同的模型，无法使用知识库") { StatusCode = 403 };
+            throw new BusinessException("知识库模型向量配置错误");
         }
 
         var aiEndpoint = new AiEndpoint
         {
             Name = wikiAiModel.Name,
             DeploymentName = wikiAiModel.DeploymentName,
-            DisplayName = wikiAiModel.DisplayName,
+            Title = wikiAiModel.Title,
             AiModelType = Enum.Parse<AiModelType>(wikiAiModel.AiModelType, true),
             Provider = Enum.Parse<AiProvider>(wikiAiModel.AiProvider, true),
             ContextWindowTokens = wikiAiModel.ContextWindowTokens,
@@ -216,7 +350,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
                 Files = wikiAiModel.Files,
                 FunctionCall = wikiAiModel.FunctionCall,
                 ImageOutput = wikiAiModel.ImageOutput,
-                Vision = wikiAiModel.Vision,
+                Vision = wikiAiModel.IsVision,
             },
             MaxDimension = wikiAiModel.MaxDimension,
             TextOutput = wikiAiModel.TextOutput
@@ -224,88 +358,36 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
 
         var wikiConfig = new WikiConfig
         {
-            EmbeddingDimensions = wikiConfigEntity.EmbeddingDimensions,
-            EmbeddingBatchSize = wikiConfigEntity.EmbeddingBatchSize,
-            MaxRetries = wikiConfigEntity.MaxRetries,
-            EmbeddingModelTokenizer = wikiConfigEntity.EmbeddingModelTokenizer,
+            EmbeddingDimensions = wikiEntity.EmbeddingDimensions,
+            EmbeddingBatchSize = wikiEntity.EmbeddingBatchSize,
+            MaxRetries = wikiEntity.MaxRetries,
+            EmbeddingModelTokenizer = wikiEntity.EmbeddingModelTokenizer,
         };
 
         // 构建客户端
         var memoryBuilder = new KernelMemoryBuilder()
             .WithSimpleFileStorage(Path.GetTempPath());
 
-        _customKernelMemoryBuilder.ConfigEmbeddingModel(memoryBuilder, aiEndpoint, wikiConfig);
+        var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(wikiAiModel.AiProvider) ?? throw new BusinessException("知识库不支持该模型服务商");
+        textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
 
         var memoryClient = memoryBuilder.WithoutTextGenerator()
             .WithPostgresMemoryDb(new PostgresConfig
             {
-                ConnectionString = _systemOptions.DocumentStore.Database,
+                ConnectionString = _systemOptions.Wiki.Database,
             })
             .Build();
 
         var memoryPlugin = new MemoryPlugin(defaultIndex: "n" + wikiEntity.Id.ToString(), memoryClient: memoryClient, waitForIngestionToComplete: true);
-        return KernelPluginFactory.CreateFromObject(target: memoryPlugin, "KnowledgeMemory");
-    }
+        var wikiPlugin = KernelPluginFactory.CreateFromObject(target: memoryPlugin, "KnowledgeMemory");
 
-    private async Task<IReadOnlyCollection<KernelPlugin>> BuildPluginsAsync(ProcessingAiAssistantChatCommand request, HashSet<int> pluginIds, CancellationToken cancellationToken)
-    {
-        List<KernelPlugin> functions = new();
-
-        var pluginEntities = await _databaseContext.Plugins.Where(x => pluginIds.Contains(x.Id) && (x.CreateUserId == request.UserId || x.IsPublic)).ToListAsync(cancellationToken);
-
-        var pluginGroupIds = pluginEntities.Select(x => x.GroupId).ToHashSet();
-
-        var pluginGroupEntities = await _databaseContext.TeamPluginGroups
-            .Where(x => x.TeamId == chatEntity.TeamId && pluginGroupIds.Contains(x.Id))
-            .ToListAsync(cancellationToken);
-
-        Dictionary<TeamPluginGroupEntity, List<TeamPluginEntity>> pluginLists = new Dictionary<TeamPluginGroupEntity, List<TeamPluginEntity>>();
-        foreach (var group in pluginGroupEntities)
-        {
-            var plugins = pluginEntities.Where(x => x.GroupId == group.Id).ToList();
-            if (plugins.Count > 0)
-            {
-                pluginLists.Add(group, plugins);
-            }
-        }
-
-        // 翻译插件为 SK 支持的格式
-        foreach (var item in pluginLists)
-        {
-            if (item.Key.Type == (int)PluginType.Mcp)
-            {
-                var plugin = await GetMCPPluginsAsync(item.Key, item.Value);
-                functions.Add(plugin);
-            }
-            else if (item.Key.Type == (int)PluginType.OpenApi)
-            {
-                var plugin = await GetOpenApiPluginsAsync(item.Key, item.Value);
-                functions.Add(plugin);
-            }
-            else if (item.Key.Type == (int)PluginType.System)
-            {
-                //// 系统插件
-                //var systemFunctions = item.Value.Select(x => x.AsKernelFunction()).ToList();
-                //functions.AddRange(systemFunctions);
-            }
-        }
-
-        return functions;
+        aiPlugins.Add(wikiPlugin);
     }
 
     private async Task<KernelPlugin> GetOpenApiPluginsAsync(PluginEntity pluginEntity, IReadOnlyCollection<PluginFunctionEntity> functionEntities)
     {
         // 后续抽到一个方法命令中
-        IReadOnlyCollection<KeyValueString> headers = default!;
-        try
-        {
-            headers = pluginEntity.Headers.JsonToObject<IReadOnlyCollection<KeyValueString>>();
-        }
-        catch (Exception ex)
-        {
-            _ = ex;
-            throw new BusinessException("Header 或 Query 格式不正确");
-        }
+        var headers = pluginEntity.Headers.JsonToObject<IReadOnlyCollection<KeyValueString>>()!;
 
         // 从 oss 读取 swaggger 文件，如果相同的 md5 可能本地有缓存，则直接读取缓存
         var fileEntity = await _databaseContext.Files
@@ -314,22 +396,17 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
 
         if (fileEntity == null)
         {
-            throw new BusinessException("插件{0}已失效", pluginEntity.Name) { StatusCode = 429 };
+            throw new BusinessException("插件{0}已失效", pluginEntity.Title) { StatusCode = 409 };
         }
 
-        var filePath = Path.Combine(Path.GetTempPath(), fileEntity.ObjectKey);
-        if (!File.Exists(filePath))
+        var filePath = await _mediator.Send(new QueryFileLocalPathCommand
         {
-            await _mediator.Send(new DownloadFileCommand
-            {
-                ObjectKey = fileEntity.ObjectKey,
-                StoreFilePath = filePath,
-                Visibility = FileVisibility.Private
-            });
-        }
+            ObjectKey = fileEntity.ObjectKey,
+            Visibility = FileVisibility.Private
+        });
 
         OpenApiDocumentParser parser = new();
-        using FileStream stream = File.OpenRead(filePath);
+        using FileStream stream = File.OpenRead(filePath.FilePath);
         RestApiSpecification specification = await parser.ParseAsync(stream);
         // var operations = specification.Operations.Where(x => pluginEntities.Any(p => p.Path == x.Path)).ToArray();
 
@@ -341,7 +418,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         }
 
         KernelPlugin plugin = OpenApiKernelPluginFactory.CreateFromOpenApi(
-            pluginName: pluginEntity.Name,
+            pluginName: pluginEntity.PluginName,
             specification: specification,
             executionParameters: new OpenApiFunctionExecutionParameters()
             {
@@ -359,29 +436,19 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         return plugin;
     }
 
-    private async Task<KernelPlugin> GetMCPPluginsAsync(TeamPluginGroupEntity groupEntity, IReadOnlyCollection<TeamPluginEntity> pluginEntities)
+    private async Task<KernelPlugin> GetMCPPluginsAsync(PluginEntity pluginEntity, IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities)
     {
         // 后续抽到一个方法命令中
-        Dictionary<string, string> headers = default!;
-        Dictionary<string, string> queries = default!;
-        try
-        {
-            headers = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(groupEntity.Header);
-            queries = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(groupEntity.Query);
-        }
-        catch (Exception ex)
-        {
-            _ = ex;
-            throw new BusinessException("Header 或 Query 格式不正确");
-        }
+        var headers = pluginEntity.Headers.JsonToObject<IReadOnlyCollection<KeyValueString>>()!;
+        var queries = pluginEntity.Queries.JsonToObject<IReadOnlyCollection<KeyValueString>>()!;
 
         // 第一步：创建 mcp 客户端
         var defaultOptions = new McpClientOptions
         {
-            ClientInfo = new() { Name = "MaomiAI", Version = "1.0.0" }
+            ClientInfo = new() { Name = "MoAI", Version = "1.0.0" }
         };
 
-        var uriBuilder = new UriBuilder(groupEntity.Server);
+        var uriBuilder = new UriBuilder(pluginEntity.Server);
         if (queries != null && queries.Count > 0)
         {
             var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
@@ -397,9 +464,10 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         var defaultConfig = new SseClientTransportOptions
         {
             Endpoint = serverUrl,
-            Name = groupEntity.Name,
-            AdditionalHeaders = headers ?? new Dictionary<string, string>(),
+            Name = pluginEntity.Title,
+            AdditionalHeaders = headers.ToDictionary(x => x.Key, x => x.Value),
         };
+
         await using var sseTransport = new SseClientTransport(defaultConfig);
         await using var client = await McpClientFactory.CreateAsync(
          sseTransport,
@@ -409,10 +477,10 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         var tools = await client.ListToolsAsync();
 
         // 只使用需要的插件
-        tools = tools.Where(x => pluginEntities.Any(y => y.Name == x.Name)).ToList();
+        tools = tools.Where(x => pluginFunctionEntities.Any(y => y.Name == x.Name)).ToList();
         KernelPlugin plugin = KernelPluginFactory.CreateFromFunctions(
-            pluginName: groupEntity.Name,
-            description: groupEntity.Description ?? string.Empty,
+            pluginName: pluginEntity.PluginName,
+            description: pluginEntity.Description ?? string.Empty,
             functions: tools.Select(aiFunction => aiFunction.AsKernelFunction()));
 
         return plugin;

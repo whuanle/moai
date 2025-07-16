@@ -18,7 +18,6 @@ public class Program
     private static async Task Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
-        Console.WriteLine("当前工作目录: " + Directory.GetCurrentDirectory());
 
         // Console.WriteLine("请在目录下执行 dotnet run，请勿直接启动该项目");
         // Console.WriteLine("使用前先删除 Data、Entities 两个目录，用完后也要删除");
@@ -55,7 +54,7 @@ public class Program
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
         };
 
         processStartInfo.ArgumentList.Add("ef");
@@ -76,9 +75,9 @@ public class Program
         processStartInfo.ArgumentList.Add("--no-onconfiguring");
         processStartInfo.ArgumentList.Add("-f");
 
-        processStartInfo.Arguments = string.Join(" ", processStartInfo.ArgumentList);
-        processStartInfo.ArgumentList.Clear();
-        string? command = $"{processStartInfo.FileName} {processStartInfo.Arguments}";
+        ////processStartInfo.Arguments = string.Join(" ", processStartInfo.ArgumentList);
+        ////processStartInfo.ArgumentList.Clear();
+        string? command = $"{processStartInfo.FileName} {string.Join(" ", processStartInfo.ArgumentList)}";
         Console.WriteLine($"启动命令: {command}");
 
         using Process? process = new() { StartInfo = processStartInfo };
