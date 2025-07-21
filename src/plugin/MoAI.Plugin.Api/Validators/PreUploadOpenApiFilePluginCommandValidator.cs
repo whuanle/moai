@@ -35,6 +35,6 @@ public class PreUploadOpenApiFilePluginCommandValidator : Validator<PreUploadOpe
 
         RuleFor(x => x.FileSize)
             .GreaterThan(0).WithMessage("文件大小必须大于 0.")
-            .GreaterThanOrEqualTo(1024 * 1024 * 1024).WithMessage("文件大小不能超过 1GB.");
+            .LessThanOrEqualTo(1024 * 1024 * 1024).WithMessage("文件大小不能超过 1GB.");
     }
 }

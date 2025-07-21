@@ -8,7 +8,7 @@ using FastEndpoints;
 using FluentValidation;
 using MoAI.AiModel.Commands;
 
-namespace MoAI.Admin.OAuth.Validators;
+namespace MoAI.AiModel.Validators;
 
 /// <summary>
 /// UpdateAiModelCommandValidator.

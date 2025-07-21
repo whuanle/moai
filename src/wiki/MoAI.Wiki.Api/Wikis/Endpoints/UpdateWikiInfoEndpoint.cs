@@ -6,6 +6,7 @@
 
 using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
@@ -45,6 +46,19 @@ public class UpdateWikiInfoEndpoint : Endpoint<UpdateWikiInfoCommand, EmptyComma
         if (!userIsWikiUser.IsWikiRoot)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+        }
+
+        if (req.IsSystem)
+        {
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                UserId = _userContext.UserId
+            });
+
+            if (!isAdmin.IsAdmin)
+            {
+                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            }
         }
 
         return await _mediator.Send(req);

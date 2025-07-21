@@ -11,7 +11,7 @@ namespace MoAI.App.AIAssistant.Endpoints;
 /// 获取话题详细内容.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/chat_history")]
-public class QueryAiAssistantChatHistoryEndpoint : Endpoint<QueryAiAssistantChatHistoryCommand, QueryAiAssistantChatHistoryCommandResponse>
+public class QueryAiAssistantChatHistoryEndpoint : Endpoint<QueryUserViewAiAssistantChatHistoryCommand, QueryAiAssistantChatHistoryCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -28,10 +28,10 @@ public class QueryAiAssistantChatHistoryEndpoint : Endpoint<QueryAiAssistantChat
     }
 
     /// <inheritdoc/>
-    public override async Task<QueryAiAssistantChatHistoryCommandResponse> ExecuteAsync(QueryAiAssistantChatHistoryCommand req, CancellationToken ct)
+    public override async Task<QueryAiAssistantChatHistoryCommandResponse> ExecuteAsync(QueryUserViewAiAssistantChatHistoryCommand req, CancellationToken ct)
     {
         return await _mediator.Send(
-            new QueryAiAssistantChatHistoryCommand
+            new QueryUserViewAiAssistantChatHistoryCommand
             {
                 UserId = _userContext.UserId,
                 ChatId = req.ChatId

@@ -6,6 +6,8 @@
 
 using FastEndpoints;
 using MediatR;
+using MoAI.AiModel.Queries;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
@@ -45,6 +47,21 @@ public class UpdateWikiConfigEndpoint : Endpoint<UpdateWikiConfigCommand, EmptyC
         if (!userIsWikiUser.IsWikiRoot)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+        }
+
+        var aiModelCreator = await _mediator.Send(new QueryAiModelCreatorCommand
+        {
+            ModelId = req.EmbeddingModelId
+        });
+
+        if (!aiModelCreator.Exist)
+        {
+            throw new BusinessException("未找到模型") { StatusCode = 404 };
+        }
+
+        if (aiModelCreator.IsSystem && aiModelCreator.IsPublic == false)
+        {
+            throw new BusinessException("未找到模型.") { StatusCode = 404 };
         }
 
         return await _mediator.Send(req);

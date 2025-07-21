@@ -59,6 +59,8 @@ public class DeletePluginCommandHandler : IRequestHandler<DeletePluginCommand, E
         await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginId == request.PluginId));
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
+        transactionScope.Complete();
+
         return EmptyCommandResponse.Default;
     }
 }

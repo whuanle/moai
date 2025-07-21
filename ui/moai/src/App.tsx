@@ -51,7 +51,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import OAuth from "./components/admin/OAuth";
 import UserManager from "./components/admin/UserManager";
 import UserSetting from "./components/user/UserSetting";
-import AIModel from "./components/admin/AiModel";
+import AIModel from "./components/aimodel/AiModel";
 import WikiPage from "./components/wiki/WikiPage";
 import WikiLayout from "./components/wiki/WikiLayout";
 import WikiSettings from "./components/wiki/WikiSettings";
@@ -60,6 +60,8 @@ import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
 import WikiSearch from "./components/wiki/WikiSearch";
 import WikiUser from "./components/wiki/WikiUser";
 import PluginList from "./components/plugin/PluginList";
+import SystemAIModel from "./components/admin/SystemAiModel";
+import SystemPluginList from "./components/admin/PluginList";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -76,25 +78,34 @@ function App() {
   // 获取当前选中的菜单项
   const getSelectedKey = () => {
     const path = location.pathname;
-    if (path.includes("/admin/oauth")) {
+    if (path.startsWith("/app/admin/aimodel")) {
+      return "admin.aimodel";
+    }
+    if (path.startsWith("/app/admin/oauth")) {
       return "admin.oauth";
     }
-    if (path.includes("/admin/usermanager")) {
+    if (path.startsWith("/app/admin/usermanager")) {
       return "admin.usermanager";
     }
-    if (path.includes("/admin")) {
+    if (path.startsWith("/app/admin/plugin")) {
+      return "admin.plugin";
+    }
+    if (path.startsWith("/app/admin")) {
       return "admin";
     }
-    if (path.includes("/user/usersetting")) {
+    if (path.startsWith("/app/aimodel")) {
+      return "aimodel";
+    }
+    if (path.startsWith("/app/user/usersetting")) {
       return "user.setting";
     }
-    if (path.includes("/user")) {
+    if (path.startsWith("/app/user")) {
       return "user";
     }
-    if (path.includes("/wiki")) {
+    if (path.startsWith("/app/wiki")) {
       return "wiki";
     }
-    if (path.includes("/plugin")) {
+    if (path.startsWith("/app/plugin")) {
       return "plugin";
     }
     return "home";
@@ -170,6 +181,11 @@ function App() {
         label: <Link to="/app/index">首页</Link>,
       },
       {
+        key: "aimodel",
+        icon: <RobotOutlined />,
+        label: <Link to="/app/aimodel">AI模型</Link>,
+      },
+      {
         key: "wiki",
         icon: <BookOutlined />,
         label: <Link to="/app/wiki/list">知识库</Link>,
@@ -214,6 +230,11 @@ function App() {
             key: "admin.aimodel",
             icon: <RobotOutlined />,
             label: <Link to="/app/admin/aimodel">AI模型</Link>,
+          },
+          {
+            key: "admin.plugin",
+            icon: <AppstoreOutlined />,
+            label: <Link to="/app/admin/plugin">插件</Link>,
           },
         ],
       });
@@ -287,11 +308,13 @@ function App() {
               <Routes>
                 <Route index element={<Dashboard />} />
                 <Route path="index" element={<Dashboard />} />
+                <Route path="aimodel" element={<AIModel />} />
                 <Route path="admin">
                   <Route index element={<Navigate to="oauth" replace />} />
                   <Route path="oauth" element={<OAuth />} />
                   <Route path="usermanager" element={<UserManager />} />
-                  <Route path="aimodel" element={<AIModel />} />
+                  <Route path="aimodel" element={<SystemAIModel />} />
+                  <Route path="plugin" element={<SystemPluginList />} />
                 </Route>
                 <Route path="user">
                   <Route index element={<Navigate to="usersetting" replace />} />

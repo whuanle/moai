@@ -90,6 +90,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             Server = apiReaderResult.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty,
             Type = (int)PluginType.OpenApi,
             Title = request.Title,
+            IsSystem = request.IsSystem,
             IsPublic = request.IsPublic
         };
 

@@ -115,6 +115,16 @@ public partial class DatabaseContext : DbContext
     /// </summary>
     public virtual DbSet<WikiUserEntity> WikiUsers { get; set; }
 
+    /// <summary>
+    /// wiki网页抓取.
+    /// </summary>
+    public virtual DbSet<WikiWebConfigEntity> WikiWebConfigs { get; set; }
+
+    /// <summary>
+    /// 抓取的页面文档.
+    /// </summary>
+    public virtual DbSet<WikiWebDocumentEntity> WikiWebDocuments { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

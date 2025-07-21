@@ -27,20 +27,14 @@ public enum OAuthPrivider
     Feishu = 1,
 
     /// <summary>
-    /// 企业微信.
-    /// </summary>
-    [JsonPropertyName("weixinwork")]
-    WeixinWork = 2,
-
-    /// <summary>
     /// 钉钉.
     /// </summary>
     [JsonPropertyName("dingtalk")]
-    DingTalk = 3,
+    DingTalk = 2,
 
     /// <summary>
     /// GitHub.
     /// </summary>
     [JsonPropertyName("github")]
-    GitHub = 4,
+    GitHub = 3,
 }

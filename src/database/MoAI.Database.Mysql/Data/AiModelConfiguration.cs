@@ -70,6 +70,12 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开使用，只有系统ai模型才能设置")
+            .HasColumnName("is_public");
+        entity.Property(e => e.IsSystem)
+            .HasComment("是否全局系统模型")
+            .HasColumnName("is_system");
         entity.Property(e => e.IsVision)
             .HasComment("支持计算机视觉")
             .HasColumnName("is_vision");

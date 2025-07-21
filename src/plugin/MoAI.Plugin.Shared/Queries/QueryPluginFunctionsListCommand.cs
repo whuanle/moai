@@ -15,11 +15,6 @@ namespace MoAI.Plugin.Queries;
 public class QueryPluginFunctionsListCommand : IRequest<QueryPluginFunctionsListCommandResponse>
 {
     /// <summary>
-    /// 用户 id.
-    /// </summary>
-    public int UserId { get; init; } = default!;
-
-    /// <summary>
     /// 插件 id.
     /// </summary>
     public int PluginId { get; init; }

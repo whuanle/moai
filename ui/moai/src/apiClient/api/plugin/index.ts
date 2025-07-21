@@ -12,15 +12,17 @@ import { Import_openapiRequestBuilderRequestsMetadata, type Import_openapiReques
 // @ts-ignore
 import { Plugin_detailRequestBuilderRequestsMetadata, type Plugin_detailRequestBuilder } from './plugin_detail/index.js';
 // @ts-ignore
-import { Plugin_listRequestBuilderRequestsMetadata, type Plugin_listRequestBuilder } from './plugin_list/index.js';
-// @ts-ignore
 import { Pre_upload_openapiRequestBuilderRequestsMetadata, type Pre_upload_openapiRequestBuilder } from './pre_upload_openapi/index.js';
 // @ts-ignore
 import { Refresh_mcpRequestBuilderRequestsMetadata, type Refresh_mcpRequestBuilder } from './refresh_mcp/index.js';
 // @ts-ignore
+import { System_plugin_listRequestBuilderRequestsMetadata, type System_plugin_listRequestBuilder } from './system_plugin_list/index.js';
+// @ts-ignore
 import { type Update_mcpRequestBuilder, Update_mcpRequestBuilderRequestsMetadata } from './update_mcp/index.js';
 // @ts-ignore
 import { type Update_openapiRequestBuilder, Update_openapiRequestBuilderRequestsMetadata } from './update_openapi/index.js';
+// @ts-ignore
+import { type User_plugin_listRequestBuilder, User_plugin_listRequestBuilderRequestsMetadata } from './user_plugin_list/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -49,10 +51,6 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      */
     get plugin_detail(): Plugin_detailRequestBuilder;
     /**
-     * The plugin_list property
-     */
-    get plugin_list(): Plugin_listRequestBuilder;
-    /**
      * The pre_upload_openapi property
      */
     get pre_upload_openapi(): Pre_upload_openapiRequestBuilder;
@@ -61,6 +59,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      */
     get refresh_mcp(): Refresh_mcpRequestBuilder;
     /**
+     * The system_plugin_list property
+     */
+    get system_plugin_list(): System_plugin_listRequestBuilder;
+    /**
      * The update_mcp property
      */
     get update_mcp(): Update_mcpRequestBuilder;
@@ -68,6 +70,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The update_openapi property
      */
     get update_openapi(): Update_openapiRequestBuilder;
+    /**
+     * The user_plugin_list property
+     */
+    get user_plugin_list(): User_plugin_listRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -92,20 +98,23 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     plugin_detail: {
         requestsMetadata: Plugin_detailRequestBuilderRequestsMetadata,
     },
-    plugin_list: {
-        requestsMetadata: Plugin_listRequestBuilderRequestsMetadata,
-    },
     pre_upload_openapi: {
         requestsMetadata: Pre_upload_openapiRequestBuilderRequestsMetadata,
     },
     refresh_mcp: {
         requestsMetadata: Refresh_mcpRequestBuilderRequestsMetadata,
     },
+    system_plugin_list: {
+        requestsMetadata: System_plugin_listRequestBuilderRequestsMetadata,
+    },
     update_mcp: {
         requestsMetadata: Update_mcpRequestBuilderRequestsMetadata,
     },
     update_openapi: {
         requestsMetadata: Update_openapiRequestBuilderRequestsMetadata,
+    },
+    user_plugin_list: {
+        requestsMetadata: User_plugin_listRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

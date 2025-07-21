@@ -8,11 +8,20 @@ using MediatR;
 using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
-namespace MaomiAI.AiModel.Shared.Commands;
+namespace MoAI.AiModel.Commands;
 
 /// <summary>
 /// 添加 AI 模型.
 /// </summary>
 public class AddAiModelCommand : AiEndpoint, IRequest<SimpleInt>
 {
+    /// <summary>
+    /// 是否系统模型，创建后无法修改该属性.
+    /// </summary>
+    public bool IsSystem { get; init; }
+
+    /// <summary>
+    /// 公开使用，只有系统模型才能公开使用.
+    /// </summary>
+    public bool IsPublic { get; init; }
 }

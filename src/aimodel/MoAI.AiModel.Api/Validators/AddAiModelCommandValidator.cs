@@ -6,9 +6,9 @@
 
 using FastEndpoints;
 using FluentValidation;
-using MaomiAI.AiModel.Shared.Commands;
+using MoAI.AiModel.Commands;
 
-namespace MoAI.Admin.OAuth.Validators;
+namespace MoAI.AiModel.Validators;
 
 /// <summary>
 /// AddAiModelCommandValidator.

@@ -19,24 +19,27 @@ namespace MoAI.App.AIAssistant.Queries;
 /// <summary>
 /// <inheritdoc cref="QueryAiAssistantChatHistoryCommandHandler"/>
 /// </summary>
-public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryAiAssistantChatHistoryCommand, QueryAiAssistantChatHistoryCommandResponse>
+public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryUserViewAiAssistantChatHistoryCommand, QueryAiAssistantChatHistoryCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAiAssistantChatHistoryCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    public QueryAiAssistantChatHistoryCommandHandler(DatabaseContext databaseContext)
+    /// <param name="userContext"></param>
+    public QueryAiAssistantChatHistoryCommandHandler(DatabaseContext databaseContext, UserContext userContext)
     {
         _databaseContext = databaseContext;
+        _userContext = userContext;
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAiAssistantChatHistoryCommandResponse> Handle(QueryAiAssistantChatHistoryCommand request, CancellationToken cancellationToken)
+    public async Task<QueryAiAssistantChatHistoryCommandResponse> Handle(QueryUserViewAiAssistantChatHistoryCommand request, CancellationToken cancellationToken)
     {
         var chatEntity = await _databaseContext.AppAssistantChats
-            .Where(x => x.Id == request.ChatId && x.CreateUserId == request.UserId)
+            .Where(x => x.Id == request.ChatId && x.CreateUserId == _userContext.UserId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (chatEntity == null)

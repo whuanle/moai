@@ -7,7 +7,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.AIAssistant.Commands;
-using MoAI.App.AIAssistant.Helpers;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;

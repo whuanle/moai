@@ -86,10 +86,10 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
             connection.AuthorizeUrl = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
             connection.WellKnown = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
         }
-        else if (sourceProvider == OAuthPrivider.WeixinWork)
+        else if (sourceProvider == OAuthPrivider.DingTalk)
         {
-            connection.AuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize";
-            connection.WellKnown = "https://open.weixin.qq.com/connect/oauth2/authorize";
+            connection.AuthorizeUrl = "https://login.dingtalk.com/oauth2/auth";
+            connection.WellKnown = "https://login.dingtalk.com/oauth2/auth";
         }
 
         _databaseContext.Update(connection);

@@ -35,6 +35,11 @@ public partial class WikiDocumentEntity : IFullAudited
     public string FileName { get; set; } = default!;
 
     /// <summary>
+    /// 文件类型，如md.
+    /// </summary>
+    public string FileType { get; set; } = default!;
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

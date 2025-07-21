@@ -5,11 +5,11 @@
 // </copyright>
 
 using FastEndpoints;
-using MaomiAI.AiModel.Shared.Commands;
 using MediatR;
+using MoAI.AiModel.Commands;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Common.Queries;
 
 namespace MoAI.AiModel.Endpoints;
 
@@ -36,16 +36,19 @@ public class AddAiModelEndpoint : Endpoint<AddAiModelCommand, SimpleInt>
     /// <inheritdoc/>
     public override async Task<SimpleInt> ExecuteAsync(AddAiModelCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+        if (req.IsSystem)
         {
-            UserId = _userContext.UserId
-        });
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                UserId = _userContext.UserId
+            });
 
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            if (!isAdmin.IsAdmin)
+            {
+                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            }
         }
 
-        return await _mediator.Send(req);
+        return await _mediator.Send(request: req);
     }
 }

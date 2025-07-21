@@ -6,11 +6,13 @@ import { AddRequestBuilderRequestsMetadata, type AddRequestBuilder } from './add
 // @ts-ignore
 import { Delete_modelRequestBuilderRequestsMetadata, type Delete_modelRequestBuilder } from './delete_model/index.js';
 // @ts-ignore
-import { ProviderlistRequestBuilderRequestsMetadata, type ProviderlistRequestBuilder } from './providerlist/index.js';
+import { System_providerlistRequestBuilderRequestsMetadata, type System_providerlistRequestBuilder } from './system_providerlist/index.js';
 // @ts-ignore
 import { type TypeRequestBuilder, TypeRequestBuilderNavigationMetadata } from './type/index.js';
 // @ts-ignore
 import { type UpdateRequestBuilder, UpdateRequestBuilderRequestsMetadata } from './update/index.js';
+// @ts-ignore
+import { type User_providerlistRequestBuilder, User_providerlistRequestBuilderRequestsMetadata } from './user_providerlist/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -27,9 +29,9 @@ export interface AimodelRequestBuilder extends BaseRequestBuilder<AimodelRequest
      */
     get delete_model(): Delete_modelRequestBuilder;
     /**
-     * The providerlist property
+     * The system_providerlist property
      */
-    get providerlist(): ProviderlistRequestBuilder;
+    get system_providerlist(): System_providerlistRequestBuilder;
     /**
      * The type property
      */
@@ -38,6 +40,10 @@ export interface AimodelRequestBuilder extends BaseRequestBuilder<AimodelRequest
      * The update property
      */
     get update(): UpdateRequestBuilder;
+    /**
+     * The user_providerlist property
+     */
+    get user_providerlist(): User_providerlistRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -53,14 +59,17 @@ export const AimodelRequestBuilderNavigationMetadata: Record<Exclude<keyof Aimod
     delete_model: {
         requestsMetadata: Delete_modelRequestBuilderRequestsMetadata,
     },
-    providerlist: {
-        requestsMetadata: ProviderlistRequestBuilderRequestsMetadata,
+    system_providerlist: {
+        requestsMetadata: System_providerlistRequestBuilderRequestsMetadata,
     },
     type: {
         navigationMetadata: TypeRequestBuilderNavigationMetadata,
     },
     update: {
         requestsMetadata: UpdateRequestBuilderRequestsMetadata,
+    },
+    user_providerlist: {
+        requestsMetadata: User_providerlistRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

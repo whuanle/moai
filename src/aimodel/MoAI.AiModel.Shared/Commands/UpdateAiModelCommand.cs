@@ -19,4 +19,9 @@ public class UpdateAiModelCommand : AiEndpoint, IRequest<EmptyCommandResponse>
     /// AI 模型 id.
     /// </summary>
     public int AiModelId { get; init; }
+
+    /// <summary>
+    /// 公开使用，只有系统模型才能公开使用.
+    /// </summary>
+    public bool IsPublic { get; init; }
 }

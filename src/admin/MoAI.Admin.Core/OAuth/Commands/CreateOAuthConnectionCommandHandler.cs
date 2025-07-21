@@ -57,9 +57,9 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         {
             await AddFeishuConnectionAsync(request, cancellationToken);
         }
-        else if(request.Provider == OAuthPrivider.WeixinWork)
+        else if (request.Provider == OAuthPrivider.DingTalk)
         {
-            await AddWeixinWorkConnectionAsync(request, cancellationToken);
+            await AddDingTalkConnectionAsync(request, cancellationToken);
         }
 
         return EmptyCommandResponse.Default;
@@ -109,8 +109,9 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task AddWeixinWorkConnectionAsync(CreateOAuthConnectionCommand request,CancellationToken cancellationToken)
+    private async Task AddDingTalkConnectionAsync(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
+        // https://login.dingtalk.com/oauth2/auth?redirect_uri=https%3A%2F%2Fwww.aaaaa.com%2Fa%2Fb&response_type=code&client_id=dingbbbbbbb&scope=openid corpid&state=dddd&prompt=consent
         var weixinWorkConnection = new Database.Entities.OauthConnectionEntity
         {
             Uuid = Guid.NewGuid().ToString("N"),
@@ -119,8 +120,8 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             Key = request.Key,
             Secret = request.Secret,
             IconUrl = request.IconUrl,
-            AuthorizeUrl = "https://open.weixin.qq.com/connect/oauth2/authorize",
-            WellKnown = "https://open.weixin.qq.com/connect/oauth2/authorize"
+            AuthorizeUrl = "https://login.dingtalk.com/oauth2/auth",
+            WellKnown = "https://login.dingtalk.com/oauth2/auth"
         };
 
         _databaseContext.OauthConnections.Add(weixinWorkConnection);

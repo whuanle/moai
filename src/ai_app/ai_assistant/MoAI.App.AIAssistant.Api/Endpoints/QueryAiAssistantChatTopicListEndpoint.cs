@@ -31,7 +31,7 @@ public class QueryAiAssistantChatTopicListEndpoint : EndpointWithoutRequest<Quer
     public override async Task<QueryAiAssistantChatTopicListCommandResponse> ExecuteAsync(CancellationToken ct)
     {
         return await _mediator.Send(
-            new QueryAiAssistantChatTopicListCommand
+            new QueryUserViewAiAssistantChatTopicListCommand
             {
                 UserId = _userContext.UserId,
             },

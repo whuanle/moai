@@ -245,7 +245,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         {
             ChatId = chatId,
             CompletionsId = completionsObject.Id,
-            Content = completionsObject.Choices.FirstOrDefault()?.Message.Content ?? string.Empty,
+            Content = completionsObject.Choices.FirstOrDefault()?.Message.Content?.ToJsonString() ?? string.Empty,
             Model = completionsObject.Model,
             Role = AuthorRole.Assistant.Label
         };
@@ -361,7 +361,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             EmbeddingDimensions = wikiEntity.EmbeddingDimensions,
             EmbeddingBatchSize = wikiEntity.EmbeddingBatchSize,
             MaxRetries = wikiEntity.MaxRetries,
-            EmbeddingModelTokenizer = wikiEntity.EmbeddingModelTokenizer,
+            EmbeddingModelTokenizer = wikiEntity.EmbeddingModelTokenizer.JsonToObject<EmbeddingTokenizer>(),
         };
 
         // 构建客户端

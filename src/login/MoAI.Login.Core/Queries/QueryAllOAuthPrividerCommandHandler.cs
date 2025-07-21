@@ -62,17 +62,17 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
                 // https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=cli_a5d611352af9d00b&redirect_uri=https%3A%2F%2Fexample.com%2Fapi%2Foauth%2Fcallback&scope=bitable:app:readonly%20contact:contact&state=RANDOMSTRING
                 redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=&state={item.OAuthId}";
             }
-            else if (OAuthPrivider.WeixinWork.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
+            else if (OAuthPrivider.DingTalk.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
             {
-                // 微信的授权地址需要特殊处理
-                // https://open.weixin.qq.com/connect/oauth2/authorize?appid=CORPID&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_base&state=STATE&agentid=AGENTID#wechat_redirect
-                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=snsapi_login&state={item.OAuthId}#wechat_redirect";
+                // 钉钉授权地址需要特殊处理
+                // https://oapi.dingtalk.com/connect/qrconnect?appid=SuiteKey&response_type=code&scope=snsapi_login&state=STATE&redirect_uri=REDIRECT_URI
+                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&response_type=code&scope=snsapi_login&state={item.OAuthId}&redirect_uri={frontUrl}";
             }
             else if (OAuthPrivider.DingTalk.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
             {
                 // 钉钉的授权地址需要特殊处理
-                // https://oapi.dingtalk.com/connect/oauth2/authorize?appid=dingb0f8c4d1c3e5f6a&response_type=code&scope=snsapi_login&state=STATE
-                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&response_type=code&scope=snsapi_login&state={item.OAuthId}";
+                // https://login.dingtalk.com/oauth2/auth?redirect_uri=https%3A%2F%2Fwww.aaaaa.com%2Fa%2Fb&response_type=code&client_id=dingbbbbbbb&scope=openid corpid&state=dddd&prompt=consent
+                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&response_type=code&scope=openid&state={item.OAuthId}&client_id={item.Key}&redirect_uri={frontUrl}";
             }
 
             // var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&response_type=code&scope=openid%20profile&state={item.OAuthId}";

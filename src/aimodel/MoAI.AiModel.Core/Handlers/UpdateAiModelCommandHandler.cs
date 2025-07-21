@@ -82,6 +82,11 @@ public class UpdateAiModelCommandHandler : IRequestHandler<UpdateAiModelCommand,
         aiModel.ImageOutput = request.Abilities?.ImageOutput ?? false;
         aiModel.IsVision = request.Abilities?.Vision ?? false;
 
+        if (aiModel.IsSystem)
+        {
+            aiModel.IsPublic = request.IsPublic;
+        }
+
         _dbContext.AiModels.Update(aiModel);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return EmptyCommandResponse.Default;

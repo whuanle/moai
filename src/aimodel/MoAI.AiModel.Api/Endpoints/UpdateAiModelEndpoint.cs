@@ -6,13 +6,13 @@
 
 using FastEndpoints;
 using MediatR;
-using MoAI.AiModel;
 using MoAI.AiModel.Commands;
+using MoAI.AiModel.Queries;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Common.Queries;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.AiModel.Endpoints;
 
 /// <summary>
 /// 修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*.
@@ -37,14 +37,31 @@ public class UpdateAiModelEndpoint : Endpoint<UpdateAiModelCommand, EmptyCommand
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateAiModelCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+        var aiModelCreator = await _mediator.Send(new QueryAiModelCreatorCommand
         {
-            UserId = _userContext.UserId
+            ModelId = req.AiModelId
         });
 
-        if (!isAdmin.IsAdmin)
+        if (!aiModelCreator.Exist)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            throw new BusinessException("未找到模型") { StatusCode = 404 };
+        }
+
+        if (aiModelCreator.IsSystem)
+        {
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                UserId = _userContext.UserId
+            });
+
+            if (!isAdmin.IsAdmin)
+            {
+                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            }
+        }
+        else if (aiModelCreator.CreatorId != _userContext.UserId)
+        {
+            throw new BusinessException("未找到模型.") { StatusCode = 404 };
         }
 
         return await _mediator.Send(req);

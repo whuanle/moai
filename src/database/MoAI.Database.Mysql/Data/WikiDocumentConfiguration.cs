@@ -40,6 +40,10 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasMaxLength(255)
             .HasComment("文档名称")
             .HasColumnName("file_name");
+        entity.Property(e => e.FileType)
+            .HasMaxLength(10)
+            .HasComment("文件类型，如md")
+            .HasColumnName("file_type");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")

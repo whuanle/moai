@@ -6,19 +6,12 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using MoAI;
-using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Commands.Responses;
-using MoAI.App.AIAssistant.Helpers;
-using MoAI.App.AIAssistant.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
-using MoAI.Infra.Models;
 using MoAI.Infra.Services;
-using StackExchange.Redis;
-using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MaomiAI.Chat.Core.Handlers;
 

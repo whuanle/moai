@@ -37,15 +37,31 @@ public class UpdateOpenApiPluginEndpoint : Endpoint<UpdateOpenApiPluginCommand, 
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateOpenApiPluginCommand req, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryUserIsPluginCreatorCommand
+        var isCreator = await _mediator.Send(new QueryPluginCreatorCommand
         {
             PluginId = req.PluginId,
-            UserId = _userContext.UserId
         });
 
-        if (!isCreator.Value)
+        if (!isCreator.Exist == false)
         {
-            throw new BusinessException("无权操作该插件.");
+            throw new BusinessException("未找到插件.");
+        }
+
+        if (isCreator.IsSystem)
+        {
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                UserId = _userContext.UserId
+            });
+
+            if (!isAdmin.IsAdmin)
+            {
+                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            }
+        }
+        else if (isCreator.CreatorId != _userContext.UserId)
+        {
+            throw new BusinessException("未找到插件.") { StatusCode = 404 };
         }
 
         return await _mediator.Send(req, ct);

@@ -40,7 +40,12 @@ public class UpdateOpenApiPluginCommand : IRequest<EmptyCommandResponse>
     public string Description { get; init; } = default!;
 
     /// <summary>
-    /// 是否公开.
+    /// 系统插件.
+    /// </summary>
+    public bool IsSystem { get; init; } = default!;
+
+    /// <summary>
+    /// 是否公开，系统插件 == true 时才能设置.
     /// </summary>
     public bool IsPublic { get; init; } = default!;
 

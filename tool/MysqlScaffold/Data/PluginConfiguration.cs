@@ -48,6 +48,9 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
         entity.Property(e => e.IsPublic)
             .HasComment("公开访问")
             .HasColumnName("is_public");
+        entity.Property(e => e.IsSystem)
+            .HasComment("系统全局插件")
+            .HasColumnName("is_system");
         entity.Property(e => e.OpenapiFileId)
             .HasComment("文件id")
             .HasColumnType("int(11)")

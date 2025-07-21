@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Defaults;
+using MoAI.Infra.DingTalk;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Feishu;
@@ -191,9 +192,41 @@ state=STATE
                 AccessToken = feishuAccessToken.AccessToken
             };
         }
-        else if (OAuthPrivider.WeixinWork.ToJsonString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
+        else if (OAuthPrivider.DingTalk.ToJsonString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
         {
-            // todo: 微信企业号登录
+            var dingTalkClient = _serviceProvider.GetRequiredService<IDingTalkClient>();
+            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
+
+            var dingTalkUserInfo = await dingTalkClient.GetUserInfoByCodeAsync(
+                clientEntity.Key,
+                timestamp,
+                dingTalkClient.ComputeSignature(timestamp, clientEntity.Key),
+                new Infra.DingTalk.Models.SnsGetUserInfoByCodeRequest
+                {
+                    TmpAuthCode = request.Code
+                });
+
+            if (dingTalkUserInfo.ErrCode != 0)
+            {
+                throw new BusinessException("钉钉接口错误");
+            }
+
+            return new OAuthBindUserProfile
+            {
+                OAuthId = clientEntity.Id,
+                Name = dingTalkUserInfo.UserInfo.UnionId,
+                Profile = new OpenIdUserProfile
+                {
+                    Sub = dingTalkUserInfo.UserInfo.UnionId,
+                    Name = dingTalkUserInfo.UserInfo.Nick,
+                    Audience = clientEntity.Key,
+                    Issuer = "https://open.feishu.cn",
+                    Picture = string.Empty,
+                    PreferredUsername = dingTalkUserInfo.UserInfo.Nick,
+                },
+
+                AccessToken = string.Empty
+            };
         }
 
         // 获取端点信息

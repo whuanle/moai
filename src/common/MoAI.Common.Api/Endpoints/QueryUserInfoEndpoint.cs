@@ -6,9 +6,9 @@
 
 using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Models;
 using MoAI.Login.Queries.Responses;
-using MoAI.Common.Queries;
 
 namespace MoAI.Common.Endpoints;
 
@@ -35,11 +35,6 @@ public class QueryUserInfoEndpoint : EndpointWithoutRequest<UserStateInfo>
     /// <inheritdoc/>
     public override Task<UserStateInfo> ExecuteAsync(CancellationToken ct)
     {
-        var query = new QueryUserInfoCommand
-        {
-            UserId = _userContext.UserId
-        };
-
-        return _mediator.Send(query, ct);
+        return _mediator.Send(new QueryUserViewUserInfoCommand(), ct);
     }
 }

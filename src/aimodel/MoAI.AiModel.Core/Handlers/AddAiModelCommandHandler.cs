@@ -4,9 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.AiModel.Shared.Commands;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AiModel.Commands;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -38,12 +38,15 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(AddAiModelCommand request, CancellationToken cancellationToken)
     {
-        var existModel = await _dbContext.AiModels
-            .AnyAsync(x => x.Title == request.Title, cancellationToken);
-
-        if (existModel)
+        if (request.IsSystem)
         {
-            throw new BusinessException("已存在同名模型") { StatusCode = 409 };
+            var existModel = await _dbContext.AiModels
+                .AnyAsync(x => x.Title == request.Title && x.IsSystem, cancellationToken);
+
+            if (existModel)
+            {
+                throw new BusinessException("已存在同名模型") { StatusCode = 409 };
+            }
         }
 
         string skKey = string.Empty;
@@ -74,6 +77,12 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
             ImageOutput = request.Abilities?.ImageOutput ?? false,
             IsVision = request.Abilities?.Vision ?? false,
         };
+
+        if (request.IsSystem)
+        {
+            aiModel.IsSystem = true;
+            aiModel.IsPublic = request.IsPublic;
+        }
 
         await _dbContext.AddAsync(aiModel, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);

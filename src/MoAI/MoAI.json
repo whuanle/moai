@@ -2301,20 +2301,20 @@
         ]
       }
     },
-    "/api/aimodel/update": {
+    "/api/aimodel/type/system_modellist": {
       "post": {
         "tags": [
           "Aimodel"
         ],
-        "summary": "修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*.",
-        "operationId": "UpdateAiModelEndpoint",
+        "summary": "获取 AI 模型列表.",
+        "operationId": "QuerySystemAiModelListEndpoint",
         "requestBody": {
-          "x-name": "UpdateAiModelCommand",
+          "x-name": "QuerySystemAiModelListCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAiModelCommand"
+                "$ref": "#/components/schemas/QuerySystemAiModelListCommand"
               }
             }
           },
@@ -2327,7 +2327,248 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                  "$ref": "#/components/schemas/QuerySystemAiModelListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/system_providerlist": {
+      "get": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "查询ai服务商列表.",
+        "operationId": "QuerySystemAiModelProviderListEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiModelProviderListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/type/user_modellist": {
+      "post": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "获取 AI 模型列表.",
+        "operationId": "QueryUserAiModelListEndpoint",
+        "requestBody": {
+          "x-name": "QueryUserAiModelListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryUserAiModelListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiModelListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/user_providerlist": {
+      "get": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "查询ai服务商列表.",
+        "operationId": "QueryUserAiModelProviderListEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiModelProviderListResponse"
                 }
               }
             }
@@ -2573,20 +2814,20 @@
         ]
       }
     },
-    "/api/aimodel/type/modellist": {
+    "/api/aimodel/update": {
       "post": {
         "tags": [
           "Aimodel"
         ],
-        "summary": "获取 AI 模型列表.",
-        "operationId": "QueryAiModelListEndpoint",
+        "summary": "修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*.",
+        "operationId": "UpdateAiModelEndpoint",
         "requestBody": {
-          "x-name": "QueryAiModelListCommand",
+          "x-name": "UpdateAiModelCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryAiModelListCommand"
+                "$ref": "#/components/schemas/UpdateAiModelCommand"
               }
             }
           },
@@ -2599,83 +2840,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryAiModelListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/aimodel/providerlist": {
-      "get": {
-        "tags": [
-          "Aimodel"
-        ],
-        "summary": "查询ai服务商列表.",
-        "operationId": "QueryAiModelProviderListEndpoint",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryAiModelProviderListResponse"
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -4440,6 +4605,362 @@
         ]
       }
     },
+    "/api/plugin/plugin_detail": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "获取插件的详细信息.",
+        "operationId": "QueryPluginDetailEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginDetailCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginDetailCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginDetailCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/function_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "插件的函数列表.",
+        "operationId": "QueryPluginFunctionsListEndpoint",
+        "requestBody": {
+          "x-name": "QueryPluginFunctionsListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPluginFunctionsListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/system_plugin_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "查询系统插件简要信息列表.",
+        "operationId": "QuerySystemPluginBaseListEndpoint",
+        "requestBody": {
+          "x-name": "QuerySystemPluginBaseListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuerySystemPluginBaseListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginBaseListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/plugin/user_plugin_list": {
+      "post": {
+        "tags": [
+          "Plugin"
+        ],
+        "summary": "查询用户插件简要信息列表.",
+        "operationId": "QueryUserPluginBaseListEndpoint",
+        "requestBody": {
+          "x-name": "QueryUserPluginBaseListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryUserPluginBaseListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPluginBaseListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/plugin/delete_plugin": {
       "delete": {
         "tags": [
@@ -4650,273 +5171,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PreUploadOpenApiFilePluginCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/plugin/plugin_list": {
-      "post": {
-        "tags": [
-          "Plugin"
-        ],
-        "summary": "插件列表.",
-        "operationId": "QueryPluginBaseListEndpoint",
-        "requestBody": {
-          "x-name": "QueryPluginBaseListCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryPluginBaseListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryPluginBaseListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/plugin/plugin_detail": {
-      "post": {
-        "tags": [
-          "Plugin"
-        ],
-        "summary": "获取插件的详细信息.",
-        "operationId": "QueryPluginDetailEndpoint",
-        "requestBody": {
-          "x-name": "QueryPluginDetailCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryPluginDetailCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryPluginDetailCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/plugin/function_list": {
-      "post": {
-        "tags": [
-          "Plugin"
-        ],
-        "summary": "插件的函数列表.",
-        "operationId": "QueryPluginFunctionsListEndpoint",
-        "requestBody": {
-          "x-name": "QueryPluginFunctionsListCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryPluginFunctionsListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponse"
                 }
               }
             }
@@ -5751,7 +6005,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752672664786"
+            "example": "1753094936029"
           }
         }
       },
@@ -6497,7 +6751,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752672664786"
+            "example": "1753094936029"
           },
           "createUserId": {
             "type": "integer",
@@ -6513,7 +6767,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752672664786"
+            "example": "1753094936029"
           },
           "updateUserId": {
             "type": "integer",
@@ -6773,14 +7027,12 @@
         "x-enumNames": [
           "Custom",
           "Feishu",
-          "WeixinWork",
           "DingTalk",
           "GitHub"
         ],
         "enum": [
           "custom",
           "feishu",
-          "weixinWork",
           "dingTalk",
           "gitHub"
         ]
@@ -7012,38 +7264,51 @@
           }
         }
       },
-      "UpdateAiModelCommand": {
+      "QuerySystemAiModelListCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
         "required": [
-          "aiModelId"
+          "aiModels"
         ],
+        "properties": {
+          "aiModels": {
+            "type": "array",
+            "description": "AI 模型列表.",
+            "items": {
+              "$ref": "#/components/schemas/QuerySystemAiModelListCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QuerySystemAiModelListCommandResponseItem": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/AiEndpoint"
+            "$ref": "#/components/schemas/AiNotKeyEndpoint"
           },
           {
             "type": "object",
-            "description": "修改 AI 模型.",
             "additionalProperties": false,
             "required": [
-              "aiModelId"
+              "isSystem",
+              "isPublic"
             ],
             "properties": {
-              "aiModelId": {
-                "type": "integer",
-                "description": "AI 模型 id.",
-                "format": "int32",
-                "minLength": 1,
-                "nullable": false
+              "isSystem": {
+                "type": "boolean"
+              },
+              "isPublic": {
+                "type": "boolean"
               }
             }
           }
         ]
       },
-      "AiEndpoint": {
+      "AiNotKeyEndpoint": {
         "type": "object",
         "description": "AI 模型.",
         "additionalProperties": false,
         "required": [
+          "id",
           "name",
           "deploymentName",
           "title",
@@ -7051,11 +7316,16 @@
           "provider",
           "contextWindowTokens",
           "endpoint",
-          "key",
+          "abilities",
           "textOutput",
           "maxDimension"
         ],
         "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
+          },
           "name": {
             "type": "string",
             "description": "模型名称."
@@ -7066,10 +7336,7 @@
           },
           "title": {
             "type": "string",
-            "description": "对用户显示名称.",
-            "maxLength": 50,
-            "minLength": 0,
-            "nullable": false
+            "description": "对用户显示名称."
           },
           "aiModelType": {
             "description": "模型类型.",
@@ -7094,20 +7361,10 @@
           },
           "endpoint": {
             "type": "string",
-            "description": "请求端点.",
-            "maxLength": 500,
-            "minLength": 0,
-            "nullable": false
-          },
-          "key": {
-            "type": "string",
-            "description": "key.",
-            "minLength": 1,
-            "nullable": false
+            "description": "请求端点."
           },
           "abilities": {
             "description": "additional parameters.",
-            "nullable": true,
             "oneOf": [
               {
                 "$ref": "#/components/schemas/ModelAbilities"
@@ -7116,7 +7373,7 @@
           },
           "textOutput": {
             "type": "integer",
-            "description": "最大模型输出 tokens，也可表示嵌入向量等最大输出数量.",
+            "description": "最大模型输出 tokens，TextOutput.",
             "format": "int32"
           },
           "maxDimension": {
@@ -7289,135 +7546,9 @@
           }
         }
       },
-      "AddAiModelCommand": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AiEndpoint"
-          },
-          {
-            "type": "object",
-            "description": "添加 AI 模型.",
-            "additionalProperties": false
-          }
-        ]
-      },
-      "DeleteAiModelCommand": {
+      "QuerySystemAiModelListCommand": {
         "type": "object",
-        "description": "删除 ai 模型.",
-        "additionalProperties": false,
-        "required": [
-          "aiModelId"
-        ],
-        "properties": {
-          "aiModelId": {
-            "type": "integer",
-            "description": "模型 id.",
-            "format": "int32",
-            "minLength": 1,
-            "nullable": false
-          }
-        }
-      },
-      "QueryAiModelListCommandResponse": {
-        "type": "object",
-        "description": "Ai 模型列表.",
-        "additionalProperties": false,
-        "required": [
-          "aiModels"
-        ],
-        "properties": {
-          "aiModels": {
-            "type": "array",
-            "description": "AI 模型列表.",
-            "items": {
-              "$ref": "#/components/schemas/AiNotKeyEndpoint"
-            }
-          }
-        }
-      },
-      "AiNotKeyEndpoint": {
-        "type": "object",
-        "description": "AI 模型.",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "name",
-          "deploymentName",
-          "title",
-          "aiModelType",
-          "provider",
-          "contextWindowTokens",
-          "endpoint",
-          "abilities",
-          "textOutput",
-          "maxDimension"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "id.",
-            "format": "int32"
-          },
-          "name": {
-            "type": "string",
-            "description": "模型名称."
-          },
-          "deploymentName": {
-            "type": "string",
-            "description": "部署名称，适配 Azure Open AI ，非 Azure Open AI 跟 Name 同名."
-          },
-          "title": {
-            "type": "string",
-            "description": "对用户显示名称."
-          },
-          "aiModelType": {
-            "description": "模型类型.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AiModelType"
-              }
-            ]
-          },
-          "provider": {
-            "description": "AI 服务商.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AiProvider"
-              }
-            ]
-          },
-          "contextWindowTokens": {
-            "type": "integer",
-            "description": "the context window (or input + output tokens limit).",
-            "format": "int32"
-          },
-          "endpoint": {
-            "type": "string",
-            "description": "请求端点."
-          },
-          "abilities": {
-            "description": "additional parameters.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ModelAbilities"
-              }
-            ]
-          },
-          "textOutput": {
-            "type": "integer",
-            "description": "最大模型输出 tokens，TextOutput.",
-            "format": "int32"
-          },
-          "maxDimension": {
-            "type": "integer",
-            "description": "向量模型的维度.",
-            "format": "int32"
-          }
-        }
-      },
-      "QueryAiModelListCommand": {
-        "type": "object",
-        "description": "查询模型列表.",
+        "description": "系统视图，查询系统能够看到的模型列表.",
         "additionalProperties": false,
         "properties": {
           "provider": {
@@ -7480,6 +7611,210 @@
             "format": "int32"
           }
         }
+      },
+      "QueryAiModelListCommandResponse": {
+        "type": "object",
+        "description": "Ai 模型列表.",
+        "additionalProperties": false,
+        "required": [
+          "aiModels"
+        ],
+        "properties": {
+          "aiModels": {
+            "type": "array",
+            "description": "AI 模型列表.",
+            "items": {
+              "$ref": "#/components/schemas/AiNotKeyEndpoint"
+            }
+          }
+        }
+      },
+      "QueryUserAiModelListCommand": {
+        "type": "object",
+        "description": "用户视图，查询用户能够看到的模型列表.",
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "description": "AI 模型类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiProvider"
+              }
+            ]
+          },
+          "aiModelType": {
+            "description": "Ai 模型类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiModelType"
+              }
+            ]
+          }
+        }
+      },
+      "AddAiModelCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AiEndpoint"
+          },
+          {
+            "type": "object",
+            "description": "添加 AI 模型.",
+            "additionalProperties": false,
+            "required": [
+              "isSystem",
+              "isPublic"
+            ],
+            "properties": {
+              "isSystem": {
+                "type": "boolean",
+                "description": "是否系统模型，创建后无法修改该属性."
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "公开使用，只有系统模型才能公开使用."
+              }
+            }
+          }
+        ]
+      },
+      "AiEndpoint": {
+        "type": "object",
+        "description": "AI 模型.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "deploymentName",
+          "title",
+          "aiModelType",
+          "provider",
+          "contextWindowTokens",
+          "endpoint",
+          "key",
+          "textOutput",
+          "maxDimension"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "模型名称."
+          },
+          "deploymentName": {
+            "type": "string",
+            "description": "部署名称，适配 Azure Open AI ，非 Azure Open AI 跟 Name 同名."
+          },
+          "title": {
+            "type": "string",
+            "description": "对用户显示名称.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
+          },
+          "aiModelType": {
+            "description": "模型类型.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiModelType"
+              }
+            ]
+          },
+          "provider": {
+            "description": "AI 服务商.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiProvider"
+              }
+            ]
+          },
+          "contextWindowTokens": {
+            "type": "integer",
+            "description": "the context window (or input + output tokens limit).",
+            "format": "int32"
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "请求端点.",
+            "maxLength": 500,
+            "minLength": 0,
+            "nullable": false
+          },
+          "key": {
+            "type": "string",
+            "description": "key.",
+            "minLength": 1,
+            "nullable": false
+          },
+          "abilities": {
+            "description": "additional parameters.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ModelAbilities"
+              }
+            ]
+          },
+          "textOutput": {
+            "type": "integer",
+            "description": "最大模型输出 tokens，也可表示嵌入向量等最大输出数量.",
+            "format": "int32"
+          },
+          "maxDimension": {
+            "type": "integer",
+            "description": "向量模型的维度.",
+            "format": "int32"
+          }
+        }
+      },
+      "DeleteAiModelCommand": {
+        "type": "object",
+        "description": "删除 ai 模型.",
+        "additionalProperties": false,
+        "required": [
+          "aiModelId"
+        ],
+        "properties": {
+          "aiModelId": {
+            "type": "integer",
+            "description": "模型 id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          }
+        }
+      },
+      "UpdateAiModelCommand": {
+        "required": [
+          "aiModelId"
+        ],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AiEndpoint"
+          },
+          {
+            "type": "object",
+            "description": "修改 AI 模型.",
+            "additionalProperties": false,
+            "required": [
+              "aiModelId",
+              "isPublic"
+            ],
+            "properties": {
+              "aiModelId": {
+                "type": "integer",
+                "description": "AI 模型 id.",
+                "format": "int32",
+                "minLength": 1,
+                "nullable": false
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "公开使用，只有系统模型才能公开使用."
+              }
+            }
+          }
+        ]
       },
       "CreateWikiCommand": {
         "type": "object",
@@ -7897,7 +8232,8 @@
           "wikiId",
           "name",
           "description",
-          "isPublic"
+          "isPublic",
+          "isSystem"
         ],
         "properties": {
           "wikiId": {
@@ -7926,6 +8262,10 @@
           "isPublic": {
             "type": "boolean",
             "description": "公开使用，所有人不需要加入团队即可使用此知识库."
+          },
+          "isSystem": {
+            "type": "boolean",
+            "description": "是否系统知识库."
           }
         }
       },
@@ -8141,7 +8481,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752672664786"
+            "example": "1753094936029"
           }
         }
       },
@@ -8605,7 +8945,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1752672664786"
+            "example": "1753094936029"
           },
           "tags": {
             "type": "array",
@@ -8663,6 +9003,327 @@
           }
         }
       },
+      "QueryPluginDetailCommandResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "pluginName",
+              "title",
+              "description",
+              "server",
+              "header",
+              "query",
+              "type",
+              "openapiFileId",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "server": {
+                "type": "string",
+                "description": "服务器地址."
+              },
+              "header": {
+                "type": "array",
+                "description": "Header 头部信息.",
+                "items": {
+                  "$ref": "#/components/schemas/KeyValueString"
+                }
+              },
+              "query": {
+                "type": "array",
+                "description": "Query 字典.",
+                "items": {
+                  "$ref": "#/components/schemas/KeyValueString"
+                }
+              },
+              "type": {
+                "description": "system|mcp|openapi.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PluginType"
+                  }
+                ]
+              },
+              "openapiFileId": {
+                "type": "integer",
+                "description": "文件id.",
+                "format": "int32"
+              },
+              "openapiFileName": {
+                "type": "string",
+                "description": "文件名称.",
+                "nullable": true
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "PluginType": {
+        "type": "string",
+        "description": "插件类型.",
+        "x-enumNames": [
+          "OpenApi",
+          "Mcp",
+          "System"
+        ],
+        "enum": [
+          "openApi",
+          "mcp",
+          "system"
+        ]
+      },
+      "QueryPluginDetailCommand": {
+        "type": "object",
+        "description": "查询该插件的详细信息.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryPluginFunctionsListCommandResponse": {
+        "type": "object",
+        "description": "函数列表.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "函数列表.",
+            "items": {
+              "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryPluginFunctionsListCommandResponseItem": {
+        "type": "object",
+        "description": "函数.",
+        "additionalProperties": false,
+        "required": [
+          "functionId",
+          "pluginId",
+          "name",
+          "summary",
+          "path"
+        ],
+        "properties": {
+          "functionId": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
+          },
+          "pluginId": {
+            "type": "integer",
+            "description": "插件路径.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "函数名称."
+          },
+          "summary": {
+            "type": "string",
+            "description": "描述."
+          },
+          "path": {
+            "type": "string",
+            "description": "api路径."
+          }
+        }
+      },
+      "QueryPluginFunctionsListCommand": {
+        "type": "object",
+        "description": "获取插件的函数列表.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "pluginId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          },
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryPluginBaseListCommandResponse": {
+        "type": "object",
+        "description": "QueryPluginListCommandResponse.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "列表.",
+            "items": {
+              "$ref": "#/components/schemas/PluginBaseInfoItem"
+            }
+          }
+        }
+      },
+      "PluginBaseInfoItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "description": "插件.",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "pluginName",
+              "title",
+              "description",
+              "server",
+              "type",
+              "openapiFileId",
+              "isSystem",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "server": {
+                "type": "string",
+                "description": "服务器地址."
+              },
+              "type": {
+                "description": "system|mcp|openapi.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PluginType"
+                  }
+                ]
+              },
+              "openapiFileId": {
+                "type": "integer",
+                "description": "文件id.",
+                "format": "int32"
+              },
+              "openapiFileName": {
+                "type": "string",
+                "description": "文件名称.",
+                "nullable": true
+              },
+              "isSystem": {
+                "type": "boolean",
+                "description": "系统插件."
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              }
+            }
+          }
+        ]
+      },
+      "QuerySystemPluginBaseListCommand": {
+        "type": "object",
+        "description": "获取系统插件基础信息列表.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称搜索.",
+            "nullable": true
+          },
+          "type": {
+            "description": "筛选类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginType"
+              }
+            ]
+          }
+        }
+      },
+      "QueryUserPluginBaseListCommand": {
+        "type": "object",
+        "description": "获取用户插件基础信息列表.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称搜索.",
+            "nullable": true
+          },
+          "type": {
+            "description": "筛选类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginType"
+              }
+            ]
+          },
+          "isOwn": {
+            "type": "boolean",
+            "description": "只查询该用户创建的插件，不设置时查询所有用户可用插件.",
+            "nullable": true
+          }
+        }
+      },
       "DeletePluginCommand": {
         "type": "object",
         "description": "删除插件.",
@@ -8690,12 +9351,17 @@
             "description": "导入 mcp 服务.",
             "additionalProperties": false,
             "required": [
+              "isSystem",
               "isPublic"
             ],
             "properties": {
+              "isSystem": {
+                "type": "boolean",
+                "description": "系统插件."
+              },
               "isPublic": {
                 "type": "boolean",
-                "description": "是否公开."
+                "description": "是否公开，系统插件 == true 时才能设置."
               }
             }
           }
@@ -8798,7 +9464,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1752672664786"
+            "example": "1753094936029"
           }
         }
       },
@@ -8831,7 +9497,8 @@
             "type": "integer",
             "description": "文件大小.",
             "format": "int32",
-            "minimum": 1073741824.0,
+            "maximum": 1073741824.0,
+            "minimum": 0.0,
             "exclusiveMinimum": true
           },
           "mD5": {
@@ -8841,309 +9508,6 @@
             "minLength": 32,
             "pattern": "^[a-fA-F0-9]{32}$",
             "nullable": false
-          }
-        }
-      },
-      "QueryPluginBaseListCommandResponse": {
-        "type": "object",
-        "description": "QueryPluginListCommandResponse.",
-        "additionalProperties": false,
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "列表.",
-            "items": {
-              "$ref": "#/components/schemas/PluginBaseInfoItem"
-            }
-          }
-        }
-      },
-      "PluginBaseInfoItem": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "description": "插件.",
-            "additionalProperties": false,
-            "required": [
-              "pluginId",
-              "pluginName",
-              "title",
-              "description",
-              "server",
-              "type",
-              "openapiFileId",
-              "isPublic"
-            ],
-            "properties": {
-              "pluginId": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "pluginName": {
-                "type": "string",
-                "description": "插件名称."
-              },
-              "title": {
-                "type": "string",
-                "description": "插件标题."
-              },
-              "description": {
-                "type": "string",
-                "description": "注释."
-              },
-              "server": {
-                "type": "string",
-                "description": "服务器地址."
-              },
-              "type": {
-                "description": "system|mcp|openapi.",
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PluginType"
-                  }
-                ]
-              },
-              "openapiFileId": {
-                "type": "integer",
-                "description": "文件id.",
-                "format": "int32"
-              },
-              "openapiFileName": {
-                "type": "string",
-                "description": "文件名称.",
-                "nullable": true
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "是否公开."
-              }
-            }
-          }
-        ]
-      },
-      "PluginType": {
-        "type": "string",
-        "description": "插件类型.",
-        "x-enumNames": [
-          "OpenApi",
-          "Mcp",
-          "System"
-        ],
-        "enum": [
-          "openApi",
-          "mcp",
-          "system"
-        ]
-      },
-      "QueryPluginBaseListCommand": {
-        "type": "object",
-        "description": "获取插件基础信息列表.",
-        "additionalProperties": false,
-        "required": [
-          "userId"
-        ],
-        "properties": {
-          "userId": {
-            "type": "integer",
-            "description": "用户id.",
-            "format": "int32"
-          },
-          "name": {
-            "type": "string",
-            "description": "名称搜索.",
-            "nullable": true
-          },
-          "type": {
-            "description": "筛选类型.",
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PluginType"
-              }
-            ]
-          },
-          "isOwn": {
-            "type": "boolean",
-            "description": "只查询该用户创建的插件.",
-            "nullable": true
-          }
-        }
-      },
-      "QueryPluginDetailCommandResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "pluginId",
-              "pluginName",
-              "title",
-              "description",
-              "server",
-              "header",
-              "query",
-              "type",
-              "openapiFileId",
-              "isPublic"
-            ],
-            "properties": {
-              "pluginId": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "pluginName": {
-                "type": "string",
-                "description": "插件名称."
-              },
-              "title": {
-                "type": "string",
-                "description": "插件标题."
-              },
-              "description": {
-                "type": "string",
-                "description": "注释."
-              },
-              "server": {
-                "type": "string",
-                "description": "服务器地址."
-              },
-              "header": {
-                "type": "array",
-                "description": "Header 头部信息.",
-                "items": {
-                  "$ref": "#/components/schemas/KeyValueString"
-                }
-              },
-              "query": {
-                "type": "array",
-                "description": "Query 字典.",
-                "items": {
-                  "$ref": "#/components/schemas/KeyValueString"
-                }
-              },
-              "type": {
-                "description": "system|mcp|openapi.",
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PluginType"
-                  }
-                ]
-              },
-              "openapiFileId": {
-                "type": "integer",
-                "description": "文件id.",
-                "format": "int32"
-              },
-              "openapiFileName": {
-                "type": "string",
-                "description": "文件名称.",
-                "nullable": true
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "是否公开."
-              }
-            }
-          }
-        ]
-      },
-      "QueryPluginDetailCommand": {
-        "type": "object",
-        "description": "查询该插件的详细信息.",
-        "additionalProperties": false,
-        "required": [
-          "pluginId"
-        ],
-        "properties": {
-          "pluginId": {
-            "type": "integer",
-            "description": "插件 id.",
-            "format": "int32"
-          }
-        }
-      },
-      "QueryPluginFunctionsListCommandResponse": {
-        "type": "object",
-        "description": "函数列表.",
-        "additionalProperties": false,
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "函数列表.",
-            "items": {
-              "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponseItem"
-            }
-          }
-        }
-      },
-      "QueryPluginFunctionsListCommandResponseItem": {
-        "type": "object",
-        "description": "函数.",
-        "additionalProperties": false,
-        "required": [
-          "functionId",
-          "pluginId",
-          "name",
-          "summary",
-          "path"
-        ],
-        "properties": {
-          "functionId": {
-            "type": "integer",
-            "description": "id.",
-            "format": "int32"
-          },
-          "pluginId": {
-            "type": "integer",
-            "description": "插件路径.",
-            "format": "int32"
-          },
-          "name": {
-            "type": "string",
-            "description": "函数名称."
-          },
-          "summary": {
-            "type": "string",
-            "description": "描述."
-          },
-          "path": {
-            "type": "string",
-            "description": "api路径."
-          }
-        }
-      },
-      "QueryPluginFunctionsListCommand": {
-        "type": "object",
-        "description": "获取插件的函数列表.",
-        "additionalProperties": false,
-        "required": [
-          "userId",
-          "pluginId"
-        ],
-        "properties": {
-          "userId": {
-            "type": "integer",
-            "description": "用户 id.",
-            "format": "int32"
-          },
-          "pluginId": {
-            "type": "integer",
-            "description": "插件 id.",
-            "format": "int32"
           }
         }
       },
@@ -9180,6 +9544,7 @@
             "additionalProperties": false,
             "required": [
               "pluginId",
+              "isSystem",
               "isPublic"
             ],
             "properties": {
@@ -9192,9 +9557,13 @@
                 "nullable": false,
                 "exclusiveMinimum": true
               },
+              "isSystem": {
+                "type": "boolean",
+                "description": "系统插件."
+              },
               "isPublic": {
                 "type": "boolean",
-                "description": "是否公开."
+                "description": "是否公开，系统插件 == true 时才能设置."
               }
             }
           }
@@ -9212,6 +9581,7 @@
           "serverUrl",
           "fileId",
           "fileName",
+          "isSystem",
           "isPublic",
           "header",
           "query"
@@ -9248,9 +9618,13 @@
             "minLength": 2,
             "nullable": false
           },
+          "isSystem": {
+            "type": "boolean",
+            "description": "系统插件."
+          },
           "isPublic": {
             "type": "boolean",
-            "description": "是否公开."
+            "description": "是否公开，系统插件 == true 时才能设置."
           },
           "pluginId": {
             "type": "integer",
@@ -9294,6 +9668,7 @@
           "title",
           "description",
           "fileId",
+          "isSystem",
           "isPublic"
         ],
         "properties": {
@@ -9333,9 +9708,13 @@
             "minLength": 2,
             "nullable": false
           },
+          "isSystem": {
+            "type": "boolean",
+            "description": "系统插件."
+          },
           "isPublic": {
             "type": "boolean",
-            "description": "是否公开."
+            "description": "是否公开，系统插件 == true 时才能设置."
           }
         }
       }

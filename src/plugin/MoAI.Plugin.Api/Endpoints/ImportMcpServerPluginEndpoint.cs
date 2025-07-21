@@ -10,6 +10,7 @@ using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
+using MoAI.Plugin.Queries;
 
 namespace MoAI.Plugin.Endpoints;
 
@@ -36,6 +37,19 @@ public class ImportMcpServerPluginEndpoint : Endpoint<ImportMcpServerPluginComma
     /// <inheritdoc/>
     public override async Task<SimpleInt> ExecuteAsync(ImportMcpServerPluginCommand req, CancellationToken ct)
     {
+        if (req.IsSystem)
+        {
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                UserId = _userContext.UserId
+            });
+
+            if (!isAdmin.IsAdmin)
+            {
+                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            }
+        }
+
         return await _mediator.Send(req, ct);
     }
 }

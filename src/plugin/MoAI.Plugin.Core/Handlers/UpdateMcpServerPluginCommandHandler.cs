@@ -52,6 +52,7 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
         }
 
         pluginEntity.IsPublic = request.IsPublic;
+        pluginEntity.IsSystem = request.IsSystem;
         pluginEntity.Description = request.Description;
         pluginEntity.Queries = request.Query.ToJsonString();
         pluginEntity.Headers = request.Header.ToJsonString();

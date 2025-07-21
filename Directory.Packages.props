@@ -5,6 +5,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="AngleSharp" Version="1.3.0" />
+    <PackageVersion Include="AngleSharp.Js" Version="0.15.0" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.2.1" />
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.1.2" />
     <PackageVersion Include="FluentValidation" Version="12.0.0" />

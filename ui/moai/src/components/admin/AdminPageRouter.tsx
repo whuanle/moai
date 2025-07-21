@@ -1,7 +1,8 @@
 import { RouteObject } from "react-router";
 import OAuth from "./OAuth";
 import UserManager from "./UserManager";
-import AIModel from "./AiModel";
+import SystemAIModel from "./SystemAiModel";
+import SystemPluginList from "./PluginList";
 
 export const AdminPageRouters: RouteObject[] = [
   {
@@ -14,6 +15,10 @@ export const AdminPageRouters: RouteObject[] = [
   },
   {
     path: "aimodel",
-    Component: AIModel,
+    Component: SystemAIModel,
   },
+  {
+    path: "plugin",
+    Component: SystemPluginList,
+  }
 ];

@@ -6,6 +6,7 @@
 
 using Maomi;
 using Microsoft.Extensions.DependencyInjection;
+using MoAI.Infra.DingTalk;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.WeixinWork;
@@ -53,6 +54,11 @@ public class InfraExternalHttpModule : IModule
 
         context.Services.AddRefitClient<IWeixinWorkClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://qyapi.weixin.qq.com"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IDingTalkClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://oapi.dingtalk.com"))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
     }

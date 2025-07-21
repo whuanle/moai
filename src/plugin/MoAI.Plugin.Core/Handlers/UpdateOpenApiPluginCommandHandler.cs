@@ -55,6 +55,7 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
 
         pluginEntity.Title = request.Title;
         pluginEntity.IsPublic = request.IsPublic;
+        pluginEntity.IsSystem = request.IsSystem;
         pluginEntity.Description = request.Description;
         pluginEntity.Queries = request.Query.ToJsonString();
         pluginEntity.Headers = request.Header.ToJsonString();

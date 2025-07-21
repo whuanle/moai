@@ -33,4 +33,9 @@ public class UpdateWikiInfoCommand : IRequest<EmptyCommandResponse>
     /// 公开使用，所有人不需要加入团队即可使用此知识库.
     /// </summary>
     public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 是否系统知识库.
+    /// </summary>
+    public bool IsSystem { get; set; }
 }

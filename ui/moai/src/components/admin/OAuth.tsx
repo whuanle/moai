@@ -38,6 +38,7 @@ const { Title } = Typography;
 const OAUTH_PROVIDERS = {
   custom: "自定义",
   feishu: "飞书",
+  dingtalk: "钉钉",
 } as const;
 
 // 提供商默认配置
@@ -46,7 +47,12 @@ const PROVIDER_DEFAULTS = {
     wellKnown: "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
     authorizeUrl: "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
     iconUrl: "https://lf-package-cn.feishucdn.com/obj/feishu-static/lark/open/website/images/899fa60e60151c73aaea2e25871102dc.svg",
-  }
+  },
+  dingtalk: {
+    wellKnown: "https://oapi.dingtalk.com/connect/oauth2/sns_authorize",
+    authorizeUrl: "https://oapi.dingtalk.com/connect/oauth2/sns_authorize",
+    iconUrl: "https://lf-package-cn.feishucdn.com/obj/feishu-static/lark/open/website/images/899fa60e60151c73aaea2e25871102dc.svg",
+  },
 } as const;
 
 function OAuth() {

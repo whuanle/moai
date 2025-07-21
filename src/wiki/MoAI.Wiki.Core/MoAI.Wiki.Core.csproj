@@ -6,6 +6,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="AngleSharp" />
+	  <PackageReference Include="AngleSharp.Js" />
 	  <PackageReference Include="Microsoft.KernelMemory.AI.Anthropic" />
 	  <PackageReference Include="Microsoft.KernelMemory.AI.AzureOpenAI" />
 	  <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" />
