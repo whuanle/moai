@@ -25,7 +25,7 @@ public class UpdateWebDocumentConfigCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 标题.
     /// </summary>
-    public string Titie { get; init; }
+    public string Title { get; init; }
 
     /// <summary>
     /// 页面地址.

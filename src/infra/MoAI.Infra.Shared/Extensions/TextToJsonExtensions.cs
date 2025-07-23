@@ -4,6 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,6 +20,7 @@ public static class TextToJsonExtensions
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
         AllowTrailingCommas = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     static TextToJsonExtensions()

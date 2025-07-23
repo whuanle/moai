@@ -62,6 +62,9 @@ import WikiUser from "./components/wiki/WikiUser";
 import PluginList from "./components/plugin/PluginList";
 import SystemAIModel from "./components/admin/SystemAiModel";
 import SystemPluginList from "./components/admin/PluginList";
+import PromptLayout from "./components/prompt/PromptLayout";
+import PromptList from "./components/prompt/PromptList";
+import AiAssistant from "./components/app/AiAssistant";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -107,6 +110,9 @@ function App() {
     }
     if (path.startsWith("/app/plugin")) {
       return "plugin";
+    }
+    if (path.startsWith("/app/prompt")) {
+      return "prompt";
     }
     return "home";
   };
@@ -196,6 +202,11 @@ function App() {
         label: <Link to="/app/plugin/list">插件</Link>,
       },
       {
+        key: "prompt",
+        icon: <BookOutlined />,
+        label: <Link to="/app/prompt/list">提示词</Link>,
+      },
+      {
         key: "user",
         icon: <UserOutlined />,
         label: "个人中心",
@@ -206,6 +217,18 @@ function App() {
             label: <Link to="/app/user/usersetting">个人信息</Link>,
           },
         ],
+      },
+      {
+        key: "application",
+        icon: <AppstoreOutlined />,
+        label: '应用',
+        children: [
+          {
+            key: "application.assistant",
+            icon: <RobotOutlined />,
+            label: <Link to="/app/application/assistant">AI助手</Link>,
+          },
+        ]
       },
     ];
 
@@ -335,6 +358,14 @@ function App() {
                 <Route path="plugin">
                   <Route index element={<Navigate to="list" replace />} />
                   <Route path="list" element={<PluginList />} />
+                </Route>
+                <Route path="prompt">
+                  <Route index element={<Navigate to="list" replace />} />
+                  <Route path="list" element={<PromptList />} />
+                  <Route path=":promptId/edit" element={<PromptLayout />} />
+                </Route>
+                <Route path="application">
+                  <Route path="assistant" element={<AiAssistant />} />
                 </Route>
               </Routes>
             </Content>

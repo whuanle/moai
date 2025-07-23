@@ -8,9 +8,13 @@ import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from 
 // @ts-ignore
 import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
 // @ts-ignore
+import { AppRequestBuilderNavigationMetadata, type AppRequestBuilder } from './app/index.js';
+// @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
 import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
+// @ts-ignore
+import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
@@ -37,6 +41,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get aimodel(): AimodelRequestBuilder;
     /**
+     * The app property
+     */
+    get app(): AppRequestBuilder;
+    /**
      * The common property
      */
     get common(): CommonRequestBuilder;
@@ -44,6 +52,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The plugin property
      */
     get plugin(): PluginRequestBuilder;
+    /**
+     * The prompt property
+     */
+    get prompt(): PromptRequestBuilder;
     /**
      * The storage property
      */
@@ -74,11 +86,17 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     aimodel: {
         navigationMetadata: AimodelRequestBuilderNavigationMetadata,
     },
+    app: {
+        navigationMetadata: AppRequestBuilderNavigationMetadata,
+    },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
     },
     plugin: {
         navigationMetadata: PluginRequestBuilderNavigationMetadata,
+    },
+    prompt: {
+        navigationMetadata: PromptRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

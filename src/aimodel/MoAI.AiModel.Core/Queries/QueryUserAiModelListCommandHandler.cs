@@ -20,23 +20,20 @@ namespace MoAI.AiModel.Queries;
 public class QueryUserAiModelListCommandHandler : IRequestHandler<QueryUserAiModelListCommand, QueryAiModelListCommandResponse>
 {
     private readonly DatabaseContext _dbContext;
-    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryUserAiModelListCommandHandler"/> class.
     /// </summary>
     /// <param name="dbContext"></param>
-    /// <param name="userContext"></param>
-    public QueryUserAiModelListCommandHandler(DatabaseContext dbContext, UserContext userContext)
+    public QueryUserAiModelListCommandHandler(DatabaseContext dbContext)
     {
         _dbContext = dbContext;
-        _userContext = userContext;
     }
 
     /// <inheritdoc/>
     public async Task<QueryAiModelListCommandResponse> Handle(QueryUserAiModelListCommand request, CancellationToken cancellationToken)
     {
-        var query = _dbContext.AiModels.Where(x => x.CreateUserId == _userContext.UserId && x.IsSystem == false);
+        var query = _dbContext.AiModels.Where(x => x.CreateUserId == request.UserId && x.IsSystem == false);
 
         if (request.Provider != null)
         {

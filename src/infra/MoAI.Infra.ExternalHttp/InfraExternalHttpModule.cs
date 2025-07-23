@@ -58,7 +58,7 @@ public class InfraExternalHttpModule : IModule
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
         context.Services.AddRefitClient<IDingTalkClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://oapi.dingtalk.com"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.dingtalk.com"))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
     }

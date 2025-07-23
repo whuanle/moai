@@ -36,13 +36,8 @@ public class DeleteAiAssistantChatCommandHandler : IRequestHandler<DeleteAiAssis
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteAiAssistantChatCommand request, CancellationToken cancellationToken)
     {
-        if (!ChatIdHelper.TryParseId(request.ChatId, out var chatId))
-        {
-            throw new BusinessException("对话记录已不存在");
-        }
-
-        var chatEntityId = await _databaseContext.ChatHistories
-            .Where(x => x.ChatId == chatId && x.CreateUserId == request.UserId)
+        var chatEntityId = await _databaseContext.AppAssistantChatHistories
+            .Where(x => x.ChatId == request.ChatId && x.CreateUserId == request.UserId)
             .Select(x => x.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -51,10 +46,7 @@ public class DeleteAiAssistantChatCommandHandler : IRequestHandler<DeleteAiAssis
             throw new BusinessException("对话记录已不存在");
         }
 
-        await _databaseContext.SoftDeleteAsync(_databaseContext.ChatHistories.Where(x => x.Id == chatEntityId));
-
-        await _redisDatabase.Database.KeyDeleteAsync(ChatIdHelper.GetChatObjectKey(chatId));
-        await _redisDatabase.Database.KeyDeleteAsync(ChatIdHelper.GetChatHistoryKey(chatId));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.AppAssistantChatHistories.Where(x => x.Id == chatEntityId));
         return EmptyCommandResponse.Default;
     }
 }

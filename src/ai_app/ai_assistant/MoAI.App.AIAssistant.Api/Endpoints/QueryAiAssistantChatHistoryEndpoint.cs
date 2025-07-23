@@ -33,7 +33,6 @@ public class QueryAiAssistantChatHistoryEndpoint : Endpoint<QueryUserViewAiAssis
         return await _mediator.Send(
             new QueryUserViewAiAssistantChatHistoryCommand
             {
-                UserId = _userContext.UserId,
                 ChatId = req.ChatId
             },
             ct);

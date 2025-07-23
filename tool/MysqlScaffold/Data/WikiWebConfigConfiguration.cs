@@ -20,6 +20,7 @@ public partial class WikiWebConfigConfiguration : IEntityTypeConfiguration<WikiW
         entity.ToTable("wiki_web_config", tb => tb.HasComment("wiki网页抓取"));
 
         entity.Property(e => e.Id)
+            .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.Address)

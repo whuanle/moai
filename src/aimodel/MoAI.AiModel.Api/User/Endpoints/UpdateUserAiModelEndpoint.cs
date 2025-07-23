@@ -1,4 +1,4 @@
-﻿// <copyright file="UpdateAiModelEndpoint.cs" company="MoAI">
+﻿// <copyright file="UpdateUserAiModelEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -8,6 +8,7 @@ using FastEndpoints;
 using MediatR;
 using MoAI.AiModel.Commands;
 using MoAI.AiModel.Queries;
+using MoAI.AiModel.User.Models;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -17,25 +18,25 @@ namespace MoAI.AiModel.Endpoints;
 /// <summary>
 /// 修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/update")]
-public class UpdateAiModelEndpoint : Endpoint<UpdateAiModelCommand, EmptyCommandResponse>
+[HttpPost($"{ApiPrefix.Prefix}/update_user_aimodel")]
+public class UpdateUserAiModelEndpoint : Endpoint<UpdateUserAiModelRequest, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateAiModelEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="UpdateUserAiModelEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public UpdateAiModelEndpoint(IMediator mediator, UserContext userContext)
+    public UpdateUserAiModelEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateAiModelCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateUserAiModelRequest req, CancellationToken ct)
     {
         var aiModelCreator = await _mediator.Send(new QueryAiModelCreatorCommand
         {
@@ -47,23 +48,28 @@ public class UpdateAiModelEndpoint : Endpoint<UpdateAiModelCommand, EmptyCommand
             throw new BusinessException("未找到模型") { StatusCode = 404 };
         }
 
-        if (aiModelCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
-        }
-        else if (aiModelCreator.CreatorId != _userContext.UserId)
+        if (aiModelCreator.CreatorId != _userContext.UserId)
         {
             throw new BusinessException("未找到模型.") { StatusCode = 404 };
         }
 
-        return await _mediator.Send(req);
+        var command = new UpdateAiModelCommand
+        {
+            AiModelId = req.AiModelId,
+            DeploymentName = req.DeploymentName,
+            MaxDimension = req.MaxDimension,
+            Abilities = req.Abilities,
+            AiModelType = req.AiModelType,
+            ContextWindowTokens = req.ContextWindowTokens,
+            Endpoint = req.Endpoint,
+            IsPublic = false,
+            Key = req.Key,
+            Name = req.Name,
+            Provider = req.Provider,
+            TextOutput = req.TextOutput,
+            Title = req.Title,
+        };
+
+        return await _mediator.Send(command, ct);
     }
 }

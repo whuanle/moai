@@ -33,7 +33,6 @@ public class QueryAiAssistantChatTopicListEndpoint : EndpointWithoutRequest<Quer
         return await _mediator.Send(
             new QueryUserViewAiAssistantChatTopicListCommand
             {
-                UserId = _userContext.UserId,
             },
             ct);
     }

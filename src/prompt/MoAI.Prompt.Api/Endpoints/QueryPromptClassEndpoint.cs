@@ -19,25 +19,25 @@ namespace MaomiAI.AiModel.Api.Endpoints;
 /// 查询分类.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/class_list")]
-public class QueryePromptClassEndpoint : Endpoint<QueryePromptClassCommand, QueryePromptClassCommandResponse>
+public class QueryPromptClassEndpoint : EndpointWithoutRequest<QueryePromptClassCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueryePromptClassEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="QueryPromptClassEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public QueryePromptClassEndpoint(IMediator mediator, UserContext userContext)
+    public QueryPromptClassEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
     /// <inheritdoc/>
-    public override async Task<QueryePromptClassCommandResponse> ExecuteAsync(QueryePromptClassCommand req, CancellationToken ct)
+    public override async Task<QueryePromptClassCommandResponse> ExecuteAsync(CancellationToken ct)
     {
-        return await _mediator.Send(req);
+        return await _mediator.Send(new QueryePromptClassCommand());
     }
 }

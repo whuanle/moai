@@ -1,7 +1,59 @@
-* 命令使用 Command 结尾，响应结果尽量使用 CommandResponse 结尾，如果是集合或分页，可不使用 CommandResponse 结尾。
-* Handler 使用 CommandHandler 结尾。
-* Endpoint 使用 XXEndpoint，与 XXCommand 抱持一致。
-* 命名一般 20 字符，考虑比较长 50，描述 255，其它长文本。
+
+
+### CQRS 、API 要求
+
+* 命令使用 `{X}Command` 结尾，响应结果尽量使用 `{X}CommandResponse` 结尾，部分无特殊结构，可使用 SimpleInt、EmptyCommandResponse 等。
+
+* 如果是集合或分页，使用 CommandResponse 结尾包装 `IReadonlyCollection<T>`，集合中的 T 建议单独抽象模型，因为复用概率比较高，示例：
+
+  > ```csharp
+  > public class QueryAllOAuthPrividerDetailCommandResponse
+  > {
+  >     /// <summary>
+  >     /// 列表.
+  >     /// </summary>
+  >     public IReadOnlyCollection<OAuthPrividerDetailModel> Items { get; init; } = Array.Empty<OAuthPrividerDetailModel>();
+  > }
+  > ```
+
+* 有些只能用于内部使用、不允许 Api 使用的作为模型类的 Command，需要加上 Internal，以便区分限制，不过依然可以被其它模块使用，只是不能出现在 Api 里面，命名：`Internal{X}Command`。
+
+* 查询类的命名统一使用 `Query{X}Command` 做前缀，命令类使用动词做前缀如 `SetUserStateCommand`。
+
+* Handler 使用 `{X}CommandHandler` 结尾。
+
+* Endpoint 使用 `{X}Endpoint`，与 `{X}Command` 抱持一致。
+
+* `.Core` 项目不可以直接使用 UserContext ，如果查询或命令需要知道用户 id，则需要 Command 传入，起名示例：
+
+  > ```
+  > Query{X}ByUserIdCommand
+  > ```
+  
+* Endpoint 可以单独做自己的模型，起名 `{X}Request`，例如查询需要根据用户 id 判断能够查询的数据，但是不能让用户传递 UserId，Endpoint 注入 UserContext 获取当前用户 id，然后传递给 Command。
+  
+  > ```
+  > public class QueryWikiBaseListRequest
+  > {
+  > }
+  > public class QueryWikiBaseListByUserIdCommand : IRequest<T>
+  > {
+  >     public int UserId{ get; init; }
+  > }
+  > ```
+  
+* MQ 的事件模型使用 `{X}Message` 命名。
+
+* API 路径命名不使用 Rest API 命名规则，删除资源统一使用 `[HttpDelete]`，其它查询、操作根据情况使用 `[HttpGet]`、`[HttpPost]`，不必使用 `[HttpPut]`。
+
+
+
+
+
+### 数据库要求
+
+* 一般标题 20 字符，考虑比较长 50、100，描述 255，其它长文本 1000、2000，可变字符串请勿设置太长，避免使用 text 类型。
+* UUID 类型使用 `binary(16)`，数据库生成器会自动对应 C# Guid 类型。
 
 
 

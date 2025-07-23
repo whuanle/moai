@@ -248,8 +248,10 @@ export default function OAuthLogin() {
         navigate("/app");
       } catch (error) {
         console.error("OAuth登录时出错:", error);
-        messageApi.error("OAuth登录失败，请重试");
-        navigate("/login");
+        messageApi.error("OAuth登录失败，3秒后跳转到登录页面");
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
       }
 
       setLoading(false);

@@ -1,4 +1,4 @@
-﻿// <copyright file="UserViewAiModelProviderListEndpoint.cs" company="MoAI">
+﻿// <copyright file="QueryUserAiModelProviderListEndpoint.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -10,23 +10,23 @@ using MoAI.AiModel.Queries;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Infra.Models;
 
-namespace MoAI.AiModel.QueryEndpoints;
+namespace MoAI.AiModel.User.Endpoints;
 
 /// <summary>
 /// 查询ai服务商列表.
 /// </summary>
-[HttpGet($"{ApiPrefix.Prefix}/system_providerlist")]
-public class QuerySystemAiModelProviderListEndpoint : EndpointWithoutRequest<QueryAiModelProviderListResponse>
+[HttpGet($"{ApiPrefix.Prefix}/user_providerlist")]
+public class QueryUserAiModelProviderListEndpoint : EndpointWithoutRequest<QueryAiModelProviderListResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QuerySystemAiModelProviderListEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="QueryUserAiModelProviderListEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public QuerySystemAiModelProviderListEndpoint(IMediator mediator, UserContext userContext)
+    public QueryUserAiModelProviderListEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
@@ -35,6 +35,11 @@ public class QuerySystemAiModelProviderListEndpoint : EndpointWithoutRequest<Que
     /// <inheritdoc/>
     public override async Task<QueryAiModelProviderListResponse> ExecuteAsync(CancellationToken ct)
     {
-        return await _mediator.Send(new QuerySystemAiModelProviderListCommand());
+        var command = new QueryUserAiModelProviderListCommand
+        {
+            UserId = _userContext.UserId
+        };
+
+        return await _mediator.Send(command, ct);
     }
 }

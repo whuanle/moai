@@ -20,6 +20,11 @@ public class QueryWikiBaseListCommand : IRequest<IReadOnlyCollection<QueryWikiIn
     public int UserId { get; init; }
 
     /// <summary>
+    /// 是否系统知识库.
+    /// </summary>
+    public bool IsSystem { get; init; }
+
+    /// <summary>
     /// 只查询该用户创建的知识库.
     /// </summary>
     public bool? IsOwn { get; init; }

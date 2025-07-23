@@ -1,6 +1,7 @@
-﻿using System;
+﻿using MoAI.Database.Audits;
+using System;
 using System.Collections.Generic;
-using MoAI.Database.Audits;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MoAI.Database.Entities;
 
@@ -12,7 +13,8 @@ public partial class AppAssistantChatEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public Guid Id { get; set; } = default!;
+    [Column(TypeName = "binary(16)")]
+    public Guid Id { get; set; } = Guid.CreateVersion7();
 
     /// <summary>
     /// 对话标题.

@@ -14,4 +14,8 @@ namespace MoAI.Login.Queries;
 /// </summary>
 public class QueryAllOAuthPrividerCommand : IRequest<QueryAllOAuthPrividerCommandResponse>
 {
+    /// <summary>
+    /// 要跳转的路径.
+    /// </summary>
+    public string? RedirectUri { get; init; }
 }

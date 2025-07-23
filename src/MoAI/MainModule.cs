@@ -6,8 +6,11 @@
 
 using Maomi;
 using Maomi.I18n;
+using MaomiAI.Prompt.Core;
 using MoAI.Admin;
+using MoAI.AI;
 using MoAI.AiModel.Core;
+using MoAI.App.AIAssistant;
 using MoAI.Common;
 using MoAI.Database;
 using MoAI.Filters;
@@ -34,6 +37,9 @@ namespace MoAI;
 [InjectModule<AiModelCoreModule>]
 [InjectModule<WikiCoreModule>]
 [InjectModule<PluginCoreModule>]
+[InjectModule<PromptCoreModule>]
+[InjectModule<AppAiAssistantCoreModule>]
+[InjectModule<AiCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

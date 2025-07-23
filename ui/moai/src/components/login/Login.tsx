@@ -42,6 +42,32 @@ export default function Login() {
   const [oauthProviders, setOauthProviders] = useState<QueryAllOAuthPrividerCommandResponseItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // 获取重定向路径参数
+  const redirectUri = searchParams.get('redirect_uri');
+
+  // 验证重定向路径的安全性
+  const validateRedirectUri = (uri: string | null): string | null => {
+    if (!uri || uri.trim() === '') {
+      return null;
+    }
+    
+    // 检查是否包含协议前缀（http://, https://, ftp:// 等）
+    if (/^[a-zA-Z]+:\/\//.test(uri)) {
+      console.warn('重定向路径包含协议前缀，已忽略:', uri);
+      return null;
+    }
+    
+    // 检查是否以斜杠开头（相对路径）
+    if (!uri.startsWith('/')) {
+      console.warn('重定向路径不是以斜杠开头的相对路径，已忽略:', uri);
+      return null;
+    }
+    
+    return uri;
+  };
+
+  const safeRedirectUri = validateRedirectUri(redirectUri);
+
   useEffect(() => {
     const initializeLogin = async () => {
       try {
@@ -51,7 +77,9 @@ export default function Login() {
         const isVerified = await CheckToken();
         if (isVerified) {
           messageApi.success("您已经登录，正在重定向到首页");
-          setTimeout(() => navigate("/app"), 1000);
+          // 如果有重定向路径，优先跳转到指定路径
+          const targetPath = safeRedirectUri || "/app";
+          setTimeout(() => navigate(targetPath), 1000);
         }
 
         // 获取第三方登录列表
@@ -104,7 +132,9 @@ export default function Login() {
       if (response) {
         SetUserInfo(response);
         messageApi.success("登录成功，正在重定向到主页");
-        setTimeout(() => navigate("/app"), 1000);
+        // 如果有重定向路径，优先跳转到指定路径
+        const targetPath = safeRedirectUri || "/app";
+        setTimeout(() => navigate(targetPath), 1000);
       } else {
         messageApi.error("登录失败");
       }

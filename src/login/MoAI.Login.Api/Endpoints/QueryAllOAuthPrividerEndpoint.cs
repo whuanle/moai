@@ -17,7 +17,7 @@ namespace MoAI.Login.Endpoints;
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/oauth_prividers")]
 [AllowAnonymous]
-public class QueryAllOAuthPrividerEndpoint : EndpointWithoutRequest<QueryAllOAuthPrividerCommandResponse>
+public class QueryAllOAuthPrividerEndpoint : Endpoint<QueryAllOAuthPrividerCommand, QueryAllOAuthPrividerCommandResponse>
 {
     private readonly IMediator _mediator;
 
@@ -31,6 +31,6 @@ public class QueryAllOAuthPrividerEndpoint : EndpointWithoutRequest<QueryAllOAut
     }
 
     /// <inheritdoc/>
-    public override Task<QueryAllOAuthPrividerCommandResponse> ExecuteAsync(CancellationToken ct)
-        => _mediator.Send(new QueryAllOAuthPrividerCommand { }, ct);
+    public override Task<QueryAllOAuthPrividerCommandResponse> ExecuteAsync(QueryAllOAuthPrividerCommand req, CancellationToken ct)
+        => _mediator.Send(req, ct);
 }

@@ -23,17 +23,14 @@ namespace MoAI.AiModel.Queries;
 public class QueryUserAiModelProviderListCommandHandler : IRequestHandler<QueryUserAiModelProviderListCommand, QueryAiModelProviderListResponse>
 {
     private readonly DatabaseContext _dbContext;
-    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryUserAiModelProviderListCommandHandler"/> class.
     /// </summary>
     /// <param name="dbContext"></param>
-    /// <param name="userContext"></param>
-    public QueryUserAiModelProviderListCommandHandler(DatabaseContext dbContext, UserContext userContext)
+    public QueryUserAiModelProviderListCommandHandler(DatabaseContext dbContext)
     {
         _dbContext = dbContext;
-        _userContext = userContext;
     }
 
     /// <inheritdoc/>
@@ -41,7 +38,7 @@ public class QueryUserAiModelProviderListCommandHandler : IRequestHandler<QueryU
     {
         var providers = new List<QueryAiModelProviderCount>();
 
-        var list = await _dbContext.AiModels.Where(x => x.CreateUserId == _userContext.UserId && x.IsSystem == false)
+        var list = await _dbContext.AiModels.Where(x => x.CreateUserId == request.UserId && x.IsSystem == false)
             .GroupBy(x => x.AiProvider)
             .Select(x => new QueryAiModelProviderCount
             {

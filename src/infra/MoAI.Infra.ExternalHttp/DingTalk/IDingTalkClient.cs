@@ -20,12 +20,31 @@ namespace MoAI.Infra.DingTalk;
 
 public interface IDingTalkClient
 {
+    /// <summary>
+    /// 获取用户token.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [Post("/v1.0/oauth2/userAccessToken")]
+    Task<UserAccessTokenResponse> GetUserAccessTokenAsync([Body] UserAccessTokenRequest request);
+
+    /// <summary>
+    /// 获取用户信息.
+    /// </summary>
+    /// <param name="unionId"></param>
+    /// <param name="accessToken"></param>
+    /// <returns></returns>
+    [Get("/v1.0/contact/users/{unionId}")]
+    Task<ContactUserInfoResponse> GetContactUserInfoAsync(
+        [AliasAs("unionId")] string unionId,
+        [Header("x-acs-dingtalk-access-token")] string accessToken);
+
     [Post("/sns/getuserinfo_bycode")]
     Task<SnsGetUserInfoByCodeResponse> GetUserInfoByCodeAsync(
-        [Query] string accessKey,
-        [Query] string timestamp,
-        [Query] string signature,
-        [Body] SnsGetUserInfoByCodeRequest request);
+    [Query] string accessKey,
+    [Query] string timestamp,
+    [Query] string signature,
+    [Body] SnsGetUserInfoByCodeRequest request);
 
     /// <summary>
     /// 计算钉钉签名（HMAC-SHA256 + Base64 + UrlEncode）

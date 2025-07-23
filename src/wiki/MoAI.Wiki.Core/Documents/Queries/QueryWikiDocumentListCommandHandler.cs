@@ -42,6 +42,16 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
             query = query.Where(x => x.FileName.Contains(request.Query));
         }
 
+        if (request.IncludeFileTypes != null && request.IncludeFileTypes.Count > 0)
+        {
+            query = query.Where(x => request.IncludeFileTypes.Contains(x.FileType));
+        }
+
+        if (request.ExcludeFileTypes != null && request.ExcludeFileTypes.Count > 0)
+        {
+            query = query.Where(x => !request.ExcludeFileTypes.Contains(x.FileType));
+        }
+
         var totalCount = await query.CountAsync();
 
         var result = await query.Join(_databaseContext.Files.Where(x => x.IsUploaded), a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem

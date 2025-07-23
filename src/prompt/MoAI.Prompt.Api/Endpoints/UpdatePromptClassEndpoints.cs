@@ -5,17 +5,19 @@
 // </copyright>
 
 using FastEndpoints;
+using MaomiAI.Prompt.Api;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
-using MoAI.Common.Queries;
 
 namespace MaomiAI.AiModel.Api.Endpoints;
 
 /// <summary>
 /// 修改提示词分类.
 /// </summary>
+[HttpPost($"{ApiPrefix.Prefix}/update_class")]
 public class UpdatePromptClassEndpoints : Endpoint<UpdatePromptClassCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;

@@ -9,6 +9,9 @@ namespace MoAI.Database.Entities;
 /// </summary>
 public partial class WikiWebConfigEntity : IFullAudited
 {
+    /// <summary>
+    /// id.
+    /// </summary>
     public int Id { get; set; }
 
     /// <summary>

@@ -159,7 +159,7 @@ state=STATE
                 GrantType = "authorization_code",
                 ClientId = clientEntity.Key,
                 ClientSecret = clientEntity.Secret,
-                RedirectUri = new Uri(new Uri(_systemOptions.Server), $"/oauth_login").ToString(),
+                RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login").ToString(),
                 CodeVerifier = request.Code,
                 Scope = string.Empty
             });
@@ -197,32 +197,27 @@ state=STATE
             var dingTalkClient = _serviceProvider.GetRequiredService<IDingTalkClient>();
             var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
 
-            var dingTalkUserInfo = await dingTalkClient.GetUserInfoByCodeAsync(
-                clientEntity.Key,
-                timestamp,
-                dingTalkClient.ComputeSignature(timestamp, clientEntity.Key),
-                new Infra.DingTalk.Models.SnsGetUserInfoByCodeRequest
-                {
-                    TmpAuthCode = request.Code
-                });
-
-            if (dingTalkUserInfo.ErrCode != 0)
+            var dingTalkToken = await dingTalkClient.GetUserAccessTokenAsync(new UserAccessTokenRequest
             {
-                throw new BusinessException("钉钉接口错误");
-            }
+                ClientId = clientEntity.Key,
+                ClientSecret = clientEntity.Secret,
+                Code = request.Code,
+            });
+
+            var dingTalkUserInfo = await dingTalkClient.GetContactUserInfoAsync("me", dingTalkToken.AccessToken!);
 
             return new OAuthBindUserProfile
             {
                 OAuthId = clientEntity.Id,
-                Name = dingTalkUserInfo.UserInfo.UnionId,
+                Name = dingTalkUserInfo.Nick!,
                 Profile = new OpenIdUserProfile
                 {
-                    Sub = dingTalkUserInfo.UserInfo.UnionId,
-                    Name = dingTalkUserInfo.UserInfo.Nick,
+                    Sub = dingTalkUserInfo.UnionId,
+                    Name = dingTalkUserInfo.Nick,
                     Audience = clientEntity.Key,
                     Issuer = "https://open.feishu.cn",
                     Picture = string.Empty,
-                    PreferredUsername = dingTalkUserInfo.UserInfo.Nick,
+                    PreferredUsername = dingTalkUserInfo.Nick,
                 },
 
                 AccessToken = string.Empty

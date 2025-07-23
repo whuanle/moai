@@ -111,6 +111,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
 
     private async Task AddDingTalkConnectionAsync(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
+        // see https://open.dingtalk.com/document/isvapp/tutorial-enabling-login-to-third-party-websites?spm=ding_open_doc.document.0.0.4cedd394fQrEYa
         // https://login.dingtalk.com/oauth2/auth?redirect_uri=https%3A%2F%2Fwww.aaaaa.com%2Fa%2Fb&response_type=code&client_id=dingbbbbbbb&scope=openid corpid&state=dddd&prompt=consent
         var weixinWorkConnection = new Database.Entities.OauthConnectionEntity
         {

@@ -12,7 +12,7 @@ using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
-namespace MoAI.AiModel.QueryEndpoints;
+namespace MoAI.AiModel.Admin.Endpoints;
 
 /// <summary>
 /// 获取 AI 模型列表.

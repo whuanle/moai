@@ -21,11 +21,14 @@
 	<ItemGroup>
 		<ProjectReference Include="..\admin\MoAI.Admin.Core\MoAI.Admin.Core.csproj" />
 		<ProjectReference Include="..\aimodel\MoAI.AiModel.Core\MoAI.AiModel.Core.csproj" />
+		<ProjectReference Include="..\ai\MoAI.AI.Core\MoAI.AI.Core.csproj" />
+		<ProjectReference Include="..\ai_app\ai_assistant\MoAI.App.AIAssistant.Core\MoAI.App.AIAssistant.Core.csproj" />
 		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
 		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
 		<ProjectReference Include="..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />
 		<ProjectReference Include="..\common\MoAI.Common.Core\MoAI.Common.Core.csproj" />
 		<ProjectReference Include="..\plugin\MoAI.Plugin.Core\MoAI.Plugin.Core.csproj" />
+		<ProjectReference Include="..\prompt\MoAI.Prompt.Core\MoAI.Prompt.Core.csproj" />
 		<ProjectReference Include="..\storage\MoAI.Storage.Core\MoAI.Storage.Core.csproj" />
 		<ProjectReference Include="..\user\MoAI.User.Core\MoAI.User.Core.csproj" />
 		<ProjectReference Include="..\wiki\MoAI.Wiki.Core\MoAI.Wiki.Core.csproj" />

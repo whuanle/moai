@@ -8,17 +8,18 @@ using FastEndpoints;
 using MediatR;
 using MoAI.AiModel.Queries;
 using MoAI.AiModel.Queries.Respones;
+using MoAI.AiModel.User.Models;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
-namespace MoAI.AiModel.QueryEndpoints;
+namespace MoAI.AiModel.User.Endpoints;
 
 /// <summary>
 /// 获取 AI 模型列表.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/type/user_modellist")]
-public class QueryUserAiModelListEndpoint : Endpoint<QueryUserAiModelListCommand, QueryAiModelListCommandResponse>
+public class QueryUserAiModelListEndpoint : Endpoint<QueryUserAiModelListRequest, QueryAiModelListCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -35,8 +36,15 @@ public class QueryUserAiModelListEndpoint : Endpoint<QueryUserAiModelListCommand
     }
 
     /// <inheritdoc/>
-    public override async Task<QueryAiModelListCommandResponse> ExecuteAsync(QueryUserAiModelListCommand req, CancellationToken ct)
+    public override async Task<QueryAiModelListCommandResponse> ExecuteAsync(QueryUserAiModelListRequest req, CancellationToken ct)
     {
-        return await _mediator.Send(req);
+        var command = new QueryUserAiModelListCommand
+        {
+            UserId = _userContext.UserId,
+            Provider = req.Provider,
+            AiModelType = req.AiModelType
+        };
+
+        return await _mediator.Send(command, ct);
     }
 }

@@ -770,6 +770,17 @@
         ],
         "summary": "获取第三方登录列表.",
         "operationId": "QueryAllOAuthPrividerEndpoint",
+        "parameters": [
+          {
+            "name": "redirectUri",
+            "in": "query",
+            "description": "要跳转的路径.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2301,6 +2312,260 @@
         ]
       }
     },
+    "/api/aimodel/type/public_system_aimodel_list": {
+      "post": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "获取开放的系统 AI 模型列表.",
+        "operationId": "QueryPublicSystemAiModelListEndpoint",
+        "requestBody": {
+          "x-name": "QueryPublicSystemAiModelListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPublicSystemAiModelListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPublicSystemAiModelListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/type/user_modellist": {
+      "post": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "获取 AI 模型列表.",
+        "operationId": "QueryUserAiModelListEndpoint",
+        "requestBody": {
+          "x-name": "QueryUserAiModelListRequest",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryUserAiModelListRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiModelListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/user_providerlist": {
+      "get": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "查询ai服务商列表.",
+        "operationId": "QueryUserAiModelProviderListEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiModelProviderListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/aimodel/type/system_modellist": {
       "post": {
         "tags": [
@@ -2466,185 +2731,20 @@
         ]
       }
     },
-    "/api/aimodel/type/user_modellist": {
+    "/api/aimodel/add_system_aimodel": {
       "post": {
         "tags": [
           "Aimodel"
         ],
-        "summary": "获取 AI 模型列表.",
-        "operationId": "QueryUserAiModelListEndpoint",
+        "summary": "添加一个系统 ai 模型，key 要使用 RSA 公钥加密.",
+        "operationId": "AddSystemAiModelEndpoint",
         "requestBody": {
-          "x-name": "QueryUserAiModelListCommand",
+          "x-name": "AddSystemAiModelRequest",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryUserAiModelListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryAiModelListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/aimodel/user_providerlist": {
-      "get": {
-        "tags": [
-          "Aimodel"
-        ],
-        "summary": "查询ai服务商列表.",
-        "operationId": "QueryUserAiModelProviderListEndpoint",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryAiModelProviderListResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/aimodel/add": {
-      "post": {
-        "tags": [
-          "Aimodel"
-        ],
-        "summary": "添加一个 ai 模型，key 要使用 RSA 公钥加密.",
-        "operationId": "AddAiModelEndpoint",
-        "requestBody": {
-          "x-name": "AddAiModelCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddAiModelCommand"
+                "$ref": "#/components/schemas/AddSystemAiModelRequest"
               }
             }
           },
@@ -2658,6 +2758,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/update_system_aimodel": {
+      "post": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*.",
+        "operationId": "UpdateSystemAiModelEndpoint",
+        "requestBody": {
+          "x-name": "UpdateSystemAiModelRequest",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSystemAiModelRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -2814,20 +3003,109 @@
         ]
       }
     },
-    "/api/aimodel/update": {
+    "/api/aimodel/add_user_model": {
+      "post": {
+        "tags": [
+          "Aimodel"
+        ],
+        "summary": "添加一个用户私有模型配置，key 要使用 RSA 公钥加密.",
+        "operationId": "AddUserAiModelEndpoint",
+        "requestBody": {
+          "x-name": "AddUserAiModelRequest",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserAiModelRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/aimodel/update_user_aimodel": {
       "post": {
         "tags": [
           "Aimodel"
         ],
         "summary": "修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*.",
-        "operationId": "UpdateAiModelEndpoint",
+        "operationId": "UpdateUserAiModelEndpoint",
         "requestBody": {
-          "x-name": "UpdateAiModelCommand",
+          "x-name": "UpdateUserAiModelRequest",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAiModelCommand"
+                "$ref": "#/components/schemas/UpdateUserAiModelRequest"
               }
             }
           },
@@ -5500,6 +5778,1071 @@
         ]
       }
     },
+    "/api/prompt/create_class": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "创建提示词分类.",
+        "operationId": "CreatePromptClassEndpoints",
+        "requestBody": {
+          "x-name": "CreatePromptClassCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePromptClassCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/create_prompt": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "创建提示词.",
+        "operationId": "CreatePromptEndpoints",
+        "requestBody": {
+          "x-name": "CreatePromptCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePromptCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/delete_class": {
+      "delete": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "删除提示词分类.",
+        "operationId": "DeletePromptClassEndpoint",
+        "requestBody": {
+          "x-name": "DeletePromptCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePromptCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePromptCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/delete_prompt": {
+      "delete": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "删除提示词.",
+        "operationId": "DeletePromptEndpoints",
+        "requestBody": {
+          "x-name": "DeletePromptCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePromptCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePromptCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/prompt_list": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "查询提示词.",
+        "operationId": "QueryPrompListEndpoints",
+        "requestBody": {
+          "x-name": "QueryPromptListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPromptListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPromptListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/class_list": {
+      "get": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "查询分类.",
+        "operationId": "QueryPromptClassEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryePromptClassCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/prompt_content": {
+      "get": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "获取提示词内容.",
+        "operationId": "QueryPromptCommandEndpoint",
+        "parameters": [
+          {
+            "name": "promptId",
+            "in": "query",
+            "required": true,
+            "description": "提示词 id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "description": "用户 id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/update_class": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "修改提示词分类.",
+        "operationId": "UpdatePromptClassEndpoints",
+        "requestBody": {
+          "x-name": "UpdatePromptClassCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromptClassCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/update_prompt": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "修改提示词.",
+        "operationId": "UpdatePromptEndpoints",
+        "requestBody": {
+          "x-name": "UpdatePromptCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromptCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/app/assistant/delete_chat": {
+      "delete": {
+        "tags": [
+          "App"
+        ],
+        "summary": "删除对话.",
+        "operationId": "DeleteAiAssistantChatEndpoint",
+        "requestBody": {
+          "x-name": "DeleteAiAssistantChatCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAiAssistantChatCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAiAssistantChatCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/app/assistant/chat_history": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "获取话题详细内容.",
+        "operationId": "QueryAiAssistantChatHistoryEndpoint",
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "query",
+            "required": true,
+            "description": "对话 id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiAssistantChatHistoryCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/app/assistant/topic_list": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "获取用户所有话题记录.",
+        "operationId": "QueryAiAssistantChatTopicListEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiAssistantChatTopicListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/plugin/import_openapi": {
       "post": {
         "tags": [
@@ -5587,6 +6930,83 @@
             "JWTBearerAuth": []
           }
         ]
+      }
+    },
+    "/api/app/assistant/completions": {
+      "post": {
+        "tags": [
+          "AiAssistant"
+        ],
+        "summary": "对话.",
+        "operationId": "AiAssistant_Completions",
+        "requestBody": {
+          "x-name": "command",
+          "description": "对话参数.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessingAiAssistantChatCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/download/private/{filename}": {
@@ -6005,7 +7425,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753094936029"
+            "example": "1753276966949"
           }
         }
       },
@@ -6453,6 +7873,11 @@
           }
         }
       },
+      "QueryAllOAuthPrividerCommand": {
+        "type": "object",
+        "description": "查询支持的 OAuth 登录方式.",
+        "additionalProperties": false
+      },
       "RefreshTokenCommandResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -6751,7 +8176,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753094936029"
+            "example": "1753276966949"
           },
           "createUserId": {
             "type": "integer",
@@ -6767,7 +8192,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753094936029"
+            "example": "1753276966949"
           },
           "updateUserId": {
             "type": "integer",
@@ -7264,8 +8689,9 @@
           }
         }
       },
-      "QuerySystemAiModelListCommandResponse": {
+      "QueryPublicSystemAiModelListCommandResponse": {
         "type": "object",
+        "description": "Ai 模型列表.",
         "additionalProperties": false,
         "required": [
           "aiModels"
@@ -7275,33 +8701,10 @@
             "type": "array",
             "description": "AI 模型列表.",
             "items": {
-              "$ref": "#/components/schemas/QuerySystemAiModelListCommandResponseItem"
+              "$ref": "#/components/schemas/AiNotKeyEndpoint"
             }
           }
         }
-      },
-      "QuerySystemAiModelListCommandResponseItem": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AiNotKeyEndpoint"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "isSystem",
-              "isPublic"
-            ],
-            "properties": {
-              "isSystem": {
-                "type": "boolean"
-              },
-              "isPublic": {
-                "type": "boolean"
-              }
-            }
-          }
-        ]
       },
       "AiNotKeyEndpoint": {
         "type": "object",
@@ -7546,9 +8949,50 @@
           }
         }
       },
-      "QuerySystemAiModelListCommand": {
+      "QueryPublicSystemAiModelListCommand": {
         "type": "object",
-        "description": "系统视图，查询系统能够看到的模型列表.",
+        "description": "查询公开访问的系统AI模型列表.",
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "description": "AI 模型类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiProvider"
+              }
+            ]
+          },
+          "aiModelType": {
+            "description": "Ai 模型类型.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiModelType"
+              }
+            ]
+          }
+        }
+      },
+      "QueryAiModelListCommandResponse": {
+        "type": "object",
+        "description": "Ai 模型列表.",
+        "additionalProperties": false,
+        "required": [
+          "aiModels"
+        ],
+        "properties": {
+          "aiModels": {
+            "type": "array",
+            "description": "AI 模型列表.",
+            "items": {
+              "$ref": "#/components/schemas/AiNotKeyEndpoint"
+            }
+          }
+        }
+      },
+      "QueryUserAiModelListRequest": {
+        "type": "object",
         "additionalProperties": false,
         "properties": {
           "provider": {
@@ -7612,9 +9056,8 @@
           }
         }
       },
-      "QueryAiModelListCommandResponse": {
+      "QuerySystemAiModelListCommandResponse": {
         "type": "object",
-        "description": "Ai 模型列表.",
         "additionalProperties": false,
         "required": [
           "aiModels"
@@ -7624,14 +9067,37 @@
             "type": "array",
             "description": "AI 模型列表.",
             "items": {
-              "$ref": "#/components/schemas/AiNotKeyEndpoint"
+              "$ref": "#/components/schemas/QuerySystemAiModelListCommandResponseItem"
             }
           }
         }
       },
-      "QueryUserAiModelListCommand": {
+      "QuerySystemAiModelListCommandResponseItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AiNotKeyEndpoint"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "isSystem",
+              "isPublic"
+            ],
+            "properties": {
+              "isSystem": {
+                "type": "boolean"
+              },
+              "isPublic": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      },
+      "QuerySystemAiModelListCommand": {
         "type": "object",
-        "description": "用户视图，查询用户能够看到的模型列表.",
+        "description": "系统视图，查询系统能够看到的模型列表.",
         "additionalProperties": false,
         "properties": {
           "provider": {
@@ -7654,24 +9120,19 @@
           }
         }
       },
-      "AddAiModelCommand": {
+      "AddSystemAiModelRequest": {
         "allOf": [
           {
             "$ref": "#/components/schemas/AiEndpoint"
           },
           {
             "type": "object",
-            "description": "添加 AI 模型.",
+            "description": "添加一个系统级模型.",
             "additionalProperties": false,
             "required": [
-              "isSystem",
               "isPublic"
             ],
             "properties": {
-              "isSystem": {
-                "type": "boolean",
-                "description": "是否系统模型，创建后无法修改该属性."
-              },
               "isPublic": {
                 "type": "boolean",
                 "description": "公开使用，只有系统模型才能公开使用."
@@ -7767,6 +9228,38 @@
           }
         }
       },
+      "UpdateSystemAiModelRequest": {
+        "required": [
+          "aiModelId"
+        ],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AiEndpoint"
+          },
+          {
+            "type": "object",
+            "description": "修改一个系统级模型.",
+            "additionalProperties": false,
+            "required": [
+              "aiModelId",
+              "isPublic"
+            ],
+            "properties": {
+              "aiModelId": {
+                "type": "integer",
+                "description": "AI 模型 id.",
+                "format": "int32",
+                "minLength": 1,
+                "nullable": false
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "公开使用，只有系统模型才能公开使用."
+              }
+            }
+          }
+        ]
+      },
       "DeleteAiModelCommand": {
         "type": "object",
         "description": "删除 ai 模型.",
@@ -7784,7 +9277,19 @@
           }
         }
       },
-      "UpdateAiModelCommand": {
+      "AddUserAiModelRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AiEndpoint"
+          },
+          {
+            "type": "object",
+            "description": "添加一个用户私有的模型.",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "UpdateUserAiModelRequest": {
         "required": [
           "aiModelId"
         ],
@@ -7794,11 +9299,10 @@
           },
           {
             "type": "object",
-            "description": "修改 AI 模型.",
+            "description": "修改一个用户私有的模型.",
             "additionalProperties": false,
             "required": [
-              "aiModelId",
-              "isPublic"
+              "aiModelId"
             ],
             "properties": {
               "aiModelId": {
@@ -7807,10 +9311,6 @@
                 "format": "int32",
                 "minLength": 1,
                 "nullable": false
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "公开使用，只有系统模型才能公开使用."
               }
             }
           }
@@ -7991,13 +9491,18 @@
         "description": "查询当前用户可以看到的所有知识库.",
         "additionalProperties": false,
         "required": [
-          "userId"
+          "userId",
+          "isSystem"
         ],
         "properties": {
           "userId": {
             "type": "integer",
             "description": "用户id.",
             "format": "int32"
+          },
+          "isSystem": {
+            "type": "boolean",
+            "description": "是否系统知识库."
           },
           "isOwn": {
             "type": "boolean",
@@ -8481,7 +9986,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753094936029"
+            "example": "1753276966949"
           }
         }
       },
@@ -8656,7 +10161,9 @@
             "description": "查询 wiki 文件列表.",
             "additionalProperties": false,
             "required": [
-              "wikiId"
+              "wikiId",
+              "includeFileTypes",
+              "excludeFileTypes"
             ],
             "properties": {
               "wikiId": {
@@ -8672,6 +10179,20 @@
                 "type": "string",
                 "description": "筛选文件名称.",
                 "nullable": true
+              },
+              "includeFileTypes": {
+                "type": "array",
+                "description": "包括文件类型，如 .md、.docx 等.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "excludeFileTypes": {
+                "type": "array",
+                "description": "排除文件类型，如 .md、.docx 等.",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -8945,7 +10466,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753094936029"
+            "example": "1753276966949"
           },
           "tags": {
             "type": "array",
@@ -9172,15 +10693,9 @@
         "description": "获取插件的函数列表.",
         "additionalProperties": false,
         "required": [
-          "userId",
           "pluginId"
         ],
         "properties": {
-          "userId": {
-            "type": "integer",
-            "description": "用户 id.",
-            "format": "int32"
-          },
           "pluginId": {
             "type": "integer",
             "description": "插件 id.",
@@ -9464,7 +10979,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753094936029"
+            "example": "1753276966949"
           }
         }
       },
@@ -9658,6 +11173,481 @@
           }
         }
       },
+      "CreatePromptClassCommand": {
+        "type": "object",
+        "description": "创建提示词分类.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 200,
+            "minLength": 0,
+            "nullable": false
+          }
+        }
+      },
+      "CreatePromptCommand": {
+        "type": "object",
+        "description": "创建提示词.",
+        "additionalProperties": false,
+        "required": [
+          "promptClassId",
+          "name",
+          "description",
+          "content",
+          "isPublic"
+        ],
+        "properties": {
+          "promptClassId": {
+            "type": "integer",
+            "description": "分类.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "名称.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 200,
+            "minLength": 0,
+            "nullable": false
+          },
+          "content": {
+            "type": "string",
+            "description": "助手设定,支持 markdown.",
+            "maxLength": 2000,
+            "minLength": 0,
+            "nullable": false
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
+          }
+        }
+      },
+      "DeletePromptCommand": {
+        "type": "object",
+        "description": "删除提示词.",
+        "additionalProperties": false,
+        "required": [
+          "promptId"
+        ],
+        "properties": {
+          "promptId": {
+            "type": "integer",
+            "description": "提示词 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryPromptListCommandResponse": {
+        "type": "object",
+        "description": "提示词列表.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "列表.",
+            "items": {
+              "$ref": "#/components/schemas/PromptItem"
+            }
+          }
+        }
+      },
+      "PromptItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "description": "查询提示词详细信息.",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "description"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "name": {
+                "type": "string",
+                "description": "名称."
+              },
+              "description": {
+                "type": "string",
+                "description": "描述."
+              },
+              "content": {
+                "type": "string",
+                "description": "助手设定,markdown.",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "QueryPromptListCommand": {
+        "type": "object",
+        "description": "查询能看到的提示词列表.",
+        "additionalProperties": false,
+        "required": [
+          "userId"
+        ],
+        "properties": {
+          "classId": {
+            "type": "integer",
+            "description": "筛选分类.",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "筛选名称.",
+            "nullable": true
+          },
+          "isOwn": {
+            "type": "boolean",
+            "description": "自己创建的.",
+            "nullable": true
+          },
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryePromptClassCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryePromptClassCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryePromptClassCommandResponseItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "名称."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述."
+          }
+        }
+      },
+      "QueryPromptCommand": {
+        "type": "object",
+        "description": "获取提示词.",
+        "additionalProperties": false
+      },
+      "UpdatePromptClassCommand": {
+        "type": "object",
+        "description": "修改提示词分类.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "名称.",
+            "maxLength": 20,
+            "minLength": 0,
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 255,
+            "minLength": 0,
+            "nullable": false
+          }
+        }
+      },
+      "UpdatePromptCommand": {
+        "type": "object",
+        "description": "更新提示词.",
+        "additionalProperties": false,
+        "required": [
+          "promptClassId",
+          "promptId",
+          "name",
+          "description",
+          "content",
+          "isPublic"
+        ],
+        "properties": {
+          "promptClassId": {
+            "type": "integer",
+            "description": "新的分类id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "promptId": {
+            "type": "integer",
+            "description": "提示词 id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "名称.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 200,
+            "minLength": 0,
+            "nullable": false
+          },
+          "content": {
+            "type": "string",
+            "description": "助手设定,markdown."
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
+          }
+        }
+      },
+      "DeleteAiAssistantChatCommand": {
+        "type": "object",
+        "description": "删除对话记录.",
+        "additionalProperties": false,
+        "required": [
+          "chatId",
+          "userId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          },
+          "chatId": {
+            "type": "string",
+            "description": "对话 id.",
+            "format": "uuid",
+            "minLength": 1,
+            "nullable": false
+          }
+        }
+      },
+      "QueryAiAssistantChatHistoryCommandResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AIAssistantChatContext"
+          },
+          {
+            "type": "object",
+            "description": "对话记录结果.",
+            "additionalProperties": false,
+            "required": [
+              "chatId",
+              "createTime",
+              "updateTime"
+            ],
+            "properties": {
+              "chatId": {
+                "type": "string",
+                "description": "id.",
+                "format": "uuid"
+              },
+              "createTime": {
+                "type": "string",
+                "description": "创建时间.",
+                "format": "int64",
+                "minimum": 0.0,
+                "example": "1753276966949"
+              },
+              "updateTime": {
+                "type": "string",
+                "description": "最后更新时间.",
+                "format": "int64",
+                "minimum": 0.0,
+                "example": "1753276966949"
+              }
+            }
+          }
+        ]
+      },
+      "AIAssistantChatContext": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AIAssistantChatObject"
+          },
+          {
+            "type": "object",
+            "description": "对话上下文，一个完整的聊天上下文.",
+            "additionalProperties": false,
+            "required": [
+              "chatHistory"
+            ],
+            "properties": {
+              "chatHistory": {
+                "type": "array",
+                "description": "历史对话或者上下文信息，创建对话时，如果有提示词，则第一个对话就是提示词.",
+                "items": {}
+              }
+            }
+          }
+        ]
+      },
+      "AIAssistantChatObject": {
+        "type": "object",
+        "description": "对话参数.",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "modelId",
+          "pluginIds",
+          "executionSettings"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "话题名称."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.",
+            "nullable": true
+          },
+          "modelId": {
+            "type": "integer",
+            "description": "要使用的 AI 模型.",
+            "format": "int32"
+          },
+          "wikiId": {
+            "type": "integer",
+            "description": "要使用的知识库，如果用户不在知识库用户内，则必须是公开的.",
+            "format": "int32",
+            "nullable": true
+          },
+          "pluginIds": {
+            "type": "array",
+            "description": "要使用的插件 id 列表，用户必须有权使用这些插件.",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "executionSettings": {
+            "type": "array",
+            "description": "配置，字典适配不同的 AI 模型.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueString"
+            }
+          }
+        }
+      },
+      "QueryUserViewAiAssistantChatHistoryCommand": {
+        "type": "object",
+        "description": "查询对话记录.",
+        "additionalProperties": false
+      },
+      "QueryAiAssistantChatTopicListCommandResponse": {
+        "type": "object",
+        "description": "话题列表.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiAssistantChatTopic"
+            }
+          }
+        }
+      },
+      "AiAssistantChatTopic": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "chatId",
+          "title",
+          "createTime"
+        ],
+        "properties": {
+          "chatId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1753276966949"
+          }
+        }
+      },
       "ImportOpenApiPluginCommand": {
         "type": "object",
         "description": "导入 openapi 文件，支持 json、yaml.",
@@ -9717,6 +11707,39 @@
             "description": "是否公开，系统插件 == true 时才能设置."
           }
         }
+      },
+      "ProcessingAiAssistantChatCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AIAssistantChatObject"
+          },
+          {
+            "type": "object",
+            "description": "进行对话，对话时，History 每次做增量传递.",
+            "additionalProperties": false,
+            "required": [
+              "userId",
+              "content"
+            ],
+            "properties": {
+              "chatId": {
+                "type": "string",
+                "description": "对话 id，id 为空时自动新建.",
+                "format": "uuid",
+                "nullable": true
+              },
+              "userId": {
+                "type": "integer",
+                "description": "当前用户标识.",
+                "format": "int32"
+              },
+              "content": {
+                "type": "string",
+                "description": "用户的提问."
+              }
+            }
+          }
+        ]
       }
     },
     "securitySchemes": {

@@ -5,16 +5,9 @@
 // </copyright>
 
 using Maomi;
-using MoAI.AiModel.Shared.Models;
-using MoAI.Infra.Exceptions;
-using MediatR;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using MoAI.AiModel.Models;
-using OpenAI;
-using StackExchange.Redis.Extensions.Core.Abstractions;
-using System.ClientModel;
 using MoAI.AI.Abstract;
+using MoAI.AiModel.Models;
 
 namespace MoAI.AI.ChatCompletion;
 

@@ -7,6 +7,8 @@
 using FluentValidation;
 using Maomi;
 using MoAI.Infra;
+using MoAI.Storage;
+using System.Reflection;
 
 namespace MoAI.Modules;
 
@@ -31,9 +33,11 @@ public class ConfigureMVCModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddControllers(o =>
+        var mvcBuilder = context.Services.AddControllers(o =>
         {
         });
+
+        AddApplicationParts(mvcBuilder, context);
 
         context.Services.AddCors(options =>
         {
@@ -50,5 +54,18 @@ public class ConfigureMVCModule : IModule
         context.Services.AddValidatorsFromAssemblies(context.Modules.Select(x => x.Assembly).Distinct());
 
         // context.Services.AddFluentValidationAutoValidation();
+    }
+
+    private static void AddApplicationParts(IMvcBuilder builder, ServiceContext context)
+    {
+        foreach (var item in context.Modules)
+        {
+            if (item.Assembly.GetName().Name?.EndsWith(".Api", StringComparison.CurrentCultureIgnoreCase) == true)
+            {
+                builder.AddApplicationPart(item.Assembly);
+            }
+        }
+
+        builder.AddApplicationPart(typeof(StorageLocalModule).Assembly);
     }
 }

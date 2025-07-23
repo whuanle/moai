@@ -51,7 +51,7 @@ const PROVIDER_DEFAULTS = {
   dingtalk: {
     wellKnown: "https://oapi.dingtalk.com/connect/oauth2/sns_authorize",
     authorizeUrl: "https://oapi.dingtalk.com/connect/oauth2/sns_authorize",
-    iconUrl: "https://lf-package-cn.feishucdn.com/obj/feishu-static/lark/open/website/images/899fa60e60151c73aaea2e25871102dc.svg",
+    iconUrl: "https://img.alicdn.com/imgextra/i1/O1CN01SNHEw41ysQFPN5Ql6_!!6000000006634-55-tps-176-31.svg",
   },
 } as const;
 

@@ -1,4 +1,4 @@
-﻿// <copyright file="QueryUserViewAiModelListCommand.cs" company="MoAI">
+﻿// <copyright file="QueryUserAiModelListCommand.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -15,6 +15,11 @@ namespace MoAI.AiModel.Queries;
 /// </summary>
 public class QueryUserAiModelListCommand : IRequest<QueryAiModelListCommandResponse>
 {
+    /// <summary>
+    /// 用户 id.
+    /// </summary>
+    public int UserId { get; init; }
+
     /// <summary>
     /// AI 模型类型.
     /// </summary>

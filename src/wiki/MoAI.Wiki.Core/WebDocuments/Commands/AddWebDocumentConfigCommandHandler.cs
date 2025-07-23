@@ -41,7 +41,7 @@ public class AddWebDocumentConfigCommandHandler : IRequestHandler<AddWebDocument
         var entity = new WikiWebConfigEntity
         {
             WikiId = request.WikiId,
-            Titie = request.Titie,
+            Title = request.Title,
             Address = request.Address,
             IsCrawlOther = request.IsCrawlOther,
             CrawlSchame = request.CrawlSchame,

@@ -14,4 +14,9 @@ namespace MoAI.AiModel.Queries;
 /// </summary>
 public class QueryUserAiModelProviderListCommand : IRequest<QueryAiModelProviderListResponse>
 {
+    /// <summary>
+    /// 用户 id.
+    /// </summary>
+    public int UserId { get; init; }
+
 }

@@ -9,7 +9,7 @@ namespace MaomiAI.Document.Core.Consumers.Events;
 /// <summary>
 /// 发送消息，后台执行任务.
 /// </summary>
-public class EmbeddingDocumentTask
+public class EmbeddingDocumentTaskMesage
 {
     /// <summary>
     /// 知识库 id.

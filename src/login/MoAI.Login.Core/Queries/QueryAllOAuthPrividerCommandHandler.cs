@@ -55,6 +55,11 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
         foreach (var item in items)
         {
             var frontUrl = _systemOptions.WebUI + $"/oauth_login";
+            if (!string.IsNullOrEmpty(request.RedirectUri))
+            {
+                frontUrl += $"?redirectUri={request.RedirectUri}";
+            }
+
             var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&redirect_uri={frontUrl}&response_type=code&scope=openid%20profile&state={item.OAuthId}";
 
             if (OAuthPrivider.Feishu.ToString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
@@ -64,15 +69,9 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
             }
             else if (OAuthPrivider.DingTalk.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
             {
-                // 钉钉授权地址需要特殊处理
-                // https://oapi.dingtalk.com/connect/qrconnect?appid=SuiteKey&response_type=code&scope=snsapi_login&state=STATE&redirect_uri=REDIRECT_URI
-                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&response_type=code&scope=snsapi_login&state={item.OAuthId}&redirect_uri={frontUrl}";
-            }
-            else if (OAuthPrivider.DingTalk.ToJsonString().Equals(item.Provider, StringComparison.OrdinalIgnoreCase))
-            {
                 // 钉钉的授权地址需要特殊处理
                 // https://login.dingtalk.com/oauth2/auth?redirect_uri=https%3A%2F%2Fwww.aaaaa.com%2Fa%2Fb&response_type=code&client_id=dingbbbbbbb&scope=openid corpid&state=dddd&prompt=consent
-                redirectUrl = $"{item.RedirectUrl}?appid={item.Key}&response_type=code&scope=openid&state={item.OAuthId}&client_id={item.Key}&redirect_uri={frontUrl}";
+                redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&response_type=code&scope=openid%20corpid&state={item.OAuthId}&prompt=consent&redirect_uri={frontUrl}";
             }
 
             // var redirectUrl = $"{item.RedirectUrl}?client_id={item.Key}&response_type=code&scope=openid%20profile&state={item.OAuthId}";

@@ -9,6 +9,7 @@ import { UserPageRouters } from "./components/user/UserPageRouter";
 import { WikiPageRouters } from "./components/wiki/WikiPageRouter";
 import { PluginPageRouters } from "./components/plugin/PluginPageRouter";
 import { AiModelPageRouters } from "./components/aimodel/AiModelPageRouter.tsx";
+import { AppPageRouters } from "./components/app/AppPageRouter";
 
 // 在此集合所有页面的路由，每个子模块的路由从模块下的 PageRouter 导出
 
@@ -27,6 +28,7 @@ export const PageRouterProvider = createBrowserRouter([
       ...UserPageRouters,
       ...WikiPageRouters,
       ...PluginPageRouters,
+      ...AppPageRouters, // 新增，确保 application/assistant 路由生效
     ],
   },
   ...LoginPageRouters,

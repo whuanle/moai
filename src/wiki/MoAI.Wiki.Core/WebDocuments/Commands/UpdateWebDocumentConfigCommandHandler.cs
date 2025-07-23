@@ -1,4 +1,4 @@
-﻿// <copyright file="AddWebDocumentConfigCommandHandler.cs" company="MoAI">
+﻿// <copyright file="UpdateWebDocumentConfigCommandHandler.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -44,9 +44,8 @@ public class UpdateWebDocumentConfigCommandHandler : IRequestHandler<UpdateWebDo
         entity.LimitPath = request.LimitPath;
         entity.IsAutoEmbedding = request.IsAutoEmbedding;
         entity.SamePathRule = (int)request.SamePathRule;
-        entity.Titie = request.Titie;
         entity.Address = request.Address;
-        entity.Titie = request.Titie.Trim();
+        entity.Title = request.Title.Trim();
 
         _databaseContext.WikiWebConfigs.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);

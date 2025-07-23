@@ -286,7 +286,7 @@ export default function SystemAIModel() {
         } as ModelAbilities
       };
 
-      const response = await client.api.aimodel.add.post(requestBody);
+      const response = await client.api.aimodel.add_system_aimodel.post(requestBody);
       
       if (response?.value) {
         messageApi.success('模型添加成功');
@@ -347,7 +347,7 @@ export default function SystemAIModel() {
         requestBody.key = '*';
       }
 
-      const response = await client.api.aimodel.update.post(requestBody);
+      const response = await client.api.aimodel.update_system_aimodel.post(requestBody);
       
       if (response) {
         messageApi.success('模型更新成功');

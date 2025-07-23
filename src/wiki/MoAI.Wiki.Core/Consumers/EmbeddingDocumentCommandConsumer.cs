@@ -26,8 +26,8 @@ namespace MaomiAI.Document.Core.Consumers;
 /// <summary>
 /// 文档向量化.
 /// </summary>
-[Consumer("embedding_document", Qos = 1)]
-public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
+[Consumer("embedding_document", Qos = 10)]
+public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskMesage>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly SystemOptions _systemOptions;
@@ -53,7 +53,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
     }
 
     /// <inheritdoc/>
-    public async Task ExecuteAsync(MessageHeader messageHeader, EmbeddingDocumentTask message)
+    public async Task ExecuteAsync(MessageHeader messageHeader, EmbeddingDocumentTaskMesage message)
     {
         var documentTask = await _databaseContext.WikiDocumentTasks
              .FirstOrDefaultAsync(x => x.DocumentId == message.DocumentId && x.Id == message.TaskId);
@@ -144,7 +144,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
     }
 
     /// <inheritdoc/>
-    public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, EmbeddingDocumentTask message)
+    public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, EmbeddingDocumentTaskMesage message)
     {
         var documentTask = await _databaseContext.WikiDocumentTasks
              .FirstOrDefaultAsync(x => x.DocumentId == message.DocumentId && x.Id == message.TaskId);
@@ -165,7 +165,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTask>
     }
 
     /// <inheritdoc/>
-    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, EmbeddingDocumentTask? message, Exception? ex)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, EmbeddingDocumentTaskMesage? message, Exception? ex)
     {
         _logger.LogError(ex, message: "Document processing failed.{@Message}", message);
         return Task.FromResult(ConsumerState.Ack);
