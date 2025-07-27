@@ -772,11 +772,12 @@
         "operationId": "QueryAllOAuthPrividerEndpoint",
         "parameters": [
           {
-            "name": "redirectUri",
+            "name": "redirectUrl",
             "in": "query",
             "description": "要跳转的路径.",
             "schema": {
               "type": "string",
+              "format": "uri",
               "nullable": true
             }
           }
@@ -1983,6 +1984,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryUserBindAccountCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/user/unbind-oauth": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "解绑第三方账号.",
+        "operationId": "UnbindUserAccountEndpoint",
+        "requestBody": {
+          "x-name": "UnbindUserAccountCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnbindUserAccountCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -5778,95 +5868,6 @@
         ]
       }
     },
-    "/api/prompt/create_class": {
-      "post": {
-        "tags": [
-          "Prompt"
-        ],
-        "summary": "创建提示词分类.",
-        "operationId": "CreatePromptClassEndpoints",
-        "requestBody": {
-          "x-name": "CreatePromptClassCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePromptClassCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SimpleInt"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/prompt/create_prompt": {
       "post": {
         "tags": [
@@ -5894,100 +5895,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SimpleInt"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/prompt/delete_class": {
-      "delete": {
-        "tags": [
-          "Prompt"
-        ],
-        "summary": "删除提示词分类.",
-        "operationId": "DeletePromptClassEndpoint",
-        "requestBody": {
-          "x-name": "DeletePromptCommand",
-          "description": "",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/DeletePromptCommand"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeletePromptCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -6233,82 +6140,6 @@
         ]
       }
     },
-    "/api/prompt/class_list": {
-      "get": {
-        "tags": [
-          "Prompt"
-        ],
-        "summary": "查询分类.",
-        "operationId": "QueryPromptClassEndpoint",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryePromptClassCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/prompt/prompt_content": {
       "get": {
         "tags": [
@@ -6326,16 +6157,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "description": "用户 id.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
           }
         ],
         "responses": {
@@ -6345,95 +6166,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PromptItem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/prompt/update_class": {
-      "post": {
-        "tags": [
-          "Prompt"
-        ],
-        "summary": "修改提示词分类.",
-        "operationId": "UpdatePromptClassEndpoints",
-        "requestBody": {
-          "x-name": "UpdatePromptClassCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdatePromptClassCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -6510,6 +6242,354 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdatePromptCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/create_class": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "创建提示词分类.",
+        "operationId": "CreatePromptClassEndpoints",
+        "requestBody": {
+          "x-name": "CreatePromptClassCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePromptClassCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/delete_class": {
+      "delete": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "删除提示词分类.",
+        "operationId": "DeletePromptClassEndpoint",
+        "requestBody": {
+          "x-name": "DeletePromptCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePromptCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePromptCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/class_list": {
+      "get": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "查询分类.",
+        "operationId": "QueryPromptClassEndpoint",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryePromptClassCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/prompt/update_class": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "修改提示词分类.",
+        "operationId": "UpdatePromptClassEndpoints",
+        "requestBody": {
+          "x-name": "UpdatePromptClassCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromptClassCommand"
               }
             }
           },
@@ -7425,7 +7505,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753276966949"
+            "example": "1753574492950"
           }
         }
       },
@@ -7730,11 +7810,6 @@
           "password": {
             "type": "string",
             "description": "密码，使用 RSA 公钥加密."
-          },
-          "oAuthBindId": {
-            "type": "string",
-            "description": "登录绑定 OAuth 用户 ID.",
-            "nullable": true
           }
         }
       },
@@ -7743,17 +7818,19 @@
         "description": "使用 OAuth 绑定已存在的账号.",
         "additionalProperties": false,
         "required": [
-          "oAuthBindId"
+          "tempOAuthBindId"
         ],
         "properties": {
-          "oAuthBindId": {
+          "tempOAuthBindId": {
             "type": "string",
-            "description": "id."
+            "description": "id.",
+            "format": "uuid"
           }
         }
       },
       "OAuthLoginCommandResponse": {
         "type": "object",
+        "description": "响应.",
         "additionalProperties": false,
         "required": [
           "isBindUser",
@@ -7767,11 +7844,13 @@
           },
           "oAuthId": {
             "type": "string",
-            "description": "id."
+            "description": "id.",
+            "format": "uuid"
           },
-          "oAuthBindId": {
+          "tempOAuthBindId": {
             "type": "string",
             "description": "如果此 id 没有绑定过用户，则返回此 id，使用此 id 绑定或注册用户.",
+            "format": "uuid",
             "nullable": true
           },
           "name": {
@@ -7791,7 +7870,7 @@
       },
       "OAuthLoginCommand": {
         "type": "object",
-        "description": "使用 OAuth 登录.",
+        "description": "使用 OAuth 登录，用于第三方登录回调后触发接口.",
         "additionalProperties": false,
         "required": [
           "code",
@@ -7804,21 +7883,23 @@
           },
           "oAuthId": {
             "type": "string",
-            "description": "id."
+            "description": "id.",
+            "format": "uuid"
           }
         }
       },
       "OAuthRegisterCommand": {
         "type": "object",
-        "description": "使用第三方账号一键注册.",
+        "description": "第三方账号没有绑定记录时，使用第三方账号一键注册.",
         "additionalProperties": false,
         "required": [
-          "oAuthBindId"
+          "tempOAuthBindId"
         ],
         "properties": {
-          "oAuthBindId": {
+          "tempOAuthBindId": {
             "type": "string",
-            "description": "登录绑定 OAuth 用户 ID."
+            "description": "登录绑定 OAuth 用户 ID.",
+            "format": "uuid"
           }
         }
       },
@@ -7853,7 +7934,8 @@
         "properties": {
           "oAuthId": {
             "type": "string",
-            "description": "id."
+            "description": "id.",
+            "format": "uuid"
           },
           "name": {
             "type": "string",
@@ -8176,7 +8258,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753276966949"
+            "example": "1753574492950"
           },
           "createUserId": {
             "type": "integer",
@@ -8192,7 +8274,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753276966949"
+            "example": "1753574492950"
           },
           "updateUserId": {
             "type": "integer",
@@ -8233,13 +8315,18 @@
           },
           {
             "type": "object",
-            "description": "查询用户列表.",
+            "description": "分页查询用户列表.",
             "additionalProperties": false,
             "properties": {
               "userId": {
                 "type": "integer",
-                "description": "指定用户的 id.",
+                "description": "查询指定用户.",
                 "format": "int32",
+                "nullable": true
+              },
+              "userName": {
+                "type": "string",
+                "description": "根据用户名筛选.",
                 "nullable": true
               },
               "search": {
@@ -8471,9 +8558,9 @@
         ],
         "properties": {
           "oAuthConnectionId": {
-            "type": "integer",
+            "type": "string",
             "description": "id.",
-            "format": "int32",
+            "format": "uuid",
             "minLength": 1,
             "nullable": false
           }
@@ -8505,7 +8592,6 @@
             "additionalProperties": false,
             "required": [
               "id",
-              "oAuthId",
               "name",
               "iconUrl",
               "provider",
@@ -8515,13 +8601,9 @@
             ],
             "properties": {
               "id": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "oAuthId": {
                 "type": "string",
-                "description": "OAuathId."
+                "description": "id.",
+                "format": "uuid"
               },
               "name": {
                 "type": "string",
@@ -8564,9 +8646,9 @@
             ],
             "properties": {
               "oAuthConnectionId": {
-                "type": "integer",
+                "type": "string",
                 "description": "id.",
-                "format": "int32"
+                "format": "uuid"
               }
             }
           }
@@ -8605,11 +8687,32 @@
             "type": "string"
           },
           "providerId": {
-            "type": "integer",
-            "format": "int32"
+            "type": "string",
+            "format": "uuid"
           },
           "iconUrl": {
             "type": "string"
+          }
+        }
+      },
+      "UnbindUserAccountCommand": {
+        "type": "object",
+        "description": "解绑第三方账号.",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "bindId"
+        ],
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "description": "用户 id.",
+            "format": "int32"
+          },
+          "bindId": {
+            "type": "integer",
+            "description": "绑定 id.",
+            "format": "int32"
           }
         }
       },
@@ -9986,7 +10089,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753276966949"
+            "example": "1753574492950"
           }
         }
       },
@@ -10466,7 +10569,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753276966949"
+            "example": "1753574492950"
           },
           "tags": {
             "type": "array",
@@ -10979,7 +11082,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753276966949"
+            "example": "1753574492950"
           }
         }
       },
@@ -11173,31 +11276,6 @@
           }
         }
       },
-      "CreatePromptClassCommand": {
-        "type": "object",
-        "description": "创建提示词分类.",
-        "additionalProperties": false,
-        "required": [
-          "name",
-          "description"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "名称.",
-            "maxLength": 50,
-            "minLength": 0,
-            "nullable": false
-          },
-          "description": {
-            "type": "string",
-            "description": "描述.",
-            "maxLength": 200,
-            "minLength": 0,
-            "nullable": false
-          }
-        }
-      },
       "CreatePromptCommand": {
         "type": "object",
         "description": "创建提示词.",
@@ -11288,7 +11366,8 @@
             "required": [
               "id",
               "name",
-              "description"
+              "description",
+              "isPublic"
             ],
             "properties": {
               "id": {
@@ -11308,6 +11387,9 @@
                 "type": "string",
                 "description": "助手设定,markdown.",
                 "nullable": true
+              },
+              "isPublic": {
+                "type": "boolean"
               }
             }
           }
@@ -11344,82 +11426,9 @@
           }
         }
       },
-      "QueryePromptClassCommandResponse": {
+      "QueryPromptContentRequest": {
         "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QueryePromptClassCommandResponseItem"
-            }
-          }
-        }
-      },
-      "QueryePromptClassCommandResponseItem": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "name",
-          "description"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "id.",
-            "format": "int32"
-          },
-          "name": {
-            "type": "string",
-            "description": "名称."
-          },
-          "description": {
-            "type": "string",
-            "description": "描述."
-          }
-        }
-      },
-      "QueryPromptCommand": {
-        "type": "object",
-        "description": "获取提示词.",
         "additionalProperties": false
-      },
-      "UpdatePromptClassCommand": {
-        "type": "object",
-        "description": "修改提示词分类.",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "name",
-          "description"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "id.",
-            "format": "int32",
-            "minLength": 1,
-            "nullable": false
-          },
-          "name": {
-            "type": "string",
-            "description": "名称.",
-            "maxLength": 20,
-            "minLength": 0,
-            "nullable": false
-          },
-          "description": {
-            "type": "string",
-            "description": "描述.",
-            "maxLength": 255,
-            "minLength": 0,
-            "nullable": false
-          }
-        }
       },
       "UpdatePromptCommand": {
         "type": "object",
@@ -11472,6 +11481,82 @@
           }
         }
       },
+      "CreatePromptClassCommand": {
+        "type": "object",
+        "description": "创建提示词分类.",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
+          }
+        }
+      },
+      "QueryePromptClassCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueryePromptClassCommandResponseItem"
+            }
+          }
+        }
+      },
+      "QueryePromptClassCommandResponseItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "名称."
+          }
+        }
+      },
+      "UpdatePromptClassCommand": {
+        "type": "object",
+        "description": "修改提示词分类.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "名称.",
+            "maxLength": 20,
+            "minLength": 0,
+            "nullable": false
+          }
+        }
+      },
       "DeleteAiAssistantChatCommand": {
         "type": "object",
         "description": "删除对话记录.",
@@ -11520,14 +11605,14 @@
                 "description": "创建时间.",
                 "format": "int64",
                 "minimum": 0.0,
-                "example": "1753276966949"
+                "example": "1753574492950"
               },
               "updateTime": {
                 "type": "string",
                 "description": "最后更新时间.",
                 "format": "int64",
                 "minimum": 0.0,
-                "example": "1753276966949"
+                "example": "1753574492950"
               }
             }
           }
@@ -11644,7 +11729,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753276966949"
+            "example": "1753574492950"
           }
         }
       },

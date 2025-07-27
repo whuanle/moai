@@ -5,6 +5,7 @@
 // </copyright>
 
 using Microsoft.Extensions.Configuration;
+using MySqlConnector;
 using System.Diagnostics;
 using System.Text;
 
@@ -45,6 +46,14 @@ public class Program
         ImportSystemConfiguration(configurationBuilder);
         var configuration = configurationBuilder.Build();
 
+        var connectionString = configuration["MoAI:Database"];
+        if (!connectionString.EndsWith(';'))
+        {
+            connectionString += ";"; // 确保连接字符串以分号结尾
+        }
+
+        connectionString += ";GuidFormat=Binary16";
+
         // 本机已经安装需先安装 dotnet-ef
         // dotnet tool install -g dotnet-ef
         ProcessStartInfo? processStartInfo = new()
@@ -60,7 +69,7 @@ public class Program
         processStartInfo.ArgumentList.Add("ef");
         processStartInfo.ArgumentList.Add("dbcontext");
         processStartInfo.ArgumentList.Add("scaffold");
-        processStartInfo.ArgumentList.Add($"\"{configuration["MoAI:Database"]}\"");
+        processStartInfo.ArgumentList.Add($"\"{connectionString.ToString()}\"");
         processStartInfo.ArgumentList.Add("Pomelo.EntityFrameworkCore.MySql");
         processStartInfo.ArgumentList.Add("--context-dir");
         processStartInfo.ArgumentList.Add("Data");

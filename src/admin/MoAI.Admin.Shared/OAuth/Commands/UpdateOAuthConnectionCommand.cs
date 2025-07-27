@@ -17,5 +17,5 @@ public class UpdateOAuthConnectionCommand : CreateOAuthConnectionCommand, IReque
     /// <summary>
     /// id.
     /// </summary>
-    public int OAuthConnectionId { get; init; }
+    public Guid OAuthConnectionId { get; init; }
 }

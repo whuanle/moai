@@ -1,4 +1,4 @@
-﻿// <copyright file="DeletePromptClassEndpoint.cs" company="MoAI">
+﻿// <copyright file="UpdatePromptClassEndpoints.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -7,35 +7,35 @@
 using FastEndpoints;
 using MaomiAI.Prompt.Api;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
-using MoAI.Common.Queries;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.Prompt.PromptClassEndpoints;
 
 /// <summary>
-/// 删除提示词分类.
+/// 修改提示词分类.
 /// </summary>
-[HttpDelete($"{ApiPrefix.Prefix}/delete_class")]
-public class DeletePromptClassEndpoint : Endpoint<DeletePromptCommand, EmptyCommandResponse>
+[HttpPost($"{ApiPrefix.Prefix}/update_class")]
+public class UpdatePromptClassEndpoints : Endpoint<UpdatePromptClassCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DeletePromptClassEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="UpdatePromptClassEndpoints"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public DeletePromptClassEndpoint(IMediator mediator, UserContext userContext)
+    public UpdatePromptClassEndpoints(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(DeletePromptCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdatePromptClassCommand req, CancellationToken ct)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {

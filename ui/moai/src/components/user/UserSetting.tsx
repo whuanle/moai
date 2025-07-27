@@ -31,6 +31,7 @@ import {
   CrownOutlined,
   SafetyOutlined,
   InfoCircleOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { GetApiClient, UploadPublicFile } from '../ServiceClient';
 import { GetUserDetailInfo, GetServiceInfo } from '../../InitService';
@@ -38,11 +39,13 @@ import { proxyRequestError } from '../../helper/RequestError';
 import { FileTypeHelper } from '../../helper/FileTypeHelper';
 import { RsaHelper } from '../../helper/RsaHalper';
 import useAppStore from '../../stateshare/store';
+import { useNavigate } from 'react-router';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 export default function UserSetting() {
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -567,6 +570,55 @@ export default function UserSetting() {
                         </Form.Item>
                       )}
                     </Form>
+                  </Card>
+                </Col>
+
+                <Col xs={24} md={12}>
+                  <Card
+                    type="inner"
+                    title={
+                      <Space>
+                        <LinkOutlined />
+                        第三方账号绑定
+                      </Space>
+                    }
+                    extra={
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<LinkOutlined />}
+                        onClick={() => navigate('/user/oauth')}
+                      >
+                        管理绑定
+                      </Button>
+                    }
+                  >
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      <Alert
+                        message="第三方账号绑定"
+                        description="绑定第三方账号后，您可以使用这些账号快速登录系统"
+                        type="info"
+                        showIcon
+                      />
+                      
+                      <Button
+                        type="dashed"
+                        icon={<LinkOutlined />}
+                        onClick={() => navigate('/user/oauth')}
+                        block
+                      >
+                        管理第三方账号绑定
+                      </Button>
+                      
+                      <Paragraph type="secondary" style={{ margin: 0 }}>
+                        <ul>
+                          <li>支持绑定多个第三方账号</li>
+                          <li>绑定后可快速登录</li>
+                          <li>可随时解绑账号</li>
+                          <li>提高账号安全性</li>
+                        </ul>
+                      </Paragraph>
+                    </Space>
                   </Card>
                 </Col>
 

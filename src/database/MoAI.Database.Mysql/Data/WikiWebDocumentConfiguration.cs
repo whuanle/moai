@@ -36,10 +36,6 @@ public partial class WikiWebDocumentConfiguration : IEntityTypeConfiguration<Wik
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.Path)
-            .HasMaxLength(1000)
-            .HasComment("相对于path的地址")
-            .HasColumnName("path");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")
@@ -54,6 +50,10 @@ public partial class WikiWebDocumentConfiguration : IEntityTypeConfiguration<Wik
             .HasMaxLength(1024)
             .HasComment("全路径地址")
             .HasColumnName("url");
+        entity.Property(e => e.WikiDocumentId)
+            .HasComment("文档id")
+            .HasColumnType("int(11)")
+            .HasColumnName("wiki_document_id");
         entity.Property(e => e.WikiId)
             .HasComment("知识库id")
             .HasColumnType("int(11)")

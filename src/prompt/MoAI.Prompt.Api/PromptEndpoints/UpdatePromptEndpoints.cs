@@ -1,4 +1,4 @@
-﻿// <copyright file="CreatePromptEndpoints.cs" company="MoAI">
+﻿// <copyright file="UpdatePromptEndpoints.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -11,40 +11,41 @@ using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
+using MoAI.Prompt.Queries;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
-/// 创建提示词.
+/// 修改提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/create_prompt")]
-public class CreatePromptEndpoints : Endpoint<CreatePromptCommand, SimpleInt>
+[HttpPost($"{ApiPrefix.Prefix}/update_prompt")]
+public class UpdatePromptEndpoints : Endpoint<UpdatePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreatePromptEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="UpdatePromptEndpoints"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public CreatePromptEndpoints(IMediator mediator, UserContext userContext)
+    public UpdatePromptEndpoints(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
     /// <inheritdoc/>
-    public override async Task<SimpleInt> ExecuteAsync(CreatePromptCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdatePromptCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+        var isCreator = await _mediator.Send(new QueryPromptCreateUserCommand
         {
-            UserId = _userContext.UserId
+            PromptId = req.PromptId
         });
 
-        if (!isAdmin.IsAdmin)
+        if (isCreator.UserId != _userContext.UserId)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            throw new BusinessException("没有操作权限") { StatusCode = 403 };
         }
 
         return await _mediator.Send(req);

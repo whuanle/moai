@@ -44,10 +44,10 @@ public class AddWebDocumentConfigCommandHandler : IRequestHandler<AddWebDocument
             Title = request.Title,
             Address = request.Address,
             IsCrawlOther = request.IsCrawlOther,
-            CrawlSchame = request.CrawlSchame,
-            LimitPath = request.LimitPath,
             IsAutoEmbedding = request.IsAutoEmbedding,
-            SamePathRule = (int)request.SamePathRule,
+            IsWaitJs = request.IsWaitJs,
+            LimitAddress = request.LimitAddress,
+            LimitMaxCount = request.LimitMaxCount
         };
 
         _databaseContext.WikiWebConfigs.Add(entity);

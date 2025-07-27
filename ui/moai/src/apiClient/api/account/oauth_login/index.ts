@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Oauth_loginRequestBuilder extends BaseRequestBuilder<Oauth_loginRequestBuilder> {
     /**
      * OAuth登录.
-     * @param body 使用 OAuth 登录.
+     * @param body 使用 OAuth 登录，用于第三方登录回调后触发接口.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<OAuthLoginCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Oauth_loginRequestBuilder extends BaseRequestBuilder<Oauth_logi
      post(body: OAuthLoginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<OAuthLoginCommandResponse | undefined>;
     /**
      * OAuth登录.
-     * @param body 使用 OAuth 登录.
+     * @param body 使用 OAuth 登录，用于第三方登录回调后触发接口.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

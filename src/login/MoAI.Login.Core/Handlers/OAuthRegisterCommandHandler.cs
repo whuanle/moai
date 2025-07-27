@@ -16,6 +16,7 @@ using MoAI.Login.Commands.Responses;
 using MoAI.Login.Models;
 using MoAI.Login.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
+using System.Transactions;
 
 namespace MoAI.Login.Handlers;
 
@@ -54,7 +55,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     public async Task<LoginCommandResponse> Handle(OAuthRegisterCommand request, CancellationToken cancellationToken)
     {
         // 绑定 OAuth 用户信息
-        var redisKey = $"oauth:bind:{request.OAuthBindId}";
+        var redisKey = $"oauth:bind:{request.TempOAuthBindId}";
         var oauthBindUserProfile = await _redisDatabase.GetAsync<OAuthBindUserProfile>(redisKey);
 
         if (oauthBindUserProfile == null)
@@ -62,34 +63,32 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             throw new BusinessException("第三方授权跳转登录已过期") { StatusCode = 403 };
         }
 
-        var oauthConnectionEntity = await _databaseContext.OauthConnections
-            .FirstOrDefaultAsync(c => c.Id == oauthBindUserProfile.OAuthId);
+        var oauthConnectionEntity = await _databaseContext.OauthConnections.FirstOrDefaultAsync(c => c.Id == oauthBindUserProfile.OAuthId);
 
         if (oauthConnectionEntity == null)
         {
             throw new BusinessException("未找到对应的 OAuth 认证方式") { StatusCode = 404 };
         }
 
-        var existingOpenIdUser = await _databaseContext.UserOauths
-            .Where(u => u.Sub == oauthBindUserProfile.Profile.Sub && u.Id == oauthConnectionEntity.Id)
-            .AnyAsync();
+        var existingOpenIdUser = await _databaseContext.UserOauths.Where(u => u.ProviderId == oauthConnectionEntity.Id && u.Sub == oauthBindUserProfile.Profile.Sub).AnyAsync();
 
         if (existingOpenIdUser)
         {
             throw new BusinessException("该 OAuth 用户已被注册") { StatusCode = 409 };
         }
 
-        // 检查用户名是否已被注册
-        var existingUser = await _databaseContext.Users
-            .Where(u => u.UserName == oauthBindUserProfile.Profile.PreferredUsername)
-            .AnyAsync();
+        using TransactionScope transactionScope = new TransactionScope(
+            scopeOption: TransactionScopeOption.Required,
+            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
+            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
 
+        var userName = "u" + Guid.CreateVersion7().ToString("N");
         var registerUserCommand = new RegisterUserCommand()
         {
-            UserName = existingUser ? Guid.NewGuid().ToString("N") : oauthBindUserProfile.Profile.PreferredUsername,
-            Email = Guid.NewGuid().ToString("N") + "@default.com",
+            UserName = userName,
+            Email = userName + "@moai.com",
             NickName = oauthBindUserProfile.Profile.PreferredUsername,
-            Phone = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString(),
+            Phone = "12345678900",
             Password = _rsaProvider.Encrypt(Guid.NewGuid().ToString("N"))
         };
 
@@ -103,6 +102,10 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             throw new BusinessException("用户注册失败，请联系管理员") { StatusCode = 500 };
         }
 
+        user.UserName = $"u{user.Id}";
+        _databaseContext.Users.Update(user);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+
         await _databaseContext.UserOauths.AddAsync(new Database.Entities.UserOauthEntity
         {
             UserId = userId.Value,
@@ -111,6 +114,8 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         });
 
         await _databaseContext.SaveChangesAsync();
+
+        transactionScope.Complete();
 
         var userContext = new DefaultUserContext
         {

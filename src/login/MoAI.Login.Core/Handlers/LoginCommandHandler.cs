@@ -138,60 +138,60 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
 
         _logger.LogInformation("User login.{@Message}", new { user.Id, user.UserName, user.NickName });
 
-        if (!string.IsNullOrEmpty(request.OAuthBindId))
-        {
-            await BindOAuthAccount(request, user, result, cancellationToken);
-        }
+        //if (!string.IsNullOrEmpty(request.OAuthBindId))
+        //{
+        //    await BindOAuthAccount(request, user, result, cancellationToken);
+        //}
 
         return result;
     }
 
-    private async Task BindOAuthAccount(LoginCommand request, UserEntity user, LoginCommandResponse result, CancellationToken cancellationToken)
-    {
-        // 绑定 OAuth 用户信息
-        var redisKey = $"oauth:bind:{request.OAuthBindId}";
-        var oauthBIndUserProfile = await _redisDatabase.GetAsync<OAuthBindUserProfile>(redisKey);
+    //private async Task BindOAuthAccount(LoginCommand request, UserEntity user, LoginCommandResponse result, CancellationToken cancellationToken)
+    //{
+    //    // 绑定 OAuth 用户信息
+    //    var redisKey = $"oauth:bind:{request.OAuthBindId}";
+    //    var oauthBIndUserProfile = await _redisDatabase.GetAsync<OAuthBindUserProfile>(redisKey);
 
-        if (oauthBIndUserProfile == null)
-        {
-            throw new BusinessException("检验第三方账号失败，请重新跳转登录.");
-        }
+    //    if (oauthBIndUserProfile == null)
+    //    {
+    //        throw new BusinessException("检验第三方账号失败，请重新跳转登录.");
+    //    }
 
-        var oauthUser = await _databaseContext.UserOauths
-            .FirstOrDefaultAsync(o => o.Sub == oauthBIndUserProfile.Profile.Sub);
+    //    var oauthUser = await _databaseContext.UserOauths
+    //        .FirstOrDefaultAsync(o => o.Sub == oauthBIndUserProfile.Profile.Sub);
 
-        if (oauthUser != null)
-        {
-            if (oauthUser.UserId != user.Id)
-            {
-                await _redisDatabase.Database.KeyDeleteAsync(redisKey);
-                throw new BusinessException("第三方账号已绑定其它账号.");
-            }
+    //    if (oauthUser != null)
+    //    {
+    //        if (oauthUser.UserId != user.Id)
+    //        {
+    //            await _redisDatabase.Database.KeyDeleteAsync(redisKey);
+    //            throw new BusinessException("第三方账号已绑定其它账号.");
+    //        }
 
-            // 重复绑定，不需要处理
-            return;
-        }
+    //        // 重复绑定，不需要处理
+    //        return;
+    //    }
 
-        var oauthConnectionEntity = await _databaseContext.OauthConnections
-            .FirstOrDefaultAsync(c => c.Id == oauthBIndUserProfile.OAuthId);
+    //    var oauthConnectionEntity = await _databaseContext.OauthConnections
+    //        .FirstOrDefaultAsync(c => c.Id == oauthBIndUserProfile.OAuthId);
 
-        if (oauthConnectionEntity == null)
-        {
-            throw new BusinessException("未找到对应的 OAuth 认证方式") { StatusCode = 404 };
-        }
+    //    if (oauthConnectionEntity == null)
+    //    {
+    //        throw new BusinessException("未找到对应的 OAuth 认证方式") { StatusCode = 404 };
+    //    }
 
-        var oauthEntity = new UserOauthEntity
-        {
-            UserId = user.Id,
-            ProviderId = oauthConnectionEntity.Id,
-            Sub = oauthBIndUserProfile.Profile.Sub,
-        };
+    //    var oauthEntity = new UserOauthEntity
+    //    {
+    //        UserId = user.Id,
+    //        ProviderId = oauthConnectionEntity.Id,
+    //        Sub = oauthBIndUserProfile.Profile.Sub,
+    //    };
 
-        await _databaseContext.UserOauths.AddAsync(oauthEntity, cancellationToken);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+    //    await _databaseContext.UserOauths.AddAsync(oauthEntity, cancellationToken);
+    //    await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        await _redisDatabase.Database.KeyDeleteAsync(redisKey);
-    }
+    //    await _redisDatabase.Database.KeyDeleteAsync(redisKey);
+    //}
 
     /// <summary>
     /// 增加登录失败计数.

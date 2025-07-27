@@ -20,9 +20,7 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
         entity.ToTable("app_assistant_chat", tb => tb.HasComment("ai助手表"));
 
         entity.Property(e => e.Id)
-            .HasMaxLength(16)
-            .HasDefaultValueSql("uuid()")
-            .IsFixedLength()
+            .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)

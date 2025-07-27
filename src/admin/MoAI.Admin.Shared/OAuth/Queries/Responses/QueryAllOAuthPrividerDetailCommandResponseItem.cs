@@ -13,12 +13,7 @@ public class QueryAllOAuthPrividerDetailCommandResponseItem : AuditsInfo
     /// <summary>
     /// id.
     /// </summary>
-    public int Id { get; init; }
-
-    /// <summary>
-    /// OAuathId.
-    /// </summary>
-    public string OAuthId { get; init; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// 提供商名称

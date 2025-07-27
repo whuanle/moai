@@ -32,4 +32,6 @@ public class PromptItem : AuditsInfo
     /// 助手设定,markdown.
     /// </summary>
     public string? Content { get; set; } = default!;
+
+    public bool IsPublic { get; set; }
 }

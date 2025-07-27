@@ -76,8 +76,8 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
         }
 
         var existingUser = await _dbContext.Users
-                .Where(u => u.UserName == request.UserName || u.Email == request.Email || u.Phone == request.Phone)
-                .Select(u => new { u.UserName, u.Email, u.Phone })
+                .Where(u => u.UserName == request.UserName || u.Email == request.Email)
+                .Select(u => new { u.UserName, u.Email })
                 .FirstOrDefaultAsync();
 
         if (existingUser != null)
@@ -90,11 +90,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
             if (existingUser.Email == request.Email)
             {
                 throw new BusinessException("邮箱 {0} 已被注册", request.Email) { StatusCode = 409 };
-            }
-
-            if (existingUser.Phone == request.Phone)
-            {
-                throw new BusinessException("手机号 {0} 已被注册", request.Phone) { StatusCode = 409 };
             }
         }
 

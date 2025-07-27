@@ -38,7 +38,7 @@ public class PagedParamter
         }
     }
 
-    private int _pageSize = 10;
+    private int _pageSize = 20;
 
     /// <summary>
     /// 每页大小.

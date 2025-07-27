@@ -32,10 +32,6 @@ public partial class PromptClassConfiguration : IEntityTypeConfiguration<PromptC
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
-        entity.Property(e => e.Description)
-            .HasMaxLength(255)
-            .HasComment("分类描述")
-            .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")

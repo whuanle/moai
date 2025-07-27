@@ -32,4 +32,14 @@ public static class HashHelper
 
         return builder.ToString();
     }
+
+    // 计算文件 md5
+    public static string ComputeFileMd5(string filePath)
+    {
+        using FileStream? stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using MD5? md5 = MD5.Create();
+        using StreamReader reader = new StreamReader(stream);
+        byte[]? hash = md5.ComputeHash(stream);
+        return Convert.ToBase64String(hash);
+    }
 }

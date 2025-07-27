@@ -4,6 +4,8 @@
 // @ts-ignore
 import { Oauth_listRequestBuilderRequestsMetadata, type Oauth_listRequestBuilder } from './oauth_list/index.js';
 // @ts-ignore
+import { type UnbindOauthRequestBuilder, UnbindOauthRequestBuilderRequestsMetadata } from './unbindOauth/index.js';
+// @ts-ignore
 import { type Update_passwordRequestBuilder, Update_passwordRequestBuilderRequestsMetadata } from './update_password/index.js';
 // @ts-ignore
 import { type Update_userRequestBuilder, Update_userRequestBuilderRequestsMetadata } from './update_user/index.js';
@@ -20,6 +22,10 @@ export interface UserRequestBuilder extends BaseRequestBuilder<UserRequestBuilde
      * The oauth_list property
      */
     get oauth_list(): Oauth_listRequestBuilder;
+    /**
+     * The unbindOauth property
+     */
+    get unbindOauth(): UnbindOauthRequestBuilder;
     /**
      * The update_password property
      */
@@ -43,6 +49,9 @@ export const UserRequestBuilderUriTemplate = "{+baseurl}/api/user";
 export const UserRequestBuilderNavigationMetadata: Record<Exclude<keyof UserRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     oauth_list: {
         requestsMetadata: Oauth_listRequestBuilderRequestsMetadata,
+    },
+    unbindOauth: {
+        requestsMetadata: UnbindOauthRequestBuilderRequestsMetadata,
     },
     update_password: {
         requestsMetadata: Update_passwordRequestBuilderRequestsMetadata,

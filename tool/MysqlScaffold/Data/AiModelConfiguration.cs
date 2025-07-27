@@ -19,17 +19,13 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
 
         entity.ToTable("ai_model", tb => tb.HasComment("ai模型"));
 
-        entity.HasIndex(e => e.AiModelType, "ai_model_ai_model_type_index");
-
-        entity.HasIndex(e => e.AiProvider, "ai_model_ai_provider_index");
-
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.AiModelType)
             .HasMaxLength(20)
-            .HasComment("模型类型")
+            .HasComment("模型功能类型")
             .HasColumnName("ai_model_type");
         entity.Property(e => e.AiProvider)
             .HasMaxLength(50)
@@ -71,10 +67,10 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
-            .HasComment("是否公开使用，只有系统ai模型才能设置")
+            .HasComment("是否开放给所有人使用,只有系统模型可以开放")
             .HasColumnName("is_public");
         entity.Property(e => e.IsSystem)
-            .HasComment("是否全局系统模型")
+            .HasComment("是否系统级模型")
             .HasColumnName("is_system");
         entity.Property(e => e.IsVision)
             .HasComment("支持计算机视觉")
@@ -97,7 +93,7 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasColumnType("int(11)")
             .HasColumnName("text_output");
         entity.Property(e => e.Title)
-            .HasMaxLength(100)
+            .HasMaxLength(50)
             .HasComment("自定义名模型名称，便于用户选择")
             .HasColumnName("title");
         entity.Property(e => e.UpdateTime)

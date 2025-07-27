@@ -19,5 +19,5 @@ public enum WebDocumentCrawlPathRule
     /// 覆盖.
     /// </summary>
     [JsonPropertyName("rewriter")]
-    Rewriter = 0,
+    Rewrite = 0,
 }

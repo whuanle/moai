@@ -11,7 +11,7 @@ using MoAI.User.Queries;
 using MoAI.User.Queries.Responses;
 using System.Threading;
 
-namespace MoAI.User.Endpoints;
+namespace MoAI.User.OAuthEndpoints;
 
 /// <summary>
 /// 查询用户已经绑定的第三方账号.

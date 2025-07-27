@@ -27,7 +27,7 @@ public partial class WikiWebCrawleTaskEntity : IFullAudited
     /// <summary>
     /// 任务id，便于追踪.
     /// </summary>
-    public Guid TaskTag { get; set; } = default!;
+    public Guid TaskTag { get; set; }
 
     /// <summary>
     /// 爬取状态.

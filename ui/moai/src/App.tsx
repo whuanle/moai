@@ -65,6 +65,7 @@ import SystemPluginList from "./components/admin/PluginList";
 import PromptLayout from "./components/prompt/PromptLayout";
 import PromptList from "./components/prompt/PromptList";
 import AiAssistant from "./components/app/AiAssistant";
+import BindOAuth from "./components/user/BindOAuth";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -101,6 +102,9 @@ function App() {
     }
     if (path.startsWith("/app/user/usersetting")) {
       return "user.setting";
+    }
+    if (path.startsWith("/app/user/oauth")) {
+      return "user.oauth";
     }
     if (path.startsWith("/app/user")) {
       return "user";
@@ -215,6 +219,11 @@ function App() {
             key: "user.setting",
             icon: <UserOutlined />,
             label: <Link to="/app/user/usersetting">个人信息</Link>,
+          },
+          {
+            key: "user.oauth",
+            icon: <ApiOutlined />,
+            label: <Link to="/app/user/oauth">第三方账号</Link>,
           },
         ],
       },
@@ -342,6 +351,7 @@ function App() {
                 <Route path="user">
                   <Route index element={<Navigate to="usersetting" replace />} />
                   <Route path="usersetting" element={<UserSetting />} />
+                  <Route path="oauth" element={<BindOAuth />} />
                 </Route>
                 <Route path="wiki">
                   <Route index element={<Navigate to="list" replace />} />

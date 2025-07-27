@@ -11,7 +11,7 @@ using MaomiAI.Prompt.Queries.Responses;
 using MediatR;
 using MoAI.Infra.Models;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
 /// 查询提示词.

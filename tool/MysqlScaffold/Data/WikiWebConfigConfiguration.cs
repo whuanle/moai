@@ -27,10 +27,6 @@ public partial class WikiWebConfigConfiguration : IEntityTypeConfiguration<WikiW
             .HasMaxLength(255)
             .HasComment("页面地址")
             .HasColumnName("address");
-        entity.Property(e => e.CrawlSchame)
-            .HasComment("抓取方式")
-            .HasColumnType("int(11)")
-            .HasColumnName("crawl_schame");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")
@@ -50,15 +46,22 @@ public partial class WikiWebConfigConfiguration : IEntityTypeConfiguration<WikiW
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.LimitPath)
+        entity.Property(e => e.IsWaitJs)
+            .HasComment("等待js加载完成")
+            .HasColumnName("is_wait_js");
+        entity.Property(e => e.LimitAddress)
             .HasMaxLength(255)
             .HasDefaultValueSql("''")
-            .HasComment("限制自动爬取的网页都在该路径之下")
-            .HasColumnName("limit_path");
-        entity.Property(e => e.SamePathRule)
-            .HasComment("抓取的页面在以前抓取过时怎么处理")
+            .HasComment("限制自动爬取的网页都在该路径之下,limit_address跟address必须具有相同域名")
+            .HasColumnName("limit_address");
+        entity.Property(e => e.LimitMaxCount)
+            .HasDefaultValueSql("'100'")
+            .HasComment("最大抓取数量")
             .HasColumnType("int(11)")
-            .HasColumnName("same_path_rule");
+            .HasColumnName("limit_max_count");
+        entity.Property(e => e.Title)
+            .HasMaxLength(20)
+            .HasComment("标题");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

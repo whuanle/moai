@@ -1,4 +1,4 @@
-﻿// <copyright file="UpdatePromptEndpoints.cs" company="MoAI">
+﻿// <copyright file="CreatePromptEndpoints.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -12,30 +12,30 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
-/// 修改提示词.
+/// 创建提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/update_prompt")]
-public class UpdatePromptEndpoints : Endpoint<UpdatePromptCommand, EmptyCommandResponse>
+[HttpPost($"{ApiPrefix.Prefix}/create_prompt")]
+public class CreatePromptEndpoints : Endpoint<CreatePromptCommand, SimpleInt>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdatePromptEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="CreatePromptEndpoints"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public UpdatePromptEndpoints(IMediator mediator, UserContext userContext)
+    public CreatePromptEndpoints(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdatePromptCommand req, CancellationToken ct)
+    public override async Task<SimpleInt> ExecuteAsync(CreatePromptCommand req, CancellationToken ct)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {

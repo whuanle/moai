@@ -11,14 +11,19 @@ using MoAI.Infra.Models;
 namespace MoAI.Admin.User.Queries;
 
 /// <summary>
-/// 查询用户列表.
+/// 分页查询用户列表.
 /// </summary>
 public class QueryUserListCommand : PagedParamter, IRequest<QueryUserListCommandResponse>
 {
     /// <summary>
-    /// 指定用户的 id.
+    /// 查询指定用户.
     /// </summary>
     public int? UserId { get; init; }
+
+    /// <summary>
+    /// 根据用户名筛选.
+    /// </summary>
+    public string? UserName { get; init; }
 
     /// <summary>
     /// 搜索参数.

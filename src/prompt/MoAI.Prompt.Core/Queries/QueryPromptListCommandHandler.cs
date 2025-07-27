@@ -67,6 +67,7 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
                 UpdateTime = x.UpdateTime,
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
+                IsPublic = x.IsPublic,
                 Content = string.Empty
             })
             .ToArrayAsync(cancellationToken);

@@ -12,7 +12,7 @@ public class QueryUserBindAccountCommandResponseItem
 
     public string Name { get; init; } = string.Empty;
 
-    public int ProviderId { get; init; }
+    public Guid ProviderId { get; init; }
 
     public string IconUrl { get; init; } = string.Empty;
 }

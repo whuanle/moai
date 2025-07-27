@@ -13,9 +13,8 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
-using MoAI.Wiki.WebDocuments.Commands;
 
-namespace MoAI.Wiki.Documents.Handlers;
+namespace MoAI.Wiki.WebDocuments.Commands;
 
 /// <summary>
 /// <inheritdoc cref="StartWebDocumentCrawleCommand"/>

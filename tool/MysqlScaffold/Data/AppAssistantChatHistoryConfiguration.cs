@@ -26,8 +26,6 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasColumnType("bigint(20)")
             .HasColumnName("id");
         entity.Property(e => e.ChatId)
-            .HasMaxLength(16)
-            .IsFixedLength()
             .HasComment("对话id")
             .HasColumnName("chat_id");
         entity.Property(e => e.CompletionsId)

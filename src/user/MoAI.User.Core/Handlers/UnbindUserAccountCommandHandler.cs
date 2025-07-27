@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.User.Queries;
+using MoAI.User.Commands;
 
 namespace MoAI.User.Handlers;
 

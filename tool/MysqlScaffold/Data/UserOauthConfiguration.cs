@@ -19,6 +19,8 @@ public partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauth
 
         entity.ToTable("user_oauth", tb => tb.HasComment("oauth2.0对接"));
 
+        entity.HasIndex(e => new { e.ProviderId, e.Sub, e.IsDeleted }, "user_oauth_provider_id_sub_is_deleted_uindex").IsUnique();
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
@@ -37,12 +39,11 @@ public partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauth
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
         entity.Property(e => e.ProviderId)
-            .HasComment("供应商id")
-            .HasColumnType("int(11)")
+            .HasComment("供应商id,对应oauth_connection表")
             .HasColumnName("provider_id");
         entity.Property(e => e.Sub)
             .HasMaxLength(50)
-            .HasComment("用户id")
+            .HasComment("用户oauth对应的唯一id")
             .HasColumnName("sub");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")

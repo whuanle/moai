@@ -7,7 +7,7 @@
 using FluentValidation;
 using MoAI.Prompt.Commands;
 
-namespace MoAI.Prompt.Validators;
+namespace MoAI.Prompt.PromptClassEndpoints.Validators;
 
 /// <summary>
 /// UpdatePromptClassCommandValidator.
@@ -23,8 +23,5 @@ public class UpdatePromptClassCommandValidator : AbstractValidator<UpdatePromptC
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("名称不能为空")
             .MaximumLength(20).WithMessage("名称不能超过20个字符");
-        RuleFor(x => x.Description)
-            .NotEmpty().WithMessage("描述不能为空")
-            .MaximumLength(255).WithMessage("描述不能超过255个字符");
     }
 }

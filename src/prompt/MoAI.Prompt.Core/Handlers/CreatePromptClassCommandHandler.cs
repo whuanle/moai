@@ -43,8 +43,7 @@ public class CreatePromptClassCommandHandler : IRequestHandler<CreatePromptClass
 
         var promptClass = new PromptClassEntity
         {
-            Name = request.Name,
-            Description = request.Description
+            Name = request.Name
         };
 
         await _databaseContext.PromptClasses.AddAsync(promptClass);

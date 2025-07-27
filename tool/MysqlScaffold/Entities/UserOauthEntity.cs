@@ -20,12 +20,12 @@ public partial class UserOauthEntity : IFullAudited
     public int UserId { get; set; }
 
     /// <summary>
-    /// 供应商id.
+    /// 供应商id,对应oauth_connection表.
     /// </summary>
-    public int ProviderId { get; set; }
+    public Guid ProviderId { get; set; }
 
     /// <summary>
-    /// 用户id.
+    /// 用户oauth对应的唯一id.
     /// </summary>
     public string Sub { get; set; } = default!;
 

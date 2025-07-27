@@ -43,6 +43,11 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
             query = query.Where(x => x.Id == request.UserId);
         }
 
+        if (!string.IsNullOrWhiteSpace(request.UserName))
+        {
+            query = query.Where(x => x.UserName == request.UserName);
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             query = query.Where(x => x.UserName.Contains(request.Search) || x.NickName.Contains(request.Search) || x.Email.Contains(request.Search) || x.Phone.Contains(request.Search));

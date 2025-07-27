@@ -36,21 +36,16 @@ export interface Prompt_contentRequestBuilderGetQueryParameters {
      * 提示词 id.
      */
     promptId?: number;
-    /**
-     * 用户 id.
-     */
-    userId?: number;
 }
 /**
  * Uri template for the request builder.
  */
-export const Prompt_contentRequestBuilderUriTemplate = "{+baseurl}/api/prompt/prompt_content?PromptId={PromptId}&UserId={UserId}";
+export const Prompt_contentRequestBuilderUriTemplate = "{+baseurl}/api/prompt/prompt_content?PromptId={PromptId}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const Prompt_contentRequestBuilderGetQueryParametersMapper: Record<string, string> = {
     "promptId": "PromptId",
-    "userId": "UserId",
 };
 /**
  * Metadata for all the requests in the request builder.

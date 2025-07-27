@@ -23,9 +23,4 @@ public class LoginCommand : IRequest<LoginCommandResponse>
     /// 密码，使用 RSA 公钥加密.
     /// </summary>
     public string Password { get; init; } = default!;
-
-    /// <summary>
-    /// 登录绑定 OAuth 用户 ID.
-    /// </summary>
-    public string? OAuthBindId { get; init; } = default!;
 }

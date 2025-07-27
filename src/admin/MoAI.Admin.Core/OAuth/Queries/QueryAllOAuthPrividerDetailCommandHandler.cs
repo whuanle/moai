@@ -51,7 +51,6 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
                 CreateTime = c.CreateTime,
                 CreateUserId = c.CreateUserId,
                 Id = c.Id,
-                OAuthId = c.Uuid,
                 UpdateTime = c.UpdateTime,
                 UpdateUserId = c.UpdateUserId
             })
@@ -59,7 +58,7 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
 
         foreach (var item in items)
         {
-            item.AuthorizeUrl = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login?state={item.OAuthId}").ToString();
+            item.AuthorizeUrl = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login?state={item.Id}").ToString();
         }
 
         await _mediator.Send(new FillUserInfoCommand { Items = items });

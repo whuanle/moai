@@ -18,7 +18,9 @@
 
 * 有些只能用于内部使用、不允许 Api 使用的作为模型类的 Command，需要加上 Internal，以便区分限制，不过依然可以被其它模块使用，只是不能出现在 Api 里面，命名：`Internal{X}Command`。
 
-* 查询类的命名统一使用 `Query{X}Command` 做前缀，命令类使用动词做前缀如 `SetUserStateCommand`。
+* 查询类的命名统一使用 `Query{X}Command` 做前缀，命令类使用动词做前缀如 `SetUserStateCommand`。
+
+* 灵活减少 Command 数量，可以通过自定义 Endpoints 、`{X}Request` 提供更多定制接口，因为太多 Command 不好维护，但是多 Endpoints 可以细粒度控制访问权限、验证角色和请求参数.
 
 * Handler 使用 `{X}CommandHandler` 结尾。
 

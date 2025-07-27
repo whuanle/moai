@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Oauth_registerRequestBuilder extends BaseRequestBuilder<Oauth_registerRequestBuilder> {
     /**
      * OAuth 注册.
-     * @param body 使用第三方账号一键注册.
+     * @param body 第三方账号没有绑定记录时，使用第三方账号一键注册.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<LoginCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Oauth_registerRequestBuilder extends BaseRequestBuilder<Oauth_r
      post(body: OAuthRegisterCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<LoginCommandResponse | undefined>;
     /**
      * OAuth 注册.
-     * @param body 使用第三方账号一键注册.
+     * @param body 第三方账号没有绑定记录时，使用第三方账号一键注册.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

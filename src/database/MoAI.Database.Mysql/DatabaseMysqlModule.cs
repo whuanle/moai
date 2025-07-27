@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra;
+using MySqlConnector;
 
 namespace MoAI.Database;
 
@@ -40,9 +41,12 @@ public class DatabaseMysqlModule : IModule
             return;
         }
 
+        var connectionString = new MySqlConnectionStringBuilder(_systemOptions.Database);
+        connectionString.GuidFormat = MySqlGuidFormat.Binary16;
+
         Action<DbContextOptionsBuilder> contextOptionsBuilder = o =>
         {
-            o.UseMySql(_systemOptions.Database, ServerVersion.AutoDetect(_systemOptions.Database))
+            o.UseMySql(connectionString.ToString(), ServerVersion.AutoDetect(_systemOptions.Database))
                 .ConfigureWarnings(
                     b => b.Ignore([
                         CoreEventId.ServiceProviderCreated,

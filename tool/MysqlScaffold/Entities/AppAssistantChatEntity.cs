@@ -12,7 +12,7 @@ public partial class AppAssistantChatEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public Guid Id { get; set; } = default!;
+    public Guid Id { get; set; }
 
     /// <summary>
     /// 对话标题.

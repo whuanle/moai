@@ -79,13 +79,14 @@ state=STATE
     public async Task<OAuthLoginCommandResponse> Handle(OAuthLoginCommand request, CancellationToken cancellationToken)
     {
         var oauthConnectionEntity = await _databaseContext.OauthConnections
-            .FirstOrDefaultAsync(c => c.Uuid == request.OAuthId, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == request.OAuthId, cancellationToken);
 
         if (oauthConnectionEntity == null)
         {
             throw new BusinessException("未找到认证方式") { StatusCode = 404 };
         }
 
+        // 获取不同第三方登录下的用户标识
         OAuthBindUserProfile oauthUserProfile = default!;
         try
         {
@@ -97,26 +98,27 @@ state=STATE
             throw new BusinessException("第三方接口错误，请联系管理员") { StatusCode = 500 };
         }
 
-        var userEntity = await _databaseContext.Users.Where(x => x.Id == _databaseContext.UserOauths.Where(a => a.ProviderId == oauthConnectionEntity.Id && a.Sub == oauthUserProfile.Profile.Sub).First().UserId).FirstOrDefaultAsync();
+        var userEntity = await _databaseContext.Users
+            .Where(x => x.Id == _databaseContext.UserOauths.Where(a => a.ProviderId == oauthConnectionEntity.Id && a.Sub == oauthUserProfile.Profile.Sub).First().UserId).FirstOrDefaultAsync();
 
-        // 如果没有绑定用户，则拒绝登录
+        // 没有绑定记录，则拒绝登录
         if (userEntity == null)
         {
-            var oauthBindId = Guid.NewGuid().ToString("N");
-            var redisKey = $"oauth:bind:{oauthBindId}";
-            await _redisDatabase.Database.StringSetAsync(redisKey, oauthUserProfile.ToRedisValue());
-            await _redisDatabase.Database.KeyExpireAsync(redisKey, TimeSpan.FromMinutes(30));
+            // 创建临时绑定记录
+            var tempOauthBindId = Guid.CreateVersion7();
+            var redisKey = $"oauth:bind:{tempOauthBindId}";
+            await _redisDatabase.Database.StringSetAsync(redisKey, oauthUserProfile.ToRedisValue(), TimeSpan.FromMinutes(10));
 
             return new OAuthLoginCommandResponse
             {
                 IsBindUser = false,
-                OAuthBindId = oauthBindId,
+                TempOAuthBindId = tempOauthBindId,
                 Name = oauthUserProfile.Name,
-                OAuthId = oauthConnectionEntity.Uuid,
+                OAuthId = oauthConnectionEntity.Id,
             };
         }
 
-        // 登录
+        // 已有绑定记录则直接登录.
         var userContext = new DefaultUserContext
         {
             UserId = userEntity.Id,
@@ -140,90 +142,32 @@ state=STATE
 
         return new OAuthLoginCommandResponse
         {
-            OAuthBindId = null,
+            TempOAuthBindId = null,
             IsBindUser = true,
             LoginCommandResponse = result,
-            OAuthId = oauthConnectionEntity.Uuid,
+            OAuthId = oauthConnectionEntity.Id,
             Name = oauthUserProfile.Name
         };
     }
 
     private async Task<OAuthBindUserProfile> GetOpenIdUserInfo(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
     {
-        if (OAuthPrivider.Feishu.ToJsonString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
+        var oauthPrivider = clientEntity.Provider.JsonToObject<OAuthPrivider>();
+
+        if (oauthPrivider == OAuthPrivider.Feishu)
         {
-            var feishuClient = _serviceProvider.GetRequiredService<IFeishuClient>();
-            var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
-            {
-                Code = request.Code,
-                GrantType = "authorization_code",
-                ClientId = clientEntity.Key,
-                ClientSecret = clientEntity.Secret,
-                RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login").ToString(),
-                CodeVerifier = request.Code,
-                Scope = string.Empty
-            });
-
-            if (feishuAccessToken.Code != 0)
-            {
-                throw new BusinessException("飞书接口错误");
-            }
-
-            var feishuUserInfo = await feishuClient.UserInfo("Bearer " + feishuAccessToken.AccessToken);
-            if (feishuUserInfo.Code != 0)
-            {
-                throw new BusinessException("飞书接口错误");
-            }
-
-            return new OAuthBindUserProfile
-            {
-                OAuthId = clientEntity.Id,
-                Name = feishuUserInfo.Data.Name,
-                Profile = new OpenIdUserProfile
-                {
-                    Sub = feishuUserInfo.Data.OpenId,
-                    Name = feishuUserInfo.Data.Name,
-                    Audience = clientEntity.Key,
-                    Issuer = "https://open.feishu.cn",
-                    Picture = feishuUserInfo.Data.AvatarUrl,
-                    PreferredUsername = feishuUserInfo.Data.Name,
-                },
-
-                AccessToken = feishuAccessToken.AccessToken
-            };
+            return await GetOpenIdFromFeishuAsync(request, clientEntity);
         }
-        else if (OAuthPrivider.DingTalk.ToJsonString().Equals(clientEntity.Provider, StringComparison.OrdinalIgnoreCase))
+        else if (oauthPrivider == OAuthPrivider.DingTalk)
         {
-            var dingTalkClient = _serviceProvider.GetRequiredService<IDingTalkClient>();
-            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-
-            var dingTalkToken = await dingTalkClient.GetUserAccessTokenAsync(new UserAccessTokenRequest
-            {
-                ClientId = clientEntity.Key,
-                ClientSecret = clientEntity.Secret,
-                Code = request.Code,
-            });
-
-            var dingTalkUserInfo = await dingTalkClient.GetContactUserInfoAsync("me", dingTalkToken.AccessToken!);
-
-            return new OAuthBindUserProfile
-            {
-                OAuthId = clientEntity.Id,
-                Name = dingTalkUserInfo.Nick!,
-                Profile = new OpenIdUserProfile
-                {
-                    Sub = dingTalkUserInfo.UnionId,
-                    Name = dingTalkUserInfo.Nick,
-                    Audience = clientEntity.Key,
-                    Issuer = "https://open.feishu.cn",
-                    Picture = string.Empty,
-                    PreferredUsername = dingTalkUserInfo.Nick,
-                },
-
-                AccessToken = string.Empty
-            };
+            return await GetOpenIdFromDingTalkAsync(request, clientEntity);
         }
 
+        return await GetOpenIdFromCustomAsync(request, clientEntity);
+    }
+
+    private async Task<OAuthBindUserProfile> GetOpenIdFromCustomAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
+    {
         // 获取端点信息
         var wellKnownUrl = new Uri(clientEntity.WellKnown);
         _authClient.Client.BaseAddress = new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority));
@@ -250,6 +194,81 @@ state=STATE
             Name = userProfile.Name,
             Profile = userProfile,
             AccessToken = openIdAccessToken.AccessToken
+        };
+    }
+
+    private async Task<OAuthBindUserProfile> GetOpenIdFromDingTalkAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
+    {
+        var dingTalkClient = _serviceProvider.GetRequiredService<IDingTalkClient>();
+        var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
+
+        var dingTalkToken = await dingTalkClient.GetUserAccessTokenAsync(new UserAccessTokenRequest
+        {
+            ClientId = clientEntity.Key,
+            ClientSecret = clientEntity.Secret,
+            Code = request.Code,
+        });
+
+        var dingTalkUserInfo = await dingTalkClient.GetContactUserInfoAsync("me", dingTalkToken.AccessToken!);
+
+        return new OAuthBindUserProfile
+        {
+            OAuthId = clientEntity.Id,
+            Name = dingTalkUserInfo.Nick!,
+            Profile = new OpenIdUserProfile
+            {
+                Sub = dingTalkUserInfo.UnionId!,
+                Name = dingTalkUserInfo.Nick!,
+                Audience = clientEntity.Key,
+                Issuer = "https://api.dingtalk.com",
+                Picture = string.Empty,
+                PreferredUsername = dingTalkUserInfo.Nick!,
+            },
+
+            AccessToken = string.Empty
+        };
+    }
+
+    private async Task<OAuthBindUserProfile> GetOpenIdFromFeishuAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
+    {
+        var feishuClient = _serviceProvider.GetRequiredService<IFeishuClient>();
+        var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
+        {
+            Code = request.Code,
+            GrantType = "authorization_code",
+            ClientId = clientEntity.Key,
+            ClientSecret = clientEntity.Secret,
+            RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login").ToString(),
+            CodeVerifier = request.Code,
+            Scope = string.Empty
+        });
+
+        if (feishuAccessToken.Code != 0)
+        {
+            throw new BusinessException("飞书接口错误");
+        }
+
+        var feishuUserInfo = await feishuClient.UserInfo("Bearer " + feishuAccessToken.AccessToken);
+        if (feishuUserInfo.Code != 0)
+        {
+            throw new BusinessException("飞书接口错误");
+        }
+
+        return new OAuthBindUserProfile
+        {
+            OAuthId = clientEntity.Id,
+            Name = feishuUserInfo.Data.Name,
+            Profile = new OpenIdUserProfile
+            {
+                Sub = feishuUserInfo.Data.OpenId,
+                Name = feishuUserInfo.Data.Name,
+                Audience = clientEntity.Key,
+                Issuer = "https://open.feishu.cn",
+                Picture = feishuUserInfo.Data.AvatarUrl,
+                PreferredUsername = feishuUserInfo.Data.Name,
+            },
+
+            AccessToken = feishuAccessToken.AccessToken
         };
     }
 }

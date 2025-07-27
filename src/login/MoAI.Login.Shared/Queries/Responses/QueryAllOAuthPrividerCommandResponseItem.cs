@@ -14,7 +14,7 @@ public class QueryAllOAuthPrividerCommandResponseItem
     /// <summary>
     /// id.
     /// </summary>
-    public string OAuthId { get; init; } = default!;
+    public Guid OAuthId { get; init; } = default!;
 
     /// <summary>
     /// 提供商名称

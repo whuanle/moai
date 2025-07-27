@@ -19,6 +19,8 @@ public partial class SettingConfiguration : IEntityTypeConfiguration<SettingEnti
 
         entity.ToTable("setting", tb => tb.HasComment("系统设置"));
 
+        entity.HasIndex(e => new { e.Key, e.IsDeleted }, "setting_key_is_deleted_uindex").IsUnique();
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
@@ -55,8 +57,8 @@ public partial class SettingConfiguration : IEntityTypeConfiguration<SettingEnti
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
         entity.Property(e => e.Value)
-            .HasComment("配置值")
-            .HasColumnType("text")
+            .HasMaxLength(255)
+            .HasComment("配置值,json")
             .HasColumnName("value");
 
         OnConfigurePartial(entity);

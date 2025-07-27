@@ -17,9 +17,4 @@ public class QueryePromptClassCommandResponseItem
     /// 名称.
     /// </summary>
     public string Name { get; init; } = default!;
-
-    /// <summary>
-    /// 描述.
-    /// </summary>
-    public string Description { get; init; } = default!;
 }

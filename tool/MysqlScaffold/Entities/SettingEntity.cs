@@ -20,7 +20,7 @@ public partial class SettingEntity : IFullAudited
     public string Key { get; set; } = default!;
 
     /// <summary>
-    /// 配置值.
+    /// 配置值,json.
     /// </summary>
     public string Value { get; set; } = default!;
 

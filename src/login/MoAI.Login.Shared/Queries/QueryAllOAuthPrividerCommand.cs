@@ -17,5 +17,5 @@ public class QueryAllOAuthPrividerCommand : IRequest<QueryAllOAuthPrividerComman
     /// <summary>
     /// 要跳转的路径.
     /// </summary>
-    public string? RedirectUri { get; init; }
+    public Uri? RedirectUrl { get; init; }
 }

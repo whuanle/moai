@@ -17,5 +17,5 @@ public class DeleteOAuthConnectionCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// id.
     /// </summary>
-    public int OAuthConnectionId { get; init; }
+    public Guid OAuthConnectionId { get; init; }
 }

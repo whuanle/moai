@@ -12,12 +12,7 @@ public partial class OauthConnectionEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public int Id { get; set; }
-
-    /// <summary>
-    /// uuid.
-    /// </summary>
-    public string Uuid { get; set; } = default!;
+    public Guid Id { get; set; }
 
     /// <summary>
     /// 认证名称.

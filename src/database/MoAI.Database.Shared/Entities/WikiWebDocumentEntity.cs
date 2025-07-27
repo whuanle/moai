@@ -25,14 +25,14 @@ public partial class WikiWebDocumentEntity : IFullAudited
     public int WikiWebConfigId { get; set; }
 
     /// <summary>
+    /// 文档id.
+    /// </summary>
+    public int WikiDocumentId { get; set; }
+
+    /// <summary>
     /// 全路径地址.
     /// </summary>
     public string Url { get; set; } = default!;
-
-    /// <summary>
-    /// 相对于path的地址.
-    /// </summary>
-    public string Path { get; set; } = default!;
 
     /// <summary>
     /// 创建人.

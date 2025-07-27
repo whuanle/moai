@@ -7,7 +7,7 @@
 using MediatR;
 using MoAI.Infra.Models;
 
-namespace MoAI.User.Queries;
+namespace MoAI.User.Commands;
 
 /// <summary>
 /// 解绑第三方账号.

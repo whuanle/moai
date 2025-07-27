@@ -34,8 +34,7 @@ public class QueryePromptClassCommandHandler : IRequestHandler<QueryePromptClass
             .Select(x => new QueryePromptClassCommandResponseItem
             {
                 Id = x.Id,
-                Name = x.Name,
-                Description = x.Description
+                Name = x.Name
             })
             .ToArrayAsync(cancellationToken);
 

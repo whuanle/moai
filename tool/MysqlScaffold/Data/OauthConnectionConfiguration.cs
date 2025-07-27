@@ -20,8 +20,8 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
         entity.ToTable("oauth_connection", tb => tb.HasComment("oauth2.0系统"));
 
         entity.Property(e => e.Id)
+            .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("id")
-            .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.AuthorizeUrl)
             .HasMaxLength(1000)
@@ -70,10 +70,6 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
-        entity.Property(e => e.Uuid)
-            .HasMaxLength(50)
-            .HasComment("uuid")
-            .HasColumnName("uuid");
         entity.Property(e => e.WellKnown)
             .HasMaxLength(1000)
             .HasComment("发现端口")

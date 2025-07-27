@@ -1,7 +1,13 @@
-
 import { RouteObject } from "react-router";
 import UserSetting from "./UserSetting";
-export const UserPageRouters: RouteObject[] = [{
-  path: "usersetting",
-  Component: UserSetting,
-}];
+import BindOAuth from "./BindOAuth";
+export const UserPageRouters: RouteObject[] = [
+  {
+    path: "usersetting",
+    Component: UserSetting,
+  },
+  {
+    path: "oauth",
+    Component: BindOAuth,
+  },
+];

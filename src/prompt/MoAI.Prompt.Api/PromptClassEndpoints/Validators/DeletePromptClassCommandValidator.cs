@@ -7,7 +7,7 @@
 using FluentValidation;
 using MoAI.Prompt.Commands;
 
-namespace MoAI.Prompt.Validators;
+namespace MoAI.Prompt.PromptClassEndpoints.Validators;
 
 /// <summary>
 /// DeletePromptClassCommandValidator.

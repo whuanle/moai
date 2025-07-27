@@ -12,6 +12,22 @@ namespace MoAI.Storage.Commands;
 /// <summary>
 /// 批量上传文件.
 /// </summary>
+public class UploadLocalFileCommand : IRequest<FileUploadResult>
+{
+    /// <summary>
+    /// 文件可见性.
+    /// </summary>
+    public FileVisibility Visibility { get; init; }
+
+    /// <summary>
+    /// 文件列表.
+    /// </summary>
+    public FileUploadItem File { get; init; }
+}
+
+/// <summary>
+/// 批量上传文件.
+/// </summary>
 public class UploadLocalFilesCommand : IRequest<UploadLocalFilesCommandResponse>
 {
     /// <summary>

@@ -10,16 +10,17 @@ using MaomiAI.Prompt.Models;
 using MaomiAI.Prompt.Queries;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Prompt.PromptEndpoints.Models;
 using MoAI.Prompt.Queries;
 using MoAI.Prompt.Queries.Responses;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
 /// 获取提示词内容.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/prompt_content")]
-public class QueryPromptCommandEndpoint : Endpoint<QueryPromptCommand, PromptItem>
+public class QueryPromptCommandEndpoint : Endpoint<QueryPromptContentRequest, PromptItem>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -36,7 +37,7 @@ public class QueryPromptCommandEndpoint : Endpoint<QueryPromptCommand, PromptIte
     }
 
     /// <inheritdoc/>
-    public override async Task<PromptItem> ExecuteAsync(QueryPromptCommand req, CancellationToken ct)
+    public override async Task<PromptItem> ExecuteAsync(QueryPromptContentRequest req, CancellationToken ct)
     {
         var newReq = new QueryPromptCommand
         {

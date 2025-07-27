@@ -45,9 +45,7 @@ public partial class WikiWebCrawleTaskConfiguration : IEntityTypeConfiguration<W
             .HasComment("任务执行信息")
             .HasColumnName("message");
         entity.Property(e => e.TaskTag)
-            .HasMaxLength(16)
             .HasDefaultValueSql("uuid()")
-            .IsFixedLength()
             .HasComment("任务id，便于追踪")
             .HasColumnName("task_tag");
         entity.Property(e => e.UpdateTime)

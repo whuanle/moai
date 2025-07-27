@@ -71,7 +71,6 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
 
         var connection = new Database.Entities.OauthConnectionEntity
         {
-            Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
             Provider = TextToJsonExtensions.ToJsonString(request.Provider),
             Key = request.Key,
@@ -95,7 +94,6 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     {
         var fsConnection = new Database.Entities.OauthConnectionEntity
         {
-            Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
             Provider = TextToJsonExtensions.ToJsonString(request.Provider),
             Key = request.Key,
@@ -115,7 +113,6 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         // https://login.dingtalk.com/oauth2/auth?redirect_uri=https%3A%2F%2Fwww.aaaaa.com%2Fa%2Fb&response_type=code&client_id=dingbbbbbbb&scope=openid corpid&state=dddd&prompt=consent
         var weixinWorkConnection = new Database.Entities.OauthConnectionEntity
         {
-            Uuid = Guid.NewGuid().ToString("N"),
             Name = request.Name,
             Provider = TextToJsonExtensions.ToJsonString(request.Provider),
             Key = request.Key,

@@ -6,6 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Queries\vzq420k5.fpp~" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <PackageReference Include="Microsoft.OpenApi.Readers" />
 	  <PackageReference Include="ModelContextProtocol" />
 	  <PackageReference Include="ModelContextProtocol-SemanticKernel" />

@@ -39,7 +39,6 @@ public class UpdatePromptClassCommandHandler : IRequestHandler<UpdatePromptClass
         }
 
         promptClass.Name = request.Name;
-        promptClass.Description = request.Description;
 
         _databaseContext.PromptClasses.Update(promptClass);
         await _databaseContext.SaveChangesAsync(cancellationToken);

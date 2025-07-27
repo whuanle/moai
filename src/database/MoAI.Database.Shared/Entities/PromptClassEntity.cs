@@ -20,11 +20,6 @@ public partial class PromptClassEntity : IFullAudited
     public string Name { get; set; } = default!;
 
     /// <summary>
-    /// 分类描述.
-    /// </summary>
-    public string Description { get; set; } = default!;
-
-    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

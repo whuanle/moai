@@ -17,4 +17,8 @@ export const LoginPageRouters: RouteObject[] = [
     path: "/oauth_login",
     Component: OAuthLogin,
   },
+  {
+    path: "/oauth-callback",
+    Component: OAuthLogin,
+  },
 ];

@@ -17,5 +17,5 @@ public class OAuthBindExistAccountCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// id.
     /// </summary>
-    public string OAuthBindId { get; init; } = default!;
+    public Guid TempOAuthBindId { get; init; } = default!;
 }

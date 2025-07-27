@@ -909,10 +909,6 @@ export function createProcessingAiAssistantChatCommandFromDiscriminatorValue(par
  */
 export interface CreatePromptClassCommand extends Parsable {
     /**
-     * 描述.
-     */
-    description?: string | null;
-    /**
      * 名称.
      */
     name?: string | null;
@@ -1503,6 +1499,15 @@ export function createSimpleStringFromDiscriminatorValue(parseNode: ParseNode | 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UnbindUserAccountCommand}
+ */
+// @ts-ignore
+export function createUnbindUserAccountCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUnbindUserAccountCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateMcpServerPluginCommand}
  */
 // @ts-ignore
@@ -1677,7 +1682,7 @@ export interface DeleteOAuthConnectionCommand extends Parsable {
     /**
      * id.
      */
-    oAuthConnectionId?: number | null;
+    oAuthConnectionId?: Guid | null;
 }
 /**
  * 删除插件.
@@ -1976,7 +1981,6 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
 // @ts-ignore
 export function deserializeIntoCreatePromptClassCommand(createPromptClassCommand: Partial<CreatePromptClassCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "description": n => { createPromptClassCommand.description = n.getStringValue(); },
         "name": n => { createPromptClassCommand.name = n.getStringValue(); },
     }
 }
@@ -2033,7 +2037,7 @@ export function deserializeIntoDeleteAiModelCommand(deleteAiModelCommand: Partia
 // @ts-ignore
 export function deserializeIntoDeleteOAuthConnectionCommand(deleteOAuthConnectionCommand: Partial<DeleteOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "oAuthConnectionId": n => { deleteOAuthConnectionCommand.oAuthConnectionId = n.getNumberValue(); },
+        "oAuthConnectionId": n => { deleteOAuthConnectionCommand.oAuthConnectionId = n.getGuidValue(); },
     }
 }
 /**
@@ -2200,7 +2204,6 @@ export function deserializeIntoKeyValueString(keyValueString: Partial<KeyValueSt
 // @ts-ignore
 export function deserializeIntoLoginCommand(loginCommand: Partial<LoginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "oAuthBindId": n => { loginCommand.oAuthBindId = n.getStringValue(); },
         "password": n => { loginCommand.password = n.getStringValue(); },
         "userName": n => { loginCommand.userName = n.getStringValue(); },
     }
@@ -2255,7 +2258,7 @@ export function deserializeIntoModelAbilities(modelAbilities: Partial<ModelAbili
 // @ts-ignore
 export function deserializeIntoOAuthBindExistAccountCommand(oAuthBindExistAccountCommand: Partial<OAuthBindExistAccountCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "oAuthBindId": n => { oAuthBindExistAccountCommand.oAuthBindId = n.getStringValue(); },
+        "tempOAuthBindId": n => { oAuthBindExistAccountCommand.tempOAuthBindId = n.getGuidValue(); },
     }
 }
 /**
@@ -2266,7 +2269,7 @@ export function deserializeIntoOAuthBindExistAccountCommand(oAuthBindExistAccoun
 export function deserializeIntoOAuthLoginCommand(oAuthLoginCommand: Partial<OAuthLoginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "code": n => { oAuthLoginCommand.code = n.getStringValue(); },
-        "oAuthId": n => { oAuthLoginCommand.oAuthId = n.getStringValue(); },
+        "oAuthId": n => { oAuthLoginCommand.oAuthId = n.getGuidValue(); },
     }
 }
 /**
@@ -2279,8 +2282,8 @@ export function deserializeIntoOAuthLoginCommandResponse(oAuthLoginCommandRespon
         "isBindUser": n => { oAuthLoginCommandResponse.isBindUser = n.getBooleanValue(); },
         "loginCommandResponse": n => { oAuthLoginCommandResponse.loginCommandResponse = n.getObjectValue<LoginCommandResponse>(createLoginCommandResponseFromDiscriminatorValue); },
         "name": n => { oAuthLoginCommandResponse.name = n.getStringValue(); },
-        "oAuthBindId": n => { oAuthLoginCommandResponse.oAuthBindId = n.getStringValue(); },
-        "oAuthId": n => { oAuthLoginCommandResponse.oAuthId = n.getStringValue(); },
+        "oAuthId": n => { oAuthLoginCommandResponse.oAuthId = n.getGuidValue(); },
+        "tempOAuthBindId": n => { oAuthLoginCommandResponse.tempOAuthBindId = n.getGuidValue(); },
     }
 }
 /**
@@ -2290,7 +2293,7 @@ export function deserializeIntoOAuthLoginCommandResponse(oAuthLoginCommandRespon
 // @ts-ignore
 export function deserializeIntoOAuthRegisterCommand(oAuthRegisterCommand: Partial<OAuthRegisterCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "oAuthBindId": n => { oAuthRegisterCommand.oAuthBindId = n.getStringValue(); },
+        "tempOAuthBindId": n => { oAuthRegisterCommand.tempOAuthBindId = n.getGuidValue(); },
     }
 }
 /**
@@ -2454,6 +2457,7 @@ export function deserializeIntoPromptItem(promptItem: Partial<PromptItem> | unde
         "content": n => { promptItem.content = n.getStringValue(); },
         "description": n => { promptItem.description = n.getStringValue(); },
         "id": n => { promptItem.id = n.getNumberValue(); },
+        "isPublic": n => { promptItem.isPublic = n.getBooleanValue(); },
         "name": n => { promptItem.name = n.getStringValue(); },
     }
 }
@@ -2530,7 +2534,7 @@ export function deserializeIntoQueryAllOAuthPrividerCommandResponseItem(queryAll
     return {
         "iconUrl": n => { queryAllOAuthPrividerCommandResponseItem.iconUrl = n.getStringValue(); },
         "name": n => { queryAllOAuthPrividerCommandResponseItem.name = n.getStringValue(); },
-        "oAuthId": n => { queryAllOAuthPrividerCommandResponseItem.oAuthId = n.getStringValue(); },
+        "oAuthId": n => { queryAllOAuthPrividerCommandResponseItem.oAuthId = n.getGuidValue(); },
         "provider": n => { queryAllOAuthPrividerCommandResponseItem.provider = n.getStringValue(); },
         "redirectUrl": n => { queryAllOAuthPrividerCommandResponseItem.redirectUrl = n.getStringValue(); },
     }
@@ -2555,10 +2559,9 @@ export function deserializeIntoQueryAllOAuthPrividerDetailCommandResponseItem(qu
         ...deserializeIntoAuditsInfo(queryAllOAuthPrividerDetailCommandResponseItem),
         "authorizeUrl": n => { queryAllOAuthPrividerDetailCommandResponseItem.authorizeUrl = n.getStringValue(); },
         "iconUrl": n => { queryAllOAuthPrividerDetailCommandResponseItem.iconUrl = n.getStringValue(); },
-        "id": n => { queryAllOAuthPrividerDetailCommandResponseItem.id = n.getNumberValue(); },
+        "id": n => { queryAllOAuthPrividerDetailCommandResponseItem.id = n.getGuidValue(); },
         "key": n => { queryAllOAuthPrividerDetailCommandResponseItem.key = n.getStringValue(); },
         "name": n => { queryAllOAuthPrividerDetailCommandResponseItem.name = n.getStringValue(); },
-        "oAuthId": n => { queryAllOAuthPrividerDetailCommandResponseItem.oAuthId = n.getStringValue(); },
         "provider": n => { queryAllOAuthPrividerDetailCommandResponseItem.provider = n.getStringValue(); },
         "wellKnown": n => { queryAllOAuthPrividerDetailCommandResponseItem.wellKnown = n.getStringValue(); },
     }
@@ -2580,7 +2583,6 @@ export function deserializeIntoQueryePromptClassCommandResponse(queryePromptClas
 // @ts-ignore
 export function deserializeIntoQueryePromptClassCommandResponseItem(queryePromptClassCommandResponseItem: Partial<QueryePromptClassCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "description": n => { queryePromptClassCommandResponseItem.description = n.getStringValue(); },
         "id": n => { queryePromptClassCommandResponseItem.id = n.getNumberValue(); },
         "name": n => { queryePromptClassCommandResponseItem.name = n.getStringValue(); },
     }
@@ -2816,7 +2818,7 @@ export function deserializeIntoQueryUserBindAccountCommandResponseItem(queryUser
         "bindId": n => { queryUserBindAccountCommandResponseItem.bindId = n.getNumberValue(); },
         "iconUrl": n => { queryUserBindAccountCommandResponseItem.iconUrl = n.getStringValue(); },
         "name": n => { queryUserBindAccountCommandResponseItem.name = n.getStringValue(); },
-        "providerId": n => { queryUserBindAccountCommandResponseItem.providerId = n.getNumberValue(); },
+        "providerId": n => { queryUserBindAccountCommandResponseItem.providerId = n.getGuidValue(); },
     }
 }
 /**
@@ -2830,6 +2832,7 @@ export function deserializeIntoQueryUserListCommand(queryUserListCommand: Partia
         "isAdmin": n => { queryUserListCommand.isAdmin = n.getBooleanValue(); },
         "search": n => { queryUserListCommand.search = n.getStringValue(); },
         "userId": n => { queryUserListCommand.userId = n.getNumberValue(); },
+        "userName": n => { queryUserListCommand.userName = n.getStringValue(); },
     }
 }
 /**
@@ -3184,6 +3187,17 @@ export function deserializeIntoSimpleString(simpleString: Partial<SimpleString> 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUnbindUserAccountCommand(unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "bindId": n => { unbindUserAccountCommand.bindId = n.getNumberValue(); },
+        "userId": n => { unbindUserAccountCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateMcpServerPluginCommand(updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoMcpServerPluginConnectionOptions(updateMcpServerPluginCommand),
@@ -3200,7 +3214,7 @@ export function deserializeIntoUpdateMcpServerPluginCommand(updateMcpServerPlugi
 export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoCreateOAuthConnectionCommand(updateOAuthConnectionCommand),
-        "oAuthConnectionId": n => { updateOAuthConnectionCommand.oAuthConnectionId = n.getNumberValue(); },
+        "oAuthConnectionId": n => { updateOAuthConnectionCommand.oAuthConnectionId = n.getGuidValue(); },
     }
 }
 /**
@@ -3230,7 +3244,6 @@ export function deserializeIntoUpdateOpenApiPluginCommand(updateOpenApiPluginCom
 // @ts-ignore
 export function deserializeIntoUpdatePromptClassCommand(updatePromptClassCommand: Partial<UpdatePromptClassCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "description": n => { updatePromptClassCommand.description = n.getStringValue(); },
         "id": n => { updatePromptClassCommand.id = n.getNumberValue(); },
         "name": n => { updatePromptClassCommand.name = n.getStringValue(); },
     }
@@ -3531,10 +3544,6 @@ export interface KeyValueString extends KeyValueOfStringAndString, Parsable {
  */
 export interface LoginCommand extends Parsable {
     /**
-     * 登录绑定 OAuth 用户 ID.
-     */
-    oAuthBindId?: string | null;
-    /**
      * 密码，使用 RSA 公钥加密.
      */
     password?: string | null;
@@ -3629,10 +3638,10 @@ export interface OAuthBindExistAccountCommand extends Parsable {
     /**
      * id.
      */
-    oAuthBindId?: string | null;
+    tempOAuthBindId?: Guid | null;
 }
 /**
- * 使用 OAuth 登录.
+ * 使用 OAuth 登录，用于第三方登录回调后触发接口.
  */
 export interface OAuthLoginCommand extends Parsable {
     /**
@@ -3642,8 +3651,11 @@ export interface OAuthLoginCommand extends Parsable {
     /**
      * id.
      */
-    oAuthId?: string | null;
+    oAuthId?: Guid | null;
 }
+/**
+ * 响应.
+ */
 export interface OAuthLoginCommandResponse extends Parsable {
     /**
      * 如果已经绑定用户.
@@ -3658,23 +3670,23 @@ export interface OAuthLoginCommandResponse extends Parsable {
      */
     name?: string | null;
     /**
-     * 如果此 id 没有绑定过用户，则返回此 id，使用此 id 绑定或注册用户.
-     */
-    oAuthBindId?: string | null;
-    /**
      * id.
      */
-    oAuthId?: string | null;
+    oAuthId?: Guid | null;
+    /**
+     * 如果此 id 没有绑定过用户，则返回此 id，使用此 id 绑定或注册用户.
+     */
+    tempOAuthBindId?: Guid | null;
 }
 export type OAuthPrivider = (typeof OAuthPrividerObject)[keyof typeof OAuthPrividerObject];
 /**
- * 使用第三方账号一键注册.
+ * 第三方账号没有绑定记录时，使用第三方账号一键注册.
  */
 export interface OAuthRegisterCommand extends Parsable {
     /**
      * 登录绑定 OAuth 用户 ID.
      */
-    oAuthBindId?: string | null;
+    tempOAuthBindId?: Guid | null;
 }
 /**
  * 分页参数.
@@ -3934,6 +3946,10 @@ export interface PromptItem extends AuditsInfo, Parsable {
      */
     id?: number | null;
     /**
+     * The isPublic property
+     */
+    isPublic?: boolean | null;
+    /**
      * 名称.
      */
     name?: string | null;
@@ -4019,7 +4035,7 @@ export interface QueryAllOAuthPrividerCommandResponseItem extends Parsable {
     /**
      * id.
      */
-    oAuthId?: string | null;
+    oAuthId?: Guid | null;
     /**
      * 提供商标识
      */
@@ -4047,7 +4063,7 @@ export interface QueryAllOAuthPrividerDetailCommandResponseItem extends AuditsIn
     /**
      * id.
      */
-    id?: number | null;
+    id?: Guid | null;
     /**
      * The key property
      */
@@ -4056,10 +4072,6 @@ export interface QueryAllOAuthPrividerDetailCommandResponseItem extends AuditsIn
      * 提供商名称
      */
     name?: string | null;
-    /**
-     * OAuathId.
-     */
-    oAuthId?: string | null;
     /**
      * 提供商标识
      */
@@ -4076,10 +4088,6 @@ export interface QueryePromptClassCommandResponse extends Parsable {
     items?: QueryePromptClassCommandResponseItem[] | null;
 }
 export interface QueryePromptClassCommandResponseItem extends Parsable {
-    /**
-     * 描述.
-     */
-    description?: string | null;
     /**
      * id.
      */
@@ -4377,10 +4385,10 @@ export interface QueryUserBindAccountCommandResponseItem extends Parsable {
     /**
      * The providerId property
      */
-    providerId?: number | null;
+    providerId?: Guid | null;
 }
 /**
- * 查询用户列表.
+ * 分页查询用户列表.
  */
 export interface QueryUserListCommand extends PagedParamter, Parsable {
     /**
@@ -4392,9 +4400,13 @@ export interface QueryUserListCommand extends PagedParamter, Parsable {
      */
     search?: string | null;
     /**
-     * 指定用户的 id.
+     * 查询指定用户.
      */
     userId?: number | null;
+    /**
+     * 根据用户名筛选.
+     */
+    userName?: string | null;
 }
 /**
  * QueryUserListCommandResponse.
@@ -5026,7 +5038,6 @@ export function serializeCreateOAuthConnectionCommand(writer: SerializationWrite
 // @ts-ignore
 export function serializeCreatePromptClassCommand(writer: SerializationWriter, createPromptClassCommand: Partial<CreatePromptClassCommand> | undefined | null = {}) : void {
     if (createPromptClassCommand) {
-        writer.writeStringValue("description", createPromptClassCommand.description);
         writer.writeStringValue("name", createPromptClassCommand.name);
     }
 }
@@ -5083,7 +5094,7 @@ export function serializeDeleteAiModelCommand(writer: SerializationWriter, delet
 // @ts-ignore
 export function serializeDeleteOAuthConnectionCommand(writer: SerializationWriter, deleteOAuthConnectionCommand: Partial<DeleteOAuthConnectionCommand> | undefined | null = {}) : void {
     if (deleteOAuthConnectionCommand) {
-        writer.writeNumberValue("oAuthConnectionId", deleteOAuthConnectionCommand.oAuthConnectionId);
+        writer.writeGuidValue("oAuthConnectionId", deleteOAuthConnectionCommand.oAuthConnectionId);
     }
 }
 /**
@@ -5250,7 +5261,6 @@ export function serializeKeyValueString(writer: SerializationWriter, keyValueStr
 // @ts-ignore
 export function serializeLoginCommand(writer: SerializationWriter, loginCommand: Partial<LoginCommand> | undefined | null = {}) : void {
     if (loginCommand) {
-        writer.writeStringValue("oAuthBindId", loginCommand.oAuthBindId);
         writer.writeStringValue("password", loginCommand.password);
         writer.writeStringValue("userName", loginCommand.userName);
     }
@@ -5305,7 +5315,7 @@ export function serializeModelAbilities(writer: SerializationWriter, modelAbilit
 // @ts-ignore
 export function serializeOAuthBindExistAccountCommand(writer: SerializationWriter, oAuthBindExistAccountCommand: Partial<OAuthBindExistAccountCommand> | undefined | null = {}) : void {
     if (oAuthBindExistAccountCommand) {
-        writer.writeStringValue("oAuthBindId", oAuthBindExistAccountCommand.oAuthBindId);
+        writer.writeGuidValue("tempOAuthBindId", oAuthBindExistAccountCommand.tempOAuthBindId);
     }
 }
 /**
@@ -5316,7 +5326,7 @@ export function serializeOAuthBindExistAccountCommand(writer: SerializationWrite
 export function serializeOAuthLoginCommand(writer: SerializationWriter, oAuthLoginCommand: Partial<OAuthLoginCommand> | undefined | null = {}) : void {
     if (oAuthLoginCommand) {
         writer.writeStringValue("code", oAuthLoginCommand.code);
-        writer.writeStringValue("oAuthId", oAuthLoginCommand.oAuthId);
+        writer.writeGuidValue("oAuthId", oAuthLoginCommand.oAuthId);
     }
 }
 /**
@@ -5329,8 +5339,8 @@ export function serializeOAuthLoginCommandResponse(writer: SerializationWriter, 
         writer.writeBooleanValue("isBindUser", oAuthLoginCommandResponse.isBindUser);
         writer.writeObjectValue<LoginCommandResponse>("loginCommandResponse", oAuthLoginCommandResponse.loginCommandResponse, serializeLoginCommandResponse);
         writer.writeStringValue("name", oAuthLoginCommandResponse.name);
-        writer.writeStringValue("oAuthBindId", oAuthLoginCommandResponse.oAuthBindId);
-        writer.writeStringValue("oAuthId", oAuthLoginCommandResponse.oAuthId);
+        writer.writeGuidValue("oAuthId", oAuthLoginCommandResponse.oAuthId);
+        writer.writeGuidValue("tempOAuthBindId", oAuthLoginCommandResponse.tempOAuthBindId);
     }
 }
 /**
@@ -5340,7 +5350,7 @@ export function serializeOAuthLoginCommandResponse(writer: SerializationWriter, 
 // @ts-ignore
 export function serializeOAuthRegisterCommand(writer: SerializationWriter, oAuthRegisterCommand: Partial<OAuthRegisterCommand> | undefined | null = {}) : void {
     if (oAuthRegisterCommand) {
-        writer.writeStringValue("oAuthBindId", oAuthRegisterCommand.oAuthBindId);
+        writer.writeGuidValue("tempOAuthBindId", oAuthRegisterCommand.tempOAuthBindId);
     }
 }
 /**
@@ -5504,6 +5514,7 @@ export function serializePromptItem(writer: SerializationWriter, promptItem: Par
         writer.writeStringValue("content", promptItem.content);
         writer.writeStringValue("description", promptItem.description);
         writer.writeNumberValue("id", promptItem.id);
+        writer.writeBooleanValue("isPublic", promptItem.isPublic);
         writer.writeStringValue("name", promptItem.name);
     }
 }
@@ -5580,7 +5591,7 @@ export function serializeQueryAllOAuthPrividerCommandResponseItem(writer: Serial
     if (queryAllOAuthPrividerCommandResponseItem) {
         writer.writeStringValue("iconUrl", queryAllOAuthPrividerCommandResponseItem.iconUrl);
         writer.writeStringValue("name", queryAllOAuthPrividerCommandResponseItem.name);
-        writer.writeStringValue("oAuthId", queryAllOAuthPrividerCommandResponseItem.oAuthId);
+        writer.writeGuidValue("oAuthId", queryAllOAuthPrividerCommandResponseItem.oAuthId);
         writer.writeStringValue("provider", queryAllOAuthPrividerCommandResponseItem.provider);
         writer.writeStringValue("redirectUrl", queryAllOAuthPrividerCommandResponseItem.redirectUrl);
     }
@@ -5605,10 +5616,9 @@ export function serializeQueryAllOAuthPrividerDetailCommandResponseItem(writer: 
         serializeAuditsInfo(writer, queryAllOAuthPrividerDetailCommandResponseItem)
         writer.writeStringValue("authorizeUrl", queryAllOAuthPrividerDetailCommandResponseItem.authorizeUrl);
         writer.writeStringValue("iconUrl", queryAllOAuthPrividerDetailCommandResponseItem.iconUrl);
-        writer.writeNumberValue("id", queryAllOAuthPrividerDetailCommandResponseItem.id);
+        writer.writeGuidValue("id", queryAllOAuthPrividerDetailCommandResponseItem.id);
         writer.writeStringValue("key", queryAllOAuthPrividerDetailCommandResponseItem.key);
         writer.writeStringValue("name", queryAllOAuthPrividerDetailCommandResponseItem.name);
-        writer.writeStringValue("oAuthId", queryAllOAuthPrividerDetailCommandResponseItem.oAuthId);
         writer.writeStringValue("provider", queryAllOAuthPrividerDetailCommandResponseItem.provider);
         writer.writeStringValue("wellKnown", queryAllOAuthPrividerDetailCommandResponseItem.wellKnown);
     }
@@ -5630,7 +5640,6 @@ export function serializeQueryePromptClassCommandResponse(writer: SerializationW
 // @ts-ignore
 export function serializeQueryePromptClassCommandResponseItem(writer: SerializationWriter, queryePromptClassCommandResponseItem: Partial<QueryePromptClassCommandResponseItem> | undefined | null = {}) : void {
     if (queryePromptClassCommandResponseItem) {
-        writer.writeStringValue("description", queryePromptClassCommandResponseItem.description);
         writer.writeNumberValue("id", queryePromptClassCommandResponseItem.id);
         writer.writeStringValue("name", queryePromptClassCommandResponseItem.name);
     }
@@ -5866,7 +5875,7 @@ export function serializeQueryUserBindAccountCommandResponseItem(writer: Seriali
         writer.writeNumberValue("bindId", queryUserBindAccountCommandResponseItem.bindId);
         writer.writeStringValue("iconUrl", queryUserBindAccountCommandResponseItem.iconUrl);
         writer.writeStringValue("name", queryUserBindAccountCommandResponseItem.name);
-        writer.writeNumberValue("providerId", queryUserBindAccountCommandResponseItem.providerId);
+        writer.writeGuidValue("providerId", queryUserBindAccountCommandResponseItem.providerId);
     }
 }
 /**
@@ -5880,6 +5889,7 @@ export function serializeQueryUserListCommand(writer: SerializationWriter, query
         writer.writeBooleanValue("isAdmin", queryUserListCommand.isAdmin);
         writer.writeStringValue("search", queryUserListCommand.search);
         writer.writeNumberValue("userId", queryUserListCommand.userId);
+        writer.writeStringValue("userName", queryUserListCommand.userName);
     }
 }
 /**
@@ -6234,6 +6244,17 @@ export function serializeSimpleString(writer: SerializationWriter, simpleString:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUnbindUserAccountCommand(writer: SerializationWriter, unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined | null = {}) : void {
+    if (unbindUserAccountCommand) {
+        writer.writeNumberValue("bindId", unbindUserAccountCommand.bindId);
+        writer.writeNumberValue("userId", unbindUserAccountCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateMcpServerPluginCommand(writer: SerializationWriter, updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined | null = {}) : void {
     if (updateMcpServerPluginCommand) {
         serializeMcpServerPluginConnectionOptions(writer, updateMcpServerPluginCommand)
@@ -6250,7 +6271,7 @@ export function serializeUpdateMcpServerPluginCommand(writer: SerializationWrite
 export function serializeUpdateOAuthConnectionCommand(writer: SerializationWriter, updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (updateOAuthConnectionCommand) {
         serializeCreateOAuthConnectionCommand(writer, updateOAuthConnectionCommand)
-        writer.writeNumberValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
+        writer.writeGuidValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
     }
 }
 /**
@@ -6280,7 +6301,6 @@ export function serializeUpdateOpenApiPluginCommand(writer: SerializationWriter,
 // @ts-ignore
 export function serializeUpdatePromptClassCommand(writer: SerializationWriter, updatePromptClassCommand: Partial<UpdatePromptClassCommand> | undefined | null = {}) : void {
     if (updatePromptClassCommand) {
-        writer.writeStringValue("description", updatePromptClassCommand.description);
         writer.writeNumberValue("id", updatePromptClassCommand.id);
         writer.writeStringValue("name", updatePromptClassCommand.name);
     }
@@ -6490,6 +6510,19 @@ export interface SimpleOfString extends Parsable {
 export interface SimpleString extends Parsable, SimpleOfString {
 }
 /**
+ * 解绑第三方账号.
+ */
+export interface UnbindUserAccountCommand extends Parsable {
+    /**
+     * 绑定 id.
+     */
+    bindId?: number | null;
+    /**
+     * 用户 id.
+     */
+    userId?: number | null;
+}
+/**
  * 更新 MCP 插件.
  */
 export interface UpdateMcpServerPluginCommand extends McpServerPluginConnectionOptions, Parsable {
@@ -6513,7 +6546,7 @@ export interface UpdateOAuthConnectionCommand extends CreateOAuthConnectionComma
     /**
      * id.
      */
-    oAuthConnectionId?: number | null;
+    oAuthConnectionId?: Guid | null;
 }
 /**
  * 更新 openapi 文件，支持 json、yaml.
@@ -6568,10 +6601,6 @@ export interface UpdateOpenApiPluginCommand extends Parsable {
  * 修改提示词分类.
  */
 export interface UpdatePromptClassCommand extends Parsable {
-    /**
-     * 描述.
-     */
-    description?: string | null;
     /**
      * id.
      */

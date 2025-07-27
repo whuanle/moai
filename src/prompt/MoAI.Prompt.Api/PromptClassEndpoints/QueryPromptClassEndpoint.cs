@@ -13,7 +13,7 @@ using MoAI.Infra.Models;
 using MoAI.Prompt.Queries;
 using MoAI.Prompt.Queries.Responses;
 
-namespace MaomiAI.AiModel.Api.Endpoints;
+namespace MoAI.Prompt.PromptClassEndpoints;
 
 /// <summary>
 /// 查询分类.

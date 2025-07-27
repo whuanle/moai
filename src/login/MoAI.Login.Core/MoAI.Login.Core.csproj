@@ -6,6 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Queries\QueryAllOAuthPrividerCommandHandler.cs~RF45581a35.TMP" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
 	</ItemGroup>

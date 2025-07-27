@@ -17,6 +17,7 @@ import {
   LinkOutlined,
   UserAddOutlined,
   LogoutOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { GetAllowApiClient, GetApiClient } from "../ServiceClient";
 import {
@@ -47,6 +48,7 @@ interface BindAccountState {
   oAuthBindId?: string;
   isBinding: boolean;
   name?: string;
+  bindSuccess?: boolean;
 }
 
 interface RegisterAccountState {
@@ -83,12 +85,22 @@ export default function OAuthLogin() {
     try {
       const client = GetApiClient();
       await client.api.account.oauth_bind_account.post({
-        oAuthBindId: bindAccountState.oAuthBindId,
+        tempOAuthBindId: bindAccountState.oAuthBindId,
       });
 
       messageApi.success("账号绑定成功！");
 
-      navigate("/app");
+      // 显示绑定成功状态
+      setBindAccountState((prev) => ({ ...prev, bindSuccess: true }));
+
+      // 延迟关闭弹窗或跳转
+      setTimeout(() => {
+        if (window.opener) {
+          window.close();
+        } else {
+          navigate("/app");
+        }
+      }, 1500);
     } catch (error) {
       console.error("绑定账号时出错:", error);
       messageApi.error("绑定账号失败，请重试");
@@ -131,7 +143,7 @@ export default function OAuthLogin() {
     try {
       const client = GetAllowApiClient();
       const response = await client.api.account.oauth_register.post({
-        oAuthBindId: registerAccountState.oAuthBindId,
+        tempOAuthBindId: registerAccountState.oAuthBindId,
       });
 
       if (response) {
@@ -139,7 +151,17 @@ export default function OAuthLogin() {
 
         SetUserInfo(response);
 
-        navigate("/app");
+        // 显示注册成功状态
+        setRegisterAccountState((prev) => ({ ...prev, isRegistering: false }));
+
+        // 延迟关闭弹窗或跳转
+        setTimeout(() => {
+          if (window.opener) {
+            window.close();
+          } else {
+            navigate("/app");
+          }
+        }, 1500);
       }
     } catch (error) {
       console.error("注册账号时出错:", error);
@@ -213,7 +235,13 @@ export default function OAuthLogin() {
         if (oauthLoginResponse.isBindUser) {
           messageApi.success("OAuth登录成功！");
           SetUserInfo(oauthLoginResponse.loginCommandResponse!);
-          navigate("/app");
+          
+          // 如果是弹窗模式，关闭弹窗
+          if (window.opener) {
+            window.close();
+          } else {
+            navigate("/app");
+          }
           return;
         }
 
@@ -224,7 +252,7 @@ export default function OAuthLogin() {
             setBindAccountState({
               showBindOptions: true,
               currentUsername,
-              oAuthBindId: oauthLoginResponse.oAuthBindId || undefined,
+              oAuthBindId: oauthLoginResponse.tempOAuthBindId || undefined,
               name: oauthLoginResponse.name || undefined,
               isBinding: false,
             });
@@ -234,7 +262,7 @@ export default function OAuthLogin() {
             // 用户未登录，显示注册选项
             setRegisterAccountState({
               showRegisterOptions: true,
-              oAuthBindId: oauthLoginResponse.oAuthBindId || undefined,
+              oAuthBindId: oauthLoginResponse.tempOAuthBindId || undefined,
               isRegistering: false,
               name: oauthLoginResponse.name || undefined,
             });
@@ -298,6 +326,40 @@ export default function OAuthLogin() {
           </Row>
         </Content>
 
+        {contextHolder}
+      </Layout>
+    );
+  }
+
+  // 显示绑定成功状态
+  if (bindAccountState.bindSuccess) {
+    return (
+      <Layout className="login-container">
+        <Content>
+          <Row justify="center" align="middle" style={{ height: "100vh" }}>
+            <Col>
+              <Card>
+                <div style={{ textAlign: "center" }}>
+                  <CheckCircleOutlined 
+                    style={{ 
+                      fontSize: 64, 
+                      color: "#52c41a", 
+                      marginBottom: 16 
+                    }} 
+                  />
+                  <Typography.Title level={4}>绑定成功</Typography.Title>
+                  <Typography.Text>
+                    OAuth账号已成功绑定到您的账号
+                  </Typography.Text>
+                  <br />
+                  <Typography.Text type="secondary">
+                    窗口将在几秒后自动关闭...
+                  </Typography.Text>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </Content>
         {contextHolder}
       </Layout>
     );
