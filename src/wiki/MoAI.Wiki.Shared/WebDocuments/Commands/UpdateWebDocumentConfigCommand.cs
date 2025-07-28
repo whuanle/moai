@@ -20,17 +20,30 @@ public class UpdateWebDocumentConfigCommand : IRequest<EmptyCommandResponse>
     /// </summary>
     public int WikiId { get; init; }
 
+    /// <summary>
+    /// 配置 id.
+    /// </summary>
     public int WebConfigId { get; init; }
 
     /// <summary>
     /// 标题.
     /// </summary>
-    public string Title { get; init; }
+    public string Title { get; set; } = default!;
 
     /// <summary>
     /// 页面地址.
     /// </summary>
-    public string Address { get; set; } = default!;
+    public Uri Address { get; set; } = default!;
+
+    /// <summary>
+    /// 限制自动爬取的网页都在该路径之下,limit_address跟address必须具有相同域名.
+    /// </summary>
+    public Uri? LimitAddress { get; set; }
+
+    /// <summary>
+    /// 最大抓取数量.
+    /// </summary>
+    public int LimitMaxCount { get; set; }
 
     /// <summary>
     /// 是否抓取其它页面.
@@ -38,22 +51,12 @@ public class UpdateWebDocumentConfigCommand : IRequest<EmptyCommandResponse>
     public bool IsCrawlOther { get; set; }
 
     /// <summary>
-    /// 抓取方式.
-    /// </summary>
-    public int CrawlSchame { get; set; }
-
-    /// <summary>
-    /// 限制自动爬取的网页都在该路径之下.
-    /// </summary>
-    public string LimitPath { get; set; } = default!;
-
-    /// <summary>
     /// 是否自动向量化.
     /// </summary>
     public bool IsAutoEmbedding { get; set; }
 
     /// <summary>
-    /// 抓取的页面在以前抓取过时怎么处理.
+    /// 等待js加载完成.
     /// </summary>
-    public WebDocumentCrawlPathRule SamePathRule { get; set; }
+    public bool IsWaitJs { get; set; }
 }

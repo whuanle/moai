@@ -22,7 +22,7 @@ public class WikiDocumentTaskItem : AuditsInfo
     /// <summary>
     /// id.
     /// </summary>
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
     /// 知识库id.
@@ -53,11 +53,6 @@ public class WikiDocumentTaskItem : AuditsInfo
     /// 文件类型.
     /// </summary>
     public string ContentType { get; init; }
-
-    /// <summary>
-    /// 任务标识，用来判断要执行的任务是否一致.
-    /// </summary>
-    public string TaskTag { get; set; } = default!;
 
     /// <summary>
     /// 任务状态.

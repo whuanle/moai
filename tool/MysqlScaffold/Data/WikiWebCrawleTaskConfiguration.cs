@@ -20,8 +20,8 @@ public partial class WikiWebCrawleTaskConfiguration : IEntityTypeConfiguration<W
         entity.ToTable("wiki_web_crawle_task", tb => tb.HasComment("web爬虫状态"));
 
         entity.Property(e => e.Id)
+            .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("id")
-            .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.CrawleState)
             .HasComment("爬取状态")
@@ -36,18 +36,36 @@ public partial class WikiWebCrawleTaskConfiguration : IEntityTypeConfiguration<W
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
+        entity.Property(e => e.FaildPageCount)
+            .HasComment("爬取失败的页面数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("faild_page_count");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.MaxTokensPerParagraph)
+            .HasDefaultValueSql("'1000'")
+            .HasComment("每段最大token数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("max_tokens_per_paragraph");
         entity.Property(e => e.Message)
             .HasMaxLength(255)
             .HasComment("任务执行信息")
             .HasColumnName("message");
-        entity.Property(e => e.TaskTag)
-            .HasDefaultValueSql("uuid()")
-            .HasComment("任务id，便于追踪")
-            .HasColumnName("task_tag");
+        entity.Property(e => e.OverlappingTokens)
+            .HasDefaultValueSql("'20'")
+            .HasComment("重叠的token数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("overlapping_tokens");
+        entity.Property(e => e.PageCount)
+            .HasComment("爬取成功的页面数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("page_count");
+        entity.Property(e => e.Tokenizer)
+            .HasMaxLength(20)
+            .HasComment("分词器")
+            .HasColumnName("tokenizer");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

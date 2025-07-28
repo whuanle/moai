@@ -20,6 +20,8 @@ import {
   Divider,
   Alert,
   Spin,
+  Select,
+  Radio,
 } from "antd";
 import {
   UploadOutlined,
@@ -80,6 +82,40 @@ interface BatchUploadStatus {
   isUploading: boolean;
 }
 
+// 文件格式选项
+const FILE_FORMAT_OPTIONS = [
+  { value: ".md", label: ".md (Markdown)" },
+  { value: ".pdf", label: ".pdf (Portable Document Format)" },
+  { value: ".doc", label: ".doc (Microsoft Word 97-2003)" },
+  { value: ".docx", label: ".docx (Microsoft Word)" },
+  { value: ".xls", label: ".xls (Microsoft Excel 97-2003)" },
+  { value: ".xlsx", label: ".xlsx (Microsoft Excel)" },
+  { value: ".ppt", label: ".ppt (Microsoft PowerPoint 97-2003)" },
+  { value: ".pptx", label: ".pptx (Microsoft PowerPoint)" },
+  { value: ".txt", label: ".txt (Plain Text)" },
+  { value: ".rtf", label: ".rtf (Rich Text Format)" },
+  { value: ".odt", label: ".odt (OpenDocument Text)" },
+  { value: ".ods", label: ".ods (OpenDocument Spreadsheet)" },
+  { value: ".odp", label: ".odp (OpenDocument Presentation)" },
+  { value: ".csv", label: ".csv (Comma-Separated Values)" },
+  { value: ".json", label: ".json (JSON - JavaScript Object Notation)" },
+  { value: ".xml", label: ".xml (XML - eXtensible Markup Language)" },
+  { value: ".html", label: ".html (HTML - HyperText Markup Language)" },
+  { value: ".htm", label: ".htm (HTML - HyperText Markup Language)" },
+  { value: ".epub", label: ".epub (EPUB - Electronic Publication)" },
+  { value: ".mobi", label: ".mobi (MOBI - Mobipocket)" },
+  { value: ".ps", label: ".ps (PostScript)" },
+  { value: ".tex", label: ".tex (LaTeX Source Document)" },
+  { value: ".dvi", label: ".dvi (Device Independent File Format - LaTeX)" },
+  { value: ".djvu", label: ".djvu (DjVu)" },
+  { value: ".msg", label: ".msg (Microsoft Outlook Email Message)" },
+  { value: ".eml", label: ".eml (EML - Email Message)" },
+  { value: ".xps", label: ".xps (XML Paper Specification)" },
+  { value: ".gdoc", label: ".gdoc (Google Docs)" },
+  { value: ".gsheet", label: ".gsheet (Google Sheets)" },
+  { value: ".gslides", label: ".gslides (Google Slides)" },
+];
+
 // 自定义 Hook - 文档列表管理
 const useDocumentList = (wikiId: number) => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -90,6 +126,8 @@ const useDocumentList = (wikiId: number) => {
     total: 0,
   });
   const [searchText, setSearchText] = useState("");
+  const [filterMode, setFilterMode] = useState<"include" | "exclude">("exclude");
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([".html"]);
   const [messageApi, contextHolder] = message.useMessage();
 
   const fetchDocuments = useCallback(async (page = 1, pageSize = 20, search = "") => {
@@ -107,6 +145,15 @@ const useDocumentList = (wikiId: number) => {
         pageSize,
         query: search,
       };
+
+      // 根据过滤模式设置文件类型参数
+      if (selectedFormats.length > 0) {
+        if (filterMode === "include") {
+          requestBody.includeFileTypes = selectedFormats;
+        } else {
+          requestBody.excludeFileTypes = selectedFormats;
+        }
+      }
 
       const response = await client.api.wiki.document.list.post(requestBody);
 
@@ -136,7 +183,7 @@ const useDocumentList = (wikiId: number) => {
     } finally {
       setLoading(false);
     }
-  }, [wikiId, messageApi]);
+  }, [wikiId, messageApi, filterMode, selectedFormats]);
 
   const deleteDocument = useCallback(async (documentId: number) => {
     try {
@@ -161,10 +208,14 @@ const useDocumentList = (wikiId: number) => {
     loading,
     pagination,
     searchText,
+    filterMode,
+    selectedFormats,
     contextHolder,
     fetchDocuments,
     deleteDocument,
     setSearchText,
+    setFilterMode,
+    setSelectedFormats,
   };
 };
 
@@ -592,10 +643,14 @@ export default function WikiDocument() {
     loading,
     pagination,
     searchText,
+    filterMode,
+    selectedFormats,
     contextHolder: listContextHolder,
     fetchDocuments,
     deleteDocument,
     setSearchText,
+    setFilterMode,
+    setSelectedFormats,
   } = useDocumentList(wikiId);
 
   const {
@@ -632,6 +687,15 @@ export default function WikiDocument() {
     fetchDocuments(pagination.current, pagination.pageSize, searchText);
   }, [fetchDocuments, pagination.current, pagination.pageSize, searchText]);
 
+  const handleFilterModeChange = useCallback((value: "include" | "exclude") => {
+    setFilterMode(value);
+    setSelectedFormats([]); // 清空已选择的格式
+  }, [setFilterMode, setSelectedFormats]);
+
+  const handleFormatChange = useCallback((values: string[]) => {
+    setSelectedFormats(values);
+  }, [setSelectedFormats]);
+
   const columns = getTableColumns(wikiId, navigate, deleteDocument);
 
   return (
@@ -640,19 +704,18 @@ export default function WikiDocument() {
       {uploadContextHolder}
       
       <Card>
-        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-          <Col>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={8}>
             <Search
               placeholder="搜索文档"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 300 }}
               onSearch={handleSearch}
               allowClear
               enterButton
             />
           </Col>
-          <Col>
+          <Col span={16}>
             <Space>
               <Button
                 icon={<ReloadOutlined />}
@@ -669,6 +732,42 @@ export default function WikiDocument() {
                 上传文档
               </Button>
             </Space>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={6}>
+            <div style={{ marginBottom: 8 }}>
+              <Text strong>格式过滤模式：</Text>
+            </div>
+            <Radio.Group 
+              value={filterMode} 
+              onChange={(e) => handleFilterModeChange(e.target.value)}
+              buttonStyle="solid"
+            >
+              <Radio.Button value="include">包含格式</Radio.Button>
+              <Radio.Button value="exclude">排除格式</Radio.Button>
+            </Radio.Group>
+          </Col>
+          <Col span={18}>
+            <div style={{ marginBottom: 8 }}>
+              <Text strong>
+                {filterMode === "include" ? "包含格式" : "排除格式"}：
+              </Text>
+            </div>
+            <Select
+              mode="multiple"
+              placeholder={`请选择要${filterMode === "include" ? "包含" : "排除"}的文件格式`}
+              value={selectedFormats}
+              onChange={handleFormatChange}
+              options={FILE_FORMAT_OPTIONS}
+              style={{ width: "50%" }}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? "").includes(input)
+              }
+              allowClear
+            />
           </Col>
         </Row>
 

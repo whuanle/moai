@@ -16,7 +16,7 @@ namespace MoAI.Wiki.Documents.Queries;
 /// <summary>
 /// 查询知识库文档列表.
 /// </summary>
-public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocumentListCommand, QueryWikiDocumentListResponse>
+public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocumentListCommand, QueryWikiDocumentListCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
@@ -33,7 +33,7 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiDocumentListResponse> Handle(QueryWikiDocumentListCommand request, CancellationToken cancellationToken)
+    public async Task<QueryWikiDocumentListCommandResponse> Handle(QueryWikiDocumentListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId);
 
@@ -72,7 +72,7 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
             Items = result
         });
 
-        return new QueryWikiDocumentListResponse
+        return new QueryWikiDocumentListCommandResponse
         {
             Total = totalCount,
             PageNo = request.PageNo,

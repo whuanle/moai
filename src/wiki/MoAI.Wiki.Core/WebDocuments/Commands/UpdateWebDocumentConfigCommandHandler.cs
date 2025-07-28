@@ -40,9 +40,12 @@ public class UpdateWebDocumentConfigCommandHandler : IRequestHandler<UpdateWebDo
         }
 
         entity.IsCrawlOther = request.IsCrawlOther;
-        entity.Address = request.Address;
+        entity.Address = request.Address.ToString();
         entity.Title = request.Title.Trim();
-
+        entity.LimitAddress = request.LimitAddress?.ToString() ?? string.Empty;
+        entity.LimitMaxCount = request.LimitMaxCount;
+        entity.IsAutoEmbedding = request.IsAutoEmbedding;
+        entity.IsWaitJs = request.IsWaitJs;
 
         _databaseContext.WikiWebConfigs.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);

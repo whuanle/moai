@@ -63,9 +63,6 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.IsPublic)
             .HasComment("是否公开，公开后所有人都可以搜索到")
             .HasColumnName("is_public");
-        entity.Property(e => e.IsSystem)
-            .HasComment("是否为系统知识库")
-            .HasColumnName("is_system");
         entity.Property(e => e.MaxRetries)
             .HasDefaultValueSql("'3'")
             .HasComment("最大失败重试次数")

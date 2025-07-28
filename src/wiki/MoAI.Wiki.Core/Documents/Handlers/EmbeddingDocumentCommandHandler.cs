@@ -78,7 +78,6 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
         {
             DocumentId = request.DocumentId,
             WikiId = request.WikiId,
-            TaskTag = Guid.NewGuid().ToString(),
             State = (int)FileEmbeddingState.Wait,
             MaxTokensPerParagraph = request.MaxTokensPerParagraph,
             OverlappingTokens = request.OverlappingTokens,

@@ -22,6 +22,8 @@ import { type Update_wiki_configRequestBuilder, Update_wiki_configRequestBuilder
 // @ts-ignore
 import { type Update_wiki_infoRequestBuilder, Update_wiki_infoRequestBuilderRequestsMetadata } from './update_wiki_info/index.js';
 // @ts-ignore
+import { type WebRequestBuilder, WebRequestBuilderNavigationMetadata } from './web/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -68,6 +70,10 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The update_wiki_info property
      */
     get update_wiki_info(): Update_wiki_infoRequestBuilder;
+    /**
+     * The web property
+     */
+    get web(): WebRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -106,6 +112,9 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     update_wiki_info: {
         requestsMetadata: Update_wiki_infoRequestBuilderRequestsMetadata,
+    },
+    web: {
+        navigationMetadata: WebRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

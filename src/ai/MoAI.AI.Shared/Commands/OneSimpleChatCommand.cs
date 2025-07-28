@@ -15,6 +15,11 @@ namespace MoAI.AI.Commands;
 public class OneSimpleChatCommand : IRequest<OneSimpleChatCommandResponse>
 {
     /// <summary>
+    /// 提示词.
+    /// </summary>
+    public string Prompt { get; init; } = default!;
+
+    /// <summary>
     /// 对话 AI 信息.
     /// </summary>
     public AiEndpoint Endpoint { get; init; } = default!;

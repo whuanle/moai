@@ -6,6 +6,11 @@ import WikiLayout from "./WikiLayout";
 import DocumentEmbedding from "./DocumentEmbedding";
 import WikiSearch from "./WikiSearch";
 import WikiUser from "./WikiUser";
+import WikiCrawle from "./WikiCrawle";
+import WikiCrawleConfig from "./crawle/WikiCrawleConfig";
+import WikiCrawleLayout from "./crawle/WikiCrawleLayout";
+import WikiCrawleDocument from "./crawle/WikiCrawleDocument";
+import WikiCrawleTask from "./crawle/WikiCrawleTask";
 
 export const WikiPageRouters: RouteObject[] = [
   {
@@ -22,6 +27,28 @@ export const WikiPageRouters: RouteObject[] = [
           {
             path: "list",
             Component: WikiDocument,
+          },
+          {
+            path: "crawle",
+            Component: WikiCrawle,
+          },
+          {
+            path: "crawle/{:crawleId}",
+            Component: WikiCrawleLayout,
+            children: [
+              {
+                path: "config",
+                Component: WikiCrawleConfig,
+              },
+              {
+                path: "task",
+                Component: WikiCrawleTask,
+              },
+              {
+                path: "document",
+                Component: WikiCrawleDocument,
+              }
+            ]
           },
           {
             path: "settings",

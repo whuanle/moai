@@ -38,8 +38,12 @@ public static class HashHelper
     {
         using FileStream? stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         using MD5? md5 = MD5.Create();
-        using StreamReader reader = new StreamReader(stream);
         byte[]? hash = md5.ComputeHash(stream);
-        return Convert.ToBase64String(hash);
+        StringBuilder builder = new StringBuilder(hash.Length * 2);
+        foreach (byte b in hash)
+        {
+            builder.Append(b.ToString("x2"));
+        }
+        return builder.ToString();
     }
 }

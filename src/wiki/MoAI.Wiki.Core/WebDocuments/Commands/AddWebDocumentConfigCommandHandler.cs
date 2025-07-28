@@ -42,12 +42,12 @@ public class AddWebDocumentConfigCommandHandler : IRequestHandler<AddWebDocument
         {
             WikiId = request.WikiId,
             Title = request.Title,
-            Address = request.Address,
+            Address = request.Address.ToString(),
             IsCrawlOther = request.IsCrawlOther,
             IsAutoEmbedding = request.IsAutoEmbedding,
             IsWaitJs = request.IsWaitJs,
-            LimitAddress = request.LimitAddress,
-            LimitMaxCount = request.LimitMaxCount
+            LimitAddress = request.LimitAddress?.ToString() ?? string.Empty,
+            LimitMaxCount = request.LimitMaxCount,
         };
 
         _databaseContext.WikiWebConfigs.Add(entity);

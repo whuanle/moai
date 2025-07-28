@@ -25,11 +25,6 @@ public partial class WikiEntity : IFullAudited
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 是否为系统知识库.
-    /// </summary>
-    public bool IsSystem { get; set; }
-
-    /// <summary>
     /// 是否公开，公开后所有人都可以搜索到.
     /// </summary>
     public bool IsPublic { get; set; }

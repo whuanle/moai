@@ -19,7 +19,7 @@ namespace MoAI.Wiki.WebDocuments.Commands;
 /// <summary>
 /// <inheritdoc cref="StartWebDocumentCrawleCommand"/>
 /// </summary>
-public class StartWebDocumentCrawleCommandHandler : IRequestHandler<StartWebDocumentCrawleCommand, EmptyCommandResponse>
+public class StartWebDocumentCrawleCommandHandler : IRequestHandler<StartWebDocumentCrawleCommand, SimpleGuid>
 {
     private readonly IMessagePublisher _messagePublisher;
     private readonly DatabaseContext _databaseContext;
@@ -36,7 +36,7 @@ public class StartWebDocumentCrawleCommandHandler : IRequestHandler<StartWebDocu
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(StartWebDocumentCrawleCommand request, CancellationToken cancellationToken)
+    public async Task<SimpleGuid> Handle(StartWebDocumentCrawleCommand request, CancellationToken cancellationToken)
     {
         var existTask = await _databaseContext.WikiWebCrawleTasks
             .AnyAsync(x => x.WikiId == request.WikiId && x.WikiWebConfigId == request.WebConfigId && x.CrawleState < (int)CrawleState.Cancal, cancellationToken);
@@ -46,25 +46,32 @@ public class StartWebDocumentCrawleCommandHandler : IRequestHandler<StartWebDocu
             throw new BusinessException("当前知识库网页爬取任务正在进行中，请稍后再试.") { StatusCode = 400 };
         }
 
-        var message = new StartWebDocumentCrawleMessage
-        {
-            WikiId = request.WikiId,
-            WebConfigId = request.WebConfigId,
-        };
-
-        await _messagePublisher.AutoPublishAsync(message);
-
         var taskEntity = new WikiWebCrawleTaskEntity
         {
             WikiId = request.WikiId,
             WikiWebConfigId = request.WebConfigId,
             CrawleState = (int)CrawleState.None,
-            TaskTag = Guid.CreateVersion7()
+            MaxTokensPerParagraph = request.MaxTokensPerParagraph,
+            OverlappingTokens = request.OverlappingTokens,
+            Tokenizer = request.Tokenizer.ToString(),
+            Message = "已提交"
         };
 
         _databaseContext.WikiWebCrawleTasks.Add(taskEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        return EmptyCommandResponse.Default;
+        var message = new StartWebDocumentCrawleMessage
+        {
+            WikiId = request.WikiId,
+            WebConfigId = request.WebConfigId,
+            TaskId = taskEntity.Id
+        };
+
+        await _messagePublisher.AutoPublishAsync(message);
+
+        return new SimpleGuid
+        {
+            Value = taskEntity.Id
+        };
     }
 }

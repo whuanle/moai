@@ -19,7 +19,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/document/list")]
 
-public class QueryWikiDocumentListEndpoint : Endpoint<QueryWikiDocumentListCommand, QueryWikiDocumentListResponse>
+public class QueryWikiDocumentListEndpoint : Endpoint<QueryWikiDocumentListCommand, QueryWikiDocumentListCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -36,7 +36,7 @@ public class QueryWikiDocumentListEndpoint : Endpoint<QueryWikiDocumentListComma
     }
 
     /// <inheritdoc/>
-    public override async Task<QueryWikiDocumentListResponse> ExecuteAsync(QueryWikiDocumentListCommand req, CancellationToken ct)
+    public override async Task<QueryWikiDocumentListCommandResponse> ExecuteAsync(QueryWikiDocumentListCommand req, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {

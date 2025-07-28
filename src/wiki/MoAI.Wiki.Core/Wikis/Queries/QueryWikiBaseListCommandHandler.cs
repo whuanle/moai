@@ -37,11 +37,6 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
     {
         var query = _databaseContext.Wikis.AsQueryable();
 
-        if (request.IsSystem)
-        {
-            query = query.Where(x => x.IsSystem);
-        }
-
         if (request.IsOwn == true)
         {
             query = query.Where(x => x.CreateUserId == request.UserId);

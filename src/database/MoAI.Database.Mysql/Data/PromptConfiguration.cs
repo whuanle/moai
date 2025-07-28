@@ -47,10 +47,6 @@ public partial class PromptConfiguration : IEntityTypeConfiguration<PromptEntity
         entity.Property(e => e.IsPublic)
             .HasComment("是否公开")
             .HasColumnName("is_public");
-        entity.Property(e => e.IsSystem)
-            .HasComment("是否系统全局提示词")
-            .HasColumnType("int(11)")
-            .HasColumnName("is_system");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("名称")

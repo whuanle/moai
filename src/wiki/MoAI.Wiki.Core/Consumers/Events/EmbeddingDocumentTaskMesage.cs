@@ -24,5 +24,5 @@ public class EmbeddingDocumentTaskMesage
     /// <summary>
     /// 任务 id.
     /// </summary>
-    public int TaskId { get; init; }
+    public Guid TaskId { get; init; }
 }

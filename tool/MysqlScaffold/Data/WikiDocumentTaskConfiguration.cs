@@ -20,8 +20,8 @@ public partial class WikiDocumentTaskConfiguration : IEntityTypeConfiguration<Wi
         entity.ToTable("wiki_document_task", tb => tb.HasComment("知识库任务"));
 
         entity.Property(e => e.Id)
+            .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("id")
-            .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
@@ -58,10 +58,6 @@ public partial class WikiDocumentTaskConfiguration : IEntityTypeConfiguration<Wi
             .HasComment("任务状态")
             .HasColumnType("int(11)")
             .HasColumnName("state");
-        entity.Property(e => e.TaskTag)
-            .HasMaxLength(50)
-            .HasComment("任务标识")
-            .HasColumnName("task_tag");
         entity.Property(e => e.Tokenizer)
             .HasMaxLength(20)
             .HasComment("分词器")

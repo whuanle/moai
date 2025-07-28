@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoAI.AI.Models;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.Infra.Extensions;
+using MoAI.Infra.Models;
 using System.Text;
 
 namespace MoAI.App.AIAssistant.Controllers;
@@ -21,14 +22,17 @@ namespace MoAI.App.AIAssistant.Controllers;
 public class AiAssistantController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiAssistantController"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public AiAssistantController(IMediator mediator)
+    /// <param name="userContext"></param>
+    public AiAssistantController(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
+        _userContext = userContext;
     }
 
     /// <summary>
@@ -42,7 +46,20 @@ public class AiAssistantController : ControllerBase
     {
         Response.ContentType = "text/event-stream";
 
-        await foreach (var item in _mediator.CreateStream(request: command, cancellationToken))
+        var req = new ProcessingAiAssistantChatCommand
+        {
+            ChatId = command.ChatId,
+            Content = command.Content,
+            ExecutionSettings = command.ExecutionSettings,
+            ModelId = command.ModelId,
+            PluginIds = command.PluginIds,
+            Prompt = command.Prompt,
+            Title = command.Title,
+            UserId = _userContext.UserId,
+            WikiId = command.WikiId
+        };
+
+        await foreach (var item in _mediator.CreateStream(req, cancellationToken))
         {
             if (item is OpenAIChatCompletionsChunk chunk)
             {

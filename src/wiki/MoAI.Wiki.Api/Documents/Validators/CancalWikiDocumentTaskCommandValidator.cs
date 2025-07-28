@@ -27,9 +27,5 @@ public class CancalWikiDocumentTaskCommandValidator : Validator<CancalWikiDocume
         RuleFor(x => x.DocumentId)
             .NotEmpty().WithMessage("文档id不正确")
             .GreaterThan(0).WithMessage("文档id不正确");
-
-        RuleFor(x => x.TaskId)
-            .NotEmpty().WithMessage("任务id不正确")
-            .GreaterThan(0).WithMessage("任务id不正确");
     }
 }

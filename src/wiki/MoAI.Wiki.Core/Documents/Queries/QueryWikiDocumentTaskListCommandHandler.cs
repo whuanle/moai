@@ -69,7 +69,6 @@ public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWiki
                 FileSize = fileEntity.FileSize,
                 ContentType = fileEntity.ContentType,
                 WikiId = a.WikiId,
-                TaskTag = b.TaskTag,
                 State = (FileEmbeddingState)b.State,
                 Message = b.Message,
                 CreateUserName = string.Empty,

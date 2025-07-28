@@ -13,7 +13,7 @@ namespace MoAI.Wiki.Documents.Queries;
 /// <summary>
 /// 查询 wiki 文件列表.
 /// </summary>
-public class QueryWikiDocumentListCommand : PagedParamter, IRequest<QueryWikiDocumentListResponse>
+public class QueryWikiDocumentListCommand : PagedParamter, IRequest<QueryWikiDocumentListCommandResponse>
 {
     /// <summary>
     /// 知识库 id.

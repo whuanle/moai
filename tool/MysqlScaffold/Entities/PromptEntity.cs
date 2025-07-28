@@ -35,11 +35,6 @@ public partial class PromptEntity : IFullAudited
     public int PromptClassId { get; set; }
 
     /// <summary>
-    /// 是否系统全局提示词.
-    /// </summary>
-    public int IsSystem { get; set; }
-
-    /// <summary>
     /// 是否公开.
     /// </summary>
     public bool IsPublic { get; set; }

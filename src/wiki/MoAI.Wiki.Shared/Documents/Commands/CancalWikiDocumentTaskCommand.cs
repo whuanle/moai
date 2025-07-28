@@ -27,5 +27,5 @@ public class CancalWikiDocumentTaskCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 任务 id.
     /// </summary>
-    public int TaskId { get; set; } = default!;
+    public Guid TaskId { get; set; } = default!;
 }

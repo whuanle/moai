@@ -11,6 +11,12 @@ import {
   Space,
   Tooltip,
   App,
+  Modal,
+  Tabs,
+  List,
+  Avatar,
+  Tag,
+  Spin,
 } from "antd";
 import { GetApiClient } from "../ServiceClient";
 import { useParams } from "react-router";
@@ -23,29 +29,114 @@ export default function WikiSettings() {
   const [loading, setLoading] = useState(false);
   const [infoLoading, setInfoLoading] = useState(false);
   const [clearingVectors, setClearingVectors] = useState(false);
-  const [modelList, setModelList] = useState<any[]>([]);
+  const [modelModalVisible, setModelModalVisible] = useState(false);
+  const [systemModels, setSystemModels] = useState<any[]>([]);
+  const [userModels, setUserModels] = useState<any[]>([]);
+  const [systemModelsLoading, setSystemModelsLoading] = useState(false);
+  const [userModelsLoading, setUserModelsLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<any>(null);
   const { id } = useParams();
   const apiClient = GetApiClient();
 
   useEffect(() => {
     fetchWikiInfo();
-    fetchModelList();
   }, [id]);
 
-  const fetchModelList = async () => {
+  const fetchSystemModels = async () => {
     try {
-      const response = await apiClient.api.aimodel.type.modellist.post({
+      setSystemModelsLoading(true);
+      const response = await apiClient.api.aimodel.type.public_system_aimodel_list.post({
         aiModelType: "embedding",
       });
 
       if (response) {
-        setModelList(response.aiModels || []);
+        setSystemModels(response.aiModels || []);
       }
     } catch (error) {
-      console.error("Failed to fetch model list:", error);
-      messageApi.error("获取模型列表失败");
+      console.error("Failed to fetch system model list:", error);
+      messageApi.error("获取系统模型列表失败");
+    } finally {
+      setSystemModelsLoading(false);
     }
   };
+
+  const fetchUserModels = async () => {
+    try {
+      setUserModelsLoading(true);
+      const response = await apiClient.api.aimodel.type.user_modellist.post({
+        aiModelType: "embedding",
+      });
+
+      if (response) {
+        setUserModels(response.aiModels || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user model list:", error);
+      messageApi.error("获取私有模型列表失败");
+    } finally {
+      setUserModelsLoading(false);
+    }
+  };
+
+  const handleModelSelect = () => {
+    setModelModalVisible(true);
+    // 获取当前选中的模型信息
+    const currentModelId = configForm.getFieldValue("embeddingModelId");
+    if (currentModelId) {
+      const allModels = [...systemModels, ...userModels];
+      const model = allModels.find(m => m.id === currentModelId);
+      setSelectedModel(model);
+    }
+    // 加载模型列表
+    fetchSystemModels();
+    fetchUserModels();
+  };
+
+  const handleModelConfirm = (model: any) => {
+    setSelectedModel(model);
+    configForm.setFieldsValue({
+      embeddingModelId: model.id,
+    });
+    setModelModalVisible(false);
+  };
+
+  const renderModelList = (models: any[], loading: boolean) => (
+    <Spin spinning={loading}>
+      <List
+        dataSource={models}
+        renderItem={(model) => (
+          <List.Item
+            actions={[
+              <Button
+                type={selectedModel?.id === model.id ? "primary" : "default"}
+                onClick={() => handleModelConfirm(model)}
+              >
+                {selectedModel?.id === model.id ? "已选择" : "选择"}
+              </Button>
+            ]}
+          >
+            <List.Item.Meta
+              avatar={<Avatar>{model.provider?.charAt(0)?.toUpperCase()}</Avatar>}
+              title={
+                <Space>
+                  <span>{model.name}</span>
+                  <Tag color="blue">{model.provider}</Tag>
+                  {model.isPublic && <Tag color="green">公开</Tag>}
+                </Space>
+              }
+              description={
+                <Space direction="vertical" size="small">
+                  <span>标题: {model.title}</span>
+                  <span>端点: {model.endpoint}</span>
+                  {model.maxDimension && <span>最大维度: {model.maxDimension}</span>}
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </Spin>
+  );
 
   const fetchWikiInfo = async () => {
     if (!id) {
@@ -74,12 +165,50 @@ export default function WikiSettings() {
           maxRetries: response.maxRetries,
           isLock: response.isLock,
         });
+
+        // 设置当前选中的模型
+        if (response.embeddingModelId && response.embeddingModelId !== 0) {
+          setSelectedModel({ id: response.embeddingModelId });
+          // 获取模型详细信息
+          await fetchModelDetails(response.embeddingModelId);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch wiki info:", error);
       messageApi.error("获取知识库信息失败");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchModelDetails = async (modelId: number) => {
+    try {
+      // 先尝试从系统模型获取
+      const systemResponse = await apiClient.api.aimodel.type.public_system_aimodel_list.post({
+        aiModelType: "embedding",
+      });
+      
+      if (systemResponse?.aiModels) {
+        const systemModel = systemResponse.aiModels.find(m => m.id === modelId);
+        if (systemModel) {
+          setSelectedModel(systemModel);
+          return;
+        }
+      }
+
+      // 如果系统模型中没有找到，尝试从用户模型获取
+      const userResponse = await apiClient.api.aimodel.type.user_modellist.post({
+        aiModelType: "embedding",
+      });
+      
+      if (userResponse?.aiModels) {
+        const userModel = userResponse.aiModels.find(m => m.id === modelId);
+        if (userModel) {
+          setSelectedModel(userModel);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch model details:", error);
     }
   };
 
@@ -242,13 +371,15 @@ export default function WikiSettings() {
               label="向量化模型"
               rules={[{ required: true, message: "请选择向量化模型" }]}
             >
-              <Select
-                disabled={configForm.getFieldValue("isLock")}
-                options={modelList.map((model) => ({
-                  label: model.name + "(" + model.provider + ")",
-                  value: model.id,
-                }))}
-              />
+              <div>
+                <Button
+                  onClick={handleModelSelect}
+                  disabled={configForm.getFieldValue("isLock")}
+                  style={{ width: "100%", textAlign: "left" }}
+                >
+                  {selectedModel ? `${selectedModel.name || '已选择模型'} (${selectedModel.provider || '未知提供商'})` : "请选择向量化模型"}
+                </Button>
+              </div>
             </Form.Item>
 
             <Form.Item
@@ -309,6 +440,30 @@ export default function WikiSettings() {
             </Form.Item>
           </Form>
         </Card>
+
+        <Modal
+          title="选择向量化模型"
+          open={modelModalVisible}
+          onCancel={() => setModelModalVisible(false)}
+          footer={null}
+          width={800}
+        >
+          <Tabs
+            defaultActiveKey="system"
+            items={[
+              {
+                key: "system",
+                label: "系统模型",
+                children: renderModelList(systemModels, systemModelsLoading),
+              },
+              {
+                key: "user",
+                label: "私有模型",
+                children: renderModelList(userModels, userModelsLoading),
+              },
+            ]}
+          />
+        </Modal>
       </div>
     </>
   );

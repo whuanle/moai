@@ -16,7 +16,7 @@ public class DeleteWebDocumentConfigCommand : IRequest<EmptyCommandResponse>
     /// </summary>
     public int WikiId { get; init; }
 
-    public int WebConfigId { get; init; }
+    public int WikiWebConfigId { get; init; }
 
     /// <summary>
     /// 是否删除该配置下的所有网页.

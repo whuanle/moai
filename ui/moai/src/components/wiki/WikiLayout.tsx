@@ -89,6 +89,14 @@ export default function WikiLayout() {
     const path = location.pathname;
     if (path.includes("/settings")) {
       return "settings";
+    } else if (path.includes("/crawle")) {
+      return "crawle";
+    } else if (path.includes("/search")) {
+      return "search";
+    } else if (path.includes("/user")) {
+      return "user";
+    } else if (path.includes("/document")) {
+      return "document";
     }
     return "detail";
   };
@@ -98,6 +106,10 @@ export default function WikiLayout() {
       key: "document",
       icon: <FileTextOutlined />,
       label: "文档列表",
+    }, {
+      key: "crawle",
+      icon: <FileTextOutlined />,
+      label: "爬虫",
     }, {
       key: "search",
       icon: <SearchOutlined />,

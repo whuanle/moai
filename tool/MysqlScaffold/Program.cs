@@ -52,7 +52,7 @@ public class Program
             connectionString += ";"; // 确保连接字符串以分号结尾
         }
 
-        connectionString += ";GuidFormat=Binary16";
+        connectionString += "GuidFormat=Binary16";
 
         // 本机已经安装需先安装 dotnet-ef
         // dotnet tool install -g dotnet-ef

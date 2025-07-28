@@ -11,4 +11,6 @@ public class StartWebDocumentCrawleMessage
     /// 知识库 web 配置 id.
     /// </summary>
     public int WebConfigId { get; init; }
+
+    public Guid TaskId { get; init; }
 }

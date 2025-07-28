@@ -121,6 +121,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiWebConfigEntity> WikiWebConfigs { get; set; }
 
     /// <summary>
+    /// 爬虫页面进度列表.
+    /// </summary>
+    public virtual DbSet<WikiWebCrawlePageStateEntity> WikiWebCrawlePageStates { get; set; }
+
+    /// <summary>
     /// web爬虫状态.
     /// </summary>
     public virtual DbSet<WikiWebCrawleTaskEntity> WikiWebCrawleTasks { get; set; }

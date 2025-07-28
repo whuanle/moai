@@ -28,12 +28,12 @@ public class AddWebDocumentConfigCommand : IRequest<SimpleInt>
     /// <summary>
     /// 页面地址.
     /// </summary>
-    public string Address { get; set; } = default!;
+    public Uri Address { get; set; } = default!;
 
     /// <summary>
     /// 限制自动爬取的网页都在该路径之下,limit_address跟address必须具有相同域名.
     /// </summary>
-    public string LimitAddress { get; set; } = default!;
+    public Uri? LimitAddress { get; set; }
 
     /// <summary>
     /// 最大抓取数量.

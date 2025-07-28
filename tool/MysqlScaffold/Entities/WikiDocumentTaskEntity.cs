@@ -12,7 +12,7 @@ public partial class WikiDocumentTaskEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
     /// 知识库id.
@@ -23,11 +23,6 @@ public partial class WikiDocumentTaskEntity : IFullAudited
     /// 文档id.
     /// </summary>
     public int DocumentId { get; set; }
-
-    /// <summary>
-    /// 任务标识.
-    /// </summary>
-    public string TaskTag { get; set; } = default!;
 
     /// <summary>
     /// 任务状态.

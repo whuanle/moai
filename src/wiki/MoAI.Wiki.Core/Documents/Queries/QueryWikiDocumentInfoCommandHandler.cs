@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.User.Queries;
+using MoAI.Wiki.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Documents.Queries;
@@ -46,7 +47,8 @@ public class QueryWikiDocumentInfoCommandHandler : IRequestHandler<QueryWikiDocu
             CreateTime = a.CreateTime,
             CreateUserId = a.CreateUserId,
             UpdateTime = a.UpdateTime,
-            UpdateUserId = a.UpdateUserId
+            UpdateUserId = a.UpdateUserId,
+            Embedding = _databaseContext.WikiDocumentTasks.Any(x => x.DocumentId == a.Id && x.State == (int)FileEmbeddingState.Successful)
         }).FirstOrDefaultAsync();
 
         if (result == null)
