@@ -6691,6 +6691,95 @@
         ]
       }
     },
+    "/api/prompt/ai_optmize_prompt": {
+      "post": {
+        "tags": [
+          "Prompt"
+        ],
+        "summary": "使用 AI 优化提示词.",
+        "operationId": "AiOptimizePromptEndpoint",
+        "requestBody": {
+          "x-name": "AiOptimizePromptRequest",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiOptimizePromptRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAiOptimizePromptCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/prompt/create_prompt": {
       "post": {
         "tags": [
@@ -6969,7 +7058,7 @@
           "Prompt"
         ],
         "summary": "获取提示词内容.",
-        "operationId": "QueryPromptCommandEndpoint",
+        "operationId": "QueryPromptEndpoint",
         "parameters": [
           {
             "name": "promptId",
@@ -8328,7 +8417,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753709124049"
+            "example": "1753790904468"
           }
         }
       },
@@ -9081,7 +9170,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753709124049"
+            "example": "1753790904468"
           },
           "createUserId": {
             "type": "integer",
@@ -9097,7 +9186,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753709124049"
+            "example": "1753790904468"
           },
           "updateUserId": {
             "type": "integer",
@@ -11013,7 +11102,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753709124049"
+            "example": "1753790904468"
           }
         }
       },
@@ -11116,7 +11205,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753709124049"
+            "example": "1753790904468"
           }
         }
       },
@@ -11611,7 +11700,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753709124049"
+            "example": "1753790904468"
           }
         }
       },
@@ -12007,7 +12096,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753709124049"
+            "example": "1753790904468"
           },
           "tags": {
             "type": "array",
@@ -12520,7 +12609,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753709124049"
+            "example": "1753790904468"
           }
         }
       },
@@ -12714,6 +12803,79 @@
           }
         }
       },
+      "QueryAiOptimizePromptCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "useage",
+          "content"
+        ],
+        "properties": {
+          "useage": {
+            "description": "请求使用量.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextTokenUsage"
+              }
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "回复内容."
+          }
+        }
+      },
+      "TextTokenUsage": {
+        "type": "object",
+        "description": "Token 使用量.",
+        "additionalProperties": false,
+        "required": [
+          "CompletionTokens",
+          "PromptTokens",
+          "TotalTokens"
+        ],
+        "properties": {
+          "CompletionTokens": {
+            "type": "integer",
+            "description": "The combined number of output tokens in the generated completion, as consumed by the model.",
+            "format": "int32"
+          },
+          "PromptTokens": {
+            "type": "integer",
+            "description": "The number of tokens in the request message input, spanning all message content items.",
+            "format": "int32"
+          },
+          "TotalTokens": {
+            "type": "integer",
+            "description": "The total number of combined input (prompt) and output (completion) tokens used by a chat completion operation.",
+            "format": "int32"
+          }
+        }
+      },
+      "AiOptimizePromptRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "aiModelId",
+          "sourcePrompt"
+        ],
+        "properties": {
+          "aiModelId": {
+            "type": "integer",
+            "description": "AI 模型 id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "sourcePrompt": {
+            "type": "string",
+            "description": "用户原本的提示词",
+            "maxLength": 2000,
+            "minLength": 0,
+            "nullable": false
+          }
+        }
+      },
       "CreatePromptCommand": {
         "type": "object",
         "description": "创建提示词.",
@@ -12805,7 +12967,8 @@
               "id",
               "name",
               "description",
-              "isPublic"
+              "isPublic",
+              "promptClassId"
             ],
             "properties": {
               "id": {
@@ -12828,6 +12991,10 @@
               },
               "isPublic": {
                 "type": "boolean"
+              },
+              "promptClassId": {
+                "type": "integer",
+                "format": "int32"
               }
             }
           }
@@ -13043,14 +13210,14 @@
                 "description": "创建时间.",
                 "format": "int64",
                 "minimum": 0.0,
-                "example": "1753709124049"
+                "example": "1753790904468"
               },
               "updateTime": {
                 "type": "string",
                 "description": "最后更新时间.",
                 "format": "int64",
                 "minimum": 0.0,
-                "example": "1753709124049"
+                "example": "1753790904468"
               }
             }
           }
@@ -13167,7 +13334,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753709124049"
+            "example": "1753790904468"
           }
         }
       },

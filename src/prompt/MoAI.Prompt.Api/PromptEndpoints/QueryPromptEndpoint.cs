@@ -20,17 +20,17 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// 获取提示词内容.
 /// </summary>
 [HttpGet($"{ApiPrefix.Prefix}/prompt_content")]
-public class QueryPromptCommandEndpoint : Endpoint<QueryPromptContentRequest, PromptItem>
+public class QueryPromptEndpoint : Endpoint<QueryPromptContentRequest, PromptItem>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueryPromptCommandEndpoint"/> class.
+    /// Initializes a new instance of the <see cref="QueryPromptEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public QueryPromptCommandEndpoint(IMediator mediator, UserContext userContext)
+    public QueryPromptEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

@@ -34,4 +34,5 @@ public class PromptItem : AuditsInfo
     public string? Content { get; set; } = default!;
 
     public bool IsPublic { get; set; }
+    public int PromptClassId { get; set; }
 }

@@ -40,7 +40,8 @@ public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPro
         {
             ClassId = req.ClassId,
             Name = req.Name,
-            UserId = _userContext.UserId
+            UserId = _userContext.UserId,
+            IsOwn = req.IsOwn
         };
         return await _mediator.Send(newReq, ct);
     }

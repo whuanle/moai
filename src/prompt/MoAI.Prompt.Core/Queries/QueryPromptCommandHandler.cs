@@ -47,7 +47,8 @@ public class QueryPromptCommandHandler : IRequestHandler<QueryPromptCommand, Pro
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
                 Content = x.Content,
-                IsPublic = x.IsPublic
+                IsPublic = x.IsPublic,
+                PromptClassId = x.PromptClassId
             })
             .FirstOrDefaultAsync(cancellationToken);
 

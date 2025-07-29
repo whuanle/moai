@@ -64,6 +64,10 @@ import SystemAIModel from "./components/admin/SystemAiModel";
 import SystemPluginList from "./components/admin/PluginList";
 import PromptLayout from "./components/prompt/PromptLayout";
 import PromptList from "./components/prompt/PromptList";
+import PromptContent from "./components/prompt/PromptContent";
+import PromptEdit from "./components/prompt/PromptEdit";
+import PromptCreate from "./components/prompt/PromptCreate";
+import PromptClassManage from "./components/prompt/PromptClassManage";
 import AiAssistant from "./components/app/AiAssistant";
 import BindOAuth from "./components/user/BindOAuth";
 import WikiCrawle from "./components/wiki/WikiCrawle";
@@ -384,7 +388,10 @@ function App() {
                 <Route path="prompt">
                   <Route index element={<Navigate to="list" replace />} />
                   <Route path="list" element={<PromptList />} />
-                  <Route path=":promptId/edit" element={<PromptLayout />} />
+                  <Route path="create" element={<PromptCreate />} />
+                  <Route path="class" element={<PromptClassManage />} />
+                  <Route path=":promptId/edit" element={<PromptEdit />} />
+                  <Route path=":promptId/content" element={<PromptContent />} />
                 </Route>
                 <Route path="application">
                   <Route path="assistant" element={<AiAssistant />} />

@@ -1,11 +1,10 @@
-﻿// <copyright file="OneSimpleChatCommand.cs" company="MoAI">
+﻿// <copyright file="OneSimpleChatCommandResponse.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MediatR;
-using MoAI.AiModel.Models;
+using MoAI.AI.Models;
 
 namespace MoAI.AI.Commands;
 
@@ -14,6 +13,11 @@ namespace MoAI.AI.Commands;
 /// </summary>
 public class OneSimpleChatCommandResponse
 {
+    /// <summary>
+    /// 请求使用量.
+    /// </summary>
+    public TextTokenUsage Useage { get; init; } = default!;
+
     /// <summary>
     /// 回复内容.
     /// </summary>

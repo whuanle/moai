@@ -206,6 +206,16 @@ export interface AiNotKeyEndpoint extends Parsable {
      */
     title?: string | null;
 }
+export interface AiOptimizePromptRequest extends Parsable {
+    /**
+     * AI 模型 id.
+     */
+    aiModelId?: number | null;
+    /**
+     * 用户原本的提示词
+     */
+    sourcePrompt?: string | null;
+}
 export type AiProvider = (typeof AiProviderObject)[keyof typeof AiProviderObject];
 /**
  * 数据子项.
@@ -488,6 +498,15 @@ export function createAiEndpointFromDiscriminatorValue(parseNode: ParseNode | un
 // @ts-ignore
 export function createAiNotKeyEndpointFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAiNotKeyEndpoint;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiOptimizePromptRequest}
+ */
+// @ts-ignore
+export function createAiOptimizePromptRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiOptimizePromptRequest;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1077,6 +1096,15 @@ export function createQueryAiModelProviderListResponseFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAiOptimizePromptCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAiOptimizePromptCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAiOptimizePromptCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAllOAuthPrividerCommandResponse}
  */
 // @ts-ignore
@@ -1644,6 +1672,15 @@ export function createStartWebDocumentCrawleCommandFromDiscriminatorValue(parseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TextTokenUsage}
+ */
+// @ts-ignore
+export function createTextTokenUsageFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTextTokenUsage;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UnbindUserAccountCommand}
  */
 // @ts-ignore
@@ -2042,6 +2079,17 @@ export function deserializeIntoAiNotKeyEndpoint(aiNotKeyEndpoint: Partial<AiNotK
         "provider": n => { aiNotKeyEndpoint.provider = n.getEnumValue<AiProvider>(AiProviderObject); },
         "textOutput": n => { aiNotKeyEndpoint.textOutput = n.getNumberValue(); },
         "title": n => { aiNotKeyEndpoint.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAiOptimizePromptRequest(aiOptimizePromptRequest: Partial<AiOptimizePromptRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { aiOptimizePromptRequest.aiModelId = n.getNumberValue(); },
+        "sourcePrompt": n => { aiOptimizePromptRequest.sourcePrompt = n.getStringValue(); },
     }
 }
 /**
@@ -2695,6 +2743,7 @@ export function deserializeIntoPromptItem(promptItem: Partial<PromptItem> | unde
         "id": n => { promptItem.id = n.getNumberValue(); },
         "isPublic": n => { promptItem.isPublic = n.getBooleanValue(); },
         "name": n => { promptItem.name = n.getStringValue(); },
+        "promptClassId": n => { promptItem.promptClassId = n.getNumberValue(); },
     }
 }
 /**
@@ -2749,6 +2798,17 @@ export function deserializeIntoQueryAiModelProviderCount(queryAiModelProviderCou
 export function deserializeIntoQueryAiModelProviderListResponse(queryAiModelProviderListResponse: Partial<QueryAiModelProviderListResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "providers": n => { queryAiModelProviderListResponse.providers = n.getCollectionOfObjectValues<QueryAiModelProviderCount>(createQueryAiModelProviderCountFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAiOptimizePromptCommandResponse(queryAiOptimizePromptCommandResponse: Partial<QueryAiOptimizePromptCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { queryAiOptimizePromptCommandResponse.content = n.getStringValue(); },
+        "useage": n => { queryAiOptimizePromptCommandResponse.useage = n.getObjectValue<TextTokenUsage>(createTextTokenUsageFromDiscriminatorValue); },
     }
 }
 /**
@@ -3503,6 +3563,18 @@ export function deserializeIntoStartWebDocumentCrawleCommand(startWebDocumentCra
         "tokenizer": n => { startWebDocumentCrawleCommand.tokenizer = n.getEnumValue<EmbeddingTokenizer>(EmbeddingTokenizerObject); },
         "webConfigId": n => { startWebDocumentCrawleCommand.webConfigId = n.getNumberValue(); },
         "wikiId": n => { startWebDocumentCrawleCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTextTokenUsage(textTokenUsage: Partial<TextTokenUsage> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "CompletionTokens": n => { textTokenUsage.completionTokens = n.getNumberValue(); },
+        "PromptTokens": n => { textTokenUsage.promptTokens = n.getNumberValue(); },
+        "TotalTokens": n => { textTokenUsage.totalTokens = n.getNumberValue(); },
     }
 }
 /**
@@ -4344,6 +4416,10 @@ export interface PromptItem extends AuditsInfo, Parsable {
      * 名称.
      */
     name?: string | null;
+    /**
+     * The promptClassId property
+     */
+    promptClassId?: number | null;
 }
 /**
  * 对话记录结果.
@@ -4401,6 +4477,16 @@ export interface QueryAiModelProviderListResponse extends Parsable {
      * AI 服务商列表，{ai服务提供商,模型数量}.
      */
     providers?: QueryAiModelProviderCount[] | null;
+}
+export interface QueryAiOptimizePromptCommandResponse extends Parsable {
+    /**
+     * 回复内容.
+     */
+    content?: string | null;
+    /**
+     * 请求使用量.
+     */
+    useage?: TextTokenUsage | null;
 }
 /**
  * QueryAllOAuthPrividerCommandResponse。
@@ -5369,6 +5455,17 @@ export function serializeAiNotKeyEndpoint(writer: SerializationWriter, aiNotKeyE
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAiOptimizePromptRequest(writer: SerializationWriter, aiOptimizePromptRequest: Partial<AiOptimizePromptRequest> | undefined | null = {}) : void {
+    if (aiOptimizePromptRequest) {
+        writer.writeNumberValue("aiModelId", aiOptimizePromptRequest.aiModelId);
+        writer.writeStringValue("sourcePrompt", aiOptimizePromptRequest.sourcePrompt);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAuditsInfo(writer: SerializationWriter, auditsInfo: Partial<AuditsInfo> | undefined | null = {}) : void {
     if (auditsInfo) {
         writer.writeStringValue("createTime", auditsInfo.createTime);
@@ -6015,6 +6112,7 @@ export function serializePromptItem(writer: SerializationWriter, promptItem: Par
         writer.writeNumberValue("id", promptItem.id);
         writer.writeBooleanValue("isPublic", promptItem.isPublic);
         writer.writeStringValue("name", promptItem.name);
+        writer.writeNumberValue("promptClassId", promptItem.promptClassId);
     }
 }
 /**
@@ -6069,6 +6167,17 @@ export function serializeQueryAiModelProviderCount(writer: SerializationWriter, 
 export function serializeQueryAiModelProviderListResponse(writer: SerializationWriter, queryAiModelProviderListResponse: Partial<QueryAiModelProviderListResponse> | undefined | null = {}) : void {
     if (queryAiModelProviderListResponse) {
         writer.writeCollectionOfObjectValues<QueryAiModelProviderCount>("providers", queryAiModelProviderListResponse.providers, serializeQueryAiModelProviderCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAiOptimizePromptCommandResponse(writer: SerializationWriter, queryAiOptimizePromptCommandResponse: Partial<QueryAiOptimizePromptCommandResponse> | undefined | null = {}) : void {
+    if (queryAiOptimizePromptCommandResponse) {
+        writer.writeStringValue("content", queryAiOptimizePromptCommandResponse.content);
+        writer.writeObjectValue<TextTokenUsage>("useage", queryAiOptimizePromptCommandResponse.useage, serializeTextTokenUsage);
     }
 }
 /**
@@ -6830,6 +6939,18 @@ export function serializeStartWebDocumentCrawleCommand(writer: SerializationWrit
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTextTokenUsage(writer: SerializationWriter, textTokenUsage: Partial<TextTokenUsage> | undefined | null = {}) : void {
+    if (textTokenUsage) {
+        writer.writeNumberValue("CompletionTokens", textTokenUsage.completionTokens);
+        writer.writeNumberValue("PromptTokens", textTokenUsage.promptTokens);
+        writer.writeNumberValue("TotalTokens", textTokenUsage.totalTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUnbindUserAccountCommand(writer: SerializationWriter, unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined | null = {}) : void {
     if (unbindUserAccountCommand) {
         writer.writeNumberValue("bindId", unbindUserAccountCommand.bindId);
@@ -7205,6 +7326,23 @@ export interface StartWebDocumentCrawleCommand extends Parsable {
      * 知识库 id.
      */
     wikiId?: number | null;
+}
+/**
+ * Token 使用量.
+ */
+export interface TextTokenUsage extends Parsable {
+    /**
+     * The combined number of output tokens in the generated completion, as consumed by the model.
+     */
+    completionTokens?: number | null;
+    /**
+     * The number of tokens in the request message input, spanning all message content items.
+     */
+    promptTokens?: number | null;
+    /**
+     * The total number of combined input (prompt) and output (completion) tokens used by a chat completion operation.
+     */
+    totalTokens?: number | null;
 }
 /**
  * 解绑第三方账号.
