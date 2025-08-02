@@ -48,6 +48,7 @@ public class AddWebDocumentConfigCommandHandler : IRequestHandler<AddWebDocument
             IsWaitJs = request.IsWaitJs,
             LimitAddress = request.LimitAddress?.ToString() ?? string.Empty,
             LimitMaxCount = request.LimitMaxCount,
+            Selector = string.Empty
         };
 
         _databaseContext.WikiWebConfigs.Add(entity);
