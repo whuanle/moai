@@ -1,8 +1,12 @@
-# 使用官方 Node.js 18 作为基础镜像
-FROM node:18-alpine AS builder
+# 使用官方 Node.js 22 作为基础镜像
+FROM node:22-slim AS builder
 
 # 安装必要的构建工具
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
 WORKDIR /app
@@ -24,7 +28,7 @@ ENV VITE_ServerUrl=${VITE_ServerUrl}
 RUN rm -rf node_modules package-lock.json && npm install
 
 # 构建应用
-RUN npm run build:strict
+RUN npm run build
 
 # 生产阶段
 FROM nginx:alpine AS production

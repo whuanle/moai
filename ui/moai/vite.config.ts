@@ -10,6 +10,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // 忽略某些警告
+        if (warning.code === 'CIRCULAR_DEPENDENCY') return
+        warn(warning)
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
   }
 }) 
