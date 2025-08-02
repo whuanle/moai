@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:strict": "tsc -b tsconfig.build.json && vite build",
+    "build:docker": "npm ci && rm -rf node_modules package-lock.json && npm install && tsc -b tsconfig.build.json && vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",

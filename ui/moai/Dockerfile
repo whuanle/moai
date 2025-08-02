@@ -13,9 +13,6 @@ RUN npm ci --only=production
 # 构建阶段
 FROM base AS builder
 
-# 安装所有依赖（包括开发依赖）
-RUN npm ci
-
 # 复制源代码
 COPY . .
 
@@ -23,8 +20,8 @@ COPY . .
 ARG VITE_ServerUrl=__BACKEND_URL_PLACEHOLDER__
 ENV VITE_ServerUrl=${VITE_ServerUrl}
 
-# 构建应用（使用宽松的 TypeScript 检查）
-RUN npm run build:strict
+# 构建应用（使用 Docker 专用构建脚本）
+RUN npm run build:docker
 
 # 生产阶段
 FROM nginx:alpine AS production
