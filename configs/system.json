@@ -12,6 +12,6 @@
       "ConnectionString": "Database=moai_document;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public"
     },
     "RabbitMQ": "amqp://guest:guest@127.0.0.1:5672",
-    "FilePath": "/app/configs//files"
+    "FilePath": "/data/moai/files"
   }
 }
