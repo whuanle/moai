@@ -52,7 +52,7 @@ public class MaomiExceptionHandler : IExceptionHandler
 #if DEBUG
         message = ex.Message;
 #else
-        Message = "Internal server error",
+        message = "Internal server error";
 #endif
 
         var response = new BusinessValidationResult()
