@@ -65,7 +65,7 @@ public class MaomiExceptionFilter : IAsyncExceptionFilter
 #if DEBUG
         message = context.Exception.Message;
 #else
-        Message = "Internal server error",
+        message = "Internal server error";
 #endif
 
         var response = new BusinessValidationResult()

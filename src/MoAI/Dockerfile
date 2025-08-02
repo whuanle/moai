@@ -13,7 +13,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Packages.props", "."]
 COPY ["Directory.Build.props", "."]
-COPY ["src/*", "src/"]
+COPY ["src/", "src/"]
 RUN dotnet restore "./src/MoAI/MoAI.csproj"
 COPY . .
 WORKDIR "/src/src/MoAI"
