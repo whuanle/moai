@@ -43,7 +43,6 @@ public static partial class MainExtensions
         if (string.IsNullOrWhiteSpace(configurationFilePath))
         {
             configurationFilePath = Path.Combine(AppConst.ConfigsPath, "system.json");
-            return;
         }
 
         string? fileType = Path.GetExtension(configurationFilePath);
