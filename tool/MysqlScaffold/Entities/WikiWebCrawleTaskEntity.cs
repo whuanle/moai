@@ -30,6 +30,11 @@ public partial class WikiWebCrawleTaskEntity : IFullAudited
     public int CrawleState { get; set; }
 
     /// <summary>
+    /// 页面选择器.
+    /// </summary>
+    public string Selector { get; set; } = default!;
+
+    /// <summary>
     /// 任务执行信息.
     /// </summary>
     public string Message { get; set; } = default!;

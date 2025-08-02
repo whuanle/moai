@@ -59,6 +59,11 @@ public partial class WikiWebConfigConfiguration : IEntityTypeConfiguration<WikiW
             .HasComment("最大抓取数量")
             .HasColumnType("int(11)")
             .HasColumnName("limit_max_count");
+        entity.Property(e => e.Selector)
+            .HasMaxLength(20)
+            .HasDefaultValueSql("''")
+            .HasComment("筛选规则")
+            .HasColumnName("selector");
         entity.Property(e => e.Title)
             .HasMaxLength(20)
             .HasComment("标题");

@@ -49,6 +49,9 @@ public partial class WikiWebConfigEntity : IFullAudited
     /// </summary>
     public bool IsAutoEmbedding { get; set; }
 
+    /// <summary>
+    /// 筛选规则.
+    /// </summary>
     public string Selector { get; set; } = default!;
 
     /// <summary>

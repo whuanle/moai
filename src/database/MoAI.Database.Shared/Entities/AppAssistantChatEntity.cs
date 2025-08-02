@@ -45,7 +45,7 @@ public partial class AppAssistantChatEntity : IFullAudited
     public string ExecutionSettings { get; set; } = default!;
 
     /// <summary>
-    /// AI 头像.
+    /// AI头像.
     /// </summary>
     public string Avatar { get; set; } = default!;
 

@@ -49,15 +49,6 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.Model)
-            .HasMaxLength(20)
-            .HasComment("模型名称")
-            .HasColumnName("model");
-        entity.Property(e => e.PluginIds)
-            .HasMaxLength(1000)
-            .HasDefaultValueSql("'[]'")
-            .HasComment("被使用的插件列表")
-            .HasColumnName("plugin_ids");
         entity.Property(e => e.Role)
             .HasMaxLength(20)
             .HasComment("角色")
@@ -72,10 +63,6 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
-        entity.Property(e => e.WikiId)
-            .HasComment("被使用的知识库id")
-            .HasColumnType("int(11)")
-            .HasColumnName("wiki_id");
 
         OnConfigurePartial(entity);
     }

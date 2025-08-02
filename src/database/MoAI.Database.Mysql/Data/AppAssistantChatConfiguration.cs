@@ -23,6 +23,11 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("id")
             .HasColumnName("id");
+        entity.Property(e => e.Avatar)
+            .HasMaxLength(10)
+            .HasDefaultValueSql("''")
+            .HasComment("AI头像")
+            .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")
@@ -37,11 +42,6 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("'[]'")
             .HasComment("对话影响参数")
             .HasColumnName("execution_settings");
-        entity.Property(e => e.Avatar)
-            .HasMaxLength(10)
-            .HasDefaultValueSql("''")
-            .HasComment("ai头像")
-            .HasColumnName("avatar");
         entity.Property(e => e.InputTokens)
             .HasComment("输入token统计")
             .HasColumnType("int(11)")

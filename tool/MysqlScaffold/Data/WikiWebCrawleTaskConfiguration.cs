@@ -62,6 +62,11 @@ public partial class WikiWebCrawleTaskConfiguration : IEntityTypeConfiguration<W
             .HasComment("爬取成功的页面数量")
             .HasColumnType("int(11)")
             .HasColumnName("page_count");
+        entity.Property(e => e.Selector)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''")
+            .HasComment("页面选择器")
+            .HasColumnName("selector");
         entity.Property(e => e.Tokenizer)
             .HasMaxLength(20)
             .HasComment("分词器")

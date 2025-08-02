@@ -50,6 +50,11 @@ public partial class WikiWebConfigEntity : IFullAudited
     public bool IsAutoEmbedding { get; set; }
 
     /// <summary>
+    /// 筛选规则.
+    /// </summary>
+    public string Selector { get; set; } = default!;
+
+    /// <summary>
     /// 等待js加载完成.
     /// </summary>
     public bool IsWaitJs { get; set; }
