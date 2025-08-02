@@ -1,6 +1,9 @@
 # 使用官方 Node.js 18 作为基础镜像
 FROM node:18-alpine AS builder
 
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+
 # 设置工作目录
 WORKDIR /app
 
@@ -16,6 +19,9 @@ COPY . .
 # 设置构建时环境变量，使用占位符
 ARG VITE_ServerUrl=__BACKEND_URL_PLACEHOLDER__
 ENV VITE_ServerUrl=${VITE_ServerUrl}
+
+# 重新安装依赖以解决 Rollup 可选依赖项问题
+RUN rm -rf node_modules package-lock.json && npm install
 
 # 构建应用
 RUN npm run build:strict
