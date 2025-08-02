@@ -24,7 +24,7 @@ ARG VITE_ServerUrl=__BACKEND_URL_PLACEHOLDER__
 ENV VITE_ServerUrl=${VITE_ServerUrl}
 
 # 构建应用（使用宽松的 TypeScript 检查）
-RUN npm run build
+RUN npm run build:strict
 
 # 生产阶段
 FROM nginx:alpine AS production
