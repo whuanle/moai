@@ -32,7 +32,7 @@ public class QueryFileLocalPathCommandHandler : IRequestHandler<QueryFileLocalPa
     {
         await Task.CompletedTask;
 
-        var visibility = request.Visibility.ToString().ToUpper();
+        var visibility = request.Visibility.ToString().ToLower();
         var filePath = Path.Combine(_systemOptions.FilePath, visibility, request.ObjectKey);
 
         return new QueryFileLocalPathCommandResponse

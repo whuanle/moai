@@ -45,7 +45,7 @@ public class DeleteFileCommandHandler : IRequestHandler<DeleteFileCommand, Empty
             _databaseContext.Files.Remove(fileEntity);
             await _databaseContext.SaveChangesAsync(cancellationToken);
 
-            var visibility = (fileEntity.IsPublic ? FileVisibility.Public : FileVisibility.Private).ToString().ToUpper();
+            var visibility = (fileEntity.IsPublic ? FileVisibility.Public : FileVisibility.Private).ToString().ToLower();
             var filePath = Path.Combine(_systemOptions.FilePath, visibility, fileEntity.ObjectKey);
 
             FileInfo fileInfo = new FileInfo(filePath);

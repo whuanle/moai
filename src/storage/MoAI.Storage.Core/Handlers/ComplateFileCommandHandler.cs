@@ -59,7 +59,7 @@ public class ComplateFileCommandHandler : IRequestHandler<ComplateFileUploadComm
             throw new BusinessException("文件不属于当前用户上传") { StatusCode = 403 };
         }
 
-        var visibility = (file.IsPublic ? FileVisibility.Public : FileVisibility.Private).ToString().ToUpper();
+        var visibility = (file.IsPublic ? FileVisibility.Public : FileVisibility.Private).ToString().ToLower();
 
         var filePath = Path.Combine(_systemOptions.FilePath, visibility, file.ObjectKey);
         var fileInfo = new FileInfo(filePath);
