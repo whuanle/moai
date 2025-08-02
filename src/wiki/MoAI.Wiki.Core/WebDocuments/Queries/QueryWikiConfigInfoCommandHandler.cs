@@ -52,6 +52,7 @@ public class QueryWikiConfigInfoCommandHandler : IRequestHandler<QueryWikiConfig
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
                 UpdateTime = x.UpdateTime,
+                Selector = x.Selector
             })
             .FirstOrDefaultAsync();
 

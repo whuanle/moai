@@ -25,19 +25,14 @@ public partial class AppAssistantChatHistoryEntity : IFullAudited
     public string CompletionsId { get; set; } = default!;
 
     /// <summary>
-    /// 内容.
-    /// </summary>
-    public string Content { get; set; } = default!;
-
-    /// <summary>
     /// 角色.
     /// </summary>
     public string Role { get; set; } = default!;
 
     /// <summary>
-    /// 模型名称.
+    /// 内容.
     /// </summary>
-    public string Model { get; set; } = default!;
+    public string Content { get; set; } = default!;
 
     /// <summary>
     /// 创建人.

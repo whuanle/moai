@@ -28,12 +28,16 @@ public partial class WikiWebCrawlePageStateEntity : IFullAudited
     /// 正在爬取的地址.
     /// </summary>
     public string Url { get; set; } = default!;
-    public string Message { get; set; } = default!;
 
     /// <summary>
     /// 爬取状态.
     /// </summary>
     public int State { get; set; }
+
+    /// <summary>
+    /// 信息.
+    /// </summary>
+    public string Message { get; set; } = default!;
 
     /// <summary>
     /// 创建人.

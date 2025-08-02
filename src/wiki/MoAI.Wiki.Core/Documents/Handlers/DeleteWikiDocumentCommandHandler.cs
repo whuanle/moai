@@ -6,7 +6,9 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
+using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
@@ -24,6 +26,7 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
     private readonly SystemOptions _systemOptions;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiDocumentCommandHandler"/> class.
@@ -31,11 +34,13 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
     /// <param name="databaseContext"></param>
     /// <param name="mediator"></param>
     /// <param name="systemOptions"></param>
-    public DeleteWikiDocumentCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions)
+    /// <param name="serviceProvider"></param>
+    public DeleteWikiDocumentCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions, IServiceProvider serviceProvider)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
         _systemOptions = systemOptions;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc/>
@@ -54,15 +59,20 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
         _databaseContext.WikiDocuments.Remove(document);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+        if (memoryDb == null)
+        {
+            throw new BusinessException("不支持的文档数据库");
+        }
+
+        IKernelMemoryBuilder memoryBuilder = new KernelMemoryBuilder();
+        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
+
         // 删除文档向量
-        var memoryClient = new KernelMemoryBuilder()
+        var memoryClient = memoryBuilder
             .WithSimpleFileStorage(Path.GetTempPath())
             .WithoutEmbeddingGenerator()
             .WithoutTextGenerator()
-            .WithPostgresMemoryDb(new PostgresConfig
-            {
-                ConnectionString = _systemOptions.Wiki.Database,
-            })
             .Build();
 
         await memoryClient.DeleteDocumentAsync(documentId: document.Id.ToString(), index: document.WikiId.ToString());

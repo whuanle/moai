@@ -36,6 +36,7 @@ public class QueryAiModelCreatorCommandHandler : IRequestHandler<QueryAiModelCre
                 Exist = x.Id > 0,
                 CreatorId = x.CreateUserId,
                 IsSystem = x.IsSystem,
+                IsPublic = x.IsPublic
             })
             .FirstOrDefaultAsync(cancellationToken) ?? new QueryAiModelCreatorCommandResponse();
     }

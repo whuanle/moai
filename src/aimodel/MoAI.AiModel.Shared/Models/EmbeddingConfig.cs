@@ -4,12 +4,12 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-namespace MoAI.Wiki.Models;
+namespace MoAI.AiModel.Models;
 
 /// <summary>
 /// 知识库配置.
 /// </summary>
-public class WikiConfig
+public class EmbeddingConfig
 {
     /// <summary>
     /// 指定进行文档向量化的模型.

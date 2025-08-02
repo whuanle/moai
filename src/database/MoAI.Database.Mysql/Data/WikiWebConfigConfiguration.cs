@@ -42,6 +42,10 @@ public partial class WikiWebConfigConfiguration : IEntityTypeConfiguration<WikiW
         entity.Property(e => e.IsCrawlOther)
             .HasComment("是否抓取其它页面")
             .HasColumnName("is_crawl_other");
+        entity.Property(e => e.Selector)
+            .HasMaxLength(255)
+            .HasComment("选择器")
+            .HasColumnName("selector");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")

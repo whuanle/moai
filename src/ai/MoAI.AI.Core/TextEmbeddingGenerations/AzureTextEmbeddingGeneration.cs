@@ -7,17 +7,16 @@
 using Maomi;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
+using MoAI.AiModel.Services;
 using MoAI.Infra.Extensions;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Services;
 
-namespace MoAI.Wiki.TextEmbeddingGenerations;
+namespace MoAI.AI.TextEmbeddingGenerations;
 
 [InjectOnScoped(ServiceKey = AiProvider.Azure)]
 public class AzureTextEmbeddingGeneration : ITextEmbeddingGeneration
 {
     /// <inheritdoc/>
-    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, WikiConfig wikiConfig)
+    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig embeddingConfig)
     {
         return kernelMemoryBuilder.WithAzureOpenAITextEmbeddingGeneration(new AzureOpenAIConfig
         {
@@ -26,12 +25,12 @@ public class AzureTextEmbeddingGeneration : ITextEmbeddingGeneration
             APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
             Deployment = endpoint.DeploymentName,
             Auth = AzureOpenAIConfig.AuthTypes.APIKey,
-            Tokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString(),
+            Tokenizer = embeddingConfig.EmbeddingModelTokenizer.ToJsonString(),
             MaxTokenTotal = endpoint.ContextWindowTokens,
 
-            MaxEmbeddingBatchSize = wikiConfig.EmbeddingBatchSize,
-            MaxRetries = wikiConfig.MaxRetries,
-            EmbeddingDimensions = wikiConfig.EmbeddingDimensions,
+            MaxEmbeddingBatchSize = embeddingConfig.EmbeddingBatchSize,
+            MaxRetries = embeddingConfig.MaxRetries,
+            EmbeddingDimensions = embeddingConfig.EmbeddingDimensions,
         });
     }
 }

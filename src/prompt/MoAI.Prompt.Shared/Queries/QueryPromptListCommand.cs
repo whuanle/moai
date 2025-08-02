@@ -4,10 +4,10 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Prompt.Queries.Responses;
+using MoAIPrompt.Queries.Responses;
 using MediatR;
 
-namespace MaomiAI.Prompt.Queries;
+namespace MoAIPrompt.Queries;
 
 /// <summary>
 /// 查询能看到的提示词列表.

@@ -5,7 +5,7 @@
 // </copyright>
 
 using Maomi.MQ;
-using MaomiAI.Document.Core.Consumers.Events;
+using MoAIDocument.Core.Consumers.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;

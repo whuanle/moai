@@ -1,12 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	
+
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<RootNamespace>MoAI.AiModel</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.KernelMemory.Abstractions" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 	</ItemGroup>
 
 </Project>

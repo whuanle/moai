@@ -8,10 +8,11 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using MoAI.AI.Abstract;
 using MoAI.AI.Commands;
 using MoAI.AI.Models;
-using MoAI.Infra.Exceptions;
+using MoAI.AiModel.Models;
 using MoAI.Infra.Extensions;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -37,26 +38,36 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
     /// <inheritdoc/>
     public async IAsyncEnumerable<IOpenAIChatCompletionsObject> Handle(ChatCompletionsCommand request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // todo: 后续加上断开连接后继续处理后续代码
-        // 改成手动调用函数，然后手动一步步执行对话
+        string completionId = $"chatcmpl-" + Guid.CreateVersion7().ToString("N");
+
+        int funcIteraCount = 1;
+
         // 拼接 ai 回复的所有内容
         StringBuilder responseContent = new StringBuilder();
         OpenAIChatCompletionsObject openAIChatCompletionsObject = default!;
-        OpenAI.Chat.ChatTokenUsage? useage = default!;
+
+        List<OpenAI.Chat.ChatTokenUsage> useages = new List<OpenAI.Chat.ChatTokenUsage>();
 
         var kernelBuilder = Kernel.CreateBuilder();
         var chatCompletionConfigurator = _serviceProvider.GetKeyedService<IChatCompletionConfigurator>(request.Endpoint.Provider);
         if (chatCompletionConfigurator == null)
         {
-            throw new BusinessException("暂不支持该模型");
+            chatCompletionConfigurator = _serviceProvider.GetKeyedService<IChatCompletionConfigurator>(AiProvider.Custom);
+
+            // throw new BusinessException("暂不支持该模型");
         }
 
-        var kernel = chatCompletionConfigurator.Configure(kernelBuilder, request.Endpoint)
+        foreach (var plugin in request.Plugins)
+        {
+            kernelBuilder.Plugins.Add(plugin);
+        }
+
+        var kernel = chatCompletionConfigurator!.Configure(kernelBuilder, request.Endpoint)
             .Build();
 
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
 
-        var executionSettings = new PromptExecutionSettings()
+        var executionSettings = new OpenAIPromptExecutionSettings()
         {
             ModelId = request.Endpoint.Name,
 
@@ -107,7 +118,7 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
 
                 if (streamingChatCompletionUpdate.Usage != null)
                 {
-                    useage = streamingChatCompletionUpdate.Usage;
+                    useages.Add(streamingChatCompletionUpdate.Usage);
                 }
 
                 // stop 不表示已经结束，后续还会返回 tokens 使用量等信息
@@ -118,7 +129,7 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                         Model = request.Endpoint.Name,
                         Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                         SystemFingerprint = streamingChatCompletionUpdate.SystemFingerprint,
-                        Id = streamingChatCompletionUpdate.CompletionId,
+                        Id = completionId,
                         Choices = new List<OpenAIChatCompletionsChoice>
                         {
                             new OpenAIChatCompletionsChoice
@@ -136,14 +147,17 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                     continue;
                 }
 
-                responseContent.Append(chunk.Content);
+                if (!string.IsNullOrEmpty(chunk.Content))
+                {
+                    responseContent.Append(chunk.Content);
+                }
 
                 yield return new OpenAIChatCompletionsChunk
                 {
                     Model = request.Endpoint.Name,
                     Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                     SystemFingerprint = streamingChatCompletionUpdate.SystemFingerprint,
-                    Id = streamingChatCompletionUpdate.CompletionId,
+                    Id = completionId,
                     Choices = new List<OpenAIChatCompletionsChoice>
                     {
                         new OpenAIChatCompletionsChoice
@@ -167,20 +181,29 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                 break;
             }
 
+            // 因为手动调用函数会导致中间缺失 AI 响应需要调用的函数列表，需要手动加上去
+            ChatMessageContent? fcContent = new ChatMessageContent(role: AuthorRole.Assistant, content: null);
+            request.ChatHistory.Add(fcContent);
+
             // 执行函数调用
             // 流式返回时，前端根据 FinishReason 区分是否函数调用，根据 是否有 Content 判断是调用请求还是调用结果
             int functionIndex = 0;
             foreach (var functionCall in functionCalls)
             {
+                funcIteraCount++;
+                string systemFingerprint = $"fp_{funcIteraCount.ToString("x2")}";
+
+                // 手动模拟 AI 要调用的函数
+                fcContent.Items.Add(functionCall);
+
                 // 准备调用函数，目前已知函数参数
                 yield return new OpenAIChatCompletionsChunk
                 {
                     Model = request.Endpoint.Name,
                     Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 
-                    // todo: 调试的时候补上
-                    SystemFingerprint = string.Empty,
-                    Id = string.Empty,
+                    SystemFingerprint = systemFingerprint,
+                    Id = completionId,
                     Choices = new List<OpenAIChatCompletionsChoice>
                     {
                         new OpenAIChatCompletionsChoice
@@ -194,12 +217,12 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                                 {
                                     new OpenAiToolCall
                                     {
-                                        Id = functionCall.Id,
+                                        Id = functionCall!.Id!,
                                         Type = "function",
                                         Function = new OpenAiFunctionCall
                                         {
                                             Name = functionCall.PluginName + "-" + functionCall.FunctionName,
-                                            Arguments = functionCall.Arguments
+                                            Arguments = functionCall!.Arguments!
                                         }
                                     }
                                 },
@@ -216,8 +239,8 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                 {
                     Model = request.Endpoint.Name,
                     Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    SystemFingerprint = string.Empty,
-                    Id = string.Empty,
+                    SystemFingerprint = systemFingerprint,
+                    Id = completionId,
                     Choices = new List<OpenAIChatCompletionsChoice>
                     {
                         new OpenAIChatCompletionsChoice
@@ -258,9 +281,9 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
             Id = openAIChatCompletionsObject.Id,
             Usage = new OpenAIChatCompletionsUsage
             {
-                PromptTokens = useage?.InputTokenCount ?? 0,
-                CompletionTokens = useage?.OutputTokenCount ?? 0,
-                TotalTokens = useage?.TotalTokenCount ?? 0
+                PromptTokens = useages.Sum(x => x.InputTokenCount),
+                CompletionTokens = useages.Sum(x => x.OutputTokenCount),
+                TotalTokens = useages.Sum(x => x.TotalTokenCount)
             }
         };
 

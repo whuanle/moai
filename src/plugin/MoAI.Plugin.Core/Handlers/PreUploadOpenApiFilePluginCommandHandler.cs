@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Plugin.Shared.Commands.Responses;
+using MoAIPlugin.Shared.Commands.Responses;
 using MediatR;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -13,7 +13,7 @@ using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
 using MoAI.Store.Enums;
 
-namespace MaomiAI.Plugin.Core.Commands;
+namespace MoAIPlugin.Core.Commands;
 
 /// <summary>
 /// 预上传 openapi 文件，支持 json、yaml.

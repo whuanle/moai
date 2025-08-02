@@ -4,6 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using MoAI.Infra.Models;
 
@@ -17,5 +18,5 @@ public class AIAssistantChatContext : AIAssistantChatObject
     /// <summary>
     /// 历史对话或者上下文信息，创建对话时，如果有提示词，则第一个对话就是提示词.
     /// </summary>
-    public virtual ChatHistory ChatHistory { get; init; } = new ChatHistory();
+    public virtual IReadOnlyCollection<ChatMessageContent> ChatHistory { get; init; } = new ChatHistory();
 }

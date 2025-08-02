@@ -36,16 +36,21 @@ export interface Chat_historyRequestBuilderGetQueryParameters {
      * 对话 id.
      */
     chatId?: Guid;
+    /**
+     * 不包含历史记录，只查基础信息.
+     */
+    isBaseInfo?: boolean;
 }
 /**
  * Uri template for the request builder.
  */
-export const Chat_historyRequestBuilderUriTemplate = "{+baseurl}/api/app/assistant/chat_history?ChatId={ChatId}";
+export const Chat_historyRequestBuilderUriTemplate = "{+baseurl}/api/app/assistant/chat_history?ChatId={ChatId}&IsBaseInfo={IsBaseInfo}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const Chat_historyRequestBuilderGetQueryParametersMapper: Record<string, string> = {
     "chatId": "ChatId",
+    "isBaseInfo": "IsBaseInfo",
 };
 /**
  * Metadata for all the requests in the request builder.

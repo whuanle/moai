@@ -22,7 +22,7 @@ public class AIAssistantChatObject
     /// <summary>
     /// 提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.
     /// </summary>
-    public string? Prompt { get; init; } = string.Empty;
+    public string Prompt { get; init; } = string.Empty;
 
     /// <summary>
     /// 要使用的 AI 模型.
@@ -32,7 +32,7 @@ public class AIAssistantChatObject
     /// <summary>
     /// 要使用的知识库，如果用户不在知识库用户内，则必须是公开的.
     /// </summary>
-    public int? WikiId { get; init; }
+    public int WikiId { get; init; }
 
     /// <summary>
     /// 要使用的插件 id 列表，用户必须有权使用这些插件.

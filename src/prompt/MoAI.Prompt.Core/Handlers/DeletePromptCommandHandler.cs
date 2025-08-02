@@ -10,7 +10,7 @@ using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
 
-namespace MaomiAI.Prompt.Core.Handlers;
+namespace MoAIPrompt.Core.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="DeletePromptCommand"/>

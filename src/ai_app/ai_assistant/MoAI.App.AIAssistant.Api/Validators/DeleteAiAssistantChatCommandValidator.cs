@@ -7,6 +7,7 @@
 using FastEndpoints;
 using FluentValidation;
 using MoAI.App.AIAssistant.Commands;
+using MoAI.App.AIAssistant.Handlers;
 using MoAI.App.AIAssistant.Queries;
 
 namespace MoAI.App.AIAssistant.Validators;

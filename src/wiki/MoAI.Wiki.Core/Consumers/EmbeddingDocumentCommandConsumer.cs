@@ -5,7 +5,7 @@
 // </copyright>
 
 using Maomi.MQ;
-using MaomiAI.Document.Core.Consumers.Events;
+using MoAIDocument.Core.Consumers.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,9 +19,9 @@ using MoAI.Infra.Extensions;
 using MoAI.Storage.Queries;
 using MoAI.Store.Enums;
 using MoAI.Wiki.Models;
-using MoAI.Wiki.Services;
+using MoAI.AiModel.Services;
 
-namespace MaomiAI.Document.Core.Consumers;
+namespace MoAIDocument.Core.Consumers;
 
 /// <summary>
 /// 文档向量化.
@@ -95,18 +95,27 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
         if (textEmbeddingGeneration == null)
         {
+            textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(AiProvider.Custom);
+        }
+
+        if (textEmbeddingGeneration == null)
+        {
             await SetFaildStateAsync(documentTask, "不支持的模型供应商");
             return;
         }
 
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+
+        if (memoryDb == null)
+        {
+            await SetFaildStateAsync(documentTask, "不支持的数据库");
+            return;
+        }
+
         textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
+        memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
 
         var memoryClient = memoryBuilder.WithoutTextGenerator()
-
-            .WithPostgresMemoryDb(new PostgresConfig
-            {
-                ConnectionString = _systemOptions.Wiki.Database,
-            })
             .WithCustomTextPartitioningOptions(
             new TextPartitioningOptions
             {
@@ -171,13 +180,13 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
         return Task.FromResult(ConsumerState.Ack);
     }
 
-    private async Task<(WikiConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
+    private async Task<(EmbeddingConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
     {
         var result = await _databaseContext.Wikis
         .Where(x => x.Id == wikiId)
         .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
         {
-            WikiConfig = new WikiConfig
+            WikiConfig = new EmbeddingConfig
             {
                 EmbeddingDimensions = a.EmbeddingDimensions,
                 EmbeddingBatchSize = a.EmbeddingBatchSize,

@@ -6,9 +6,15 @@ import { Chat_historyRequestBuilderRequestsMetadata, type Chat_historyRequestBui
 // @ts-ignore
 import { CompletionsRequestBuilderRequestsMetadata, type CompletionsRequestBuilder } from './completions/index.js';
 // @ts-ignore
+import { Create_chatRequestBuilderRequestsMetadata, type Create_chatRequestBuilder } from './create_chat/index.js';
+// @ts-ignore
+import { Delete_chat_recordRequestBuilderRequestsMetadata, type Delete_chat_recordRequestBuilder } from './delete_chat_record/index.js';
+// @ts-ignore
 import { Delete_chatRequestBuilderRequestsMetadata, type Delete_chatRequestBuilder } from './delete_chat/index.js';
 // @ts-ignore
 import { Topic_listRequestBuilderRequestsMetadata, type Topic_listRequestBuilder } from './topic_list/index.js';
+// @ts-ignore
+import { type Update_chatRequestBuilder, Update_chatRequestBuilderRequestsMetadata } from './update_chat/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -25,13 +31,25 @@ export interface AssistantRequestBuilder extends BaseRequestBuilder<AssistantReq
      */
     get completions(): CompletionsRequestBuilder;
     /**
+     * The create_chat property
+     */
+    get create_chat(): Create_chatRequestBuilder;
+    /**
      * The delete_chat property
      */
     get delete_chat(): Delete_chatRequestBuilder;
     /**
+     * The delete_chat_record property
+     */
+    get delete_chat_record(): Delete_chat_recordRequestBuilder;
+    /**
      * The topic_list property
      */
     get topic_list(): Topic_listRequestBuilder;
+    /**
+     * The update_chat property
+     */
+    get update_chat(): Update_chatRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -47,11 +65,20 @@ export const AssistantRequestBuilderNavigationMetadata: Record<Exclude<keyof Ass
     completions: {
         requestsMetadata: CompletionsRequestBuilderRequestsMetadata,
     },
+    create_chat: {
+        requestsMetadata: Create_chatRequestBuilderRequestsMetadata,
+    },
     delete_chat: {
         requestsMetadata: Delete_chatRequestBuilderRequestsMetadata,
     },
+    delete_chat_record: {
+        requestsMetadata: Delete_chat_recordRequestBuilderRequestsMetadata,
+    },
     topic_list: {
         requestsMetadata: Topic_listRequestBuilderRequestsMetadata,
+    },
+    update_chat: {
+        requestsMetadata: Update_chatRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

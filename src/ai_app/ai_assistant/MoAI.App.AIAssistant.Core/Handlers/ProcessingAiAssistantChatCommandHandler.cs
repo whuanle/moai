@@ -8,7 +8,7 @@
 #pragma warning disable SKEXP0040 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
 
-using MaomiAI.Chat.Core.Handlers;
+using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +20,9 @@ using Microsoft.SemanticKernel.Plugins.OpenApi;
 using MoAI.AI.Commands;
 using MoAI.AI.Models;
 using MoAI.AiModel.Models;
+using MoAI.AiModel.Services;
 using MoAI.App.AIAssistant.Commands;
+using MoAI.App.AIAssistant.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
@@ -30,8 +32,7 @@ using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 using MoAI.Storage.Queries;
 using MoAI.Store.Enums;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Services;
+using MoAIChat.Core.Handlers;
 using ModelContextProtocol.Client;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Runtime.CompilerServices;
@@ -41,7 +42,7 @@ namespace MoAI.App.AIAssistant.Handlers;
 /// <summary>
 /// <inheritdoc cref="ProcessingAiAssistantChatCommand"/>
 /// </summary>
-public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<ProcessingAiAssistantChatCommand, IOpenAIChatCompletionsObject>
+public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<ProcessingAiAssistantChatCommand, IOpenAIChatCompletionsObject>, IAsyncDisposable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly DatabaseContext _databaseContext;
@@ -50,6 +51,10 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
     private readonly ILoggerFactory _loggerFactory;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly SystemOptions _systemOptions;
+    private readonly IMessagePublisher _messagePublisher;
+
+    private readonly List<IDisposable> _disposables = new();
+    private readonly List<IAsyncDisposable> _asyncDisposables = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ProcessingAiAssistantChatCommandHandler"/> class.
@@ -61,7 +66,8 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
     /// <param name="loggerFactory"></param>
     /// <param name="httpClientFactory"></param>
     /// <param name="systemOptions"></param>
-    public ProcessingAiAssistantChatCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, IRedisDatabase redisDatabase, IMediator mediator, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory, SystemOptions systemOptions)
+    /// <param name="messagePublisher"></param>
+    public ProcessingAiAssistantChatCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, IRedisDatabase redisDatabase, IMediator mediator, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory, SystemOptions systemOptions, IMessagePublisher messagePublisher)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
@@ -70,38 +76,14 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         _loggerFactory = loggerFactory;
         _httpClientFactory = httpClientFactory;
         _systemOptions = systemOptions;
+        _messagePublisher = messagePublisher;
     }
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<IOpenAIChatCompletionsObject> Handle(ProcessingAiAssistantChatCommand request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // todo: 暂时限制最大 5 个插件
-        // todo: 支持函数调用前端输出提示
-        Guid chatId = default!;
-        ChatHistory chatMessages = new();
-
-        if (request.ChatId == null || request.ChatId.Value == default)
-        {
-            var createResult = await _mediator.Send(
-                new CreateAiAssistantChatCommand
-                {
-                    Title = request.Title,
-                    ModelId = request.ModelId,
-                    PluginIds = request.PluginIds,
-                    ExecutionSettings = request.ExecutionSettings,
-                    WikiId = request.WikiId,
-                },
-                cancellationToken);
-
-            chatId = createResult.ChatId;
-        }
-        else
-        {
-            chatId = request.ChatId!.Value;
-        }
-
         var chatObjectEntity = await _databaseContext.AppAssistantChats
-            .Where(x => x.Id == chatId && x.CreateUserId == request.UserId)
+            .Where(x => x.Id == request.ChatId && x.CreateUserId == request.UserId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (chatObjectEntity == null)
@@ -109,17 +91,27 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             throw new BusinessException("对话不存在或无权访问") { StatusCode = 404 };
         }
 
-        await UpdateChatObjectEntityAsync(request, chatObjectEntity);
+        AIAssistantChatObject aIAssistantChatObject = new AIAssistantChatObject
+        {
+            ExecutionSettings = chatObjectEntity.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>()!,
+            ModelId = chatObjectEntity.ModelId,
+            PluginIds = chatObjectEntity.PluginIds.JsonToObject<IReadOnlyCollection<int>>()!.Where(x => x > 0).ToHashSet(),
+            Prompt = chatObjectEntity.Prompt,
+            Title = chatObjectEntity.Title,
+            WikiId = chatObjectEntity.WikiId
+        };
+
+        ChatHistory chatMessages = new();
 
         // 添加提示词.
-        if (!string.IsNullOrEmpty(request.Prompt))
+        if (!string.IsNullOrEmpty(aIAssistantChatObject.Prompt))
         {
-            chatMessages.AddSystemMessage(request.Prompt);
+            chatMessages.AddSystemMessage(aIAssistantChatObject.Prompt);
         }
 
         // 补全对话上下文
         var history = await _databaseContext.AppAssistantChatHistories
-            .Where(x => x.ChatId == chatId)
+            .Where(x => x.ChatId == request.ChatId)
             .OrderBy(x => x.CreateTime)
             .ToListAsync(cancellationToken);
 
@@ -149,20 +141,26 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         // 要给 AI 调用的插件列表
         List<KernelPlugin> aiPlugins = new List<KernelPlugin>();
 
-        var pluginIds = request.PluginIds.Where(x => x > 0).ToHashSet();
+        // 映射插件调用的工具列表
+        List<ToolCallRecord> toolMaps = new List<ToolCallRecord>();
+
+        // 被调用的工具列表
+        List<int> calledPluginIds = new List<int>();
+
+        var pluginIds = aIAssistantChatObject.PluginIds.ToHashSet();
 
         if (pluginIds.Count > 0)
         {
-            await BuildFunctionPluginAsync(request, aiPlugins, pluginIds, cancellationToken);
+            await BuildFunctionPluginAsync(request, aiPlugins, toolMaps, pluginIds, cancellationToken);
         }
 
-        if (request.WikiId > 0)
+        if (aIAssistantChatObject.WikiId > 0)
         {
-            await BuildWikiPluginAsync(request, aiPlugins, cancellationToken);
+            await BuildWikiPluginAsync(aIAssistantChatObject, request, aiPlugins, toolMaps, cancellationToken);
         }
 
         var aiEndpoint = await _databaseContext.AiModels
-            .Where(x => x.Id == request.ModelId)
+            .Where(x => x.Id == aIAssistantChatObject.ModelId)
             .Select(x => new AiEndpoint
             {
                 Name = x.Name,
@@ -197,11 +195,11 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
 
         var command = new ChatCompletionsCommand
         {
-            ChatId = chatId,
+            ChatId = chatObjectEntity.Id,
             ChatHistory = chatMessages,
             Plugins = aiPlugins,
             Endpoint = aiEndpoint,
-            ExecutionSetting = request.ExecutionSettings
+            ExecutionSetting = aIAssistantChatObject.ExecutionSettings
         };
 
         OpenAIChatCompletionsObject completionsObject = default!;
@@ -211,6 +209,11 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             // 聊天块内容
             if (item is OpenAIChatCompletionsChunk chunk)
             {
+                var firstChoice = chunk.Choices.FirstOrDefault();
+                if (firstChoice != null && firstChoice.FinishReason == Microsoft.Extensions.AI.ChatFinishReason.ToolCalls.ToString())
+                {
+                    // todo: 记录函数调用
+                }
             }
 
             // 结束聊天
@@ -234,24 +237,57 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
 
         var userChatRecord = new AppAssistantChatHistoryEntity
         {
-            ChatId = chatId,
+            ChatId = chatObjectEntity.Id,
             CompletionsId = completionsObject.Id,
             Content = request.Content,
-            Model = completionsObject.Model,
-            Role = AuthorRole.User.Label
+            Role = AuthorRole.User.Label,
         };
 
         var aiChatRecord = new AppAssistantChatHistoryEntity
         {
-            ChatId = chatId,
+            ChatId = chatObjectEntity.Id,
             CompletionsId = completionsObject.Id,
-            Content = completionsObject.Choices.FirstOrDefault()?.Message.Content?.ToJsonString() ?? string.Empty,
-            Model = completionsObject.Model,
-            Role = AuthorRole.Assistant.Label
+            Content = completionsObject.Choices.FirstOrDefault()?.Message.Content?.ToString() ?? string.Empty,
+            Role = AuthorRole.Assistant.Label,
         };
+
+        await _databaseContext.AppAssistantChatHistories.AddAsync(userChatRecord);
+        await _databaseContext.AppAssistantChatHistories.AddAsync(aiChatRecord);
+        await _databaseContext.SaveChangesAsync();
+
+        var log = new AiModelUseageLogEntity
+        {
+            Channel = "assistant",
+            CompletionTokens = completionsObject.Usage.CompletionTokens,
+            ModelId = chatObjectEntity.ModelId,
+            PromptTokens = completionsObject.Usage.PromptTokens,
+            TotalTokens = completionsObject.Usage.TotalTokens,
+            UseriId = request.UserId
+        };
+
+        await _databaseContext.AiModelUseageLogs.AddAsync(log);
+        await _databaseContext.SaveChangesAsync();
+
+        // todo: 记录执行的插件列表，写到数据库
     }
 
-    private async Task BuildFunctionPluginAsync(ProcessingAiAssistantChatCommand request, List<KernelPlugin> aiPlugins, HashSet<int> pluginIds, CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var item in _disposables)
+        {
+            item.Dispose();
+        }
+
+        foreach (var item in _asyncDisposables)
+        {
+            await item.DisposeAsync();
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private async Task BuildFunctionPluginAsync(ProcessingAiAssistantChatCommand request, List<KernelPlugin> aiPlugins, List<ToolCallRecord> toolMaps, HashSet<int> pluginIds, CancellationToken cancellationToken)
     {
         var pluginEntities = await _databaseContext.Plugins.Where(x => pluginIds.Contains(x.Id) && (x.CreateUserId == request.UserId || x.IsPublic)).ToListAsync(cancellationToken);
 
@@ -272,48 +308,61 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         // 翻译插件为 SK 支持的格式
         foreach (var item in pluginLists)
         {
-            if (item.Key.Type == (int)PluginType.Mcp)
+            if (item.Key.Type == (int)PluginType.MCP)
             {
                 var plugin = await GetMCPPluginsAsync(item.Key, item.Value);
                 aiPlugins.Add(plugin);
+
+                foreach (var function in item.Value)
+                {
+                    toolMaps.Add(new ToolCallRecord
+                    {
+                        Key = item.Key + "-" + function.Name,
+                        PluginType = PluginType.MCP,
+                        ToolId = function.Id,
+                    });
+                }
             }
             else if (item.Key.Type == (int)PluginType.OpenApi)
             {
                 var plugin = await GetOpenApiPluginsAsync(item.Key, item.Value);
                 aiPlugins.Add(plugin);
+
+                foreach (var function in item.Value)
+                {
+                    toolMaps.Add(new ToolCallRecord
+                    {
+                        Key = item.Key + "-" + function.Name,
+                        PluginType = PluginType.OpenApi,
+                        ToolId = function.Id,
+                    });
+                }
             }
             else if (item.Key.Type == (int)PluginType.System)
             {
-                //// 系统插件
+                //// todo: 后续增加系统插件
                 //var systemFunctions = item.Value.Select(x => x.AsKernelFunction()).ToList();
                 //functions.AddRange(systemFunctions);
+
+                foreach (var function in item.Value)
+                {
+                    toolMaps.Add(new ToolCallRecord
+                    {
+                        Key = function.Name,
+                        PluginType = PluginType.System,
+                        ToolId = function.Id,
+                    });
+                }
             }
         }
     }
 
-    private async Task UpdateChatObjectEntityAsync(ProcessingAiAssistantChatCommand request, AppAssistantChatEntity chatEntity)
-    {
-        chatEntity.Title = request.Title;
-        chatEntity.ExecutionSettings = request.ExecutionSettings.ToJsonString();
-        chatEntity.PluginIds = request.PluginIds.ToJsonString();
-        chatEntity.ModelId = request.ModelId;
-        chatEntity.WikiId = request.WikiId ?? 0;
-
-        if (request.Prompt != null)
-        {
-            chatEntity.Prompt = request.Prompt;
-        }
-
-        _databaseContext.Update(chatEntity);
-        await _databaseContext.SaveChangesAsync();
-    }
-
     // 将知识库转换为插件
-    private async Task BuildWikiPluginAsync(ProcessingAiAssistantChatCommand request, List<KernelPlugin> aiPlugins, CancellationToken cancellationToken)
+    private async Task BuildWikiPluginAsync(AIAssistantChatObject aIAssistantChatObject, ProcessingAiAssistantChatCommand request, List<KernelPlugin> aiPlugins, List<ToolCallRecord> toolMaps, CancellationToken cancellationToken)
     {
         // 读取知识库
         var wikiEntity = await _databaseContext
-            .Wikis.Where(x => x.Id == request.WikiId! && (x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Where(a => a.UserId == request.UserId).Any()))
+            .Wikis.Where(x => x.Id == aIAssistantChatObject.WikiId! && (x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Where(a => a.UserId == request.UserId).Any()))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (wikiEntity == null)
@@ -356,7 +405,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             TextOutput = wikiAiModel.TextOutput
         };
 
-        var wikiConfig = new WikiConfig
+        var wikiConfig = new EmbeddingConfig
         {
             EmbeddingDimensions = wikiEntity.EmbeddingDimensions,
             EmbeddingBatchSize = wikiEntity.EmbeddingBatchSize,
@@ -368,20 +417,35 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         var memoryBuilder = new KernelMemoryBuilder()
             .WithSimpleFileStorage(Path.GetTempPath());
 
-        var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(wikiAiModel.AiProvider) ?? throw new BusinessException("知识库不支持该模型服务商");
+        var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(wikiAiModel.AiProvider.JsonToObject<AiProvider>());
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+
+        if (textEmbeddingGeneration == null)
+        {
+            throw new BusinessException("不支持的模型类型");
+        }
+
+        if (memoryDb == null)
+        {
+            throw new BusinessException("不支持的数据库类型");
+        }
+
         textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
+        memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
 
         var memoryClient = memoryBuilder.WithoutTextGenerator()
-            .WithPostgresMemoryDb(new PostgresConfig
-            {
-                ConnectionString = _systemOptions.Wiki.Database,
-            })
             .Build();
 
-        var memoryPlugin = new MemoryPlugin(defaultIndex: "n" + wikiEntity.Id.ToString(), memoryClient: memoryClient, waitForIngestionToComplete: true);
+        var memoryPlugin = new MemoryPlugin(defaultIndex: wikiEntity.Id.ToString(), memoryClient: memoryClient, waitForIngestionToComplete: true);
         var wikiPlugin = KernelPluginFactory.CreateFromObject(target: memoryPlugin, "KnowledgeMemory");
 
         aiPlugins.Add(wikiPlugin);
+        toolMaps.Add(new ToolCallRecord
+        {
+            Key = "KnowledgeMemory",
+            PluginType = PluginType.Wiki,
+            ToolId = wikiEntity.Id,
+        });
     }
 
     private async Task<KernelPlugin> GetOpenApiPluginsAsync(PluginEntity pluginEntity, IReadOnlyCollection<PluginFunctionEntity> functionEntities)
@@ -408,8 +472,8 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
         OpenApiDocumentParser parser = new();
         using FileStream stream = File.OpenRead(filePath.FilePath);
         RestApiSpecification specification = await parser.ParseAsync(stream);
-        // var operations = specification.Operations.Where(x => pluginEntities.Any(p => p.Path == x.Path)).ToArray();
 
+        // todo: 支持接口筛选 var operations = specification.Operations.Where(x => pluginEntities.Any(p => p.Path == x.Path)).ToArray();
         var httpClient = _httpClientFactory.CreateClient("OpenApiClient");
 
         foreach (var header in headers)
@@ -432,6 +496,8 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
                 },
                 HttpClient = httpClient,
             });
+
+        _disposables.Add(httpClient);
 
         return plugin;
     }
@@ -468,8 +534,10 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             AdditionalHeaders = headers.ToDictionary(x => x.Key, x => x.Value),
         };
 
-        await using var sseTransport = new SseClientTransport(defaultConfig);
-        await using var client = await McpClientFactory.CreateAsync(
+        // 这里不能使用 using，因为要给插件插件使用
+        // todo: 加上资源释放
+        var sseTransport = new SseClientTransport(defaultConfig);
+        var client = await McpClientFactory.CreateAsync(
          sseTransport,
          defaultOptions,
          loggerFactory: _loggerFactory);
@@ -482,6 +550,9 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             pluginName: pluginEntity.PluginName,
             description: pluginEntity.Description ?? string.Empty,
             functions: tools.Select(aiFunction => aiFunction.AsKernelFunction()));
+
+        _asyncDisposables.Add(client);
+        _asyncDisposables.Add(sseTransport);
 
         return plugin;
     }

@@ -53,6 +53,7 @@ public partial class WikiWebCrawleTaskConfiguration : IEntityTypeConfiguration<W
             .HasMaxLength(255)
             .HasComment("任务执行信息")
             .HasColumnName("message");
+
         entity.Property(e => e.OverlappingTokens)
             .HasDefaultValueSql("'20'")
             .HasComment("重叠的token数量")

@@ -6,11 +6,10 @@
 
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
-using MoAI.Wiki.Models;
 
-namespace MoAI.Wiki.Services;
+namespace MoAI.AiModel.Services;
 
 public interface ITextEmbeddingGeneration
 {
-    IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, WikiConfig wikiConfig);
+    IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig wikiConfig);
 }

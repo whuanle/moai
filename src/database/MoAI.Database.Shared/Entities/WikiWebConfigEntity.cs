@@ -49,6 +49,8 @@ public partial class WikiWebConfigEntity : IFullAudited
     /// </summary>
     public bool IsAutoEmbedding { get; set; }
 
+    public string Selector { get; set; } = default!;
+
     /// <summary>
     /// 等待js加载完成.
     /// </summary>

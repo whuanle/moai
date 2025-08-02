@@ -7577,6 +7577,95 @@
         ]
       }
     },
+    "/api/app/assistant/create_chat": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "发起新的聊天，检查用户是否有知识库、插件灯权限，如果检查通过，返回聊天 id.",
+        "operationId": "CreateAiAssistantChatEndpoint",
+        "requestBody": {
+          "x-name": "AIAssistantChatObject",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIAssistantChatObject"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAiAssistantChatCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/app/assistant/delete_chat": {
       "delete": {
         "tags": [
@@ -7671,6 +7760,100 @@
         ]
       }
     },
+    "/api/app/assistant/delete_chat_record": {
+      "delete": {
+        "tags": [
+          "App"
+        ],
+        "summary": "删除对话中的一条记录.",
+        "operationId": "DeleteAiAssistantChatOneRecordEndpoint",
+        "requestBody": {
+          "x-name": "DeleteAiAssistantChatOneRecordCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAiAssistantChatOneRecordCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAiAssistantChatOneRecordCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/app/assistant/chat_history": {
       "get": {
         "tags": [
@@ -7687,6 +7870,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "isBaseInfo",
+            "in": "query",
+            "required": true,
+            "description": "不包含历史记录，只查基础信息.",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -7773,6 +7965,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryAiAssistantChatTopicListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/app/assistant/update_chat": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "更新聊天参数.",
+        "operationId": "UpdateAiAssistanChatConfigEndpoint",
+        "requestBody": {
+          "x-name": "UpdateAiAssistanChatConfigCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAiAssistanChatConfigCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -8417,7 +8698,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753790904468"
+            "example": "1754098223588"
           }
         }
       },
@@ -9170,7 +9451,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753790904468"
+            "example": "1754098223588"
           },
           "createUserId": {
             "type": "integer",
@@ -9186,7 +9467,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753790904468"
+            "example": "1754098223588"
           },
           "updateUserId": {
             "type": "integer",
@@ -10656,7 +10937,7 @@
         ],
         "allOf": [
           {
-            "$ref": "#/components/schemas/WikiConfig"
+            "$ref": "#/components/schemas/EmbeddingConfig"
           },
           {
             "type": "object",
@@ -10679,7 +10960,7 @@
           }
         ]
       },
-      "WikiConfig": {
+      "EmbeddingConfig": {
         "type": "object",
         "description": "知识库配置.",
         "additionalProperties": false,
@@ -10921,7 +11202,8 @@
               "limitMaxCount",
               "isCrawlOther",
               "isAutoEmbedding",
-              "isWaitJs"
+              "isWaitJs",
+              "selector"
             ],
             "properties": {
               "wikiId": {
@@ -10962,6 +11244,10 @@
               "isWaitJs": {
                 "type": "boolean",
                 "description": "等待js加载完成."
+              },
+              "selector": {
+                "type": "string",
+                "description": "html 筛选器."
               }
             }
           }
@@ -11102,7 +11388,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753790904468"
+            "example": "1754098223588"
           }
         }
       },
@@ -11135,6 +11421,7 @@
           "wikiWebConfigId",
           "crawleState",
           "message",
+          "selector",
           "pageCount",
           "faildPageCount",
           "maxTokensPerParagraph",
@@ -11171,6 +11458,10 @@
             "type": "string",
             "description": "任务执行信息."
           },
+          "selector": {
+            "type": "string",
+            "description": "选择器."
+          },
           "pageCount": {
             "type": "integer",
             "description": "爬取成功的页面数量.",
@@ -11205,7 +11496,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753790904468"
+            "example": "1754098223588"
           }
         }
       },
@@ -11431,7 +11722,8 @@
           "limitMaxCount",
           "isCrawlOther",
           "isAutoEmbedding",
-          "isWaitJs"
+          "isWaitJs",
+          "selector"
         ],
         "properties": {
           "wikiId": {
@@ -11489,6 +11781,12 @@
           "isWaitJs": {
             "type": "boolean",
             "description": "等待js加载完成."
+          },
+          "selector": {
+            "type": "string",
+            "description": "选择器，筛选页面的表达式，例如 \".content\".",
+            "maxLength": 255,
+            "minLength": 0
           }
         }
       },
@@ -11700,7 +11998,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753790904468"
+            "example": "1754098223588"
           }
         }
       },
@@ -12096,7 +12394,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753790904468"
+            "example": "1754098223588"
           },
           "tags": {
             "type": "array",
@@ -12240,14 +12538,16 @@
         "type": "string",
         "description": "插件类型.",
         "x-enumNames": [
+          "System",
+          "MCP",
           "OpenApi",
-          "Mcp",
-          "System"
+          "Wiki"
         ],
         "enum": [
-          "openApi",
+          "system",
           "mcp",
-          "system"
+          "openApi",
+          "wiki"
         ]
       },
       "QueryPluginDetailCommand": {
@@ -12609,7 +12909,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1753790904468"
+            "example": "1754098223588"
           }
         }
       },
@@ -13162,20 +13462,85 @@
           }
         }
       },
+      "CreateAiAssistantChatCommandResponse": {
+        "type": "object",
+        "description": "对话 id.",
+        "additionalProperties": false,
+        "required": [
+          "chatId"
+        ],
+        "properties": {
+          "chatId": {
+            "type": "string",
+            "description": "每个聊天对话都有唯一 id.",
+            "format": "uuid"
+          }
+        }
+      },
+      "AIAssistantChatObject": {
+        "type": "object",
+        "description": "对话参数.",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "prompt",
+          "modelId",
+          "wikiId",
+          "pluginIds",
+          "executionSettings"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "话题名称.",
+            "maxLength": 100,
+            "minLength": 0,
+            "nullable": false
+          },
+          "prompt": {
+            "type": "string",
+            "description": "提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.",
+            "maxLength": 2000,
+            "minLength": 0,
+            "nullable": false
+          },
+          "modelId": {
+            "type": "integer",
+            "description": "要使用的 AI 模型.",
+            "format": "int32",
+            "minimum": 0.0,
+            "exclusiveMinimum": true
+          },
+          "wikiId": {
+            "type": "integer",
+            "description": "要使用的知识库，如果用户不在知识库用户内，则必须是公开的.",
+            "format": "int32"
+          },
+          "pluginIds": {
+            "type": "array",
+            "description": "要使用的插件 id 列表，用户必须有权使用这些插件.",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "executionSettings": {
+            "type": "array",
+            "description": "配置，字典适配不同的 AI 模型.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueString"
+            }
+          }
+        }
+      },
       "DeleteAiAssistantChatCommand": {
         "type": "object",
         "description": "删除对话记录.",
         "additionalProperties": false,
         "required": [
-          "chatId",
-          "userId"
+          "chatId"
         ],
         "properties": {
-          "userId": {
-            "type": "integer",
-            "description": "用户 id.",
-            "format": "int32"
-          },
           "chatId": {
             "type": "string",
             "description": "对话 id.",
@@ -13185,77 +13550,56 @@
           }
         }
       },
-      "QueryAiAssistantChatHistoryCommandResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AIAssistantChatContext"
-          },
-          {
-            "type": "object",
-            "description": "对话记录结果.",
-            "additionalProperties": false,
-            "required": [
-              "chatId",
-              "createTime",
-              "updateTime"
-            ],
-            "properties": {
-              "chatId": {
-                "type": "string",
-                "description": "id.",
-                "format": "uuid"
-              },
-              "createTime": {
-                "type": "string",
-                "description": "创建时间.",
-                "format": "int64",
-                "minimum": 0.0,
-                "example": "1753790904468"
-              },
-              "updateTime": {
-                "type": "string",
-                "description": "最后更新时间.",
-                "format": "int64",
-                "minimum": 0.0,
-                "example": "1753790904468"
-              }
-            }
-          }
-        ]
-      },
-      "AIAssistantChatContext": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AIAssistantChatObject"
-          },
-          {
-            "type": "object",
-            "description": "对话上下文，一个完整的聊天上下文.",
-            "additionalProperties": false,
-            "required": [
-              "chatHistory"
-            ],
-            "properties": {
-              "chatHistory": {
-                "type": "array",
-                "description": "历史对话或者上下文信息，创建对话时，如果有提示词，则第一个对话就是提示词.",
-                "items": {}
-              }
-            }
-          }
-        ]
-      },
-      "AIAssistantChatObject": {
+      "DeleteAiAssistantChatOneRecordCommand": {
         "type": "object",
-        "description": "对话参数.",
+        "description": "删除对话中的一条记录.",
         "additionalProperties": false,
         "required": [
-          "title",
-          "modelId",
-          "pluginIds",
-          "executionSettings"
+          "chatId",
+          "recordId"
         ],
         "properties": {
+          "chatId": {
+            "type": "string",
+            "description": "对话 id.",
+            "format": "uuid",
+            "minLength": 1,
+            "nullable": false
+          },
+          "recordId": {
+            "type": "string",
+            "description": "记录id.",
+            "format": "int64",
+            "minimum": 0.0,
+            "exclusiveMinimum": true
+          }
+        }
+      },
+      "QueryAiAssistantChatHistoryCommandResponse": {
+        "type": "object",
+        "description": "对话记录结果.",
+        "additionalProperties": false,
+        "required": [
+          "chatId",
+          "title",
+          "modelId",
+          "wikiId",
+          "pluginIds",
+          "executionSettings",
+          "avatar",
+          "inputTokens",
+          "outTokens",
+          "totalTokens",
+          "createTime",
+          "updateTime",
+          "chatHistory"
+        ],
+        "properties": {
+          "chatId": {
+            "type": "string",
+            "description": "id.",
+            "format": "uuid"
+          },
           "title": {
             "type": "string",
             "description": "话题名称."
@@ -13273,8 +13617,7 @@
           "wikiId": {
             "type": "integer",
             "description": "要使用的知识库，如果用户不在知识库用户内，则必须是公开的.",
-            "format": "int32",
-            "nullable": true
+            "format": "int32"
           },
           "pluginIds": {
             "type": "array",
@@ -13290,6 +13633,72 @@
             "items": {
               "$ref": "#/components/schemas/KeyValueString"
             }
+          },
+          "avatar": {
+            "type": "string",
+            "description": "AI 的头像."
+          },
+          "inputTokens": {
+            "type": "integer",
+            "description": "输入token统计.",
+            "format": "int32"
+          },
+          "outTokens": {
+            "type": "integer",
+            "description": "输出token统计.",
+            "format": "int32"
+          },
+          "totalTokens": {
+            "type": "integer",
+            "description": "使用的 token 总数.",
+            "format": "int32"
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1754098223588"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "最后更新时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1754098223588"
+          },
+          "chatHistory": {
+            "type": "array",
+            "description": "历史对话或者上下文信息，创建对话时，如果有提示词，则第一个对话就是提示词.",
+            "items": {
+              "$ref": "#/components/schemas/ChatContentItem"
+            }
+          }
+        }
+      },
+      "ChatContentItem": {
+        "type": "object",
+        "description": "对话项.",
+        "additionalProperties": false,
+        "required": [
+          "recordId",
+          "authorName"
+        ],
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1415926535897934852"
+          },
+          "authorName": {
+            "type": "string",
+            "description": "角色名称，system、assistant、user、tool."
+          },
+          "content": {
+            "type": "string",
+            "description": "对话内容.",
+            "nullable": true
           }
         }
       },
@@ -13334,9 +13743,45 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1753790904468"
+            "example": "1754098223588"
           }
         }
+      },
+      "UpdateAiAssistanChatConfigCommand": {
+        "required": [
+          "chatId",
+          "aiAvatar"
+        ],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AIAssistantChatObject"
+          },
+          {
+            "type": "object",
+            "description": "更新 AI 对话参数.",
+            "additionalProperties": false,
+            "required": [
+              "chatId",
+              "aiAvatar"
+            ],
+            "properties": {
+              "chatId": {
+                "type": "string",
+                "description": "对话 id.",
+                "format": "uuid",
+                "minLength": 1,
+                "nullable": false
+              },
+              "aiAvatar": {
+                "type": "string",
+                "description": "AI 的头像.",
+                "maxLength": 10,
+                "minLength": 0,
+                "nullable": false
+              }
+            }
+          }
+        ]
       },
       "ImportOpenApiPluginCommand": {
         "type": "object",
@@ -13399,37 +13844,30 @@
         }
       },
       "ProcessingAiAssistantChatCommand": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AIAssistantChatObject"
+        "type": "object",
+        "description": "进行对话，对话时，History 每次做增量传递.",
+        "additionalProperties": false,
+        "required": [
+          "chatId",
+          "userId",
+          "content"
+        ],
+        "properties": {
+          "chatId": {
+            "type": "string",
+            "description": "对话 id，id 为空时自动新建.",
+            "format": "uuid"
           },
-          {
-            "type": "object",
-            "description": "进行对话，对话时，History 每次做增量传递.",
-            "additionalProperties": false,
-            "required": [
-              "userId",
-              "content"
-            ],
-            "properties": {
-              "chatId": {
-                "type": "string",
-                "description": "对话 id，id 为空时自动新建.",
-                "format": "uuid",
-                "nullable": true
-              },
-              "userId": {
-                "type": "integer",
-                "description": "当前用户标识.",
-                "format": "int32"
-              },
-              "content": {
-                "type": "string",
-                "description": "用户的提问."
-              }
-            }
+          "userId": {
+            "type": "integer",
+            "description": "当前用户标识.",
+            "format": "int32"
+          },
+          "content": {
+            "type": "string",
+            "description": "用户的提问."
           }
-        ]
+        }
       }
     },
     "securitySchemes": {

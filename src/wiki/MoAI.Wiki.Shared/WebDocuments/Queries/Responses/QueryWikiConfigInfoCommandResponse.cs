@@ -55,4 +55,9 @@ public class QueryWikiConfigInfoCommandResponse : AuditsInfo
     /// 等待js加载完成.
     /// </summary>
     public bool IsWaitJs { get; init; }
+
+    /// <summary>
+    /// html 筛选器.
+    /// </summary>
+    public string Selector { get; init; }
 }

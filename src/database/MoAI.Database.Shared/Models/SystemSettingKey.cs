@@ -14,17 +14,22 @@ public struct SystemSettingKey : IEquatable<SystemSettingKey>
     /// <summary>
     /// key.
     /// </summary>
-    public string Key { get; set; }
+    public string Key { get; init; }
 
     /// <summary>
     /// 值.
     /// </summary>
-    public string Value { get; set; }
+    public string Value { get; init; }
 
     /// <summary>
     /// 描述
     /// </summary>
-    public string Description { get; set; }
+    public string Description { get; init; }
+
+    /// <summary>
+    /// 是否可以更新.
+    /// </summary>
+    public bool IsEdit { get; init; }
 
     /// <inheritdoc/>
     public override bool Equals(object? obj)

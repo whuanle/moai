@@ -13,7 +13,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Services;
 
-namespace MaomiAI.Chat.Core.Handlers;
+namespace MoAIChat.Core.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="CreateAiAssistantChatCommand"/>
@@ -42,7 +42,7 @@ public class CreateAiAssistantChatCommandHandler : IRequestHandler<CreateAiAssis
     {
         // 检测用户是否有权访问知识库和插件
         // 插件不做检查，实际用到时只使用用户有权使用的插件
-        if (request.WikiId.HasValue && request.WikiId.Value > 0)
+        if (request.WikiId > 0)
         {
             var existWiki = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId && (x.CreateUserId == request.UserId || x.IsPublic)).AnyAsync();
             if (existWiki == false)
@@ -62,7 +62,7 @@ public class CreateAiAssistantChatCommandHandler : IRequestHandler<CreateAiAssis
             ModelId = request.ModelId,
             Prompt = request.Prompt ?? string.Empty,
             PluginIds = request.PluginIds.ToJsonString(),
-            WikiId = request.WikiId ?? 0,
+            WikiId = request.WikiId,
             ExecutionSettings = request.ExecutionSettings.ToJsonString(),
         };
 

@@ -19,7 +19,7 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
 
         entity.ToTable("app_assistant_chat_history", tb => tb.HasComment("对话历史，不保存实际历史记录"));
 
-        entity.HasIndex(e => e.ChatId, "chat_history_pk_2").IsUnique();
+        entity.HasIndex(e => e.ChatId, "chat_history_pk_2");
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -29,7 +29,7 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("对话id")
             .HasColumnName("chat_id");
         entity.Property(e => e.CompletionsId)
-            .HasMaxLength(20)
+            .HasMaxLength(50)
             .HasComment("对话id")
             .HasColumnName("completions_id");
         entity.Property(e => e.Content)
@@ -53,6 +53,11 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasMaxLength(20)
             .HasComment("模型名称")
             .HasColumnName("model");
+        entity.Property(e => e.PluginIds)
+            .HasMaxLength(1000)
+            .HasDefaultValueSql("'[]'")
+            .HasComment("被使用的插件列表")
+            .HasColumnName("plugin_ids");
         entity.Property(e => e.Role)
             .HasMaxLength(20)
             .HasComment("角色")
@@ -67,6 +72,10 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.WikiId)
+            .HasComment("被使用的知识库id")
+            .HasColumnType("int(11)")
+            .HasColumnName("wiki_id");
 
         OnConfigurePartial(entity);
     }

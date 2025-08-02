@@ -7,7 +7,7 @@
 using Maomi;
 using MoAI.Prompt;
 
-namespace MaomiAI.Prompt.Core;
+namespace MoAIPrompt.Core;
 
 /// <summary>
 /// PromptCoreModule.

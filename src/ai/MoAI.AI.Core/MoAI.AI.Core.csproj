@@ -13,6 +13,15 @@
 		<PackageReference Include="Microsoft.SemanticKernel.Connectors.MistralAI" />
 		<PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" />
 		<PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" />
+		<PackageReference Include="Microsoft.KernelMemory.AI.Anthropic" />
+		<PackageReference Include="Microsoft.KernelMemory.AI.AzureOpenAI" />
+		<PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" />
+		<PackageReference Include="Microsoft.KernelMemory.Core" />
+		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Elasticsearch" />
+		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" />
+		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Qdrant" />
+		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Redis" />
+		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.SQLServer" />
 	</ItemGroup>
 
 	<ItemGroup>

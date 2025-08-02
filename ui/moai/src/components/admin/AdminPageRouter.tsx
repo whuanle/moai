@@ -3,6 +3,7 @@ import OAuth from "./OAuth";
 import UserManager from "./UserManager";
 import SystemAIModel from "./SystemAiModel";
 import SystemPluginList from "./PluginList";
+import SystemSettings from "./SystemSettings";
 
 export const AdminPageRouters: RouteObject[] = [
   {
@@ -20,5 +21,9 @@ export const AdminPageRouters: RouteObject[] = [
   {
     path: "plugin",
     Component: SystemPluginList,
+  },
+  {
+    path: "settings",
+    Component: SystemSettings,
   }
 ];

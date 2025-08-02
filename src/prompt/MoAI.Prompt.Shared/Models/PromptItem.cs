@@ -6,7 +6,7 @@
 
 using MoAI.Infra.Models;
 
-namespace MaomiAI.Prompt.Models;
+namespace MoAIPrompt.Models;
 
 /// <summary>
 /// 查询提示词详细信息.

@@ -5,15 +5,15 @@
 // </copyright>
 
 using MediatR;
+using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
-using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Wikis.Commands;
 
 /// <summary>
 /// 更新知识库设置信息.
 /// </summary>
-public class UpdateWikiConfigCommand : WikiConfig, IRequest<EmptyCommandResponse>
+public class UpdateWikiConfigCommand : EmbeddingConfig, IRequest<EmptyCommandResponse>
 {
     /// <summary>
     /// 知识库 id.

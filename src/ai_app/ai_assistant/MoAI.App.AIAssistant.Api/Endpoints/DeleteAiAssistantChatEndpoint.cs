@@ -3,6 +3,7 @@ using MediatR;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Queries;
 using MoAI.App.AIAssistant.Queries.Responses;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.AIAssistant.Endpoints;
@@ -30,10 +31,21 @@ public class DeleteAiAssistantChatEndpoint : Endpoint<DeleteAiAssistantChatComma
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(DeleteAiAssistantChatCommand req, CancellationToken ct)
     {
+        var creatorId = await _mediator.Send(
+            new QueryAiAssistantCreatorCommand
+            {
+                ChatId = req.ChatId
+            },
+            ct);
+
+        if (creatorId != _userContext.UserId)
+        {
+            throw new BusinessException("未找到对话") { StatusCode = 404 };
+        }
+
         return await _mediator.Send(
             new DeleteAiAssistantChatCommand
             {
-                UserId = _userContext.UserId,
                 ChatId = req.ChatId
             },
             ct);

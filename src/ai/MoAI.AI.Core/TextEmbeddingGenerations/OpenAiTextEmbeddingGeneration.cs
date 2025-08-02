@@ -7,16 +7,15 @@
 using Maomi;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
+using MoAI.AiModel.Services;
 using MoAI.Infra.Extensions;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Services;
 
 namespace MoAI.Wiki.TextEmbeddingGenerations;
 
 [InjectOnScoped(ServiceKey = AiProvider.OpenAI)]
 public class OpenAiTextEmbeddingGeneration : ITextEmbeddingGeneration
 {
-    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, WikiConfig wikiConfig)
+    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig embeddingConfig)
     {
         return kernelMemoryBuilder.WithOpenAITextEmbeddingGeneration(new OpenAIConfig
         {
@@ -24,11 +23,11 @@ public class OpenAiTextEmbeddingGeneration : ITextEmbeddingGeneration
             Endpoint = endpoint.Endpoint,
             APIKey = endpoint.Key,
 
-            MaxEmbeddingBatchSize = wikiConfig.EmbeddingBatchSize,
-            MaxRetries = wikiConfig.MaxRetries,
+            MaxEmbeddingBatchSize = embeddingConfig.EmbeddingBatchSize,
+            MaxRetries = embeddingConfig.MaxRetries,
             EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
-            EmbeddingDimensions = wikiConfig.EmbeddingDimensions,
-            EmbeddingModelTokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString()
+            EmbeddingDimensions = embeddingConfig.EmbeddingDimensions,
+            EmbeddingModelTokenizer = embeddingConfig.EmbeddingModelTokenizer.ToJsonString()
         });
     }
 }

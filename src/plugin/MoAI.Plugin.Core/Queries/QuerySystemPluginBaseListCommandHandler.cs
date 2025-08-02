@@ -14,7 +14,7 @@ using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
 using MoAI.User.Queries;
 
-namespace MaomiAI.Plugin.Core.Queries;
+namespace MoAIPlugin.Core.Queries;
 
 /// <summary>
 /// <inheritdoc cref="QuerySystemPluginBaseListCommand"/>

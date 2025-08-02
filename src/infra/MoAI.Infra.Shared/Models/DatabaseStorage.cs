@@ -19,5 +19,5 @@ public class DatabaseStorage
     /// <summary>
     /// 系统数据库连接字符串.
     /// </summary>
-    public string Database { get; init; } = string.Empty;
+    public string ConnectionString { get; init; } = string.Empty;
 }

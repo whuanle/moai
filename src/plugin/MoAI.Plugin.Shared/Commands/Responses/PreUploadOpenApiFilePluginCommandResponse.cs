@@ -6,7 +6,7 @@
 
 using MoAI.Store.Enums;
 
-namespace MaomiAI.Plugin.Shared.Commands.Responses;
+namespace MoAIPlugin.Shared.Commands.Responses;
 
 /// <summary>
 /// 导入 openapi 文件插件.

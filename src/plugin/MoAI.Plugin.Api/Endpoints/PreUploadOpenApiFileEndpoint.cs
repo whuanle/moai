@@ -5,7 +5,7 @@
 // </copyright>
 
 using FastEndpoints;
-using MaomiAI.Plugin.Shared.Commands.Responses;
+using MoAIPlugin.Shared.Commands.Responses;
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;

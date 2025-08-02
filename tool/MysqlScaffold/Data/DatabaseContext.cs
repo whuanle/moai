@@ -41,6 +41,21 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
+    /// ai模型使用量限制，只能用于系统模型.
+    /// </summary>
+    public virtual DbSet<AiModelLimitEntity> AiModelLimits { get; set; }
+
+    /// <summary>
+    /// 统计不同模型的token使用量，该表不是实时刷新的.
+    /// </summary>
+    public virtual DbSet<AiModelTokenAuditEntity> AiModelTokenAudits { get; set; }
+
+    /// <summary>
+    /// 模型使用日志,记录每次请求使用记录.
+    /// </summary>
+    public virtual DbSet<AiModelUseageLogEntity> AiModelUseageLogs { get; set; }
+
+    /// <summary>
     /// ai助手表.
     /// </summary>
     public virtual DbSet<AppAssistantChatEntity> AppAssistantChats { get; set; }
@@ -69,6 +84,16 @@ public partial class DatabaseContext : DbContext
     /// 插件函数.
     /// </summary>
     public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
+
+    /// <summary>
+    /// 插件使用量限制.
+    /// </summary>
+    public virtual DbSet<PluginLimitEntity> PluginLimits { get; set; }
+
+    /// <summary>
+    /// 插件使用日志.
+    /// </summary>
+    public virtual DbSet<PluginLogEntity> PluginLogs { get; set; }
 
     /// <summary>
     /// 提示词.

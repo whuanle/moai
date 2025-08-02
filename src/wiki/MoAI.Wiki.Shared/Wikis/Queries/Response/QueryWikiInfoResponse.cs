@@ -4,8 +4,8 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
+using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
-using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Wikis.Queries.Response;
 

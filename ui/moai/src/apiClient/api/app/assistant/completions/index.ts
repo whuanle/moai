@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface CompletionsRequestBuilder extends BaseRequestBuilder<CompletionsRequestBuilder> {
     /**
      * 对话.
-     * @param body The request body
+     * @param body 进行对话，对话时，History 每次做增量传递.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<ArrayBuffer>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface CompletionsRequestBuilder extends BaseRequestBuilder<Completion
      post(body: ProcessingAiAssistantChatCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<ArrayBuffer | undefined>;
     /**
      * 对话.
-     * @param body The request body
+     * @param body 进行对话，对话时，History 每次做增量传递.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

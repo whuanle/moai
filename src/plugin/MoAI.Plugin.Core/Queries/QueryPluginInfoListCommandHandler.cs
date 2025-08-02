@@ -11,7 +11,7 @@ using MoAI.Plugin.Models;
 using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
 
-namespace MaomiAI.Plugin.Core.Queries;
+namespace MoAIPlugin.Core.Queries;
 
 /// <summary>
 /// <inheritdoc cref="QueryPluginInfoListCommand"/>

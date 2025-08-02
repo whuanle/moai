@@ -3,6 +3,7 @@ using MediatR;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Queries;
 using MoAI.App.AIAssistant.Queries.Responses;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.AIAssistant.Endpoints;
@@ -30,6 +31,18 @@ public class QueryAiAssistantChatHistoryEndpoint : Endpoint<QueryUserViewAiAssis
     /// <inheritdoc/>
     public override async Task<QueryAiAssistantChatHistoryCommandResponse> ExecuteAsync(QueryUserViewAiAssistantChatHistoryCommand req, CancellationToken ct)
     {
+        var creatorId = await _mediator.Send(
+            new QueryAiAssistantCreatorCommand
+            {
+                ChatId = req.ChatId
+            },
+            ct);
+
+        if (creatorId != _userContext.UserId)
+        {
+            throw new BusinessException("未找到对话") { StatusCode = 404 };
+        }
+
         return await _mediator.Send(
             new QueryUserViewAiAssistantChatHistoryCommand
             {

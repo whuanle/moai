@@ -46,6 +46,7 @@ public class UpdateWebDocumentConfigCommandHandler : IRequestHandler<UpdateWebDo
         entity.LimitMaxCount = request.LimitMaxCount;
         entity.IsAutoEmbedding = request.IsAutoEmbedding;
         entity.IsWaitJs = request.IsWaitJs;
+        entity.Selector = request.Selector ?? string.Empty;
 
         _databaseContext.WikiWebConfigs.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);

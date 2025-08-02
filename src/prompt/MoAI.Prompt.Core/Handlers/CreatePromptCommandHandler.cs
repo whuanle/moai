@@ -10,7 +10,7 @@ using MoAI.Database.Entities;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
 
-namespace MaomiAI.Prompt.Core.Handlers;
+namespace MoAIPrompt.Core.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="CreatePromptCommand"/>

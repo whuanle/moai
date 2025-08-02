@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Plugin.Shared.Commands.Responses;
+using MoAIPlugin.Shared.Commands.Responses;
 using MediatR;
 
 namespace MoAI.Plugin.Commands;

@@ -66,6 +66,7 @@ public class ComplateUploadWikiDocumentCommandHandler : IRequestHandler<Complate
             WikiId = request.WikiId,
             FileName = fileEntity.FileName,
             ObjectKey = fileEntity.ObjectKey,
+            FileType = Path.GetExtension(fileEntity.FileName)
         });
 
         await _databaseContext.SaveChangesAsync();

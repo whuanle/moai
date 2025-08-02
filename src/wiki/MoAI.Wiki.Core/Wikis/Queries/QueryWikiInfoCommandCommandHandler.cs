@@ -6,10 +6,10 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AiModel.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
-using MoAI.Wiki.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;
@@ -53,6 +53,7 @@ public class QueryWikiInfoCommandCommandHandler : IRequestHandler<QueryWikiInfoC
                 IsLock = x.IsLock,
                 EmbeddingBatchSize = x.EmbeddingBatchSize,
                 MaxRetries = x.MaxRetries,
+                DocumentCount = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).Count()
             }).FirstOrDefaultAsync();
 
         if (wiki == null)

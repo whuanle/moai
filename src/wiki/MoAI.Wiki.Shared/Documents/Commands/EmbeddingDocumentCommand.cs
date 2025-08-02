@@ -5,8 +5,8 @@
 // </copyright>
 
 using MediatR;
+using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
-using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Documents.Commands;
 

@@ -5,7 +5,7 @@
 // </copyright>
 
 using FastEndpoints;
-using MaomiAI.Prompt.Api;
+using MoAIPrompt.Api;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;

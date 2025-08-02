@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-namespace MaomiAI.Prompt.Api;
+namespace MoAIPrompt.Api;
 
 internal static class ApiPrefix
 {

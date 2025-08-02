@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-namespace MaomiAI.Document.Core.Consumers.Events;
+namespace MoAIDocument.Core.Consumers.Events;
 
 /// <summary>
 /// 发送消息，后台执行任务.

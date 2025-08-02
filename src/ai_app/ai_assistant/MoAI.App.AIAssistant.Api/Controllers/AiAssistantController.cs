@@ -50,13 +50,7 @@ public class AiAssistantController : ControllerBase
         {
             ChatId = command.ChatId,
             Content = command.Content,
-            ExecutionSettings = command.ExecutionSettings,
-            ModelId = command.ModelId,
-            PluginIds = command.PluginIds,
-            Prompt = command.Prompt,
-            Title = command.Title,
             UserId = _userContext.UserId,
-            WikiId = command.WikiId
         };
 
         await foreach (var item in _mediator.CreateStream(req, cancellationToken))

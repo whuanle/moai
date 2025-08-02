@@ -11,19 +11,22 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io;
 using Maomi.MQ;
-using MaomiAI.Document.Core.Consumers.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
+using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
+using MoAIDocument.Core.Consumers.Events;
 using System;
 
 namespace MoAI.Wiki.Consumers;
@@ -39,6 +42,7 @@ public class StartWebDocumentCrawleCommandConsumer : IConsumer<StartWebDocumentC
     private readonly SystemOptions _systemOptions;
     private readonly ILogger<StartWebDocumentCrawleCommandConsumer> _logger;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StartWebDocumentCrawleCommandConsumer"/> class.
@@ -48,13 +52,15 @@ public class StartWebDocumentCrawleCommandConsumer : IConsumer<StartWebDocumentC
     /// <param name="systemOptions"></param>
     /// <param name="logger"></param>
     /// <param name="messagePublisher"></param>
-    public StartWebDocumentCrawleCommandConsumer(IMediator mediator, DatabaseContext databaseContext, SystemOptions systemOptions, ILogger<StartWebDocumentCrawleCommandConsumer> logger, IMessagePublisher messagePublisher)
+    /// <param name="serviceProvider"></param>
+    public StartWebDocumentCrawleCommandConsumer(IMediator mediator, DatabaseContext databaseContext, SystemOptions systemOptions, ILogger<StartWebDocumentCrawleCommandConsumer> logger, IMessagePublisher messagePublisher, IServiceProvider serviceProvider)
     {
         _mediator = mediator;
         _databaseContext = databaseContext;
         _systemOptions = systemOptions;
         _logger = logger;
         _messagePublisher = messagePublisher;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc/>
@@ -175,8 +181,6 @@ public class StartWebDocumentCrawleCommandConsumer : IConsumer<StartWebDocumentC
          爬取完成
          */
 
-        // 保存文档、向量化
-
         if (string.IsNullOrEmpty(wikiWebConfig.LimitAddress) || currentUrl.ToString().StartsWith(wikiWebConfig.LimitAddress, StringComparison.CurrentCultureIgnoreCase))
         {
             await SaveWebDocumentAsync(wikiWebConfig, webCrawleTaskEntity, currentUrl, document);
@@ -234,6 +238,34 @@ public class StartWebDocumentCrawleCommandConsumer : IConsumer<StartWebDocumentC
         // 将文档存储为文件
         var filePath = Path.Combine(Path.GetTempPath(), DateTimeOffset.Now.ToUnixTimeMilliseconds() + ".html");
         using TextWriter writer = new StreamWriter(filePath);
+
+        // 对页面内容进行筛选
+        if (!string.IsNullOrEmpty(wikiWebConfig.Selector))
+        {
+            var selectedElements = document.QuerySelectorAll(".content");
+
+            // 复用原网页的 head，替换 body 内容
+            var newDocument = document.Clone() as IHtmlDocument;
+
+            if (newDocument != null)
+            {
+                var newBody = newDocument.Body;
+
+                if (newBody != null)
+                {
+                    newBody.InnerHtml = string.Empty;
+
+                    foreach (var element in selectedElements)
+                    {
+                        var clonedElement = element.Clone() as IElement;
+                        newBody.AppendChild(clonedElement!);
+                    }
+
+                    document = newDocument;
+                }
+            }
+        }
+
         await document.ToHtmlAsync(writer);
         await writer.FlushAsync();
         await writer.DisposeAsync();
@@ -335,17 +367,22 @@ public class StartWebDocumentCrawleCommandConsumer : IConsumer<StartWebDocumentC
             await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => documentIds.Contains(x.Id)));
         }
 
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+        if (memoryDb == null)
+        {
+            throw new BusinessException("不支持的文档数据库");
+        }
+
         // 删除知识库文档
         // 构建客户端
         var memoryBuilder = new KernelMemoryBuilder()
             .WithSimpleFileStorage(Path.GetTempPath());
+
+        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
+
         var memoryClient = memoryBuilder
             .WithoutTextGenerator()
             .WithoutEmbeddingGenerator()
-            .WithPostgresMemoryDb(new PostgresConfig
-            {
-                ConnectionString = _systemOptions.Wiki.Database,
-            })
             .Build();
 
         // 删除知识库文档

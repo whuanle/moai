@@ -59,4 +59,9 @@ public class UpdateWebDocumentConfigCommand : IRequest<EmptyCommandResponse>
     /// 等待js加载完成.
     /// </summary>
     public bool IsWaitJs { get; set; }
+
+    /// <summary>
+    /// 选择器，筛选页面的表达式，例如 ".content".
+    /// </summary>
+    public string Selector { get; set; } = default!;
 }

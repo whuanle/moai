@@ -59,7 +59,14 @@ public class UpdateWikiConfigEndpoint : Endpoint<UpdateWikiConfigCommand, EmptyC
             throw new BusinessException("未找到模型") { StatusCode = 404 };
         }
 
-        if (aiModelCreator.IsSystem && aiModelCreator.IsPublic == false)
+        if (aiModelCreator.IsSystem)
+        {
+            if (aiModelCreator.IsPublic == false)
+            {
+                throw new BusinessException("未找到模型.") { StatusCode = 404 };
+            }
+        }
+        else if (aiModelCreator.CreatorId != _userContext.UserId)
         {
             throw new BusinessException("未找到模型.") { StatusCode = 404 };
         }

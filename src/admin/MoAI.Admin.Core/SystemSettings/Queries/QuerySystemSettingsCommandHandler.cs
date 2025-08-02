@@ -45,7 +45,7 @@ public class QuerySystemSettingsCommandHandler : IRequestHandler<QuerySystemSett
             Description = x.Description ?? string.Empty,
         }).ToArrayAsync();
 
-        foreach (var item in ISystemSettingProvider.Keys)
+        foreach (var item in ISystemSettingProvider.Keys.Where(x => x.IsEdit == true))
         {
             var result = data.FirstOrDefault(x => x.Key == item.Key);
             if (result != null)

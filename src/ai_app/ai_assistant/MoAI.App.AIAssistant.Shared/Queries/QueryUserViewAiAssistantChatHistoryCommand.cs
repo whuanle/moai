@@ -18,4 +18,9 @@ public class QueryUserViewAiAssistantChatHistoryCommand : IRequest<QueryAiAssist
     /// 对话 id.
     /// </summary>
     public Guid ChatId { get; init; } = default!;
+
+    /// <summary>
+    /// 不包含历史记录，只查基础信息.
+    /// </summary>
+    public bool IsBaseInfo { get; init; } = default!;
 }

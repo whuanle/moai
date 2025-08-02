@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Plugin.Core.Queries;
+using MoAIPlugin.Core.Queries;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;

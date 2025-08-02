@@ -37,6 +37,11 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("'[]'")
             .HasComment("对话影响参数")
             .HasColumnName("execution_settings");
+        entity.Property(e => e.Avatar)
+            .HasMaxLength(10)
+            .HasDefaultValueSql("''")
+            .HasComment("ai头像")
+            .HasColumnName("avatar");
         entity.Property(e => e.InputTokens)
             .HasComment("输入token统计")
             .HasColumnType("int(11)")
@@ -59,7 +64,7 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("要使用的插件id")
             .HasColumnName("plugin_ids");
         entity.Property(e => e.Prompt)
-            .HasMaxLength(20)
+            .HasMaxLength(2000)
             .HasDefaultValueSql("''")
             .HasComment("提示词")
             .HasColumnName("prompt");

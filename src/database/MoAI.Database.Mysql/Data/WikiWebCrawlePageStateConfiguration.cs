@@ -36,6 +36,11 @@ public partial class WikiWebCrawlePageStateConfiguration : IEntityTypeConfigurat
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.Message)
+            .HasMaxLength(500)
+            .HasDefaultValueSql("''")
+            .HasComment("信息")
+            .HasColumnName("message");
         entity.Property(e => e.State)
             .HasComment("爬取状态")
             .HasColumnType("int(11)")
@@ -54,10 +59,6 @@ public partial class WikiWebCrawlePageStateConfiguration : IEntityTypeConfigurat
             .HasMaxLength(1000)
             .HasComment("正在爬取的地址")
             .HasColumnName("url");
-        entity.Property(e => e.Message)
-    .HasMaxLength(5000)
-    .HasComment("正在爬取的地址")
-    .HasColumnName("message");
         entity.Property(e => e.WikiId)
             .HasComment("知识库id")
             .HasColumnType("int(11)")

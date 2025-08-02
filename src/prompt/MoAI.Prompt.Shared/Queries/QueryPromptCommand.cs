@@ -4,10 +4,10 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Prompt.Models;
+using MoAIPrompt.Models;
 using MediatR;
 
-namespace MaomiAI.Prompt.Queries;
+namespace MoAIPrompt.Queries;
 
 /// <summary>
 /// 获取提示词.

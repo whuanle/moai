@@ -19,7 +19,7 @@ using MoAI.Storage.Queries;
 using MoAI.Store.Enums;
 using System.Transactions;
 
-namespace MaomiAI.Plugin.Core.Commands;
+namespace MoAIPlugin.Core.Commands;
 
 /// <summary>
 /// 完成 openapi 文件上传，并拆解生成到数据库.

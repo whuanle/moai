@@ -122,7 +122,7 @@
   box-shadow: none;
   background: #fff;
   border-top: 1px solid #f0f0f0;
-  min-height: 140px;
+  min-height: 280px;
 }
 
 .chat-input-container .ant-card-body {
@@ -156,29 +156,31 @@
 
 /* 聊天输入区域样式 */
 .lobe-chat-input-area {
-  padding: 16px 24px;
+  padding: 12px 24px;
   background: #fff;
   flex: 1;
   border-radius: 0;
-  min-height: 120px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
 }
 
 .lobe-chat-input-area__input {
-  min-height: 80px;
+  min-height: 100px;
   flex: 1;
 }
 
 .lobe-chat-input-area__send {
-  margin-top: 8px;
+  margin-top: 4px;
   flex-shrink: 0;
 }
 
 .lobe-chat-send-button {
-  margin-top: 8px;
+  margin-top: 4px;
   flex-shrink: 0;
 }
+
+
 
 /* 空状态样式 */
 .empty-state {
@@ -324,5 +326,269 @@
   }
   100% {
     transform: scale(1);
+  }
+}
+
+/* 助手设定抽屉样式 */
+.ant-drawer-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.ant-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-drawer-body {
+  padding: 24px;
+}
+
+.ant-drawer-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+/* 助手设定表单样式 */
+.assistant-prompt-section {
+  margin-bottom: 24px;
+}
+
+.assistant-prompt-section .ant-typography {
+  margin-bottom: 8px;
+}
+
+.assistant-prompt-section .ant-input {
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.assistant-prompt-section .ant-input:focus,
+.assistant-prompt-section .ant-input-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 助手设定按钮样式 */
+.assistant-settings-btn {
+  transition: all 0.3s ease;
+}
+
+.assistant-settings-btn:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+/* 抽屉内容区域样式 */
+.drawer-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-content .ant-space {
+  flex: 1;
+}
+
+/* 文本域样式优化 */
+.ant-input-textarea {
+  border-radius: 8px;
+}
+
+.ant-input-textarea .ant-input {
+  border-radius: 8px;
+  min-height: 140px;
+  resize: none;
+}
+
+/* 抽屉标题图标样式 */
+.drawer-title-icon {
+  color: #1890ff;
+  margin-right: 8px;
+}
+
+/* 右侧助手设定面板样式 */
+.assistant-settings-sider {
+  background: #fff;
+  border-left: 1px solid #f0f0f0;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.06);
+  height: 100%;
+  overflow: hidden;
+}
+
+.settings-card {
+  height: 100%;
+  border: none;
+  box-shadow: none;
+}
+
+.settings-card .ant-card-body {
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+/* 助手设定内容样式 */
+.settings-card .ant-space {
+  flex: 1;
+}
+
+.settings-card .ant-typography {
+  margin-bottom: 8px;
+}
+
+.settings-card .ant-input-textarea {
+  border-radius: 8px;
+}
+
+.settings-card .ant-input-textarea .ant-input {
+  border-radius: 8px;
+  min-height: 140px;
+  resize: none;
+}
+
+/* 保存按钮样式 */
+.settings-card .ant-btn-primary {
+  margin-top: auto;
+  border-radius: 8px;
+  height: 40px;
+  font-weight: 500;
+}
+
+/* 响应式设计 - 右侧面板 */
+@media (max-width: 1200px) {
+  .assistant-settings-sider {
+    width: 300px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .assistant-settings-sider {
+    width: 100% !important;
+    max-width: 350px;
+  }
+}
+
+/* Markdown 显示区域样式 */
+.prompt-markdown-container {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 120px;
+  max-height: 200px;
+  overflow: auto;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.prompt-markdown-container:hover {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.prompt-markdown-container .lobe-markdown {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.prompt-markdown-container .lobe-markdown h1,
+.prompt-markdown-container .lobe-markdown h2,
+.prompt-markdown-container .lobe-markdown h3,
+.prompt-markdown-container .lobe-markdown h4,
+.prompt-markdown-container .lobe-markdown h5,
+.prompt-markdown-container .lobe-markdown h6 {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.prompt-markdown-container .lobe-markdown p {
+  margin-bottom: 8px;
+}
+
+.prompt-markdown-container .lobe-markdown code {
+  background-color: #f0f0f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.prompt-markdown-container .lobe-markdown pre {
+  background-color: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+/* 编辑模态窗口样式 */
+.prompt-edit-modal .ant-modal-body {
+  padding: 24px;
+  height: 70vh;
+  overflow: auto;
+}
+
+.prompt-edit-modal .ant-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.prompt-preview-container {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fafafa;
+  height: 60vh;
+  overflow: auto;
+  margin-top: 16px;
+}
+
+/* CodeEditor 样式优化 */
+.prompt-edit-modal .lobe-code-editor {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.prompt-edit-modal .lobe-code-editor .monaco-editor {
+  border-radius: 8px;
+  background-color: #f5f5f5;
+}
+
+.prompt-edit-modal .lobe-code-editor .monaco-editor .monaco-editor-background {
+  background-color: #f5f5f5;
+}
+
+.prompt-edit-modal .lobe-code-editor .monaco-editor .monaco-editor-margin {
+  background-color: #f0f0f0;
+}
+
+/* 编辑状态切换按钮样式 */
+.prompt-edit-modal .ant-modal-footer .ant-btn {
+  margin-left: 8px;
+}
+
+.prompt-edit-modal .ant-modal-footer .ant-btn:first-child {
+  margin-left: 0;
+}
+
+/* 响应式设计 - 编辑模态窗口 */
+@media (max-width: 768px) {
+  .prompt-edit-modal .ant-modal {
+    width: 95vw !important;
+    max-width: none;
+  }
+  
+  .prompt-edit-modal .ant-modal-body {
+    height: 60vh;
+  }
+  
+  .prompt-preview-container {
+    height: 50vh;
   }
 } 

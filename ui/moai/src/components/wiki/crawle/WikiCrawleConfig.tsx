@@ -14,6 +14,8 @@ import {
   Alert,
   Row,
   Col,
+  Modal,
+  Select,
 } from "antd";
 import { PlayCircleOutlined } from "@ant-design/icons";
 import { GetApiClient } from "../../ServiceClient";
@@ -21,6 +23,7 @@ import {
   QueryWikiConfigInfoCommandResponse,
   UpdateWebDocumentConfigCommand,
   StartWebDocumentCrawleCommand,
+  EmbeddingTokenizer,
 } from "../../../apiClient/models";
 import { proxyRequestError } from "../../../helper/RequestError";
 
@@ -34,17 +37,27 @@ interface CrawleConfigFormData {
   isAutoEmbedding: boolean;
   isCrawlOther: boolean;
   isWaitJs: boolean;
+  selector: string;
+}
+
+interface CrawleParametersFormData {
+  splitMethod: string;
+  maxTokensPerParagraph: number;
+  overlappingTokens: number;
+  tokenizer: EmbeddingTokenizer;
 }
 
 export default function WikiCrawleConfig() {
   const { id: wikiId, crawleId: wikiWebConfigId } = useParams();
   const [form] = Form.useForm();
+  const [parametersForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [startingCrawle, setStartingCrawle] = useState(false);
   const [configData, setConfigData] =
     useState<QueryWikiConfigInfoCommandResponse | null>(null);
+  const [parametersModalVisible, setParametersModalVisible] = useState(false);
 
   const apiClient = GetApiClient();
 
@@ -75,6 +88,7 @@ export default function WikiCrawleConfig() {
           isAutoEmbedding: response.isAutoEmbedding || false,
           isCrawlOther: response.isCrawlOther || false,
           isWaitJs: response.isWaitJs || false,
+          selector: response.selector || "",
         });
       }
     } catch (error) {
@@ -99,6 +113,7 @@ export default function WikiCrawleConfig() {
         isAutoEmbedding: values.isAutoEmbedding,
         isCrawlOther: values.isCrawlOther,
         isWaitJs: values.isWaitJs,
+        selector: values.selector,
       };
 
       await apiClient.api.wiki.web.update_crawle_config.post(updateCommand);
@@ -114,13 +129,31 @@ export default function WikiCrawleConfig() {
     }
   };
 
-  const handleStartCrawle = async () => {
+  const handleStartCrawle = () => {
+    // 显示参数配置模态窗口
+    setParametersModalVisible(true);
+    // 设置参数表单默认值
+    parametersForm.setFieldsValue({
+      splitMethod: "",
+      maxTokensPerParagraph: 1000,
+      overlappingTokens: 100,
+      tokenizer: "cl100k",
+    });
+  };
+
+  const handleParametersSubmit = async (values: CrawleParametersFormData) => {
     try {
       setStartingCrawle(true);
+      setParametersModalVisible(false);
 
+      const formValues = form.getFieldsValue();
       const startCommand: StartWebDocumentCrawleCommand = {
         webConfigId: parseInt(wikiWebConfigId || "0"),
         wikiId: parseInt(wikiId || "0"),
+        splitMethod: values.splitMethod || "",
+        maxTokensPerParagraph: values.maxTokensPerParagraph,
+        overlappingTokens: values.overlappingTokens,
+        tokenizer: values.tokenizer,
       };
 
       const response = await apiClient.api.wiki.web.lanuch_crawle.post(startCommand);
@@ -136,6 +169,11 @@ export default function WikiCrawleConfig() {
     }
   };
 
+  const handleParametersCancel = () => {
+    setParametersModalVisible(false);
+    parametersForm.resetFields();
+  };
+
   const handleReset = () => {
     if (configData) {
       form.setFieldsValue({
@@ -146,6 +184,7 @@ export default function WikiCrawleConfig() {
         isAutoEmbedding: configData.isAutoEmbedding || false,
         isCrawlOther: configData.isCrawlOther || false,
         isWaitJs: configData.isWaitJs || false,
+        selector: configData.selector || "",
       });
     }
   };
@@ -209,6 +248,7 @@ export default function WikiCrawleConfig() {
             isAutoEmbedding: false,
             isCrawlOther: false,
             isWaitJs: false,
+            selector: "",
           }}
         >
           <Form.Item
@@ -236,6 +276,14 @@ export default function WikiCrawleConfig() {
             extra="限制自动爬取的网页都在该路径之下，必须与页面地址具有相同域名"
           >
             <Input placeholder="可选：限制爬取范围" />
+          </Form.Item>
+
+          <Form.Item
+            label="页面筛选规则"
+            name="selector"
+            extra="CSS选择器规则，用于提取页面中的特定内容。例如：.content, #main, article 等。留空则提取整个页面内容"
+          >
+            <Input placeholder="可选：CSS选择器，如 .content, #main, article" />
           </Form.Item>
 
           <Form.Item
@@ -288,6 +336,189 @@ export default function WikiCrawleConfig() {
           </Form.Item>
         </Form>
       </Card>
+
+      {/* 启动爬虫参数配置模态窗口 */}
+      <Modal
+        title="配置爬虫参数"
+        open={parametersModalVisible}
+        onCancel={handleParametersCancel}
+        footer={null}
+        width={600}
+        destroyOnClose
+      >
+        <Form
+          form={parametersForm}
+          layout="vertical"
+          onFinish={handleParametersSubmit}
+          initialValues={{
+            splitMethod: "",
+            maxTokensPerParagraph: 1000,
+            overlappingTokens: 100,
+            tokenizer: "cl100k",
+          }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    marginBottom: "8px",
+                  }}
+                >
+                  分词器
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginBottom: "8px",
+                    color: "#8c8c8c",
+                  }}
+                >
+                  本地检测文档token数量的算法
+                </div>
+                <Form.Item
+                  name="tokenizer"
+                  rules={[{ required: true, message: "请选择分词器" }]}
+                >
+                  <Select
+                    placeholder="请选择分词器"
+                    options={[
+                      { label: "p50k", value: "p50k" },
+                      { label: "cl100k", value: "cl100k" },
+                      { label: "o200k", value: "o200k" },
+                    ]}
+                  />
+                </Form.Item>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    marginBottom: "8px",
+                  }}
+                >
+                  每段最大Token数
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginBottom: "8px",
+                    color: "#8c8c8c",
+                  }}
+                >
+                  当对文档进行分段时，每个分段通常包含一个段落。此参数控制每个段落的最大token数量
+                </div>
+                <Form.Item
+                  name="maxTokensPerParagraph"
+                  rules={[
+                    { required: true, message: "请输入每段最大Token数" },
+                  ]}
+                >
+                  <InputNumber
+                    min={1}
+                    max={4000}
+                    style={{ width: "100%" }}
+                    placeholder="请输入每段最大Token数"
+                  />
+                </Form.Item>
+              </div>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    marginBottom: "8px",
+                  }}
+                >
+                  重叠Token数
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginBottom: "8px",
+                    color: "#8c8c8c",
+                  }}
+                >
+                  分段之间的重叠token数量，用于保持上下文的连贯性
+                </div>
+                <Form.Item
+                  name="overlappingTokens"
+                  rules={[{ required: true, message: "请输入重叠Token数" }]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={1000}
+                    style={{ width: "100%" }}
+                    placeholder="请输入重叠Token数"
+                  />
+                </Form.Item>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    marginBottom: "8px",
+                  }}
+                >
+                  文本分割方法
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginBottom: "8px",
+                    color: "#8c8c8c",
+                  }}
+                >
+                  文本分割方法，暂时不支持使用
+                </div>
+                <Form.Item name="splitMethod">
+                  <Input
+                    placeholder="可选：文本分割方法"
+                    disabled
+                  />
+                </Form.Item>
+              </div>
+            </Col>
+          </Row>
+
+          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+              <Button onClick={handleParametersCancel}>
+                取消
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={startingCrawle}
+                icon={<PlayCircleOutlined />}
+              >
+                启动爬虫
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+
+        <Alert
+          message="参数说明"
+          description="这些参数用于控制爬取内容的文本处理和向量化过程，将影响后续的搜索和匹配效果。"
+          type="info"
+          showIcon
+          style={{ marginTop: 16 }}
+        />
+      </Modal>
     </>
   );
 }

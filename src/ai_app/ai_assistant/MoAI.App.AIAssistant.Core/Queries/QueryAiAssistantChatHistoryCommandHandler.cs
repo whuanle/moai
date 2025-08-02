@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel.ChatCompletion;
+using MoAI.App.AIAssistant.Models;
 using MoAI.App.AIAssistant.Queries.Responses;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -47,26 +48,52 @@ public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryUs
             throw new BusinessException("未找到对话记录") { StatusCode = 404 };
         }
 
+        if (request.IsBaseInfo)
+        {
+            return new QueryAiAssistantChatHistoryCommandResponse
+            {
+                ChatId = chatEntity.Id,
+                Title = chatEntity.Title,
+                CreateTime = chatEntity.CreateTime,
+                UpdateTime = chatEntity.UpdateTime,
+                ModelId = chatEntity.ModelId,
+                Prompt = chatEntity.Prompt,
+                WikiId = chatEntity.WikiId,
+                PluginIds = chatEntity.PluginIds.JsonToObject<IReadOnlyCollection<int>>()!,
+                ExecutionSettings = chatEntity.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>()!,
+                ChatHistory = Array.Empty<ChatContentItem>(),
+                Avatar = chatEntity.Avatar,
+                InputTokens = chatEntity.InputTokens,
+                OutTokens = chatEntity.OutTokens,
+                TotalTokens = chatEntity.TotalTokens
+            };
+        }
+
         var historyEntities = await _databaseContext.AppAssistantChatHistories.Where(x => x.ChatId == request.ChatId)
-            .OrderByDescending(x => x.CreateTime)
+            .OrderBy(x => x.CreateTime)
             .ToArrayAsync(cancellationToken);
 
-        ChatHistory chatMessageContents = new ChatHistory();
-
-        if (!string.IsNullOrEmpty(chatEntity.Prompt))
-        {
-            chatMessageContents.AddSystemMessage(chatEntity.Prompt);
-        }
+        List<ChatContentItem> chatMessageContents = new();
 
         foreach (var item in historyEntities)
         {
             if (item.Role == AuthorRole.User.Label)
             {
-                chatMessageContents.AddUserMessage(item.Content);
+                chatMessageContents.Add(new ChatContentItem
+                {
+                    RecordId = item.Id,
+                    AuthorName = AuthorRole.User.Label,
+                    Content = item.Content,
+                });
             }
             else if (item.Role == AuthorRole.Assistant.Label)
             {
-                chatMessageContents.AddAssistantMessage(item.Content);
+                chatMessageContents.Add(new ChatContentItem
+                {
+                    RecordId = item.Id,
+                    AuthorName = AuthorRole.Assistant.Label,
+                    Content = item.Content,
+                });
             }
             else
             {
@@ -79,13 +106,17 @@ public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryUs
             ChatId = chatEntity.Id,
             Title = chatEntity.Title,
             CreateTime = chatEntity.CreateTime,
-            UpdateTime = historyEntities.LastOrDefault()?.CreateTime ?? chatEntity.UpdateTime,
+            UpdateTime = chatEntity.UpdateTime,
             ModelId = chatEntity.ModelId,
             Prompt = chatEntity.Prompt,
             WikiId = chatEntity.WikiId,
             PluginIds = chatEntity.PluginIds.JsonToObject<IReadOnlyCollection<int>>()!,
             ExecutionSettings = chatEntity.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>()!,
-            ChatHistory = chatMessageContents
+            ChatHistory = chatMessageContents,
+            Avatar = chatEntity.Avatar,
+            InputTokens = chatEntity.InputTokens,
+            OutTokens = chatEntity.OutTokens,
+            TotalTokens = chatEntity.TotalTokens
         };
 
         return response;

@@ -17,7 +17,7 @@ using MoAI.Plugin.Models;
 using ModelContextProtocol.Client;
 using System.Transactions;
 
-namespace MaomiAI.Plugin.Core.Handlers;
+namespace MoAIPlugin.Core.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="UpdateMcpServerPluginCommand"/>
@@ -44,7 +44,7 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
     public async Task<EmptyCommandResponse> Handle(UpdateMcpServerPluginCommand request, CancellationToken cancellationToken)
     {
         var pluginEntity = await _databaseContext.Plugins
-            .FirstOrDefaultAsync(x => x.Id == request.PluginId && x.Type == (int)PluginType.Mcp, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.PluginId && x.Type == (int)PluginType.MCP, cancellationToken);
 
         if (pluginEntity == null)
         {

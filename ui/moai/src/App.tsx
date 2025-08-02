@@ -62,6 +62,7 @@ import WikiUser from "./components/wiki/WikiUser";
 import PluginList from "./components/plugin/PluginList";
 import SystemAIModel from "./components/admin/SystemAiModel";
 import SystemPluginList from "./components/admin/PluginList";
+import SystemSettings from "./components/admin/SystemSettings";
 import PromptLayout from "./components/prompt/PromptLayout";
 import PromptList from "./components/prompt/PromptList";
 import PromptContent from "./components/prompt/PromptContent";
@@ -85,6 +86,7 @@ function App() {
   const location = useLocation();
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const serverInfo = useAppStore.getState().getServerInfo();
   const userDetailInfo = useAppStore((state) => state.userDetailInfo);
 
@@ -102,6 +104,9 @@ function App() {
     }
     if (path.startsWith("/app/admin/plugin")) {
       return "admin.plugin";
+    }
+    if (path.startsWith("/app/admin/settings")) {
+      return "admin.settings";
     }
     if (path.startsWith("/app/admin")) {
       return "admin";
@@ -250,7 +255,7 @@ function App() {
       },
     ];
 
-    // 只有管理员才能看到管理面板
+            // 只有管理员才能看到管理面板
     if (isAdmin) {
       baseItems.push({
         key: "admin",
@@ -277,6 +282,11 @@ function App() {
             icon: <AppstoreOutlined />,
             label: <Link to="/app/admin/plugin">插件</Link>,
           },
+          {
+            key: "admin.settings",
+            icon: <SettingOutlined />,
+            label: <Link to="/app/admin/settings">系统设置</Link>,
+          },
         ],
       });
     }
@@ -288,55 +298,64 @@ function App() {
     <>
       {contextHolder}
       <Layout className="layout">
-        <Layout.Header
-          className="header"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            backgroundColor: "white",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Image src="/logo.png" width={60} height={60} />
-            <p style={{ margin: 0, marginLeft: 10 }}>MaomiAI</p>
-          </div>
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            placement="bottomRight"
-            arrow
+        {headerVisible && (
+          <Layout.Header
+            className="header"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: "white",
+            }}
           >
-            <div
-              style={{
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                padding: "4px 8px",
-                borderRadius: "6px",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#f5f5f5")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              <Avatar
-                size={40}
-                src={getAvatarUrl(userDetailInfo?.avatarPath)}
-                icon={<UserOutlined />}
-                style={{ marginRight: 8 }}
-              />
-              <span style={{ marginRight: 4, color: "#333" }}>
-                {userDetailInfo?.nickName || userDetailInfo?.userName || "用户"}
-              </span>
-              <DownOutlined style={{ fontSize: "12px", color: "#666" }} />
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Image src="/logo.png" width={60} height={60} />
+              <p style={{ margin: 0, marginLeft: 10 }}>MoAI</p>
             </div>
-          </Dropdown>
-        </Layout.Header>
+            <Dropdown
+              menu={{ items: userMenuItems }}
+              placement="bottomRight"
+              arrow
+            >
+              <div
+                style={{
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <Avatar
+                  size={40}
+                  src={getAvatarUrl(userDetailInfo?.avatarPath)}
+                  icon={<UserOutlined />}
+                  style={{ marginRight: 8 }}
+                />
+                <span style={{ marginRight: 4, color: "#333" }}>
+                  {userDetailInfo?.nickName || userDetailInfo?.userName || "用户"}
+                </span>
+                <DownOutlined style={{ fontSize: "12px", color: "#666" }} />
+              </div>
+            </Dropdown>
+          </Layout.Header>
+        )}
         <Layout>
-          <Sider width={200} className="sider" collapsible>
+          <Sider 
+            width={200} 
+            className="sider" 
+            collapsible
+            onCollapse={(collapsed) => {
+              setHeaderVisible(!collapsed);
+            }}
+          >
             <Menu
               mode="inline"
               className="menu-inline"
@@ -356,6 +375,7 @@ function App() {
                   <Route path="usermanager" element={<UserManager />} />
                   <Route path="aimodel" element={<SystemAIModel />} />
                   <Route path="plugin" element={<SystemPluginList />} />
+                  <Route path="settings" element={<SystemSettings />} />
                 </Route>
                 <Route path="user">
                   <Route index element={<Navigate to="usersetting" replace />} />
@@ -398,7 +418,7 @@ function App() {
                 </Route>
               </Routes>
             </Content>
-            <Footer className="footer">MaomiAI ©2025</Footer>
+            {/* <Footer className="footer">MaomiAI ©2025</Footer> */}
           </Layout>
         </Layout>
       </Layout>

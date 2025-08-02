@@ -6,7 +6,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace MoAI.Wiki.Models;
+namespace MoAI.AiModel.Models;
 
 public enum EmbeddingTokenizer
 {

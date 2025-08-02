@@ -4,9 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Prompt.Models;
+using MoAIPrompt.Models;
 
-namespace MaomiAI.Prompt.Queries.Responses;
+namespace MoAIPrompt.Queries.Responses;
 
 /// <summary>
 /// 提示词列表.

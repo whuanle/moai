@@ -6,7 +6,7 @@
 
 using Maomi;
 using Maomi.I18n;
-using MaomiAI.Prompt.Core;
+using MoAIPrompt.Core;
 using MoAI.Admin;
 using MoAI.AI;
 using MoAI.AiModel.Core;

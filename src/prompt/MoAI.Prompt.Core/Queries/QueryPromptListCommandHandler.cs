@@ -4,9 +4,9 @@
 // Github link: https://github.com/whuanle/moai
 // </copyright>
 
-using MaomiAI.Prompt.Models;
-using MaomiAI.Prompt.Queries;
-using MaomiAI.Prompt.Queries.Responses;
+using MoAIPrompt.Models;
+using MoAIPrompt.Queries;
+using MoAIPrompt.Queries.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;

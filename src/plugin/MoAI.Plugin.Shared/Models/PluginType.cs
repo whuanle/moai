@@ -14,20 +14,26 @@ namespace MoAI.Plugin.Models;
 public enum PluginType
 {
     /// <summary>
-    /// OpenAPi 插件.
+    /// 系统插件.
+    /// </summary>
+    [JsonPropertyName("system")]
+    System,
+
+    /// <summary>
+    /// MCP.
+    /// </summary>
+    [JsonPropertyName("mcp")]
+    MCP,
+
+    /// <summary>
+    /// OpenAPI.
     /// </summary>
     [JsonPropertyName("openapi")]
     OpenApi,
 
     /// <summary>
-    /// mcp 插件.
+    /// 知识库
     /// </summary>
-    [JsonPropertyName("mcp")]
-    Mcp,
-
-    /// <summary>
-    /// 系统插件.
-    /// </summary>
-    [JsonPropertyName("system")]
-    System,
+    [JsonPropertyName("wiki")]
+    Wiki
 }

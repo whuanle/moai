@@ -1,4 +1,4 @@
-﻿// <copyright file="SystemSettingKeys.cs" company="MoAI">
+﻿// <copyright file="ISystemSettingProvider.cs" company="MoAI">
 // Copyright (c) MoAI. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/moai
@@ -26,31 +26,34 @@ public interface ISystemSettingProvider
     /// <summary>
     /// 最大上传文件大小，单位为字节，默认 100MB.
     /// </summary>
-    public static readonly SystemSettingKey MaxUploadFileSize = new SystemSettingKey
+    public static readonly SystemSettingKey SystemName = new SystemSettingKey
     {
-        Key = "max_upload_file_size",
-        Value = (1024 * 1024 * 100).ToJsonString(),
-        Description = "超级管理员"
+        Key = "system_name",
+        Value = "MoAI",
+        IsEdit = true,
+        Description = "系统名字"
     };
 
     /// <summary>
     /// 最大上传文件大小，单位为字节，默认 100MB.
     /// </summary>
+    public static readonly SystemSettingKey MaxUploadFileSize = new SystemSettingKey
+    {
+        Key = "max_upload_file_size",
+        Value = (1024 * 1024 * 100).ToJsonString(),
+        IsEdit = true,
+        Description = "最大上传文件大小，单位为字节，默认 100MB"
+    };
+
+    /// <summary>
+    /// 禁止注册.
+    /// </summary>
     public static readonly SystemSettingKey DisableRegister = new SystemSettingKey
     {
         Key = "disable_register",
         Value = false.ToJsonString(),
-        Description = "超级管理员"
-    };
-
-    /// <summary>
-    /// AI 对话中用户最大聊天记录数量.
-    /// </summary>
-    public static readonly SystemSettingKey UserMaxAIHistoryCount = new SystemSettingKey
-    {
-        Key = "user_max_ai_history_count",
-        Value = 10.ToJsonString(),
-        Description = "超级管理员"
+        IsEdit = true,
+        Description = "禁用注册功能"
     };
 
     /// <summary>
@@ -59,9 +62,9 @@ public interface ISystemSettingProvider
     public static readonly IReadOnlyCollection<SystemSettingKey> Keys = new List<SystemSettingKey>
         {
             Root,
+            SystemName,
             MaxUploadFileSize,
-            DisableRegister,
-            UserMaxAIHistoryCount
+            DisableRegister
         };
 
     /// <summary>

@@ -9,12 +9,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
+using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Services;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Documents.Queries;
@@ -55,6 +54,13 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
         var memoryBuilder = new KernelMemoryBuilder().WithSimpleFileStorage(Path.GetTempPath());
 
         var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(aiEndpoint.Provider);
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+        if (memoryDb == null)
+        {
+            throw new BusinessException("不支持的文档数据库");
+        }
+
+        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
 
         if (textEmbeddingGeneration == null)
         {
@@ -64,10 +70,6 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
         textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
 
         var memoryClient = memoryBuilder.WithoutTextGenerator()
-            .WithPostgresMemoryDb(new PostgresConfig
-            {
-                ConnectionString = _systemOptions.Wiki.Database,
-            })
             .Build();
 
         MemoryFilter filter = new MemoryFilter();
@@ -102,13 +104,13 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
         };
     }
 
-    private async Task<(WikiConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
+    private async Task<(EmbeddingConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
     {
         var result = await _databaseContext.Wikis
         .Where(x => x.Id == wikiId)
         .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
         {
-            WikiConfig = new WikiConfig
+            WikiConfig = new EmbeddingConfig
             {
                 EmbeddingDimensions = a.EmbeddingDimensions,
                 EmbeddingBatchSize = a.EmbeddingBatchSize,

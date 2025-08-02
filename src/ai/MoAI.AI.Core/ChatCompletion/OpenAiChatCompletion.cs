@@ -20,6 +20,6 @@ public class OpenAiChatCompletion : IChatCompletionConfigurator
             apiKey: endpoint.Key,
             endpoint: new Uri(endpoint.Endpoint),
             modelId: endpoint.Name,
-            serviceId: "MaomiAI");
+            serviceId: "MoAI");
     }
 }

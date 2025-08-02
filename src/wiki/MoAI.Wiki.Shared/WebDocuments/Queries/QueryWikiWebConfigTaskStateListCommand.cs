@@ -94,6 +94,11 @@ public class WikiConfigCrawleTaskItem
     public string Message { get; set; } = default!;
 
     /// <summary>
+    /// 选择器.
+    /// </summary>
+    public string Selector { get; set; } = default!;
+
+    /// <summary>
     /// 爬取成功的页面数量.
     /// </summary>
     public int PageCount { get; set; }

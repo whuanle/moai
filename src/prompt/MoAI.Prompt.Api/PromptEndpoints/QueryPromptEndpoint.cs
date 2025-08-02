@@ -5,9 +5,9 @@
 // </copyright>
 
 using FastEndpoints;
-using MaomiAI.Prompt.Api;
-using MaomiAI.Prompt.Models;
-using MaomiAI.Prompt.Queries;
+using MoAIPrompt.Api;
+using MoAIPrompt.Models;
+using MoAIPrompt.Queries;
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Prompt.PromptEndpoints.Models;

@@ -36,17 +36,18 @@ public class DeleteAiAssistantChatCommandHandler : IRequestHandler<DeleteAiAssis
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteAiAssistantChatCommand request, CancellationToken cancellationToken)
     {
-        var chatEntityId = await _databaseContext.AppAssistantChatHistories
-            .Where(x => x.ChatId == request.ChatId && x.CreateUserId == request.UserId)
-            .Select(x => x.Id)
+        var chatEntity = await _databaseContext.AppAssistantChats
+            .Where(x => x.Id == request.ChatId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (chatEntityId == 0)
+        if (chatEntity == default)
         {
             throw new BusinessException("对话记录已不存在");
         }
 
-        await _databaseContext.SoftDeleteAsync(_databaseContext.AppAssistantChatHistories.Where(x => x.Id == chatEntityId));
+        _databaseContext.Remove(chatEntity);
+        await _databaseContext.SaveChangesAsync();
+        await _databaseContext.SoftDeleteAsync(_databaseContext.AppAssistantChatHistories.Where(x => x.ChatId == chatEntity.Id));
         return EmptyCommandResponse.Default;
     }
 }

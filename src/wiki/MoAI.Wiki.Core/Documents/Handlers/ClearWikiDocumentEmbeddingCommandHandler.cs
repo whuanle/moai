@@ -6,7 +6,9 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
+using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
@@ -23,6 +25,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
     private readonly SystemOptions _systemOptions;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClearWikiDocumentEmbeddingCommandHandler"/> class.
@@ -30,11 +33,13 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
     /// <param name="databaseContext"></param>
     /// <param name="mediator"></param>
     /// <param name="systemOptions"></param>
-    public ClearWikiDocumentEmbeddingCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions)
+    /// <param name="serviceProvider"></param>
+    public ClearWikiDocumentEmbeddingCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions, IServiceProvider serviceProvider = null)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
         _systemOptions = systemOptions;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc/>
@@ -45,14 +50,18 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
             transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
 
-        var memoryClient = new KernelMemoryBuilder()
-            .WithSimpleFileStorage(Path.GetTempPath())
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+        if (memoryDb == null)
+        {
+            throw new BusinessException("不支持的文档数据库");
+        }
+
+        IKernelMemoryBuilder memoryBuilder = new KernelMemoryBuilder();
+        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
+
+        var memoryClient = memoryBuilder.WithSimpleFileStorage(Path.GetTempPath())
             .WithoutEmbeddingGenerator()
             .WithoutTextGenerator()
-        .WithPostgresMemoryDb(new PostgresConfig
-        {
-            ConnectionString = _systemOptions.Wiki.Database,
-        })
             .Build();
 
         if (request.DocumentId != null && request.DocumentId > 0)

@@ -8,7 +8,7 @@ using MediatR;
 using MoAI.App.AIAssistant.Commands.Responses;
 using MoAI.App.AIAssistant.Models;
 
-namespace MaomiAI.Chat.Core.Handlers;
+namespace MoAIChat.Core.Handlers;
 
 /// <summary>
 /// 创建新的对话，要使用 ProcessingAiAssistantChatCommand 发起对话，此接口只用于新建第一条记录.

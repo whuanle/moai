@@ -16,7 +16,7 @@ using MoAI.Plugin.Models;
 using ModelContextProtocol.Client;
 using System.Transactions;
 
-namespace MaomiAI.Plugin.Core.Handlers;
+namespace MoAIPlugin.Core.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="ImportMcpServerPluginCommand"/>
@@ -68,7 +68,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             Server = request.ServerUrl.ToString(),
             OpenapiFileId = 0,
             Title = request.Title,
-            Type = (int)PluginType.Mcp,
+            Type = (int)PluginType.MCP,
             Headers = TextToJsonExtensions.ToJsonString(request.Header),
             Queries = TextToJsonExtensions.ToJsonString(request.Query),
             IsSystem = request.IsSystem,

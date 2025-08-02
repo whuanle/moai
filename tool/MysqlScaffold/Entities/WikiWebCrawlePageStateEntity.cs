@@ -35,6 +35,11 @@ public partial class WikiWebCrawlePageStateEntity : IFullAudited
     public int State { get; set; }
 
     /// <summary>
+    /// 信息.
+    /// </summary>
+    public string Message { get; set; } = default!;
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

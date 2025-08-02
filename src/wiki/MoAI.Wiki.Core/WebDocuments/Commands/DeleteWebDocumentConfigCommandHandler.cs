@@ -6,9 +6,12 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
+using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Infra;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using System.Transactions;
@@ -23,6 +26,7 @@ public class DeleteWebDocumentConfigCommandHandler : IRequestHandler<DeleteWebDo
     private readonly DatabaseContext _databaseContext;
     private readonly SystemOptions _systemOptions;
     private readonly IMediator _mediator;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWebDocumentConfigCommandHandler"/> class.
@@ -30,11 +34,12 @@ public class DeleteWebDocumentConfigCommandHandler : IRequestHandler<DeleteWebDo
     /// <param name="databaseContext"></param>
     /// <param name="systemOptions"></param>
     /// <param name="mediator"></param>
-    public DeleteWebDocumentConfigCommandHandler(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator)
+    public DeleteWebDocumentConfigCommandHandler(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider)
     {
         _databaseContext = databaseContext;
         _systemOptions = systemOptions;
         _mediator = mediator;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc/>
@@ -73,15 +78,20 @@ public class DeleteWebDocumentConfigCommandHandler : IRequestHandler<DeleteWebDo
         _databaseContext.WikiDocuments.RemoveRange(documents);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
+        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+        if (memoryDb == null)
+        {
+            throw new BusinessException("不支持的文档数据库");
+        }
+
+        IKernelMemoryBuilder memoryBuilder = new KernelMemoryBuilder();
+        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
+
         // 删除文档向量
-        var memoryClient = new KernelMemoryBuilder()
+        var memoryClient = memoryBuilder
             .WithSimpleFileStorage(Path.GetTempPath())
             .WithoutEmbeddingGenerator()
             .WithoutTextGenerator()
-            .WithPostgresMemoryDb(new PostgresConfig
-            {
-                ConnectionString = _systemOptions.Wiki.Database,
-            })
             .Build();
 
         foreach (var document in documents)

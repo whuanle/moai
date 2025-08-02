@@ -15,11 +15,6 @@ namespace MoAI.App.AIAssistant.Commands;
 public class DeleteAiAssistantChatCommand : IRequest<EmptyCommandResponse>
 {
     /// <summary>
-    /// 用户 id.
-    /// </summary>
-    public int UserId { get; init; }
-
-    /// <summary>
     /// 对话 id.
     /// </summary>
     public Guid ChatId { get; init; } = default!;

@@ -19,7 +19,7 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
 
         entity.ToTable("app_assistant_chat_history", tb => tb.HasComment("对话历史，不保存实际历史记录"));
 
-        entity.HasIndex(e => e.ChatId, "chat_history_pk_2").IsUnique();
+        entity.HasIndex(e => e.ChatId, "chat_history_pk_2");
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -29,7 +29,7 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("对话id")
             .HasColumnName("chat_id");
         entity.Property(e => e.CompletionsId)
-            .HasMaxLength(20)
+            .HasMaxLength(50)
             .HasComment("对话id")
             .HasColumnName("completions_id");
         entity.Property(e => e.Content)
@@ -49,10 +49,6 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.Model)
-            .HasMaxLength(20)
-            .HasComment("模型名称")
-            .HasColumnName("model");
         entity.Property(e => e.Role)
             .HasMaxLength(20)
             .HasComment("角色")
