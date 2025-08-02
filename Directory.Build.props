@@ -39,7 +39,7 @@
 		</AssemblyAttribute>
 	</ItemGroup>
 
-	<PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
 		<OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
 		<OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)</OpenApiDocumentsDirectory>
 	</PropertyGroup>
