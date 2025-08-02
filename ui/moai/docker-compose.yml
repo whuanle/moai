@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  moai-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_ServerUrl: ${VITE_ServerUrl:-http://localhost:5000}
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    # 如果需要连接后端 API，可以取消注释以下配置
+    # depends_on:
+    #   - backend
+    # networks:
+    #   - moai-network
+
+# 如果需要连接后端服务，可以取消注释以下配置
+# services:
+#   backend:
+#     image: your-backend-image:latest
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       - NODE_ENV=production
+#     networks:
+#       - moai-network
+
+# networks:
+#   moai-network:
+#     driver: bridge 

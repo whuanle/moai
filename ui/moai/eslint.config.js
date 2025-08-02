@@ -23,6 +23,9 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // 允许未使用的变量和参数（在开发过程中）
+      '@typescript-eslint/no-unused-vars': 'warn',
+      'no-unused-vars': 'off', // 关闭基础规则，使用 TypeScript 版本
     },
   },
 )

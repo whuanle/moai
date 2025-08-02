@@ -121,7 +121,7 @@ function OAuth() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const client = GetApiClient();
       await client.api.admin.oauth.deletePath.delete({ oAuthConnectionId: id });

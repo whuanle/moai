@@ -8,10 +8,10 @@ import {
   AiNotKeyEndpoint,
   AiModelType,
   AiProvider,
-  AddAiModelCommand,
-  UpdateAiModelCommand,
   ModelAbilities,
-  QueryUserAiModelListCommand
+  QueryUserAiModelListRequest,
+  AddUserAiModelRequest,
+  UpdateUserAiModelRequest,
 } from '../../apiClient/models';
 import { DEFAULT_MODEL_PROVIDER_LIST } from '../../lobechat/types/modelProviders';
 import { RsaHelper } from '../../helper/RsaHalper';
@@ -122,7 +122,7 @@ export default function AIModel() {
 
     try {
       const client = GetApiClient();
-      const requestBody: QueryUserAiModelListCommand = {
+      const requestBody: QueryUserAiModelListRequest = {
         provider: provider as AiProvider
       };
       
@@ -261,7 +261,7 @@ export default function AIModel() {
       const client = GetApiClient();
       
       // 构建请求参数
-      const requestBody: AddAiModelCommand = {
+      const requestBody: AddUserAiModelRequest = {
         name: values.name,
         title: values.title,
         provider: values.provider as AiProvider,
@@ -308,7 +308,7 @@ export default function AIModel() {
       const client = GetApiClient();
       
       // 构建请求参数
-      const requestBody: UpdateAiModelCommand = {
+      const requestBody: UpdateUserAiModelRequest = {
         aiModelId: values.aiModelId,
         name: values.name,
         title: values.title,

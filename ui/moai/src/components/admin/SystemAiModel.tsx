@@ -8,10 +8,12 @@ import {
   AiNotKeyEndpoint,
   AiModelType,
   AiProvider,
-  AddAiModelCommand,
-  UpdateAiModelCommand,
   ModelAbilities,
-  QueryUserAiModelListCommand
+  QueryUserAiModelListRequest,
+  AddUserAiModelRequest,
+  AddSystemAiModelRequest,
+  QuerySystemAiModelListCommand,
+  UpdateSystemAiModelRequest,
 } from '../../apiClient/models';
 import { DEFAULT_MODEL_PROVIDER_LIST } from '../../lobechat/types/modelProviders';
 import { RsaHelper } from '../../helper/RsaHalper';
@@ -122,7 +124,7 @@ export default function SystemAIModel() {
 
     try {
       const client = GetApiClient();
-      const requestBody: QueryUserAiModelListCommand = {
+      const requestBody: QuerySystemAiModelListCommand = {
         provider: provider as AiProvider
       };
       
@@ -265,7 +267,7 @@ export default function SystemAIModel() {
       const client = GetApiClient();
       
       // 构建请求参数
-      const requestBody: AddAiModelCommand = {
+      const requestBody: AddSystemAiModelRequest = {
         name: values.name,
         title: values.title,
         provider: values.provider as AiProvider,
@@ -276,7 +278,6 @@ export default function SystemAIModel() {
         contextWindowTokens: values.contextWindowTokens,
         textOutput: values.textOutput,
         maxDimension: values.maxDimension,
-        isSystem: true, // 系统模型默认为true
         isPublic: values.isPublic || false, // 从表单获取isPublic值
         abilities: {
           vision: values.vision || false,
@@ -314,7 +315,7 @@ export default function SystemAIModel() {
       const client = GetApiClient();
       
       // 构建请求参数
-      const requestBody: UpdateAiModelCommand = {
+      const requestBody: UpdateSystemAiModelRequest = {
         aiModelId: values.aiModelId,
         name: values.name,
         title: values.title,

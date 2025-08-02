@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**",
+    "**/test/**"
+  ]
+}

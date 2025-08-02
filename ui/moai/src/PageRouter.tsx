@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter } from "react-router";
 
 import Home from "./Home";
 import App from "./App";
@@ -8,7 +8,7 @@ import { AdminPageRouters } from "./components/admin/AdminPageRouter";
 import { UserPageRouters } from "./components/user/UserPageRouter";
 import { WikiPageRouters } from "./components/wiki/WikiPageRouter";
 import { PluginPageRouters } from "./components/plugin/PluginPageRouter";
-import { AiModelPageRouters } from "./components/aimodel/AiModelPageRouter.tsx";
+import { AiModelPageRouters } from "./components/aimodel/AiModelPageRouter";
 import { AppPageRouters } from "./components/app/AppPageRouter";
 
 // 在此集合所有页面的路由，每个子模块的路由从模块下的 PageRouter 导出

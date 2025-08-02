@@ -139,7 +139,7 @@ const useTaskList = (wikiId: string, documentId: string) => {
       try {
         const apiClient = GetApiClient();
         await apiClient.api.wiki.document.create_document.post({
-          taskId: parseInt(taskId),
+          taskId: taskId,
           wikiId: parseInt(wikiId),
           documentId: parseInt(documentId),
         });

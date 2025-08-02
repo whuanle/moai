@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  moaiapi:
+    build:
+      context: ./src/MoAI
+      dockerfile: Dockerfile
+    container_name: moaiapi-dev
+    ports:
+      - "5000:8080"
+    volumes:
+      - ./configs:/app/config
+      # 开发时可以挂载源代码目录，实现热重载
+      - ./src:/src
+    environment:
+      - MAI_FILE=/app/config/system.json
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    restart: unless-stopped
+    networks:
+      - moai-network
+
+  # 前端服务（开发模式）
+  miaifront:
+    build:
+      context: ./ui/moai
+      dockerfile: Dockerfile.dev
+    container_name: miaifront-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # 挂载源代码目录，实现热重载
+      - ./ui/moai/src:/app/src
+      - ./ui/moai/public:/app/public
+      - ./ui/moai/package.json:/app/package.json
+      - ./ui/moai/package-lock.json:/app/package-lock.json
+      - ./ui/moai/vite.config.ts:/app/vite.config.ts
+      - ./ui/moai/tsconfig.json:/app/tsconfig.json
+      - ./ui/moai/tsconfig.app.json:/app/tsconfig.app.json
+      - ./ui/moai/tsconfig.node.json:/app/tsconfig.node.json
+    environment:
+      - NODE_ENV=development
+      - BACKEND_URL=http://moaiapi:8080
+      - VITE_ServerUrl=http://moaiapi:8080
+    restart: unless-stopped
+    depends_on:
+      - moaiapi
+    networks:
+      - moai-network
+    command: npm run dev
+
+networks:
+  moai-network:
+    driver: bridge
+
+volumes:
+  configs:
+    driver: local 

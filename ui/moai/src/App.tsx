@@ -418,7 +418,7 @@ function App() {
                 </Route>
               </Routes>
             </Content>
-            {/* <Footer className="footer">MaomiAI ©2025</Footer> */}
+            {/* <Footer className="footer">moai ©2025</Footer> */}
           </Layout>
         </Layout>
       </Layout>

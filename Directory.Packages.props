@@ -39,6 +39,7 @@
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.54.0-alpha" />
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.54.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Plugins.OpenApi" Version="1.60.0" />
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageVersion Include="ModelContextProtocol" Version="0.3.0-preview.2" />
     <PackageVersion Include="ModelContextProtocol-SemanticKernel" Version="0.3.0-preview-01" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />

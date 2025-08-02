@@ -1,12 +1,14 @@
 {
-  "name": "maomiai",
+  "name": "moai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:strict": "tsc -b tsconfig.build.json && vite build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "syncapi": "kiota generate --additional-data false -l typescript -d http://127.0.0.1:5000/openapi/v1.json -c MoAIClient -o ./src/apiClient"
   },
