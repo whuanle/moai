@@ -20,7 +20,7 @@ namespace MoAI.App.AIAssistant.Endpoints;
 /// 发起新的聊天，检查用户是否有知识库、插件灯权限，如果检查通过，返回聊天 id.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/create_chat")]
-public class CreateAiAssistantChatEndpoint:Endpoint<AIAssistantChatObject, CreateAiAssistantChatCommandResponse>
+public class CreateAiAssistantChatEndpoint : Endpoint<AIAssistantChatObject, CreateAiAssistantChatCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;

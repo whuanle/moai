@@ -28,7 +28,6 @@ public class AIAssistantChatObjectValidator : Validator<AIAssistantChatObject>
             .MaximumLength(100).WithMessage("对话标题长度不能超过100个字符.");
 
         RuleFor(x => x.Prompt)
-            .NotEmpty().WithMessage("提示词不能为空.")
             .MaximumLength(2000).WithMessage("提示词长度不能超过2000个字符.");
 
         RuleFor(x => x.ModelId)

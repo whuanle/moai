@@ -517,7 +517,7 @@ export default function DocumentEmbedding() {
                     >
                       <InputNumber
                         min={1}
-                        max={4000}
+                        max={100000}
                         style={{ width: "100%" }}
                       />
                     </Form.Item>

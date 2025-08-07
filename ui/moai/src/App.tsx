@@ -12,7 +12,6 @@ import {
   Layout,
   Menu,
   message,
-  Image,
   Modal,
   Card,
   Avatar,
@@ -157,13 +156,19 @@ function App() {
     };
     fetchData();
 
-    // 每分钟刷新一次 token
-    const refreshToken = setInterval(async () => {
-      await CheckToken();
+    // 每分钟检查一次 token
+    const checkTokenInterval = setInterval(async () => {
+      const isTokenValid = await CheckToken();
+      if (!isTokenValid) {
+        messageApi.error("Token已过期，请重新登录");
+        useAppStore.getState().clearUserInfo();
+        useAppStore.getState().clearUserDetailInfo();
+        navigate("/login");
+      }
     }, 1000 * 60);
 
     return () => {
-      clearInterval(refreshToken);
+      clearInterval(checkTokenInterval);
     };
   }, []);
 
@@ -298,19 +303,24 @@ function App() {
     <>
       {contextHolder}
       <Layout className="layout">
-        {headerVisible && (
+      {headerVisible && (
           <Layout.Header
             className="header"
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              backgroundColor: "white",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <Image src="/logo.png" width={60} height={60} />
-              <p style={{ margin: 0, marginLeft: 10 }}>MoAI</p>
+            <div className="logo-container">
+              <img 
+                src="/logo.png" 
+                width={45} 
+                height={45}
+                style={{ objectFit: "contain" }}
+                alt="MoAI Logo"
+              />
+              <p>MoAI</p>
             </div>
             <Dropdown
               menu={{ items: userMenuItems }}
@@ -334,7 +344,7 @@ function App() {
                 }
               >
                 <Avatar
-                  size={40}
+                  size={32}
                   src={getAvatarUrl(userDetailInfo?.avatarPath)}
                   icon={<UserOutlined />}
                   style={{ marginRight: 8 }}

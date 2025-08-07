@@ -256,7 +256,7 @@ const AiAssistant: React.FC = () => {
 
   // 创建新对话
   const createNewChat = useCallback(
-    async (title?: string, content?: string) => {
+    async (title?: string) => {
       // 检查是否已选择模型
       if (!selectedModelId) {
         messageApi.warning("请先选择AI模型");
@@ -268,7 +268,7 @@ const AiAssistant: React.FC = () => {
         const chatObject: AIAssistantChatObject = {
           title: title || DEFAULT_TITLE,
           modelId: selectedModelId,
-          prompt: content || assistantPrompt || undefined,
+          prompt: assistantPrompt || "",
           wikiId: selectedWikiId || 0,
           pluginIds: selectedPluginIds || [],
           executionSettings: [
@@ -742,7 +742,7 @@ const AiAssistant: React.FC = () => {
       // 如果没有chatId，先创建对话
       if (!chatId) {
         const title = userInput.substring(0, 30) || DEFAULT_TITLE;
-        chatId = await createNewChat(title, userInput);
+        chatId = await createNewChat(title);
         if (!chatId) {
           throw new Error("创建对话失败");
         }

@@ -54,33 +54,43 @@ export const GetUserInfo = (): UserInfoModel | null => {
 export const CheckToken = async () => {
   const userInfo = GetUserInfo();
   if (!userInfo || !userInfo.accessToken) {
+    console.log("No user info or access token found");
     return false;
   }
 
   try {
     if (IsTokenExpired(userInfo.accessToken)) {
+      console.log("Access token is expired, attempting to refresh...");
       // 使用 refresh token 刷新 access token
       if (userInfo.refreshToken && !IsTokenExpired(userInfo.refreshToken)) {
+
+        // 先清理现在的 用户信息
+        useAppStore.getState().clearUserInfo();
+
         var response = await RefreshAccessToken(userInfo.refreshToken);
 
         // 刷新失败
         if (!response) {
+          console.log("Failed to refresh access token");
           return false;
         }
 
+        console.log("Successfully refreshed access token");
         SetUserInfo(response);
 
         return true;
+      } else {
+        console.log("Refresh token is expired or not available");
+        return false;
       }
     } else {
+      console.log("Access token is still valid");
       return true;
     }
   } catch (error) {
     console.error("Error checking token:", error);
     return false;
   }
-
-  return false;
 };
 
 export const GetAccessToken = async (): Promise<string | null> => {
