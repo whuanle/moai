@@ -59,7 +59,7 @@ public class TokenProvider : ITokenProvider
             Issuer = _systemOptions.Server,
             Audience = _systemOptions.Server,
 #if DEBUG
-            Expires = DateTime.UtcNow.AddDays(30),
+            Expires = DateTime.UtcNow.AddDays(7),
 #else
             Expires = DateTime.UtcNow.AddMinutes(30),
 #endif

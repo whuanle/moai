@@ -52,7 +52,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         var (refreshTokenUserContext, claims) = await _tokenProvider.ParseUserContextFromTokenAsync(request.RefreshToken);
 
         // 如果不是 refresh_token，禁止刷新 token
-        if (!claims.TryGetValue("token_type", out var tokenType) || string.IsNullOrEmpty(tokenType.Value) || !"refresh".Equals(tokenType.Value, StringComparison.OrdinalIgnoreCase))
+        if (!claims.TryGetValue("token_type", out var tokenType) || string.IsNullOrEmpty(tokenType.Value) || !"refresh_token".Equals(tokenType.Value, StringComparison.OrdinalIgnoreCase))
         {
             throw new BusinessException("非 refresh_token.") { StatusCode = 401 };
         }

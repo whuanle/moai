@@ -64,10 +64,10 @@ export const CheckToken = async () => {
       // 使用 refresh token 刷新 access token
       if (userInfo.refreshToken && !IsTokenExpired(userInfo.refreshToken)) {
 
+        var response = await RefreshAccessToken(userInfo.refreshToken);
+
         // 先清理现在的 用户信息
         useAppStore.getState().clearUserInfo();
-
-        var response = await RefreshAccessToken(userInfo.refreshToken);
 
         // 刷新失败
         if (!response) {
