@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Workflow</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Jint" />
+	  <PackageReference Include="Newtonsoft.Json" />
+	  <PackageReference Include="RulesEngine" />
+	  <PackageReference Include="SmartFormat.NET" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\MoAI.Workflow.Shared\MoAI.Workflow.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

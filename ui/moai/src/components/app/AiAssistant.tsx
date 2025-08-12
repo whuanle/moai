@@ -437,7 +437,7 @@ const AiAssistant: React.FC = () => {
       try {
         const client = GetApiClient();
         // 先尝试从系统模型列表中查找
-        const systemResponse = await client.api.aimodel.type.system_modellist.post({
+        const systemResponse = await client.api.aimodel.type.public_system_aimodel_list.post({
           aiModelType: "chat"
         });
         

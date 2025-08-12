@@ -11,6 +11,7 @@
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.1.2" />
     <PackageVersion Include="FluentValidation" Version="12.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageVersion Include="Jint" Version="4.4.1" />
     <PackageVersion Include="LinqKit.Core" Version="1.2.8" />
     <PackageVersion Include="Maomi.MQ.RabbitMQ" Version="2.1.0" />
     <PackageVersion Include="MediatR" Version="12.5.0" />
@@ -42,6 +43,7 @@
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageVersion Include="ModelContextProtocol" Version="0.3.0-preview.2" />
     <PackageVersion Include="ModelContextProtocol-SemanticKernel" Version="0.3.0-preview-01" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
     <PackageVersion Include="FastEndpoints" Version="6.2.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
@@ -53,6 +55,8 @@
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.12.1" />
     <PackageVersion Include="Refit" Version="8.0.0" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="8.0.0" />
+    <PackageVersion Include="RulesEngine" Version="6.0.0" />
+    <PackageVersion Include="SmartFormat.NET" Version="3.6.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.31" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="11.0.0" />

@@ -8698,7 +8698,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1754624391144"
+            "example": "1754970609531"
           }
         }
       },
@@ -9451,7 +9451,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           },
           "createUserId": {
             "type": "integer",
@@ -9467,7 +9467,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           },
           "updateUserId": {
             "type": "integer",
@@ -11388,7 +11388,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           }
         }
       },
@@ -11496,7 +11496,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           }
         }
       },
@@ -11998,7 +11998,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1754624391144"
+            "example": "1754970609531"
           }
         }
       },
@@ -12394,7 +12394,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           },
           "tags": {
             "type": "array",
@@ -12909,7 +12909,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1754624391144"
+            "example": "1754970609531"
           }
         }
       },
@@ -13658,14 +13658,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           },
           "chatHistory": {
             "type": "array",
@@ -13743,7 +13743,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1754624391144"
+            "example": "1754970609531"
           }
         }
       },
