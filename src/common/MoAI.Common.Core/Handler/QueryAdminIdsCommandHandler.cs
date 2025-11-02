@@ -1,16 +1,14 @@
-﻿// <copyright file="QueryAdminIdsCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
+using MoAI.Common.Commands.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Login.Commands;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Login.Handlers;
 
+/// <summary>
+/// <inheritdoc cref="QueryAdminIdsCommand"/>
+/// </summary>
 public class QueryAdminIdsCommandHandler : IRequestHandler<QueryAdminIdsCommand, QueryAdminIdsCommandResponse>
 {
     private readonly IRedisDatabase _redisDatabase;

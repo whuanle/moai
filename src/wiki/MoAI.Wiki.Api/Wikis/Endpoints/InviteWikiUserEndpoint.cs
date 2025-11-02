@@ -1,11 +1,6 @@
-﻿// <copyright file="InviteWikiUserEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
@@ -14,7 +9,7 @@ using MoAI.Wiki.Wikis.Queries;
 namespace MoAI.Wiki.Wikis.Endpoints;
 
 /// <summary>
-/// 邀请用户加入知识库协作.
+/// 邀请或移除知识库成员.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/invite_wiki_user")]
 public class InviteWikiUserEndpoint : Endpoint<InviteWikiUserCommand, EmptyCommandResponse>
@@ -36,13 +31,24 @@ public class InviteWikiUserEndpoint : Endpoint<InviteWikiUserCommand, EmptyComma
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(InviteWikiUserCommand req, CancellationToken ct)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
+        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand
         {
-            UserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 
-        if (!userIsWikiUser.IsWikiRoot)
+        if (isCreator.IsSystem)
+        {
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                ContextUserId = _userContext.UserId
+            });
+
+            if (!isAdmin.IsAdmin)
+            {
+                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            }
+        }
+        else if (isCreator.CreatorId != _userContext.UserId)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }

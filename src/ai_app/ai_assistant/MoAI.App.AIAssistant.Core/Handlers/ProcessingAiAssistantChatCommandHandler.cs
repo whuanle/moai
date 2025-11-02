@@ -1,13 +1,7 @@
-﻿// <copyright file="ProcessingAiAssistantChatCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿
 #pragma warning disable SKEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable SKEXP0040 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
-
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -31,8 +25,6 @@ using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 using MoAI.Storage.Queries;
-using MoAI.Store.Enums;
-using MoAIChat.Core.Handlers;
 using ModelContextProtocol.Client;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Runtime.CompilerServices;
@@ -338,18 +330,17 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
                     });
                 }
             }
-            else if (item.Key.Type == (int)PluginType.System)
+            else if (item.Key.Type == (int)PluginType.Internal)
             {
                 //// todo: 后续增加系统插件
-                //var systemFunctions = item.Value.Select(x => x.AsKernelFunction()).ToList();
-                //functions.AddRange(systemFunctions);
-
+                // var systemFunctions = item.Value.Select(x => x.AsKernelFunction()).ToList();
+                // functions.AddRange(systemFunctions);
                 foreach (var function in item.Value)
                 {
                     toolMaps.Add(new ToolCallRecord
                     {
                         Key = function.Name,
-                        PluginType = PluginType.System,
+                        PluginType = PluginType.Internal,
                         ToolId = function.Id,
                     });
                 }
@@ -405,12 +396,21 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
             TextOutput = wikiAiModel.TextOutput
         };
 
+        //var wikiConfig = new EmbeddingConfig
+        //{
+        //    EmbeddingDimensions = wikiEntity.EmbeddingDimensions,
+        //    EmbeddingBatchSize = wikiEntity.EmbeddingBatchSize,
+        //    MaxRetries = wikiEntity.MaxRetries,
+        //    EmbeddingModelTokenizer = wikiEntity.EmbeddingModelTokenizer.JsonToObject<EmbeddingTokenizer>(),
+        //};
+
+
         var wikiConfig = new EmbeddingConfig
         {
             EmbeddingDimensions = wikiEntity.EmbeddingDimensions,
-            EmbeddingBatchSize = wikiEntity.EmbeddingBatchSize,
-            MaxRetries = wikiEntity.MaxRetries,
-            EmbeddingModelTokenizer = wikiEntity.EmbeddingModelTokenizer.JsonToObject<EmbeddingTokenizer>(),
+            EmbeddingBatchSize = 100,
+            MaxRetries = 3,
+            EmbeddingModelTokenizer = EmbeddingTokenizer.P50k,
         };
 
         // 构建客户端
@@ -465,8 +465,7 @@ public class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<Pro
 
         var filePath = await _mediator.Send(new QueryFileLocalPathCommand
         {
-            ObjectKey = fileEntity.ObjectKey,
-            Visibility = FileVisibility.Private
+            ObjectKey = fileEntity.ObjectKey
         });
 
         OpenApiDocumentParser parser = new();

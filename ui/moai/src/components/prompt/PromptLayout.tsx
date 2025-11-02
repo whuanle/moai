@@ -1,3 +1,9 @@
+import { Outlet } from 'react-router';
+
 export default function PromptLayout() {
-  return <div>PromptLayout</div>;
+  return (
+    <div>
+      <Outlet />
+    </div>
+  );
 }

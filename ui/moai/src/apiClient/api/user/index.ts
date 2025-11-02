@@ -10,8 +10,6 @@ import { type Update_passwordRequestBuilder, Update_passwordRequestBuilderReques
 // @ts-ignore
 import { type Update_userRequestBuilder, Update_userRequestBuilderRequestsMetadata } from './update_user/index.js';
 // @ts-ignore
-import { type Upload_avatarRequestBuilder, Upload_avatarRequestBuilderRequestsMetadata } from './upload_avatar/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -34,10 +32,6 @@ export interface UserRequestBuilder extends BaseRequestBuilder<UserRequestBuilde
      * The update_user property
      */
     get update_user(): Update_userRequestBuilder;
-    /**
-     * The upload_avatar property
-     */
-    get upload_avatar(): Upload_avatarRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -58,9 +52,6 @@ export const UserRequestBuilderNavigationMetadata: Record<Exclude<keyof UserRequ
     },
     update_user: {
         requestsMetadata: Update_userRequestBuilderRequestsMetadata,
-    },
-    upload_avatar: {
-        requestsMetadata: Upload_avatarRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

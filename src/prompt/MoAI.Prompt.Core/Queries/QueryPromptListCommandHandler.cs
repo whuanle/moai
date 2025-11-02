@@ -1,16 +1,10 @@
-﻿// <copyright file="QueryPromptListCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAIPrompt.Models;
-using MoAIPrompt.Queries;
-using MoAIPrompt.Queries.Responses;
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.User.Queries;
+using MoAIPrompt.Models;
+using MoAIPrompt.Queries;
+using MoAIPrompt.Queries.Responses;
 
 namespace MoAI.Prompt.Queries;
 
@@ -38,13 +32,25 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
     {
         var query = _databaseContext.Prompts.AsQueryable();
 
-        if (request.IsOwn == true)
+        if (request.Condition == PromptFilterCondition.Own)
         {
-            query = query.Where(x => x.CreateUserId == request.UserId);
+            query = query.Where(x => x.CreateUserId == request.ContextUserId);
+        }
+        else if (request.Condition == PromptFilterCondition.OwnPublic)
+        {
+            query = query.Where(x => x.CreateUserId == request.ContextUserId && x.IsPublic);
+        }
+        else if (request.Condition == PromptFilterCondition.OwnPrivate)
+        {
+            query = query.Where(x => x.CreateUserId == request.ContextUserId && x.IsPublic == false);
+        }
+        else if (request.Condition == PromptFilterCondition.OtherShare)
+        {
+            query = query.Where(x => x.CreateUserId != request.ContextUserId && x.IsPublic == true);
         }
         else
         {
-            query = query.Where(x => x.CreateUserId == request.UserId || x.IsPublic);
+            query = query.Where(x => x.CreateUserId == request.ContextUserId || (x.CreateUserId != request.ContextUserId && x.IsPublic == true));
         }
 
         if (request.ClassId != null)
@@ -52,9 +58,9 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
             query = query.Where(x => x.PromptClassId == request.ClassId);
         }
 
-        if (!string.IsNullOrEmpty(request.Name))
+        if (!string.IsNullOrEmpty(request.Search))
         {
-            query = query.Where(x => x.Name.Contains(request.Name));
+            query = query.Where(x => x.Name.Contains(request.Search));
         }
 
         var prompts = await query
@@ -71,6 +77,9 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
                 Content = string.Empty,
                 PromptClassId = x.CreateUserId
             })
+            .OrderByDescending(x => x.Name)
+            .Skip(request.Skip)
+            .Take(request.Take)
             .ToArrayAsync(cancellationToken);
 
         await _mediator.Send(new FillUserInfoCommand

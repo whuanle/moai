@@ -1,9 +1,3 @@
-// <copyright file="HashHelper.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
 using System.Security.Cryptography;
 using System.Text;
 
@@ -44,6 +38,7 @@ public static class HashHelper
         {
             builder.Append(b.ToString("x2"));
         }
+
         return builder.ToString();
     }
 }

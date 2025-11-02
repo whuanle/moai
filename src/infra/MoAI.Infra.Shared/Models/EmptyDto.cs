@@ -1,11 +1,5 @@
-﻿// <copyright file="EmptyDto.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿
 #pragma warning disable CA1052 // 静态容器类型应为 Static 或 NotInheritable
-
 namespace MoAI.Infra.Models;
 
 /// <summary>

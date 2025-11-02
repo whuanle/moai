@@ -1,10 +1,4 @@
-﻿// <copyright file="RefreshUserStateCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
@@ -52,37 +46,21 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
                 IsDisable = true,
                 UserId = request.UserId
             };
-        }
-        else
-        {
-            var avatarUrl = string.Empty;
-            if (!string.IsNullOrEmpty(user.AvatarPath))
-            {
-                var fileUrls = await _mediator.Send(new QueryFileDownloadUrlCommand
-                {
-                    Visibility = Store.Enums.FileVisibility.Public,
-                    ObjectKeys = new List<KeyValueString>() { new KeyValueString { Key = user.AvatarPath, Value = user.AvatarPath } }
-                });
-                avatarUrl = fileUrls.Urls.FirstOrDefault().Value?.ToString() ?? string.Empty;
-            }
-            else
-            {
-                avatarUrl = string.Empty;
-            }
 
-            userCache = new UserStateInfo
-            {
-                UserId = user.Id,
-                UserName = user.UserName,
-                Email = user.Email,
-                NickName = user.NickName,
-                AvatarPath = avatarUrl,
-                Phone = user.Phone,
-                IsDisable = user.IsDisable,
-                IsAdmin = user.IsAdmin,
-                IsDeleted = user.IsDeleted > 0,
-            };
+            return userCache;
         }
+
+        userCache = new UserStateInfo
+        {
+            UserId = user.Id,
+            UserName = user.UserName,
+            Email = user.Email,
+            NickName = user.NickName,
+            Phone = user.Phone,
+            IsDisable = user.IsDisable,
+            IsAdmin = user.IsAdmin,
+            IsDeleted = user.IsDeleted > 0,
+        };
 
         var key = $"userstate:{request.UserId}";
 

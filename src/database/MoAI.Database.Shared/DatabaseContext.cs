@@ -1,8 +1,8 @@
-﻿// <copyright file="DatabaseContext.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
+﻿#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -15,6 +15,9 @@ namespace MoAI.Database;
 /// </summary>
 public partial class DatabaseContext : DbContext
 {
+    /// <summary>
+    /// IServiceProvider.
+    /// </summary>
     protected readonly IServiceProvider _serviceProvider;
 
     /// <summary>
@@ -70,6 +73,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppAssistantChatHistoryEntity> AppAssistantChatHistories { get; set; }
 
     /// <summary>
+    /// 分类.
+    /// </summary>
+    public virtual DbSet<ClassifyEntity> Classifies { get; set; }
+
+    /// <summary>
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }
@@ -90,6 +98,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
 
     /// <summary>
+    /// 内置插件.
+    /// </summary>
+    public virtual DbSet<PluginInternalEntity> PluginInternals { get; set; }
+
+    /// <summary>
     /// 插件使用量限制.
     /// </summary>
     public virtual DbSet<PluginLimitEntity> PluginLimits { get; set; }
@@ -103,11 +116,6 @@ public partial class DatabaseContext : DbContext
     /// 提示词.
     /// </summary>
     public virtual DbSet<PromptEntity> Prompts { get; set; }
-
-    /// <summary>
-    /// 提示词分类.
-    /// </summary>
-    public virtual DbSet<PromptClassEntity> PromptClasses { get; set; }
 
     /// <summary>
     /// 系统设置.
@@ -135,7 +143,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
 
     /// <summary>
-    /// 知识库任务.
+    /// 文档向量化任务状态.
     /// </summary>
     public virtual DbSet<WikiDocumentTaskEntity> WikiDocumentTasks { get; set; }
 
@@ -163,7 +171,6 @@ public partial class DatabaseContext : DbContext
     /// 抓取的页面文档.
     /// </summary>
     public virtual DbSet<WikiWebDocumentEntity> WikiWebDocuments { get; set; }
-
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

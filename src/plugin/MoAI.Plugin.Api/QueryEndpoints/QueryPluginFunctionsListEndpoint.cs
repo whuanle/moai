@@ -1,23 +1,17 @@
-﻿// <copyright file="QueryPluginFunctionsListEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Queries;
 using MoAI.Plugin.Queries.Responses;
-using MoAI.Common.Queries;
 
 namespace MoAI.Plugin.QueryEndpoints;
 
 /// <summary>
 /// 插件的函数列表.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/function_list")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/function_list")]
 public class QueryPluginFunctionsListEndpoint : Endpoint<QueryPluginFunctionsListCommand, QueryPluginFunctionsListCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -37,39 +31,16 @@ public class QueryPluginFunctionsListEndpoint : Endpoint<QueryPluginFunctionsLis
     /// <inheritdoc/>
     public override async Task<QueryPluginFunctionsListCommandResponse> ExecuteAsync(QueryPluginFunctionsListCommand req, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryPluginCreatorCommand
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            PluginId = req.PluginId,
+            ContextUserId = _userContext.UserId
         });
 
-        if (isCreator.Exist == false)
+        if (!isAdmin.IsAdmin)
         {
-            throw new BusinessException("未找到插件.");
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
-        if (isCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
-        }
-        else if (isCreator.CreatorId != _userContext.UserId)
-        {
-            throw new BusinessException("未找到插件.") { StatusCode = 404 };
-        }
-
-
-        return await _mediator.Send(
-            new QueryPluginFunctionsListCommand
-            {
-                PluginId = req.PluginId
-            },
-            ct);
+        return await _mediator.Send(req, ct);
     }
 }

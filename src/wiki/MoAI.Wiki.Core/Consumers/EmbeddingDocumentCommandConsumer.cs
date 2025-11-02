@@ -1,11 +1,4 @@
-﻿// <copyright file="EmbeddingDocumentCommandConsumer.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi.MQ;
-using MoAIDocument.Core.Consumers.Events;
+﻿using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,13 +6,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Configuration;
 using MoAI.AiModel.Models;
+using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Extensions;
 using MoAI.Storage.Queries;
-using MoAI.Store.Enums;
 using MoAI.Wiki.Models;
-using MoAI.AiModel.Services;
+using MoAIDocument.Core.Consumers.Events;
 
 namespace MoAIDocument.Core.Consumers;
 

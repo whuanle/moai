@@ -1,10 +1,4 @@
-﻿// <copyright file="FileUploadHelper.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using System.IO.Pipelines;
+﻿using System.IO.Pipelines;
 
 namespace MoAI.Storage.Helper;
 
@@ -34,11 +28,6 @@ public static class FileUploadHelper
 
         long totalBytesRead = 0;
 
-        if (File.Exists(targetFilePath))
-        {
-            File.Delete(targetFilePath);
-        }
-
         using FileStream outputFileStream = new FileStream(
             path: targetFilePath,
             mode: FileMode.CreateNew,
@@ -49,7 +38,7 @@ public static class FileUploadHelper
 
         while (true)
         {
-            var readResult = await contentReader.ReadAsync();
+            var readResult = await contentReader.ReadAsync(cancellationToken);
             var buffer = readResult.Buffer;
 
             foreach (var memory in buffer)
@@ -64,6 +53,17 @@ public static class FileUploadHelper
             {
                 break;
             }
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            // 如果取消了，则删除文件
+            if (File.Exists(targetFilePath))
+            {
+                File.Delete(targetFilePath);
+            }
+
+            throw new OperationCanceledException("File upload was canceled.");
         }
     }
 }

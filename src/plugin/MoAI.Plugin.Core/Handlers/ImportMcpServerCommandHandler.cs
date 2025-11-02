@@ -1,10 +1,4 @@
-﻿// <copyright file="ImportMcpServerCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -51,7 +45,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
         }
         catch (Exception ex)
         {
-            _logger.LogInformation(ex, $"Failed to connect to the MCP server.");
+            _logger.LogInformation(ex, "Failed to connect to the MCP server,【{Url}】.", request.ServerUrl);
             throw new BusinessException("访问 MCP 服务器失败") { StatusCode = 409 };
         }
 
@@ -71,8 +65,8 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             Type = (int)PluginType.MCP,
             Headers = TextToJsonExtensions.ToJsonString(request.Header),
             Queries = TextToJsonExtensions.ToJsonString(request.Query),
-            IsSystem = request.IsSystem,
-            IsPublic = request.IsPublic
+            IsPublic = request.IsPublic,
+            ClassifyId = request.ClassifyId
         };
 
         await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);

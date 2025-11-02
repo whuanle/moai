@@ -1,10 +1,4 @@
-﻿// <copyright file="DeleteUserCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Login.Commands;
@@ -34,6 +28,9 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand, Empty
     public async Task<EmptyCommandResponse> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
     {
         await _databaseContext.SoftDeleteAsync(_databaseContext.Users.Where(x => request.UserIds.Contains(x.Id)));
+
+        // 关联的 OAuth2 数据也删除
+        await _databaseContext.SoftDeleteAsync(_databaseContext.UserOauths.Where(x => request.UserIds.Contains(x.UserId)));
 
         foreach (var item in request.UserIds)
         {

@@ -1,24 +1,17 @@
-﻿// <copyright file="UpdatePromptEndpoints.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
-using MoAIPrompt.Api;
+﻿using FastEndpoints;
 using MediatR;
-using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
 using MoAI.Prompt.Queries;
+using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
 /// 修改提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/update_prompt")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/update_prompt")]
 public class UpdatePromptEndpoints : Endpoint<UpdatePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;

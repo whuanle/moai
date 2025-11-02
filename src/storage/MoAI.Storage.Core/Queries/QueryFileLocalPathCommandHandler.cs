@@ -1,13 +1,7 @@
-﻿// <copyright file="QueryFileLocalPathCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
-using MoAI.Infra;
+﻿using MediatR;
 using MoAI.Storage.Queries;
-using MoAI.Store.Enums;
+using MoAI.Storage.Queries.Response;
+using MoAI.Storage.Services;
 
 namespace MoAI.Wiki.Documents.Queries;
 
@@ -16,15 +10,15 @@ namespace MoAI.Wiki.Documents.Queries;
 /// </summary>
 public class QueryFileLocalPathCommandHandler : IRequestHandler<QueryFileLocalPathCommand, QueryFileLocalPathCommandResponse>
 {
-    private readonly SystemOptions _systemOptions;
+    private readonly IStorage _storage;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryFileLocalPathCommandHandler"/> class.
     /// </summary>
-    /// <param name="systemOptions"></param>
-    public QueryFileLocalPathCommandHandler(SystemOptions systemOptions)
+    /// <param name="storage"></param>
+    public QueryFileLocalPathCommandHandler(IStorage storage)
     {
-        _systemOptions = systemOptions;
+        _storage = storage;
     }
 
     /// <inheritdoc/>
@@ -32,8 +26,23 @@ public class QueryFileLocalPathCommandHandler : IRequestHandler<QueryFileLocalPa
     {
         await Task.CompletedTask;
 
-        var visibility = request.Visibility.ToString().ToLower();
-        var filePath = Path.Combine(_systemOptions.FilePath, visibility, request.ObjectKey);
+        var tmpDir = Path.GetTempPath();
+        tmpDir = Path.Combine(tmpDir, DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString());
+        if (!Directory.Exists(tmpDir))
+        {
+            Directory.CreateDirectory(tmpDir);
+        }
+
+        var filePath = Path.Combine(tmpDir, request.ObjectKey);
+
+        var fileDir = Directory.GetParent(filePath)!.FullName;
+
+        if (!Directory.Exists(fileDir))
+        {
+            Directory.CreateDirectory(fileDir);
+        }
+
+        await _storage.DownloadAsync(request.ObjectKey, filePath);
 
         return new QueryFileLocalPathCommandResponse
         {

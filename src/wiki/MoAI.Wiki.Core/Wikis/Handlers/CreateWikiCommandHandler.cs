@@ -1,10 +1,4 @@
-﻿// <copyright file="CreateWikiCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -33,10 +27,14 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(CreateWikiCommand request, CancellationToken cancellationToken)
     {
-        var exist = await _databaseContext.Wikis.AnyAsync(x => x.Name == request.Name, cancellationToken);
-        if (exist)
+        // 个人知识库可以随便起名，重复没关系
+        if (request.IsSystem)
         {
-            throw new BusinessException("已存在同名知识库") { StatusCode = 409 };
+            var exist = await _databaseContext.Wikis.AnyAsync(x => x.IsSystem&& x.Name == request.Name, cancellationToken);
+            if (exist)
+            {
+                throw new BusinessException("系统知识库名称重复") { StatusCode = 409 };
+            }
         }
 
         var wikiEntity = new WikiEntity
@@ -44,10 +42,8 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
             Name = request.Name,
             Description = request.Description,
             EmbeddingModelId = default,
-            EmbeddingDimensions = 512,
-            EmbeddingModelTokenizer = string.Empty,
-            EmbeddingBatchSize = 50,
-            MaxRetries = 3,
+            EmbeddingDimensions = 1024,
+            IsSystem = request.IsSystem,
             IsPublic = false,
             IsLock = false
         };

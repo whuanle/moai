@@ -1,11 +1,6 @@
-﻿// <copyright file="DeleteWikiEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
@@ -36,15 +31,30 @@ public class DeleteWikiEndpoint : Endpoint<DeleteWikiCommand, EmptyCommandRespon
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(DeleteWikiCommand req, CancellationToken ct)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
+        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand
         {
-            UserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 
-        if (!userIsWikiUser.IsWikiRoot)
+        // 系统知识库无论是谁创建的，只能由 root 用户删除，
+        if (isCreator.IsSystem)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
+            {
+                ContextUserId = _userContext.UserId
+            });
+
+            if (!isAdmin.IsRoot)
+            {
+                throw new BusinessException("只有超级管理员可以删除系统知识库.") { StatusCode = 403 };
+            }
+        }
+        else
+        {
+            if (isCreator.CreatorId != _userContext.UserId)
+            {
+                throw new BusinessException("未找到知识库.") { StatusCode = 404 };
+            }
         }
 
         return await _mediator.Send(req);

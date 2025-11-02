@@ -1,16 +1,10 @@
-﻿// <copyright file="QueryAllOAuthPrividerDetailEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Admin.OAuth.Queries.Responses;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Queries;
-using MoAI.Common.Queries;
 
 namespace MoAI.Admin.OAuth.Endpoints;
 
@@ -37,7 +31,7 @@ public class QueryAllOAuthPrividerDetailEndpoint : EndpointWithoutRequest<QueryA
     /// <inheritdoc/>
     public override async Task<QueryAllOAuthPrividerDetailCommandResponse> ExecuteAsync(CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { UserId = _userContext.UserId });
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { ContextUserId = _userContext.UserId });
 
         if (!isAdmin.IsAdmin)
         {

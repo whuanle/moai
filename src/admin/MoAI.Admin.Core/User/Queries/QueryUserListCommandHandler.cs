@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryUserListCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Admin.User.Queries.Responses;
 using MoAI.Database;
@@ -63,10 +57,9 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
             .OrderByDescending(x => x.Id)
             .Skip(request.PageSize * (request.PageNo - 1))
             .Take(request.PageSize)
-            .Select(x => new QueryUserListCommandResponseItem
+            .Select(x => new UserItem
             {
                 IsDisable = x.IsDisable,
-                AvatarPath = x.AvatarPath,
                 CreateTime = x.CreateTime,
                 CreateUserId = x.CreateUserId,
                 Email = x.Email,
@@ -84,19 +77,6 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
         {
             Items = users
         });
-
-        var userAvatars = users.Where(x => !string.IsNullOrEmpty(x.AvatarPath)).Distinct().Select(x => new KeyValueString { Key = x.AvatarPath, Value = x.AvatarPath }).ToHashSet();
-        var avatarResult = await _mediator.Send(new QueryFileDownloadUrlCommand
-        {
-            Visibility = Store.Enums.FileVisibility.Public,
-            ObjectKeys = userAvatars
-        });
-
-        foreach (var item in users)
-        {
-            avatarResult.Urls.TryGetValue(item.AvatarPath, out var avatarUrl);
-            item.AvatarPath = avatarUrl?.ToString() ?? string.Empty;
-        }
 
         return new QueryUserListCommandResponse
         {

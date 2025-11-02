@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryWikiBaseListEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Queries;
@@ -35,14 +29,6 @@ public class QueryWikiBaseListEndpoint : Endpoint<QueryWikiBaseListCommand, IRea
     /// <inheritdoc/>
     public override async Task<IReadOnlyCollection<QueryWikiInfoResponse>> ExecuteAsync(QueryWikiBaseListCommand req, CancellationToken ct)
     {
-        var newReq = new QueryWikiBaseListCommand
-        {
-            UserId = _userContext.UserId,
-            IsOwn = req.IsOwn,
-            IsPublic = req.IsPublic,
-            IsUser = req.IsUser
-        };
-
-        return await _mediator.Send(newReq, ct);
+        return await _mediator.Send(req, ct);
     }
 }

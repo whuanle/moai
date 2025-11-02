@@ -1,11 +1,5 @@
-﻿// <copyright file="CustomTextEmbeddingGeneration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿
 #pragma warning disable KMEXP01 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
-
 using Maomi;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.AI.OpenAI;
@@ -19,7 +13,7 @@ namespace MoAI.AI.TextEmbeddingGenerations;
 public class CustomTextEmbeddingGeneration : ITextEmbeddingGeneration
 {
     /// <inheritdoc/>
-    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig embeddingConfig)
+    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig wikiConfig)
     {
         var config = new OpenAIConfig
         {
@@ -27,11 +21,11 @@ public class CustomTextEmbeddingGeneration : ITextEmbeddingGeneration
             Endpoint = endpoint.Endpoint,
             APIKey = endpoint.Key,
 
-            MaxEmbeddingBatchSize = embeddingConfig.EmbeddingBatchSize,
-            MaxRetries = embeddingConfig.MaxRetries,
+            MaxEmbeddingBatchSize = wikiConfig.EmbeddingBatchSize,
+            MaxRetries = wikiConfig.MaxRetries,
             EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
-            EmbeddingDimensions = embeddingConfig.EmbeddingDimensions,
-            EmbeddingModelTokenizer = embeddingConfig.EmbeddingModelTokenizer.ToJsonString()
+            EmbeddingDimensions = wikiConfig.EmbeddingDimensions,
+            EmbeddingModelTokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString()
         };
 
         var embeddingGenerator = new OpenAITextEmbeddingGenerator(config);

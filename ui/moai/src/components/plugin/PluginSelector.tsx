@@ -19,7 +19,7 @@ import {
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import {
-  QueryUserPluginBaseListCommand,
+  QueryPluginBaseListCommand,
   PluginBaseInfoItem,
 } from "../../apiClient/models";
 
@@ -48,8 +48,8 @@ const PluginSelector: React.FC<PluginSelectorProps> = ({
     setLoading(true);
     try {
       const client = GetApiClient();
-      const requestData: QueryUserPluginBaseListCommand = {};
-      const response = await client.api.plugin.user_plugin_list.post(requestData);
+      const requestData: QueryPluginBaseListCommand = {};
+      const response = await client.api.plugin.plugin_list.post(requestData);
 
       if (response?.items) {
         setPlugins(response.items);

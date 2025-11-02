@@ -1,10 +1,7 @@
-﻿// <copyright file="StorageCoreModule.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi;
+﻿using Maomi;
+using Microsoft.Extensions.DependencyInjection;
+using MoAI.Infra;
+using MoAI.Storage.Services;
 
 namespace MoAI.Storage;
 
@@ -15,8 +12,27 @@ namespace MoAI.Storage;
 [InjectModule<StorageApiModule>]
 public class StorageCoreModule : IModule
 {
+    private readonly SystemOptions _systemOptions;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StorageCoreModule"/> class.
+    /// </summary>
+    /// <param name="systemOptions"></param>
+    public StorageCoreModule(SystemOptions systemOptions)
+    {
+        _systemOptions = systemOptions;
+    }
+
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        if (!string.IsNullOrEmpty(_systemOptions.Storage.Type) && "S3".Equals(_systemOptions!.Storage.Type, StringComparison.OrdinalIgnoreCase))
+        {
+            context.Services.AddScoped<IStorage, S3Storage>();
+        }
+        else
+        {
+            context.Services.AddScoped<IStorage, LocalStorage>();
+        }
     }
 }

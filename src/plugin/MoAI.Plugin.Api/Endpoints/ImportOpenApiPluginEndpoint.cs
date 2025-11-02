@@ -1,24 +1,17 @@
-﻿// <copyright file="ImportOpenApiPluginEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Routing;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
-using MoAI.Common.Queries;
 
 namespace MoAI.Plugin.Endpoints;
 
 /// <summary>
 /// 完成 openapi 文件上传.
 /// </summary>
-[EndpointGroupName("store")]
-[HttpPost($"{ApiPrefix.Prefix}/import_openapi")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/import_openapi")]
 public class ImportOpenApiPluginEndpoint : Endpoint<ImportOpenApiPluginCommand, SimpleInt>
 {
     private readonly IMediator _mediator;
@@ -38,17 +31,14 @@ public class ImportOpenApiPluginEndpoint : Endpoint<ImportOpenApiPluginCommand, 
     /// <inheritdoc/>
     public override async Task<SimpleInt> ExecuteAsync(ImportOpenApiPluginCommand req, CancellationToken ct)
     {
-        if (req.IsSystem)
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
+            ContextUserId = _userContext.UserId
+        });
 
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
+        if (!isAdmin.IsAdmin)
+        {
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
         return await _mediator.Send(req, ct);

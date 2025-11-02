@@ -5,7 +5,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 知识库任务.
+/// 文档向量化任务状态.
 /// </summary>
 public partial class WikiDocumentTaskEntity : IFullAudited
 {

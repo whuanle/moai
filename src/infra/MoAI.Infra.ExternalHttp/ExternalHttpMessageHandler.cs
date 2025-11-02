@@ -1,11 +1,5 @@
-﻿// <copyright file="ExternalHttpMessageHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
+﻿
 #pragma warning disable SA1118 // Parameter should not span multiple lines
-
 using Microsoft.Extensions.Logging;
 
 namespace MoAI.Infra;

@@ -1,11 +1,5 @@
-// <copyright file="PBKDF2Helper.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
 
 #pragma warning disable CA1031 // 不捕获常规异常类型
-
 using System.Security.Cryptography;
 using System.Text;
 

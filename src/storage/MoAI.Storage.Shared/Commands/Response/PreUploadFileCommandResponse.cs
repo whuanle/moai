@@ -1,12 +1,4 @@
-﻿// <copyright file="PreUploadFileCommandResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAI.Store.Enums;
-
-namespace MoAI.Storage.Commands.Response;
+﻿namespace MoAI.Storage.Commands.Response;
 
 /// <summary>
 /// 预上传文件.
@@ -14,12 +6,7 @@ namespace MoAI.Storage.Commands.Response;
 public class PreUploadFileCommandResponse
 {
     /// <summary>
-    /// 文件可见性.
-    /// </summary>
-    public FileVisibility Visibility { get; set; }
-
-    /// <summary>
-    /// 文件已存在,如果文件已存在则直接使用 FileId，无需再次上传.
+    /// 已存在相同的 objectKey,如果文件已存在则直接使用 FileId，无需再次上传.
     /// </summary>
     public bool IsExist { get; set; }
 

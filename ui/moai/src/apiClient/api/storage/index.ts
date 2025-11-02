@@ -4,8 +4,6 @@
 // @ts-ignore
 import { Complate_urlRequestBuilderRequestsMetadata, type Complate_urlRequestBuilder } from './complate_url/index.js';
 // @ts-ignore
-import { Pre_upload_imageRequestBuilderRequestsMetadata, type Pre_upload_imageRequestBuilder } from './pre_upload_image/index.js';
-// @ts-ignore
 import { type UploadRequestBuilder, UploadRequestBuilderNavigationMetadata } from './upload/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -18,10 +16,6 @@ export interface StorageRequestBuilder extends BaseRequestBuilder<StorageRequest
      * The complate_url property
      */
     get complate_url(): Complate_urlRequestBuilder;
-    /**
-     * The pre_upload_image property
-     */
-    get pre_upload_image(): Pre_upload_imageRequestBuilder;
     /**
      * The upload property
      */
@@ -37,9 +31,6 @@ export const StorageRequestBuilderUriTemplate = "{+baseurl}/api/storage";
 export const StorageRequestBuilderNavigationMetadata: Record<Exclude<keyof StorageRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     complate_url: {
         requestsMetadata: Complate_urlRequestBuilderRequestsMetadata,
-    },
-    pre_upload_image: {
-        requestsMetadata: Pre_upload_imageRequestBuilderRequestsMetadata,
     },
     upload: {
         navigationMetadata: UploadRequestBuilderNavigationMetadata,

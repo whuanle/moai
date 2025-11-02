@@ -3,6 +3,9 @@ using MoAI.Plugin.Models;
 
 namespace MoAI.Plugin.Queries.Responses;
 
+/// <summary>
+/// 查询插件描述信息.
+/// </summary>
 public class QueryPluginDetailCommandResponse : AuditsInfo
 {
     /// <summary>
@@ -54,6 +57,11 @@ public class QueryPluginDetailCommandResponse : AuditsInfo
     /// 文件名称.
     /// </summary>
     public string? OpenapiFileName { get; set; } = default!;
+
+    /// <summary>
+    /// 分类 id.
+    /// </summary>
+    public int ClassifyId { get; init; }
 
     /// <summary>
     /// 是否公开.

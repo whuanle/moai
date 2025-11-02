@@ -1,15 +1,10 @@
-﻿// <copyright file="DeletePluginCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
+using MoAI.Plugin.Models;
 using MoAI.Storage.Commands;
 using System.Transactions;
 
@@ -37,8 +32,8 @@ public class DeletePluginCommandHandler : IRequestHandler<DeletePluginCommand, E
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeletePluginCommand request, CancellationToken cancellationToken)
     {
-        var pluginEntity = await _databaseContext.Plugins
-            .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
+        var pluginEntity = await _databaseContext.Plugins.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
+
         if (pluginEntity == null)
         {
             throw new BusinessException("插件不存在") { StatusCode = 404 };
@@ -49,15 +44,19 @@ public class DeletePluginCommandHandler : IRequestHandler<DeletePluginCommand, E
             asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
             transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
 
-        await _mediator.Send(new DeleteFileCommand
-        {
-            FileId = pluginEntity.OpenapiFileId,
-        });
-
         _databaseContext.Plugins.Remove(pluginEntity);
 
         await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginId == request.PluginId));
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        if (pluginEntity.Type == (int)PluginType.OpenApi)
+        {
+            // 文件删除不可恢复
+            await _mediator.Send(new DeleteFileCommand
+            {
+                FileIds = new List<int>() { pluginEntity.OpenapiFileId }
+            });
+        }
 
         transactionScope.Complete();
 

@@ -1,15 +1,15 @@
-﻿// <copyright file="QueryAnyUserIsAdminCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Infra.Models;
 
 namespace MoAI.Login.Queries;
 
+/// <summary>
+/// 查询列表中是否有用户是管理员.
+/// </summary>
 public class QueryAnyUserIsAdminCommand : IRequest<SimpleBool>
 {
+    /// <summary>
+    /// 用户 id 列表.
+    /// </summary>
     public IReadOnlyCollection<int> UserIds { get; init; } = Array.Empty<int>();
 }

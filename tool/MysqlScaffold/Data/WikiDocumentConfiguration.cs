@@ -37,12 +37,12 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasColumnType("int(11)")
             .HasColumnName("file_id");
         entity.Property(e => e.FileName)
-            .HasMaxLength(255)
+            .HasMaxLength(1024)
             .HasComment("文档名称")
             .HasColumnName("file_name");
         entity.Property(e => e.FileType)
             .HasMaxLength(10)
-            .HasComment("文件类型，如md")
+            .HasComment("文件扩展名称，如.md")
             .HasColumnName("file_type");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")

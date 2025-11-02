@@ -1,14 +1,8 @@
-﻿// <copyright file="QueryUserIsAdminCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
-using MoAI.Database;
-using MoAI.Login.Commands;
+﻿using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Common.Queries.Response;
+using MoAI.Database;
+using MoAI.Login.Commands;
 
 namespace MoAI.Login.Queries;
 
@@ -36,7 +30,7 @@ public class QueryUserIsAdminCommandHandler : IRequestHandler<QueryUserIsAdminCo
     {
         var adminList = await _mediator.Send(new QueryAdminIdsCommand(), cancellationToken);
 
-        var isRoot = adminList.RootId == request.UserId;
-        return new QueryUserIsAdminCommandResponse { IsRoot = isRoot, IsAdmin = isRoot ? true : adminList.AdminIds.Contains(request.UserId) };
+        var isRoot = adminList.RootId == request.ContextUserId;
+        return new QueryUserIsAdminCommandResponse { IsRoot = isRoot, IsAdmin = isRoot ? true : adminList.AdminIds.Contains(request.ContextUserId) };
     }
 }

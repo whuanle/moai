@@ -1,0 +1,19 @@
+.prompt-create-page-card {
+  height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-create-page-form-container {
+  margin-top: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.prompt-create-page-vditor {
+  flex: 1;
+  min-height: 800px;
+  font-size: 16px;
+}

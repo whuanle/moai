@@ -1,10 +1,4 @@
-﻿// <copyright file="ApplicationBuilderExtensions.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using MoAI.Infra;
@@ -24,7 +18,7 @@ public static class ApplicationBuilderExtensions
     {
         var systemOptions = builder.ApplicationServices.GetRequiredService<SystemOptions>();
 
-        var filePath = Path.Combine(systemOptions.FilePath, "public");
+        var filePath = Path.Combine(systemOptions.Storage.LocalPath, "public");
 
         // 登录后就能直接看到的文件
         builder.UseStaticFiles(new StaticFileOptions

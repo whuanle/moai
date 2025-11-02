@@ -1,10 +1,4 @@
-﻿// <copyright file="UpdateOpenApiPluginEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
@@ -17,7 +11,7 @@ namespace MoAI.Plugin.Endpoints;
 /// <summary>
 /// 修改 openapi 插件.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/update_openapi")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/update_openapi")]
 public class UpdateOpenApiPluginEndpoint : Endpoint<UpdateOpenApiPluginCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -37,31 +31,14 @@ public class UpdateOpenApiPluginEndpoint : Endpoint<UpdateOpenApiPluginCommand, 
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateOpenApiPluginCommand req, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryPluginCreatorCommand
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            PluginId = req.PluginId,
+            ContextUserId = _userContext.UserId
         });
 
-        if (!isCreator.Exist == false)
+        if (!isAdmin.IsAdmin)
         {
-            throw new BusinessException("未找到插件.");
-        }
-
-        if (isCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
-        }
-        else if (isCreator.CreatorId != _userContext.UserId)
-        {
-            throw new BusinessException("未找到插件.") { StatusCode = 404 };
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
         return await _mediator.Send(req, ct);

@@ -19,10 +19,18 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
 
         entity.ToTable("plugin", tb => tb.HasComment("插件"));
 
+        entity.HasIndex(e => e.PluginName, "plugin_plugin_name_index");
+
+        entity.HasIndex(e => e.Title, "plugin_title_index");
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
+        entity.Property(e => e.ClassifyId)
+            .HasComment("分类id")
+            .HasColumnType("int(11)")
+            .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("创建时间")
@@ -48,9 +56,6 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
         entity.Property(e => e.IsPublic)
             .HasComment("公开访问")
             .HasColumnName("is_public");
-        entity.Property(e => e.IsSystem)
-            .HasComment("系统全局插件")
-            .HasColumnName("is_system");
         entity.Property(e => e.OpenapiFileId)
             .HasComment("文件id")
             .HasColumnType("int(11)")

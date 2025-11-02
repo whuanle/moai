@@ -1,16 +1,10 @@
-﻿// <copyright file="QueryPluginDetailCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAIPlugin.Core.Queries;
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
+using MoAI.Plugin.InternalPluginQueries;
 using MoAI.Plugin.Models;
 using MoAI.Plugin.Queries.Responses;
 using MoAI.User.Queries;
@@ -18,7 +12,7 @@ using MoAI.User.Queries;
 namespace MoAI.Plugin.Queries;
 
 /// <summary>
-/// <inheritdoc cref="QueryPluginDetailCommand"/>
+/// <inheritdoc cref="QueryInternalPluginDetailCommand"/>
 /// </summary>
 public class QueryPluginDetailCommandHandler : IRequestHandler<QueryPluginDetailCommand, QueryPluginDetailCommandResponse>
 {
@@ -56,15 +50,16 @@ public class QueryPluginDetailCommandHandler : IRequestHandler<QueryPluginDetail
                 CreateUserId = x.CreateUserId,
                 UpdateTime = x.UpdateTime,
                 UpdateUserId = x.UpdateUserId,
-                IsPublic = x.IsPublic
+                IsPublic = x.IsPublic,
+                ClassifyId = x.ClassifyId
             }).FirstOrDefaultAsync();
 
         if (plugin == null)
         {
-            throw new BusinessException("未找到或不能编辑此插件");
+            throw new BusinessException("未找到插件") { StatusCode = 404 };
         }
 
-        await _mediator.Send(new FillUserInfoCommand { Items = new QueryPluginDetailCommandResponse[] { plugin } });
+        await _mediator.Send(new FillUserInfoCommand { Items = new Responses.QueryPluginDetailCommandResponse[] { plugin } });
 
         return plugin;
     }

@@ -1,15 +1,8 @@
-// <copyright file="RegisterUserCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Models;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
@@ -45,18 +38,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        var disableRegister = await _dbContext.Settings
-            .Where(s => s.Key == ISystemSettingProvider.DisableRegister.Key)
-            .Select(s => s.Value)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (disableRegister == "true" || disableRegister == "1")
-        {
-            // 禁用注册功能
-            _logger.LogWarning("注册功能已被禁用，请联系管理员。");
-            throw new BusinessException("注册功能已被禁用，请联系管理员。") { StatusCode = 403 };
-        }
-
         // 使用 RSA 解密还原密码
         string restorePassword = default!;
         try

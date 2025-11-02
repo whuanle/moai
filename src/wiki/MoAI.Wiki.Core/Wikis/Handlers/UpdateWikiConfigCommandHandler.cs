@@ -1,10 +1,4 @@
-﻿// <copyright file="UpdateWikiConfigCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -43,16 +37,24 @@ public class UpdateWikiConfigCommandHandler : IRequestHandler<UpdateWikiConfigCo
             throw new BusinessException("知识库不存在") { StatusCode = 500 };
         }
 
-        if (wikiEntity.IsLock)
+        if (!wikiEntity.IsLock)
         {
-            throw new BusinessException("知识库已进行锁定，禁止改动配置") { StatusCode = 409 };
+            wikiEntity.EmbeddingDimensions = request.EmbeddingDimensions;
+            wikiEntity.EmbeddingModelId = request.EmbeddingModelId;
         }
 
-        wikiEntity.EmbeddingDimensions = request.EmbeddingDimensions;
-        wikiEntity.EmbeddingModelId = request.EmbeddingModelId;
-        wikiEntity.EmbeddingModelTokenizer = request.EmbeddingModelTokenizer.ToJsonString();
-        wikiEntity.EmbeddingBatchSize = request.EmbeddingBatchSize;
-        wikiEntity.MaxRetries = request.MaxRetries;
+        if (request.Name != wikiEntity.Name && wikiEntity.IsSystem)
+        {
+            var exist = await _databaseContext.Wikis.AnyAsync(x => x.IsSystem && x.Id != wikiEntity.Id && x.Name == request.Name, cancellationToken);
+            if (exist)
+            {
+                throw new BusinessException("系统知识库名称重复") { StatusCode = 409 };
+            }
+        }
+
+        wikiEntity.IsPublic = request.IsPublic;
+        wikiEntity.Name = request.Name;
+        wikiEntity.Description = request.Description;
 
         _databaseContext.Update(wikiEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);

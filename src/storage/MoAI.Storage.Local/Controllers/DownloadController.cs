@@ -1,10 +1,4 @@
-﻿// <copyright file="DownloadController.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra;
 using MoAI.Infra.Helpers;
@@ -15,7 +9,7 @@ namespace MoAI.Storage.Controllers;
 /// <summary>
 /// 下载文件.
 /// </summary>
-[Route($"/download")]
+[Route($"/api")]
 [AllowAnonymous]
 public class DownloadController : ControllerBase
 {
@@ -38,22 +32,23 @@ public class DownloadController : ControllerBase
     /// <param name="expiry"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    [HttpGet("private/{filename}")]
-    public IActionResult DownloadPrivateFile([FromRoute] string filename, [FromQuery] string key, [FromQuery] long expiry, [FromQuery] string token)
+    [HttpGet("download/{filename}")]
+    public IActionResult DownloadPrivateFile([FromRoute] string filename, [FromQuery] string key, [FromQuery] ulong expiry, [FromQuery] string token)
     {
-        var text = $"{filename}|{key}|{expiry}";
+        // 已过期
+        if (DateTimeOffset.FromUnixTimeMilliseconds((long)expiry) < DateTimeOffset.Now)
+        {
+            return Unauthorized("Have expired");
+        }
+
+        var text = $"{expiry}|{key}|{filename}";
 
         if (token != HashHelper.ComputeSha256Hash(text))
         {
             return Unauthorized("Invalid token.");
         }
 
-        if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - expiry > 0)
-        {
-            return Unauthorized("Token has expired.");
-        }
-
-        var filePath = Path.Combine(_systemOptions.FilePath, "private", key);
+        var filePath = Path.Combine(_systemOptions.Storage.LocalPath, key);
 
 #pragma warning disable CA3003 // 查看文件路径注入漏洞的代码
 #pragma warning disable CA2000 // 丢失范围之前释放对象

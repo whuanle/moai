@@ -6,19 +6,13 @@ import { Ai_optmize_promptRequestBuilderRequestsMetadata, type Ai_optmize_prompt
 // @ts-ignore
 import { Class_listRequestBuilderRequestsMetadata, type Class_listRequestBuilder } from './class_list/index.js';
 // @ts-ignore
-import { Create_classRequestBuilderRequestsMetadata, type Create_classRequestBuilder } from './create_class/index.js';
-// @ts-ignore
 import { Create_promptRequestBuilderRequestsMetadata, type Create_promptRequestBuilder } from './create_prompt/index.js';
-// @ts-ignore
-import { Delete_classRequestBuilderRequestsMetadata, type Delete_classRequestBuilder } from './delete_class/index.js';
 // @ts-ignore
 import { Delete_promptRequestBuilderRequestsMetadata, type Delete_promptRequestBuilder } from './delete_prompt/index.js';
 // @ts-ignore
 import { Prompt_contentRequestBuilderRequestsMetadata, type Prompt_contentRequestBuilder } from './prompt_content/index.js';
 // @ts-ignore
 import { Prompt_listRequestBuilderRequestsMetadata, type Prompt_listRequestBuilder } from './prompt_list/index.js';
-// @ts-ignore
-import { type Update_classRequestBuilder, Update_classRequestBuilderRequestsMetadata } from './update_class/index.js';
 // @ts-ignore
 import { type Update_promptRequestBuilder, Update_promptRequestBuilderRequestsMetadata } from './update_prompt/index.js';
 // @ts-ignore
@@ -37,17 +31,9 @@ export interface PromptRequestBuilder extends BaseRequestBuilder<PromptRequestBu
      */
     get class_list(): Class_listRequestBuilder;
     /**
-     * The create_class property
-     */
-    get create_class(): Create_classRequestBuilder;
-    /**
      * The create_prompt property
      */
     get create_prompt(): Create_promptRequestBuilder;
-    /**
-     * The delete_class property
-     */
-    get delete_class(): Delete_classRequestBuilder;
     /**
      * The delete_prompt property
      */
@@ -60,10 +46,6 @@ export interface PromptRequestBuilder extends BaseRequestBuilder<PromptRequestBu
      * The prompt_list property
      */
     get prompt_list(): Prompt_listRequestBuilder;
-    /**
-     * The update_class property
-     */
-    get update_class(): Update_classRequestBuilder;
     /**
      * The update_prompt property
      */
@@ -83,14 +65,8 @@ export const PromptRequestBuilderNavigationMetadata: Record<Exclude<keyof Prompt
     class_list: {
         requestsMetadata: Class_listRequestBuilderRequestsMetadata,
     },
-    create_class: {
-        requestsMetadata: Create_classRequestBuilderRequestsMetadata,
-    },
     create_prompt: {
         requestsMetadata: Create_promptRequestBuilderRequestsMetadata,
-    },
-    delete_class: {
-        requestsMetadata: Delete_classRequestBuilderRequestsMetadata,
     },
     delete_prompt: {
         requestsMetadata: Delete_promptRequestBuilderRequestsMetadata,
@@ -100,9 +76,6 @@ export const PromptRequestBuilderNavigationMetadata: Record<Exclude<keyof Prompt
     },
     prompt_list: {
         requestsMetadata: Prompt_listRequestBuilderRequestsMetadata,
-    },
-    update_class: {
-        requestsMetadata: Update_classRequestBuilderRequestsMetadata,
     },
     update_prompt: {
         requestsMetadata: Update_promptRequestBuilderRequestsMetadata,

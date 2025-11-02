@@ -1,42 +1,31 @@
-﻿// <copyright file="DownloadFileCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
-using MoAI.Infra;
+﻿using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
+using MoAI.Storage.Services;
 
 namespace MoAI.Storage.Handlers;
 
+/// <summary>
+/// <inheritdoc cref="DownloadFileCommand"/>
+/// </summary>
 public class DownloadFileCommandHandler : IRequestHandler<DownloadFileCommand, EmptyCommandResponse>
 {
-    private readonly SystemOptions _systemOptions;
+    private readonly IStorage _storage;
 
-    public DownloadFileCommandHandler(SystemOptions systemOptions)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DownloadFileCommandHandler"/> class.
+    /// </summary>
+    /// <param name="storage"></param>
+    public DownloadFileCommandHandler(IStorage storage)
     {
-        _systemOptions = systemOptions;
+        _storage = storage;
     }
 
-    public EmptyCommandResponse Handle(DownloadFileCommand request, CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public async Task<EmptyCommandResponse> Handle(DownloadFileCommand request, CancellationToken cancellationToken)
     {
-        var visibility = request.Visibility.ToString().ToLower();
-
-        var sourceFilePath = Path.Combine(_systemOptions.FilePath, visibility, request.ObjectKey);
-        if (!File.Exists(sourceFilePath))
-        {
-            throw new FileNotFoundException($"文件 {request.ObjectKey} 不存在于 {_systemOptions.FilePath} 路径下。");
-        }
-
-        File.Copy(sourceFilePath, request.StoreFilePath, true);
+        await _storage.DownloadAsync(request.ObjectKey, request.LocalFilePath);
 
         return EmptyCommandResponse.Default;
-    }
-
-    Task<EmptyCommandResponse> IRequestHandler<DownloadFileCommand, EmptyCommandResponse>.Handle(DownloadFileCommand request, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
     }
 }

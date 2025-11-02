@@ -1,9 +1,3 @@
-// <copyright file="PagedResult{T}.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
 namespace MoAI.Infra.Models;
 
 /// <summary>
@@ -15,7 +9,7 @@ public class PagedResult<T> : PagedParamter
     /// <summary>
     /// 项目集合.
     /// </summary>
-    public IReadOnlyCollection<T> Items { get; init; }
+    public required IReadOnlyCollection<T> Items { get; init; }
 
     /// <summary>
     /// 总数.

@@ -1,10 +1,4 @@
-﻿// <copyright file="UpdateMcpServerPluginCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -52,13 +46,13 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
         }
 
         pluginEntity.IsPublic = request.IsPublic;
-        pluginEntity.IsSystem = request.IsSystem;
         pluginEntity.Description = request.Description;
         pluginEntity.Queries = request.Query.ToJsonString();
         pluginEntity.Headers = request.Header.ToJsonString();
         pluginEntity.Title = request.Name;
         pluginEntity.PluginName = request.Name;
         pluginEntity.Server = request.ServerUrl.ToString();
+        pluginEntity.ClassifyId = request.ClassifyId;
 
         // 检测 MCP Server 是否可用
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;

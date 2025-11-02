@@ -1,11 +1,4 @@
-﻿// <copyright file="EmbeddingDocumentCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi.MQ;
-using MoAIDocument.Core.Consumers.Events;
+﻿using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Models;
@@ -16,6 +9,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Models;
+using MoAIDocument.Core.Consumers.Events;
 
 namespace MoAI.Wiki.Documents.Commands;
 

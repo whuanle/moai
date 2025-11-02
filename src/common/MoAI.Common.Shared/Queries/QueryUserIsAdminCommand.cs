@@ -1,15 +1,14 @@
-﻿// <copyright file="QueryUserIsAdminCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Common.Queries.Response;
+using MoAI.Infra.Models;
 
 namespace MoAI.Common.Queries;
 
-public class QueryUserIsAdminCommand : IRequest<QueryUserIsAdminCommandResponse>
+/// <summary>
+/// 查询当前用户是否管理员.
+/// </summary>
+public class QueryUserIsAdminCommand : IUserIdContext, IRequest<QueryUserIsAdminCommandResponse>
 {
-    public int UserId { get; init; }
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; }
 }

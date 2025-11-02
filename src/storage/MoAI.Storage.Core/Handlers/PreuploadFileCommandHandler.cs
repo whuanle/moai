@@ -1,10 +1,4 @@
-﻿// <copyright file="PreuploadFileCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -12,7 +6,8 @@ using MoAI.Infra;
 using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Commands.Response;
-using MoAI.Store.Enums;
+using MoAI.Storage.Services;
+using MoAI.Store.Services;
 using System.Net;
 
 namespace MoAI.Storage.Handlers;
@@ -24,32 +19,30 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
 {
     private readonly DatabaseContext _dbContext;
     private readonly IMediator _mediator;
-    private readonly IServiceProvider _serviceProvider;
     private readonly SystemOptions _systemOptions;
+    private readonly IStorage _storage;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PreuploadFileCommandHandler"/> class.
     /// </summary>
     /// <param name="dbContext"></param>
-    /// <param name="serviceProvider"></param>
     /// <param name="mediator"></param>
     /// <param name="systemOptions"></param>
-    public PreuploadFileCommandHandler(DatabaseContext dbContext, IServiceProvider serviceProvider, IMediator mediator, SystemOptions systemOptions)
+    /// <param name="storage"></param>
+    public PreuploadFileCommandHandler(DatabaseContext dbContext, IMediator mediator, SystemOptions systemOptions, IStorage storage)
     {
         _dbContext = dbContext;
-        _serviceProvider = serviceProvider;
         _mediator = mediator;
         _systemOptions = systemOptions;
+        _storage = storage;
     }
 
     /// <inheritdoc/>
     public async Task<PreUploadFileCommandResponse> Handle(PreUploadFileCommand request, CancellationToken cancellationToken)
     {
-        var isPublic = request.Visibility == FileVisibility.Public ? true : false;
-
         // 如果文件的 md5 已存在并且文件大小相同，则直接返回文件的 oss 地址，无需重复上传
         // public 和 private 不可以是同一个桶
-        var file = await _dbContext.Files.FirstOrDefaultAsync(x => x.IsPublic == isPublic && x.ObjectKey == request.ObjectKey, cancellationToken);
+        var file = await _dbContext.Files.FirstOrDefaultAsync(x => x.ObjectKey == request.ObjectKey, cancellationToken);
 
         // 文件已存在，直接复用
         if (file != null && file.IsUploaded)
@@ -66,12 +59,11 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
         {
             fileEntity = new FileEntity
             {
-                FileName = request.FileName,
+                FileExtension = Path.GetExtension(request.ObjectKey) ?? string.Empty,
                 FileMd5 = request.MD5,
                 FileSize = request.FileSize,
                 ContentType = request.ContentType,
                 IsUploaded = false,
-                IsPublic = isPublic,
                 ObjectKey = request.ObjectKey
             };
 
@@ -88,14 +80,13 @@ public class PreuploadFileCommandHandler : IRequestHandler<PreUploadFileCommand,
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        // 生成预上传地址
-        var expiry = DateTimeOffset.Now.Add(request.Expiration).ToUnixTimeMilliseconds();
-        var token = $"{request.ObjectKey}|{expiry}|{request.FileSize}|{request.ContentType}";
-        var tokenEncode = HashHelper.ComputeSha256Hash(token);
-        var visibility = request.Visibility.ToString().ToLower();
-        var objectPath = WebUtility.UrlEncode(request.ObjectKey);
-
-        var uploadUrl = new Uri(new Uri(_systemOptions.Server), $"/api/storage/upload/{visibility}/{objectPath}?expiry={expiry}&size={request.FileSize}&token={tokenEncode}").ToString();
+        var uploadUrl = await _storage.GeneratePreSignedUploadUrlAsync(new FileObject
+        {
+            ObjectKey = fileEntity.ObjectKey,
+            MaxFileSize = request.FileSize,
+            ContentType = request.ContentType,
+            ExpiryDuration = request.Expiration
+        });
 
         return new PreUploadFileCommandResponse
         {

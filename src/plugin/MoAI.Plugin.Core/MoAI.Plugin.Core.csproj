@@ -6,10 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="Queries\vzq420k5.fpp~" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <PackageReference Include="Microsoft.OpenApi.Readers" />
 	  <PackageReference Include="ModelContextProtocol" />
 	  <PackageReference Include="ModelContextProtocol-SemanticKernel" />
@@ -20,6 +16,7 @@
 	  <ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.Api\MoAI.Plugin.Api.csproj" />
+	  <ProjectReference Include="..\MoAI.Plugin.BuildIn\MoAI.Plugin.BuildIn.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 	</ItemGroup>
 

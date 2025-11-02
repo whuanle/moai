@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Refresh_mcpRequestBuilder extends BaseRequestBuilder<Refresh_mcpRequestBuilder> {
     /**
-     * 刷新mcp服务器的tool列表.
+     * 刷新 mcp 服务器的 tool 列表.
      * @param body 刷新 MCP 服务器的工具列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface Refresh_mcpRequestBuilder extends BaseRequestBuilder<Refresh_mc
      */
      post(body: RefreshMcpServerPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 刷新mcp服务器的tool列表.
+     * 刷新 mcp 服务器的 tool 列表.
      * @param body 刷新 MCP 服务器的工具列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

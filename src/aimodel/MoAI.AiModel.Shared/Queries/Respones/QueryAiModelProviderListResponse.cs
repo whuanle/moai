@@ -1,31 +1,4 @@
-﻿// <copyright file="QueryAiModelProviderListResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-
-// <copyright file="QueryAiModelProviderListResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-
-// <copyright file="QueryAiModelProviderListResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-
-// <copyright file="QueryAiModelProviderListResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAI.AiModel.Models;
+﻿using MoAI.AiModel.Models;
 
 namespace MoAI.AiModel.Queries.Respones;
 
@@ -38,4 +11,9 @@ public class QueryAiModelProviderListResponse
     /// AI 服务商列表，{ai服务提供商,模型数量}.
     /// </summary>
     public IReadOnlyCollection<QueryAiModelProviderCount> Providers { get; init; } = new List<QueryAiModelProviderCount>();
+
+    /// <summary>
+    /// AI 模型数量.
+    /// </summary>
+    public IReadOnlyCollection<QueryAiModelTypeCount> Types { get; init; } = new List<QueryAiModelTypeCount>();
 }

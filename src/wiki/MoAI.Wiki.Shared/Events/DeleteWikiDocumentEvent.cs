@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Events;
 

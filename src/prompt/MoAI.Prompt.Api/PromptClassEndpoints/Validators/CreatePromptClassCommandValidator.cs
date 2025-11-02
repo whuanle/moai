@@ -1,10 +1,4 @@
-﻿// <copyright file="CreatePromptClassCommandValidator.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FluentValidation;
+﻿using FluentValidation;
 using MoAI.Prompt.Commands;
 
 namespace MoAI.Prompt.PromptClassEndpoints.Validators;
@@ -12,7 +6,7 @@ namespace MoAI.Prompt.PromptClassEndpoints.Validators;
 /// <summary>
 /// CreatePromptClassValidator.
 /// </summary>
-public class CreatePromptClassCommandValidator : AbstractValidator<CreatePromptClassCommand>
+public class CreatePromptClassCommandValidator : AbstractValidator<CreatePromptClassifyCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CreatePromptClassCommandValidator"/> class.

@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Prompt_listRequestBuilder extends BaseRequestBuilder<Prompt_listRequestBuilder> {
     /**
      * 查询提示词.
-     * @param body 查询能看到的提示词列表.
+     * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryPromptListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Prompt_listRequestBuilder extends BaseRequestBuilder<Prompt_lis
      post(body: QueryPromptListCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryPromptListCommandResponse | undefined>;
     /**
      * 查询提示词.
-     * @param body 查询能看到的提示词列表.
+     * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

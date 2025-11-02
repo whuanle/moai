@@ -1,16 +1,8 @@
-﻿// <copyright file="AddWebDocumentConfigEndpoints.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Wiki.WebDocuments.Commands;
 using MoAI.Wiki.WebDocuments.Queries;
-using MoAI.Wiki.WebDocuments.Queries.Responses;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 

@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Infra</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.KernelMemory.Abstractions" />
+	  <PackageReference Include="Microsoft.KernelMemory.Core" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

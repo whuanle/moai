@@ -66,6 +66,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppAssistantChatHistoryEntity> AppAssistantChatHistories { get; set; }
 
     /// <summary>
+    /// 分类.
+    /// </summary>
+    public virtual DbSet<ClassifyEntity> Classifies { get; set; }
+
+    /// <summary>
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }
@@ -86,6 +91,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
 
     /// <summary>
+    /// 内置插件.
+    /// </summary>
+    public virtual DbSet<PluginInternalEntity> PluginInternals { get; set; }
+
+    /// <summary>
     /// 插件使用量限制.
     /// </summary>
     public virtual DbSet<PluginLimitEntity> PluginLimits { get; set; }
@@ -99,11 +109,6 @@ public partial class DatabaseContext : DbContext
     /// 提示词.
     /// </summary>
     public virtual DbSet<PromptEntity> Prompts { get; set; }
-
-    /// <summary>
-    /// 提示词分类.
-    /// </summary>
-    public virtual DbSet<PromptClassEntity> PromptClasses { get; set; }
 
     /// <summary>
     /// 系统设置.
@@ -131,7 +136,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
 
     /// <summary>
-    /// 知识库任务.
+    /// 文档向量化任务状态.
     /// </summary>
     public virtual DbSet<WikiDocumentTaskEntity> WikiDocumentTasks { get; set; }
 

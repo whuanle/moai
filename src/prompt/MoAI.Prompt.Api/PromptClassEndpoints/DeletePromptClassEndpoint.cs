@@ -1,23 +1,17 @@
-﻿// <copyright file="DeletePromptClassEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
-using MoAIPrompt.Api;
+﻿using FastEndpoints;
 using MediatR;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
-using MoAI.Common.Queries;
+using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.PromptClassEndpoints;
 
 /// <summary>
 /// 删除提示词分类.
 /// </summary>
-[HttpDelete($"{ApiPrefix.Prefix}/delete_class")]
+[HttpDelete($"{ApiPrefix.AdminPrefix}/delete_class")]
 public class DeletePromptClassEndpoint : Endpoint<DeletePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -39,7 +33,7 @@ public class DeletePromptClassEndpoint : Endpoint<DeletePromptCommand, EmptyComm
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            UserId = _userContext.UserId
+            ContextUserId = _userContext.UserId
         });
 
         if (!isAdmin.IsAdmin)

@@ -15,14 +15,14 @@ public partial class FileEntity : IFullAudited
     public int Id { get; set; }
 
     /// <summary>
-    /// 文件名称,对于共用文件无意义,私有文件自行存储文件名称.
-    /// </summary>
-    public string FileName { get; set; } = default!;
-
-    /// <summary>
     /// 文件路径.
     /// </summary>
     public string ObjectKey { get; set; } = default!;
+
+    /// <summary>
+    /// 文件扩展名.
+    /// </summary>
+    public string FileExtension { get; set; } = default!;
 
     /// <summary>
     /// md5.
@@ -40,12 +40,7 @@ public partial class FileEntity : IFullAudited
     public string ContentType { get; set; } = default!;
 
     /// <summary>
-    /// 是否公开.
-    /// </summary>
-    public bool IsPublic { get; set; }
-
-    /// <summary>
-    /// 是否已经上传.
+    /// 是否已经上传完毕.
     /// </summary>
     public bool IsUploaded { get; set; }
 

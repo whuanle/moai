@@ -1,12 +1,5 @@
-﻿// <copyright file="MainModule.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi;
+﻿using Maomi;
 using Maomi.I18n;
-using MoAIPrompt.Core;
 using MoAI.Admin;
 using MoAI.AI;
 using MoAI.AiModel.Core;
@@ -21,6 +14,7 @@ using MoAI.Plugin;
 using MoAI.Storage;
 using MoAI.User;
 using MoAI.Wiki;
+using MoAIPrompt.Core;
 
 namespace MoAI;
 
@@ -35,7 +29,7 @@ namespace MoAI;
 [InjectModule<AdminCoreModule>]
 [InjectModule<UserCoreModule>]
 [InjectModule<AiModelCoreModule>]
-[InjectModule<WikiCoreModule>]
+//[InjectModule<WikiCoreModule>]
 [InjectModule<PluginCoreModule>]
 [InjectModule<PromptCoreModule>]
 [InjectModule<AppAiAssistantCoreModule>]

@@ -1,10 +1,4 @@
-﻿// <copyright file="AzureTextEmbeddingGeneration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi;
+﻿using Maomi;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Services;
@@ -16,7 +10,7 @@ namespace MoAI.AI.TextEmbeddingGenerations;
 public class AnthropicTextEmbeddingGeneration : ITextEmbeddingGeneration
 {
     /// <inheritdoc/>
-    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig embeddingConfig)
+    public IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig wikiConfig)
     {
         return kernelMemoryBuilder.WithAnthropicTextGeneration(new Microsoft.KernelMemory.AI.Anthropic.AnthropicConfig
         {
@@ -24,7 +18,7 @@ public class AnthropicTextEmbeddingGeneration : ITextEmbeddingGeneration
             Endpoint = endpoint.Endpoint,
             ApiKey = endpoint.Key,
 
-            Tokenizer = embeddingConfig.EmbeddingModelTokenizer.ToJsonString(),
+            Tokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString(),
             MaxTokenOut = endpoint.TextOutput,
         });
     }

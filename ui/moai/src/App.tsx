@@ -37,44 +37,37 @@ import {
   UserOutlined,
   DownOutlined,
   LogoutOutlined,
+  FolderOutlined,
 } from "@ant-design/icons";
 import "./App.css";
 import {
   CheckToken,
   RefreshServerInfo,
-  GetUserDetailInfo
+  GetUserDetailInfo,
 } from "./InitService";
 import { GetApiClient } from "./components/ServiceClient";
 import useAppStore from "./stateshare/store";
 import Dashboard from "./components/dashboard/Dashboard";
-import OAuth from "./components/admin/OAuth";
-import UserManager from "./components/admin/UserManager";
+import OAuthPage from "./components/admin/oauth/OAuthPage";
+import UserManagerPage from "./components/admin/usermanager/UserManagerPage";
 import UserSetting from "./components/user/UserSetting";
-import AIModel from "./components/aimodel/AiModel";
-import WikiPage from "./components/wiki/WikiPage";
-import WikiLayout from "./components/wiki/WikiLayout";
-import WikiSettings from "./components/wiki/WikiSettings";
-import WikiDocument from "./components/wiki/WikiDocument";
-import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
-import WikiSearch from "./components/wiki/WikiSearch";
-import WikiUser from "./components/wiki/WikiUser";
-import PluginList from "./components/plugin/PluginList";
-import SystemAIModel from "./components/admin/SystemAiModel";
-import SystemPluginList from "./components/admin/PluginList";
-import SystemSettings from "./components/admin/SystemSettings";
-import PromptLayout from "./components/prompt/PromptLayout";
-import PromptList from "./components/prompt/PromptList";
-import PromptContent from "./components/prompt/PromptContent";
-import PromptEdit from "./components/prompt/PromptEdit";
-import PromptCreate from "./components/prompt/PromptCreate";
-import PromptClassManage from "./components/prompt/PromptClassManage";
-import AiAssistant from "./components/app/AiAssistant";
+// import WikiPage from "./components/wiki/WikiPage";
+// import WikiLayout from "./components/wiki/WikiLayout";
+// import WikiSettings from "./components/wiki/WikiSettings";
+// import WikiDocument from "./components/wiki/WikiDocument";
+// import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
+// import WikiSearch from "./components/wiki/WikiSearch";
+// import WikiUser from "./components/wiki/WikiUser";
+
 import BindOAuth from "./components/user/BindOAuth";
-import WikiCrawle from "./components/wiki/WikiCrawle";
-import WikiCrawleConfig from "./components/wiki/crawle/WikiCrawleConfig";
-import WikiCrawleLayout from "./components/wiki/crawle/WikiCrawleLayout";
-import WikiCrawleDocument from "./components/wiki/crawle/WikiCrawleDocument";
-import WikiCrawleTask from "./components/wiki/crawle/WikiCrawleTask";
+import AiModelPage from "./components/admin/aimodel/AiModelPage";
+import PromptClassPage from "./components/admin/promptclass/PromptClassPage";
+import PromptListPage from "./components/prompt/PromptListPage";
+import PromptCreatePage from "./components/prompt/PromptCreatePage";
+import PromptEditPage from "./components/prompt/PromptEditPage";
+import PluginClassPage from "./components/admin/pluginClass/PluginClassPage";
+import PluginList from "./components/plugin/PluginList";
+import PluginManagerPage from "./components/admin/plugin/PluginManagerPage";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -95,6 +88,12 @@ function App() {
     if (path.startsWith("/app/admin/aimodel")) {
       return "admin.aimodel";
     }
+    if (path.startsWith("/app/admin/promptclass")) {
+      return "admin.promptclass";
+    }
+    if (path.startsWith("/app/admin/pluginclass")) {
+      return "admin.pluginclass";
+    }
     if (path.startsWith("/app/admin/oauth")) {
       return "admin.oauth";
     }
@@ -104,14 +103,8 @@ function App() {
     if (path.startsWith("/app/admin/plugin")) {
       return "admin.plugin";
     }
-    if (path.startsWith("/app/admin/settings")) {
-      return "admin.settings";
-    }
     if (path.startsWith("/app/admin")) {
       return "admin";
-    }
-    if (path.startsWith("/app/aimodel")) {
-      return "aimodel";
     }
     if (path.startsWith("/app/user/usersetting")) {
       return "user.setting";
@@ -124,9 +117,6 @@ function App() {
     }
     if (path.startsWith("/app/wiki")) {
       return "wiki";
-    }
-    if (path.startsWith("/app/plugin")) {
-      return "plugin";
     }
     if (path.startsWith("/app/prompt")) {
       return "prompt";
@@ -172,15 +162,9 @@ function App() {
     };
   }, []);
 
-  // 获取完整的头像URL
-  const getAvatarUrl = (avatarPath: string | null | undefined) => {
-    if (!avatarPath) return null;
-    if (avatarPath.startsWith("http://") || avatarPath.startsWith("https://")) {
-      return avatarPath;
-    }
-    return serverInfo?.publicStoreUrl
-      ? `${serverInfo.publicStoreUrl}/${avatarPath}`
-      : avatarPath;
+  // 获取用户显示名称
+  const getUserDisplayName = () => {
+    return userDetailInfo?.nickName || userDetailInfo?.userName || "用户";
   };
 
   // 注销登录
@@ -210,19 +194,9 @@ function App() {
         label: <Link to="/app/index">首页</Link>,
       },
       {
-        key: "aimodel",
-        icon: <RobotOutlined />,
-        label: <Link to="/app/aimodel">AI模型</Link>,
-      },
-      {
         key: "wiki",
         icon: <BookOutlined />,
         label: <Link to="/app/wiki/list">知识库</Link>,
-      },
-      {
-        key: "plugin",
-        icon: <AppstoreOutlined />,
-        label: <Link to="/app/plugin/list">插件</Link>,
       },
       {
         key: "prompt",
@@ -249,18 +223,18 @@ function App() {
       {
         key: "application",
         icon: <AppstoreOutlined />,
-        label: '应用',
+        label: "应用",
         children: [
           {
             key: "application.assistant",
             icon: <RobotOutlined />,
             label: <Link to="/app/application/assistant">AI助手</Link>,
           },
-        ]
+        ],
       },
     ];
 
-            // 只有管理员才能看到管理面板
+    // 只有管理员才能看到管理面板
     if (isAdmin) {
       baseItems.push({
         key: "admin",
@@ -283,15 +257,20 @@ function App() {
             label: <Link to="/app/admin/aimodel">AI模型</Link>,
           },
           {
+            key: "admin.promptclass",
+            icon: <FolderOutlined />,
+            label: <Link to="/app/admin/promptclass">提示词分类</Link>,
+          },
+          {
+            key: "admin.pluginclass",
+            icon: <AppstoreOutlined />,
+            label: <Link to="/app/admin/pluginclass">插件分类</Link>,
+          },
+          {
             key: "admin.plugin",
             icon: <AppstoreOutlined />,
             label: <Link to="/app/admin/plugin">插件</Link>,
-          },
-          {
-            key: "admin.settings",
-            icon: <SettingOutlined />,
-            label: <Link to="/app/admin/settings">系统设置</Link>,
-          },
+          }
         ],
       });
     }
@@ -303,7 +282,7 @@ function App() {
     <>
       {contextHolder}
       <Layout className="layout">
-      {headerVisible && (
+        {headerVisible && (
           <Layout.Header
             className="header"
             style={{
@@ -313,9 +292,9 @@ function App() {
             }}
           >
             <div className="logo-container">
-              <img 
-                src="/logo.png" 
-                width={45} 
+              <img
+                src="/logo.png"
+                width={45}
                 height={45}
                 style={{ objectFit: "contain" }}
                 alt="MoAI Logo"
@@ -345,12 +324,13 @@ function App() {
               >
                 <Avatar
                   size={32}
-                  src={getAvatarUrl(userDetailInfo?.avatarPath)}
                   icon={<UserOutlined />}
                   style={{ marginRight: 8 }}
-                />
+                >
+                  {getUserDisplayName().charAt(0).toUpperCase()}
+                </Avatar>
                 <span style={{ marginRight: 4, color: "#333" }}>
-                  {userDetailInfo?.nickName || userDetailInfo?.userName || "用户"}
+                  {getUserDisplayName()}
                 </span>
                 <DownOutlined style={{ fontSize: "12px", color: "#666" }} />
               </div>
@@ -358,9 +338,9 @@ function App() {
           </Layout.Header>
         )}
         <Layout>
-          <Sider 
-            width={200} 
-            className="sider" 
+          <Sider
+            width={200}
+            className="sider"
             collapsible
             onCollapse={(collapsed) => {
               setHeaderVisible(!collapsed);
@@ -374,25 +354,28 @@ function App() {
             />
           </Sider>
           <Layout style={{ padding: "0 0px 0px" }}>
-          <Content className="content">
+            <Content className="content">
               <Routes>
                 <Route index element={<Dashboard />} />
                 <Route path="index" element={<Dashboard />} />
-                <Route path="aimodel" element={<AIModel />} />
                 <Route path="admin">
                   <Route index element={<Navigate to="oauth" replace />} />
-                  <Route path="oauth" element={<OAuth />} />
-                  <Route path="usermanager" element={<UserManager />} />
-                  <Route path="aimodel" element={<SystemAIModel />} />
-                  <Route path="plugin" element={<SystemPluginList />} />
-                  <Route path="settings" element={<SystemSettings />} />
+                  <Route path="oauth" element={<OAuthPage />} />
+                  <Route path="usermanager" element={<UserManagerPage />} />
+                  <Route path="aimodel" element={<AiModelPage />} />
+                  <Route path="promptclass" element={<PromptClassPage />} />
+                  <Route path="pluginclass" element={<PluginClassPage />} />
+                  <Route path="plugin" element={<PluginManagerPage />} />
                 </Route>
                 <Route path="user">
-                  <Route index element={<Navigate to="usersetting" replace />} />
+                  <Route
+                    index
+                    element={<Navigate to="usersetting" replace />}
+                  />
                   <Route path="usersetting" element={<UserSetting />} />
                   <Route path="oauth" element={<BindOAuth />} />
                 </Route>
-                <Route path="wiki">
+                {/* <Route path="wiki">
                   <Route index element={<Navigate to="list" replace />} />
                   <Route path="list" element={<WikiPage />} />
                   <Route path=":id" element={<WikiLayout />}>
@@ -410,22 +393,22 @@ function App() {
                       <Route path="task" element={<WikiCrawleTask />} />
                     </Route>
                   </Route>
-                </Route>
-                <Route path="plugin">
+                </Route> */}
+                {/* <Route path="plugin">
                   <Route index element={<Navigate to="list" replace />} />
-                  <Route path="list" element={<PluginList />} />
-                </Route>
+                </Route> */}
                 <Route path="prompt">
                   <Route index element={<Navigate to="list" replace />} />
-                  <Route path="list" element={<PromptList />} />
-                  <Route path="create" element={<PromptCreate />} />
-                  <Route path="class" element={<PromptClassManage />} />
-                  <Route path=":promptId/edit" element={<PromptEdit />} />
-                  <Route path=":promptId/content" element={<PromptContent />} />
+                  <Route path="list" element={<PromptListPage />} />
+                  <Route path="create" element={<PromptCreatePage />} />
+                  <Route path=":promptId/edit" element={<PromptEditPage />} />
+                  {/* <Route path="class" element={<PromptClassManage />} />
+
+                  <Route path=":promptId/content" element={<PromptContent />} /> */}
                 </Route>
-                <Route path="application">
+                {/* <Route path="application">
                   <Route path="assistant" element={<AiAssistant />} />
-                </Route>
+                </Route> */}
               </Routes>
             </Content>
             {/* <Footer className="footer">moai ©2025</Footer> */}

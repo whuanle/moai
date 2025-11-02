@@ -1,10 +1,4 @@
-﻿// <copyright file="ImportMcpServerPluginCommandValidator.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using FluentValidation;
 using MoAI.Plugin.Commands;
 
@@ -23,7 +17,7 @@ public class ImportMcpServerPluginCommandValidator : Validator<ImportMcpServerPl
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("插件名称长度在 2-20 之间.")
             .Length(2, 20).WithMessage("插件名称长度在 2-20 之间.")
-            .Matches("^[a-zA-Z]+$").WithMessage("插件名称只能包含字母.");
+            .Matches("^[a-zA-Z_]+$").WithMessage("插件名称只能包含字母下划线.");
 
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("插件名称不能为空.")

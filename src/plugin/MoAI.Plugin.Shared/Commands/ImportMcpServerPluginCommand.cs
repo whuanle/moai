@@ -1,10 +1,4 @@
-﻿// <copyright file="ImportMcpServerPluginCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 
@@ -16,12 +10,12 @@ namespace MoAI.Plugin.Commands;
 public class ImportMcpServerPluginCommand : McpServerPluginConnectionOptions, IRequest<SimpleInt>
 {
     /// <summary>
-    /// 系统插件.
+    /// 分类 id.
     /// </summary>
-    public bool IsSystem { get; init; } = default!;
+    public int ClassifyId { get; init; }
 
     /// <summary>
-    /// 是否公开，系统插件 == true 时才能设置.
+    /// 是否公开.
     /// </summary>
     public bool IsPublic { get; init; } = default!;
 }

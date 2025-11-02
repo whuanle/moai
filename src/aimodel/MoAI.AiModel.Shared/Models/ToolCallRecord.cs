@@ -20,5 +20,5 @@ public class ToolCallRecord
     /// <summary>
     /// 映射函数名称.
     /// </summary>
-    public string Key { get; init; }
+    public required string Key { get; init; }
 }

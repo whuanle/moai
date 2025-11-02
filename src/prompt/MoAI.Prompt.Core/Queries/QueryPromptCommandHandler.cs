@@ -1,15 +1,9 @@
-﻿// <copyright file="QueryPromptCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAIPrompt.Models;
-using MoAIPrompt.Queries;
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAIPrompt.Models;
+using MoAIPrompt.Queries;
 
 namespace MoAI.Prompt.Queries;
 

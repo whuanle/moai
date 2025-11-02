@@ -1,13 +1,8 @@
-﻿// <copyright file="QueryWikiListCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Infra.Models;
+using MoAI.Infra.Helpers;
+using MoAI.Login.Commands;
 using MoAI.User.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 
@@ -35,19 +30,36 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
     /// <inheritdoc/>
     public async Task<IReadOnlyCollection<QueryWikiInfoResponse>> Handle(QueryWikiBaseListCommand request, CancellationToken cancellationToken)
     {
+        /*
+         四种情况：
+         1，系统知识库
+         2，自己创建的
+         3，是知识库成员
+         4，无关，但是公开的知识库
+         */
+
         var query = _databaseContext.Wikis.AsQueryable();
 
-        if (request.IsOwn == true)
+        if (request.QueryType == WikiQueryType.System)
         {
-            query = query.Where(x => x.CreateUserId == request.UserId);
+            query = query.Where(x => x.IsSystem);
         }
-        else if (request.IsPublic == true)
+        else
+        {
+            query = query.Where(x => !x.IsSystem);
+            if (request.QueryType == WikiQueryType.Own)
+            {
+                query = query.Where(x => x.CreateUserId == request.ContextUserId);
+            }
+            else if (request.QueryType == WikiQueryType.User)
+            {
+                query = query.Where(x => _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId && a.WikiId == x.Id));
+            }
+        }
+
+        if (request.IsPublic == true)
         {
             query = query.Where(x => x.IsPublic);
-        }
-        else if (request.IsUser == true)
-        {
-            query = query.Where(x => x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Any(a => a.WikiId == x.Id && a.UserId == request.UserId));
         }
 
         var response = await query
@@ -56,16 +68,26 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
             {
                 WikiId = x.Id,
                 Name = x.Name,
+                IsSystem = x.IsSystem,
                 Description = x.Description,
                 IsPublic = x.IsPublic,
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
                 CreateTime = x.CreateTime,
                 UpdateTime = x.UpdateTime,
-                IsUser = x.CreateUserId == request.UserId || _databaseContext.WikiUsers.Any(a => a.UserId == request.UserId),
+                IsUser = x.CreateUserId == request.ContextUserId || _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId),
                 DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()
             })
             .ToListAsync(cancellationToken);
+
+        if (response.Where(x => x.IsSystem).Any())
+        {
+            var adminIds = await _mediator.Send(new QueryAdminIdsCommand());
+            foreach (var item in response.Where(x => x.IsSystem))
+            {
+                item.SetProperty(x => x.IsUser, adminIds.AdminIds.Contains(request.ContextUserId));
+            }
+        }
 
         await _mediator.Send(new FillUserInfoCommand { Items = response });
 

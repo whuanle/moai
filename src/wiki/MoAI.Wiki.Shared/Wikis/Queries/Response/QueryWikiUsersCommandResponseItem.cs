@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryWikiUsersCommandResponseItem.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAI.Infra.Models;
+﻿using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Wikis.Queries.Response;
 
@@ -29,9 +23,4 @@ public class QueryWikiUsersCommandResponseItem : AuditsInfo
     /// 昵称.
     /// </summary>
     public string NickName { get; init; } = default!;
-
-    /// <summary>
-    /// 头像路径.
-    /// </summary>
-    public string AvatarPath { get; init; } = default!;
 }

@@ -85,12 +85,7 @@ public partial class AiModelEntity : IFullAudited
     public bool IsVision { get; set; }
 
     /// <summary>
-    /// 是否系统级模型.
-    /// </summary>
-    public bool IsSystem { get; set; }
-
-    /// <summary>
-    /// 是否开放给所有人使用,只有系统模型可以开放.
+    /// 是否开放给大家使用.
     /// </summary>
     public bool IsPublic { get; set; }
 

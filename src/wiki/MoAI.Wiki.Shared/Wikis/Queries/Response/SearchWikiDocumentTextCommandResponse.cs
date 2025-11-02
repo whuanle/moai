@@ -1,14 +1,8 @@
-﻿// <copyright file="SearchWikiDocumentTextCommandResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Microsoft.KernelMemory;
+﻿using Microsoft.KernelMemory;
 
 namespace MoAI.Wiki.Wikis.Queries.Response;
 
 public class SearchWikiDocumentTextCommandResponse
 {
-    public SearchResult SearchResult { get; init; }
+    public required SearchResult SearchResult { get; init; }
 }

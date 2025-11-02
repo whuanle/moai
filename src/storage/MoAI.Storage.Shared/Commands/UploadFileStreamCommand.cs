@@ -1,19 +1,34 @@
-﻿// <copyright file="UploadLocalFilesCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
-using MoAI.Store.Enums;
+﻿using MediatR;
 
 namespace MoAI.Storage.Commands;
 
+/// <summary>
+/// 上传文件流.
+/// </summary>
 public class UploadFileStreamCommand : IRequest<FileUploadResult>
 {
+    /// <summary>
+    /// 文件流.
+    /// </summary>
     public Stream FileStream { get; init; } = Stream.Null;
-    public string FileName { get; init; } = string.Empty;
-    public string ObjectKey { get; init; } = string.Empty;
-    public string MD5 { get; init; } = string.Empty;
-    public string ContentType { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 文件类型.
+    /// </summary>
+    public string ContentType { get; set; } = default!;
+
+    /// <summary>
+    /// 文件大小.
+    /// </summary>
+    public int FileSize { get; set; } = default!;
+
+    /// <summary>
+    /// 文件 MD5.
+    /// </summary>
+    public string MD5 { get; set; } = default!;
+
+    /// <summary>
+    /// 文件路径，即 ObjectKey.
+    /// </summary>
+    public string ObjectKey { get; set; } = default!;
 }

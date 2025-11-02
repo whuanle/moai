@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MoAI.Prompt.PromptEndpoints.Models;
+﻿namespace MoAI.Prompt.PromptEndpoints.Models;
 
 public class AiOptimizePromptRequest
 {
@@ -16,5 +10,5 @@ public class AiOptimizePromptRequest
     /// <summary>
     /// 用户原本的提示词
     /// </summary>
-    public string SourcePrompt { get; init; }
+    public required string SourcePrompt { get; init; }
 }

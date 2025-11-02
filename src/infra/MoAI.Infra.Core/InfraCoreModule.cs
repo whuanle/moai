@@ -1,16 +1,9 @@
-﻿// <copyright file="InfraCoreModule.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi;
+﻿using Maomi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Models;
-using MoAI.Infra.Service;
 using MoAI.Infra.Services;
 
 namespace MoAI.Infra;
@@ -44,7 +37,7 @@ public class InfraCoreModule : IModule
         context.Services.AddSingleton<IIdProvider>(new DefaultIdProvider(0));
         context.Services.AddHttpContextAccessor();
 
-        context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
+        // context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
 
         // 注册默认服务，会被上层模块覆盖
         context.Services.AddScoped<UserContext, DefaultUserContext>();

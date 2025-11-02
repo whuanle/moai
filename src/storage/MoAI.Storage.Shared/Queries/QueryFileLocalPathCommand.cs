@@ -1,28 +1,15 @@
-﻿// <copyright file="QueryFileLocalPathCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
-using MoAI.Store.Enums;
+﻿using MediatR;
+using MoAI.Storage.Queries.Response;
 
 namespace MoAI.Storage.Queries;
 
+/// <summary>
+/// 将文件复制到本地，并返回本地路径.
+/// </summary>
 public class QueryFileLocalPathCommand : IRequest<QueryFileLocalPathCommandResponse>
 {
-    /// <summary>
-    /// 文件可见性
-    /// </summary>
-    public FileVisibility Visibility { get; init; }
-
     /// <summary>
     /// key.
     /// </summary>
     public string ObjectKey { get; init; } = default!;
-}
-
-public class QueryFileLocalPathCommandResponse
-{
-    public string FilePath { get; init; }
 }

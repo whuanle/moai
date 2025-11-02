@@ -1,10 +1,4 @@
-﻿// <copyright file="AddAiModelCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Commands;
 using MoAI.Database;
@@ -38,15 +32,11 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(AddAiModelCommand request, CancellationToken cancellationToken)
     {
-        if (request.IsSystem)
-        {
-            var existModel = await _dbContext.AiModels
-                .AnyAsync(x => x.Title == request.Title && x.IsSystem, cancellationToken);
+        var existModel = await _dbContext.AiModels.AnyAsync(x => x.Title == request.Title, cancellationToken);
 
-            if (existModel)
-            {
-                throw new BusinessException("已存在同名模型") { StatusCode = 409 };
-            }
+        if (existModel)
+        {
+            throw new BusinessException("已存在同名模型") { StatusCode = 409 };
         }
 
         string skKey = string.Empty;
@@ -76,13 +66,8 @@ public class AddAiModelCommandHandler : IRequestHandler<AddAiModelCommand, Simpl
             Files = request.Abilities?.Files ?? false,
             ImageOutput = request.Abilities?.ImageOutput ?? false,
             IsVision = request.Abilities?.Vision ?? false,
+            IsPublic = request.IsPublic
         };
-
-        if (request.IsSystem)
-        {
-            aiModel.IsSystem = true;
-            aiModel.IsPublic = request.IsPublic;
-        }
 
         await _dbContext.AddAsync(aiModel, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);

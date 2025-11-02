@@ -1,23 +1,17 @@
-﻿// <copyright file="CreatePromptEndpoints.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
-using MoAIPrompt.Api;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
+using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
 /// 创建提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/create_prompt")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/create_prompt")]
 public class CreatePromptEndpoints : Endpoint<CreatePromptCommand, SimpleInt>
 {
     private readonly IMediator _mediator;
@@ -39,7 +33,7 @@ public class CreatePromptEndpoints : Endpoint<CreatePromptCommand, SimpleInt>
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            UserId = _userContext.UserId
+            ContextUserId = _userContext.UserId
         });
 
         if (!isAdmin.IsAdmin)

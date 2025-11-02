@@ -1,15 +1,9 @@
-﻿// <copyright file="SetUserAdminEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Admin.User.Commands;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Common.Queries;
 
 namespace MoAI.Admin.User.Endpoints;
 
@@ -37,7 +31,7 @@ public class SetUserAdminEndpoint : Endpoint<SetUserAdminCommand, EmptyCommandRe
     public override async Task<EmptyCommandResponse> ExecuteAsync(SetUserAdminCommand req, CancellationToken ct)
     {
         // 用户是否管理员
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { UserId = _userContext.UserId }, ct);
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { ContextUserId = _userContext.UserId }, ct);
         if (!isAdmin.IsRoot)
         {
             throw new BusinessException("没有操作权限") { StatusCode = 403 };

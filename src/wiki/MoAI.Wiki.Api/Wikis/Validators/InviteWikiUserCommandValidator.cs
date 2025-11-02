@@ -1,10 +1,4 @@
-﻿// <copyright file="CreateWikiCommandValidator.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using FluentValidation;
 using MoAI.Wiki.Wikis.Commands;
 
@@ -24,7 +18,7 @@ public class InviteWikiUserCommandValidator : Validator<InviteWikiUserCommand>
             .NotEmpty().WithMessage("知识库id不正确")
             .GreaterThan(0).WithMessage("知识库id不正确");
 
-        RuleFor(x => x.UserName)
+        RuleFor(x => x.UserNames)
             .NotEmpty().WithMessage("被邀请用户信息错误");
     }
 }

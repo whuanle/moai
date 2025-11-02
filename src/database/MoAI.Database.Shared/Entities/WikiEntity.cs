@@ -25,14 +25,14 @@ public partial class WikiEntity : IFullAudited
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 是否公开，公开后所有人都可以搜索到.
+    /// 系统知识库.
     /// </summary>
-    public bool IsPublic { get; set; }
+    public bool IsSystem { get; set; }
 
     /// <summary>
-    /// 向量化模型的id.
+    /// 是否公开，公开后所有人都可以使用，但是不能进去操作.
     /// </summary>
-    public int EmbeddingModelId { get; set; }
+    public bool IsPublic { get; set; }
 
     /// <summary>
     /// 是否已被锁定配置.
@@ -40,24 +40,14 @@ public partial class WikiEntity : IFullAudited
     public bool IsLock { get; set; }
 
     /// <summary>
-    /// 使用的分词器.
+    /// 向量化模型的id.
     /// </summary>
-    public string EmbeddingModelTokenizer { get; set; } = default!;
+    public int EmbeddingModelId { get; set; }
 
     /// <summary>
-    /// 知识库向量维度.
+    /// 知识库向量维度，创建后不能修改.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
-
-    /// <summary>
-    /// 批处理大小.
-    /// </summary>
-    public int EmbeddingBatchSize { get; set; }
-
-    /// <summary>
-    /// 最大失败重试次数.
-    /// </summary>
-    public int MaxRetries { get; set; }
 
     /// <summary>
     /// 创建人.

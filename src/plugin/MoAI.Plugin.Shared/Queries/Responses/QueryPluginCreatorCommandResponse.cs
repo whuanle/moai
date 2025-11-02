@@ -1,13 +1,8 @@
-﻿// <copyright file="QueryUserIsPluginCreatorCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
+﻿namespace MoAI.Plugin.Queries.Responses;
 
-using MediatR;
-
-namespace MoAI.Plugin.Queries.Responses;
-
+/// <summary>
+/// 查询插件创建信息.
+/// </summary>
 public class QueryPluginCreatorCommandResponse
 {
     /// <summary>
@@ -15,7 +10,23 @@ public class QueryPluginCreatorCommandResponse
     /// </summary>
     public int PluginId { get; init; } = default!;
 
-    public bool Exist { get; init; }
+    /// <summary>
+    /// 是否存在.
+    /// </summary>
+    public bool IsExist { get; init; }
+
+    /// <summary>
+    /// 是否系统插件.
+    /// </summary>
     public bool IsSystem { get; init; }
+
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; }
+
+    /// <summary>
+    /// 创建这 id.
+    /// </summary>
     public int CreatorId { get; init; }
 }

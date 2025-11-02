@@ -1,10 +1,4 @@
-﻿// <copyright file="DeletePromptClassCommandValidator.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FluentValidation;
+﻿using FluentValidation;
 using MoAI.Prompt.Commands;
 
 namespace MoAI.Prompt.PromptClassEndpoints.Validators;
@@ -12,13 +6,13 @@ namespace MoAI.Prompt.PromptClassEndpoints.Validators;
 /// <summary>
 /// DeletePromptClassCommandValidator.
 /// </summary>
-public class DeletePromptClassCommandValidator : AbstractValidator<DeletePromptClassCommand>
+public class DeletePromptClassCommandValidator : AbstractValidator<DeletePromptClassifyCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeletePromptClassCommandValidator"/> class.
     /// </summary>
     public DeletePromptClassCommandValidator()
     {
-        RuleFor(x => x.ClassId).NotEmpty().WithMessage("分类ID不能为空");
+        RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类ID不能为空");
     }
 }

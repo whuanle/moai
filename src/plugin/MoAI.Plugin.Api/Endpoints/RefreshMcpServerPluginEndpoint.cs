@@ -1,10 +1,4 @@
-﻿// <copyright file="RefreshMcpServerPluginEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
@@ -15,9 +9,9 @@ using MoAI.Plugin.Queries;
 namespace MoAI.Plugin.Endpoints;
 
 /// <summary>
-/// 刷新mcp服务器的tool列表.
+/// 刷新 mcp 服务器的 tool 列表.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/refresh_mcp")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/refresh_mcp")]
 public class RefreshMcpServerPluginEndpoint : Endpoint<RefreshMcpServerPluginCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -37,31 +31,14 @@ public class RefreshMcpServerPluginEndpoint : Endpoint<RefreshMcpServerPluginCom
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(RefreshMcpServerPluginCommand req, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryPluginCreatorCommand
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            PluginId = req.PluginId,
+            ContextUserId = _userContext.UserId
         });
 
-        if (!isCreator.Exist == false)
+        if (!isAdmin.IsAdmin)
         {
-            throw new BusinessException("未找到插件.");
-        }
-
-        if (isCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
-        }
-        else if (isCreator.CreatorId != _userContext.UserId)
-        {
-            throw new BusinessException("未找到插件.") { StatusCode = 404 };
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
         return await _mediator.Send(

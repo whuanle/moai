@@ -1,25 +1,17 @@
-﻿// <copyright file="QueryePromptClassEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
-using MoAIPrompt.Api;
-using MoAIPrompt.Models;
-using MoAIPrompt.Queries;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Prompt.PromptEndpoints.Models;
 using MoAI.Prompt.Queries;
 using MoAI.Prompt.Queries.Responses;
+using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
 /// 使用 AI 优化提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/ai_optmize_prompt")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/ai_optmize_prompt")]
 public class AiOptimizePromptEndpoint : Endpoint<AiOptimizePromptRequest, QueryAiOptimizePromptCommandResponse>
 {
     private readonly IMediator _mediator;

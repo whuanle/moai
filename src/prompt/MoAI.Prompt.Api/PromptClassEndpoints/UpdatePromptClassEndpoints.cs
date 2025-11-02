@@ -1,24 +1,18 @@
-﻿// <copyright file="UpdatePromptClassEndpoints.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
-using MoAIPrompt.Api;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
+using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.PromptClassEndpoints;
 
 /// <summary>
 /// 修改提示词分类.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/update_class")]
-public class UpdatePromptClassEndpoints : Endpoint<UpdatePromptClassCommand, EmptyCommandResponse>
+[HttpPost($"{ApiPrefix.AdminPrefix}/update_class")]
+public class UpdatePromptClassEndpoints : Endpoint<UpdatePromptClassifyCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -35,11 +29,11 @@ public class UpdatePromptClassEndpoints : Endpoint<UpdatePromptClassCommand, Emp
     }
 
     /// <inheritdoc/>
-    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdatePromptClassCommand req, CancellationToken ct)
+    public override async Task<EmptyCommandResponse> ExecuteAsync(UpdatePromptClassifyCommand req, CancellationToken ct)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            UserId = _userContext.UserId
+            ContextUserId = _userContext.UserId
         });
 
         if (!isAdmin.IsAdmin)

@@ -35,7 +35,7 @@ public partial class WikiDocumentEntity : IFullAudited
     public string FileName { get; set; } = default!;
 
     /// <summary>
-    /// 文件类型，如md.
+    /// 文件扩展名称，如.md.
     /// </summary>
     public string FileType { get; set; } = default!;
 

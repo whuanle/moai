@@ -1,10 +1,4 @@
-﻿// <copyright file="InfraExternalHttpModule.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi;
+﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra.DingTalk;
 using MoAI.Infra.Feishu;
@@ -48,6 +42,11 @@ public class InfraExternalHttpModule : IModule
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
         context.Services.AddRefitClient<IFeishuClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IFeishuWebHookClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));

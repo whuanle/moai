@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryAiOptimizePromptCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.Commands;
 using MoAI.AiModel.Models;
@@ -37,29 +31,13 @@ public class QueryAiOptimizePromptCommandHandler : IRequestHandler<AiOptimizePro
     public async Task<QueryAiOptimizePromptCommandResponse> Handle(AiOptimizePromptCommand request, CancellationToken cancellationToken)
     {
         // 检查用户是否有权使用此 ai 模型
-
         var aiModel = await _databaseContext.AiModels
-            .Where(x => x.Id == request.AiModelId)
+            .Where(x => x.Id == request.AiModelId && x.IsPublic)
             .FirstOrDefaultAsync();
 
         if (aiModel == null)
         {
             throw new BusinessException("未找到可用 ai 模型");
-        }
-
-        if (aiModel.IsSystem)
-        {
-            if (!aiModel.IsPublic)
-            {
-                throw new BusinessException("未找到可用 ai 模型");
-            }
-        }
-        else
-        {
-            if (aiModel.CreateUserId != request.UserId)
-            {
-                throw new BusinessException("未找到可用 ai 模型");
-            }
         }
 
         var aiEndpoint = new AiEndpoint
@@ -99,33 +77,35 @@ public class QueryAiOptimizePromptCommandHandler : IRequestHandler<AiOptimizePro
 
     private const string Prompt =
         """
-        提示词生成器
+        # 专业提示词优化提示词
 
-        目标：将用户提供的简单提示词转化为详细专业的提示词，提示词不要超过 2000 字。
+        你是专业的提示词优化专家，核心目标是把用户非专业的原始提示词，转化为精准、清晰、可执行、能让AI高效产出优质结果的专业提示词。优化需遵循以下原则和步骤，不改变用户核心需求：
 
-        输入指南：
+        ### 1. 明确核心要素
 
-        背景信息 ：请尽可能多地收集与主题相关的信息，包括目标受众、使用场景和期望的输出形式。
-        核心主题 ：明确用户输入的核心主题或关键字。
-        意图与目标 ：理解用户的意图（如：提高效率、获得灵感、生成内容等）和目标效果。
-        输出要求：
+        - 提取用户核心需求（必须优先保留，不增删核心目标）。
+        - 补充“结果形式”（如文案、表格、报告、步骤等，用户未说明则按需求默认最优形式）。
+        - 明确“风格/调性”（如专业、通俗、幽默、严谨等，用户未说明则匹配需求场景）。
+        - 界定“范围/边界”（如字数限制、覆盖维度、排除内容等，用户未说明则给出合理默认值）。
 
-        结构化内容 ：确保输出的提示词有清晰的结构，包括引言、主体部分和结论。
-        细节与深度 ：根据背景信息和核心主题，补充细节，使提示词具有专业性和说服力。
-        明确指示 ：输出提示词应包括明确的指示，指导 AI 完成特定任务。
-        相关示例 ：提供适当的示例或用例，以帮助理解和应用提示词。
-        示例任务：
-        用户输入：“帮我写一个关于环保的重要性的文章。”
+        ### 2. 优化表达逻辑
 
-        生成专业提示词：
-        请写一篇关于环保重要性的文章，目标受众为青少年。文章应包括以下内容：
+        - 用“指令+要求”结构重构，先明确AI要做什么，再说明做到什么标准。
+        - 删除模糊表述（如“大概”“差不多”“尽量”），替换为具体可量化的要求（如“控制在300字内”“包含3个核心维度”）。
+        - 拆解复杂需求，若用户需求包含多个子任务，按“1. 2. 3.”分点列明，逻辑清晰不混乱。
 
-        引言 ：简要介绍环保的重要性并说明为什么青少年应该关注这个主题。
-        当前环境现状 ：描述当前地球环境的状态，包括气候变化、污染等问题。
-        环保的重要性 ：详细阐述环保对于地球和人类未来的重要性，并结合具体例子说明（如：动物栖息地的丧失、海洋污染）。
-        行动措施 ：提出青少年可以采取的具体环保行动，如减少使用塑料、参加环保活动等。
-        结论 ：总结文章内容，并呼吁青少年积极参与环保实践。
+        ### 3. 补充专业细节
 
-        请遵循以上格式生成新的专业提示词。根据用户输入的信息和意图，适当地进行调整和内容扩展。
+        - 针对需求场景，增加“关键输出要点”（如写产品文案需包含核心卖点、使用场景；做方案需包含执行步骤、预期效果）。
+        - 若用户未指定“交付格式”，补充通用且专业的格式要求（如分点、加粗重点、段落清晰等）。
+        - 增加“质量要求”（如无语法错误、逻辑连贯、符合场景规范、可直接落地使用）。
+
+        ### 4. 最终输出标准
+
+        - 优化后的提示词需简洁不冗余，指令明确无歧义。
+        - 语言正式且专业，避免口语化表达。
+        - 结尾需明确“请严格按照上述要求执行，输出符合标准的结果”，强化AI执行力度。
+
+        现在，请接收用户的原始提示词，按以上步骤完成专业优化，直接输出优化后的完整提示词，最好保持在 2000字内，内容争取详细，无需额外解释。
         """;
 }

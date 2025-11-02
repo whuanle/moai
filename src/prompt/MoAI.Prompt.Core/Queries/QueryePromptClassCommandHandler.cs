@@ -1,12 +1,7 @@
-﻿// <copyright file="QueryePromptClassCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Plugin.Queries;
 using MoAI.Prompt.Queries.Responses;
 
 namespace MoAI.Prompt.Queries;
@@ -30,14 +25,15 @@ public class QueryePromptClassCommandHandler : IRequestHandler<QueryePromptClass
     /// <inheritdoc/>
     public async Task<QueryePromptClassCommandResponse> Handle(QueryePromptClassCommand request, CancellationToken cancellationToken)
     {
-        var promptClass = await _databaseContext.PromptClasses
-            .Select(x => new QueryePromptClassCommandResponseItem
+        var classifies = await _databaseContext.Classifies.Where(x => x.Type == "prompt")
+            .Select(x => new PromptClassifyItem
             {
-                Id = x.Id,
-                Name = x.Name
+                ClassifyId = x.Id,
+                Name = x.Name,
+                Description = x.Description
             })
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync();
 
-        return new QueryePromptClassCommandResponse { Items = promptClass };
+        return new QueryePromptClassCommandResponse { Items = classifies };
     }
 }

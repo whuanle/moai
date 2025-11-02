@@ -1,15 +1,17 @@
-﻿// <copyright file="IMemoryD
-// bClient.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Microsoft.KernelMemory;
+﻿using Microsoft.KernelMemory;
 
 namespace MoAI.AiModel.Services;
 
+/// <summary>
+/// 知识库客户端配置器.
+/// </summary>
 public interface IMemoryDbClient
 {
+    /// <summary>
+    /// 配置知识库客户端.
+    /// </summary>
+    /// <param name="kernelMemoryBuilder"></param>
+    /// <param name="connectionString"></param>
+    /// <returns></returns>
     IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, string connectionString);
 }

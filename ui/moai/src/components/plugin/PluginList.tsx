@@ -36,7 +36,7 @@ import { GetApiClient } from "../ServiceClient";
 import {
   ImportMcpServerPluginCommand,
   KeyValueString,
-  QueryUserPluginBaseListCommand,
+  QueryPluginBaseListCommand,
   QueryPluginBaseListCommandResponse,
   PluginBaseInfoItem,
   PluginTypeObject,
@@ -48,7 +48,7 @@ import {
   PreUploadOpenApiFilePluginCommandResponse,
   QueryPluginFunctionsListCommand,
   QueryPluginFunctionsListCommandResponse,
-  QueryPluginFunctionsListCommandResponseItem,
+  PluginFunctionItem,
 } from "../../apiClient/models";
 import {
   proxyFormRequestError,
@@ -77,7 +77,6 @@ interface OpenApiUploadStatus {
 
 // 常量定义
 const PLUGIN_TYPE_MAP = {
-  [PluginTypeObject.System]: { color: "blue", text: "系统" },
   [PluginTypeObject.Mcp]: { color: "green", text: "MCP" },
   [PluginTypeObject.OpenApi]: { color: "orange", text: "OpenAPI" },
 } as const;
@@ -91,7 +90,7 @@ const useFileUpload = () => {
     ): Promise<PreUploadOpenApiFilePluginCommandResponse> => {
       const md5 = await GetFileMd5(file);
       console.log("文件MD5:", md5);
-      const preUploadResponse = await client.api.plugin.pre_upload_openapi.post(
+      const preUploadResponse = await client.api.admin.plugin.pre_upload_openapi.post(
         {
           contentType: FileTypeHelper.getFileType(file),
           fileName: file.name,
@@ -205,7 +204,7 @@ export default function PluginList() {
   const [functionListModalVisible, setFunctionListModalVisible] =
     useState(false);
   const [functionList, setFunctionList] = useState<
-    QueryPluginFunctionsListCommandResponseItem[]
+   PluginFunctionItem[]
   >([]);
   const [functionListLoading, setFunctionListLoading] = useState(false);
   const [currentPlugin, setCurrentPlugin] = useState<PluginBaseInfoItem | null>(
@@ -234,8 +233,8 @@ export default function PluginList() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const requestData: QueryUserPluginBaseListCommand = {};
-      const response = await client.api.plugin.user_plugin_list.post(requestData);
+      const requestData: QueryPluginBaseListCommand = {};
+      const response = await client.api.admin.plugin.plugin_list.post(requestData);
 
       if (response?.items) {
         setPluginList(response.items);
@@ -271,7 +270,7 @@ export default function PluginList() {
           pluginId: record.pluginId,
         };
 
-        const response = await client.api.plugin.plugin_detail.post(
+        const response = await client.api.admin.plugin.plugin_detail.post(
           requestData
         );
 
@@ -361,7 +360,7 @@ export default function PluginList() {
       try {
         const client = GetApiClient();
         const requestData: DeletePluginCommand = { pluginId };
-        await client.api.plugin.delete_plugin.delete(requestData);
+        await client.api.admin.plugin.delete_plugin.delete(requestData);
 
         messageApi.success("插件删除成功");
         fetchPluginList();
@@ -386,7 +385,7 @@ export default function PluginList() {
           pluginId: record.pluginId,
         };
 
-        const response = await client.api.plugin.function_list.post(
+        const response = await client.api.admin.plugin.function_list.post(
           requestData
         );
 
@@ -562,7 +561,7 @@ export default function PluginList() {
 
       setSubmitLoading(true);
       const client = GetApiClient();
-      const response = await client.api.plugin.import_mcp.post(requestData);
+      const response = await client.api.admin.plugin.import_mcp.post(requestData);
 
       if (response?.value) {
         messageApi.success("MCP插件导入成功");
@@ -597,7 +596,7 @@ export default function PluginList() {
 
       setEditLoading(true);
       const client = GetApiClient();
-      await client.api.plugin.update_mcp.post(requestData);
+      await client.api.admin.plugin.update_mcp.post(requestData);
 
       messageApi.success("插件更新成功");
       setEditModalVisible(false);
@@ -660,7 +659,7 @@ export default function PluginList() {
         fileName: fileName,
       };
 
-      await client.api.plugin.update_openapi.post(requestData);
+      await client.api.admin.plugin.update_openapi.post(requestData);
 
       setEditOpenApiUploadStatus({ uploading: false, progress: 100 });
       messageApi.success("OpenAPI 插件更新成功");
@@ -721,7 +720,7 @@ export default function PluginList() {
         fileName: openApiSelectedFile.name,
       };
 
-      await client.api.plugin.import_openapi.post(importBody);
+      await client.api.admin.plugin.import_openapi.post(importBody);
 
       setOpenApiUploadStatus({ uploading: false, progress: 100 });
       messageApi.success("OpenAPI 插件导入成功");

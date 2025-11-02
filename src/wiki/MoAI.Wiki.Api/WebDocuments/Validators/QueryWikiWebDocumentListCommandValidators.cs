@@ -1,12 +1,5 @@
-﻿// <copyright file="AddWebDocumentConfigCommandValidators.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using FluentValidation;
-using MoAI.Wiki.WebDocuments.Commands;
 using MoAI.Wiki.WebDocuments.Queries;
 
 namespace MoAI.Wiki.WebDocuments.Validators;

@@ -12,15 +12,11 @@ import { AppRequestBuilderNavigationMetadata, type AppRequestBuilder } from './a
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
-import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
-// @ts-ignore
-import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
+import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
-// @ts-ignore
-import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata } from './wiki/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -49,13 +45,9 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get common(): CommonRequestBuilder;
     /**
-     * The plugin property
+     * The download property
      */
-    get plugin(): PluginRequestBuilder;
-    /**
-     * The prompt property
-     */
-    get prompt(): PromptRequestBuilder;
+    get download(): DownloadRequestBuilder;
     /**
      * The storage property
      */
@@ -64,10 +56,6 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The user property
      */
     get user(): UserRequestBuilder;
-    /**
-     * The wiki property
-     */
-    get wiki(): WikiRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -92,20 +80,14 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
     },
-    plugin: {
-        navigationMetadata: PluginRequestBuilderNavigationMetadata,
-    },
-    prompt: {
-        navigationMetadata: PromptRequestBuilderNavigationMetadata,
+    download: {
+        navigationMetadata: DownloadRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,
     },
     user: {
         navigationMetadata: UserRequestBuilderNavigationMetadata,
-    },
-    wiki: {
-        navigationMetadata: WikiRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

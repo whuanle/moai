@@ -1,23 +1,16 @@
-﻿// <copyright file="ImportMcpServerPluginEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Commands;
-using MoAI.Plugin.Queries;
 
 namespace MoAI.Plugin.Endpoints;
 
 /// <summary>
 /// 导入 mcp 服务.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/import_mcp")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/import_mcp")]
 public class ImportMcpServerPluginEndpoint : Endpoint<ImportMcpServerPluginCommand, SimpleInt>
 {
     private readonly IMediator _mediator;
@@ -37,17 +30,14 @@ public class ImportMcpServerPluginEndpoint : Endpoint<ImportMcpServerPluginComma
     /// <inheritdoc/>
     public override async Task<SimpleInt> ExecuteAsync(ImportMcpServerPluginCommand req, CancellationToken ct)
     {
-        if (req.IsSystem)
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
+            ContextUserId = _userContext.UserId
+        });
 
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
+        if (!isAdmin.IsAdmin)
+        {
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
         return await _mediator.Send(req, ct);

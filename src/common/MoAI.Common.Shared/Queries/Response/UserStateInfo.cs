@@ -1,10 +1,4 @@
-﻿// <copyright file="UserStateInfo.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-namespace MoAI.Login.Queries.Responses;
+﻿namespace MoAI.Login.Queries.Responses;
 
 /// <summary>
 /// UserStateInfo.
@@ -30,11 +24,6 @@ public class UserStateInfo
     /// 昵称.
     /// </summary>
     public string NickName { get; set; } = default!;
-
-    /// <summary>
-    /// 头像路径.
-    /// </summary>
-    public string AvatarPath { get; set; } = default!;
 
     /// <summary>
     /// 手机号.

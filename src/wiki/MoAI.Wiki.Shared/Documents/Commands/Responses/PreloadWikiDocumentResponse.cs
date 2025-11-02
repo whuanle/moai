@@ -1,20 +1,7 @@
-﻿// <copyright file="PreloadWikiDocumentResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAI.Store.Enums;
-
-namespace MoAI.Wiki.Documents.Commands.Responses;
+﻿namespace MoAI.Wiki.Documents.Commands.Responses;
 
 public class PreloadWikiDocumentResponse
 {
-    /// <summary>
-    /// 文件可见性.
-    /// </summary>
-    public FileVisibility Visibility { get; set; }
-
     /// <summary>
     /// 文件已存在,如果文件已存在则直接使用 FileId，无需再次上传.
     /// </summary>

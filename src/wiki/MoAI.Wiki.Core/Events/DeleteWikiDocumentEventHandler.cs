@@ -1,10 +1,4 @@
-﻿// <copyright file="DeleteWikiDocumentEventHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Database;
 
 namespace MoAI.Wiki.Events;
@@ -25,6 +19,7 @@ public class DeleteWikiDocumentEventHandler : INotificationHandler<DeleteWikiDoc
         _databaseContext = databaseContext;
     }
 
+    /// <inheritdoc/>
     public async Task Handle(DeleteWikiDocumentEvent notification, CancellationToken cancellationToken)
     {
         await _databaseContext.SoftDeleteAsync(_databaseContext.WikiWebDocuments.Where(x => x.WikiDocumentId == notification.DocumentId));

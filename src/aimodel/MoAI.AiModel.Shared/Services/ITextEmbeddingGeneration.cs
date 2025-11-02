@@ -1,15 +1,19 @@
-﻿// <copyright file="ITextEmbeddingGeneration.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Microsoft.KernelMemory;
+﻿using Microsoft.KernelMemory;
 using MoAI.AiModel.Models;
 
 namespace MoAI.AiModel.Services;
 
+/// <summary>
+/// 向量化构建接口.
+/// </summary>
 public interface ITextEmbeddingGeneration
 {
+    /// <summary>
+    /// 配置.
+    /// </summary>
+    /// <param name="kernelMemoryBuilder"></param>
+    /// <param name="endpoint"></param>
+    /// <param name="wikiConfig"></param>
+    /// <returns></returns>
     IKernelMemoryBuilder Configure(IKernelMemoryBuilder kernelMemoryBuilder, AiEndpoint endpoint, EmbeddingConfig wikiConfig);
 }

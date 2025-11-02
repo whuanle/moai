@@ -7,7 +7,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 知识库任务.
+/// 文档向量化任务状态.
 /// </summary>
 public partial class WikiDocumentTaskConfiguration : IEntityTypeConfiguration<WikiDocumentTaskEntity>
 {
@@ -17,7 +17,7 @@ public partial class WikiDocumentTaskConfiguration : IEntityTypeConfiguration<Wi
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("wiki_document_task", tb => tb.HasComment("知识库任务"));
+        entity.ToTable("wiki_document_task", tb => tb.HasComment("文档向量化任务状态"));
 
         entity.Property(e => e.Id)
             .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")

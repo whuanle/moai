@@ -36,14 +36,15 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
+        entity.Property(e => e.FileExtension)
+            .HasMaxLength(10)
+            .HasDefaultValueSql("''")
+            .HasComment("文件扩展名")
+            .HasColumnName("file_extension");
         entity.Property(e => e.FileMd5)
             .HasMaxLength(50)
             .HasComment("md5")
             .HasColumnName("file_md5");
-        entity.Property(e => e.FileName)
-            .HasMaxLength(50)
-            .HasComment("文件名称,对于共用文件无意义,私有文件自行存储文件名称")
-            .HasColumnName("file_name");
         entity.Property(e => e.FileSize)
             .HasComment("文件大小")
             .HasColumnType("int(11)")
@@ -52,11 +53,8 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.IsPublic)
-            .HasComment("是否公开")
-            .HasColumnName("is_public");
         entity.Property(e => e.IsUploaded)
-            .HasComment("是否已经上传")
+            .HasComment("是否已经上传完毕")
             .HasColumnName("is_uploaded");
         entity.Property(e => e.ObjectKey)
             .HasMaxLength(1024)

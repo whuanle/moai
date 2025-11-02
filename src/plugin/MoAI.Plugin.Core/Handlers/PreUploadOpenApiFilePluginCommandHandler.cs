@@ -1,17 +1,10 @@
-﻿// <copyright file="PreUploadOpenApiFilePluginCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAIPlugin.Shared.Commands.Responses;
-using MediatR;
+﻿using MediatR;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.Commands;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
-using MoAI.Store.Enums;
+using MoAIPlugin.Shared.Commands.Responses;
 
 namespace MoAIPlugin.Core.Commands;
 
@@ -48,12 +41,10 @@ public class PreUploadOpenApiFilePluginCommandHandler : IRequestHandler<PreUploa
         var result = await _mediator.Send(new PreUploadFileCommand
         {
             MD5 = request.MD5,
-            FileName = request.FileName,
             ContentType = request.ContentType,
             FileSize = request.FileSize,
-            Visibility = FileVisibility.Private,
             ObjectKey = objectKey,
-            Expiration = TimeSpan.FromMinutes(2),
+            Expiration = TimeSpan.FromMinutes(2)
         });
 
         if (result.IsExist)
@@ -67,7 +58,6 @@ public class PreUploadOpenApiFilePluginCommandHandler : IRequestHandler<PreUploa
 
         return new PreUploadOpenApiFilePluginCommandResponse
         {
-            Visibility = FileVisibility.Private,
             FileId = result.FileId,
             IsExist = result.IsExist,
             UploadUrl = result.UploadUrl,

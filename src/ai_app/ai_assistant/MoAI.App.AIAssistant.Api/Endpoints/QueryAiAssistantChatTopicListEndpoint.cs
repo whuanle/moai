@@ -1,6 +1,5 @@
 ﻿using FastEndpoints;
 using MediatR;
-using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Queries;
 using MoAI.App.AIAssistant.Queries.Responses;
 using MoAI.Infra.Models;

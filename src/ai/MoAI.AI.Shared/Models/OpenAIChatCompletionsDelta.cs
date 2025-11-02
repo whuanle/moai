@@ -1,10 +1,4 @@
-﻿// <copyright file="OpenAIChatCompletionsDelta.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace MoAI.AI.Models;
 
@@ -14,7 +8,7 @@ public class OpenAIChatCompletionsDelta
     public string Role { get; init; } = "assistant";
 
     /// <summary>
-    /// string or array	
+    /// string or array
     /// </summary>
     [JsonPropertyName("content")]
     public object? Content { get; init; } = string.Empty;
@@ -32,15 +26,17 @@ public class OpenAIChatCompletionsDelta
     public object? FunctionCall { get; init; }
 
     [JsonPropertyName("reasoning_content")]
-    public IReadOnlyCollection<OpenAiToolCall> ReasoningContent { get; init; }= Array.Empty<OpenAiToolCall>();
+    public IReadOnlyCollection<OpenAiToolCall> ReasoningContent { get; init; } = Array.Empty<OpenAiToolCall>();
 }
 
 public class OpenAiToolCall
 {
     [JsonPropertyName("id")]
     public string Id { get; init; } = string.Empty;
+
     [JsonPropertyName("type")]
     public string Type { get; init; } = "function";
+
     [JsonPropertyName("function")]
     public OpenAiFunctionCall Function { get; init; } = new OpenAiFunctionCall();
 }
@@ -49,6 +45,7 @@ public class OpenAiFunctionCall
 {
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
+
     [JsonPropertyName("arguments")]
     public object Arguments { get; init; } = new { };
 }

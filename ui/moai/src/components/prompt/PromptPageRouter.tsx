@@ -1,30 +1,28 @@
 import { RouteObject } from "react-router";
 import PromptLayout from "./PromptLayout";
-import PromptList from "./PromptList";
-import PromptContent from "./PromptContent";
-import PromptEdit from "./PromptEdit";
-import PromptCreate from "./PromptCreate";
-import PromptClassManage from "./PromptClassManage";
+import PromptListPage from "./PromptListPage";
+import PromptCreatePage from "./PromptCreatePage";
+import PromptEditPage from "./PromptEditPage";
 
 export const PromptPageRouters: RouteObject[] = [
   {
     path: "list",
-    Component: PromptList,
+    Component: PromptListPage,
   },
   {
     path: "create",
-    Component: PromptCreate,
-  },
-  {
-    path: "class",
-    Component: PromptClassManage,
+    Component: PromptCreatePage,
   },
   {
     path: ":promptId/edit",
-    Component: PromptEdit,
+    Component: PromptEditPage,
   },
-  {
-    path: ":promptId/content",
-    Component: PromptContent,
-  }
+  // {
+  //   path: "class",
+  //   Component: PromptClassManage,
+  // },
+  // {
+  //   path: ":promptId/content",
+  //   Component: PromptContent,
+  // }
 ];

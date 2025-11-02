@@ -1,24 +1,16 @@
-﻿// <copyright file="QueryePromptClassEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
-using MoAIPrompt.Api;
-using MoAIPrompt.Models;
-using MoAIPrompt.Queries;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Queries;
 using MoAI.Prompt.Queries.Responses;
+using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.PromptClassEndpoints;
 
 /// <summary>
 /// 查询分类.
 /// </summary>
-[HttpGet($"{ApiPrefix.Prefix}/class_list")]
+[HttpGet($"{ApiPrefix.AdminPrefix}/class_list")]
 public class QueryPromptClassEndpoint : EndpointWithoutRequest<QueryePromptClassCommandResponse>
 {
     private readonly IMediator _mediator;

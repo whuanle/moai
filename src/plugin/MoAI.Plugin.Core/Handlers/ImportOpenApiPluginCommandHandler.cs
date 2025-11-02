@@ -1,10 +1,4 @@
-﻿// <copyright file="ImportOpenApiPluginCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Readers;
@@ -17,7 +11,7 @@ using MoAI.Plugin.Commands;
 using MoAI.Plugin.Models;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Queries;
-using MoAI.Store.Enums;
+using MoAI.Storage.Queries.Response;
 using System.Transactions;
 
 namespace MoAIPlugin.Core.Commands;
@@ -58,7 +52,6 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
         // 拉取完整的 openapi 文件
         var openFilePath = await _mediator.Send(new QueryFileLocalPathCommand
         {
-            Visibility = FileVisibility.Private,
             ObjectKey = fileEntity.ObjectKey
         });
 
@@ -90,8 +83,8 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             Server = apiReaderResult.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty,
             Type = (int)PluginType.OpenApi,
             Title = request.Title,
-            IsSystem = request.IsSystem,
-            IsPublic = request.IsPublic
+            IsPublic = request.IsPublic,
+            ClassifyId = request.ClassifyId
         };
 
         await _databaseContext.Plugins.AddAsync(pluginEntity, cancellationToken);

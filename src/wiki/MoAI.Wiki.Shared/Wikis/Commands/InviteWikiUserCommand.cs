@@ -1,26 +1,30 @@
-﻿// <copyright file="InviteWikiUserCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Wikis.Commands;
 
 /// <summary>
-/// 邀请知识库协作成员，可以管理知识库文档等.
+/// 邀请或移除知识库协作成员，可以管理知识库文档等.
 /// </summary>
 public class InviteWikiUserCommand : IRequest<EmptyCommandResponse>
 {
     /// <summary>
-    /// 被邀请用户.
-    /// </summary>
-    public string UserName { get; init; } = default!;
-
-    /// <summary>
     /// 知识库 id.
     /// </summary>
     public int WikiId { get; init; }
+
+    /// <summary>
+    /// 如果是则邀请，否则是移除.
+    /// </summary>
+    public bool IsInvite { get; init; } = true;
+
+    /// <summary>
+    /// 用户名称.
+    /// </summary>
+    public IReadOnlyCollection<string> UserNames { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// 用户id.
+    /// </summary>
+    public IReadOnlyCollection<int> UserIds { get; init; } = Array.Empty<int>();
 }

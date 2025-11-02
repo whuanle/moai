@@ -1,10 +1,4 @@
-﻿// <copyright file="StorageLocalModule.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using Maomi;
+﻿using Maomi;
 using MoAI.Infra;
 
 namespace MoAI.Storage;
@@ -28,22 +22,9 @@ public class StorageLocalModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        var filePath = Path.Combine(_systemOptions.FilePath, "public");
-        var contentPath = Path.Combine(_systemOptions.FilePath, "private");
-
-        if (!Directory.Exists(_systemOptions.FilePath))
+        if (!Directory.Exists(_systemOptions.Storage.LocalPath))
         {
-            Directory.CreateDirectory(_systemOptions.FilePath);
-        }
-
-        if (!Directory.Exists(filePath))
-        {
-            Directory.CreateDirectory(filePath);
-        }
-
-        if (!Directory.Exists(contentPath))
-        {
-            Directory.CreateDirectory(contentPath);
+            Directory.CreateDirectory(_systemOptions.Storage.LocalPath);
         }
     }
 }

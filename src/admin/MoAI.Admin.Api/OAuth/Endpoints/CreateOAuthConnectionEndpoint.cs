@@ -1,10 +1,4 @@
-﻿// <copyright file="CreateOAuthConnectionEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
@@ -36,7 +30,7 @@ public class CreateOAuthConnectionEndpoint : Endpoint<CreateOAuthConnectionComma
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(CreateOAuthConnectionCommand req, CancellationToken ct)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { UserId = _userContext.UserId });
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { ContextUserId = _userContext.UserId });
 
         if (!isAdmin.IsAdmin)
         {

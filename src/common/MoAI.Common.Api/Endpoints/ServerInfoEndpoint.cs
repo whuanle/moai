@@ -1,14 +1,9 @@
-﻿// <copyright file="ServerInfoEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using MoAI.Common.Queries;
 using MoAI.Common.Queries.Response;
+using MoAI.Infra.Models;
 
 namespace MoAI.Common.Endpoints;
 

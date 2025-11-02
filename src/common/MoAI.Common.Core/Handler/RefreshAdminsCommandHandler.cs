@@ -1,13 +1,6 @@
-﻿// <copyright file="RefreshAdminsCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Models;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Login.Commands;
@@ -15,6 +8,9 @@ using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Login.Handlers;
 
+/// <summary>
+/// 刷新超级管理员列表.
+/// </summary>
 public class RefreshAdminsCommandHandler : IRequestHandler<RefreshAdminsCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
@@ -25,18 +21,19 @@ public class RefreshAdminsCommandHandler : IRequestHandler<RefreshAdminsCommand,
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="redisDatabase"></param>
-    public RefreshAdminsCommandHandler(DatabaseContext databaseContext, IRedisDatabase? redisDatabase = null)
+    public RefreshAdminsCommandHandler(DatabaseContext databaseContext, IRedisDatabase redisDatabase)
     {
         _databaseContext = databaseContext;
         _redisDatabase = redisDatabase;
     }
 
+    /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(RefreshAdminsCommand request, CancellationToken cancellationToken)
     {
         await _redisDatabase.Database.KeyDeleteAsync("adminids");
         await _redisDatabase.Database.KeyDeleteAsync("rootid");
 
-        var rootId = await _databaseContext.Settings.FirstOrDefaultAsync(x => x.Key == ISystemSettingProvider.Root.Key);
+        var rootId = await _databaseContext.Settings.FirstOrDefaultAsync(x => x.Key == "root");
 
         if (rootId == null)
         {

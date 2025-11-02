@@ -1,10 +1,4 @@
-﻿// <copyright file="UserContext.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-namespace MoAI.Infra.Models;
+﻿namespace MoAI.Infra.Models;
 
 /// <summary>
 /// 用户上下文接口，提供当前用户的信息.

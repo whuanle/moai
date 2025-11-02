@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryAllOAuthPrividerDetailCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Admin.OAuth.Queries.Responses;
 using MoAI.Database;
@@ -40,7 +34,7 @@ public class QueryAllOAuthPrividerDetailCommandHandler : IRequestHandler<QueryAl
     public async Task<QueryAllOAuthPrividerDetailCommandResponse> Handle(QueryAllOAuthPrividerDetailCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.OauthConnections
-            .Select(c => new QueryAllOAuthPrividerDetailCommandResponseItem
+            .Select(c => new OAuthPrividerDetailItem
             {
                 Name = c.Name,
                 IconUrl = c.IconUrl,

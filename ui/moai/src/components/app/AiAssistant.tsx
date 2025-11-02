@@ -60,10 +60,8 @@ import { Flexbox } from "react-layout-kit";
 import { GetApiClient } from "../ServiceClient";
 import { EnvOptions } from "../../Env";
 import useAppStore from "../../stateshare/store";
-import PromptSelector from "../prompt/PromptSelector";
 import WikiSelector from "../wiki/WikiSelector";
 import PluginSelector from "../plugin/PluginSelector";
-import ModelSelector from "../aimodel/ModelSelector";
 import {
   ProcessingAiAssistantChatCommand,
   DeleteAiAssistantChatCommand,

@@ -1,10 +1,4 @@
-﻿// <copyright file="DeleteAiModelEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.AiModel.Commands;
 using MoAI.AiModel.Queries;
@@ -15,9 +9,9 @@ using MoAI.Infra.Models;
 namespace MoAI.AiModel.Endpoints;
 
 /// <summary>
-/// 删除一个模型.
+/// 删除一个模型，管理员访问.
 /// </summary>
-[HttpDelete($"{ApiPrefix.Prefix}/delete_model")]
+[HttpDelete($"{ApiPrefix.AdminPrefix}/delete_model")]
 public class DeleteAiModelEndpoint : Endpoint<DeleteAiModelCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -37,33 +31,16 @@ public class DeleteAiModelEndpoint : Endpoint<DeleteAiModelCommand, EmptyCommand
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(DeleteAiModelCommand req, CancellationToken ct)
     {
-        var aiModelCreator = await _mediator.Send(new QueryAiModelCreatorCommand
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            ModelId = req.AiModelId
+            ContextUserId = _userContext.UserId
         });
 
-        if (!aiModelCreator.Exist)
+        if (!isAdmin.IsAdmin)
         {
-            throw new BusinessException("未找到模型") { StatusCode = 404 };
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
-        if (aiModelCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
-        }
-        else if (aiModelCreator.CreatorId != _userContext.UserId)
-        {
-            throw new BusinessException("未找到模型.") { StatusCode = 404 };
-        }
-
-        return await _mediator.Send(req);
+        return await _mediator.Send(req, ct);
     }
 }

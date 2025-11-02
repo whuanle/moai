@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryPluginInfoListEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
@@ -17,7 +11,7 @@ namespace MoAI.Plugin.QueryEndpoints;
 /// <summary>
 /// 获取插件的详细信息.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/plugin_detail")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/plugin_detail")]
 public class QueryPluginDetailEndpoint : Endpoint<QueryPluginDetailCommand, QueryPluginDetailCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -37,38 +31,16 @@ public class QueryPluginDetailEndpoint : Endpoint<QueryPluginDetailCommand, Quer
     /// <inheritdoc/>
     public override async Task<QueryPluginDetailCommandResponse> ExecuteAsync(QueryPluginDetailCommand req, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryPluginCreatorCommand
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
-            PluginId = req.PluginId,
+            ContextUserId = _userContext.UserId
         });
 
-        if (isCreator.Exist == false)
+        if (!isAdmin.IsAdmin)
         {
-            throw new BusinessException("未找到插件.");
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
-        if (isCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                UserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
-        }
-        else if (isCreator.CreatorId != _userContext.UserId)
-        {
-            throw new BusinessException("未找到插件.") { StatusCode = 404 };
-        }
-
-        return await _mediator.Send(
-            new QueryPluginDetailCommand
-            {
-                PluginId = req.PluginId,
-            },
-            ct);
+        return await _mediator.Send(req, ct);
     }
 }

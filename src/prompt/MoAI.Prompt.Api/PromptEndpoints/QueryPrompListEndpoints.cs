@@ -1,22 +1,17 @@
-﻿// <copyright file="QueryPrompListEndpoints.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
+using MediatR;
+using MoAI.Infra.Helpers;
+using MoAI.Infra.Models;
 using MoAIPrompt.Api;
 using MoAIPrompt.Queries;
 using MoAIPrompt.Queries.Responses;
-using MediatR;
-using MoAI.Infra.Models;
 
 namespace MoAI.Prompt.PromptEndpoints;
 
 /// <summary>
 /// 查询提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/prompt_list")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/prompt_list")]
 public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPromptListCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -36,13 +31,7 @@ public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPro
     /// <inheritdoc/>
     public override async Task<QueryPromptListCommandResponse> ExecuteAsync(QueryPromptListCommand req, CancellationToken ct)
     {
-        var newReq = new QueryPromptListCommand
-        {
-            ClassId = req.ClassId,
-            Name = req.Name,
-            UserId = _userContext.UserId,
-            IsOwn = req.IsOwn
-        };
-        return await _mediator.Send(newReq, ct);
+        req.SetProperty(x => x.ContextUserId, _userContext.UserId);
+        return await _mediator.Send(req, ct);
     }
 }

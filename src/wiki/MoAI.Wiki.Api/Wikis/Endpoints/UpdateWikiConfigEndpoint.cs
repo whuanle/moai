@@ -1,10 +1,4 @@
-﻿// <copyright file="UpdateWikiConfigEndpoint.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using FastEndpoints;
+﻿using FastEndpoints;
 using MediatR;
 using MoAI.AiModel.Queries;
 using MoAI.Common.Queries;
@@ -38,39 +32,30 @@ public class UpdateWikiConfigEndpoint : Endpoint<UpdateWikiConfigCommand, EmptyC
     /// <inheritdoc/>
     public override async Task<EmptyCommandResponse> ExecuteAsync(UpdateWikiConfigCommand req, CancellationToken ct)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
+        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand
         {
-            UserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 
-        if (!userIsWikiUser.IsWikiRoot)
+        // 只有超级管理员或知识库创建人可以修改配置
+        if (isCreator.IsSystem)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
-
-        var aiModelCreator = await _mediator.Send(new QueryAiModelCreatorCommand
-        {
-            ModelId = req.EmbeddingModelId
-        });
-
-        if (!aiModelCreator.Exist)
-        {
-            throw new BusinessException("未找到模型") { StatusCode = 404 };
-        }
-
-        if (aiModelCreator.IsSystem)
-        {
-            if (aiModelCreator.IsPublic == false)
+            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
             {
-                throw new BusinessException("未找到模型.") { StatusCode = 404 };
+                ContextUserId = _userContext.UserId
+            });
+
+            if (isAdmin.IsAdmin)
+            {
+                return await _mediator.Send(req);
             }
         }
-        else if (aiModelCreator.CreatorId != _userContext.UserId)
+
+        if (isCreator.CreatorId == _userContext.UserId)
         {
-            throw new BusinessException("未找到模型.") { StatusCode = 404 };
+            return await _mediator.Send(req);
         }
 
-        return await _mediator.Send(req);
+        throw new BusinessException("没有操作权限.") { StatusCode = 403 };
     }
 }

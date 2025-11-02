@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryWikiDetailInfoResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-namespace MoAI.Wiki.Wikis.Queries.Response;
+﻿namespace MoAI.Wiki.Wikis.Queries.Response;
 
 public class QueryWikiDetailInfoResponse
 {
@@ -21,7 +15,7 @@ public class QueryWikiDetailInfoResponse
     /// <summary>
     /// 团队头像路径.
     /// </summary>
-    public string AvatarUrl { get; set; }
+    public required string AvatarUrl { get; set; }
 
     /// <summary>
     /// 知识库描述.

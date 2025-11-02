@@ -2,7 +2,6 @@
 using MediatR;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Queries;
-using MoAI.App.AIAssistant.Queries.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 

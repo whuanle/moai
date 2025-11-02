@@ -1,13 +1,11 @@
-﻿// <copyright file="QueryAdminIdsCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
+using MoAI.Common.Commands.Responses;
 
 namespace MoAI.Login.Commands;
 
+/// <summary>
+/// 查询管理员列表，返回管理员用户id.
+/// </summary>
 public class QueryAdminIdsCommand : IRequest<QueryAdminIdsCommandResponse>
 {
 }

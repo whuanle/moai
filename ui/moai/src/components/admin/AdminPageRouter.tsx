@@ -1,29 +1,29 @@
 import { RouteObject } from "react-router";
-import OAuth from "./OAuth";
-import UserManager from "./UserManager";
-import SystemAIModel from "./SystemAiModel";
-import SystemPluginList from "./PluginList";
-import SystemSettings from "./SystemSettings";
+import OAuthPage from "./oauth/OAuthPage";
+import UserManagerPage from "./usermanager/UserManagerPage";
+import AiModelPage from "./aimodel/AiModelPage";
+import PromptClassPage from "./promptclass/PromptClassPage";
+import PluginClassPage from "./pluginClass/PluginClassPage";
 
 export const AdminPageRouters: RouteObject[] = [
   {
     path: "oauth",
-    Component: OAuth,
+    Component: OAuthPage,
   },
   {
     path: "usermanager",
-    Component: UserManager,
+    Component: UserManagerPage,
   },
   {
     path: "aimodel",
-    Component: SystemAIModel,
+    Component: AiModelPage,
   },
   {
-    path: "plugin",
-    Component: SystemPluginList,
+    path: "promptclass",
+    Component: PromptClassPage,
   },
   {
-    path: "settings",
-    Component: SystemSettings,
+    path: "pluginclass",
+    Component: PluginClassPage,
   }
 ];

@@ -45,14 +45,14 @@ public partial class PluginEntity : IFullAudited
     public string Queries { get; set; } = default!;
 
     /// <summary>
+    /// 分类id.
+    /// </summary>
+    public int ClassifyId { get; set; }
+
+    /// <summary>
     /// system|mcp|openapi.
     /// </summary>
     public int Type { get; set; }
-
-    /// <summary>
-    /// 系统全局插件.
-    /// </summary>
-    public bool IsSystem { get; set; }
 
     /// <summary>
     /// 公开访问.

@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryPluginInfoListCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Plugin.Models;
@@ -52,7 +46,7 @@ public class QueryPluginInfoListCommandHandler : IRequestHandler<QueryPluginInfo
         }
 
         var plugins = await query
-            .Select(x => new QueryPluginInfoItem
+            .Select(x => new PluginBaseInfoItem
             {
                 PluginId = x.Id,
                 PluginName = x.PluginName,
@@ -60,6 +54,7 @@ public class QueryPluginInfoListCommandHandler : IRequestHandler<QueryPluginInfo
                 Type = (PluginType)x.Type,
                 Description = x.Description,
                 IsPublic = x.IsPublic,
+                ClassifyId = x.ClassifyId,
             }).ToArrayAsync();
 
         return new QueryPluginInfoListCommandResponse { Items = plugins };

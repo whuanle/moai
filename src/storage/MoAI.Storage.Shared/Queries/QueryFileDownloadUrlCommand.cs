@@ -1,28 +1,16 @@
-﻿// <copyright file="QueryFileDownloadUrlCommand.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Storage.Queries.Response;
-using MoAI.Store.Enums;
 
 namespace MoAI.Store.Queries;
 
 /// <summary>
-/// 查询文件下载地址.
+/// 获取文件的下载地址.
 /// </summary>
 public class QueryFileDownloadUrlCommand : IRequest<QueryFileDownloadUrlCommandResponse>
 {
     /// <summary>
-    /// 文件可见性
-    /// </summary>
-    public FileVisibility Visibility { get; init; }
-
-    /// <summary>
-    /// 过期时间，公用文件不需要填写.
+    /// 过期时间，该地址过期后不能使用.
     /// </summary>
     public TimeSpan ExpiryDuration { get; init; }
 

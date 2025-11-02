@@ -94,6 +94,7 @@ dotnet_diagnostic.SA1311.severity = silent
 dotnet_diagnostic.CA1311.severity = silent
 csharp_prefer_static_local_function = true:suggestion
 dotnet_diagnostic.SA1616.severity = silent
+dotnet_diagnostic.SA1633.severity = silent
 
 [*.vb]
 #### 命名样式 ####

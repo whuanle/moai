@@ -1,10 +1,4 @@
-﻿// <copyright file="QueryWikiSimpleInfoResponse.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MoAI.AiModel.Models;
+﻿using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Wikis.Queries.Response;
@@ -35,6 +29,11 @@ public class QueryWikiInfoResponse : AuditsInfo
     public bool IsPublic { get; init; } = default!;
 
     /// <summary>
+    /// 是否是系统知识库.
+    /// </summary>
+    public bool IsSystem { get; init; }
+
+    /// <summary>
     /// 是否该知识库成员.
     /// </summary>
     public bool IsUser { get; init; }
@@ -55,22 +54,7 @@ public class QueryWikiInfoResponse : AuditsInfo
     public bool IsLock { get; init; }
 
     /// <summary>
-    /// 分词器.
-    /// </summary>
-    public EmbeddingTokenizer EmbeddingModelTokenizer { get; init; } = default!;
-
-    /// <summary>
     /// 维度，跟模型有关.
     /// </summary>
     public int EmbeddingDimensions { get; init; }
-
-    /// <summary>
-    /// 批处理大小.
-    /// </summary>
-    public int EmbeddingBatchSize { get; init; }
-
-    /// <summary>
-    /// 最大重试次数.
-    /// </summary>
-    public int MaxRetries { get; init; }
 }

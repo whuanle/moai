@@ -1,15 +1,8 @@
-﻿// <copyright file="UpdateAiModelCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Commands;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -37,27 +30,14 @@ public class UpdateAiModelCommandHandler : IRequestHandler<UpdateAiModelCommand,
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateAiModelCommand request, CancellationToken cancellationToken)
     {
-        var aiModel = await _dbContext.AiModels
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == request.AiModelId, cancellationToken);
+        var aiModel = await _dbContext.AiModels.FirstOrDefaultAsync(x => x.Id == request.AiModelId, cancellationToken);
 
         if (aiModel == null)
         {
             throw new BusinessException("模型不存在") { StatusCode = 404 };
         }
 
-        if (aiModel.Name != request.Name)
-        {
-            var existModel = await _dbContext.AiModels
-                .AnyAsync(x => x.Name == request.Name, cancellationToken);
-
-            if (existModel)
-            {
-                throw new BusinessException("已存在同名模型") { StatusCode = 409 };
-            }
-        }
-
-        if (!string.IsNullOrEmpty(request.Key) && request.Key.Distinct().Count() > 1)
+        if (!string.IsNullOrEmpty(request.Key) && request.Key != "*")
         {
             try
             {
@@ -81,11 +61,7 @@ public class UpdateAiModelCommandHandler : IRequestHandler<UpdateAiModelCommand,
         aiModel.Files = request.Abilities?.Files ?? false;
         aiModel.ImageOutput = request.Abilities?.ImageOutput ?? false;
         aiModel.IsVision = request.Abilities?.Vision ?? false;
-
-        if (aiModel.IsSystem)
-        {
-            aiModel.IsPublic = request.IsPublic;
-        }
+        aiModel.IsPublic = request.IsPublic;
 
         _dbContext.AiModels.Update(aiModel);
         await _dbContext.SaveChangesAsync(cancellationToken);

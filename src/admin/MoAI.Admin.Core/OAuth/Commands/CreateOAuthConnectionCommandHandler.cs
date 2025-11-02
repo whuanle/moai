@@ -1,11 +1,6 @@
-﻿// <copyright file="CreateOAuthConnectionCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
@@ -25,6 +20,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     private readonly DatabaseContext _databaseContext;
     private readonly IOAuthClient _authClient;
     private readonly SystemOptions _systemOptions;
+    private readonly ILogger<CreateOAuthConnectionCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateOAuthConnectionCommandHandler"/> class.
@@ -32,11 +28,13 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     /// <param name="databaseContext"></param>
     /// <param name="authClient"></param>
     /// <param name="systemOptions"></param>
-    public CreateOAuthConnectionCommandHandler(DatabaseContext databaseContext, IOAuthClient authClient, SystemOptions systemOptions)
+    /// <param name="logger"></param>
+    public CreateOAuthConnectionCommandHandler(DatabaseContext databaseContext, IOAuthClient authClient, SystemOptions systemOptions, ILogger<CreateOAuthConnectionCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _authClient = authClient;
         _systemOptions = systemOptions;
+        _logger = logger;
     }
 
     /// <inheritdoc/>

@@ -1,0 +1,23 @@
+.prompt-list-page {
+  padding: 24px;
+}
+
+.prompt-list-page .ant-card {
+  margin-bottom: 16px;
+}
+
+.prompt-list-page .ant-space {
+  flex-wrap: wrap;
+}
+
+.prompt-list-page .ant-select {
+  width: 150px;
+}
+
+.prompt-list-page .ant-input-search {
+  width: 250px;
+}
+
+.prompt-list-page .vditor {
+  min-height: 500px;
+}

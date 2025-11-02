@@ -1,10 +1,4 @@
-﻿using MediatR;
-using MoAI.AI.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MoAI.AI.Models;
 
 namespace MoAI.Prompt.Queries.Responses;
 

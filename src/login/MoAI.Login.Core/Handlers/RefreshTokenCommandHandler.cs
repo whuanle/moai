@@ -1,14 +1,7 @@
-﻿// <copyright file="RefreshTokenCommandHandler.cs" company="MoAI">
-// Copyright (c) MoAI. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Github link: https://github.com/whuanle/moai
-// </copyright>
-
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
-using MoAI.Database.Models;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Login.Commands;
@@ -72,11 +65,11 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         List<string> roles = new List<string>();
 
-        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == ISystemSettingProvider.Root.Key && x.Value == user.Id.ToString());
+        var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == "root" && x.Value == user.Id.ToString());
 
         if (isRoot)
         {
-            roles.Add(ISystemSettingProvider.Root.Key);
+            roles.Add("root");
             roles.Add("admin");
         }
         else if (user.IsAdmin)

@@ -19,6 +19,10 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
 
         entity.ToTable("ai_model", tb => tb.HasComment("ai模型"));
 
+        entity.HasIndex(e => e.AiModelType, "ai_model_ai_model_type_index");
+
+        entity.HasIndex(e => e.AiProvider, "ai_model_ai_provider_index");
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
@@ -67,11 +71,8 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
-            .HasComment("是否开放给所有人使用,只有系统模型可以开放")
+            .HasComment("是否开放给大家使用")
             .HasColumnName("is_public");
-        entity.Property(e => e.IsSystem)
-            .HasComment("是否系统级模型")
-            .HasColumnName("is_system");
         entity.Property(e => e.IsVision)
             .HasComment("支持计算机视觉")
             .HasColumnName("is_vision");
