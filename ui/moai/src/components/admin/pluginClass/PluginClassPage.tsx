@@ -38,7 +38,7 @@ export default function PluginClassPage() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const response = await client.api.admin.plugin.classify_list.get();
+      const response = await client.api.admin_plugin.classify_list.get();
 
       if (response?.items) {
         setClassList(response.items || []);
@@ -79,7 +79,7 @@ export default function PluginClassPage() {
       const requestBody: DeletePluginClassifyCommand = {
         classifyId: item.classifyId!,
       };
-      await client.api.admin.plugin.delete_classify.post(requestBody);
+      await client.api.admin_plugin.delete_classify.post(requestBody);
       messageApi.success("分类删除成功");
 
       // 刷新分类列表
@@ -95,7 +95,7 @@ export default function PluginClassPage() {
     setSubmitting(true);
     try {
       const client = GetApiClient();
-      await client.api.admin.plugin.add_classify.post(values);
+      await client.api.admin_plugin.add_classify.post(values);
 
       messageApi.success("分类添加成功");
       setAddModalVisible(false);
@@ -123,7 +123,7 @@ export default function PluginClassPage() {
         description: values.description,
       };
 
-      await client.api.admin.plugin.update_classify.delete(requestBody);
+      await client.api.admin_plugin.update_classify.delete(requestBody);
 
       messageApi.success("分类更新成功");
       setEditModalVisible(false);

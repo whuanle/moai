@@ -7,7 +7,7 @@ namespace MoAI.Plugin.InternalPluginQueries;
 /// <summary>
 /// 查询该插件的详细信息.
 /// </summary>
-public class QueryInternalPluginDetailCommand : IRequest<QueryInternalPluginDetailCommandResponse>
+public class QueryInternalPluginDetailCommand : IRequest<InternalPluginDetail>
 {
     /// <summary>
     /// 插件 id.

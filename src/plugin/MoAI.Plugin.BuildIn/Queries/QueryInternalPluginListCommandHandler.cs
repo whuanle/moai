@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Extensions;
 using MoAI.Plugin.InternalPluginQueries;
 using MoAI.Plugin.InternalPluginQueries.Responses;
 using MoAI.Plugin.Models;
@@ -38,6 +39,16 @@ public class QueryInternalPluginListCommandHandler : IRequestHandler<QueryIntern
             query = query.Where(x => x.PluginName.Contains(request.Name));
         }
 
+        if (request.TemplatePluginClassify != null)
+        {
+            query = query.Where(x => x.TemplatePluginClassify == request.TemplatePluginClassify.ToJsonString());
+        }
+
+        if (!string.IsNullOrEmpty(request.TemplatePluginKey))
+        {
+            query = query.Where(x => x.TemplatePluginKey == request.TemplatePluginKey);
+        }
+
         if (request.ClassifyId.HasValue)
         {
             query = query.Where(x => x.ClassifyId == (int)request.ClassifyId.Value);
@@ -60,7 +71,9 @@ public class QueryInternalPluginListCommandHandler : IRequestHandler<QueryIntern
                 UpdateTime = x.UpdateTime,
                 UpdateUserId = x.UpdateUserId,
                 IsPublic = x.IsPublic,
-                ClassifyId = x.ClassifyId
+                ClassifyId = x.ClassifyId,
+                TemplatePluginClassify = x.TemplatePluginClassify.JsonToObject<InternalPluginClassify>(),
+                TemplatePluginKey = x.TemplatePluginKey
             }).ToArrayAsync();
 
         await _mediator.Send(new FillUserInfoCommand { Items = plugins });

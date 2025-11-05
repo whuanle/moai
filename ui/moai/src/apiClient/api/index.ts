@@ -4,6 +4,12 @@
 // @ts-ignore
 import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } from './account/index.js';
 // @ts-ignore
+import { Admin_aimodelRequestBuilderNavigationMetadata, type Admin_aimodelRequestBuilder } from './admin_aimodel/index.js';
+// @ts-ignore
+import { Admin_pluginRequestBuilderNavigationMetadata, type Admin_pluginRequestBuilder } from './admin_plugin/index.js';
+// @ts-ignore
+import { Admin_promptRequestBuilderNavigationMetadata, type Admin_promptRequestBuilder } from './admin_prompt/index.js';
+// @ts-ignore
 import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from './admin/index.js';
 // @ts-ignore
 import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
@@ -32,6 +38,18 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The admin property
      */
     get admin(): AdminRequestBuilder;
+    /**
+     * The admin_aimodel property
+     */
+    get admin_aimodel(): Admin_aimodelRequestBuilder;
+    /**
+     * The admin_plugin property
+     */
+    get admin_plugin(): Admin_pluginRequestBuilder;
+    /**
+     * The admin_prompt property
+     */
+    get admin_prompt(): Admin_promptRequestBuilder;
     /**
      * The aimodel property
      */
@@ -70,6 +88,15 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     admin: {
         navigationMetadata: AdminRequestBuilderNavigationMetadata,
+    },
+    admin_aimodel: {
+        navigationMetadata: Admin_aimodelRequestBuilderNavigationMetadata,
+    },
+    admin_plugin: {
+        navigationMetadata: Admin_pluginRequestBuilderNavigationMetadata,
+    },
+    admin_prompt: {
+        navigationMetadata: Admin_promptRequestBuilderNavigationMetadata,
     },
     aimodel: {
         navigationMetadata: AimodelRequestBuilderNavigationMetadata,

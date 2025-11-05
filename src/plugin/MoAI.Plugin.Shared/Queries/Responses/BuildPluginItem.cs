@@ -28,5 +28,5 @@ public class BuildPluginItem
     /// <summary>
     /// 分类.
     /// </summary>
-    public string Classify { get; set; } = default!;
+    public InternalPluginClassify Classify { get; set; } = default!;
 }

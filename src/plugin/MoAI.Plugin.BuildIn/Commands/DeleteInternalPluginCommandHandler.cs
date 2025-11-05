@@ -23,6 +23,7 @@ public class DeleteInternalPluginCommandHandler : IRequestHandler<DeleteInternal
         _databaseContext = databaseContext;
     }
 
+    /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteInternalPluginCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.PluginInternals.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);

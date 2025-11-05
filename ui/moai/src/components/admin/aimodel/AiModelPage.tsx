@@ -247,7 +247,7 @@ export default function AiModelPage() {
   const fetchModelTypeCounts = async () => {
     try {
       const client = GetApiClient();
-      const response = await client.api.admin.aimodel.providerlist.get();
+      const response = await client.api.admin_aimodel.providerlist.get();
 
       if (response?.providers) {
         // 获取所有的模型类型
@@ -286,7 +286,7 @@ export default function AiModelPage() {
         provider: undefined,
       };
 
-      const response = await client.api.admin.aimodel.modellist.post(
+      const response = await client.api.admin_aimodel.modellist.post(
         requestBody
       );
 
@@ -358,7 +358,7 @@ export default function AiModelPage() {
   const handleDeleteClick = async (model: AiModelItem) => {
     try {
       const client = GetApiClient();
-      await client.api.admin.aimodel.delete_model.delete({
+      await client.api.admin_aimodel.delete_model.delete({
         aiModelId: model.id,
       });
       messageApi.success("模型删除成功");
@@ -450,7 +450,7 @@ export default function AiModelPage() {
         } as ModelAbilities,
       };
 
-      await client.api.admin.aimodel.add_aimodel.post(requestBody as any);
+      await client.api.admin_aimodel.add_aimodel.post(requestBody as any);
 
       messageApi.success("模型添加成功");
       setAddModalVisible(false);
@@ -505,7 +505,7 @@ export default function AiModelPage() {
         (requestBody as any).key = "*";
       }
 
-      await client.api.admin.aimodel.update_aimodel.post(requestBody as any);
+      await client.api.admin_aimodel.update_aimodel.post(requestBody as any);
 
       messageApi.success("模型更新成功");
       setEditModalVisible(false);

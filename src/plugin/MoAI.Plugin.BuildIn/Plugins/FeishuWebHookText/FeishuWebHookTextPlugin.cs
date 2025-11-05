@@ -3,9 +3,11 @@
 
 using Maomi;
 using Microsoft.SemanticKernel;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.Feishu.Models;
 using MoAI.Infra.Models;
+using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
 using System.ComponentModel;
@@ -38,35 +40,28 @@ public class FeishuWebHookTextPlugin : IInternalPluginRuntime
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyCollection<KeyValueString>> CheckConfigAsync(string @params)
+    public async Task<string?> CheckConfigAsync(string config)
     {
         try
         {
-            var objectParams = System.Text.Json.JsonSerializer.Deserialize<FeishuWebHookTextPluginParams>(@params);
+            var objectParams = System.Text.Json.JsonSerializer.Deserialize<FeishuWebHookTextPluginParams>(config);
             var validationResult = await Validation.ValidateAsync(objectParams!);
             if (validationResult.IsValid)
             {
-                return Array.Empty<KeyValueString>();
+                return string.Empty;
             }
             else
             {
-                return validationResult.Errors.Select(e => new KeyValueString
+                return string.Join(";", validationResult.Errors.Select(e => new KeyValueString
                 {
                     Key = e.PropertyName,
                     Value = e.ErrorMessage
-                }).ToList();
+                }));
             }
         }
         catch (Exception ex)
         {
-            return new List<KeyValueString>
-            {
-                new KeyValueString
-                {
-                    Key = "@params",
-                    Value = $"参数解析失败: {ex.Message}"
-                }
-            };
+            return $"参数解析失败: {ex.Message}";
         }
     }
 
@@ -79,7 +74,7 @@ public class FeishuWebHookTextPlugin : IInternalPluginRuntime
         {
             new InternalPluginParamConfig
             {
-                Key = "webhook_key",
+                Key = nameof(FeishuWebHookTextPluginParams.WebhookKey),
                 Description = "飞书机器人 WebHook Key",
                 FFieldType = InternalPluginConfigFieldType.String,
                 IsRequired = true,
@@ -87,7 +82,7 @@ public class FeishuWebHookTextPlugin : IInternalPluginRuntime
             },
             new InternalPluginParamConfig
             {
-                Key = "sign_key",
+                Key = nameof(FeishuWebHookTextPluginParams.SignKey),
                 Description = "设置签名校验后，向 webhook 发送请求需要签名校验来保障来源可信",
                 FFieldType = InternalPluginConfigFieldType.String,
                 IsRequired = false,
@@ -97,11 +92,18 @@ public class FeishuWebHookTextPlugin : IInternalPluginRuntime
     }
 
     /// <inheritdoc/>
-    public async Task ImportConfigAsync(string json)
+    public async Task<string> GetParamsExampleValue()
+    {
+        await Task.CompletedTask;
+        return System.Text.Json.JsonSerializer.Serialize("这是一条来自飞书机器人的消息", JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+    }
+
+    /// <inheritdoc/>
+    public async Task ImportConfigAsync(string config)
     {
         await Task.CompletedTask;
 
-        var objectParams = System.Text.Json.JsonSerializer.Deserialize<FeishuWebHookTextPluginParams>(json);
+        var objectParams = System.Text.Json.JsonSerializer.Deserialize<FeishuWebHookTextPluginParams>(config);
         _params = objectParams!;
     }
 
@@ -139,6 +141,21 @@ public class FeishuWebHookTextPlugin : IInternalPluginRuntime
                 Code = -1,
                 Msg = ex.Message
             };
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<string> TestAsync(string @params)
+    {
+        try
+        {
+            var str = System.Text.Json.JsonSerializer.Deserialize<string>(@params);
+            var result = await InvokeAsync(str);
+            return System.Text.Json.JsonSerializer.Serialize(result, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+        }
+        catch (Exception ex)
+        {
+            throw new BusinessException(ex.Message);
         }
     }
 }

@@ -18,14 +18,27 @@ public interface IInternalPluginRuntime
     /// <summary>
     /// 检查配置，返回是否有问题.
     /// </summary>
-    /// <param name="params"></param>
+    /// <param name="config"></param>
     /// <returns></returns>
-    Task<IReadOnlyCollection<KeyValueString>> CheckConfigAsync(string @params);
+    Task<string?> CheckConfigAsync(string config);
 
     /// <summary>
     /// 初始化配置.
     /// </summary>
-    /// <param name="json"></param>
+    /// <param name="config"></param>
     /// <returns></returns>
-    Task ImportConfigAsync(string json);
+    Task ImportConfigAsync(string config);
+
+    /// <summary>
+    /// 获取参数示例值.
+    /// </summary>
+    /// <returns></returns>
+    Task<string> GetParamsExampleValue();
+
+    /// <summary>
+    /// 使用参数运行测试.
+    /// </summary>
+    /// <param name="params"></param>
+    /// <returns></returns>
+    Task<string> TestAsync(string @params);
 }

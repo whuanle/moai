@@ -47,6 +47,22 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             throw new BusinessException("文件不存在") { StatusCode = 404 };
         }
 
+        // 检查插件是否同名
+        var exists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
+        exists = await _databaseContext.PluginInternals
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
         await _mediator.Send(new ComplateFileUploadCommand { FileId = request.FileId, IsSuccess = true });
 
         // 拉取完整的 openapi 文件

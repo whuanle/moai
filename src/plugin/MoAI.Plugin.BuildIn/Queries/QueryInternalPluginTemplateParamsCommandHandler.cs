@@ -40,9 +40,12 @@ public class QueryInternalPluginTemplateParamsCommandHandler : IRequestHandler<Q
 
         var plugin = service as IInternalPluginRuntime;
 
+        var exampleValue = await plugin!.GetParamsExampleValue();
+
         return new QueryInternalPluginTemplateParamsCommandResponse
         {
-            Items = await plugin!.ExportConfigAsync()
+            Items = await plugin!.ExportConfigAsync(),
+            ExampleValue = exampleValue
         };
     }
 }

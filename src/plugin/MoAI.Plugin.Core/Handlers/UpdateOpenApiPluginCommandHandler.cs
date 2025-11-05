@@ -47,6 +47,22 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
+        // 检查插件是否同名
+        var exists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == request.Name && x.Id == request.PluginId, cancellationToken);
+
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
+        exists = await _databaseContext.PluginInternals
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
         pluginEntity.Title = request.Title;
         pluginEntity.IsPublic = request.IsPublic;
         pluginEntity.Description = request.Description;

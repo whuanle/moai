@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MoAI.Plugin.Models;
 
 namespace MoAI.Plugin.Attributes;
 
@@ -13,10 +9,10 @@ namespace MoAI.Plugin.Attributes;
 public sealed class PluginClassifyAttribute : Attribute
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="PluginKeyAttribute"/> class.
+    /// Initializes a new instance of the <see cref="PluginClassifyAttribute"/> class.
     /// </summary>
     /// <param name="key"></param>
-    public PluginClassifyAttribute(string key)
+    public PluginClassifyAttribute(InternalPluginClassify key)
     {
         Key = key;
     }
@@ -24,5 +20,5 @@ public sealed class PluginClassifyAttribute : Attribute
     /// <summary>
     /// 插件的唯一标识.
     /// </summary>
-    public string Key { get; }
+    public InternalPluginClassify Key { get; }
 }

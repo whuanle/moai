@@ -1,8 +1,10 @@
 ﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra.DingTalk;
+using MoAI.Infra.Doc2x;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.OAuth;
+using MoAI.Infra.Put;
 using MoAI.Infra.WeixinWork;
 using Refit;
 using System.Text.Json;
@@ -58,6 +60,15 @@ public class InfraExternalHttpModule : IModule
 
         context.Services.AddRefitClient<IDingTalkClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.dingtalk.com"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IDoc2xClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://v2.doc2x.noedgeai.com"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IPutClient>(settings)
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
     }

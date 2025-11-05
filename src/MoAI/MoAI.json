@@ -2137,10 +2137,10 @@
         ]
       }
     },
-    "/api/admin/aimodel/add_aimodel": {
+    "/api/admin_aimodel/add_aimodel": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Aimodel"
         ],
         "summary": "添加一个系统 ai 模型，key 要使用 RSA 公钥加密，管理员访问.",
         "operationId": "AddAiModelEndpoint",
@@ -2226,10 +2226,10 @@
         ]
       }
     },
-    "/api/admin/aimodel/delete_model": {
+    "/api/admin_aimodel/delete_model": {
       "delete": {
         "tags": [
-          "Admin"
+          "Admin_Aimodel"
         ],
         "summary": "删除一个模型，管理员访问.",
         "operationId": "DeleteAiModelEndpoint",
@@ -2320,10 +2320,10 @@
         ]
       }
     },
-    "/api/admin/aimodel/modellist": {
+    "/api/admin_aimodel/modellist": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Aimodel"
         ],
         "summary": "获取 AI 模型列表，管理员访问.",
         "operationId": "QueryAiModelListEndpoint",
@@ -2409,10 +2409,10 @@
         ]
       }
     },
-    "/api/admin/aimodel/providerlist": {
+    "/api/admin_aimodel/providerlist": {
       "get": {
         "tags": [
-          "Admin"
+          "Admin_Aimodel"
         ],
         "summary": "按维度查询不同分类的模型的数量，管理员访问.",
         "operationId": "QueryAiModelProviderListEndpoint",
@@ -2574,10 +2574,10 @@
         ]
       }
     },
-    "/api/admin/aimodel/update_aimodel": {
+    "/api/admin_aimodel/update_aimodel": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Aimodel"
         ],
         "summary": "修改 AI 模型信息，key 要使用 RSA 公钥加密，如果不修改 key 需设置 key=*，管理员访问.",
         "operationId": "UpdateAiModelEndpoint",
@@ -2663,12 +2663,12 @@
         ]
       }
     },
-    "/api/admin/plugin/internal_template_params": {
+    "/api/admin_plugin/internal_template_params": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
-        "summary": "内置插件模板的参数.",
+        "summary": "内置插件模板的配置模板.",
         "operationId": "QueryInternalPluginTemplateParamsEndpoint",
         "requestBody": {
           "x-name": "QueryInternalPluginTemplateParamsCommand",
@@ -2752,13 +2752,26 @@
         ]
       }
     },
-    "/api/admin/plugin/internal_template_list": {
-      "get": {
+    "/api/admin_plugin/internal_template_list": {
+      "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "获取内置插件模板列表.",
         "operationId": "QueryInternalTemplatePluginListEndpoint",
+        "requestBody": {
+          "x-name": "QueryInternalTemplatePluginListCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryInternalTemplatePluginListCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
         "responses": {
           "200": {
             "description": "Success",
@@ -2828,10 +2841,10 @@
         ]
       }
     },
-    "/api/admin/plugin/plugin_list": {
+    "/api/admin_plugin/plugin_list": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "查询插件简要信息列表，不支持查询内置插件.",
         "operationId": "QueryPluginBaseListEndpoint",
@@ -2917,10 +2930,10 @@
         ]
       }
     },
-    "/api/admin/plugin/plugin_detail": {
+    "/api/admin_plugin/plugin_detail": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "获取插件的详细信息.",
         "operationId": "QueryPluginDetailEndpoint",
@@ -3006,10 +3019,10 @@
         ]
       }
     },
-    "/api/admin/plugin/function_list": {
+    "/api/admin_plugin/function_list": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "插件的函数列表.",
         "operationId": "QueryPluginFunctionsListEndpoint",
@@ -3095,10 +3108,10 @@
         ]
       }
     },
-    "/api/admin/plugin/internal_plugin_list": {
+    "/api/admin_plugin/internal_plugin_list": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "查询内置插件简要信息列表.",
         "operationId": "QueryInternalPluginBaseListEndpoint",
@@ -3184,10 +3197,10 @@
         ]
       }
     },
-    "/api/admin/plugin/internal_plugin_detail": {
+    "/api/admin_plugin/internal_plugin_detail": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "查询内置插件详细信息.",
         "operationId": "QueryInternalPluginDetailEndpoint",
@@ -3210,7 +3223,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryInternalPluginDetailCommandResponse"
+                  "$ref": "#/components/schemas/InternalPluginDetail"
                 }
               }
             }
@@ -3273,10 +3286,10 @@
         ]
       }
     },
-    "/api/admin/plugin/delete_plugin": {
+    "/api/admin_plugin/delete_plugin": {
       "delete": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "删除插件.",
         "operationId": "DeletePlugiEndpoint",
@@ -3367,10 +3380,10 @@
         ]
       }
     },
-    "/api/admin/plugin/import_mcp": {
+    "/api/admin_plugin/import_mcp": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "导入 mcp 服务.",
         "operationId": "ImportMcpServerPluginEndpoint",
@@ -3456,10 +3469,10 @@
         ]
       }
     },
-    "/api/admin/plugin/import_openapi": {
+    "/api/admin_plugin/import_openapi": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "完成 openapi 文件上传.",
         "operationId": "ImportOpenApiPluginEndpoint",
@@ -3545,10 +3558,10 @@
         ]
       }
     },
-    "/api/admin/plugin/pre_upload_openapi": {
+    "/api/admin_plugin/pre_upload_openapi": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "预上传 openapi 文件.",
         "operationId": "PreUploadOpenApiFileEndpoint",
@@ -3634,10 +3647,10 @@
         ]
       }
     },
-    "/api/admin/plugin/refresh_mcp": {
+    "/api/admin_plugin/refresh_mcp": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "刷新 mcp 服务器的 tool 列表.",
         "operationId": "RefreshMcpServerPluginEndpoint",
@@ -3723,10 +3736,10 @@
         ]
       }
     },
-    "/api/admin/plugin/update_mcp": {
+    "/api/admin_plugin/update_mcp": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "修改mcp插件.",
         "operationId": "UpdateMcpServerPluginEndpoint",
@@ -3812,10 +3825,10 @@
         ]
       }
     },
-    "/api/admin/plugin/update_openapi": {
+    "/api/admin_plugin/update_openapi": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "修改 openapi 插件.",
         "operationId": "UpdateOpenApiPluginEndpoint",
@@ -3901,10 +3914,10 @@
         ]
       }
     },
-    "/api/admin/plugin/create_internal_plugin": {
+    "/api/admin_plugin/create_internal_plugin": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "创建内置插件.",
         "operationId": "CreateInternalPluginEndpoint",
@@ -3990,10 +4003,10 @@
         ]
       }
     },
-    "/api/admin/plugin/delete_internal_plugin": {
+    "/api/admin_plugin/delete_internal_plugin": {
       "delete": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "删除内置插件.",
         "operationId": "DeleteInternalPluginEndpoint",
@@ -4084,10 +4097,104 @@
         ]
       }
     },
-    "/api/admin/plugin/update_internal_plugin": {
+    "/api/admin_plugin/run_internal_plugin": {
+      "delete": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "运行内置插件.",
+        "operationId": "RunTestInternalPluginEndpoint",
+        "requestBody": {
+          "x-name": "RunTestInternalPluginCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/RunTestInternalPluginCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunTestInternalPluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunTestInternalPluginCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/update_internal_plugin": {
       "put": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "更新内置插件.",
         "operationId": "UpdateInternalPluginEndpoint",
@@ -4173,10 +4280,10 @@
         ]
       }
     },
-    "/api/admin/plugin/add_classify": {
+    "/api/admin_plugin/add_classify": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "新增分类.",
         "operationId": "CreatePluginClassifyEndpoint",
@@ -4262,10 +4369,10 @@
         ]
       }
     },
-    "/api/admin/plugin/delete_classify": {
+    "/api/admin_plugin/delete_classify": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "删除分类.",
         "operationId": "DeletePluginClassifyEndpoint",
@@ -4351,10 +4458,10 @@
         ]
       }
     },
-    "/api/admin/plugin/classify_list": {
+    "/api/admin_plugin/classify_list": {
       "get": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "获取分类列表.",
         "operationId": "QueryPluginClassifyListEndpoint",
@@ -4427,10 +4534,10 @@
         ]
       }
     },
-    "/api/admin/plugin/update_classify": {
+    "/api/admin_plugin/update_classify": {
       "delete": {
         "tags": [
-          "Admin"
+          "Admin_Plugin"
         ],
         "summary": "修改分类.",
         "operationId": "UpdatePluginClassifyCommandEndpoint",
@@ -4521,10 +4628,10 @@
         ]
       }
     },
-    "/api/admin/prompt/ai_optmize_prompt": {
+    "/api/admin_prompt/ai_optmize_prompt": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "使用 AI 优化提示词.",
         "operationId": "AiOptimizePromptEndpoint",
@@ -4610,10 +4717,10 @@
         ]
       }
     },
-    "/api/admin/prompt/create_prompt": {
+    "/api/admin_prompt/create_prompt": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "创建提示词.",
         "operationId": "CreatePromptEndpoints",
@@ -4699,10 +4806,10 @@
         ]
       }
     },
-    "/api/admin/prompt/delete_prompt": {
+    "/api/admin_prompt/delete_prompt": {
       "delete": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "删除提示词.",
         "operationId": "DeletePromptEndpoints",
@@ -4793,10 +4900,10 @@
         ]
       }
     },
-    "/api/admin/prompt/prompt_list": {
+    "/api/admin_prompt/prompt_list": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "查询提示词.",
         "operationId": "QueryPrompListEndpoints",
@@ -4882,10 +4989,10 @@
         ]
       }
     },
-    "/api/admin/prompt/prompt_content": {
+    "/api/admin_prompt/prompt_content": {
       "get": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "获取提示词内容.",
         "operationId": "QueryPromptEndpoint",
@@ -4970,10 +5077,10 @@
         ]
       }
     },
-    "/api/admin/prompt/update_prompt": {
+    "/api/admin_prompt/update_prompt": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "修改提示词.",
         "operationId": "UpdatePromptEndpoints",
@@ -5059,10 +5166,10 @@
         ]
       }
     },
-    "/api/admin/prompt/create_class": {
+    "/api/admin_prompt/create_class": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "创建提示词分类.",
         "operationId": "CreatePromptClassEndpoints",
@@ -5148,10 +5255,10 @@
         ]
       }
     },
-    "/api/admin/prompt/delete_class": {
+    "/api/admin_prompt/delete_class": {
       "delete": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "删除提示词分类.",
         "operationId": "DeletePromptClassEndpoint",
@@ -5242,10 +5349,10 @@
         ]
       }
     },
-    "/api/admin/prompt/class_list": {
+    "/api/admin_prompt/class_list": {
       "get": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "查询分类.",
         "operationId": "QueryPromptClassEndpoint",
@@ -5318,10 +5425,10 @@
         ]
       }
     },
-    "/api/admin/prompt/update_class": {
+    "/api/admin_prompt/update_class": {
       "post": {
         "tags": [
-          "Admin"
+          "Admin_Prompt"
         ],
         "summary": "修改提示词分类.",
         "operationId": "UpdatePromptClassEndpoints",
@@ -6992,7 +7099,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762076261821"
+            "example": "1762324537316"
           },
           "createUserId": {
             "type": "integer",
@@ -7008,7 +7115,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762076261821"
+            "example": "1762324537316"
           },
           "updateUserId": {
             "type": "integer",
@@ -7966,7 +8073,8 @@
         "description": "插件模板参数.",
         "additionalProperties": false,
         "required": [
-          "items"
+          "items",
+          "exampleValue"
         ],
         "properties": {
           "items": {
@@ -7975,6 +8083,10 @@
             "items": {
               "$ref": "#/components/schemas/InternalPluginParamConfig"
             }
+          },
+          "exampleValue": {
+            "type": "string",
+            "description": "示例值."
           }
         }
       },
@@ -8037,7 +8149,7 @@
       },
       "QueryInternalPluginTemplateParamsCommand": {
         "type": "object",
-        "description": "查询内置插件模板参数.",
+        "description": "查询内置插件模板配置参数.",
         "additionalProperties": false,
         "required": [
           "templatePluginKey"
@@ -8053,14 +8165,22 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "plugins"
+          "plugins",
+          "classifyCount"
         ],
         "properties": {
           "plugins": {
             "type": "array",
-            "description": "插件列表.",
+            "description": "模板列表.",
             "items": {
               "$ref": "#/components/schemas/InternalTemplatePlugin"
+            }
+          },
+          "classifyCount": {
+            "type": "array",
+            "description": "每种分类的插件的数量.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
             }
           }
         }
@@ -8088,8 +8208,84 @@
             "description": "注释."
           },
           "classify": {
+            "description": "分类.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InternalPluginClassify"
+              }
+            ]
+          }
+        }
+      },
+      "InternalPluginClassify": {
+        "type": "string",
+        "description": "内置插件分类.",
+        "x-enumNames": [
+          "Tool",
+          "Search",
+          "MultiModal",
+          "Productivity",
+          "ScientificResearch",
+          "Finance",
+          "Design",
+          "News",
+          "Business",
+          "Communication",
+          "Social",
+          "OCR",
+          "DocumentProcessing",
+          "Others"
+        ],
+        "enum": [
+          "tool",
+          "search",
+          "multiModal",
+          "productivity",
+          "scientificResearch",
+          "finance",
+          "design",
+          "news",
+          "business",
+          "communication",
+          "social",
+          "ocr",
+          "documentProcessing",
+          "others"
+        ]
+      },
+      "KeyValueOfStringAndInt32": {
+        "type": "object",
+        "description": "kv.",
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "key": {
             "type": "string",
-            "description": "分类."
+            "description": "Key.",
+            "nullable": true
+          },
+          "value": {
+            "type": "integer",
+            "description": "Value.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryInternalTemplatePluginListCommand": {
+        "type": "object",
+        "description": "查询内置模板列表.",
+        "additionalProperties": false,
+        "properties": {
+          "classify": {
+            "description": "分类筛选.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InternalPluginClassify"
+              }
+            ]
           }
         }
       },
@@ -8457,6 +8653,7 @@
             "additionalProperties": false,
             "required": [
               "pluginId",
+              "templatePluginClassify",
               "templatePluginKey",
               "pluginName",
               "title",
@@ -8469,6 +8666,14 @@
                 "type": "integer",
                 "description": "id.",
                 "format": "int32"
+              },
+              "templatePluginClassify": {
+                "description": "模板分类.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InternalPluginClassify"
+                  }
+                ]
               },
               "templatePluginKey": {
                 "type": "string",
@@ -8501,12 +8706,26 @@
       },
       "QueryInternalPluginListCommand": {
         "type": "object",
-        "description": "查询内置插件列表.",
+        "description": "查询内置插件实例列表.",
         "additionalProperties": false,
         "properties": {
           "name": {
             "type": "string",
             "description": "名称搜索.",
+            "nullable": true
+          },
+          "templatePluginClassify": {
+            "description": "模板分类.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InternalPluginClassify"
+              }
+            ]
+          },
+          "templatePluginKey": {
+            "type": "string",
+            "description": "模板搜索.",
             "nullable": true
           },
           "classifyId": {
@@ -8522,7 +8741,7 @@
           }
         }
       },
-      "QueryInternalPluginDetailCommandResponse": {
+      "InternalPluginDetail": {
         "allOf": [
           {
             "$ref": "#/components/schemas/AuditsInfo"
@@ -8537,6 +8756,7 @@
               "params",
               "pluginId",
               "pluginName",
+              "templatePluginClassify",
               "templatePluginKey",
               "title"
             ],
@@ -8566,6 +8786,14 @@
               "pluginName": {
                 "type": "string",
                 "description": "插件名称."
+              },
+              "templatePluginClassify": {
+                "description": "模板分类.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InternalPluginClassify"
+                  }
+                ]
               },
               "templatePluginKey": {
                 "type": "string",
@@ -8654,7 +8882,7 @@
           "name": {
             "type": "string",
             "description": "插件名称，只能纯字母，用于给 AI 使用.",
-            "maxLength": 20,
+            "maxLength": 30,
             "minLength": 2,
             "pattern": "^[a-zA-Z_]+$",
             "nullable": false
@@ -8727,7 +8955,7 @@
           "name": {
             "type": "string",
             "description": "插件名称.",
-            "maxLength": 20,
+            "maxLength": 30,
             "minLength": 2,
             "pattern": "^[a-zA-Z_]+$",
             "nullable": false
@@ -8787,7 +9015,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1762076261821"
+            "example": "1762324537316"
           }
         }
       },
@@ -8923,7 +9151,7 @@
           "name": {
             "type": "string",
             "description": "插件名称.",
-            "maxLength": 20,
+            "maxLength": 30,
             "minLength": 2,
             "pattern": "^[a-zA-Z_]+$",
             "nullable": false
@@ -8990,11 +9218,11 @@
         "required": [
           "name",
           "classifyId",
-          "params",
           "templatePluginKey",
           "title",
           "description",
-          "isPublic"
+          "isPublic",
+          "config"
         ],
         "properties": {
           "templatePluginKey": {
@@ -9004,8 +9232,9 @@
           "name": {
             "type": "string",
             "description": "插件名称，只能纯字母，用于给 AI 使用.",
-            "maxLength": 10,
-            "minLength": 0,
+            "maxLength": 30,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z_]+$",
             "nullable": false
           },
           "title": {
@@ -9029,11 +9258,9 @@
             "type": "boolean",
             "description": "是否公开."
           },
-          "params": {
+          "config": {
             "type": "string",
-            "description": "参数.",
-            "minLength": 1,
-            "nullable": false
+            "description": "参数."
           }
         }
       },
@@ -9052,6 +9279,41 @@
           }
         }
       },
+      "RunTestInternalPluginCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "isSuccess",
+          "response"
+        ],
+        "properties": {
+          "isSuccess": {
+            "type": "boolean",
+            "description": "运行是否成功."
+          },
+          "response": {
+            "type": "string",
+            "description": "响应结果."
+          }
+        }
+      },
+      "RunTestInternalPluginCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "pluginId",
+          "params"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "params": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateInternalPluginCommand": {
         "type": "object",
         "description": "修改内置插件实例.",
@@ -9059,7 +9321,7 @@
         "required": [
           "name",
           "classifyId",
-          "params",
+          "config",
           "pluginId",
           "templatePluginKey",
           "title",
@@ -9079,8 +9341,9 @@
           "name": {
             "type": "string",
             "description": "插件名称，只能纯字母，用于给 AI 使用.",
-            "maxLength": 10,
-            "minLength": 0,
+            "maxLength": 30,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z_]+$",
             "nullable": false
           },
           "title": {
@@ -9104,7 +9367,7 @@
             "type": "boolean",
             "description": "是否公开."
           },
-          "params": {
+          "config": {
             "type": "string",
             "description": "参数.",
             "minLength": 1,
@@ -9827,14 +10090,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762076261821"
+            "example": "1762324537316"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762076261821"
+            "example": "1762324537316"
           },
           "chatHistory": {
             "type": "array",
@@ -9912,7 +10175,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762076261821"
+            "example": "1762324537316"
           }
         }
       },

@@ -4,6 +4,7 @@ using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.InternalPluginQueries;
+using MoAI.Plugin.InternalPluginQueries.Responses;
 
 namespace MoAI.Plugin.QueryEndpoints;
 
@@ -11,7 +12,7 @@ namespace MoAI.Plugin.QueryEndpoints;
 /// 查询内置插件详细信息.
 /// </summary>
 [HttpPost($"{ApiPrefix.AdminPrefix}/internal_plugin_detail")]
-public class QueryInternalPluginDetailEndpoint : Endpoint<QueryInternalPluginDetailCommand, QueryInternalPluginDetailCommandResponse>
+public class QueryInternalPluginDetailEndpoint : Endpoint<QueryInternalPluginDetailCommand, InternalPluginDetail>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
@@ -28,7 +29,7 @@ public class QueryInternalPluginDetailEndpoint : Endpoint<QueryInternalPluginDet
     }
 
     /// <inheritdoc/>
-    public override async Task<QueryInternalPluginDetailCommandResponse> ExecuteAsync(QueryInternalPluginDetailCommand req, CancellationToken ct)
+    public override async Task<InternalPluginDetail> ExecuteAsync(QueryInternalPluginDetailCommand req, CancellationToken ct)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {

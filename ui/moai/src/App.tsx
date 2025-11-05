@@ -68,6 +68,7 @@ import PromptEditPage from "./components/prompt/PromptEditPage";
 import PluginClassPage from "./components/admin/pluginClass/PluginClassPage";
 import PluginList from "./components/plugin/PluginList";
 import PluginManagerPage from "./components/admin/plugin/PluginManagerPage";
+import InternalPluginPage from "./components/admin/internalplugin/InternalPluginPage";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -102,6 +103,9 @@ function App() {
     }
     if (path.startsWith("/app/admin/plugin")) {
       return "admin.plugin";
+    }
+    if (path.startsWith("/app/admin/internalplugin")) {
+      return "admin.internalplugin";
     }
     if (path.startsWith("/app/admin")) {
       return "admin";
@@ -270,6 +274,11 @@ function App() {
             key: "admin.plugin",
             icon: <AppstoreOutlined />,
             label: <Link to="/app/admin/plugin">插件</Link>,
+          },
+          {
+            key: "admin.internalplugin",
+            icon: <ApiOutlined />,
+            label: <Link to="/app/admin/internalplugin">内置插件</Link>,
           }
         ],
       });
@@ -366,6 +375,7 @@ function App() {
                   <Route path="promptclass" element={<PromptClassPage />} />
                   <Route path="pluginclass" element={<PluginClassPage />} />
                   <Route path="plugin" element={<PluginManagerPage />} />
+                  <Route path="internalplugin" element={<InternalPluginPage />} />
                 </Route>
                 <Route path="user">
                   <Route

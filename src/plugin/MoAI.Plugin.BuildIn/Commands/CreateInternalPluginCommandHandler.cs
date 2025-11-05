@@ -1,6 +1,8 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.BuiltCommands;
 using MoAI.Plugin.Plugins;
@@ -26,6 +28,7 @@ public class CreateInternalPluginCommandHandler : IRequestHandler<CreateInternal
         _databaseContext = databaseContext;
     }
 
+    /// <inheritdoc/>
     public async Task<SimpleInt> Handle(CreateInternalPluginCommand request, CancellationToken cancellationToken)
     {
         if (!InternalPluginFactory.Plugins.TryGetValue(request.TemplatePluginKey, out var pluginInfo))
@@ -41,22 +44,38 @@ public class CreateInternalPluginCommandHandler : IRequestHandler<CreateInternal
 
         var plugin = service as IInternalPluginRuntime;
 
-        var checkResult = await plugin.CheckConfigAsync(request.Params);
+        var checkResult = await plugin!.CheckConfigAsync(request.Config);
 
-        if (checkResult.Count > 0)
+        if (!string.IsNullOrEmpty(checkResult))
         {
-            throw new BusinessException("参数配置有误") { StatusCode = 409 };
+            throw new BusinessException(checkResult) { StatusCode = 409 };
+        }
+
+        // 检查插件是否同名
+        var exists = await _databaseContext.PluginInternals
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
+        exists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
         var entity = new MoAI.Database.Entities.PluginInternalEntity
         {
+            TemplatePluginClassify = pluginInfo.Classify.ToJsonString(),
             TemplatePluginKey = request.TemplatePluginKey,
             Title = request.Title,
             Description = request.Description,
             ClassifyId = request.ClassifyId,
             IsPublic = request.IsPublic,
             PluginName = pluginInfo.PluginKey,
-            Config = request.Params,
+            Config = request.Config ?? string.Empty,
         };
 
         _databaseContext.PluginInternals.Add(entity);

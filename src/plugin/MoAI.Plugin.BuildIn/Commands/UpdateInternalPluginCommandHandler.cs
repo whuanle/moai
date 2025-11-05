@@ -27,6 +27,7 @@ public class UpdateInternalPluginCommandHandler : IRequestHandler<UpdateInternal
         _databaseContext = databaseContext;
     }
 
+    /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateInternalPluginCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.PluginInternals.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
@@ -49,18 +50,33 @@ public class UpdateInternalPluginCommandHandler : IRequestHandler<UpdateInternal
 
         var plugin = service as IInternalPluginRuntime;
 
-        var checkResult = await plugin.CheckConfigAsync(request.Params);
+        var checkResult = await plugin!.CheckConfigAsync(request.Config);
 
-        if (checkResult.Count > 0)
+        if (!string.IsNullOrEmpty(checkResult))
         {
-            throw new BusinessException("参数配置有误") { StatusCode = 409 };
+            throw new BusinessException(checkResult) { StatusCode = 409 };
+        }
+
+        // 检查插件是否同名
+        var exists = await _databaseContext.PluginInternals
+            .AnyAsync(x => x.PluginName == request.Name && x.Id != request.PluginId, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
+        exists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
         entity.Title = request.Title;
         entity.Description = request.Description;
         entity.ClassifyId = request.ClassifyId;
         entity.IsPublic = request.IsPublic;
-        entity.Config = request.Params;
+        entity.Config = request.Config;
 
         _databaseContext.PluginInternals.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
@@ -68,4 +84,3 @@ public class UpdateInternalPluginCommandHandler : IRequestHandler<UpdateInternal
         return EmptyCommandResponse.Default;
     }
 }
-

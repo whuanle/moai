@@ -60,8 +60,12 @@ public partial class PluginInternalConfiguration : IEntityTypeConfiguration<Plug
             .HasMaxLength(50)
             .HasComment("插件名称")
             .HasColumnName("plugin_name");
-        entity.Property(e => e.TemplatePluginKey)
+        entity.Property(e => e.TemplatePluginClassify)
             .HasMaxLength(20)
+            .HasComment("对应的内置插件key")
+            .HasColumnName("template_plugin_classify");
+        entity.Property(e => e.TemplatePluginKey)
+            .HasMaxLength(50)
             .HasComment("对应的内置插件key")
             .HasColumnName("template_plugin_key");
         entity.Property(e => e.Title)

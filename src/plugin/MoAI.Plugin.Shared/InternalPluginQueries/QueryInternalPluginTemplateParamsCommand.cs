@@ -1,10 +1,11 @@
 ﻿using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Plugin.Queries.Responses;
 
 namespace MoAI.Plugin.InternalQueries;
 
 /// <summary>
-/// 查询内置插件模板参数.
+/// 查询内置插件模板配置参数.
 /// </summary>
 public class QueryInternalPluginTemplateParamsCommand : IRequest<QueryInternalPluginTemplateParamsCommandResponse>
 {

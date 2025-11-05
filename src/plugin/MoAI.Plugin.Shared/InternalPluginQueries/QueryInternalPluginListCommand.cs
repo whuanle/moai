@@ -1,11 +1,11 @@
 ﻿using MediatR;
 using MoAI.Plugin.InternalPluginQueries.Responses;
-using MoAI.Plugin.Queries.Responses;
+using MoAI.Plugin.Models;
 
 namespace MoAI.Plugin.InternalPluginQueries;
 
 /// <summary>
-/// 查询内置插件列表.
+/// 查询内置插件实例列表.
 /// </summary>
 public class QueryInternalPluginListCommand : IRequest<QueryInternalPluginListCommandResponse>
 {
@@ -13,6 +13,16 @@ public class QueryInternalPluginListCommand : IRequest<QueryInternalPluginListCo
     /// 名称搜索.
     /// </summary>
     public string? Name { get; init; }
+
+    /// <summary>
+    /// 模板分类.
+    /// </summary>
+    public InternalPluginClassify? TemplatePluginClassify { get; init; }
+
+    /// <summary>
+    /// 模板搜索.
+    /// </summary>
+    public string? TemplatePluginKey { get; init; }
 
     /// <summary>
     /// 分类 id.

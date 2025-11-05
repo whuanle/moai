@@ -17,6 +17,11 @@ public partial class PluginInternalEntity : IFullAudited
     /// <summary>
     /// 对应的内置插件key.
     /// </summary>
+    public string TemplatePluginClassify { get; set; } = default!;
+
+    /// <summary>
+    /// 对应的内置插件key.
+    /// </summary>
     public string TemplatePluginKey { get; set; } = default!;
 
     /// <summary>

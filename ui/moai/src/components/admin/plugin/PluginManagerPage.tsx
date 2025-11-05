@@ -92,7 +92,7 @@ const useFileUpload = () => {
     ): Promise<PreUploadOpenApiFilePluginCommandResponse> => {
       const md5 = await GetFileMd5(file);
       console.log("文件MD5:", md5);
-      const preUploadResponse = await client.api.admin.plugin.pre_upload_openapi.post(
+      const preUploadResponse = await client.api.admin_plugin.pre_upload_openapi.post(
         {
           contentType: FileTypeHelper.getFileType(file),
           fileName: file.name,
@@ -242,7 +242,7 @@ export default function PluginManagerPage() {
   const fetchClassifyList = useCallback(async () => {
     try {
       const client = GetApiClient();
-      const response = await client.api.admin.plugin.classify_list.get();
+      const response = await client.api.admin_plugin.classify_list.get();
       if (response?.items) {
         setClassifyList(response.items || []);
       }
@@ -261,7 +261,7 @@ export default function PluginManagerPage() {
         name: searchName || undefined,
         type: filterType as any || undefined,
       };
-      const response = await client.api.admin.plugin.plugin_list.post(requestData);
+      const response = await client.api.admin_plugin.plugin_list.post(requestData);
 
       if (response?.items) {
         let filteredItems = response.items;
@@ -309,7 +309,7 @@ export default function PluginManagerPage() {
           pluginId: record.pluginId,
         };
 
-        const response = await client.api.admin.plugin.plugin_detail.post(
+        const response = await client.api.admin_plugin.plugin_detail.post(
           requestData
         );
 
@@ -407,7 +407,7 @@ export default function PluginManagerPage() {
       try {
         const client = GetApiClient();
         const requestData: DeletePluginCommand = { pluginId };
-        await client.api.admin.plugin.delete_plugin.delete(requestData);
+        await client.api.admin_plugin.delete_plugin.delete(requestData);
 
         messageApi.success("插件删除成功");
         fetchPluginList();
@@ -432,7 +432,7 @@ export default function PluginManagerPage() {
           pluginId: record.pluginId,
         };
 
-        const response = await client.api.admin.plugin.function_list.post(
+        const response = await client.api.admin_plugin.function_list.post(
           requestData
         );
 
@@ -624,7 +624,7 @@ export default function PluginManagerPage() {
 
       setSubmitLoading(true);
       const client = GetApiClient();
-      const response = await client.api.admin.plugin.import_mcp.post(requestData);
+      const response = await client.api.admin_plugin.import_mcp.post(requestData);
 
       if (response?.value) {
         messageApi.success("MCP插件导入成功");
@@ -661,7 +661,7 @@ export default function PluginManagerPage() {
 
       setEditLoading(true);
       const client = GetApiClient();
-      await client.api.admin.plugin.update_mcp.post(requestData);
+      await client.api.admin_plugin.update_mcp.post(requestData);
 
       messageApi.success("插件更新成功");
       setEditModalVisible(false);
@@ -726,7 +726,7 @@ export default function PluginManagerPage() {
         classifyId: values.classifyId,
       };
 
-      await client.api.admin.plugin.update_openapi.post(requestData);
+      await client.api.admin_plugin.update_openapi.post(requestData);
 
       setEditOpenApiUploadStatus({ uploading: false, progress: 100 });
       messageApi.success("OpenAPI 插件更新成功");
@@ -789,7 +789,7 @@ export default function PluginManagerPage() {
         classifyId: values.classifyId,
       };
 
-      await client.api.admin.plugin.import_openapi.post(importBody);
+      await client.api.admin_plugin.import_openapi.post(importBody);
 
       setOpenApiUploadStatus({ uploading: false, progress: 100 });
       messageApi.success("OpenAPI 插件导入成功");
@@ -1062,7 +1062,7 @@ export default function PluginManagerPage() {
                     try {
                       const client = GetApiClient();
                       const requestData: QueryPluginBaseListCommand = {};
-                      const response = await client.api.admin.plugin.plugin_list.post(requestData);
+                      const response = await client.api.admin_plugin.plugin_list.post(requestData);
                       if (response?.items) {
                         // 过滤掉内置插件
                         const filteredItems = response.items.filter(

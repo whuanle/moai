@@ -14,6 +14,11 @@ public class InternalPluginInfo : AuditsInfo
     public int PluginId { get; init; }
 
     /// <summary>
+    /// 模板分类.
+    /// </summary>
+    public InternalPluginClassify TemplatePluginClassify { get; init; }
+
+    /// <summary>
     /// 模板 key.
     /// </summary>
     public string TemplatePluginKey { get; set; } = default!;

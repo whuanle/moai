@@ -4,6 +4,7 @@ using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.BuiltCommands;
+using MoAI.Plugin.InternalPluginCommands;
 
 namespace MoAI.Plugin.Endpoints;
 

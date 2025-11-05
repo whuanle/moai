@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -47,6 +48,22 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
         {
             _logger.LogInformation(ex, "Failed to connect to the MCP server,【{Url}】.", request.ServerUrl);
             throw new BusinessException("访问 MCP 服务器失败") { StatusCode = 409 };
+        }
+
+        // 检查插件是否同名
+        var exists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
+        exists = await _databaseContext.PluginInternals
+            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
         using TransactionScope transactionScope = new TransactionScope(

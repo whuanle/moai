@@ -15,7 +15,7 @@ namespace MoAI.Plugin.Queries;
 /// <summary>
 /// <inheritdoc cref="QueryInternalPluginDetailCommand"/>
 /// </summary>
-public class QueryInternalPluginDetailCommandHandler : IRequestHandler<QueryInternalPluginDetailCommand, QueryInternalPluginDetailCommandResponse>
+public class QueryInternalPluginDetailCommandHandler : IRequestHandler<QueryInternalPluginDetailCommand, InternalPluginDetail>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
@@ -32,10 +32,10 @@ public class QueryInternalPluginDetailCommandHandler : IRequestHandler<QueryInte
     }
 
     /// <inheritdoc/>
-    public async Task<QueryInternalPluginDetailCommandResponse> Handle(QueryInternalPluginDetailCommand request, CancellationToken cancellationToken)
+    public async Task<InternalPluginDetail> Handle(QueryInternalPluginDetailCommand request, CancellationToken cancellationToken)
     {
         var plugin = await _databaseContext.PluginInternals.Where(x => x.Id == request.PluginId)
-            .Select(x => new QueryInternalPluginDetailCommandResponse
+            .Select(x => new InternalPluginDetail
             {
                 PluginId = x.Id,
                 PluginName = x.PluginName,
@@ -48,6 +48,7 @@ public class QueryInternalPluginDetailCommandHandler : IRequestHandler<QueryInte
                 IsPublic = x.IsPublic,
                 ClassifyId = x.ClassifyId,
                 Params = x.Config,
+                TemplatePluginClassify = x.TemplatePluginClassify.JsonToObject<InternalPluginClassify>(),
                 TemplatePluginKey = x.TemplatePluginKey
             }).FirstOrDefaultAsync();
 
@@ -56,7 +57,7 @@ public class QueryInternalPluginDetailCommandHandler : IRequestHandler<QueryInte
             throw new BusinessException("未找到插件") { StatusCode = 404 };
         }
 
-        await _mediator.Send(new FillUserInfoCommand { Items = new QueryInternalPluginDetailCommandResponse[] { plugin } });
+        await _mediator.Send(new FillUserInfoCommand { Items = new InternalPluginDetail[] { plugin } });
 
         return plugin;
     }

@@ -37,7 +37,7 @@ export default function PromptClassPage() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const response = await client.api.admin.prompt.class_list.get();
+      const response = await client.api.admin_prompt.class_list.get();
 
       if (response?.items) {
         setClassList(response.items || []);
@@ -75,7 +75,7 @@ export default function PromptClassPage() {
   const handleDeleteClick = async (item: PromptClassifyItem) => {
     try {
       const client = GetApiClient();
-      await client.api.admin.prompt.delete_class.delete({
+      await client.api.admin_prompt.delete_class.delete({
         promptId: item.classifyId!,
       });
       messageApi.success("分类删除成功");
@@ -93,7 +93,7 @@ export default function PromptClassPage() {
     setSubmitting(true);
     try {
       const client = GetApiClient();
-      await client.api.admin.prompt.create_class.post(values);
+      await client.api.admin_prompt.create_class.post(values);
 
       messageApi.success("分类添加成功");
       setAddModalVisible(false);
@@ -121,7 +121,7 @@ export default function PromptClassPage() {
         description: values.description,
       };
 
-      await client.api.admin.prompt.update_class.post(requestBody);
+      await client.api.admin_prompt.update_class.post(requestBody);
 
       messageApi.success("分类更新成功");
       setEditModalVisible(false);

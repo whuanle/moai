@@ -51,7 +51,8 @@ public class ExternalHttpMessageHandler : DelegatingHandler
             if (!reqContentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) &&
                 !reqContentType.StartsWith("application/octet-stream", StringComparison.OrdinalIgnoreCase) &&
                 !reqContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) &&
-                !reqContentType.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase))
+                !reqContentType.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase) &&
+                !reqContentType.StartsWith("data-binary", StringComparison.OrdinalIgnoreCase))
             {
                 requestContent = await request.Content.ReadAsStringAsync();
             }
@@ -88,7 +89,8 @@ public class ExternalHttpMessageHandler : DelegatingHandler
             if (!reqContentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) &&
                 !reqContentType.StartsWith("application/octet-stream", StringComparison.OrdinalIgnoreCase) &&
                 !reqContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) &&
-                !reqContentType.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase))
+                !reqContentType.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase) &&
+                !reqContentType.StartsWith("data-binary", StringComparison.OrdinalIgnoreCase))
             {
                 requestContent = await request.Content.ReadAsStringAsync(cancellationToken);
             }
