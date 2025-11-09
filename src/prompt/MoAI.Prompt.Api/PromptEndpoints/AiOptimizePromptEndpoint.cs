@@ -11,7 +11,7 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// <summary>
 /// 使用 AI 优化提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.AdminPrefix}/ai_optmize_prompt")]
+[HttpPost($"{ApiPrefix.Prefix}/ai_optmize_prompt")]
 public class AiOptimizePromptEndpoint : Endpoint<AiOptimizePromptRequest, QueryAiOptimizePromptCommandResponse>
 {
     private readonly IMediator _mediator;

@@ -23,6 +23,5 @@ public class UpdateInternalPluginCommandValidator : Validator<UpdateInternalPlug
             .Matches("^[a-zA-Z_]+$").WithMessage("插件名称只能包含字母下划线.");
 
         RuleFor(x => x.Description).MaximumLength(255).WithMessage("分类描述不能超过255个字符.");
-        RuleFor(x => x.Config).NotEmpty().WithMessage("参数不能为空.");
     }
 }

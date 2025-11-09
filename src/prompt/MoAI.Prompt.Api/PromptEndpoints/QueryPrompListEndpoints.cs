@@ -11,7 +11,7 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// <summary>
 /// 查询提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.AdminPrefix}/prompt_list")]
+[HttpPost($"{ApiPrefix.Prefix}/prompt_list")]
 public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPromptListCommandResponse>
 {
     private readonly IMediator _mediator;

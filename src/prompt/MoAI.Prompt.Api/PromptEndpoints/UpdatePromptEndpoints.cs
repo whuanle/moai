@@ -11,7 +11,7 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// <summary>
 /// 修改提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.AdminPrefix}/update_prompt")]
+[HttpPost($"{ApiPrefix.Prefix}/update_prompt")]
 public class UpdatePromptEndpoints : Endpoint<UpdatePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;

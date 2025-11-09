@@ -11,7 +11,7 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// <summary>
 /// 创建提示词.
 /// </summary>
-[HttpPost($"{ApiPrefix.AdminPrefix}/create_prompt")]
+[HttpPost($"{ApiPrefix.Prefix}/create_prompt")]
 public class CreatePromptEndpoints : Endpoint<CreatePromptCommand, SimpleInt>
 {
     private readonly IMediator _mediator;

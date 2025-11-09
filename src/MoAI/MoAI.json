@@ -4098,7 +4098,7 @@
       }
     },
     "/api/admin_plugin/run_internal_plugin": {
-      "delete": {
+      "post": {
         "tags": [
           "Admin_Plugin"
         ],
@@ -4108,11 +4108,6 @@
           "x-name": "RunTestInternalPluginCommand",
           "description": "",
           "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/RunTestInternalPluginCommand"
-              }
-            },
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RunTestInternalPluginCommand"
@@ -4192,7 +4187,7 @@
       }
     },
     "/api/admin_plugin/update_internal_plugin": {
-      "put": {
+      "post": {
         "tags": [
           "Admin_Plugin"
         ],
@@ -4628,10 +4623,10 @@
         ]
       }
     },
-    "/api/admin_prompt/ai_optmize_prompt": {
+    "/api/prompt/ai_optmize_prompt": {
       "post": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "使用 AI 优化提示词.",
         "operationId": "AiOptimizePromptEndpoint",
@@ -4717,10 +4712,10 @@
         ]
       }
     },
-    "/api/admin_prompt/create_prompt": {
+    "/api/prompt/create_prompt": {
       "post": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "创建提示词.",
         "operationId": "CreatePromptEndpoints",
@@ -4806,10 +4801,10 @@
         ]
       }
     },
-    "/api/admin_prompt/delete_prompt": {
+    "/api/prompt/delete_prompt": {
       "delete": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "删除提示词.",
         "operationId": "DeletePromptEndpoints",
@@ -4900,10 +4895,10 @@
         ]
       }
     },
-    "/api/admin_prompt/prompt_list": {
+    "/api/prompt/prompt_list": {
       "post": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "查询提示词.",
         "operationId": "QueryPrompListEndpoints",
@@ -4989,10 +4984,10 @@
         ]
       }
     },
-    "/api/admin_prompt/prompt_content": {
+    "/api/prompt/prompt_content": {
       "get": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "获取提示词内容.",
         "operationId": "QueryPromptEndpoint",
@@ -5077,10 +5072,10 @@
         ]
       }
     },
-    "/api/admin_prompt/update_prompt": {
+    "/api/prompt/update_prompt": {
       "post": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "修改提示词.",
         "operationId": "UpdatePromptEndpoints",
@@ -5349,10 +5344,10 @@
         ]
       }
     },
-    "/api/admin_prompt/class_list": {
+    "/api/prompt/class_list": {
       "get": {
         "tags": [
-          "Admin_Prompt"
+          "Prompt"
         ],
         "summary": "查询分类.",
         "operationId": "QueryPromptClassEndpoint",
@@ -7099,7 +7094,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762324537316"
+            "example": "1762680335788"
           },
           "createUserId": {
             "type": "integer",
@@ -7115,7 +7110,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762324537316"
+            "example": "1762680335788"
           },
           "updateUserId": {
             "type": "integer",
@@ -8149,7 +8144,7 @@
       },
       "QueryInternalPluginTemplateParamsCommand": {
         "type": "object",
-        "description": "查询内置插件模板配置参数.",
+        "description": "获取一个内置插件模板需要的配置参数和运行参数.",
         "additionalProperties": false,
         "required": [
           "templatePluginKey"
@@ -8189,17 +8184,18 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "templatePluginKey",
-          "pluginName",
+          "key",
+          "name",
           "description",
-          "classify"
+          "classify",
+          "requiredConfiguration"
         ],
         "properties": {
-          "templatePluginKey": {
+          "key": {
             "type": "string",
-            "description": "插件key."
+            "description": "插件的唯一标识."
           },
-          "pluginName": {
+          "name": {
             "type": "string",
             "description": "插件名称."
           },
@@ -8214,6 +8210,10 @@
                 "$ref": "#/components/schemas/InternalPluginClassify"
               }
             ]
+          },
+          "requiredConfiguration": {
+            "type": "boolean",
+            "description": "是否需要配置，需要配置的插件都需要实例化并存储到数据库."
           }
         }
       },
@@ -8275,7 +8275,7 @@
       },
       "QueryInternalTemplatePluginListCommand": {
         "type": "object",
-        "description": "查询内置模板列表.",
+        "description": "查询内置插件模板列表.",
         "additionalProperties": false,
         "properties": {
           "classify": {
@@ -8631,13 +8631,30 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "items"
+          "items",
+          "templateClassifyCount",
+          "classifyCount"
         ],
         "properties": {
           "items": {
             "type": "array",
+            "description": "插件实例列表.",
             "items": {
               "$ref": "#/components/schemas/InternalPluginInfo"
+            }
+          },
+          "templateClassifyCount": {
+            "type": "array",
+            "description": "按插件模板分类的划分的分类数量.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
+            }
+          },
+          "classifyCount": {
+            "type": "array",
+            "description": "按自定义分类划分的分类数量.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
             }
           }
         }
@@ -8730,7 +8747,7 @@
           },
           "classifyId": {
             "type": "integer",
-            "description": "分类 id.",
+            "description": "自定义分类 id.",
             "format": "int32",
             "nullable": true
           },
@@ -9015,7 +9032,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1762324537316"
+            "example": "1762680335788"
           }
         }
       },
@@ -9307,10 +9324,12 @@
         "properties": {
           "pluginId": {
             "type": "integer",
+            "description": "实例化的插件 id.",
             "format": "int32"
           },
           "params": {
-            "type": "string"
+            "type": "string",
+            "description": "运行参数."
           }
         }
       },
@@ -9321,9 +9340,7 @@
         "required": [
           "name",
           "classifyId",
-          "config",
           "pluginId",
-          "templatePluginKey",
           "title",
           "description",
           "isPublic"
@@ -9333,10 +9350,6 @@
             "type": "integer",
             "description": "插件 id.",
             "format": "int32"
-          },
-          "templatePluginKey": {
-            "type": "string",
-            "description": "内置插件模板 key."
           },
           "name": {
             "type": "string",
@@ -9370,8 +9383,7 @@
           "config": {
             "type": "string",
             "description": "参数.",
-            "minLength": 1,
-            "nullable": false
+            "nullable": true
           }
         }
       },
@@ -10090,14 +10102,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762324537316"
+            "example": "1762680335788"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762324537316"
+            "example": "1762680335788"
           },
           "chatHistory": {
             "type": "array",
@@ -10175,7 +10187,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762324537316"
+            "example": "1762680335788"
           }
         }
       },

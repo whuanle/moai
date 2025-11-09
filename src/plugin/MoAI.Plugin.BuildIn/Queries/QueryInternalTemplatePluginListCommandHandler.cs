@@ -14,17 +14,6 @@ namespace MoAI.Plugin.Queries;
 /// </summary>
 public class QueryInternalTemplatePluginListCommandHandler : IRequestHandler<QueryInternalTemplatePluginListCommand, QueryInternalTemplatePluginListCommandResponse>
 {
-    private readonly DatabaseContext _databaseContext;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="QueryInternalTemplatePluginListCommandHandler"/> class.
-    /// </summary>
-    /// <param name="databaseContext"></param>
-    public QueryInternalTemplatePluginListCommandHandler(DatabaseContext databaseContext)
-    {
-        _databaseContext = databaseContext;
-    }
-
     /// <inheritdoc/>
     public async Task<QueryInternalTemplatePluginListCommandResponse> Handle(QueryInternalTemplatePluginListCommand request, CancellationToken cancellationToken)
     {
@@ -34,29 +23,17 @@ public class QueryInternalTemplatePluginListCommandHandler : IRequestHandler<Que
 
         if (request.Classify != null)
         {
-            plugins = InternalPluginFactory.Plugins.Where(x => x.Value.Classify == request.Classify).Select(x => new InternalTemplatePlugin
-            {
-                Description = x.Value.Description,
-                TemplatePluginKey = x.Value.PluginKey,
-                PluginName = x.Value.PluginName,
-                Classify = x.Value.Classify
-            }).ToArray();
+            plugins = InternalPluginFactory.Plugins.Where(x => x.Classify == request.Classify).ToArray();
         }
         else
         {
-            plugins = InternalPluginFactory.Plugins.Select(x => new InternalTemplatePlugin
-            {
-                Description = x.Value.Description,
-                TemplatePluginKey = x.Value.PluginKey,
-                PluginName = x.Value.PluginName,
-                Classify = x.Value.Classify
-            }).ToArray();
+            plugins = InternalPluginFactory.Plugins.ToArray();
         }
 
         return new QueryInternalTemplatePluginListCommandResponse
         {
             Plugins = plugins,
-            ClassifyCount = InternalPluginFactory.Plugins.Values.GroupBy(x => x.Classify).Select(x => new KeyValue<string, int>
+            ClassifyCount = InternalPluginFactory.Plugins.GroupBy(x => x.Classify).Select(x => new KeyValue<string, int>
             {
                 Key = x.Key.ToString(),
                 Value = x.Count()

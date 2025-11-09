@@ -14,11 +14,6 @@ public class UpdateInternalPluginCommand : IRequest<EmptyCommandResponse>
     public int PluginId { get; init; }
 
     /// <summary>
-    /// 内置插件模板 key.
-    /// </summary>
-    public string TemplatePluginKey { get; init; } = string.Empty;
-
-    /// <summary>
     /// 插件名称，只能纯字母，用于给 AI 使用.
     /// </summary>
     public string Name { get; init; } = default!;
@@ -46,5 +41,5 @@ public class UpdateInternalPluginCommand : IRequest<EmptyCommandResponse>
     /// <summary>
     /// 参数.
     /// </summary>
-    public string Config { get; init; } = default!;
+    public string? Config { get; init; } = default!;
 }

@@ -72,6 +72,10 @@ export default function InternalPluginPage() {
   const [classifyList, setClassifyList] = useState<PluginClassifyItem[]>([]);
   // 模板列表相关状态
   const [selectedTemplateClassify, setSelectedTemplateClassify] = useState<InternalPluginClassify | null>(null);
+  // 左侧分类类型切换（"template" 使用 ClassifyList，"api" 使用 classifyList API）
+  const [leftClassifyType, setLeftClassifyType] = useState<"template" | "api">("template");
+  // 左侧分类选择（可以是 string 用于模板分类，或 number 用于 API 分类）
+  const [selectedLeftClassify, setSelectedLeftClassify] = useState<string | number | "all">("all");
 
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -97,7 +101,16 @@ export default function InternalPluginPage() {
   const [runParamsValue, setRunParamsValue] = useState<string>("");
   const [runParamsLoading, setRunParamsLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
-  const [runResult, setRunResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [runResult, setRunResult] = useState<{ success: boolean; message: string | null | undefined } | null>(null);
+
+  // 将 ClassifyList 的 key 转换为枚举值的辅助函数
+  const keyToEnum = useCallback((key: string): InternalPluginClassify | null => {
+    // 查找对应的枚举值
+    const enumEntry = Object.entries(InternalPluginClassifyObject).find(
+      ([_, value]) => value.toLowerCase() === key.toLowerCase()
+    );
+    return enumEntry ? (enumEntry[1] as InternalPluginClassify) : null;
+  }, []);
 
   // 获取分类列表
   const fetchClassifyList = useCallback(async () => {
@@ -113,20 +126,56 @@ export default function InternalPluginPage() {
     }
   }, [messageApi]);
 
+  // 获取所有插件数据（用于计算分类数量）
+  const [allPluginList, setAllPluginList] = useState<InternalPluginInfo[]>([]);
+  const fetchAllPluginList = useCallback(async () => {
+    try {
+      const client = GetApiClient();
+      const requestData: QueryInternalPluginListCommand = {};
+      const response = await client.api.admin_plugin.internal_plugin_list.post(requestData);
+      if (response?.items) {
+        setAllPluginList(response.items);
+      }
+    } catch (error) {
+      console.log("Fetch all plugin list error:", error);
+    }
+  }, []);
+
   // 获取内置插件列表
   const fetchPluginList = useCallback(async () => {
     setLoading(true);
     try {
       const client = GetApiClient();
+      // 根据左侧选中的分类类型和值来设置筛选条件
+      let classifyId: number | undefined = undefined;
+      let templatePluginClassify: InternalPluginClassify | undefined = undefined;
+      
+      if (selectedLeftClassify !== "all") {
+        if (leftClassifyType === "api") {
+          // 使用 API 分类（classifyId）
+          classifyId = typeof selectedLeftClassify === "number" ? selectedLeftClassify : undefined;
+        } else {
+          // 使用模板分类（templatePluginClassify）
+          const enumValue = typeof selectedLeftClassify === "string" ? keyToEnum(selectedLeftClassify) : null;
+          if (enumValue) {
+            templatePluginClassify = enumValue;
+          }
+        }
+      }
+      
       const requestData: QueryInternalPluginListCommand = {
         name: searchName || undefined,
-        classifyId: filterClassifyId || undefined,
-        templatePluginClassify: selectedTemplateClassify || undefined,
+        classifyId: classifyId,
+        templatePluginClassify: templatePluginClassify,
       };
       const response = await client.api.admin_plugin.internal_plugin_list.post(requestData);
 
       if (response?.items) {
         setPluginList(response.items);
+        // 如果没有筛选条件（全部），同时更新 allPluginList
+        if (selectedLeftClassify === "all" && !searchName) {
+          setAllPluginList(response.items);
+        }
       }
     } catch (error) {
       console.log("Fetch internal plugin list error:", error);
@@ -134,11 +183,13 @@ export default function InternalPluginPage() {
     } finally {
       setLoading(false);
     }
-  }, [messageApi, searchName, filterClassifyId, selectedTemplateClassify]);
+  }, [messageApi, searchName, selectedLeftClassify, leftClassifyType, keyToEnum]);
 
   // 页面加载时获取数据
   useEffect(() => {
     fetchClassifyList();
+    // 页面加载时，fetchPluginList 会获取全部数据并同时更新 allPluginList，避免重复请求
+    // 所以这里不需要调用 fetchAllPluginList
   }, [fetchClassifyList]);
 
   // 当筛选条件变化时，重新获取插件列表
@@ -147,9 +198,12 @@ export default function InternalPluginPage() {
   }, [fetchPluginList]);
 
   // 刷新列表
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
+    // 先刷新全部插件列表（用于左侧分类数量统计）
+    await fetchAllPluginList();
+    // 再刷新当前筛选的插件列表
     fetchPluginList();
-  }, [fetchPluginList]);
+  }, [fetchPluginList, fetchAllPluginList]);
 
   // 编辑插件
   const handleEdit = useCallback(
@@ -174,7 +228,7 @@ export default function InternalPluginPage() {
             title: detailResponse.title,
             description: detailResponse.description,
             classifyId: detailResponse.classifyId,
-            isPublic: detailResponse.isPublic ?? false,
+            isPublic: detailResponse.isPublic ?? true,
           });
 
           // 获取模板参数
@@ -274,22 +328,14 @@ export default function InternalPluginPage() {
         params: paramsString,
       };
 
-      const response = await client.api.admin_plugin.run_internal_plugin.delete(requestData);
+      const response = await client.api.admin_plugin.run_internal_plugin.post(requestData);
 
       if (response) {
-        if (response.isSuccess === true) {
-          setRunResult({
-            success: true,
-            message: response.response || "运行成功",
-          });
-          messageApi.success("插件运行成功");
-        } else {
-          setRunResult({
-            success: false,
-            message: response.response || "运行失败",
-          });
-          messageApi.error(response.response || "插件运行失败");
-        }
+        setRunResult({
+          success: response.isSuccess!,
+          message: response.response!,
+        });  
+        messageApi.success((response.isSuccess == true )? "插件运行成功" : "插件运行失败");
       }
     } catch (error) {
       console.log("Run plugin error:", error);
@@ -330,22 +376,25 @@ export default function InternalPluginPage() {
         title: values.title,
         description: values.description,
         classifyId: values.classifyId,
-        isPublic: values.isPublic ?? false,
+        isPublic: values.isPublic ?? true,
         config: Object.keys(paramsObj).length > 0 ? JSON.stringify(paramsObj) : undefined,
       };
 
-      await client.api.admin_plugin.update_internal_plugin.put(requestData);
+      await client.api.admin_plugin.update_internal_plugin.post(requestData);
 
       messageApi.success("内置插件更新成功");
       handleCloseEditDrawer();
-      fetchPluginList(); // 刷新插件列表
+      // 先刷新全部插件列表（用于左侧分类数量统计）
+      await fetchAllPluginList();
+      // 再刷新当前筛选的插件列表
+      fetchPluginList();
     } catch (error) {
       console.log("Update internal plugin error:", error);
       proxyFormRequestError(error, messageApi, editForm);
     } finally {
       setEditLoading(false);
     }
-  }, [editingPlugin, editForm, editTemplateParams, messageApi, fetchPluginList, handleCloseEditDrawer]);
+  }, [editingPlugin, editForm, editTemplateParams, messageApi, fetchPluginList, fetchAllPluginList, handleCloseEditDrawer]);
 
   // 删除插件
   const handleDelete = useCallback(
@@ -358,13 +407,16 @@ export default function InternalPluginPage() {
         await client.api.admin_plugin.delete_internal_plugin.delete(requestData);
 
         messageApi.success("内置插件删除成功");
-        fetchPluginList(); // 刷新插件列表
+        // 先刷新全部插件列表（用于左侧分类数量统计）
+        await fetchAllPluginList();
+        // 再刷新当前筛选的插件列表
+        fetchPluginList();
       } catch (error) {
         console.log("Delete internal plugin error:", error);
         proxyRequestError(error, messageApi, "删除内置插件失败");
       }
     },
-    [messageApi, fetchPluginList]
+    [messageApi, fetchPluginList, fetchAllPluginList]
   );
 
   // 表格列定义
@@ -383,25 +435,6 @@ export default function InternalPluginPage() {
         dataIndex: "title",
         key: "title",
         render: (title: string) => title || "-",
-      },
-      {
-        title: "类型",
-        key: "type",
-        render: () => <Tag color="purple">内置</Tag>,
-      },
-      {
-        title: "分类",
-        dataIndex: "classifyId",
-        key: "classifyId",
-        render: (classifyId: number | null | undefined) => {
-          if (!classifyId) return "-";
-          const classify = classifyList.find((item) => item.classifyId === classifyId);
-          return classify ? (
-            <Tag color="blue">{classify.name}</Tag>
-          ) : (
-            "-"
-          );
-        },
       },
       {
         title: "模板Key",
@@ -486,17 +519,8 @@ export default function InternalPluginPage() {
         ),
       },
     ],
-    [handleEdit, handleDelete, classifyList]
+    [handleEdit, handleDelete]
   );
-
-  // 将 ClassifyList 的 key 转换为枚举值的辅助函数
-  const keyToEnum = useCallback((key: string): InternalPluginClassify | null => {
-    // 查找对应的枚举值
-    const enumEntry = Object.entries(InternalPluginClassifyObject).find(
-      ([_, value]) => value.toLowerCase() === key.toLowerCase()
-    );
-    return enumEntry ? (enumEntry[1] as InternalPluginClassify) : null;
-  }, []);
 
   // 获取模板列表
   const fetchTemplateList = useCallback(async () => {
@@ -611,10 +635,15 @@ export default function InternalPluginPage() {
   // 点击模板项
   const handleTemplateClick = useCallback((template: InternalTemplatePlugin) => {
     setSelectedTemplate(template);
-    if (template.templatePluginKey) {
-      fetchTemplateParams(template.templatePluginKey);
+    // 设置表单默认值：name 使用模板的 key，title 使用模板的 name
+    form.setFieldsValue({
+      name: template.key || "",
+      title: template.name || "",
+    });
+    if (template.key) {
+      fetchTemplateParams(template.key);
     }
-  }, [fetchTemplateParams]);
+  }, [fetchTemplateParams, form]);
 
   // 创建内置插件
   const handleCreatePlugin = useCallback(async () => {
@@ -637,12 +666,12 @@ export default function InternalPluginPage() {
 
       const client = GetApiClient();
       const requestData: CreateInternalPluginCommand = {
-        templatePluginKey: selectedTemplate.templatePluginKey || undefined,
+        templatePluginKey: selectedTemplate.key || undefined,
         name: values.name,
         title: values.title,
         description: values.description,
         classifyId: values.classifyId,
-        isPublic: values.isPublic ?? false,
+        isPublic: values.isPublic ?? true,
         config: Object.keys(paramsObj).length > 0 ? JSON.stringify(paramsObj) : undefined,
       };
 
@@ -651,7 +680,10 @@ export default function InternalPluginPage() {
       if (response?.value !== undefined) {
         messageApi.success("内置插件创建成功");
         handleCloseDrawer();
-        fetchPluginList(); // 刷新插件列表
+        // 先刷新全部插件列表（用于左侧分类数量统计）
+        await fetchAllPluginList();
+        // 再刷新当前筛选的插件列表
+        fetchPluginList();
       }
     } catch (error) {
       console.log("Create internal plugin error:", error);
@@ -659,7 +691,7 @@ export default function InternalPluginPage() {
     } finally {
       setCreateLoading(false);
     }
-  }, [selectedTemplate, form, templateParams, messageApi, fetchPluginList, handleCloseDrawer]);
+  }, [selectedTemplate, form, templateParams, messageApi, fetchPluginList, fetchAllPluginList, handleCloseDrawer]);
 
   return (
     <>
@@ -687,114 +719,155 @@ export default function InternalPluginPage() {
             </Button>
           </div>
 
-          {/* 筛选条件 */}
-          <Row gutter={16} style={{ marginBottom: 16 }} align="middle">
-            <Col span={6}>
-              <Input.Search
-                placeholder="搜索插件名称"
-                allowClear
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                onSearch={() => fetchPluginList()}
-                enterButton
-              />
-            </Col>
-            <Col span={5}>
-              <Select
-                placeholder="选择分类"
-                allowClear
-                style={{ width: "100%" }}
-                value={filterClassifyId}
-                onChange={(value) => {
-                  setFilterClassifyId(value);
-                  fetchPluginList();
-                }}
-              >
-                {classifyList.map((item) => (
-                  <Select.Option key={item.classifyId} value={item.classifyId}>
-                    {item.name}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Col>
-            <Col span={5}>
-              <Select
-                placeholder="选择模板类型"
-                allowClear
-                style={{ width: "100%" }}
-                value={selectedTemplateClassify}
-                onChange={(value) => {
-                  setSelectedTemplateClassify(value);
-                }}
-              >
-                {ClassifyList.map((item) => {
-                  const enumValue = keyToEnum(item.key);
-                  if (enumValue) {
-                    return (
-                      <Select.Option key={item.key} value={enumValue}>
-                        {item.name}
-                      </Select.Option>
-                    );
-                  }
-                  return null;
-                })}
-              </Select>
-            </Col>
-            <Col span={8}>
-              <Space style={{ width: "100%" }}>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={handleRefresh}
-                  loading={loading}
-                  style={{ flex: 1 }}
-                >
-                  刷新
-                </Button>
-                <Button
-                  onClick={async () => {
-                    setSearchName("");
-                    setFilterClassifyId(undefined);
-                    setSelectedTemplateClassify(null);
-                    // 重置后立即使用空条件查询
-                    setLoading(true);
-                    try {
-                      const client = GetApiClient();
-                      const requestData: QueryInternalPluginListCommand = {};
-                      const response = await client.api.admin_plugin.internal_plugin_list.post(requestData);
-                      if (response?.items) {
-                        setPluginList(response.items);
-                      }
-                    } catch (error) {
-                      console.log("Fetch internal plugin list error:", error);
-                      proxyRequestError(error, messageApi, "获取内置插件列表失败");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  style={{ flex: 1 }}
-                >
-                  重置
-                </Button>
-              </Space>
-            </Col>
-          </Row>
+          {/* 主体内容：左右布局 */}
+          <div style={{ display: "flex", gap: "16px" }}>
+            {/* 左侧分类列表 */}
+            <div
+              style={{
+                width: "200px",
+                borderRight: "1px solid #f0f0f0",
+                paddingRight: "16px",
+              }}
+            >
+              {/* 分类类型切换按钮 */}
+              <div style={{ marginBottom: "12px" }}>
+                <Button.Group style={{ width: "100%" }}>
+                  <Button
+                    type={leftClassifyType === "template" ? "primary" : "default"}
+                    size="small"
+                    onClick={() => {
+                      setLeftClassifyType("template");
+                      setSelectedLeftClassify("all");
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    模板分类
+                  </Button>
+                  <Button
+                    type={leftClassifyType === "api" ? "primary" : "default"}
+                    size="small"
+                    onClick={() => {
+                      setLeftClassifyType("api");
+                      setSelectedLeftClassify("all");
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    插件分类
+                  </Button>
+                </Button.Group>
+              </div>
 
-          <Table
-            columns={columns}
-            dataSource={pluginList}
-            rowKey="pluginId"
-            loading={loading}
-            pagination={false}
-            scroll={{ x: 1200 }}
-            locale={{
-              emptyText: (
-                <Empty
-                  description="暂无内置插件数据"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ),
-            }}
-          />
+              <List
+                size="small"
+                dataSource={
+                  (leftClassifyType === "template"
+                    ? [
+                        { key: "all" as const, name: "全部", icon: "📋", count: allPluginList.length },
+                        ...ClassifyList.map((item) => {
+                          const enumValue = keyToEnum(item.key);
+                          const count = enumValue
+                            ? allPluginList.filter(
+                                (plugin) => plugin.templatePluginClassify === enumValue
+                              ).length
+                            : 0;
+                          return {
+                            key: item.key,
+                            name: item.name,
+                            icon: item.icon,
+                            count,
+                          };
+                        }),
+                      ]
+                    : [
+                        { key: "all" as const, name: "全部", icon: undefined, count: allPluginList.length },
+                        ...classifyList
+                          .filter((item) => item.classifyId != null)
+                          .map((item) => ({
+                            key: item.classifyId!,
+                            name: item.name || "",
+                            icon: undefined,
+                            count: allPluginList.filter(
+                              (plugin) => plugin.classifyId === item.classifyId
+                            ).length,
+                          })),
+                      ]) as Array<{ key: string | number | "all"; name: string; icon?: string; count: number }>
+                }
+                renderItem={(item) => {
+                  const isSelected = selectedLeftClassify === item.key;
+                  
+                  return (
+                    <List.Item
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: isSelected ? "#e6f7ff" : "transparent",
+                        borderRadius: "4px",
+                        padding: "8px 12px",
+                        marginBottom: "4px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                      onClick={() => setSelectedLeftClassify(item.key)}
+                    >
+                      <Space>
+                        {"icon" in item && item.icon && (
+                          <span style={{ fontSize: "16px" }}>{item.icon}</span>
+                        )}
+                        <Typography.Text strong={isSelected}>
+                          {item.name}
+                        </Typography.Text>
+                      </Space>
+                      <Tag color={isSelected ? "blue" : "default"}>
+                        {item.count}
+                      </Tag>
+                    </List.Item>
+                  );
+                }}
+              />
+            </div>
+
+            {/* 右侧内容区域 */}
+            <div style={{ flex: 1 }}>
+              {/* 搜索筛选 */}
+              <div style={{ marginBottom: 16 }}>
+                <Space>
+                  <Input.Search
+                    placeholder="搜索插件名称"
+                    allowClear
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    onSearch={() => fetchPluginList()}
+                    enterButton
+                    style={{ maxWidth: "400px" }}
+                  />
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={handleRefresh}
+                    loading={loading}
+                  >
+                    刷新
+                  </Button>
+                </Space>
+              </div>
+
+              <Table
+                columns={columns}
+                dataSource={pluginList}
+                rowKey="pluginId"
+                loading={loading}
+                pagination={false}
+                scroll={{ x: 1200 }}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="暂无内置插件数据"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  ),
+                }}
+              />
+            </div>
+          </div>
         </Card>
 
         {/* 编辑插件抽屉 */}
@@ -837,7 +910,7 @@ export default function InternalPluginPage() {
                     form={editForm}
                     layout="vertical"
                     initialValues={{
-                      isPublic: false,
+                      isPublic: true,
                     }}
                   >
                     {/* 基础信息 */}
@@ -884,10 +957,16 @@ export default function InternalPluginPage() {
                       <Col span={12}>
                         <Form.Item
                           name="classifyId"
-                          label="分类"
+                          label={
+                            <Space>
+                              <Typography.Text>分类</Typography.Text>
+                              <Typography.Text type="danger">*</Typography.Text>
+                            </Space>
+                          }
+                          rules={[{ required: true, message: "请选择分类" }]}
                         >
                           <Select
-                            placeholder="请选择分类（可选）"
+                            placeholder="请选择分类"
                             allowClear
                             style={{ width: "100%" }}
                           >
@@ -1140,7 +1219,7 @@ export default function InternalPluginPage() {
                         style={{
                           cursor: "pointer",
                           backgroundColor:
-                            selectedTemplate?.templatePluginKey === template.templatePluginKey
+                            selectedTemplate?.key === template.key
                               ? "#e6f7ff"
                               : "transparent",
                           borderRadius: "4px",
@@ -1153,10 +1232,10 @@ export default function InternalPluginPage() {
                           title={
                             <Space direction="vertical" size={4}>
                               <Typography.Text strong>
-                                {template.pluginName}
+                                {template.name}
                               </Typography.Text>
                               <Tag color="purple" style={{ margin: 0 }}>
-                                {template.templatePluginKey}
+                                {template.key}
                               </Tag>
                             </Space>
                           }
@@ -1202,7 +1281,7 @@ export default function InternalPluginPage() {
                       title={
                         <Space>
                           <Typography.Text strong>创建插件</Typography.Text>
-                          <Tag color="purple">{selectedTemplate.pluginName}</Tag>
+                          <Tag color="purple">{selectedTemplate.name}</Tag>
                         </Space>
                       }
                       extra={
@@ -1215,11 +1294,20 @@ export default function InternalPluginPage() {
                         </Button>
                       }
                     >
+                      {selectedTemplate.requiredConfiguration === false && (
+                        <Alert
+                          message="该插件不需要配置"
+                          description="该插件不需要配置，可直接创建。"
+                          type="info"
+                          showIcon
+                          style={{ marginBottom: 16 }}
+                        />
+                      )}
                       <Form
                         form={form}
                         layout="vertical"
                         initialValues={{
-                          isPublic: false,
+                          isPublic: true,
                         }}
                       >
                         {/* 基础信息 */}
@@ -1266,10 +1354,16 @@ export default function InternalPluginPage() {
                           <Col span={12}>
                             <Form.Item
                               name="classifyId"
-                              label="分类"
+                              label={
+                                <Space>
+                                  <Typography.Text>分类</Typography.Text>
+                                  <Typography.Text type="danger">*</Typography.Text>
+                                </Space>
+                              }
+                              rules={[{ required: true, message: "请选择分类" }]}
                             >
                               <Select
-                                placeholder="请选择分类（可选）"
+                                placeholder="请选择分类"
                                 allowClear
                                 style={{ width: "100%" }}
                               >

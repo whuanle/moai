@@ -31,7 +31,8 @@ public class CreateInternalPluginCommandHandler : IRequestHandler<CreateInternal
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(CreateInternalPluginCommand request, CancellationToken cancellationToken)
     {
-        if (!InternalPluginFactory.Plugins.TryGetValue(request.TemplatePluginKey, out var pluginInfo))
+        var pluginInfo = InternalPluginFactory.Plugins.FirstOrDefault(x => x.Key == request.TemplatePluginKey);
+        if (pluginInfo == null)
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
@@ -74,8 +75,8 @@ public class CreateInternalPluginCommandHandler : IRequestHandler<CreateInternal
             Description = request.Description,
             ClassifyId = request.ClassifyId,
             IsPublic = request.IsPublic,
-            PluginName = pluginInfo.PluginKey,
-            Config = request.Config ?? string.Empty,
+            PluginName = pluginInfo.Key,
+            Config = request.Config ?? string.Empty
         };
 
         _databaseContext.PluginInternals.Add(entity);

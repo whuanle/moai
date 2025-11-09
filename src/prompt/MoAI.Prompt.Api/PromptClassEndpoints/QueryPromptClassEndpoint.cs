@@ -10,7 +10,7 @@ namespace MoAI.Prompt.PromptClassEndpoints;
 /// <summary>
 /// 查询分类.
 /// </summary>
-[HttpGet($"{ApiPrefix.AdminPrefix}/class_list")]
+[HttpGet($"{ApiPrefix.Prefix}/class_list")]
 public class QueryPromptClassEndpoint : EndpointWithoutRequest<QueryePromptClassCommandResponse>
 {
     private readonly IMediator _mediator;

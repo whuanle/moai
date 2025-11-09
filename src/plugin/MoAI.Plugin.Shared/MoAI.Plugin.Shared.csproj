@@ -4,11 +4,7 @@
 		<OutputType>Library</OutputType>
 		<RootNamespace>MoAI.Plugin</RootNamespace>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <None Remove="Queries\Responses\BuildPluginItem.cs~RF16ec417.TMP" />
-	</ItemGroup>
-
+	
 	<ItemGroup>
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />

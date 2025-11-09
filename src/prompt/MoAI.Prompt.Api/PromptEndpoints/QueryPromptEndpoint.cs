@@ -11,7 +11,7 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// <summary>
 /// 获取提示词内容.
 /// </summary>
-[HttpGet($"{ApiPrefix.AdminPrefix}/prompt_content")]
+[HttpGet($"{ApiPrefix.Prefix}/prompt_content")]
 public class QueryPromptEndpoint : Endpoint<QueryPromptContentRequest, PromptItem>
 {
     private readonly IMediator _mediator;

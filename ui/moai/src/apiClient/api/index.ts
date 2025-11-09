@@ -20,6 +20,8 @@ import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } fro
 // @ts-ignore
 import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
 // @ts-ignore
+import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
+// @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
@@ -67,6 +69,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get download(): DownloadRequestBuilder;
     /**
+     * The prompt property
+     */
+    get prompt(): PromptRequestBuilder;
+    /**
      * The storage property
      */
     get storage(): StorageRequestBuilder;
@@ -109,6 +115,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     download: {
         navigationMetadata: DownloadRequestBuilderNavigationMetadata,
+    },
+    prompt: {
+        navigationMetadata: PromptRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

@@ -1,20 +1,31 @@
 ﻿using MoAI.Plugin.Models;
-using System.Text.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace MoAI.Plugin.Queries.Responses;
+namespace MoAI.Plugin.Attributes;
 
-public class InternalTemplatePlugin
+/// <summary>
+/// 内置插件.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class InternalPluginAttribute : Attribute
 {
     /// <summary>
-    /// 类型.
+    /// Initializes a new instance of the <see cref="InternalPluginAttribute"/> class.
     /// </summary>
-    [JsonIgnore]
-    public Type Type { get; init; }
+    /// <param name="key"></param>
+    public InternalPluginAttribute(string key)
+    {
+        Key = key;
+    }
 
     /// <summary>
     /// 插件的唯一标识.
     /// </summary>
-    public string Key { get; init; }
+    public string Key { get; }
 
     /// <summary>
     /// 插件名称.

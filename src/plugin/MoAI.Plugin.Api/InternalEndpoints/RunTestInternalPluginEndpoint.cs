@@ -11,7 +11,7 @@ namespace MoAI.Plugin.Endpoints;
 /// <summary>
 /// 运行内置插件.
 /// </summary>
-[HttpDelete($"{ApiPrefix.AdminPrefix}/run_internal_plugin")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/run_internal_plugin")]
 public class RunTestInternalPluginEndpoint : Endpoint<RunTestInternalPluginCommand, RunTestInternalPluginCommandResponse>
 {
     private readonly IMediator _mediator;

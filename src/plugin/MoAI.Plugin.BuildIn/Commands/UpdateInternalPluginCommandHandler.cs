@@ -37,7 +37,8 @@ public class UpdateInternalPluginCommandHandler : IRequestHandler<UpdateInternal
             throw new BusinessException("未找到插件实例") { StatusCode = 404 };
         }
 
-        if (!InternalPluginFactory.Plugins.TryGetValue(entity.TemplatePluginKey, out var pluginInfo))
+        var pluginInfo = InternalPluginFactory.Plugins.FirstOrDefault(x => x.Key == entity.TemplatePluginKey);
+        if (pluginInfo == null)
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
@@ -76,7 +77,7 @@ public class UpdateInternalPluginCommandHandler : IRequestHandler<UpdateInternal
         entity.Description = request.Description;
         entity.ClassifyId = request.ClassifyId;
         entity.IsPublic = request.IsPublic;
-        entity.Config = request.Config;
+        entity.Config = string.IsNullOrEmpty(request.Config) ? string.Empty : request.Config;
 
         _databaseContext.PluginInternals.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);

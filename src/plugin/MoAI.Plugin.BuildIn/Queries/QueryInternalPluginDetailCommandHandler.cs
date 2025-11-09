@@ -49,7 +49,7 @@ public class QueryInternalPluginDetailCommandHandler : IRequestHandler<QueryInte
                 ClassifyId = x.ClassifyId,
                 Params = x.Config,
                 TemplatePluginClassify = x.TemplatePluginClassify.JsonToObject<InternalPluginClassify>(),
-                TemplatePluginKey = x.TemplatePluginKey
+                TemplatePluginKey = x.TemplatePluginKey,
             }).FirstOrDefaultAsync();
 
         if (plugin == null)

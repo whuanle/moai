@@ -4,19 +4,13 @@ namespace MoAI.Plugin.InternalPluginCommands;
 
 public class RunTestInternalPluginCommand : IRequest<RunTestInternalPluginCommandResponse>
 {
+    /// <summary>
+    /// 实例化的插件 id.
+    /// </summary>
     public int PluginId { get; init; }
+
+    /// <summary>
+    /// 运行参数.
+    /// </summary>
     public string Params { get; init; }
-}
-
-public class RunTestInternalPluginCommandResponse
-{
-    /// <summary>
-    /// 运行是否成功.
-    /// </summary>
-    public bool IsSuccess { get; init; }
-
-    /// <summary>
-    /// 响应结果.
-    /// </summary>
-    public string Response { get; init; }
 }

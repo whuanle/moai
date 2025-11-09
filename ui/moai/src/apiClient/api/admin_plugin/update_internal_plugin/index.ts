@@ -21,14 +21,14 @@ export interface Update_internal_pluginRequestBuilder extends BaseRequestBuilder
      * @throws {BusinessValidationResult} error when the service returns a 409 status code
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
-     put(body: UpdateInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
+     post(body: UpdateInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
      * 更新内置插件.
      * @param body 修改内置插件实例.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
-     toPutRequestInformation(body: UpdateInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
+     toPostRequestInformation(body: UpdateInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
 }
 /**
  * Uri template for the request builder.
@@ -38,7 +38,7 @@ export const Update_internal_pluginRequestBuilderUriTemplate = "{+baseurl}/api/a
  * Metadata for all the requests in the request builder.
  */
 export const Update_internal_pluginRequestBuilderRequestsMetadata: RequestsMetadata = {
-    put: {
+    post: {
         uriTemplate: Update_internal_pluginRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {

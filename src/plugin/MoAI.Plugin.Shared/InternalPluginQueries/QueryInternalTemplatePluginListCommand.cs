@@ -5,7 +5,7 @@ using MoAI.Plugin.Queries.Responses;
 namespace MoAI.Plugin.InternalQueries;
 
 /// <summary>
-/// 查询内置模板列表.
+/// 查询内置插件模板列表.
 /// </summary>
 public class QueryInternalTemplatePluginListCommand : IRequest<QueryInternalTemplatePluginListCommandResponse>
 {

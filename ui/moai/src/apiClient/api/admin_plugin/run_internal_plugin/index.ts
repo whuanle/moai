@@ -21,14 +21,14 @@ export interface Run_internal_pluginRequestBuilder extends BaseRequestBuilder<Ru
      * @throws {BusinessValidationResult} error when the service returns a 409 status code
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
-     delete(body: RunTestInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<RunTestInternalPluginCommandResponse | undefined>;
+     post(body: RunTestInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<RunTestInternalPluginCommandResponse | undefined>;
     /**
      * 运行内置插件.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
-     toDeleteRequestInformation(body: RunTestInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
+     toPostRequestInformation(body: RunTestInternalPluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
 }
 /**
  * Uri template for the request builder.
@@ -38,7 +38,7 @@ export const Run_internal_pluginRequestBuilderUriTemplate = "{+baseurl}/api/admi
  * Metadata for all the requests in the request builder.
  */
 export const Run_internal_pluginRequestBuilderRequestsMetadata: RequestsMetadata = {
-    delete: {
+    post: {
         uriTemplate: Run_internal_pluginRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {

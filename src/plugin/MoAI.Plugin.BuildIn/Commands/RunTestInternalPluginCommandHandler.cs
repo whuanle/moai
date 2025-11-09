@@ -2,8 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Models;
-using MoAI.Plugin.BuiltCommands;
 using MoAI.Plugin.InternalPluginCommands;
 using MoAI.Plugin.Plugins;
 
@@ -38,7 +36,9 @@ public class RunTestInternalPluginCommandHandler : IRequestHandler<RunTestIntern
             throw new BusinessException("未找到插件实例") { StatusCode = 404 };
         }
 
-        if (!InternalPluginFactory.Plugins.TryGetValue(entity.TemplatePluginKey, out var pluginInfo))
+        // 一种是不需要实例化的插件模板，一种是需要实例化的插件模板
+        var pluginInfo = InternalPluginFactory.Plugins.FirstOrDefault(x => x.Key == entity.TemplatePluginKey);
+        if (pluginInfo == null)
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
@@ -49,14 +49,12 @@ public class RunTestInternalPluginCommandHandler : IRequestHandler<RunTestIntern
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
 
-        var plugin = service as IInternalPluginRuntime;
-
-        // 导入配置
-        await plugin!.ImportConfigAsync(entity.Config);
+        var plugin = (service as IInternalPluginRuntime)!;
 
         // 执行测试
         try
         {
+            await plugin.ImportConfigAsync(entity.Config!);
             var result = await plugin!.TestAsync(request.Params);
             return new RunTestInternalPluginCommandResponse
             {

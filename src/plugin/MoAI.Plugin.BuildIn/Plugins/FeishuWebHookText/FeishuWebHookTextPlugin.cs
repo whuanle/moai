@@ -17,10 +17,12 @@ namespace MoAI.Plugin.Plugins.FeishuWebHookText;
 /// <summary>
 /// 飞书机器人 WebHook 插件.
 /// </summary>
-[PluginKey("feishu_webhook_text")]
-[PluginName("飞书机器人推送普通文本")]
-[PluginClassify(InternalPluginClassify.Communication)]
-[Description("使用飞书机器人对群聊或人发送消息，消息内容格式为普通文本")]
+[InternalPlugin(
+    "feishu_webhook_text",
+    Name = "飞书机器人发送文本消息",
+    Description = "使用飞书机器人对群聊或人发送消息，消息内容格式为普通文本",
+    RequiredConfiguration = true,
+    Classify = InternalPluginClassify.Communication)]
 [InjectOnTransient]
 public class FeishuWebHookTextPlugin : IInternalPluginRuntime
 {

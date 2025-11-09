@@ -5,7 +5,7 @@ using MoAI.Plugin.Queries.Responses;
 namespace MoAI.Plugin.InternalQueries;
 
 /// <summary>
-/// 查询内置插件模板配置参数.
+/// 获取一个内置插件模板需要的配置参数和运行参数.
 /// </summary>
 public class QueryInternalPluginTemplateParamsCommand : IRequest<QueryInternalPluginTemplateParamsCommandResponse>
 {

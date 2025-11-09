@@ -15,9 +15,12 @@ namespace MoAI.Plugin.Plugins.MarkdownToHtml;
 /// <summary>
 /// Markdown 转 html.
 /// </summary>
-[PluginKey("markdown_to_html")]
-[PluginName("markdown转html")]
-[PluginClassify(InternalPluginClassify.Tool)]
+[InternalPlugin(
+    "markdown_to_html",
+    Name = "markdown转html",
+    Description = "将 markdown 转换为 html，消息内容格式为普通文本",
+    RequiredConfiguration = false,
+    Classify = InternalPluginClassify.Tool)]
 [Description("将 markdown 转换为 html")]
 [InjectOnTransient]
 public class MarkdownToHtmlPlugin : IInternalPluginRuntime

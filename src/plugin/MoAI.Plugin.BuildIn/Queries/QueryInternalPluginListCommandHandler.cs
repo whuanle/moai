@@ -2,10 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Extensions;
+using MoAI.Infra.Models;
 using MoAI.Plugin.InternalPluginQueries;
 using MoAI.Plugin.InternalPluginQueries.Responses;
 using MoAI.Plugin.Models;
-using MoAI.Plugin.Queries.Responses;
 using MoAI.User.Queries;
 
 namespace MoAI.Plugin.Queries;
@@ -78,6 +78,23 @@ public class QueryInternalPluginListCommandHandler : IRequestHandler<QueryIntern
 
         await _mediator.Send(new FillUserInfoCommand { Items = plugins });
 
-        return new QueryInternalPluginListCommandResponse { Items = plugins };
+        var classifyCount = await _databaseContext.PluginInternals.GroupBy(x => x.ClassifyId).Select(x => new KeyValue<string, int>
+        {
+            Key = x.Key.ToString(),
+            Value = x.Count()
+        }).ToArrayAsync();
+
+        var templateClassifyCount = await _databaseContext.PluginInternals.GroupBy(x => x.TemplatePluginClassify).Select(x => new KeyValue<string, int>
+        {
+            Key = x.Key,
+            Value = x.Count()
+        }).ToArrayAsync();
+
+        return new QueryInternalPluginListCommandResponse
+        {
+            Items = plugins,
+            ClassifyCount = classifyCount,
+            TemplateClassifyCount = templateClassifyCount
+        };
     }
 }

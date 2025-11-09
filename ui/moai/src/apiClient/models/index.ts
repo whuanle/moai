@@ -2039,8 +2039,9 @@ export function deserializeIntoInternalTemplatePlugin(internalTemplatePlugin: Pa
     return {
         "classify": n => { internalTemplatePlugin.classify = n.getEnumValue<InternalPluginClassify>(InternalPluginClassifyObject); },
         "description": n => { internalTemplatePlugin.description = n.getStringValue(); },
-        "pluginName": n => { internalTemplatePlugin.pluginName = n.getStringValue(); },
-        "templatePluginKey": n => { internalTemplatePlugin.templatePluginKey = n.getStringValue(); },
+        "key": n => { internalTemplatePlugin.key = n.getStringValue(); },
+        "name": n => { internalTemplatePlugin.name = n.getStringValue(); },
+        "requiredConfiguration": n => { internalTemplatePlugin.requiredConfiguration = n.getBooleanValue(); },
     }
 }
 /**
@@ -2517,7 +2518,9 @@ export function deserializeIntoQueryInternalPluginListCommand(queryInternalPlugi
 // @ts-ignore
 export function deserializeIntoQueryInternalPluginListCommandResponse(queryInternalPluginListCommandResponse: Partial<QueryInternalPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "classifyCount": n => { queryInternalPluginListCommandResponse.classifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
         "items": n => { queryInternalPluginListCommandResponse.items = n.getCollectionOfObjectValues<InternalPluginInfo>(createInternalPluginInfoFromDiscriminatorValue); },
+        "templateClassifyCount": n => { queryInternalPluginListCommandResponse.templateClassifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
     }
 }
 /**
@@ -2964,7 +2967,6 @@ export function deserializeIntoUpdateInternalPluginCommand(updateInternalPluginC
         "isPublic": n => { updateInternalPluginCommand.isPublic = n.getBooleanValue(); },
         "name": n => { updateInternalPluginCommand.name = n.getStringValue(); },
         "pluginId": n => { updateInternalPluginCommand.pluginId = n.getNumberValue(); },
-        "templatePluginKey": n => { updateInternalPluginCommand.templatePluginKey = n.getStringValue(); },
         "title": n => { updateInternalPluginCommand.title = n.getStringValue(); },
     }
 }
@@ -3283,13 +3285,17 @@ export interface InternalTemplatePlugin extends Parsable {
      */
     description?: string | null;
     /**
+     * 插件的唯一标识.
+     */
+    key?: string | null;
+    /**
      * 插件名称.
      */
-    pluginName?: string | null;
+    name?: string | null;
     /**
-     * 插件key.
+     * 是否需要配置，需要配置的插件都需要实例化并存储到数据库.
      */
-    templatePluginKey?: string | null;
+    requiredConfiguration?: boolean | null;
 }
 /**
  * kv.
@@ -3963,7 +3969,7 @@ export interface QueryInternalPluginDetailCommand extends Parsable {
  */
 export interface QueryInternalPluginListCommand extends Parsable {
     /**
-     * 分类 id.
+     * 自定义分类 id.
      */
     classifyId?: number | null;
     /**
@@ -3985,12 +3991,20 @@ export interface QueryInternalPluginListCommand extends Parsable {
 }
 export interface QueryInternalPluginListCommandResponse extends Parsable {
     /**
-     * The items property
+     * 按自定义分类划分的分类数量.
+     */
+    classifyCount?: KeyValueOfStringAndInt32[] | null;
+    /**
+     * 插件实例列表.
      */
     items?: InternalPluginInfo[] | null;
+    /**
+     * 按插件模板分类的划分的分类数量.
+     */
+    templateClassifyCount?: KeyValueOfStringAndInt32[] | null;
 }
 /**
- * 查询内置插件模板配置参数.
+ * 获取一个内置插件模板需要的配置参数和运行参数.
  */
 export interface QueryInternalPluginTemplateParamsCommand extends Parsable {
     /**
@@ -4012,7 +4026,7 @@ export interface QueryInternalPluginTemplateParamsCommandResponse extends Parsab
     items?: InternalPluginParamConfig[] | null;
 }
 /**
- * 查询内置模板列表.
+ * 查询内置插件模板列表.
  */
 export interface QueryInternalTemplatePluginListCommand extends Parsable {
     /**
@@ -4346,11 +4360,11 @@ export interface ResetUserPasswordCommand extends Parsable {
 }
 export interface RunTestInternalPluginCommand extends Parsable {
     /**
-     * The params property
+     * 运行参数.
      */
     params?: string | null;
     /**
-     * The pluginId property
+     * 实例化的插件 id.
      */
     pluginId?: number | null;
 }
@@ -4812,8 +4826,9 @@ export function serializeInternalTemplatePlugin(writer: SerializationWriter, int
     if (internalTemplatePlugin) {
         writer.writeEnumValue<InternalPluginClassify>("classify", internalTemplatePlugin.classify);
         writer.writeStringValue("description", internalTemplatePlugin.description);
-        writer.writeStringValue("pluginName", internalTemplatePlugin.pluginName);
-        writer.writeStringValue("templatePluginKey", internalTemplatePlugin.templatePluginKey);
+        writer.writeStringValue("key", internalTemplatePlugin.key);
+        writer.writeStringValue("name", internalTemplatePlugin.name);
+        writer.writeBooleanValue("requiredConfiguration", internalTemplatePlugin.requiredConfiguration);
     }
 }
 /**
@@ -5290,7 +5305,9 @@ export function serializeQueryInternalPluginListCommand(writer: SerializationWri
 // @ts-ignore
 export function serializeQueryInternalPluginListCommandResponse(writer: SerializationWriter, queryInternalPluginListCommandResponse: Partial<QueryInternalPluginListCommandResponse> | undefined | null = {}) : void {
     if (queryInternalPluginListCommandResponse) {
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("classifyCount", queryInternalPluginListCommandResponse.classifyCount, serializeKeyValueOfStringAndInt32);
         writer.writeCollectionOfObjectValues<InternalPluginInfo>("items", queryInternalPluginListCommandResponse.items, serializeInternalPluginInfo);
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("templateClassifyCount", queryInternalPluginListCommandResponse.templateClassifyCount, serializeKeyValueOfStringAndInt32);
     }
 }
 /**
@@ -5737,7 +5754,6 @@ export function serializeUpdateInternalPluginCommand(writer: SerializationWriter
         writer.writeBooleanValue("isPublic", updateInternalPluginCommand.isPublic);
         writer.writeStringValue("name", updateInternalPluginCommand.name);
         writer.writeNumberValue("pluginId", updateInternalPluginCommand.pluginId);
-        writer.writeStringValue("templatePluginKey", updateInternalPluginCommand.templatePluginKey);
         writer.writeStringValue("title", updateInternalPluginCommand.title);
     }
 }
@@ -6022,10 +6038,6 @@ export interface UpdateInternalPluginCommand extends Parsable {
      * 插件 id.
      */
     pluginId?: number | null;
-    /**
-     * 内置插件模板 key.
-     */
-    templatePluginKey?: string | null;
     /**
      * 插件标题，可中文.
      */

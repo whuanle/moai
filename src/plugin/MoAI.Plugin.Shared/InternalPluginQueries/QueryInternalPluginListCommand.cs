@@ -25,7 +25,7 @@ public class QueryInternalPluginListCommand : IRequest<QueryInternalPluginListCo
     public string? TemplatePluginKey { get; init; }
 
     /// <summary>
-    /// 分类 id.
+    /// 自定义分类 id.
     /// </summary>
     public int? ClassifyId { get; init; }
 

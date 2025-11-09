@@ -11,7 +11,7 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// <summary>
 /// 删除提示词.
 /// </summary>
-[HttpDelete($"{ApiPrefix.AdminPrefix}/delete_prompt")]
+[HttpDelete($"{ApiPrefix.Prefix}/delete_prompt")]
 public class DeletePromptEndpoints : Endpoint<DeletePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;

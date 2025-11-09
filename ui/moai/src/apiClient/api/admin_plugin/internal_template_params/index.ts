@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Internal_template_paramsRequestBuilder extends BaseRequestBuilder<Internal_template_paramsRequestBuilder> {
     /**
      * 内置插件模板的配置模板.
-     * @param body 查询内置插件模板配置参数.
+     * @param body 获取一个内置插件模板需要的配置参数和运行参数.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryInternalPluginTemplateParamsCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Internal_template_paramsRequestBuilder extends BaseRequestBuild
      post(body: QueryInternalPluginTemplateParamsCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryInternalPluginTemplateParamsCommandResponse | undefined>;
     /**
      * 内置插件模板的配置模板.
-     * @param body 查询内置插件模板配置参数.
+     * @param body 获取一个内置插件模板需要的配置参数和运行参数.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

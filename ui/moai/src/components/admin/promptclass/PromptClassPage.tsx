@@ -37,7 +37,7 @@ export default function PromptClassPage() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const response = await client.api.admin_prompt.class_list.get();
+      const response = await client.api.prompt.class_list.get();
 
       if (response?.items) {
         setClassList(response.items || []);

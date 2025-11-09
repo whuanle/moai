@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Internal_template_listRequestBuilder extends BaseRequestBuilder<Internal_template_listRequestBuilder> {
     /**
      * 获取内置插件模板列表.
-     * @param body 查询内置模板列表.
+     * @param body 查询内置插件模板列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryInternalTemplatePluginListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Internal_template_listRequestBuilder extends BaseRequestBuilder
      post(body: QueryInternalTemplatePluginListCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryInternalTemplatePluginListCommandResponse | undefined>;
     /**
      * 获取内置插件模板列表.
-     * @param body 查询内置模板列表.
+     * @param body 查询内置插件模板列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

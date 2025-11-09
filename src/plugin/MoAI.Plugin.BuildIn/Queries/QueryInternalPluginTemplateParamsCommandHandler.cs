@@ -27,7 +27,8 @@ public class QueryInternalPluginTemplateParamsCommandHandler : IRequestHandler<Q
     /// <inheritdoc/>
     public async Task<QueryInternalPluginTemplateParamsCommandResponse> Handle(QueryInternalPluginTemplateParamsCommand request, CancellationToken cancellationToken)
     {
-        if (!InternalPluginFactory.Plugins.TryGetValue(request.TemplatePluginKey, out var pluginInfo))
+        var pluginInfo = InternalPluginFactory.Plugins.FirstOrDefault(x => x.Key == request.TemplatePluginKey);
+        if (pluginInfo == null)
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }

@@ -10,7 +10,7 @@ namespace MoAI.Plugin.Endpoints;
 /// <summary>
 /// 更新内置插件.
 /// </summary>
-[HttpPut($"{ApiPrefix.AdminPrefix}/update_internal_plugin")]
+[HttpPost($"{ApiPrefix.AdminPrefix}/update_internal_plugin")]
 public class UpdateInternalPluginEndpoint : Endpoint<UpdateInternalPluginCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
