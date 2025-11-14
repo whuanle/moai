@@ -43,7 +43,7 @@ public sealed class InternalPluginAttribute : Attribute
     public InternalPluginClassify Classify { get; init; }
 
     /// <summary>
-    /// 是否需要配置，需要配置的插件都需要实例化并存储到数据库.
+    /// 插件需要实例化，工具不需要实例化.
     /// </summary>
     public bool RequiredConfiguration { get; init; } = true;
 }
