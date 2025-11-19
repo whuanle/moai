@@ -3,8 +3,7 @@ using MediatR;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Commands;
-using MoAI.Plugin.Queries;
+using MoAI.Plugin.Classify.Commands;
 
 namespace MoAI.Plugin.ClassifyEndpoint;
 

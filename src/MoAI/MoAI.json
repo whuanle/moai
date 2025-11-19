@@ -2663,20 +2663,20 @@
         ]
       }
     },
-    "/api/admin_plugin/internal_template_params": {
+    "/api/admin_plugin/native_plugin_list": {
       "post": {
         "tags": [
           "Admin_Plugin"
         ],
-        "summary": "内置插件模板的配置模板.",
-        "operationId": "QueryInternalPluginTemplateParamsEndpoint",
+        "summary": "查询内置插件简要信息列表.",
+        "operationId": "QueryNativePluginBaseListEndpoint",
         "requestBody": {
-          "x-name": "QueryInternalPluginTemplateParamsCommand",
+          "x-name": "QueryNativePluginListCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryInternalPluginTemplateParamsCommand"
+                "$ref": "#/components/schemas/QueryNativePluginListCommand"
               }
             }
           },
@@ -2689,7 +2689,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryInternalPluginTemplateParamsCommandResponse"
+                  "$ref": "#/components/schemas/QueryNativePluginListCommandResponse"
                 }
               }
             }
@@ -2752,20 +2752,109 @@
         ]
       }
     },
-    "/api/admin_plugin/internal_template_list": {
+    "/api/admin_plugin/native_plugin_detail": {
+      "post": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "查询内置插件详细信息.",
+        "operationId": "QueryNativePluginDetailEndpoint",
+        "requestBody": {
+          "x-name": "QueryNativePluginDetailCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryNativePluginDetailCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePluginDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/native_template_list": {
       "post": {
         "tags": [
           "Admin_Plugin"
         ],
         "summary": "获取内置插件模板列表.",
-        "operationId": "QueryInternalTemplatePluginListEndpoint",
+        "operationId": "QueryNativePluginTemplateListEndpoint",
         "requestBody": {
-          "x-name": "QueryInternalTemplatePluginListCommand",
+          "x-name": "QueryNativePluginTemplateListCommand",
           "description": "",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryInternalTemplatePluginListCommand"
+                "$ref": "#/components/schemas/QueryNativePluginTemplateListCommand"
               }
             }
           },
@@ -2779,6 +2868,456 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryInternalTemplatePluginListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/native_template_params": {
+      "post": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "内置插件模板的配置模板.",
+        "operationId": "QueryNativePluginTemplateParamsEndpoint",
+        "requestBody": {
+          "x-name": "QueryNativePluginTemplateParamsCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryNativePluginTemplateParamsCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryNativePluginTemplateParamsCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/create_native_plugin": {
+      "post": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "创建内置插件.",
+        "operationId": "CreateNativePluginEndpoint",
+        "requestBody": {
+          "x-name": "CreateNativePluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNativePluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/delete_native_plugin": {
+      "delete": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "删除内置插件.",
+        "operationId": "DeleteNativePluginEndpoint",
+        "requestBody": {
+          "x-name": "DeleteNativePluginCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteNativePluginCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteNativePluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/run_native_plugin": {
+      "post": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "运行内置插件.",
+        "operationId": "RunTestNativePluginEndpoint",
+        "requestBody": {
+          "x-name": "RunTestNativePluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunTestNativePluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunTestNativePluginCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin_plugin/update_native_plugin": {
+      "post": {
+        "tags": [
+          "Admin_Plugin"
+        ],
+        "summary": "更新内置插件.",
+        "operationId": "UpdateNativePluginEndpoint",
+        "requestBody": {
+          "x-name": "UpdateNativePluginCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNativePluginCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
                 }
               }
             }
@@ -3046,184 +3585,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryPluginFunctionsListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin_plugin/internal_plugin_list": {
-      "post": {
-        "tags": [
-          "Admin_Plugin"
-        ],
-        "summary": "查询内置插件简要信息列表.",
-        "operationId": "QueryInternalPluginBaseListEndpoint",
-        "requestBody": {
-          "x-name": "QueryInternalPluginListCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryInternalPluginListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryInternalPluginListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin_plugin/internal_plugin_detail": {
-      "post": {
-        "tags": [
-          "Admin_Plugin"
-        ],
-        "summary": "查询内置插件详细信息.",
-        "operationId": "QueryInternalPluginDetailEndpoint",
-        "requestBody": {
-          "x-name": "QueryInternalPluginDetailCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryInternalPluginDetailCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalPluginDetail"
                 }
               }
             }
@@ -3839,367 +4200,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateOpenApiPluginCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin_plugin/create_internal_plugin": {
-      "post": {
-        "tags": [
-          "Admin_Plugin"
-        ],
-        "summary": "创建内置插件.",
-        "operationId": "CreateInternalPluginEndpoint",
-        "requestBody": {
-          "x-name": "CreateInternalPluginCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateInternalPluginCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SimpleInt"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin_plugin/delete_internal_plugin": {
-      "delete": {
-        "tags": [
-          "Admin_Plugin"
-        ],
-        "summary": "删除内置插件.",
-        "operationId": "DeleteInternalPluginEndpoint",
-        "requestBody": {
-          "x-name": "DeleteInternalPluginCommand",
-          "description": "",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteInternalPluginCommand"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteInternalPluginCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin_plugin/run_internal_plugin": {
-      "post": {
-        "tags": [
-          "Admin_Plugin"
-        ],
-        "summary": "运行内置插件.",
-        "operationId": "RunTestInternalPluginEndpoint",
-        "requestBody": {
-          "x-name": "RunTestInternalPluginCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RunTestInternalPluginCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunTestInternalPluginCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/admin_plugin/update_internal_plugin": {
-      "post": {
-        "tags": [
-          "Admin_Plugin"
-        ],
-        "summary": "更新内置插件.",
-        "operationId": "UpdateInternalPluginEndpoint",
-        "requestBody": {
-          "x-name": "UpdateInternalPluginCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateInternalPluginCommand"
               }
             }
           },
@@ -7094,7 +7094,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762680335788"
+            "example": "1763542652131"
           },
           "createUserId": {
             "type": "integer",
@@ -7110,7 +7110,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762680335788"
+            "example": "1763542652131"
           },
           "updateUserId": {
             "type": "integer",
@@ -8063,161 +8063,101 @@
           }
         ]
       },
-      "QueryInternalPluginTemplateParamsCommandResponse": {
+      "QueryNativePluginListCommandResponse": {
         "type": "object",
-        "description": "插件模板参数.",
         "additionalProperties": false,
         "required": [
           "items",
-          "exampleValue"
+          "templateClassifyCount",
+          "classifyCount"
         ],
         "properties": {
           "items": {
             "type": "array",
-            "description": "插件模板参数.",
+            "description": "插件实例列表.",
             "items": {
-              "$ref": "#/components/schemas/InternalPluginParamConfig"
+              "$ref": "#/components/schemas/NativePluginInfo"
             }
           },
-          "exampleValue": {
-            "type": "string",
-            "description": "示例值."
-          }
-        }
-      },
-      "InternalPluginParamConfig": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "key",
-          "description",
-          "fFieldType",
-          "isRequired",
-          "exampleValue"
-        ],
-        "properties": {
-          "key": {
-            "type": "string",
-            "description": "配置名称."
-          },
-          "description": {
-            "type": "string",
-            "description": "描述."
-          },
-          "fFieldType": {
-            "description": "配置类型.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/InternalPluginConfigFieldType"
-              }
-            ]
-          },
-          "isRequired": {
-            "type": "boolean",
-            "description": "该字段是否必填."
-          },
-          "exampleValue": {
-            "type": "string",
-            "description": "示例值."
-          }
-        }
-      },
-      "InternalPluginConfigFieldType": {
-        "type": "string",
-        "description": "内置插件配置字段类型.",
-        "x-enumNames": [
-          "String",
-          "Number",
-          "Boolean",
-          "Integer",
-          "Object",
-          "Map"
-        ],
-        "enum": [
-          "string",
-          "number",
-          "boolean",
-          "integer",
-          "object",
-          "map"
-        ]
-      },
-      "QueryInternalPluginTemplateParamsCommand": {
-        "type": "object",
-        "description": "获取一个内置插件模板需要的配置参数和运行参数.",
-        "additionalProperties": false,
-        "required": [
-          "templatePluginKey"
-        ],
-        "properties": {
-          "templatePluginKey": {
-            "type": "string",
-            "description": "插件键."
-          }
-        }
-      },
-      "QueryInternalTemplatePluginListCommandResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "plugins",
-          "classifyCount"
-        ],
-        "properties": {
-          "plugins": {
+          "templateClassifyCount": {
             "type": "array",
-            "description": "模板列表.",
+            "description": "按插件模板分类的划分的分类数量.",
             "items": {
-              "$ref": "#/components/schemas/InternalTemplatePlugin"
+              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
             }
           },
           "classifyCount": {
             "type": "array",
-            "description": "每种分类的插件的数量.",
+            "description": "按自定义分类划分的分类数量.",
             "items": {
               "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
             }
           }
         }
       },
-      "InternalTemplatePlugin": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "key",
-          "name",
-          "description",
-          "classify",
-          "requiredConfiguration"
-        ],
-        "properties": {
-          "key": {
-            "type": "string",
-            "description": "插件的唯一标识."
+      "NativePluginInfo": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
           },
-          "name": {
-            "type": "string",
-            "description": "插件名称."
-          },
-          "description": {
-            "type": "string",
-            "description": "注释."
-          },
-          "classify": {
-            "description": "分类.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/InternalPluginClassify"
+          {
+            "type": "object",
+            "description": "内置插件信息.",
+            "additionalProperties": false,
+            "required": [
+              "pluginId",
+              "templatePluginClassify",
+              "templatePluginKey",
+              "pluginName",
+              "title",
+              "description",
+              "classifyId",
+              "isPublic"
+            ],
+            "properties": {
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "templatePluginClassify": {
+                "description": "模板分类.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/NativePluginClassify"
+                  }
+                ]
+              },
+              "templatePluginKey": {
+                "type": "string",
+                "description": "模板 key."
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "classifyId": {
+                "type": "integer",
+                "description": "分类 id.",
+                "format": "int32"
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
               }
-            ]
-          },
-          "requiredConfiguration": {
-            "type": "boolean",
-            "description": "是否需要配置，需要配置的插件都需要实例化并存储到数据库."
+            }
           }
-        }
+        ]
       },
-      "InternalPluginClassify": {
+      "NativePluginClassify": {
         "type": "string",
         "description": "内置插件分类.",
         "x-enumNames": [
@@ -8273,7 +8213,187 @@
           }
         }
       },
-      "QueryInternalTemplatePluginListCommand": {
+      "QueryNativePluginListCommand": {
+        "type": "object",
+        "description": "查询内置插件实例列表.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "名称搜索.",
+            "nullable": true
+          },
+          "templatePluginClassify": {
+            "description": "模板分类.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NativePluginClassify"
+              }
+            ]
+          },
+          "templatePluginKey": {
+            "type": "string",
+            "description": "模板搜索.",
+            "nullable": true
+          },
+          "classifyId": {
+            "type": "integer",
+            "description": "自定义分类 id.",
+            "format": "int32",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开.",
+            "nullable": true
+          }
+        }
+      },
+      "NativePluginDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "classifyId",
+              "description",
+              "isPublic",
+              "params",
+              "pluginId",
+              "pluginName",
+              "templatePluginClassify",
+              "templatePluginKey",
+              "title"
+            ],
+            "properties": {
+              "classifyId": {
+                "type": "integer",
+                "description": "分类 id.",
+                "format": "int32"
+              },
+              "description": {
+                "type": "string",
+                "description": "注释."
+              },
+              "isPublic": {
+                "type": "boolean",
+                "description": "是否公开."
+              },
+              "params": {
+                "type": "string",
+                "description": "参数."
+              },
+              "pluginId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "pluginName": {
+                "type": "string",
+                "description": "插件名称."
+              },
+              "templatePluginClassify": {
+                "description": "模板分类.",
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/NativePluginClassify"
+                  }
+                ]
+              },
+              "templatePluginKey": {
+                "type": "string",
+                "description": "模板 key."
+              },
+              "title": {
+                "type": "string",
+                "description": "插件标题."
+              }
+            }
+          }
+        ]
+      },
+      "QueryNativePluginDetailCommand": {
+        "type": "object",
+        "description": "查询该插件的详细信息.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "QueryInternalTemplatePluginListCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "plugins",
+          "classifyCount"
+        ],
+        "properties": {
+          "plugins": {
+            "type": "array",
+            "description": "模板列表.",
+            "items": {
+              "$ref": "#/components/schemas/NativePluginTemplateInfo"
+            }
+          },
+          "classifyCount": {
+            "type": "array",
+            "description": "每种分类的插件的数量.",
+            "items": {
+              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
+            }
+          }
+        }
+      },
+      "NativePluginTemplateInfo": {
+        "type": "object",
+        "description": "内置插件模板信息.",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "name",
+          "description",
+          "classify",
+          "isTool"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "插件的唯一标识."
+          },
+          "name": {
+            "type": "string",
+            "description": "插件名称."
+          },
+          "description": {
+            "type": "string",
+            "description": "注释."
+          },
+          "classify": {
+            "description": "分类.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NativePluginClassify"
+              }
+            ]
+          },
+          "isTool": {
+            "type": "boolean",
+            "description": "是否需要配置，需要配置的插件都需要实例化并存储到数据库."
+          }
+        }
+      },
+      "QueryNativePluginTemplateListCommand": {
         "type": "object",
         "description": "查询内置插件模板列表.",
         "additionalProperties": false,
@@ -8283,9 +8403,267 @@
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/InternalPluginClassify"
+                "$ref": "#/components/schemas/NativePluginClassify"
               }
             ]
+          }
+        }
+      },
+      "QueryNativePluginTemplateParamsCommandResponse": {
+        "type": "object",
+        "description": "插件模板参数.",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "exampleValue"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "插件模板参数.",
+            "items": {
+              "$ref": "#/components/schemas/NativePluginConfigFieldTemplate"
+            }
+          },
+          "exampleValue": {
+            "type": "string",
+            "description": "示例值."
+          }
+        }
+      },
+      "NativePluginConfigFieldTemplate": {
+        "type": "object",
+        "description": "插件字段.",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "description",
+          "fieldType",
+          "isRequired",
+          "exampleValue"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "配置名称."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述."
+          },
+          "fieldType": {
+            "description": "配置类型.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PluginConfigFieldType"
+              }
+            ]
+          },
+          "isRequired": {
+            "type": "boolean",
+            "description": "该字段是否必填."
+          },
+          "exampleValue": {
+            "type": "string",
+            "description": "示例值."
+          }
+        }
+      },
+      "PluginConfigFieldType": {
+        "type": "string",
+        "description": "内置插件配置字段类型.",
+        "x-enumNames": [
+          "String",
+          "Number",
+          "Boolean",
+          "Integer",
+          "Object",
+          "Map"
+        ],
+        "enum": [
+          "string",
+          "number",
+          "boolean",
+          "integer",
+          "object",
+          "map"
+        ]
+      },
+      "QueryNativePluginTemplateParamsCommand": {
+        "type": "object",
+        "description": "获取一个内置插件模板需要的配置参数和运行参数.",
+        "additionalProperties": false,
+        "required": [
+          "templatePluginKey"
+        ],
+        "properties": {
+          "templatePluginKey": {
+            "type": "string",
+            "description": "插件键."
+          }
+        }
+      },
+      "CreateNativePluginCommand": {
+        "type": "object",
+        "description": "创建内置插件实例.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "classifyId",
+          "templatePluginKey",
+          "title",
+          "description",
+          "isPublic",
+          "config"
+        ],
+        "properties": {
+          "templatePluginKey": {
+            "type": "string",
+            "description": "内置插件模板 key."
+          },
+          "name": {
+            "type": "string",
+            "description": "插件名称，只能纯字母，用于给 AI 使用.",
+            "maxLength": 30,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z_]+$",
+            "nullable": false
+          },
+          "title": {
+            "type": "string",
+            "description": "插件标题，可中文."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 255,
+            "minLength": 0
+          },
+          "classifyId": {
+            "type": "integer",
+            "description": "分类 id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
+          },
+          "config": {
+            "type": "string",
+            "description": "参数."
+          }
+        }
+      },
+      "DeleteNativePluginCommand": {
+        "type": "object",
+        "description": "删除内置插件实例.",
+        "additionalProperties": false,
+        "required": [
+          "pluginId"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "RunTestNativePluginCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "isSuccess",
+          "response"
+        ],
+        "properties": {
+          "isSuccess": {
+            "type": "boolean",
+            "description": "运行是否成功."
+          },
+          "response": {
+            "type": "string",
+            "description": "响应结果."
+          }
+        }
+      },
+      "RunTestNativePluginCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "templatePluginKey",
+          "params"
+        ],
+        "properties": {
+          "templatePluginKey": {
+            "type": "string",
+            "description": "插件模板."
+          },
+          "pluginId": {
+            "type": "integer",
+            "description": "实例化的插件 id，如果是工具插件，则不需要填写.",
+            "format": "int32",
+            "nullable": true
+          },
+          "params": {
+            "type": "string",
+            "description": "运行参数."
+          }
+        }
+      },
+      "UpdateNativePluginCommand": {
+        "type": "object",
+        "description": "修改内置插件实例.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "classifyId",
+          "pluginId",
+          "title",
+          "description",
+          "isPublic",
+          "config"
+        ],
+        "properties": {
+          "pluginId": {
+            "type": "integer",
+            "description": "插件 id.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "插件名称，只能纯字母，用于给 AI 使用.",
+            "maxLength": 30,
+            "minLength": 2,
+            "pattern": "^[a-zA-Z_]+$",
+            "nullable": false
+          },
+          "title": {
+            "type": "string",
+            "description": "插件标题，可中文."
+          },
+          "description": {
+            "type": "string",
+            "description": "描述.",
+            "maxLength": 255,
+            "minLength": 0
+          },
+          "classifyId": {
+            "type": "integer",
+            "description": "分类 id.",
+            "format": "int32",
+            "minLength": 1,
+            "nullable": false
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "是否公开."
+          },
+          "config": {
+            "type": "string",
+            "description": "参数."
           }
         }
       },
@@ -8627,218 +9005,6 @@
           }
         }
       },
-      "QueryInternalPluginListCommandResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "items",
-          "templateClassifyCount",
-          "classifyCount"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "插件实例列表.",
-            "items": {
-              "$ref": "#/components/schemas/InternalPluginInfo"
-            }
-          },
-          "templateClassifyCount": {
-            "type": "array",
-            "description": "按插件模板分类的划分的分类数量.",
-            "items": {
-              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
-            }
-          },
-          "classifyCount": {
-            "type": "array",
-            "description": "按自定义分类划分的分类数量.",
-            "items": {
-              "$ref": "#/components/schemas/KeyValueOfStringAndInt32"
-            }
-          }
-        }
-      },
-      "InternalPluginInfo": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "description": "内置插件信息.",
-            "additionalProperties": false,
-            "required": [
-              "pluginId",
-              "templatePluginClassify",
-              "templatePluginKey",
-              "pluginName",
-              "title",
-              "description",
-              "classifyId",
-              "isPublic"
-            ],
-            "properties": {
-              "pluginId": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "templatePluginClassify": {
-                "description": "模板分类.",
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/InternalPluginClassify"
-                  }
-                ]
-              },
-              "templatePluginKey": {
-                "type": "string",
-                "description": "模板 key."
-              },
-              "pluginName": {
-                "type": "string",
-                "description": "插件名称."
-              },
-              "title": {
-                "type": "string",
-                "description": "插件标题."
-              },
-              "description": {
-                "type": "string",
-                "description": "注释."
-              },
-              "classifyId": {
-                "type": "integer",
-                "description": "分类 id.",
-                "format": "int32"
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "是否公开."
-              }
-            }
-          }
-        ]
-      },
-      "QueryInternalPluginListCommand": {
-        "type": "object",
-        "description": "查询内置插件实例列表.",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "名称搜索.",
-            "nullable": true
-          },
-          "templatePluginClassify": {
-            "description": "模板分类.",
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/InternalPluginClassify"
-              }
-            ]
-          },
-          "templatePluginKey": {
-            "type": "string",
-            "description": "模板搜索.",
-            "nullable": true
-          },
-          "classifyId": {
-            "type": "integer",
-            "description": "自定义分类 id.",
-            "format": "int32",
-            "nullable": true
-          },
-          "isPublic": {
-            "type": "boolean",
-            "description": "是否公开.",
-            "nullable": true
-          }
-        }
-      },
-      "InternalPluginDetail": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "classifyId",
-              "description",
-              "isPublic",
-              "params",
-              "pluginId",
-              "pluginName",
-              "templatePluginClassify",
-              "templatePluginKey",
-              "title"
-            ],
-            "properties": {
-              "classifyId": {
-                "type": "integer",
-                "description": "分类 id.",
-                "format": "int32"
-              },
-              "description": {
-                "type": "string",
-                "description": "注释."
-              },
-              "isPublic": {
-                "type": "boolean",
-                "description": "是否公开."
-              },
-              "params": {
-                "type": "string",
-                "description": "参数."
-              },
-              "pluginId": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "pluginName": {
-                "type": "string",
-                "description": "插件名称."
-              },
-              "templatePluginClassify": {
-                "description": "模板分类.",
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/InternalPluginClassify"
-                  }
-                ]
-              },
-              "templatePluginKey": {
-                "type": "string",
-                "description": "模板 key."
-              },
-              "title": {
-                "type": "string",
-                "description": "插件标题."
-              }
-            }
-          }
-        ]
-      },
-      "QueryInternalPluginDetailCommand": {
-        "type": "object",
-        "description": "查询该插件的详细信息.",
-        "additionalProperties": false,
-        "required": [
-          "pluginId"
-        ],
-        "properties": {
-          "pluginId": {
-            "type": "integer",
-            "description": "插件 id.",
-            "format": "int32"
-          }
-        }
-      },
       "DeletePluginCommand": {
         "type": "object",
         "description": "删除插件.",
@@ -9032,7 +9198,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1762680335788"
+            "example": "1763542652131"
           }
         }
       },
@@ -9225,165 +9391,6 @@
             "items": {
               "$ref": "#/components/schemas/KeyValueString"
             }
-          }
-        }
-      },
-      "CreateInternalPluginCommand": {
-        "type": "object",
-        "description": "创建内置插件实例.",
-        "additionalProperties": false,
-        "required": [
-          "name",
-          "classifyId",
-          "templatePluginKey",
-          "title",
-          "description",
-          "isPublic",
-          "config"
-        ],
-        "properties": {
-          "templatePluginKey": {
-            "type": "string",
-            "description": "内置插件模板 key."
-          },
-          "name": {
-            "type": "string",
-            "description": "插件名称，只能纯字母，用于给 AI 使用.",
-            "maxLength": 30,
-            "minLength": 2,
-            "pattern": "^[a-zA-Z_]+$",
-            "nullable": false
-          },
-          "title": {
-            "type": "string",
-            "description": "插件标题，可中文."
-          },
-          "description": {
-            "type": "string",
-            "description": "描述.",
-            "maxLength": 255,
-            "minLength": 0
-          },
-          "classifyId": {
-            "type": "integer",
-            "description": "分类 id.",
-            "format": "int32",
-            "minLength": 1,
-            "nullable": false
-          },
-          "isPublic": {
-            "type": "boolean",
-            "description": "是否公开."
-          },
-          "config": {
-            "type": "string",
-            "description": "参数."
-          }
-        }
-      },
-      "DeleteInternalPluginCommand": {
-        "type": "object",
-        "description": "删除内置插件实例.",
-        "additionalProperties": false,
-        "required": [
-          "pluginId"
-        ],
-        "properties": {
-          "pluginId": {
-            "type": "integer",
-            "description": "插件 id.",
-            "format": "int32"
-          }
-        }
-      },
-      "RunTestInternalPluginCommandResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "isSuccess",
-          "response"
-        ],
-        "properties": {
-          "isSuccess": {
-            "type": "boolean",
-            "description": "运行是否成功."
-          },
-          "response": {
-            "type": "string",
-            "description": "响应结果."
-          }
-        }
-      },
-      "RunTestInternalPluginCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "pluginId",
-          "params"
-        ],
-        "properties": {
-          "pluginId": {
-            "type": "integer",
-            "description": "实例化的插件 id.",
-            "format": "int32"
-          },
-          "params": {
-            "type": "string",
-            "description": "运行参数."
-          }
-        }
-      },
-      "UpdateInternalPluginCommand": {
-        "type": "object",
-        "description": "修改内置插件实例.",
-        "additionalProperties": false,
-        "required": [
-          "name",
-          "classifyId",
-          "pluginId",
-          "title",
-          "description",
-          "isPublic"
-        ],
-        "properties": {
-          "pluginId": {
-            "type": "integer",
-            "description": "插件 id.",
-            "format": "int32"
-          },
-          "name": {
-            "type": "string",
-            "description": "插件名称，只能纯字母，用于给 AI 使用.",
-            "maxLength": 30,
-            "minLength": 2,
-            "pattern": "^[a-zA-Z_]+$",
-            "nullable": false
-          },
-          "title": {
-            "type": "string",
-            "description": "插件标题，可中文."
-          },
-          "description": {
-            "type": "string",
-            "description": "描述.",
-            "maxLength": 255,
-            "minLength": 0
-          },
-          "classifyId": {
-            "type": "integer",
-            "description": "分类 id.",
-            "format": "int32",
-            "minLength": 1,
-            "nullable": false
-          },
-          "isPublic": {
-            "type": "boolean",
-            "description": "是否公开."
-          },
-          "config": {
-            "type": "string",
-            "description": "参数.",
-            "nullable": true
           }
         }
       },
@@ -10102,14 +10109,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762680335788"
+            "example": "1763542652131"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762680335788"
+            "example": "1763542652131"
           },
           "chatHistory": {
             "type": "array",
@@ -10187,7 +10194,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1762680335788"
+            "example": "1763542652131"
           }
         }
       },

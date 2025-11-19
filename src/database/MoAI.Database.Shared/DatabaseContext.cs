@@ -100,7 +100,7 @@ public partial class DatabaseContext : DbContext
     /// <summary>
     /// 内置插件.
     /// </summary>
-    public virtual DbSet<PluginInternalEntity> PluginInternals { get; set; }
+    public virtual DbSet<PluginNativeEntity> PluginInternals { get; set; }
 
     /// <summary>
     /// 插件使用量限制.

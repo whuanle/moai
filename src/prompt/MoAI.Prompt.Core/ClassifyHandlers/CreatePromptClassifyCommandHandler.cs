@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Commands;
 using MoAI.Prompt.Commands;
 
 namespace MoAI.Prompt.ClassifyHandlers;

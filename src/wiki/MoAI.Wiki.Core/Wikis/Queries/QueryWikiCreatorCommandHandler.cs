@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Plugin.Queries.Responses;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 

@@ -9,15 +9,15 @@ namespace MoAI.Database;
 /// <summary>
 /// 内置插件.
 /// </summary>
-public partial class PluginInternalConfiguration : IEntityTypeConfiguration<PluginInternalEntity>
+public partial class PluginInternalConfiguration : IEntityTypeConfiguration<PluginNativeEntity>
 {
     /// <inheritdoc/>
-    public void Configure(EntityTypeBuilder<PluginInternalEntity> builder)
+    public void Configure(EntityTypeBuilder<PluginNativeEntity> builder)
     {
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("plugin_internal", tb => tb.HasComment("内置插件"));
+        entity.ToTable("plugin_native", tb => tb.HasComment("内置插件"));
 
         entity.HasIndex(e => e.PluginName, "plugin_plugin_name_index");
 
@@ -85,5 +85,5 @@ public partial class PluginInternalConfiguration : IEntityTypeConfiguration<Plug
         OnConfigurePartial(entity);
     }
 
-    partial void OnConfigurePartial(EntityTypeBuilder<PluginInternalEntity> modelBuilder);
+    partial void OnConfigurePartial(EntityTypeBuilder<PluginNativeEntity> modelBuilder);
 }

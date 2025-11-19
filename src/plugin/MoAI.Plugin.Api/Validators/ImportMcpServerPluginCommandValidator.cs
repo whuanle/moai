@@ -1,6 +1,6 @@
 ﻿using FastEndpoints;
 using FluentValidation;
-using MoAI.Plugin.Commands;
+using MoAI.Plugin.CustomPlugins.Commands;
 
 namespace MoAI.Plugin.Validators;
 

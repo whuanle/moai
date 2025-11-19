@@ -1,19 +1,18 @@
 ﻿using FastEndpoints;
 using FluentValidation;
-using MoAI.Plugin.BuiltCommands;
-using MoAI.Plugin.Commands;
+using MoAI.Plugin.NativePlugins.Commands;
 
 namespace MoAI.Plugin.Validators;
 
 /// <summary>
-/// UpdateInternalPluginCommandValidator.
+/// UpdateNativePluginCommandValidator.
 /// </summary>
-public class UpdateInternalPluginCommandValidator : Validator<UpdateInternalPluginCommand>
+public class UpdateNativePluginCommandValidator : Validator<UpdateNativePluginCommand>
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateInternalPluginCommandValidator"/> class.
+    /// Initializes a new instance of the <see cref="UpdateNativePluginCommandValidator"/> class.
     /// </summary>
-    public UpdateInternalPluginCommandValidator()
+    public UpdateNativePluginCommandValidator()
     {
         RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类id不正确.");
 

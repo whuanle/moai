@@ -1,0 +1,44 @@
+﻿using MoAI.Plugin.Models;
+
+namespace MoAI.Plugin.CustomPlugins.Queries.Responses;
+
+/// <summary>
+/// 插件信息.
+/// </summary>
+public class QueryPluginInfoItem
+{
+    /// <summary>
+    /// 插件Id.
+    /// </summary>
+    public int PluginId { get; init; }
+
+    /// <summary>
+    /// 插件名称.
+    /// </summary>
+    public string PluginName { get; init; } = default!;
+
+    /// <summary>
+    /// system|mcp|openapi.
+    /// </summary>
+    public PluginType Type { get; set; }
+
+    /// <summary>
+    /// 插件标题.
+    /// </summary>
+    public string Title { get; init; } = default!;
+
+    /// <summary>
+    /// 描述.
+    /// </summary>
+    public string Description { get; init; } = default!;
+
+    /// <summary>
+    /// 分类 id.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
+    /// <summary>
+    /// 是否公开.
+    /// </summary>
+    public bool IsPublic { get; init; } = default!;
+}

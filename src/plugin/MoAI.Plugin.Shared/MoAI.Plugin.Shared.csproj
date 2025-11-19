@@ -9,5 +9,10 @@
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	</ItemGroup>
+	
+	<ItemGroup>
+	  <Folder Include="ToolPlugins\Commands\" />
+	  <Folder Include="ToolPlugins\Queries\" />
+	</ItemGroup>
 
 </Project>

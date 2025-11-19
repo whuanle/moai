@@ -1,7 +1,4 @@
-﻿using MediatR;
-using MoAI.Plugin.Queries.Responses;
-
-namespace MoAI.Wiki.Wikis.Queries.Response;
+﻿namespace MoAI.Wiki.Wikis.Queries.Response;
 
 /// <summary>
 /// 查询知识库创建信息.

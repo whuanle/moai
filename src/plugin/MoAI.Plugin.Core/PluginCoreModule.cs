@@ -2,11 +2,18 @@
 
 namespace MoAI.Plugin;
 
+/*
+* 自定义插件
+* 内置插件
+* 工具
+ */
+
 /// <summary>
 /// PluginCoreModule.
 /// </summary>
 [InjectModule<PluginApiModule>]
-[InjectModule<PluginBuildInModule>]
+[InjectModule<NativePluginModule>]
+[InjectModule<ToolPluginModule>]
 public class PluginCoreModule : IModule
 {
     /// <inheritdoc/>

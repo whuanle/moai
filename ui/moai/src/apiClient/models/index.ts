@@ -415,11 +415,11 @@ export function createCreateAiAssistantChatCommandResponseFromDiscriminatorValue
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {CreateInternalPluginCommand}
+ * @returns {CreateNativePluginCommand}
  */
 // @ts-ignore
-export function createCreateInternalPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCreateInternalPluginCommand;
+export function createCreateNativePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateNativePluginCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -487,11 +487,11 @@ export function createDeleteAiModelCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {DeleteInternalPluginCommand}
+ * @returns {DeleteNativePluginCommand}
  */
 // @ts-ignore
-export function createDeleteInternalPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoDeleteInternalPluginCommand;
+export function createDeleteNativePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDeleteNativePluginCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -575,75 +575,6 @@ export function createImportOpenApiPluginCommandFromDiscriminatorValue(parseNode
     return deserializeIntoImportOpenApiPluginCommand;
 }
 /**
- * 创建内置插件实例.
- */
-export interface CreateInternalPluginCommand extends Parsable {
-    /**
-     * 分类 id.
-     */
-    classifyId?: number | null;
-    /**
-     * 参数.
-     */
-    config?: string | null;
-    /**
-     * 描述.
-     */
-    description?: string | null;
-    /**
-     * 是否公开.
-     */
-    isPublic?: boolean | null;
-    /**
-     * 插件名称，只能纯字母，用于给 AI 使用.
-     */
-    name?: string | null;
-    /**
-     * 内置插件模板 key.
-     */
-    templatePluginKey?: string | null;
-    /**
-     * 插件标题，可中文.
-     */
-    title?: string | null;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {InternalPluginDetail}
- */
-// @ts-ignore
-export function createInternalPluginDetailFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoInternalPluginDetail;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {InternalPluginInfo}
- */
-// @ts-ignore
-export function createInternalPluginInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoInternalPluginInfo;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {InternalPluginParamConfig}
- */
-// @ts-ignore
-export function createInternalPluginParamConfigFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoInternalPluginParamConfig;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {InternalTemplatePlugin}
- */
-// @ts-ignore
-export function createInternalTemplatePluginFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoInternalTemplatePlugin;
-}
-/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {KeyValueOfStringAndInt32}
@@ -705,6 +636,75 @@ export function createMcpServerPluginConnectionOptionsFromDiscriminatorValue(par
 // @ts-ignore
 export function createModelAbilitiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoModelAbilities;
+}
+/**
+ * 创建内置插件实例.
+ */
+export interface CreateNativePluginCommand extends Parsable {
+    /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
+     * 参数.
+     */
+    config?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 插件名称，只能纯字母，用于给 AI 使用.
+     */
+    name?: string | null;
+    /**
+     * 内置插件模板 key.
+     */
+    templatePluginKey?: string | null;
+    /**
+     * 插件标题，可中文.
+     */
+    title?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {NativePluginConfigFieldTemplate}
+ */
+// @ts-ignore
+export function createNativePluginConfigFieldTemplateFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoNativePluginConfigFieldTemplate;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {NativePluginDetail}
+ */
+// @ts-ignore
+export function createNativePluginDetailFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoNativePluginDetail;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {NativePluginInfo}
+ */
+// @ts-ignore
+export function createNativePluginInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoNativePluginInfo;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {NativePluginTemplateInfo}
+ */
+// @ts-ignore
+export function createNativePluginTemplateInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoNativePluginTemplateInfo;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1041,65 +1041,65 @@ export function createQueryePromptClassCommandResponseFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryInternalPluginDetailCommand}
- */
-// @ts-ignore
-export function createQueryInternalPluginDetailCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryInternalPluginDetailCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryInternalPluginListCommand}
- */
-// @ts-ignore
-export function createQueryInternalPluginListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryInternalPluginListCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryInternalPluginListCommandResponse}
- */
-// @ts-ignore
-export function createQueryInternalPluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryInternalPluginListCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryInternalPluginTemplateParamsCommand}
- */
-// @ts-ignore
-export function createQueryInternalPluginTemplateParamsCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryInternalPluginTemplateParamsCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryInternalPluginTemplateParamsCommandResponse}
- */
-// @ts-ignore
-export function createQueryInternalPluginTemplateParamsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryInternalPluginTemplateParamsCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryInternalTemplatePluginListCommand}
- */
-// @ts-ignore
-export function createQueryInternalTemplatePluginListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryInternalTemplatePluginListCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryInternalTemplatePluginListCommandResponse}
  */
 // @ts-ignore
 export function createQueryInternalTemplatePluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryInternalTemplatePluginListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNativePluginDetailCommand}
+ */
+// @ts-ignore
+export function createQueryNativePluginDetailCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNativePluginDetailCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNativePluginListCommand}
+ */
+// @ts-ignore
+export function createQueryNativePluginListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNativePluginListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNativePluginListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryNativePluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNativePluginListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNativePluginTemplateListCommand}
+ */
+// @ts-ignore
+export function createQueryNativePluginTemplateListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNativePluginTemplateListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNativePluginTemplateParamsCommand}
+ */
+// @ts-ignore
+export function createQueryNativePluginTemplateParamsCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNativePluginTemplateParamsCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNativePluginTemplateParamsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryNativePluginTemplateParamsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNativePluginTemplateParamsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1293,20 +1293,20 @@ export function createResetUserPasswordCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {RunTestInternalPluginCommand}
+ * @returns {RunTestNativePluginCommand}
  */
 // @ts-ignore
-export function createRunTestInternalPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoRunTestInternalPluginCommand;
+export function createRunTestNativePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoRunTestNativePluginCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {RunTestInternalPluginCommandResponse}
+ * @returns {RunTestNativePluginCommandResponse}
  */
 // @ts-ignore
-export function createRunTestInternalPluginCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoRunTestInternalPluginCommandResponse;
+export function createRunTestNativePluginCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoRunTestNativePluginCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1410,20 +1410,20 @@ export function createUpdateAiModelCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UpdateInternalPluginCommand}
- */
-// @ts-ignore
-export function createUpdateInternalPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUpdateInternalPluginCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateMcpServerPluginCommand}
  */
 // @ts-ignore
 export function createUpdateMcpServerPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateMcpServerPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateNativePluginCommand}
+ */
+// @ts-ignore
+export function createUpdateNativePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateNativePluginCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1540,7 +1540,7 @@ export interface DeleteAiModelCommand extends Parsable {
 /**
  * 删除内置插件实例.
  */
-export interface DeleteInternalPluginCommand extends Parsable {
+export interface DeleteNativePluginCommand extends Parsable {
     /**
      * 插件 id.
      */
@@ -1778,15 +1778,15 @@ export function deserializeIntoCreateAiAssistantChatCommandResponse(createAiAssi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoCreateInternalPluginCommand(createInternalPluginCommand: Partial<CreateInternalPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoCreateNativePluginCommand(createNativePluginCommand: Partial<CreateNativePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "classifyId": n => { createInternalPluginCommand.classifyId = n.getNumberValue(); },
-        "config": n => { createInternalPluginCommand.config = n.getStringValue(); },
-        "description": n => { createInternalPluginCommand.description = n.getStringValue(); },
-        "isPublic": n => { createInternalPluginCommand.isPublic = n.getBooleanValue(); },
-        "name": n => { createInternalPluginCommand.name = n.getStringValue(); },
-        "templatePluginKey": n => { createInternalPluginCommand.templatePluginKey = n.getStringValue(); },
-        "title": n => { createInternalPluginCommand.title = n.getStringValue(); },
+        "classifyId": n => { createNativePluginCommand.classifyId = n.getNumberValue(); },
+        "config": n => { createNativePluginCommand.config = n.getStringValue(); },
+        "description": n => { createNativePluginCommand.description = n.getStringValue(); },
+        "isPublic": n => { createNativePluginCommand.isPublic = n.getBooleanValue(); },
+        "name": n => { createNativePluginCommand.name = n.getStringValue(); },
+        "templatePluginKey": n => { createNativePluginCommand.templatePluginKey = n.getStringValue(); },
+        "title": n => { createNativePluginCommand.title = n.getStringValue(); },
     }
 }
 /**
@@ -1876,9 +1876,9 @@ export function deserializeIntoDeleteAiModelCommand(deleteAiModelCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoDeleteInternalPluginCommand(deleteInternalPluginCommand: Partial<DeleteInternalPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoDeleteNativePluginCommand(deleteNativePluginCommand: Partial<DeleteNativePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "pluginId": n => { deleteInternalPluginCommand.pluginId = n.getNumberValue(); },
+        "pluginId": n => { deleteNativePluginCommand.pluginId = n.getNumberValue(); },
     }
 }
 /**
@@ -1984,71 +1984,6 @@ export function deserializeIntoImportOpenApiPluginCommand(importOpenApiPluginCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoInternalPluginDetail(internalPluginDetail: Partial<InternalPluginDetail> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(internalPluginDetail),
-        "classifyId": n => { internalPluginDetail.classifyId = n.getNumberValue(); },
-        "description": n => { internalPluginDetail.description = n.getStringValue(); },
-        "isPublic": n => { internalPluginDetail.isPublic = n.getBooleanValue(); },
-        "params": n => { internalPluginDetail.params = n.getStringValue(); },
-        "pluginId": n => { internalPluginDetail.pluginId = n.getNumberValue(); },
-        "pluginName": n => { internalPluginDetail.pluginName = n.getStringValue(); },
-        "templatePluginClassify": n => { internalPluginDetail.templatePluginClassify = n.getEnumValue<InternalPluginClassify>(InternalPluginClassifyObject); },
-        "templatePluginKey": n => { internalPluginDetail.templatePluginKey = n.getStringValue(); },
-        "title": n => { internalPluginDetail.title = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoInternalPluginInfo(internalPluginInfo: Partial<InternalPluginInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(internalPluginInfo),
-        "classifyId": n => { internalPluginInfo.classifyId = n.getNumberValue(); },
-        "description": n => { internalPluginInfo.description = n.getStringValue(); },
-        "isPublic": n => { internalPluginInfo.isPublic = n.getBooleanValue(); },
-        "pluginId": n => { internalPluginInfo.pluginId = n.getNumberValue(); },
-        "pluginName": n => { internalPluginInfo.pluginName = n.getStringValue(); },
-        "templatePluginClassify": n => { internalPluginInfo.templatePluginClassify = n.getEnumValue<InternalPluginClassify>(InternalPluginClassifyObject); },
-        "templatePluginKey": n => { internalPluginInfo.templatePluginKey = n.getStringValue(); },
-        "title": n => { internalPluginInfo.title = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoInternalPluginParamConfig(internalPluginParamConfig: Partial<InternalPluginParamConfig> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "description": n => { internalPluginParamConfig.description = n.getStringValue(); },
-        "exampleValue": n => { internalPluginParamConfig.exampleValue = n.getStringValue(); },
-        "fFieldType": n => { internalPluginParamConfig.fFieldType = n.getEnumValue<InternalPluginConfigFieldType>(InternalPluginConfigFieldTypeObject); },
-        "isRequired": n => { internalPluginParamConfig.isRequired = n.getBooleanValue(); },
-        "key": n => { internalPluginParamConfig.key = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoInternalTemplatePlugin(internalTemplatePlugin: Partial<InternalTemplatePlugin> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "classify": n => { internalTemplatePlugin.classify = n.getEnumValue<InternalPluginClassify>(InternalPluginClassifyObject); },
-        "description": n => { internalTemplatePlugin.description = n.getStringValue(); },
-        "key": n => { internalTemplatePlugin.key = n.getStringValue(); },
-        "name": n => { internalTemplatePlugin.name = n.getStringValue(); },
-        "requiredConfiguration": n => { internalTemplatePlugin.requiredConfiguration = n.getBooleanValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoKeyValueOfStringAndInt32(keyValueOfStringAndInt32: Partial<KeyValueOfStringAndInt32> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "key": n => { keyValueOfStringAndInt32.key = n.getStringValue(); },
@@ -2128,6 +2063,71 @@ export function deserializeIntoModelAbilities(modelAbilities: Partial<ModelAbili
         "functionCall": n => { modelAbilities.functionCall = n.getBooleanValue(); },
         "imageOutput": n => { modelAbilities.imageOutput = n.getBooleanValue(); },
         "vision": n => { modelAbilities.vision = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoNativePluginConfigFieldTemplate(nativePluginConfigFieldTemplate: Partial<NativePluginConfigFieldTemplate> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { nativePluginConfigFieldTemplate.description = n.getStringValue(); },
+        "exampleValue": n => { nativePluginConfigFieldTemplate.exampleValue = n.getStringValue(); },
+        "fieldType": n => { nativePluginConfigFieldTemplate.fieldType = n.getEnumValue<PluginConfigFieldType>(PluginConfigFieldTypeObject); },
+        "isRequired": n => { nativePluginConfigFieldTemplate.isRequired = n.getBooleanValue(); },
+        "key": n => { nativePluginConfigFieldTemplate.key = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoNativePluginDetail(nativePluginDetail: Partial<NativePluginDetail> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(nativePluginDetail),
+        "classifyId": n => { nativePluginDetail.classifyId = n.getNumberValue(); },
+        "description": n => { nativePluginDetail.description = n.getStringValue(); },
+        "isPublic": n => { nativePluginDetail.isPublic = n.getBooleanValue(); },
+        "params": n => { nativePluginDetail.params = n.getStringValue(); },
+        "pluginId": n => { nativePluginDetail.pluginId = n.getNumberValue(); },
+        "pluginName": n => { nativePluginDetail.pluginName = n.getStringValue(); },
+        "templatePluginClassify": n => { nativePluginDetail.templatePluginClassify = n.getEnumValue<NativePluginClassify>(NativePluginClassifyObject); },
+        "templatePluginKey": n => { nativePluginDetail.templatePluginKey = n.getStringValue(); },
+        "title": n => { nativePluginDetail.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoNativePluginInfo(nativePluginInfo: Partial<NativePluginInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(nativePluginInfo),
+        "classifyId": n => { nativePluginInfo.classifyId = n.getNumberValue(); },
+        "description": n => { nativePluginInfo.description = n.getStringValue(); },
+        "isPublic": n => { nativePluginInfo.isPublic = n.getBooleanValue(); },
+        "pluginId": n => { nativePluginInfo.pluginId = n.getNumberValue(); },
+        "pluginName": n => { nativePluginInfo.pluginName = n.getStringValue(); },
+        "templatePluginClassify": n => { nativePluginInfo.templatePluginClassify = n.getEnumValue<NativePluginClassify>(NativePluginClassifyObject); },
+        "templatePluginKey": n => { nativePluginInfo.templatePluginKey = n.getStringValue(); },
+        "title": n => { nativePluginInfo.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoNativePluginTemplateInfo(nativePluginTemplateInfo: Partial<NativePluginTemplateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classify": n => { nativePluginTemplateInfo.classify = n.getEnumValue<NativePluginClassify>(NativePluginClassifyObject); },
+        "description": n => { nativePluginTemplateInfo.description = n.getStringValue(); },
+        "isTool": n => { nativePluginTemplateInfo.isTool = n.getBooleanValue(); },
+        "key": n => { nativePluginTemplateInfo.key = n.getStringValue(); },
+        "name": n => { nativePluginTemplateInfo.name = n.getStringValue(); },
     }
 }
 /**
@@ -2492,77 +2492,77 @@ export function deserializeIntoQueryePromptClassCommandResponse(queryePromptClas
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryInternalPluginDetailCommand(queryInternalPluginDetailCommand: Partial<QueryInternalPluginDetailCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "pluginId": n => { queryInternalPluginDetailCommand.pluginId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryInternalPluginListCommand(queryInternalPluginListCommand: Partial<QueryInternalPluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "classifyId": n => { queryInternalPluginListCommand.classifyId = n.getNumberValue(); },
-        "isPublic": n => { queryInternalPluginListCommand.isPublic = n.getBooleanValue(); },
-        "name": n => { queryInternalPluginListCommand.name = n.getStringValue(); },
-        "templatePluginClassify": n => { queryInternalPluginListCommand.templatePluginClassify = n.getEnumValue<InternalPluginClassify>(InternalPluginClassifyObject); },
-        "templatePluginKey": n => { queryInternalPluginListCommand.templatePluginKey = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryInternalPluginListCommandResponse(queryInternalPluginListCommandResponse: Partial<QueryInternalPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "classifyCount": n => { queryInternalPluginListCommandResponse.classifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
-        "items": n => { queryInternalPluginListCommandResponse.items = n.getCollectionOfObjectValues<InternalPluginInfo>(createInternalPluginInfoFromDiscriminatorValue); },
-        "templateClassifyCount": n => { queryInternalPluginListCommandResponse.templateClassifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryInternalPluginTemplateParamsCommand(queryInternalPluginTemplateParamsCommand: Partial<QueryInternalPluginTemplateParamsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "templatePluginKey": n => { queryInternalPluginTemplateParamsCommand.templatePluginKey = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryInternalPluginTemplateParamsCommandResponse(queryInternalPluginTemplateParamsCommandResponse: Partial<QueryInternalPluginTemplateParamsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "exampleValue": n => { queryInternalPluginTemplateParamsCommandResponse.exampleValue = n.getStringValue(); },
-        "items": n => { queryInternalPluginTemplateParamsCommandResponse.items = n.getCollectionOfObjectValues<InternalPluginParamConfig>(createInternalPluginParamConfigFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryInternalTemplatePluginListCommand(queryInternalTemplatePluginListCommand: Partial<QueryInternalTemplatePluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "classify": n => { queryInternalTemplatePluginListCommand.classify = n.getEnumValue<InternalPluginClassify>(InternalPluginClassifyObject); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoQueryInternalTemplatePluginListCommandResponse(queryInternalTemplatePluginListCommandResponse: Partial<QueryInternalTemplatePluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "classifyCount": n => { queryInternalTemplatePluginListCommandResponse.classifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
-        "plugins": n => { queryInternalTemplatePluginListCommandResponse.plugins = n.getCollectionOfObjectValues<InternalTemplatePlugin>(createInternalTemplatePluginFromDiscriminatorValue); },
+        "plugins": n => { queryInternalTemplatePluginListCommandResponse.plugins = n.getCollectionOfObjectValues<NativePluginTemplateInfo>(createNativePluginTemplateInfoFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNativePluginDetailCommand(queryNativePluginDetailCommand: Partial<QueryNativePluginDetailCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginId": n => { queryNativePluginDetailCommand.pluginId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNativePluginListCommand(queryNativePluginListCommand: Partial<QueryNativePluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyId": n => { queryNativePluginListCommand.classifyId = n.getNumberValue(); },
+        "isPublic": n => { queryNativePluginListCommand.isPublic = n.getBooleanValue(); },
+        "name": n => { queryNativePluginListCommand.name = n.getStringValue(); },
+        "templatePluginClassify": n => { queryNativePluginListCommand.templatePluginClassify = n.getEnumValue<NativePluginClassify>(NativePluginClassifyObject); },
+        "templatePluginKey": n => { queryNativePluginListCommand.templatePluginKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNativePluginListCommandResponse(queryNativePluginListCommandResponse: Partial<QueryNativePluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyCount": n => { queryNativePluginListCommandResponse.classifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
+        "items": n => { queryNativePluginListCommandResponse.items = n.getCollectionOfObjectValues<NativePluginInfo>(createNativePluginInfoFromDiscriminatorValue); },
+        "templateClassifyCount": n => { queryNativePluginListCommandResponse.templateClassifyCount = n.getCollectionOfObjectValues<KeyValueOfStringAndInt32>(createKeyValueOfStringAndInt32FromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNativePluginTemplateListCommand(queryNativePluginTemplateListCommand: Partial<QueryNativePluginTemplateListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classify": n => { queryNativePluginTemplateListCommand.classify = n.getEnumValue<NativePluginClassify>(NativePluginClassifyObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNativePluginTemplateParamsCommand(queryNativePluginTemplateParamsCommand: Partial<QueryNativePluginTemplateParamsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "templatePluginKey": n => { queryNativePluginTemplateParamsCommand.templatePluginKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNativePluginTemplateParamsCommandResponse(queryNativePluginTemplateParamsCommandResponse: Partial<QueryNativePluginTemplateParamsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "exampleValue": n => { queryNativePluginTemplateParamsCommandResponse.exampleValue = n.getStringValue(); },
+        "items": n => { queryNativePluginTemplateParamsCommandResponse.items = n.getCollectionOfObjectValues<NativePluginConfigFieldTemplate>(createNativePluginConfigFieldTemplateFromDiscriminatorValue); },
     }
 }
 /**
@@ -2819,10 +2819,11 @@ export function deserializeIntoResetUserPasswordCommand(resetUserPasswordCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoRunTestInternalPluginCommand(runTestInternalPluginCommand: Partial<RunTestInternalPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoRunTestNativePluginCommand(runTestNativePluginCommand: Partial<RunTestNativePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "params": n => { runTestInternalPluginCommand.params = n.getStringValue(); },
-        "pluginId": n => { runTestInternalPluginCommand.pluginId = n.getNumberValue(); },
+        "params": n => { runTestNativePluginCommand.params = n.getStringValue(); },
+        "pluginId": n => { runTestNativePluginCommand.pluginId = n.getNumberValue(); },
+        "templatePluginKey": n => { runTestNativePluginCommand.templatePluginKey = n.getStringValue(); },
     }
 }
 /**
@@ -2830,10 +2831,10 @@ export function deserializeIntoRunTestInternalPluginCommand(runTestInternalPlugi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoRunTestInternalPluginCommandResponse(runTestInternalPluginCommandResponse: Partial<RunTestInternalPluginCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoRunTestNativePluginCommandResponse(runTestNativePluginCommandResponse: Partial<RunTestNativePluginCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "isSuccess": n => { runTestInternalPluginCommandResponse.isSuccess = n.getBooleanValue(); },
-        "response": n => { runTestInternalPluginCommandResponse.response = n.getStringValue(); },
+        "isSuccess": n => { runTestNativePluginCommandResponse.isSuccess = n.getBooleanValue(); },
+        "response": n => { runTestNativePluginCommandResponse.response = n.getStringValue(); },
     }
 }
 /**
@@ -2959,15 +2960,12 @@ export function deserializeIntoUpdateAiModelCommand(updateAiModelCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoUpdateInternalPluginCommand(updateInternalPluginCommand: Partial<UpdateInternalPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoUpdateMcpServerPluginCommand(updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "classifyId": n => { updateInternalPluginCommand.classifyId = n.getNumberValue(); },
-        "config": n => { updateInternalPluginCommand.config = n.getStringValue(); },
-        "description": n => { updateInternalPluginCommand.description = n.getStringValue(); },
-        "isPublic": n => { updateInternalPluginCommand.isPublic = n.getBooleanValue(); },
-        "name": n => { updateInternalPluginCommand.name = n.getStringValue(); },
-        "pluginId": n => { updateInternalPluginCommand.pluginId = n.getNumberValue(); },
-        "title": n => { updateInternalPluginCommand.title = n.getStringValue(); },
+        ...deserializeIntoMcpServerPluginConnectionOptions(updateMcpServerPluginCommand),
+        "classifyId": n => { updateMcpServerPluginCommand.classifyId = n.getNumberValue(); },
+        "isPublic": n => { updateMcpServerPluginCommand.isPublic = n.getBooleanValue(); },
+        "pluginId": n => { updateMcpServerPluginCommand.pluginId = n.getNumberValue(); },
     }
 }
 /**
@@ -2975,12 +2973,15 @@ export function deserializeIntoUpdateInternalPluginCommand(updateInternalPluginC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoUpdateMcpServerPluginCommand(updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoUpdateNativePluginCommand(updateNativePluginCommand: Partial<UpdateNativePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        ...deserializeIntoMcpServerPluginConnectionOptions(updateMcpServerPluginCommand),
-        "classifyId": n => { updateMcpServerPluginCommand.classifyId = n.getNumberValue(); },
-        "isPublic": n => { updateMcpServerPluginCommand.isPublic = n.getBooleanValue(); },
-        "pluginId": n => { updateMcpServerPluginCommand.pluginId = n.getNumberValue(); },
+        "classifyId": n => { updateNativePluginCommand.classifyId = n.getNumberValue(); },
+        "config": n => { updateNativePluginCommand.config = n.getStringValue(); },
+        "description": n => { updateNativePluginCommand.description = n.getStringValue(); },
+        "isPublic": n => { updateNativePluginCommand.isPublic = n.getBooleanValue(); },
+        "name": n => { updateNativePluginCommand.name = n.getStringValue(); },
+        "pluginId": n => { updateNativePluginCommand.pluginId = n.getNumberValue(); },
+        "title": n => { updateNativePluginCommand.title = n.getStringValue(); },
     }
 }
 /**
@@ -3176,127 +3177,6 @@ export interface ImportOpenApiPluginCommand extends Parsable {
      */
     title?: string | null;
 }
-export type InternalPluginClassify = (typeof InternalPluginClassifyObject)[keyof typeof InternalPluginClassifyObject];
-export type InternalPluginConfigFieldType = (typeof InternalPluginConfigFieldTypeObject)[keyof typeof InternalPluginConfigFieldTypeObject];
-export interface InternalPluginDetail extends AuditsInfo, Parsable {
-    /**
-     * 分类 id.
-     */
-    classifyId?: number | null;
-    /**
-     * 注释.
-     */
-    description?: string | null;
-    /**
-     * 是否公开.
-     */
-    isPublic?: boolean | null;
-    /**
-     * 参数.
-     */
-    params?: string | null;
-    /**
-     * id.
-     */
-    pluginId?: number | null;
-    /**
-     * 插件名称.
-     */
-    pluginName?: string | null;
-    /**
-     * 模板分类.
-     */
-    templatePluginClassify?: InternalPluginClassify | null;
-    /**
-     * 模板 key.
-     */
-    templatePluginKey?: string | null;
-    /**
-     * 插件标题.
-     */
-    title?: string | null;
-}
-/**
- * 内置插件信息.
- */
-export interface InternalPluginInfo extends AuditsInfo, Parsable {
-    /**
-     * 分类 id.
-     */
-    classifyId?: number | null;
-    /**
-     * 注释.
-     */
-    description?: string | null;
-    /**
-     * 是否公开.
-     */
-    isPublic?: boolean | null;
-    /**
-     * id.
-     */
-    pluginId?: number | null;
-    /**
-     * 插件名称.
-     */
-    pluginName?: string | null;
-    /**
-     * 模板分类.
-     */
-    templatePluginClassify?: InternalPluginClassify | null;
-    /**
-     * 模板 key.
-     */
-    templatePluginKey?: string | null;
-    /**
-     * 插件标题.
-     */
-    title?: string | null;
-}
-export interface InternalPluginParamConfig extends Parsable {
-    /**
-     * 描述.
-     */
-    description?: string | null;
-    /**
-     * 示例值.
-     */
-    exampleValue?: string | null;
-    /**
-     * 配置类型.
-     */
-    fFieldType?: InternalPluginConfigFieldType | null;
-    /**
-     * 该字段是否必填.
-     */
-    isRequired?: boolean | null;
-    /**
-     * 配置名称.
-     */
-    key?: string | null;
-}
-export interface InternalTemplatePlugin extends Parsable {
-    /**
-     * 分类.
-     */
-    classify?: InternalPluginClassify | null;
-    /**
-     * 注释.
-     */
-    description?: string | null;
-    /**
-     * 插件的唯一标识.
-     */
-    key?: string | null;
-    /**
-     * 插件名称.
-     */
-    name?: string | null;
-    /**
-     * 是否需要配置，需要配置的插件都需要实例化并存储到数据库.
-     */
-    requiredConfiguration?: boolean | null;
-}
 /**
  * kv.
  */
@@ -3419,6 +3299,132 @@ export interface ModelAbilities extends Parsable {
      * Whether model supports vision
      */
     vision?: boolean | null;
+}
+export type NativePluginClassify = (typeof NativePluginClassifyObject)[keyof typeof NativePluginClassifyObject];
+/**
+ * 插件字段.
+ */
+export interface NativePluginConfigFieldTemplate extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 示例值.
+     */
+    exampleValue?: string | null;
+    /**
+     * 配置类型.
+     */
+    fieldType?: PluginConfigFieldType | null;
+    /**
+     * 该字段是否必填.
+     */
+    isRequired?: boolean | null;
+    /**
+     * 配置名称.
+     */
+    key?: string | null;
+}
+export interface NativePluginDetail extends AuditsInfo, Parsable {
+    /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 参数.
+     */
+    params?: string | null;
+    /**
+     * id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 模板分类.
+     */
+    templatePluginClassify?: NativePluginClassify | null;
+    /**
+     * 模板 key.
+     */
+    templatePluginKey?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+}
+/**
+ * 内置插件信息.
+ */
+export interface NativePluginInfo extends AuditsInfo, Parsable {
+    /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 模板分类.
+     */
+    templatePluginClassify?: NativePluginClassify | null;
+    /**
+     * 模板 key.
+     */
+    templatePluginKey?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+}
+/**
+ * 内置插件模板信息.
+ */
+export interface NativePluginTemplateInfo extends Parsable {
+    /**
+     * 分类.
+     */
+    classify?: NativePluginClassify | null;
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * 是否需要配置，需要配置的插件都需要实例化并存储到数据库.
+     */
+    isTool?: boolean | null;
+    /**
+     * 插件的唯一标识.
+     */
+    key?: string | null;
+    /**
+     * 插件名称.
+     */
+    name?: string | null;
 }
 /**
  * 使用 OAuth 绑定已存在的账号.
@@ -3598,6 +3604,7 @@ export interface PluginClassifyItem extends Parsable {
      */
     name?: string | null;
 }
+export type PluginConfigFieldType = (typeof PluginConfigFieldTypeObject)[keyof typeof PluginConfigFieldTypeObject];
 /**
  * 函数.
  */
@@ -3955,10 +3962,20 @@ export interface QueryePromptClassCommandResponse extends Parsable {
      */
     items?: PromptClassifyItem[] | null;
 }
+export interface QueryInternalTemplatePluginListCommandResponse extends Parsable {
+    /**
+     * 每种分类的插件的数量.
+     */
+    classifyCount?: KeyValueOfStringAndInt32[] | null;
+    /**
+     * 模板列表.
+     */
+    plugins?: NativePluginTemplateInfo[] | null;
+}
 /**
  * 查询该插件的详细信息.
  */
-export interface QueryInternalPluginDetailCommand extends Parsable {
+export interface QueryNativePluginDetailCommand extends Parsable {
     /**
      * 插件 id.
      */
@@ -3967,7 +3984,7 @@ export interface QueryInternalPluginDetailCommand extends Parsable {
 /**
  * 查询内置插件实例列表.
  */
-export interface QueryInternalPluginListCommand extends Parsable {
+export interface QueryNativePluginListCommand extends Parsable {
     /**
      * 自定义分类 id.
      */
@@ -3983,13 +4000,13 @@ export interface QueryInternalPluginListCommand extends Parsable {
     /**
      * 模板分类.
      */
-    templatePluginClassify?: InternalPluginClassify | null;
+    templatePluginClassify?: NativePluginClassify | null;
     /**
      * 模板搜索.
      */
     templatePluginKey?: string | null;
 }
-export interface QueryInternalPluginListCommandResponse extends Parsable {
+export interface QueryNativePluginListCommandResponse extends Parsable {
     /**
      * 按自定义分类划分的分类数量.
      */
@@ -3997,16 +4014,25 @@ export interface QueryInternalPluginListCommandResponse extends Parsable {
     /**
      * 插件实例列表.
      */
-    items?: InternalPluginInfo[] | null;
+    items?: NativePluginInfo[] | null;
     /**
      * 按插件模板分类的划分的分类数量.
      */
     templateClassifyCount?: KeyValueOfStringAndInt32[] | null;
 }
 /**
+ * 查询内置插件模板列表.
+ */
+export interface QueryNativePluginTemplateListCommand extends Parsable {
+    /**
+     * 分类筛选.
+     */
+    classify?: NativePluginClassify | null;
+}
+/**
  * 获取一个内置插件模板需要的配置参数和运行参数.
  */
-export interface QueryInternalPluginTemplateParamsCommand extends Parsable {
+export interface QueryNativePluginTemplateParamsCommand extends Parsable {
     /**
      * 插件键.
      */
@@ -4015,7 +4041,7 @@ export interface QueryInternalPluginTemplateParamsCommand extends Parsable {
 /**
  * 插件模板参数.
  */
-export interface QueryInternalPluginTemplateParamsCommandResponse extends Parsable {
+export interface QueryNativePluginTemplateParamsCommandResponse extends Parsable {
     /**
      * 示例值.
      */
@@ -4023,26 +4049,7 @@ export interface QueryInternalPluginTemplateParamsCommandResponse extends Parsab
     /**
      * 插件模板参数.
      */
-    items?: InternalPluginParamConfig[] | null;
-}
-/**
- * 查询内置插件模板列表.
- */
-export interface QueryInternalTemplatePluginListCommand extends Parsable {
-    /**
-     * 分类筛选.
-     */
-    classify?: InternalPluginClassify | null;
-}
-export interface QueryInternalTemplatePluginListCommandResponse extends Parsable {
-    /**
-     * 每种分类的插件的数量.
-     */
-    classifyCount?: KeyValueOfStringAndInt32[] | null;
-    /**
-     * 模板列表.
-     */
-    plugins?: InternalTemplatePlugin[] | null;
+    items?: NativePluginConfigFieldTemplate[] | null;
 }
 /**
  * 获取系统插件基础信息列表.
@@ -4358,17 +4365,21 @@ export interface ResetUserPasswordCommand extends Parsable {
      */
     userId?: number | null;
 }
-export interface RunTestInternalPluginCommand extends Parsable {
+export interface RunTestNativePluginCommand extends Parsable {
     /**
      * 运行参数.
      */
     params?: string | null;
     /**
-     * 实例化的插件 id.
+     * 实例化的插件 id，如果是工具插件，则不需要填写.
      */
     pluginId?: number | null;
+    /**
+     * 插件模板.
+     */
+    templatePluginKey?: string | null;
 }
-export interface RunTestInternalPluginCommandResponse extends Parsable {
+export interface RunTestNativePluginCommandResponse extends Parsable {
     /**
      * 运行是否成功.
      */
@@ -4565,15 +4576,15 @@ export function serializeCreateAiAssistantChatCommandResponse(writer: Serializat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeCreateInternalPluginCommand(writer: SerializationWriter, createInternalPluginCommand: Partial<CreateInternalPluginCommand> | undefined | null = {}) : void {
-    if (createInternalPluginCommand) {
-        writer.writeNumberValue("classifyId", createInternalPluginCommand.classifyId);
-        writer.writeStringValue("config", createInternalPluginCommand.config);
-        writer.writeStringValue("description", createInternalPluginCommand.description);
-        writer.writeBooleanValue("isPublic", createInternalPluginCommand.isPublic);
-        writer.writeStringValue("name", createInternalPluginCommand.name);
-        writer.writeStringValue("templatePluginKey", createInternalPluginCommand.templatePluginKey);
-        writer.writeStringValue("title", createInternalPluginCommand.title);
+export function serializeCreateNativePluginCommand(writer: SerializationWriter, createNativePluginCommand: Partial<CreateNativePluginCommand> | undefined | null = {}) : void {
+    if (createNativePluginCommand) {
+        writer.writeNumberValue("classifyId", createNativePluginCommand.classifyId);
+        writer.writeStringValue("config", createNativePluginCommand.config);
+        writer.writeStringValue("description", createNativePluginCommand.description);
+        writer.writeBooleanValue("isPublic", createNativePluginCommand.isPublic);
+        writer.writeStringValue("name", createNativePluginCommand.name);
+        writer.writeStringValue("templatePluginKey", createNativePluginCommand.templatePluginKey);
+        writer.writeStringValue("title", createNativePluginCommand.title);
     }
 }
 /**
@@ -4663,9 +4674,9 @@ export function serializeDeleteAiModelCommand(writer: SerializationWriter, delet
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeDeleteInternalPluginCommand(writer: SerializationWriter, deleteInternalPluginCommand: Partial<DeleteInternalPluginCommand> | undefined | null = {}) : void {
-    if (deleteInternalPluginCommand) {
-        writer.writeNumberValue("pluginId", deleteInternalPluginCommand.pluginId);
+export function serializeDeleteNativePluginCommand(writer: SerializationWriter, deleteNativePluginCommand: Partial<DeleteNativePluginCommand> | undefined | null = {}) : void {
+    if (deleteNativePluginCommand) {
+        writer.writeNumberValue("pluginId", deleteNativePluginCommand.pluginId);
     }
 }
 /**
@@ -4771,71 +4782,6 @@ export function serializeImportOpenApiPluginCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeInternalPluginDetail(writer: SerializationWriter, internalPluginDetail: Partial<InternalPluginDetail> | undefined | null = {}) : void {
-    if (internalPluginDetail) {
-        serializeAuditsInfo(writer, internalPluginDetail)
-        writer.writeNumberValue("classifyId", internalPluginDetail.classifyId);
-        writer.writeStringValue("description", internalPluginDetail.description);
-        writer.writeBooleanValue("isPublic", internalPluginDetail.isPublic);
-        writer.writeStringValue("params", internalPluginDetail.params);
-        writer.writeNumberValue("pluginId", internalPluginDetail.pluginId);
-        writer.writeStringValue("pluginName", internalPluginDetail.pluginName);
-        writer.writeEnumValue<InternalPluginClassify>("templatePluginClassify", internalPluginDetail.templatePluginClassify);
-        writer.writeStringValue("templatePluginKey", internalPluginDetail.templatePluginKey);
-        writer.writeStringValue("title", internalPluginDetail.title);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeInternalPluginInfo(writer: SerializationWriter, internalPluginInfo: Partial<InternalPluginInfo> | undefined | null = {}) : void {
-    if (internalPluginInfo) {
-        serializeAuditsInfo(writer, internalPluginInfo)
-        writer.writeNumberValue("classifyId", internalPluginInfo.classifyId);
-        writer.writeStringValue("description", internalPluginInfo.description);
-        writer.writeBooleanValue("isPublic", internalPluginInfo.isPublic);
-        writer.writeNumberValue("pluginId", internalPluginInfo.pluginId);
-        writer.writeStringValue("pluginName", internalPluginInfo.pluginName);
-        writer.writeEnumValue<InternalPluginClassify>("templatePluginClassify", internalPluginInfo.templatePluginClassify);
-        writer.writeStringValue("templatePluginKey", internalPluginInfo.templatePluginKey);
-        writer.writeStringValue("title", internalPluginInfo.title);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeInternalPluginParamConfig(writer: SerializationWriter, internalPluginParamConfig: Partial<InternalPluginParamConfig> | undefined | null = {}) : void {
-    if (internalPluginParamConfig) {
-        writer.writeStringValue("description", internalPluginParamConfig.description);
-        writer.writeStringValue("exampleValue", internalPluginParamConfig.exampleValue);
-        writer.writeEnumValue<InternalPluginConfigFieldType>("fFieldType", internalPluginParamConfig.fFieldType);
-        writer.writeBooleanValue("isRequired", internalPluginParamConfig.isRequired);
-        writer.writeStringValue("key", internalPluginParamConfig.key);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeInternalTemplatePlugin(writer: SerializationWriter, internalTemplatePlugin: Partial<InternalTemplatePlugin> | undefined | null = {}) : void {
-    if (internalTemplatePlugin) {
-        writer.writeEnumValue<InternalPluginClassify>("classify", internalTemplatePlugin.classify);
-        writer.writeStringValue("description", internalTemplatePlugin.description);
-        writer.writeStringValue("key", internalTemplatePlugin.key);
-        writer.writeStringValue("name", internalTemplatePlugin.name);
-        writer.writeBooleanValue("requiredConfiguration", internalTemplatePlugin.requiredConfiguration);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeKeyValueOfStringAndInt32(writer: SerializationWriter, keyValueOfStringAndInt32: Partial<KeyValueOfStringAndInt32> | undefined | null = {}) : void {
     if (keyValueOfStringAndInt32) {
         writer.writeStringValue("key", keyValueOfStringAndInt32.key);
@@ -4915,6 +4861,71 @@ export function serializeModelAbilities(writer: SerializationWriter, modelAbilit
         writer.writeBooleanValue("functionCall", modelAbilities.functionCall);
         writer.writeBooleanValue("imageOutput", modelAbilities.imageOutput);
         writer.writeBooleanValue("vision", modelAbilities.vision);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeNativePluginConfigFieldTemplate(writer: SerializationWriter, nativePluginConfigFieldTemplate: Partial<NativePluginConfigFieldTemplate> | undefined | null = {}) : void {
+    if (nativePluginConfigFieldTemplate) {
+        writer.writeStringValue("description", nativePluginConfigFieldTemplate.description);
+        writer.writeStringValue("exampleValue", nativePluginConfigFieldTemplate.exampleValue);
+        writer.writeEnumValue<PluginConfigFieldType>("fieldType", nativePluginConfigFieldTemplate.fieldType);
+        writer.writeBooleanValue("isRequired", nativePluginConfigFieldTemplate.isRequired);
+        writer.writeStringValue("key", nativePluginConfigFieldTemplate.key);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeNativePluginDetail(writer: SerializationWriter, nativePluginDetail: Partial<NativePluginDetail> | undefined | null = {}) : void {
+    if (nativePluginDetail) {
+        serializeAuditsInfo(writer, nativePluginDetail)
+        writer.writeNumberValue("classifyId", nativePluginDetail.classifyId);
+        writer.writeStringValue("description", nativePluginDetail.description);
+        writer.writeBooleanValue("isPublic", nativePluginDetail.isPublic);
+        writer.writeStringValue("params", nativePluginDetail.params);
+        writer.writeNumberValue("pluginId", nativePluginDetail.pluginId);
+        writer.writeStringValue("pluginName", nativePluginDetail.pluginName);
+        writer.writeEnumValue<NativePluginClassify>("templatePluginClassify", nativePluginDetail.templatePluginClassify);
+        writer.writeStringValue("templatePluginKey", nativePluginDetail.templatePluginKey);
+        writer.writeStringValue("title", nativePluginDetail.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeNativePluginInfo(writer: SerializationWriter, nativePluginInfo: Partial<NativePluginInfo> | undefined | null = {}) : void {
+    if (nativePluginInfo) {
+        serializeAuditsInfo(writer, nativePluginInfo)
+        writer.writeNumberValue("classifyId", nativePluginInfo.classifyId);
+        writer.writeStringValue("description", nativePluginInfo.description);
+        writer.writeBooleanValue("isPublic", nativePluginInfo.isPublic);
+        writer.writeNumberValue("pluginId", nativePluginInfo.pluginId);
+        writer.writeStringValue("pluginName", nativePluginInfo.pluginName);
+        writer.writeEnumValue<NativePluginClassify>("templatePluginClassify", nativePluginInfo.templatePluginClassify);
+        writer.writeStringValue("templatePluginKey", nativePluginInfo.templatePluginKey);
+        writer.writeStringValue("title", nativePluginInfo.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeNativePluginTemplateInfo(writer: SerializationWriter, nativePluginTemplateInfo: Partial<NativePluginTemplateInfo> | undefined | null = {}) : void {
+    if (nativePluginTemplateInfo) {
+        writer.writeEnumValue<NativePluginClassify>("classify", nativePluginTemplateInfo.classify);
+        writer.writeStringValue("description", nativePluginTemplateInfo.description);
+        writer.writeBooleanValue("isTool", nativePluginTemplateInfo.isTool);
+        writer.writeStringValue("key", nativePluginTemplateInfo.key);
+        writer.writeStringValue("name", nativePluginTemplateInfo.name);
     }
 }
 /**
@@ -5279,77 +5290,77 @@ export function serializeQueryePromptClassCommandResponse(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryInternalPluginDetailCommand(writer: SerializationWriter, queryInternalPluginDetailCommand: Partial<QueryInternalPluginDetailCommand> | undefined | null = {}) : void {
-    if (queryInternalPluginDetailCommand) {
-        writer.writeNumberValue("pluginId", queryInternalPluginDetailCommand.pluginId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryInternalPluginListCommand(writer: SerializationWriter, queryInternalPluginListCommand: Partial<QueryInternalPluginListCommand> | undefined | null = {}) : void {
-    if (queryInternalPluginListCommand) {
-        writer.writeNumberValue("classifyId", queryInternalPluginListCommand.classifyId);
-        writer.writeBooleanValue("isPublic", queryInternalPluginListCommand.isPublic);
-        writer.writeStringValue("name", queryInternalPluginListCommand.name);
-        writer.writeEnumValue<InternalPluginClassify>("templatePluginClassify", queryInternalPluginListCommand.templatePluginClassify);
-        writer.writeStringValue("templatePluginKey", queryInternalPluginListCommand.templatePluginKey);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryInternalPluginListCommandResponse(writer: SerializationWriter, queryInternalPluginListCommandResponse: Partial<QueryInternalPluginListCommandResponse> | undefined | null = {}) : void {
-    if (queryInternalPluginListCommandResponse) {
-        writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("classifyCount", queryInternalPluginListCommandResponse.classifyCount, serializeKeyValueOfStringAndInt32);
-        writer.writeCollectionOfObjectValues<InternalPluginInfo>("items", queryInternalPluginListCommandResponse.items, serializeInternalPluginInfo);
-        writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("templateClassifyCount", queryInternalPluginListCommandResponse.templateClassifyCount, serializeKeyValueOfStringAndInt32);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryInternalPluginTemplateParamsCommand(writer: SerializationWriter, queryInternalPluginTemplateParamsCommand: Partial<QueryInternalPluginTemplateParamsCommand> | undefined | null = {}) : void {
-    if (queryInternalPluginTemplateParamsCommand) {
-        writer.writeStringValue("templatePluginKey", queryInternalPluginTemplateParamsCommand.templatePluginKey);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryInternalPluginTemplateParamsCommandResponse(writer: SerializationWriter, queryInternalPluginTemplateParamsCommandResponse: Partial<QueryInternalPluginTemplateParamsCommandResponse> | undefined | null = {}) : void {
-    if (queryInternalPluginTemplateParamsCommandResponse) {
-        writer.writeStringValue("exampleValue", queryInternalPluginTemplateParamsCommandResponse.exampleValue);
-        writer.writeCollectionOfObjectValues<InternalPluginParamConfig>("items", queryInternalPluginTemplateParamsCommandResponse.items, serializeInternalPluginParamConfig);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryInternalTemplatePluginListCommand(writer: SerializationWriter, queryInternalTemplatePluginListCommand: Partial<QueryInternalTemplatePluginListCommand> | undefined | null = {}) : void {
-    if (queryInternalTemplatePluginListCommand) {
-        writer.writeEnumValue<InternalPluginClassify>("classify", queryInternalTemplatePluginListCommand.classify);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeQueryInternalTemplatePluginListCommandResponse(writer: SerializationWriter, queryInternalTemplatePluginListCommandResponse: Partial<QueryInternalTemplatePluginListCommandResponse> | undefined | null = {}) : void {
     if (queryInternalTemplatePluginListCommandResponse) {
         writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("classifyCount", queryInternalTemplatePluginListCommandResponse.classifyCount, serializeKeyValueOfStringAndInt32);
-        writer.writeCollectionOfObjectValues<InternalTemplatePlugin>("plugins", queryInternalTemplatePluginListCommandResponse.plugins, serializeInternalTemplatePlugin);
+        writer.writeCollectionOfObjectValues<NativePluginTemplateInfo>("plugins", queryInternalTemplatePluginListCommandResponse.plugins, serializeNativePluginTemplateInfo);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNativePluginDetailCommand(writer: SerializationWriter, queryNativePluginDetailCommand: Partial<QueryNativePluginDetailCommand> | undefined | null = {}) : void {
+    if (queryNativePluginDetailCommand) {
+        writer.writeNumberValue("pluginId", queryNativePluginDetailCommand.pluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNativePluginListCommand(writer: SerializationWriter, queryNativePluginListCommand: Partial<QueryNativePluginListCommand> | undefined | null = {}) : void {
+    if (queryNativePluginListCommand) {
+        writer.writeNumberValue("classifyId", queryNativePluginListCommand.classifyId);
+        writer.writeBooleanValue("isPublic", queryNativePluginListCommand.isPublic);
+        writer.writeStringValue("name", queryNativePluginListCommand.name);
+        writer.writeEnumValue<NativePluginClassify>("templatePluginClassify", queryNativePluginListCommand.templatePluginClassify);
+        writer.writeStringValue("templatePluginKey", queryNativePluginListCommand.templatePluginKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNativePluginListCommandResponse(writer: SerializationWriter, queryNativePluginListCommandResponse: Partial<QueryNativePluginListCommandResponse> | undefined | null = {}) : void {
+    if (queryNativePluginListCommandResponse) {
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("classifyCount", queryNativePluginListCommandResponse.classifyCount, serializeKeyValueOfStringAndInt32);
+        writer.writeCollectionOfObjectValues<NativePluginInfo>("items", queryNativePluginListCommandResponse.items, serializeNativePluginInfo);
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndInt32>("templateClassifyCount", queryNativePluginListCommandResponse.templateClassifyCount, serializeKeyValueOfStringAndInt32);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNativePluginTemplateListCommand(writer: SerializationWriter, queryNativePluginTemplateListCommand: Partial<QueryNativePluginTemplateListCommand> | undefined | null = {}) : void {
+    if (queryNativePluginTemplateListCommand) {
+        writer.writeEnumValue<NativePluginClassify>("classify", queryNativePluginTemplateListCommand.classify);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNativePluginTemplateParamsCommand(writer: SerializationWriter, queryNativePluginTemplateParamsCommand: Partial<QueryNativePluginTemplateParamsCommand> | undefined | null = {}) : void {
+    if (queryNativePluginTemplateParamsCommand) {
+        writer.writeStringValue("templatePluginKey", queryNativePluginTemplateParamsCommand.templatePluginKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNativePluginTemplateParamsCommandResponse(writer: SerializationWriter, queryNativePluginTemplateParamsCommandResponse: Partial<QueryNativePluginTemplateParamsCommandResponse> | undefined | null = {}) : void {
+    if (queryNativePluginTemplateParamsCommandResponse) {
+        writer.writeStringValue("exampleValue", queryNativePluginTemplateParamsCommandResponse.exampleValue);
+        writer.writeCollectionOfObjectValues<NativePluginConfigFieldTemplate>("items", queryNativePluginTemplateParamsCommandResponse.items, serializeNativePluginConfigFieldTemplate);
     }
 }
 /**
@@ -5606,10 +5617,11 @@ export function serializeResetUserPasswordCommand(writer: SerializationWriter, r
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeRunTestInternalPluginCommand(writer: SerializationWriter, runTestInternalPluginCommand: Partial<RunTestInternalPluginCommand> | undefined | null = {}) : void {
-    if (runTestInternalPluginCommand) {
-        writer.writeStringValue("params", runTestInternalPluginCommand.params);
-        writer.writeNumberValue("pluginId", runTestInternalPluginCommand.pluginId);
+export function serializeRunTestNativePluginCommand(writer: SerializationWriter, runTestNativePluginCommand: Partial<RunTestNativePluginCommand> | undefined | null = {}) : void {
+    if (runTestNativePluginCommand) {
+        writer.writeStringValue("params", runTestNativePluginCommand.params);
+        writer.writeNumberValue("pluginId", runTestNativePluginCommand.pluginId);
+        writer.writeStringValue("templatePluginKey", runTestNativePluginCommand.templatePluginKey);
     }
 }
 /**
@@ -5617,10 +5629,10 @@ export function serializeRunTestInternalPluginCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeRunTestInternalPluginCommandResponse(writer: SerializationWriter, runTestInternalPluginCommandResponse: Partial<RunTestInternalPluginCommandResponse> | undefined | null = {}) : void {
-    if (runTestInternalPluginCommandResponse) {
-        writer.writeBooleanValue("isSuccess", runTestInternalPluginCommandResponse.isSuccess);
-        writer.writeStringValue("response", runTestInternalPluginCommandResponse.response);
+export function serializeRunTestNativePluginCommandResponse(writer: SerializationWriter, runTestNativePluginCommandResponse: Partial<RunTestNativePluginCommandResponse> | undefined | null = {}) : void {
+    if (runTestNativePluginCommandResponse) {
+        writer.writeBooleanValue("isSuccess", runTestNativePluginCommandResponse.isSuccess);
+        writer.writeStringValue("response", runTestNativePluginCommandResponse.response);
     }
 }
 /**
@@ -5746,15 +5758,12 @@ export function serializeUpdateAiModelCommand(writer: SerializationWriter, updat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeUpdateInternalPluginCommand(writer: SerializationWriter, updateInternalPluginCommand: Partial<UpdateInternalPluginCommand> | undefined | null = {}) : void {
-    if (updateInternalPluginCommand) {
-        writer.writeNumberValue("classifyId", updateInternalPluginCommand.classifyId);
-        writer.writeStringValue("config", updateInternalPluginCommand.config);
-        writer.writeStringValue("description", updateInternalPluginCommand.description);
-        writer.writeBooleanValue("isPublic", updateInternalPluginCommand.isPublic);
-        writer.writeStringValue("name", updateInternalPluginCommand.name);
-        writer.writeNumberValue("pluginId", updateInternalPluginCommand.pluginId);
-        writer.writeStringValue("title", updateInternalPluginCommand.title);
+export function serializeUpdateMcpServerPluginCommand(writer: SerializationWriter, updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined | null = {}) : void {
+    if (updateMcpServerPluginCommand) {
+        serializeMcpServerPluginConnectionOptions(writer, updateMcpServerPluginCommand)
+        writer.writeNumberValue("classifyId", updateMcpServerPluginCommand.classifyId);
+        writer.writeBooleanValue("isPublic", updateMcpServerPluginCommand.isPublic);
+        writer.writeNumberValue("pluginId", updateMcpServerPluginCommand.pluginId);
     }
 }
 /**
@@ -5762,12 +5771,15 @@ export function serializeUpdateInternalPluginCommand(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeUpdateMcpServerPluginCommand(writer: SerializationWriter, updateMcpServerPluginCommand: Partial<UpdateMcpServerPluginCommand> | undefined | null = {}) : void {
-    if (updateMcpServerPluginCommand) {
-        serializeMcpServerPluginConnectionOptions(writer, updateMcpServerPluginCommand)
-        writer.writeNumberValue("classifyId", updateMcpServerPluginCommand.classifyId);
-        writer.writeBooleanValue("isPublic", updateMcpServerPluginCommand.isPublic);
-        writer.writeNumberValue("pluginId", updateMcpServerPluginCommand.pluginId);
+export function serializeUpdateNativePluginCommand(writer: SerializationWriter, updateNativePluginCommand: Partial<UpdateNativePluginCommand> | undefined | null = {}) : void {
+    if (updateNativePluginCommand) {
+        writer.writeNumberValue("classifyId", updateNativePluginCommand.classifyId);
+        writer.writeStringValue("config", updateNativePluginCommand.config);
+        writer.writeStringValue("description", updateNativePluginCommand.description);
+        writer.writeBooleanValue("isPublic", updateNativePluginCommand.isPublic);
+        writer.writeStringValue("name", updateNativePluginCommand.name);
+        writer.writeNumberValue("pluginId", updateNativePluginCommand.pluginId);
+        writer.writeStringValue("title", updateNativePluginCommand.title);
     }
 }
 /**
@@ -6011,9 +6023,26 @@ export interface UpdateAiModelCommand extends AiEndpoint, Parsable {
     isPublic?: boolean | null;
 }
 /**
+ * 更新 MCP 插件.
+ */
+export interface UpdateMcpServerPluginCommand extends McpServerPluginConnectionOptions, Parsable {
+    /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 插件 id.            
+     */
+    pluginId?: number | null;
+}
+/**
  * 修改内置插件实例.
  */
-export interface UpdateInternalPluginCommand extends Parsable {
+export interface UpdateNativePluginCommand extends Parsable {
     /**
      * 分类 id.
      */
@@ -6042,23 +6071,6 @@ export interface UpdateInternalPluginCommand extends Parsable {
      * 插件标题，可中文.
      */
     title?: string | null;
-}
-/**
- * 更新 MCP 插件.
- */
-export interface UpdateMcpServerPluginCommand extends McpServerPluginConnectionOptions, Parsable {
-    /**
-     * 分类 id.
-     */
-    classifyId?: number | null;
-    /**
-     * 是否公开.
-     */
-    isPublic?: boolean | null;
-    /**
-     * 插件 id.            
-     */
-    pluginId?: number | null;
 }
 /**
  * 更新 OAuth2.0 连接配置.
@@ -6319,7 +6331,7 @@ export const AiProviderObject = {
 /**
  * 内置插件分类.
  */
-export const InternalPluginClassifyObject = {
+export const NativePluginClassifyObject = {
     Tool: "tool",
     Search: "search",
     MultiModal: "multiModal",
@@ -6336,17 +6348,6 @@ export const InternalPluginClassifyObject = {
     Others: "others",
 } as const;
 /**
- * 内置插件配置字段类型.
- */
-export const InternalPluginConfigFieldTypeObject = {
-    String: "string",
-    Number: "number",
-    Boolean: "boolean",
-    Integer: "integer",
-    Object: "object",
-    Map: "map",
-} as const;
-/**
  * OAuth 提供商.
  */
 export const OAuthPrividerObject = {
@@ -6354,6 +6355,17 @@ export const OAuthPrividerObject = {
     Feishu: "feishu",
     DingTalk: "dingTalk",
     GitHub: "gitHub",
+} as const;
+/**
+ * 内置插件配置字段类型.
+ */
+export const PluginConfigFieldTypeObject = {
+    String: "string",
+    Number: "number",
+    Boolean: "boolean",
+    Integer: "integer",
+    Object: "object",
+    Map: "map",
 } as const;
 /**
  * 插件类型.

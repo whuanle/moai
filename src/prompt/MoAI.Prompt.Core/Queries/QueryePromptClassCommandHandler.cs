@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Plugin.Queries;
 using MoAI.Prompt.Queries.Responses;
 
 namespace MoAI.Prompt.Queries;

@@ -16,8 +16,13 @@
 	  <ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.Api\MoAI.Plugin.Api.csproj" />
-	  <ProjectReference Include="..\MoAI.Plugin.BuildIn\MoAI.Plugin.BuildIn.csproj" />
+	  <ProjectReference Include="..\MoAI.Plugin.NativePlugin\MoAI.Plugin.NativePlugin.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
+	  <ProjectReference Include="..\MoAI.Plugin.Tool\MoAI.Plugin.Tool.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="ToolPlugins\" />
 	</ItemGroup>
 
 </Project>

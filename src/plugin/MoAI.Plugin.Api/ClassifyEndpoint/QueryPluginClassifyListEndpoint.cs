@@ -1,11 +1,7 @@
 ﻿using FastEndpoints;
 using MediatR;
-using MoAI.Common.Queries;
-using MoAI.Infra.Exceptions;
-using MoAI.Infra.Models;
-using MoAI.Plugin.Commands;
-using MoAI.Plugin.Queries;
-using MoAI.Plugin.Queries.Responses;
+using MoAI.Plugin.Classify.Queries;
+using MoAI.Plugin.Classify.Queries.Responses;
 
 namespace MoAI.Plugin.ClassifyEndpoint;
 

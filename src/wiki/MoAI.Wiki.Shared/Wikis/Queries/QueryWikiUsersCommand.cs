@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using MoAI.Plugin.Queries.Responses;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;

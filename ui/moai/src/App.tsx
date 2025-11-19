@@ -68,7 +68,7 @@ import PromptEditPage from "./components/prompt/PromptEditPage";
 import PluginClassPage from "./components/admin/pluginClass/PluginClassPage";
 import PluginList from "./components/plugin/PluginList";
 import PluginManagerPage from "./components/admin/plugin/PluginManagerPage";
-import InternalPluginPage from "./components/admin/internalplugin/InternalPluginPage";
+import NativePluginPage from "./components/admin/nativeplugin/NativePluginPage";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -273,7 +273,7 @@ function App() {
           {
             key: "admin.plugin",
             icon: <AppstoreOutlined />,
-            label: <Link to="/app/admin/plugin">插件</Link>,
+            label: <Link to="/app/admin/plugin">自定义插件</Link>,
           },
           {
             key: "admin.internalplugin",
@@ -375,7 +375,7 @@ function App() {
                   <Route path="promptclass" element={<PromptClassPage />} />
                   <Route path="pluginclass" element={<PluginClassPage />} />
                   <Route path="plugin" element={<PluginManagerPage />} />
-                  <Route path="internalplugin" element={<InternalPluginPage />} />
+                  <Route path="internalplugin" element={<NativePluginPage />} />
                 </Route>
                 <Route path="user">
                   <Route

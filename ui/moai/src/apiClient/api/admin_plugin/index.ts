@@ -6,11 +6,11 @@ import { Add_classifyRequestBuilderRequestsMetadata, type Add_classifyRequestBui
 // @ts-ignore
 import { Classify_listRequestBuilderRequestsMetadata, type Classify_listRequestBuilder } from './classify_list/index.js';
 // @ts-ignore
-import { Create_internal_pluginRequestBuilderRequestsMetadata, type Create_internal_pluginRequestBuilder } from './create_internal_plugin/index.js';
+import { Create_native_pluginRequestBuilderRequestsMetadata, type Create_native_pluginRequestBuilder } from './create_native_plugin/index.js';
 // @ts-ignore
 import { Delete_classifyRequestBuilderRequestsMetadata, type Delete_classifyRequestBuilder } from './delete_classify/index.js';
 // @ts-ignore
-import { Delete_internal_pluginRequestBuilderRequestsMetadata, type Delete_internal_pluginRequestBuilder } from './delete_internal_plugin/index.js';
+import { Delete_native_pluginRequestBuilderRequestsMetadata, type Delete_native_pluginRequestBuilder } from './delete_native_plugin/index.js';
 // @ts-ignore
 import { Delete_pluginRequestBuilderRequestsMetadata, type Delete_pluginRequestBuilder } from './delete_plugin/index.js';
 // @ts-ignore
@@ -20,13 +20,13 @@ import { Import_mcpRequestBuilderRequestsMetadata, type Import_mcpRequestBuilder
 // @ts-ignore
 import { Import_openapiRequestBuilderRequestsMetadata, type Import_openapiRequestBuilder } from './import_openapi/index.js';
 // @ts-ignore
-import { Internal_plugin_detailRequestBuilderRequestsMetadata, type Internal_plugin_detailRequestBuilder } from './internal_plugin_detail/index.js';
+import { Native_plugin_detailRequestBuilderRequestsMetadata, type Native_plugin_detailRequestBuilder } from './native_plugin_detail/index.js';
 // @ts-ignore
-import { Internal_plugin_listRequestBuilderRequestsMetadata, type Internal_plugin_listRequestBuilder } from './internal_plugin_list/index.js';
+import { Native_plugin_listRequestBuilderRequestsMetadata, type Native_plugin_listRequestBuilder } from './native_plugin_list/index.js';
 // @ts-ignore
-import { Internal_template_listRequestBuilderRequestsMetadata, type Internal_template_listRequestBuilder } from './internal_template_list/index.js';
+import { Native_template_listRequestBuilderRequestsMetadata, type Native_template_listRequestBuilder } from './native_template_list/index.js';
 // @ts-ignore
-import { Internal_template_paramsRequestBuilderRequestsMetadata, type Internal_template_paramsRequestBuilder } from './internal_template_params/index.js';
+import { Native_template_paramsRequestBuilderRequestsMetadata, type Native_template_paramsRequestBuilder } from './native_template_params/index.js';
 // @ts-ignore
 import { Plugin_detailRequestBuilderRequestsMetadata, type Plugin_detailRequestBuilder } from './plugin_detail/index.js';
 // @ts-ignore
@@ -36,13 +36,13 @@ import { Pre_upload_openapiRequestBuilderRequestsMetadata, type Pre_upload_opena
 // @ts-ignore
 import { Refresh_mcpRequestBuilderRequestsMetadata, type Refresh_mcpRequestBuilder } from './refresh_mcp/index.js';
 // @ts-ignore
-import { Run_internal_pluginRequestBuilderRequestsMetadata, type Run_internal_pluginRequestBuilder } from './run_internal_plugin/index.js';
+import { Run_native_pluginRequestBuilderRequestsMetadata, type Run_native_pluginRequestBuilder } from './run_native_plugin/index.js';
 // @ts-ignore
 import { type Update_classifyRequestBuilder, Update_classifyRequestBuilderRequestsMetadata } from './update_classify/index.js';
 // @ts-ignore
-import { type Update_internal_pluginRequestBuilder, Update_internal_pluginRequestBuilderRequestsMetadata } from './update_internal_plugin/index.js';
-// @ts-ignore
 import { type Update_mcpRequestBuilder, Update_mcpRequestBuilderRequestsMetadata } from './update_mcp/index.js';
+// @ts-ignore
+import { type Update_native_pluginRequestBuilder, Update_native_pluginRequestBuilderRequestsMetadata } from './update_native_plugin/index.js';
 // @ts-ignore
 import { type Update_openapiRequestBuilder, Update_openapiRequestBuilderRequestsMetadata } from './update_openapi/index.js';
 // @ts-ignore
@@ -61,17 +61,17 @@ export interface Admin_pluginRequestBuilder extends BaseRequestBuilder<Admin_plu
      */
     get classify_list(): Classify_listRequestBuilder;
     /**
-     * The create_internal_plugin property
+     * The create_native_plugin property
      */
-    get create_internal_plugin(): Create_internal_pluginRequestBuilder;
+    get create_native_plugin(): Create_native_pluginRequestBuilder;
     /**
      * The delete_classify property
      */
     get delete_classify(): Delete_classifyRequestBuilder;
     /**
-     * The delete_internal_plugin property
+     * The delete_native_plugin property
      */
-    get delete_internal_plugin(): Delete_internal_pluginRequestBuilder;
+    get delete_native_plugin(): Delete_native_pluginRequestBuilder;
     /**
      * The delete_plugin property
      */
@@ -89,21 +89,21 @@ export interface Admin_pluginRequestBuilder extends BaseRequestBuilder<Admin_plu
      */
     get import_openapi(): Import_openapiRequestBuilder;
     /**
-     * The internal_plugin_detail property
+     * The native_plugin_detail property
      */
-    get internal_plugin_detail(): Internal_plugin_detailRequestBuilder;
+    get native_plugin_detail(): Native_plugin_detailRequestBuilder;
     /**
-     * The internal_plugin_list property
+     * The native_plugin_list property
      */
-    get internal_plugin_list(): Internal_plugin_listRequestBuilder;
+    get native_plugin_list(): Native_plugin_listRequestBuilder;
     /**
-     * The internal_template_list property
+     * The native_template_list property
      */
-    get internal_template_list(): Internal_template_listRequestBuilder;
+    get native_template_list(): Native_template_listRequestBuilder;
     /**
-     * The internal_template_params property
+     * The native_template_params property
      */
-    get internal_template_params(): Internal_template_paramsRequestBuilder;
+    get native_template_params(): Native_template_paramsRequestBuilder;
     /**
      * The plugin_detail property
      */
@@ -121,21 +121,21 @@ export interface Admin_pluginRequestBuilder extends BaseRequestBuilder<Admin_plu
      */
     get refresh_mcp(): Refresh_mcpRequestBuilder;
     /**
-     * The run_internal_plugin property
+     * The run_native_plugin property
      */
-    get run_internal_plugin(): Run_internal_pluginRequestBuilder;
+    get run_native_plugin(): Run_native_pluginRequestBuilder;
     /**
      * The update_classify property
      */
     get update_classify(): Update_classifyRequestBuilder;
     /**
-     * The update_internal_plugin property
-     */
-    get update_internal_plugin(): Update_internal_pluginRequestBuilder;
-    /**
      * The update_mcp property
      */
     get update_mcp(): Update_mcpRequestBuilder;
+    /**
+     * The update_native_plugin property
+     */
+    get update_native_plugin(): Update_native_pluginRequestBuilder;
     /**
      * The update_openapi property
      */
@@ -155,14 +155,14 @@ export const Admin_pluginRequestBuilderNavigationMetadata: Record<Exclude<keyof 
     classify_list: {
         requestsMetadata: Classify_listRequestBuilderRequestsMetadata,
     },
-    create_internal_plugin: {
-        requestsMetadata: Create_internal_pluginRequestBuilderRequestsMetadata,
+    create_native_plugin: {
+        requestsMetadata: Create_native_pluginRequestBuilderRequestsMetadata,
     },
     delete_classify: {
         requestsMetadata: Delete_classifyRequestBuilderRequestsMetadata,
     },
-    delete_internal_plugin: {
-        requestsMetadata: Delete_internal_pluginRequestBuilderRequestsMetadata,
+    delete_native_plugin: {
+        requestsMetadata: Delete_native_pluginRequestBuilderRequestsMetadata,
     },
     delete_plugin: {
         requestsMetadata: Delete_pluginRequestBuilderRequestsMetadata,
@@ -176,17 +176,17 @@ export const Admin_pluginRequestBuilderNavigationMetadata: Record<Exclude<keyof 
     import_openapi: {
         requestsMetadata: Import_openapiRequestBuilderRequestsMetadata,
     },
-    internal_plugin_detail: {
-        requestsMetadata: Internal_plugin_detailRequestBuilderRequestsMetadata,
+    native_plugin_detail: {
+        requestsMetadata: Native_plugin_detailRequestBuilderRequestsMetadata,
     },
-    internal_plugin_list: {
-        requestsMetadata: Internal_plugin_listRequestBuilderRequestsMetadata,
+    native_plugin_list: {
+        requestsMetadata: Native_plugin_listRequestBuilderRequestsMetadata,
     },
-    internal_template_list: {
-        requestsMetadata: Internal_template_listRequestBuilderRequestsMetadata,
+    native_template_list: {
+        requestsMetadata: Native_template_listRequestBuilderRequestsMetadata,
     },
-    internal_template_params: {
-        requestsMetadata: Internal_template_paramsRequestBuilderRequestsMetadata,
+    native_template_params: {
+        requestsMetadata: Native_template_paramsRequestBuilderRequestsMetadata,
     },
     plugin_detail: {
         requestsMetadata: Plugin_detailRequestBuilderRequestsMetadata,
@@ -200,17 +200,17 @@ export const Admin_pluginRequestBuilderNavigationMetadata: Record<Exclude<keyof 
     refresh_mcp: {
         requestsMetadata: Refresh_mcpRequestBuilderRequestsMetadata,
     },
-    run_internal_plugin: {
-        requestsMetadata: Run_internal_pluginRequestBuilderRequestsMetadata,
+    run_native_plugin: {
+        requestsMetadata: Run_native_pluginRequestBuilderRequestsMetadata,
     },
     update_classify: {
         requestsMetadata: Update_classifyRequestBuilderRequestsMetadata,
     },
-    update_internal_plugin: {
-        requestsMetadata: Update_internal_pluginRequestBuilderRequestsMetadata,
-    },
     update_mcp: {
         requestsMetadata: Update_mcpRequestBuilderRequestsMetadata,
+    },
+    update_native_plugin: {
+        requestsMetadata: Update_native_pluginRequestBuilderRequestsMetadata,
     },
     update_openapi: {
         requestsMetadata: Update_openapiRequestBuilderRequestsMetadata,

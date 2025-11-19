@@ -26,13 +26,13 @@ public class UpdateWikiConfigCommandValidator : Validator<UpdateWikiConfigComman
             .NotEmpty().WithMessage("向量维度配置不正确")
             .GreaterThan(0).WithMessage("向量维度配置不正确");
 
-        RuleFor(x => x.EmbeddingBatchSize)
-            .NotEmpty().WithMessage("批处理大小配置不正确")
-            .GreaterThan(0).WithMessage("批处理大小配置不正确");
+        //RuleFor(x => x.EmbeddingBatchSize)
+        //    .NotEmpty().WithMessage("批处理大小配置不正确")
+        //    .GreaterThan(0).WithMessage("批处理大小配置不正确");
 
-        RuleFor(x => x.MaxRetries)
-            .NotEmpty().WithMessage("文档处理最大重试次数0-5")
-            .GreaterThan(0).WithMessage("文档处理最大重试次数0-5")
-            .LessThan(5).WithMessage("文档处理最大重试次数0-5");
+        //RuleFor(x => x.MaxRetries)
+        //    .NotEmpty().WithMessage("文档处理最大重试次数0-5")
+        //    .GreaterThan(0).WithMessage("文档处理最大重试次数0-5")
+        //    .LessThan(5).WithMessage("文档处理最大重试次数0-5");
     }
 }
