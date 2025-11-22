@@ -7,10 +7,11 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
+using MoAI.Plugin.Plugins;
 using ModelContextProtocol.Protocol;
 using System.ComponentModel;
 
-namespace MoAI.Plugin.Plugins.MarkdownToHtml;
+namespace MoAI.Plugin.Tools.MarkdownToHtml;
 
 /// <summary>
 /// Markdown 转 html.
