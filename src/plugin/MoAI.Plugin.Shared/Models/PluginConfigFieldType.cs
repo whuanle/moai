@@ -17,6 +17,9 @@ public enum PluginConfigFieldType
     [JsonPropertyName("string")]
     String,
 
+    [JsonPropertyName("code")]
+    Code,
+
     [JsonPropertyName("number")]
     Number,
 

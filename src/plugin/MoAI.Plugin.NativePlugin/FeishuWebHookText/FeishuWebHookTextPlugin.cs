@@ -17,7 +17,7 @@ namespace MoAI.Plugin.Plugins.FeishuWebHookText;
 /// <summary>
 /// 飞书机器人 WebHook 插件.
 /// </summary>
-[Attributes.NativePluginFieldConfigAttribute(
+[NativePluginFieldConfig(
     "feishu_webhook_text",
     Name = "飞书机器人发送文本消息",
     Description = "使用飞书机器人对群聊或人发送消息，消息内容格式为普通文本",

@@ -8,6 +8,8 @@ using Microsoft.KernelMemory.DataFormats.WebPages;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.Pipeline;
 using Microsoft.KernelMemory.Text;
+using MoAI.Infra.Put;
+using System.IO;
 using System.Text;
 
 namespace MoAI.Infra.Handlers;
@@ -22,6 +24,7 @@ public sealed class MoAiTextExtractionHandler : IDisposable
     private readonly ILogger<MoAiTextExtractionHandler> _log;
     private readonly MimeTypesDetection _mimeTypeDetection = new MimeTypesDetection();
     private readonly TextExtractionFactory _textExtractionFactory;
+    private readonly IPutClient _putClient;
 
     /// <summary>
     /// TextExtraction.
@@ -32,16 +35,19 @@ public sealed class MoAiTextExtractionHandler : IDisposable
     /// Initializes a new instance of the <see cref="MoAiTextExtractionHandler"/> class.
     /// </summary>
     /// <param name="textExtractionFactory"></param>
+    /// <param name="putClient"></param>
     /// <param name="webScraper"></param>
     /// <param name="loggerFactory"></param>
     public MoAiTextExtractionHandler(
         TextExtractionFactory textExtractionFactory,
+        IPutClient putClient,
         IWebScraper? webScraper = null,
         ILoggerFactory? loggerFactory = null)
     {
         _textExtractionFactory = textExtractionFactory;
         _log = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<MoAiTextExtractionHandler>();
         _webScraper = webScraper ?? new WebScraper();
+        _putClient = putClient;
     }
 
     /// <summary>
@@ -71,10 +77,11 @@ public sealed class MoAiTextExtractionHandler : IDisposable
     /// Extract file.
     /// </summary>
     /// <param name="url"></param>
+    /// <param name="fileName"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="FileNotFoundException">.</exception>
-    public async Task<(string Text, FileContent FileContent)> ExtractUrlAsync(string url, CancellationToken cancellationToken = default)
+    public async Task<(string Text, FileContent FileContent)> ExtractUrlAsync(string url, string fileName, CancellationToken cancellationToken = default)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult))
         {
@@ -82,8 +89,16 @@ public sealed class MoAiTextExtractionHandler : IDisposable
             throw new UriFormatException($"Uri format error: {{url}}: {url}");
         }
 
-        using var stream = File.Create(Path.GetTempFileName());
-        (var text, var content) = await Extract(fileName: url, fileType: MimeTypes.WebPageUrl, stream: stream, cancellationToken: cancellationToken);
+        var filePath = Path.GetTempFileName();
+        using var stream = File.Create(filePath);
+        _putClient.Client.BaseAddress = new Uri(url);
+        using var httpStream = await _putClient.DownloadAsync(string.Empty);
+        await httpStream.CopyToAsync(stream, cancellationToken);
+        await stream.FlushAsync();
+        stream.Seek(0, SeekOrigin.Begin);
+
+
+        (var text, var content) = await Extract(fileName: filePath, fileType: this._mimeTypeDetection.GetFileType(fileName), stream: stream, cancellationToken: cancellationToken);
         return (text, content);
     }
 

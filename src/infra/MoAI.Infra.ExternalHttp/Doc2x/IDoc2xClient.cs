@@ -1,4 +1,5 @@
 ﻿using MoAI.Infra.Doc2x.Models;
+using MoAI.Infra.Models;
 using Refit;
 
 namespace MoAI.Infra.Doc2x;
@@ -26,9 +27,10 @@ public interface IDoc2xClient
     /// 文件预上传接口
     /// </summary>
     /// <param name="key"></param>
+    /// <param name="dto"></param>
     /// <returns>包含上传URL和UID的响应数据</returns>
     [Post("/api/v2/parse/preupload")]
-    Task<Doc2xPreuploadResponse> PreuploadAsync([Header("Authorization")] string key);
+    Task<Doc2xPreuploadResponse> PreuploadAsync([Header("Authorization")] string key, [Body(BodySerializationMethod.Serialized)] EmptyDto dto);
 
     /// <summary>
     /// 获取解析状态接口

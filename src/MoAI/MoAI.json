@@ -7094,7 +7094,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1763542652131"
+            "example": "1763810837344"
           },
           "createUserId": {
             "type": "integer",
@@ -7110,7 +7110,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1763542652131"
+            "example": "1763810837344"
           },
           "updateUserId": {
             "type": "integer",
@@ -8474,6 +8474,7 @@
         "description": "内置插件配置字段类型.",
         "x-enumNames": [
           "String",
+          "Code",
           "Number",
           "Boolean",
           "Integer",
@@ -8482,6 +8483,7 @@
         ],
         "enum": [
           "string",
+          "code",
           "number",
           "boolean",
           "integer",
@@ -9198,7 +9200,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1763542652131"
+            "example": "1763810837344"
           }
         }
       },
@@ -10109,14 +10111,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1763542652131"
+            "example": "1763810837344"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1763542652131"
+            "example": "1763810837344"
           },
           "chatHistory": {
             "type": "array",
@@ -10194,7 +10196,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1763542652131"
+            "example": "1763810837344"
           }
         }
       },

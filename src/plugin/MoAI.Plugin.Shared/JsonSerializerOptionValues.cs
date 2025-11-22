@@ -13,7 +13,7 @@ public class JsonSerializerOptionValues
         UnsafeRelaxedJsonEscaping = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            //DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true,
             AllowTrailingCommas = true,

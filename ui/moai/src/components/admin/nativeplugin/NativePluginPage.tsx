@@ -1,3 +1,4 @@
+// === 导入依赖 ===
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Button,
@@ -31,6 +32,8 @@ import {
   PlusOutlined,
   PlayCircleOutlined,
   DeleteOutlined,
+  ExpandOutlined,
+  CodeOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../../ServiceClient";
 import {
@@ -60,68 +63,481 @@ import {
 } from "../../../helper/RequestError";
 import { formatDateTime } from "../../../helper/DateTimeHelper";
 import { TemplateItem, ClassifyList } from "./TemplatePlugin";
+import CodeEditorModal from "../../common/CodeEditorModal";
 
 const { Title } = Typography;
 
+// === 样式常量 ===
+const STYLES = {
+  pageContainer: { padding: 24 },
+  headerContainer: {
+    marginBottom: "16px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  mainLayout: { display: "flex", gap: "16px" },
+  leftSidebar: {
+    width: "200px",
+    borderRight: "1px solid #f0f0f0",
+    paddingRight: "16px",
+  },
+  classifyToggleContainer: { marginBottom: "12px" },
+  classifyToggleButton: { flex: 1 },
+  classifyItem: {
+    cursor: "pointer",
+    borderRadius: "4px",
+    padding: "8px 12px",
+    marginBottom: "4px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  classifyItemSelected: {
+    backgroundColor: "#e6f7ff",
+  },
+  classifyItemUnselected: {
+    backgroundColor: "transparent",
+  },
+  iconSize: { fontSize: "16px" },
+  searchContainer: { marginBottom: 16 },
+  searchInput: { maxWidth: "400px" },
+  drawerBody: { padding: 0 },
+  drawerContent: { padding: 24 },
+  drawerSidebar: {
+    width: "200px",
+    borderRight: "1px solid #f0f0f0",
+    paddingRight: "16px",
+    paddingLeft: "16px",
+    paddingTop: "16px",
+    overflowY: "auto",
+    height: "100%",
+  },
+  drawerTemplateList: {
+    width: "300px",
+    borderRight: "1px solid #f0f0f0",
+    paddingLeft: "16px",
+    paddingRight: "16px",
+    paddingTop: "16px",
+    overflowY: "auto",
+    height: "100%",
+  },
+  drawerForm: {
+    flex: 1,
+    paddingLeft: "16px",
+    paddingRight: "16px",
+    paddingTop: "16px",
+    overflowY: "auto",
+    height: "100%",
+  },
+  drawerFlexContainer: { display: "flex", height: "100%" },
+  monospaceText: { fontSize: "12px", fontFamily: "monospace" },
+  secondaryText: { fontSize: "12px" },
+  resultTextArea: (success: boolean, autoWrap: boolean) => ({
+    fontFamily: "monospace",
+    whiteSpace: autoWrap ? "pre-wrap" : "pre",
+    wordBreak: (autoWrap ? "break-all" : "normal") as "break-all" | "normal",
+    backgroundColor: success ? "#f6ffed" : "#fff2f0",
+    borderColor: success ? "#b7eb8f" : "#ffccc7",
+  }),
+  fullscreenModal: { top: 20 },
+  autoWrapContainer: {
+    marginBottom: 16,
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+} as const;
+
+// === 主组件 ===
 export default function NativePluginPage() {
-  // 状态管理
+  // === 状态管理：主列表相关 ===
   const [pluginList, setPluginList] = useState<NativePluginInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchName, setSearchName] = useState<string>("");
-  const [filterClassifyId, setFilterClassifyId] = useState<number | undefined>(undefined);
   const [classifyList, setClassifyList] = useState<PluginClassifyItem[]>([]);
-  // 模板列表相关状态
-  const [selectedTemplateClassify, setSelectedTemplateClassify] = useState<NativePluginClassify | null>(null);
-  // 左侧分类类型切换（"template" 使用 ClassifyList，"api" 使用 classifyList API）
-  const [leftClassifyType, setLeftClassifyType] = useState<"template" | "api">("template");
-  // 左侧分类选择（可以是 string 用于模板分类，或 number 用于 API 分类）
-  const [selectedLeftClassify, setSelectedLeftClassify] = useState<string | number | "all">("all");
-  // 只看模板开关（仅在模板分类模式下有效）
+  const [allPluginList, setAllPluginList] = useState<NativePluginInfo[]>([]);
+  const [templateListForDisplay, setTemplateListForDisplay] = useState<
+    NativePluginTemplateInfo[]
+  >([]);
+  const [templateClassifyCount, setTemplateClassifyCount] = useState<
+    Array<{ key: string; value: number }>
+  >([]);
+
+  // === 状态管理：分类筛选相关 ===
+  const [leftClassifyType, setLeftClassifyType] = useState<"template" | "api">(
+    "template"
+  );
+  const [selectedLeftClassify, setSelectedLeftClassify] = useState<
+    string | number | "all"
+  >("all");
   const [showTemplatesOnly, setShowTemplatesOnly] = useState<boolean>(false);
-  // 用于主表格显示的模板列表
-  const [templateListForDisplay, setTemplateListForDisplay] = useState<NativePluginTemplateInfo[]>([]);
 
-  const [messageApi, contextHolder] = message.useMessage();
-
-  // 模板面板相关状态
+  // === 状态管理：模板面板相关 ===
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [templateList, setTemplateList] = useState<NativePluginTemplateInfo[]>([]);
+  const [templateList, setTemplateList] = useState<NativePluginTemplateInfo[]>(
+    []
+  );
   const [templateLoading, setTemplateLoading] = useState(false);
   const [selectedClassify, setSelectedClassify] = useState<string>("all");
-  const [selectedTemplate, setSelectedTemplate] = useState<NativePluginTemplateInfo | null>(null);
-  const [templateParams, setTemplateParams] = useState<NativePluginConfigFieldTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<NativePluginTemplateInfo | null>(null);
+  const [templateParams, setTemplateParams] = useState<
+    NativePluginConfigFieldTemplate[]
+  >([]);
   const [paramsLoading, setParamsLoading] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [form] = Form.useForm();
-  const [templateClassify, settemplateClassify] = useState<TemplateItem[]>(ClassifyList);
+  const [templateClassify, setTemplateClassify] =
+    useState<TemplateItem[]>(ClassifyList);
 
-  // 编辑相关状态
-  const [editingPlugin, setEditingPlugin] = useState<NativePluginInfo | null>(null);
+  // === 状态管理：编辑相关 ===
+  const [editingPlugin, setEditingPlugin] = useState<NativePluginInfo | null>(
+    null
+  );
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
   const [editForm] = Form.useForm();
   const [editLoading, setEditLoading] = useState(false);
   const [editParamsLoading, setEditParamsLoading] = useState(false);
-  const [editTemplateParams, setEditTemplateParams] = useState<NativePluginConfigFieldTemplate[]>([]);
-  
-  // 运行测试模态窗口相关状态
+  const [editTemplateParams, setEditTemplateParams] = useState<
+    NativePluginConfigFieldTemplate[]
+  >([]);
+
+  // === 状态管理：运行测试相关 ===
   const [runModalVisible, setRunModalVisible] = useState(false);
-  const [runningPlugin, setRunningPlugin] = useState<NativePluginInfo | null>(null);
+  const [runningPlugin, setRunningPlugin] = useState<NativePluginInfo | null>(
+    null
+  );
   const [runParamsValue, setRunParamsValue] = useState<string>("");
   const [runParamsLoading, setRunParamsLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
-  const [runResult, setRunResult] = useState<{ success: boolean; message: string | null | undefined } | null>(null);
+  const [runResult, setRunResult] = useState<{
+    success: boolean;
+    message: string | null | undefined;
+  } | null>(null);
+  const [runResultOriginalMessage, setRunResultOriginalMessage] = useState<
+    string | null | undefined
+  >(null);
   const [autoWrap, setAutoWrap] = useState<boolean>(false);
+  const [resultFullscreenVisible, setResultFullscreenVisible] = useState(false);
 
-  // 将 ClassifyList 的 key 转换为枚举值的辅助函数
+  // === 状态管理：代码编辑器相关 ===
+  const [codeEditorVisible, setCodeEditorVisible] = useState(false);
+  const [codeEditorFieldKey, setCodeEditorFieldKey] = useState<string | null>(
+    null
+  );
+  const [codeEditorInitialValue, setCodeEditorInitialValue] = useState<
+    string
+  >("");
+  const [codeEditorFormInstance, setCodeEditorFormInstance] = useState<any>(
+    null
+  );
+
+  const [messageApi, contextHolder] = message.useMessage();
+
+  // === 辅助函数 ===
+  /**
+   * 将 ClassifyList 的 key 转换为枚举值
+   */
   const keyToEnum = useCallback((key: string): NativePluginClassify | null => {
-    // 查找对应的枚举值
     const enumEntry = Object.entries(NativePluginClassifyObject).find(
       ([_, value]) => value.toLowerCase() === key.toLowerCase()
     );
     return enumEntry ? (enumEntry[1] as NativePluginClassify) : null;
   }, []);
 
-  // 获取分类列表
+  // 读取 json 字符串，则页面显示时使用
+  const getJsonString = function (json: string): string {
+    if (json === "" || json === null || json === undefined) {
+      return "";
+    }
+
+    // 尝试将 字符串解析为 object
+    try {
+      const obj = JSON.parse(json);
+      // 如果还是字符串，则说明本身真的是字符串，则返回解析后端字符串
+      if (typeof obj === "string") {
+        return obj;
+      }
+
+      // 如果是对象，则保留原本的 json 格式
+      if (typeof obj === "object") {
+        return json;
+      }
+    } catch (error) {
+      return json;
+    }
+
+    return json;
+  };
+
+  const setJsonString = function (json: any): string {
+    if (json === "" || json === null || json === undefined) {
+      return "";
+    }
+
+    if (typeof json === "string") {
+      // 如果是字符串，检查是一级字符串还是二级字符串
+      try {
+        const obj = JSON.parse(json);
+
+        // 已经是二级字符串，返回最后的结果
+        if (typeof obj === "string") {
+          return obj;
+        }
+
+        return json;
+      } catch (error) {
+        return json;
+      }
+    }
+
+    if (typeof json === "object") {
+      return JSON.stringify(json, null, 2);
+    }
+
+    return JSON.stringify(json, null, 2);
+  };
+
+  /**
+   * 截断文本，超过指定长度时显示省略号
+   */
+  const truncateText = useCallback((text: string | null | undefined, maxLength: number = 100): string => {
+    if (!text) {
+      return "无描述";
+    }
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength) + "...";
+  }, []);
+
+  /**
+   * 打开代码编辑器
+   */
+  const handleOpenCodeEditor = useCallback(
+    (fieldKey: string, currentValue: string, formInstance: any) => {
+      setCodeEditorFieldKey(fieldKey);
+      setCodeEditorInitialValue(currentValue || "");
+      setCodeEditorFormInstance(formInstance);
+      setCodeEditorVisible(true);
+    },
+    []
+  );
+
+  /**
+   * 关闭代码编辑器
+   */
+  const handleCloseCodeEditor = useCallback(() => {
+    setCodeEditorVisible(false);
+    setCodeEditorFieldKey(null);
+    setCodeEditorInitialValue("");
+    setCodeEditorFormInstance(null);
+  }, []);
+
+  /**
+   * 确认代码编辑器内容
+   */
+  const handleConfirmCodeEditor = useCallback(
+    (value: string) => {
+      if (codeEditorFieldKey && codeEditorFormInstance) {
+        codeEditorFormInstance.setFieldsValue({
+          [codeEditorFieldKey]: value,
+        });
+      }
+      handleCloseCodeEditor();
+    },
+    [codeEditorFieldKey, codeEditorFormInstance, handleCloseCodeEditor]
+  );
+
+  /**
+   * 渲染模板参数字段表单项
+   */
+  const renderParamFormItem = useCallback(
+    (param: NativePluginConfigFieldTemplate, formInstance?: any) => {
+      if (!param.key) return null;
+
+      const fieldType = param.fieldType;
+      const isRequired = param.isRequired === true;
+      const label = (
+        <Space>
+          <Typography.Text>{param.key}</Typography.Text>
+          {isRequired && <Typography.Text type="danger">*</Typography.Text>}
+        </Space>
+      );
+
+      // 根据字段类型解析默认值
+      let initialValue: any = undefined;
+      if (param.exampleValue !== null && param.exampleValue !== undefined) {
+        if (fieldType === PluginConfigFieldTypeObject.Boolean) {
+          const valueStr = String(param.exampleValue).toLowerCase();
+          initialValue = valueStr === "true" || valueStr === "1";
+        } else if (
+          fieldType === PluginConfigFieldTypeObject.Number ||
+          fieldType === PluginConfigFieldTypeObject.Integer
+        ) {
+          initialValue = Number(param.exampleValue);
+        } else {
+          initialValue = param.exampleValue;
+        }
+      }
+
+      // code 类型优先处理
+      if (fieldType === PluginConfigFieldTypeObject.Code) {
+        return (
+          <Form.Item
+            key={param.key}
+            name={param.key}
+            label={label}
+            help={param.description || undefined}
+            initialValue={initialValue || "// 在这里写代码"}
+            rules={
+              isRequired
+                ? [{ required: true, message: `请输入${param.key}` }]
+                : []
+            }
+          >
+            <Form.Item noStyle shouldUpdate>
+              {({ getFieldValue }) => {
+                const fieldValue = getFieldValue(param.key);
+                return (
+                  <div>
+                    <Input.TextArea
+                      rows={6}
+                      placeholder="JavaScript 代码"
+                      readOnly
+                      value={
+                        fieldValue ||
+                        initialValue ||
+                        "// 在这里写代码"
+                      }
+                      style={{ fontFamily: "monospace", fontSize: "14px" }}
+                    />
+                    <div style={{ marginTop: 8, textAlign: "right" }}>
+                      <Tooltip title="打开代码编辑器">
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<CodeOutlined />}
+                          onClick={() => {
+                            if (!param.key) return;
+                            const currentValue =
+                              fieldValue ||
+                              initialValue ||
+                              "";
+                            handleOpenCodeEditor(
+                              param.key,
+                              currentValue,
+                              formInstance
+                            );
+                          }}
+                        >
+                          打开代码编辑器
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  </div>
+                );
+              }}
+            </Form.Item>
+          </Form.Item>
+        );
+      }
+
+      if (fieldType === PluginConfigFieldTypeObject.Boolean) {
+        return (
+          <Form.Item
+            key={param.key}
+            name={param.key}
+            label={label}
+            help={param.description || undefined}
+            valuePropName="checked"
+            initialValue={initialValue}
+            rules={
+              isRequired
+                ? [{ required: true, message: `请输入${param.key}` }]
+                : []
+            }
+          >
+            <Switch />
+          </Form.Item>
+        );
+      }
+
+      if (
+        fieldType === PluginConfigFieldTypeObject.Number ||
+        fieldType === PluginConfigFieldTypeObject.Integer
+      ) {
+        return (
+          <Form.Item
+            key={param.key}
+            name={param.key}
+            label={label}
+            help={param.description || undefined}
+            initialValue={initialValue}
+            rules={
+              isRequired
+                ? [{ required: true, message: `请输入${param.key}` }]
+                : []
+            }
+          >
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
+        );
+      }
+
+      if (
+        fieldType === PluginConfigFieldTypeObject.Object ||
+        fieldType === PluginConfigFieldTypeObject.Map
+      ) {
+        return (
+          <Form.Item
+            key={param.key}
+            name={param.key}
+            label={label}
+            help={param.description || undefined}
+            initialValue={initialValue}
+            rules={
+              isRequired
+                ? [{ required: true, message: `请输入${param.key}` }]
+                : []
+            }
+          >
+            <Input.TextArea rows={4} placeholder="请输入 JSON 格式" />
+          </Form.Item>
+        );
+      }
+
+
+      // 默认字符串类型
+      return (
+        <Form.Item
+          key={param.key}
+          name={param.key}
+          label={label}
+          help={param.description || undefined}
+          initialValue={initialValue}
+          rules={
+            isRequired
+              ? [{ required: true, message: `请输入${param.key}` }]
+              : []
+          }
+        >
+          <Input.TextArea
+            rows={3}
+            placeholder={
+              param.exampleValue ? `示例: ${param.exampleValue}` : ""
+            }
+          />
+        </Form.Item>
+      );
+    },
+    [handleOpenCodeEditor]
+  );
+
+  // === 数据获取函数 ===
+  /**
+   * 获取分类列表
+   */
   const fetchClassifyList = useCallback(async () => {
     try {
       const client = GetApiClient();
@@ -135,13 +551,16 @@ export default function NativePluginPage() {
     }
   }, [messageApi]);
 
-  // 获取所有插件数据（用于计算分类数量）
-  const [allPluginList, setAllPluginList] = useState<NativePluginInfo[]>([]);
+  /**
+   * 获取所有插件数据（用于计算分类数量）
+   */
   const fetchAllPluginList = useCallback(async () => {
     try {
       const client = GetApiClient();
       const requestData: QueryNativePluginListCommand = {};
-      const response = await client.api.admin_plugin.native_plugin_list.post(requestData);
+      const response = await client.api.admin_plugin.native_plugin_list.post(
+        requestData
+      );
       if (response?.items) {
         setAllPluginList(response.items);
       }
@@ -150,25 +569,62 @@ export default function NativePluginPage() {
     }
   }, []);
 
-  // 获取模板列表（用于主表格显示）
+  /**
+   * 获取所有模板的分类数量（用于左侧分类显示）
+   */
+  const fetchTemplateClassifyCount = useCallback(async () => {
+    try {
+      const client = GetApiClient();
+      const requestData: QueryNativePluginTemplateListCommand = {
+        classify: undefined, // 不传分类参数，获取所有分类的数量
+      };
+      const response = await client.api.admin_plugin.native_template_list.post(
+        requestData
+      );
+      if (response?.classifyCount) {
+        // 将 KeyValueOfStringAndInt32[] 转换为简单的数组格式
+        const countMap = response.classifyCount
+          .filter((item) => item.key && typeof item.value === "number")
+          .map((item) => ({
+            key: item.key!,
+            value: item.value!,
+          }));
+        setTemplateClassifyCount(countMap);
+      } else {
+        setTemplateClassifyCount([]);
+      }
+    } catch (error) {
+      console.log("Fetch template classify count error:", error);
+      setTemplateClassifyCount([]);
+    }
+  }, []);
+
+  /**
+   * 获取模板列表（用于主表格显示）
+   */
   const fetchTemplateListForDisplay = useCallback(async () => {
     setLoading(true);
     try {
       const client = GetApiClient();
       // 根据左侧选中的分类来设置筛选条件
       let classify: NativePluginClassify | undefined = undefined;
-      
-      if (selectedLeftClassify !== "all" && typeof selectedLeftClassify === "string") {
+
+      if (
+        selectedLeftClassify !== "all" &&
+        typeof selectedLeftClassify === "string"
+      ) {
         const enumValue = keyToEnum(selectedLeftClassify);
         if (enumValue) {
           classify = enumValue;
         }
       }
-      
+
       const requestData: QueryNativePluginTemplateListCommand = {
         classify: classify || undefined,
       };
-      const response = await client.api.admin_plugin.native_template_list.post(requestData);
+      const response = await client.api.admin_plugin.native_template_list.post(
+        requestData
+      );
 
       if (response?.plugins) {
         setTemplateListForDisplay(response.plugins);
@@ -184,7 +640,9 @@ export default function NativePluginPage() {
     }
   }, [messageApi, selectedLeftClassify, keyToEnum]);
 
-  // 获取内置插件列表
+  /**
+   * 获取内置插件列表
+   */
   const fetchPluginList = useCallback(async () => {
     setLoading(true);
     try {
@@ -192,26 +650,34 @@ export default function NativePluginPage() {
       // 根据左侧选中的分类类型和值来设置筛选条件
       let classifyId: number | undefined = undefined;
       let templatePluginClassify: NativePluginClassify | undefined = undefined;
-      
+
       if (selectedLeftClassify !== "all") {
         if (leftClassifyType === "api") {
           // 使用 API 分类（classifyId）
-          classifyId = typeof selectedLeftClassify === "number" ? selectedLeftClassify : undefined;
+          classifyId =
+            typeof selectedLeftClassify === "number"
+              ? selectedLeftClassify
+              : undefined;
         } else {
           // 使用模板分类（templatePluginClassify）
-          const enumValue = typeof selectedLeftClassify === "string" ? keyToEnum(selectedLeftClassify) : null;
+          const enumValue =
+            typeof selectedLeftClassify === "string"
+              ? keyToEnum(selectedLeftClassify)
+              : null;
           if (enumValue) {
             templatePluginClassify = enumValue;
           }
         }
       }
-      
+
       const requestData: QueryNativePluginListCommand = {
         name: searchName || undefined,
         classifyId: classifyId,
         templatePluginClassify: templatePluginClassify,
       };
-      const response = await client.api.admin_plugin.native_plugin_list.post(requestData);
+      const response = await client.api.admin_plugin.native_plugin_list.post(
+        requestData
+      );
 
       if (response?.items) {
         setPluginList(response.items);
@@ -226,39 +692,75 @@ export default function NativePluginPage() {
     } finally {
       setLoading(false);
     }
-  }, [messageApi, searchName, selectedLeftClassify, leftClassifyType, keyToEnum]);
+  }, [
+    messageApi,
+    searchName,
+    selectedLeftClassify,
+    leftClassifyType,
+    keyToEnum,
+  ]);
 
-  // 页面加载时获取数据
+  // === 副作用处理 ===
+  /**
+   * 页面加载时获取数据
+   */
   useEffect(() => {
     fetchClassifyList();
     // 页面加载时，fetchPluginList 会获取全部数据并同时更新 allPluginList，避免重复请求
-    // 所以这里不需要调用 fetchAllPluginList
   }, [fetchClassifyList]);
 
-  // 当筛选条件变化时，重新获取插件列表或模板列表
+  /**
+   * 当筛选条件变化时，重新获取插件列表或模板列表
+   */
   useEffect(() => {
     if (leftClassifyType === "template" && showTemplatesOnly) {
       // 模板分类模式下，如果开启了"只看模板"，则获取模板列表
       fetchTemplateListForDisplay();
+      // 如果还没有获取过模板分类数量，则获取一次
+      if (templateClassifyCount.length === 0) {
+        fetchTemplateClassifyCount();
+      }
     } else {
       // 否则获取插件列表
       fetchPluginList();
     }
-  }, [fetchPluginList, fetchTemplateListForDisplay, leftClassifyType, showTemplatesOnly, selectedLeftClassify]);
+  }, [
+    fetchPluginList,
+    fetchTemplateListForDisplay,
+    fetchTemplateClassifyCount,
+    leftClassifyType,
+    showTemplatesOnly,
+    selectedLeftClassify,
+    templateClassifyCount.length,
+  ]);
 
-  // 刷新列表
+  // === 事件处理函数 ===
+  /**
+   * 刷新列表
+   */
   const handleRefresh = useCallback(async () => {
     // 先刷新全部插件列表（用于左侧分类数量统计）
     await fetchAllPluginList();
     // 再刷新当前筛选的列表（插件或模板）
     if (leftClassifyType === "template" && showTemplatesOnly) {
+      // 刷新模板列表和模板分类数量
+      await fetchTemplateClassifyCount();
       fetchTemplateListForDisplay();
     } else {
       fetchPluginList();
     }
-  }, [fetchPluginList, fetchTemplateListForDisplay, fetchAllPluginList, leftClassifyType, showTemplatesOnly]);
+  }, [
+    fetchPluginList,
+    fetchTemplateListForDisplay,
+    fetchAllPluginList,
+    fetchTemplateClassifyCount,
+    leftClassifyType,
+    showTemplatesOnly,
+  ]);
 
-  // 编辑插件
+  /**
+   * 编辑插件
+   */
   const handleEdit = useCallback(
     async (record: NativePluginInfo) => {
       setEditingPlugin(record);
@@ -272,7 +774,10 @@ export default function NativePluginPage() {
         const detailRequest: QueryNativePluginDetailCommand = {
           pluginId: record.pluginId,
         };
-        const detailResponse = await client.api.admin_plugin.native_plugin_detail.post(detailRequest);
+        const detailResponse =
+          await client.api.admin_plugin.native_plugin_detail.post(
+            detailRequest
+          );
 
         if (detailResponse) {
           // 设置表单值
@@ -289,25 +794,37 @@ export default function NativePluginPage() {
             const paramsRequest: QueryNativePluginTemplateParamsCommand = {
               templatePluginKey: detailResponse.templatePluginKey,
             };
-            const paramsResponse = await client.api.admin_plugin.native_template_params.post(paramsRequest);
-            
+            const paramsResponse =
+              await client.api.admin_plugin.native_template_params.post(
+                paramsRequest
+              );
+
             if (paramsResponse?.items) {
               setEditTemplateParams(paramsResponse.items);
-              
+
               // 解析params JSON并设置表单值
               if (detailResponse.params) {
                 try {
                   const paramsObj = JSON.parse(detailResponse.params);
                   const initialValues: Record<string, any> = {};
                   paramsResponse.items.forEach((item) => {
-                    if (item.key && paramsObj[item.key] !== undefined && paramsObj[item.key] !== null) {
+                    if (
+                      item.key &&
+                      paramsObj[item.key] !== undefined &&
+                      paramsObj[item.key] !== null
+                    ) {
                       const fieldType = item.fieldType;
-                      if (fieldType === PluginConfigFieldTypeObject.Number || 
-                          fieldType === PluginConfigFieldTypeObject.Integer) {
+                      if (
+                        fieldType === PluginConfigFieldTypeObject.Number ||
+                        fieldType === PluginConfigFieldTypeObject.Integer
+                      ) {
                         initialValues[item.key] = Number(paramsObj[item.key]);
-                      } else if (fieldType === PluginConfigFieldTypeObject.Boolean) {
+                      } else if (
+                        fieldType === PluginConfigFieldTypeObject.Boolean
+                      ) {
                         const valueStr = String(paramsObj[item.key]);
-                        initialValues[item.key] = valueStr === "true" || valueStr === "1";
+                        initialValues[item.key] =
+                          valueStr === "true" || valueStr === "1";
                       } else {
                         initialValues[item.key] = paramsObj[item.key];
                       }
@@ -332,7 +849,9 @@ export default function NativePluginPage() {
     [messageApi, editForm]
   );
 
-  // 关闭编辑抽屉
+  /**
+   * 关闭编辑抽屉
+   */
   const handleCloseEditDrawer = useCallback(() => {
     setEditDrawerVisible(false);
     setEditingPlugin(null);
@@ -340,54 +859,118 @@ export default function NativePluginPage() {
     editForm.resetFields();
   }, [editForm]);
 
-  // 打开运行测试模态窗口
-  const handleOpenRunModal = useCallback(async (record: NativePluginInfo) => {
-    setRunningPlugin(record);
-    setRunModalVisible(true);
-    setRunParamsLoading(true);
-    setRunParamsValue("");
-    setRunResult(null);
+  /**
+   * 打开运行测试模态窗口
+   */
+  const handleOpenRunModal = useCallback(
+    async (record: NativePluginInfo) => {
+      setRunningPlugin(record);
+      setRunModalVisible(true);
+      setRunParamsLoading(true);
+      setRunParamsValue("");
+      setRunResult(null);
 
-    try {
-      const client = GetApiClient();
-      // 获取插件详情以获取模板key
-      const detailRequest: QueryNativePluginDetailCommand = {
-        pluginId: record.pluginId,
-      };
-      const detailResponse = await client.api.admin_plugin.native_plugin_detail.post(detailRequest);
-
-      if (detailResponse?.templatePluginKey) {
-        // 获取模板参数示例值
-        const paramsRequest: QueryNativePluginTemplateParamsCommand = {
-          templatePluginKey: detailResponse.templatePluginKey,
+      try {
+        const client = GetApiClient();
+        // 获取插件详情以获取模板key
+        const detailRequest: QueryNativePluginDetailCommand = {
+          pluginId: record.pluginId,
         };
-        const paramsResponse = await client.api.admin_plugin.native_template_params.post(paramsRequest);
-        
-        // 获取运行参数示例值
-        if (paramsResponse?.exampleValue) {
-          setRunParamsValue(JSON.parse(paramsResponse.exampleValue));
-        } else {
-          setRunParamsValue("");
-        }
-      }
-    } catch (error) {
-      console.log("Fetch run params error:", error);
-      proxyRequestError(error, messageApi, "获取运行参数失败");
-    } finally {
-      setRunParamsLoading(false);
-    }
-  }, [messageApi]);
+        const detailResponse =
+          await client.api.admin_plugin.native_plugin_detail.post(
+            detailRequest
+          );
 
-  // 关闭运行测试模态窗口
+        // 更新 runningPlugin 的描述信息
+        if (detailResponse) {
+          setRunningPlugin({
+            ...record,
+            description: detailResponse.description || record.description,
+          });
+        }
+
+        if (detailResponse?.templatePluginKey) {
+          // 获取模板参数示例值
+          const paramsRequest: QueryNativePluginTemplateParamsCommand = {
+            templatePluginKey: detailResponse.templatePluginKey,
+          };
+          const paramsResponse =
+            await client.api.admin_plugin.native_template_params.post(
+              paramsRequest
+            );
+
+          // 获取运行参数示例值
+          const exampleValue = getJsonString(
+            paramsResponse?.exampleValue || ""
+          );
+          setRunParamsValue(exampleValue);
+        }
+      } catch (error) {
+        console.log("Fetch run params error:", error);
+        proxyRequestError(error, messageApi, "获取运行参数失败");
+      } finally {
+        setRunParamsLoading(false);
+      }
+    },
+    [messageApi]
+  );
+
+  /**
+   * 关闭运行测试模态窗口
+   */
   const handleCloseRunModal = useCallback(() => {
     setRunModalVisible(false);
     setRunningPlugin(null);
     setRunParamsValue("");
     setRunResult(null);
+    setRunResultOriginalMessage(null);
     setAutoWrap(false); // 重置自动换行状态
+    setResultFullscreenVisible(false); // 关闭全屏查看
   }, []);
 
-  // 运行插件
+  /**
+   * 处理自动换行切换
+   */
+  const handleAutoWrapChange = useCallback(
+    (checked: boolean) => {
+      setAutoWrap(checked);
+
+      // 如果有运行结果，根据开关状态格式化或恢复原始内容
+      if (
+        runResult &&
+        runResultOriginalMessage !== null &&
+        runResultOriginalMessage !== undefined
+      ) {
+        if (checked) {
+          // 开启自动换行时，尝试格式化 JSON
+          try {
+            const parsed = getJsonString(runResultOriginalMessage);
+            setRunResult({
+              ...runResult,
+              message: parsed,
+            });
+          } catch (error) {
+            // 如果解析失败，使用原始消息
+            setRunResult({
+              ...runResult,
+              message: runResultOriginalMessage,
+            });
+          }
+        } else {
+          // 关闭自动换行时，恢复原始消息
+          setRunResult({
+            ...runResult,
+            message: runResultOriginalMessage,
+          });
+        }
+      }
+    },
+    [runResult, runResultOriginalMessage]
+  );
+
+  /**
+   * 运行插件
+   */
   const handleRunPlugin = useCallback(async () => {
     if (!runningPlugin) {
       messageApi.error("请先选择插件");
@@ -404,7 +987,7 @@ export default function NativePluginPage() {
       setRunResult(null);
 
       // 序列化为 JSON 字符串
-      const paramsString = JSON.stringify(runParamsValue);
+      const paramsString = setJsonString(runParamsValue);
 
       const client = GetApiClient();
       const requestData: RunTestNativePluginCommand = {
@@ -413,35 +996,50 @@ export default function NativePluginPage() {
         params: paramsString,
       };
 
-      const response = await client.api.admin_plugin.run_native_plugin.post(requestData);
+      const response = await client.api.admin_plugin.run_native_plugin.post(
+        requestData
+      );
 
       if (response) {
-        let message = response.response!;
-        // 如果开启了自动换行，尝试解析 JSON 并格式化
-        if (autoWrap && message) {
-          try {
-            const parsed = JSON.parse(message);
-            // 如果 parsed 是字符串 则直接赋值；如果 parsed 是对象则直接使用 response.response!
-            if (typeof parsed === "string") {
-              message = parsed;
-            } else {
-              // 避免 parsed 序列化后是 object 导致 setRunResult() 异常
-              message = JSON.stringify(parsed, null, 2);
-            }
-          } catch (error) {
-            // 如果解析失败，使用原始消息
-            console.log("Failed to parse response as JSON:", error);
-          }
-        }
+        const originalMessage = response.response!;
+        // 保存原始消息
+        setRunResultOriginalMessage(originalMessage);
+
+        let message = getJsonString(originalMessage);
         setRunResult({
           success: response.isSuccess!,
           message: message,
-        });  
-        messageApi.success((response.isSuccess == true )? "插件运行成功" : "插件运行失败");
+        });
+        messageApi.success(
+          response.isSuccess == true ? "插件运行成功" : "插件运行失败"
+        );
       }
     } catch (error) {
       console.log("Run plugin error:", error);
-      const errorMessage = (error as any)?.message || "运行插件时发生错误";
+
+      // 提取详细的错误信息
+      let errorMessage = "运行插件时发生错误";
+      const businessError = error as any;
+
+      if (businessError?.detail) {
+        // 优先使用业务错误详情
+        errorMessage = businessError.detail;
+      } else if (businessError?.message) {
+        // 其次使用错误消息
+        errorMessage = businessError.message;
+      } else if (error instanceof Error) {
+        // 使用 Error 对象的 message
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        // 如果是字符串，直接使用
+        errorMessage = error;
+      } else if (error) {
+        // 最后尝试转换为字符串
+        errorMessage = String(error);
+      }
+
+      // 保存原始错误消息
+      setRunResultOriginalMessage(errorMessage);
       setRunResult({
         success: false,
         message: errorMessage,
@@ -452,7 +1050,9 @@ export default function NativePluginPage() {
     }
   }, [runningPlugin, runParamsValue, messageApi, autoWrap]);
 
-  // 提交编辑
+  /**
+   * 提交编辑
+   */
   const handleEditSubmit = useCallback(async () => {
     if (!editingPlugin) {
       messageApi.error("请先选择插件");
@@ -466,7 +1066,11 @@ export default function NativePluginPage() {
       // 构建参数对象
       const paramsObj: Record<string, any> = {};
       editTemplateParams.forEach((param) => {
-        if (param.key && values[param.key] !== undefined && values[param.key] !== null) {
+        if (
+          param.key &&
+          values[param.key] !== undefined &&
+          values[param.key] !== null
+        ) {
           paramsObj[param.key] = values[param.key];
         }
       });
@@ -479,7 +1083,10 @@ export default function NativePluginPage() {
         description: values.description,
         classifyId: values.classifyId,
         isPublic: values.isPublic ?? true,
-        config: Object.keys(paramsObj).length > 0 ? JSON.stringify(paramsObj) : undefined,
+        config:
+          Object.keys(paramsObj).length > 0
+            ? JSON.stringify(paramsObj)
+            : undefined,
       };
 
       await client.api.admin_plugin.update_native_plugin.post(requestData);
@@ -496,7 +1103,15 @@ export default function NativePluginPage() {
     } finally {
       setEditLoading(false);
     }
-  }, [editingPlugin, editForm, editTemplateParams, messageApi, fetchPluginList, fetchAllPluginList, handleCloseEditDrawer]);
+  }, [
+    editingPlugin,
+    editForm,
+    editTemplateParams,
+    messageApi,
+    fetchPluginList,
+    fetchAllPluginList,
+    handleCloseEditDrawer,
+  ]);
 
   // 删除插件
   const handleDelete = useCallback(
@@ -522,49 +1137,51 @@ export default function NativePluginPage() {
   );
 
   // 处理模板运行
-  const handleRunTemplate = useCallback(async (template: NativePluginTemplateInfo) => {
-    if (!template.key) {
-      messageApi.error("模板Key不存在");
-      return;
-    }
-
-    // 创建一个临时的 NativePluginInfo 对象用于运行
-    const tempPlugin: NativePluginInfo = {
-      pluginId: undefined,
-      pluginName: template.name || "",
-      templatePluginKey: template.key || undefined,
-      title: template.name || "",
-      description: template.description || undefined,
-      isPublic: true,
-    };
-    
-    setRunningPlugin(tempPlugin);
-    setRunModalVisible(true);
-    setRunParamsLoading(true);
-    setRunParamsValue("");
-    setRunResult(null);
-
-    try {
-      const client = GetApiClient();
-      // 直接使用模板的 key 获取模板参数示例值
-      const paramsRequest: QueryNativePluginTemplateParamsCommand = {
-        templatePluginKey: template.key,
-      };
-      const paramsResponse = await client.api.admin_plugin.native_template_params.post(paramsRequest);
-      
-      // 获取运行参数示例值
-      if (paramsResponse?.exampleValue) {
-        setRunParamsValue(JSON.parse(paramsResponse.exampleValue));
-      } else {
-        setRunParamsValue("");
+  const handleRunTemplate = useCallback(
+    async (template: NativePluginTemplateInfo) => {
+      if (!template.key) {
+        messageApi.error("模板Key不存在");
+        return;
       }
-    } catch (error) {
-      console.log("Fetch template run params error:", error);
-      proxyRequestError(error, messageApi, "获取运行参数失败");
-    } finally {
-      setRunParamsLoading(false);
-    }
-  }, [messageApi]);
+
+      // 创建一个临时的 NativePluginInfo 对象用于运行
+      const tempPlugin: NativePluginInfo = {
+        pluginId: undefined,
+        pluginName: template.name || "",
+        templatePluginKey: template.key || undefined,
+        title: template.name || "",
+        description: template.description || undefined,
+        isPublic: true,
+      };
+
+      setRunningPlugin(tempPlugin);
+      setRunModalVisible(true);
+      setRunParamsLoading(true);
+      setRunParamsValue("");
+      setRunResult(null);
+
+      try {
+        const client = GetApiClient();
+        // 直接使用模板的 key 获取模板参数示例值
+        const paramsRequest: QueryNativePluginTemplateParamsCommand = {
+          templatePluginKey: template.key,
+        };
+        const paramsResponse =
+          await client.api.admin_plugin.native_template_params.post(
+            paramsRequest
+          );
+        const exampleValue = getJsonString(paramsResponse?.exampleValue!);
+
+        setRunParamsValue(exampleValue);
+      } catch (error) {
+        console.log("Fetch template run params error:", error);
+        proxyRequestError(error, messageApi, "获取运行参数失败");
+      } finally {
+        setRunParamsLoading(false);
+      }
+    },
+    [messageApi]
+  );
 
   // 过滤后的模板列表（支持搜索）
   const filteredTemplateListForDisplay = useMemo(() => {
@@ -576,7 +1193,8 @@ export default function NativePluginPage() {
       (template) =>
         (template.name && template.name.toLowerCase().includes(searchLower)) ||
         (template.key && template.key.toLowerCase().includes(searchLower)) ||
-        (template.description && template.description.toLowerCase().includes(searchLower))
+        (template.description &&
+          template.description.toLowerCase().includes(searchLower))
     );
   }, [templateListForDisplay, searchName]);
 
@@ -587,10 +1205,17 @@ export default function NativePluginPage() {
         title: "插件名称",
         dataIndex: "pluginName",
         key: "pluginName",
-        render: (pluginName: string, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          pluginName: string,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 如果是模板（没有 pluginId），使用 name 字段
-          if (!('pluginId' in record)) {
-            return <Typography.Text strong>{(record as NativePluginTemplateInfo).name || "-"}</Typography.Text>;
+          if (!("pluginId" in record)) {
+            return (
+              <Typography.Text strong>
+                {(record as NativePluginTemplateInfo).name || "-"}
+              </Typography.Text>
+            );
           }
           return <Typography.Text strong>{pluginName}</Typography.Text>;
         },
@@ -599,9 +1224,12 @@ export default function NativePluginPage() {
         title: "标题",
         dataIndex: "title",
         key: "title",
-        render: (title: string, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          title: string,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 如果是模板（没有 pluginId），使用 name 字段
-          if (!('pluginId' in record)) {
+          if (!("pluginId" in record)) {
             return (record as NativePluginTemplateInfo).name || "-";
           }
           return title || "-";
@@ -611,17 +1239,20 @@ export default function NativePluginPage() {
         title: "模板Key",
         dataIndex: "templatePluginKey",
         key: "templatePluginKey",
-        render: (templatePluginKey: string, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          templatePluginKey: string,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 如果是模板（没有 pluginId），使用 key 字段
-          if (!('pluginId' in record)) {
+          if (!("pluginId" in record)) {
             return (
-              <Typography.Text type="secondary" style={{ fontSize: "12px", fontFamily: "monospace" }}>
+              <Typography.Text type="secondary" style={STYLES.monospaceText}>
                 {(record as NativePluginTemplateInfo).key || "-"}
               </Typography.Text>
             );
           }
           return (
-            <Typography.Text type="secondary" style={{ fontSize: "12px", fontFamily: "monospace" }}>
+            <Typography.Text type="secondary" style={STYLES.monospaceText}>
               {templatePluginKey || "-"}
             </Typography.Text>
           );
@@ -631,10 +1262,20 @@ export default function NativePluginPage() {
         title: "描述",
         dataIndex: "description",
         key: "description",
+        width: 300,
+        ellipsis: {
+          showTitle: false,
+        },
         render: (description: string) => (
-          <Typography.Text type="secondary" style={{ fontSize: "12px" }}>
-            {description || "-"}
-          </Typography.Text>
+          <Tooltip placement="topLeft" title={description || "-"}>
+            <Typography.Text
+              type="secondary"
+              style={STYLES.secondaryText}
+              ellipsis
+            >
+              {description || "-"}
+            </Typography.Text>
+          </Tooltip>
         ),
       },
       {
@@ -642,9 +1283,12 @@ export default function NativePluginPage() {
         dataIndex: "isPublic",
         key: "isPublic",
         width: 100,
-        render: (isPublic: boolean, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          isPublic: boolean,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 如果是模板（没有 pluginId），不显示
-          if (!('pluginId' in record)) {
+          if (!("pluginId" in record)) {
             return "-";
           }
           return (
@@ -658,9 +1302,12 @@ export default function NativePluginPage() {
         title: "创建时间",
         dataIndex: "createTime",
         key: "createTime",
-        render: (createTime: string, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          createTime: string,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 如果是模板（没有 pluginId），不显示
-          if (!('pluginId' in record)) {
+          if (!("pluginId" in record)) {
             return "-";
           }
           if (!createTime) return "-";
@@ -675,9 +1322,12 @@ export default function NativePluginPage() {
         title: "创建人",
         dataIndex: "createUserName",
         key: "createUserName",
-        render: (createUserName: string, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          createUserName: string,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 如果是模板（没有 pluginId），不显示
-          if (!('pluginId' in record)) {
+          if (!("pluginId" in record)) {
             return "-";
           }
           return createUserName || "-";
@@ -688,12 +1338,15 @@ export default function NativePluginPage() {
         key: "action",
         width: 150,
         fixed: "right" as const,
-        render: (_: any, record: NativePluginInfo | NativePluginTemplateInfo) => {
+        render: (
+          _: any,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
           // 判断是否是模板（没有 pluginId 就是模板）
-          const isTemplate = !('pluginId' in record);
+          const isTemplate = !("pluginId" in record);
           const template = record as NativePluginTemplateInfo;
           const plugin = record as NativePluginInfo;
-          
+
           return (
             <Space size="small">
               {/* 如果是模板且是 IsTool，显示运行按钮 */}
@@ -770,33 +1423,37 @@ export default function NativePluginPage() {
       const requestData: QueryNativePluginTemplateListCommand = {
         classify: undefined,
       };
-      const response = await client.api.admin_plugin.native_template_list.post(requestData);
+      const response = await client.api.admin_plugin.native_template_list.post(
+        requestData
+      );
       if (response) {
         if (response.plugins) {
           setTemplateList(response.plugins);
         }
-        
+
         // 从 ClassifyList 拷贝数据，生成 TemplateItem[]
         const templateItems: TemplateItem[] = ClassifyList.map((item) => ({
           ...item,
           count: 0, // 初始化为 0
         }));
-        
+
         // 使用 classifyCount 匹配，设置每个分类的数量
         // classifyCount 是 KeyValueOfStringAndInt32[] 数组，每个元素有 key 和 value
         if (response.classifyCount && response.classifyCount.length > 0) {
-          templateItems.forEach((templateItem) => { 
+          templateItems.forEach((templateItem) => {
             // 在 classifyCount 中查找匹配的 key（忽略大小写字符串匹配）
             const countItem = response.classifyCount!.find(
-              (cv) => cv.key && cv.key.toLowerCase() === templateItem.key.toLowerCase()
+              (cv) =>
+                cv.key &&
+                cv.key.toLowerCase() === templateItem.key.toLowerCase()
             );
-            if (countItem && typeof countItem.value === 'number') {
+            if (countItem && typeof countItem.value === "number") {
               templateItem.count = countItem.value;
             }
           });
         }
-        
-        settemplateClassify(templateItems);
+
+        setTemplateClassify(templateItems);
         // 默认选中"全部"
         setSelectedClassify("all");
       }
@@ -847,42 +1504,109 @@ export default function NativePluginPage() {
   }, [selectedClassify, groupedTemplates, templateList]);
 
   // 获取模板参数
-  const fetchTemplateParams = useCallback(async (templateKey: string) => {
-    setParamsLoading(true);
-    try {
-      const client = GetApiClient();
-      const requestData: QueryNativePluginTemplateParamsCommand = {
-        templatePluginKey: templateKey,
-      };
-      const response = await client.api.admin_plugin.native_template_params.post(requestData);
-      if (response?.items) {
-        setTemplateParams(response.items);
-      } else {
+  const fetchTemplateParams = useCallback(
+    async (templateKey: string, oldParamKeys?: string[]) => {
+      setParamsLoading(true);
+      try {
+        const client = GetApiClient();
+        const requestData: QueryNativePluginTemplateParamsCommand = {
+          templatePluginKey: templateKey,
+        };
+        const response =
+          await client.api.admin_plugin.native_template_params.post(
+            requestData
+          );
+        if (response?.items) {
+          // 先清除所有旧参数的值（如果提供了旧参数keys）
+          if (oldParamKeys && oldParamKeys.length > 0) {
+            const fieldsToReset: Record<string, undefined> = {};
+            oldParamKeys.forEach((key) => {
+              fieldsToReset[key] = undefined;
+            });
+            form.setFieldsValue(fieldsToReset);
+          }
+
+          // 设置新参数
+          setTemplateParams(response.items);
+
+          // 根据新参数的 exampleValue 设置默认值
+          const initialValues: Record<string, any> = {};
+          response.items.forEach((param) => {
+            if (
+              param.key &&
+              param.exampleValue !== null &&
+              param.exampleValue !== undefined
+            ) {
+              const fieldType = param.fieldType;
+              if (fieldType === PluginConfigFieldTypeObject.Boolean) {
+                const valueStr = String(param.exampleValue).toLowerCase();
+                initialValues[param.key] =
+                  valueStr === "true" || valueStr === "1";
+              } else if (
+                fieldType === PluginConfigFieldTypeObject.Number ||
+                fieldType === PluginConfigFieldTypeObject.Integer
+              ) {
+                initialValues[param.key] = Number(param.exampleValue);
+              } else {
+                initialValues[param.key] = param.exampleValue;
+              }
+            }
+          });
+
+          // 设置新参数的默认值
+          if (Object.keys(initialValues).length > 0) {
+            form.setFieldsValue(initialValues);
+          }
+        } else {
+          setTemplateParams([]);
+          // 清除所有旧参数的值（如果提供了旧参数keys）
+          if (oldParamKeys && oldParamKeys.length > 0) {
+            const fieldsToReset: Record<string, undefined> = {};
+            oldParamKeys.forEach((key) => {
+              fieldsToReset[key] = undefined;
+            });
+            form.setFieldsValue(fieldsToReset);
+          }
+        }
+      } catch (error) {
+        console.log("Fetch template params error:", error);
+        proxyRequestError(error, messageApi, "获取模板参数失败");
         setTemplateParams([]);
-        form.resetFields();
+        // 清除所有旧参数的值（如果提供了旧参数keys）
+        if (oldParamKeys && oldParamKeys.length > 0) {
+          const fieldsToReset: Record<string, undefined> = {};
+          oldParamKeys.forEach((key) => {
+            fieldsToReset[key] = undefined;
+          });
+          form.setFieldsValue(fieldsToReset);
+        }
+      } finally {
+        setParamsLoading(false);
       }
-    } catch (error) {
-      console.log("Fetch template params error:", error);
-      proxyRequestError(error, messageApi, "获取模板参数失败");
-      setTemplateParams([]);
-      form.resetFields();
-    } finally {
-      setParamsLoading(false);
-    }
-  }, [messageApi, form]);
+    },
+    [messageApi, form]
+  );
 
   // 点击模板项
-  const handleTemplateClick = useCallback((template: NativePluginTemplateInfo) => {
-    setSelectedTemplate(template);
-    // 设置表单默认值：name 使用模板的 key，title 使用模板的 name
-    form.setFieldsValue({
-      name: template.key || "",
-      title: template.name || "",
-    });
-    if (template.key) {
-      fetchTemplateParams(template.key);
-    }
-  }, [fetchTemplateParams, form]);
+  const handleTemplateClick = useCallback(
+    (template: NativePluginTemplateInfo) => {
+      // 先保存旧参数的keys
+      const oldParamKeys = templateParams
+        .map((p) => p.key)
+        .filter((k): k is string => !!k);
+
+      setSelectedTemplate(template);
+      // 设置表单默认值：name 使用模板的 key，title 使用模板的 name
+      form.setFieldsValue({
+        name: template.key || "",
+        title: template.name || "",
+      });
+      if (template.key) {
+        fetchTemplateParams(template.key, oldParamKeys);
+      }
+    },
+    [fetchTemplateParams, form, templateParams]
+  );
 
   // 创建内置插件
   const handleCreatePlugin = useCallback(async () => {
@@ -898,7 +1622,11 @@ export default function NativePluginPage() {
       // 构建参数对象
       const paramsObj: Record<string, any> = {};
       templateParams.forEach((param) => {
-        if (param.key && values[param.key] !== undefined && values[param.key] !== null) {
+        if (
+          param.key &&
+          values[param.key] !== undefined &&
+          values[param.key] !== null
+        ) {
           paramsObj[param.key] = values[param.key];
         }
       });
@@ -911,10 +1639,15 @@ export default function NativePluginPage() {
         description: values.description,
         classifyId: values.classifyId,
         isPublic: values.isPublic ?? true,
-        config: Object.keys(paramsObj).length > 0 ? JSON.stringify(paramsObj) : undefined,
+        config:
+          Object.keys(paramsObj).length > 0
+            ? JSON.stringify(paramsObj)
+            : undefined,
       };
 
-      const response = await client.api.admin_plugin.create_native_plugin.post(requestData);
+      const response = await client.api.admin_plugin.create_native_plugin.post(
+        requestData
+      );
 
       if (response?.value !== undefined) {
         messageApi.success("内置插件创建成功");
@@ -930,21 +1663,22 @@ export default function NativePluginPage() {
     } finally {
       setCreateLoading(false);
     }
-  }, [selectedTemplate, form, templateParams, messageApi, fetchPluginList, fetchAllPluginList, handleCloseDrawer]);
+  }, [
+    selectedTemplate,
+    form,
+    templateParams,
+    messageApi,
+    fetchPluginList,
+    fetchAllPluginList,
+    handleCloseDrawer,
+  ]);
 
   return (
     <>
       {contextHolder}
-      <div style={{ padding: 24 }}>
+      <div style={STYLES.pageContainer}>
         <Card>
-          <div
-            style={{
-              marginBottom: "16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div style={STYLES.headerContainer}>
             <Title level={3} style={{ margin: 0 }}>
               <ApiOutlined style={{ marginRight: "8px" }} />
               内置插件
@@ -959,27 +1693,23 @@ export default function NativePluginPage() {
           </div>
 
           {/* 主体内容：左右布局 */}
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div style={STYLES.mainLayout}>
             {/* 左侧分类列表 */}
-            <div
-              style={{
-                width: "200px",
-                borderRight: "1px solid #f0f0f0",
-                paddingRight: "16px",
-              }}
-            >
+            <div style={STYLES.leftSidebar}>
               {/* 分类类型切换按钮 */}
-              <div style={{ marginBottom: "12px" }}>
+              <div style={STYLES.classifyToggleContainer}>
                 <Button.Group style={{ width: "100%" }}>
                   <Button
-                    type={leftClassifyType === "template" ? "primary" : "default"}
+                    type={
+                      leftClassifyType === "template" ? "primary" : "default"
+                    }
                     size="small"
                     onClick={() => {
                       setLeftClassifyType("template");
                       setSelectedLeftClassify("all");
-                      setShowTemplatesOnly(false); // 切换分类类型时重置"只看模板"开关
+                      setShowTemplatesOnly(false);
                     }}
-                    style={{ flex: 1 }}
+                    style={STYLES.classifyToggleButton}
                   >
                     模板分类
                   </Button>
@@ -989,9 +1719,9 @@ export default function NativePluginPage() {
                     onClick={() => {
                       setLeftClassifyType("api");
                       setSelectedLeftClassify("all");
-                      setShowTemplatesOnly(false); // 切换分类类型时重置"只看模板"开关
+                      setShowTemplatesOnly(false);
                     }}
-                    style={{ flex: 1 }}
+                    style={STYLES.classifyToggleButton}
                   >
                     插件分类
                   </Button>
@@ -1003,14 +1733,37 @@ export default function NativePluginPage() {
                 dataSource={
                   (leftClassifyType === "template"
                     ? [
-                        { key: "all" as const, name: "全部", icon: "📋", count: allPluginList.length },
+                        {
+                          key: "all" as const,
+                          name: "全部",
+                          icon: "📋",
+                          count: showTemplatesOnly
+                            ? templateClassifyCount.reduce(
+                                (sum, item) => sum + item.value,
+                                0
+                              )
+                            : allPluginList.length,
+                        },
                         ...ClassifyList.map((item) => {
-                          const enumValue = keyToEnum(item.key);
-                          const count = enumValue
-                            ? allPluginList.filter(
-                                (plugin) => plugin.templatePluginClassify === enumValue
-                              ).length
-                            : 0;
+                          let count = 0;
+                          if (showTemplatesOnly) {
+                            // 只看模板模式下，使用接口返回的分类数量
+                            const countItem = templateClassifyCount.find(
+                              (cv) =>
+                                cv.key &&
+                                cv.key.toLowerCase() === item.key.toLowerCase()
+                            );
+                            count = countItem ? countItem.value : 0;
+                          } else {
+                            // 插件模式下，使用插件列表计算数量
+                            const enumValue = keyToEnum(item.key);
+                            count = enumValue
+                              ? allPluginList.filter(
+                                  (plugin) =>
+                                    plugin.templatePluginClassify === enumValue
+                                ).length
+                              : 0;
+                          }
                           return {
                             key: item.key,
                             name: item.name,
@@ -1020,7 +1773,12 @@ export default function NativePluginPage() {
                         }),
                       ]
                     : [
-                        { key: "all" as const, name: "全部", icon: undefined, count: allPluginList.length },
+                        {
+                          key: "all" as const,
+                          name: "全部",
+                          icon: undefined,
+                          count: allPluginList.length,
+                        },
                         ...classifyList
                           .filter((item) => item.classifyId != null)
                           .map((item) => ({
@@ -1031,28 +1789,29 @@ export default function NativePluginPage() {
                               (plugin) => plugin.classifyId === item.classifyId
                             ).length,
                           })),
-                      ]) as Array<{ key: string | number | "all"; name: string; icon?: string; count: number }>
+                      ]) as Array<{
+                    key: string | number | "all";
+                    name: string;
+                    icon?: string;
+                    count: number;
+                  }>
                 }
                 renderItem={(item) => {
                   const isSelected = selectedLeftClassify === item.key;
-                  
+
                   return (
                     <List.Item
                       style={{
-                        cursor: "pointer",
-                        backgroundColor: isSelected ? "#e6f7ff" : "transparent",
-                        borderRadius: "4px",
-                        padding: "8px 12px",
-                        marginBottom: "4px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        ...STYLES.classifyItem,
+                        backgroundColor: isSelected
+                          ? STYLES.classifyItemSelected.backgroundColor
+                          : STYLES.classifyItemUnselected.backgroundColor,
                       }}
                       onClick={() => setSelectedLeftClassify(item.key)}
                     >
                       <Space>
                         {"icon" in item && item.icon && (
-                          <span style={{ fontSize: "16px" }}>{item.icon}</span>
+                          <span style={STYLES.iconSize}>{item.icon}</span>
                         )}
                         <Typography.Text strong={isSelected}>
                           {item.name}
@@ -1070,7 +1829,7 @@ export default function NativePluginPage() {
             {/* 右侧内容区域 */}
             <div style={{ flex: 1 }}>
               {/* 搜索筛选 */}
-              <div style={{ marginBottom: 16 }}>
+              <div style={STYLES.searchContainer}>
                 <Space>
                   <Input.Search
                     placeholder={
@@ -1084,12 +1843,15 @@ export default function NativePluginPage() {
                     onSearch={() => {
                       // 搜索功能在模板模式下通过客户端过滤实现，不需要重新请求
                       // 在插件模式下才需要重新请求
-                      if (leftClassifyType !== "template" || !showTemplatesOnly) {
+                      if (
+                        leftClassifyType !== "template" ||
+                        !showTemplatesOnly
+                      ) {
                         fetchPluginList();
                       }
                     }}
                     enterButton
-                    style={{ maxWidth: "400px" }}
+                    style={STYLES.searchInput}
                   />
                   {/* 模板分类模式下显示"只看模板"开关 */}
                   {leftClassifyType === "template" && (
@@ -1123,14 +1885,16 @@ export default function NativePluginPage() {
                 }
                 rowKey={(record) => {
                   // 如果是模板（没有 pluginId），使用 key；如果是插件，使用 pluginId
-                  if (!('pluginId' in record)) {
+                  if (!("pluginId" in record)) {
                     return (record as NativePluginTemplateInfo).key || "";
                   }
-                  return (record as NativePluginInfo).pluginId?.toString() || "";
+                  return (
+                    (record as NativePluginInfo).pluginId?.toString() || ""
+                  );
                 }}
                 loading={loading}
                 pagination={false}
-                scroll={{ x: 'max-content' }}
+                scroll={{ x: 1500 }}
                 locale={{
                   emptyText: (
                     <Empty
@@ -1156,14 +1920,10 @@ export default function NativePluginPage() {
           open={editDrawerVisible}
           width={1400}
           destroyOnClose
-          styles={{
-            body: {
-              padding: 0,
-            },
-          }}
+          styles={{ body: STYLES.drawerBody }}
         >
           <Spin spinning={editLoading}>
-            <div style={{ padding: 24 }}>
+            <div style={STYLES.drawerContent}>
               <Card
                 title={
                   <Space>
@@ -1203,7 +1963,10 @@ export default function NativePluginPage() {
                       help="只能包含字母，用于AI识别使用"
                       rules={[
                         { required: true, message: "请输入插件名称" },
-                        { pattern: /^[a-zA-Z_]+$/, message: "插件名称只能包含字母和下划线" },
+                        {
+                          pattern: /^[a-zA-Z_]+$/,
+                          message: "插件名称只能包含字母和下划线",
+                        },
                         { max: 30, message: "插件名称不能超过30个字符" },
                       ]}
                     >
@@ -1224,10 +1987,7 @@ export default function NativePluginPage() {
                       <Input placeholder="请输入插件标题" />
                     </Form.Item>
 
-                    <Form.Item
-                      name="description"
-                      label="描述"
-                    >
+                    <Form.Item name="description" label="描述">
                       <Input.TextArea rows={3} placeholder="请输入插件描述" />
                     </Form.Item>
 
@@ -1249,7 +2009,10 @@ export default function NativePluginPage() {
                             style={{ width: "100%" }}
                           >
                             {classifyList.map((item) => (
-                              <Select.Option key={item.classifyId} value={item.classifyId}>
+                              <Select.Option
+                                key={item.classifyId}
+                                value={item.classifyId}
+                              >
                                 {item.name}
                               </Select.Option>
                             ))}
@@ -1262,96 +2025,19 @@ export default function NativePluginPage() {
                           label="是否公开"
                           valuePropName="checked"
                         >
-                          <Switch checkedChildren="公开" unCheckedChildren="私有" />
+                          <Switch
+                            checkedChildren="公开"
+                            unCheckedChildren="私有"
+                          />
                         </Form.Item>
                       </Col>
                     </Row>
 
                     <Divider>模板参数</Divider>
 
-                    {editTemplateParams.map((param) => {
-                      const fieldType = param.fieldType;
-                      const isRequired = param.isRequired === true;
-
-                      // 根据字段类型渲染不同的表单项
-                      if (!param.key) return null;
-                      
-                      if (fieldType === PluginConfigFieldTypeObject.Boolean) {
-                        return (
-                          <Form.Item
-                            key={param.key}
-                            name={param.key}
-                            label={
-                              <Space>
-                                <Typography.Text>{param.key}</Typography.Text>
-                                {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                              </Space>
-                            }
-                            help={param.description || undefined}
-                            valuePropName="checked"
-                            rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                          >
-                            <Switch />
-                          </Form.Item>
-                        );
-                      } else if (
-                        fieldType === PluginConfigFieldTypeObject.Number ||
-                        fieldType === PluginConfigFieldTypeObject.Integer
-                      ) {
-                        return (
-                          <Form.Item
-                            key={param.key}
-                            name={param.key}
-                            label={
-                              <Space>
-                                <Typography.Text>{param.key}</Typography.Text>
-                                {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                              </Space>
-                            }
-                            help={param.description || undefined}
-                            rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                          >
-                            <InputNumber style={{ width: "100%" }} />
-                          </Form.Item>
-                        );
-                      } else if (fieldType === PluginConfigFieldTypeObject.Object || 
-                                 fieldType === PluginConfigFieldTypeObject.Map) {
-                        return (
-                          <Form.Item
-                            key={param.key}
-                            name={param.key}
-                            label={
-                              <Space>
-                                <Typography.Text>{param.key}</Typography.Text>
-                                {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                              </Space>
-                            }
-                            help={param.description || undefined}
-                            rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                          >
-                            <Input.TextArea rows={4} placeholder="请输入 JSON 格式" />
-                          </Form.Item>
-                        );
-                      } else {
-                        // 默认字符串类型
-                        return (
-                          <Form.Item
-                            key={param.key}
-                            name={param.key}
-                            label={
-                              <Space>
-                                <Typography.Text>{param.key}</Typography.Text>
-                                {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                              </Space>
-                            }
-                            help={param.description || undefined}
-                            rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                          >
-                            <Input placeholder={param.exampleValue ? `示例: ${param.exampleValue}` : ""} />
-                          </Form.Item>
-                        );
-                      }
-                    })}
+                    {editTemplateParams.map((param) =>
+                      renderParamFormItem(param, editForm)
+                    )}
                     {editTemplateParams.length === 0 && !editParamsLoading && (
                       <Empty
                         description="该模板暂无配置参数"
@@ -1373,51 +2059,39 @@ export default function NativePluginPage() {
           open={drawerVisible}
           width={1400}
           destroyOnClose
-          styles={{
-            body: {
-              padding: 0,
-            },
-          }}
+          styles={{ body: STYLES.drawerBody }}
         >
           <Spin spinning={templateLoading}>
-            <div style={{ display: "flex", height: "100%" }}>
+            <div style={STYLES.drawerFlexContainer}>
               {/* 左侧分类列表 */}
-              <div
-                style={{
-                  width: "200px",
-                  borderRight: "1px solid #f0f0f0",
-                  paddingRight: "16px",
-                  paddingLeft: "16px",
-                  paddingTop: "16px",
-                  overflowY: "auto",
-                  height: "100%",
-                }}
-              >
+              <div style={STYLES.drawerSidebar}>
                 <List
                   size="small"
                   dataSource={[
-                    { key: "all", name: "全部", icon: "📋", count: templateList.length, templates: [] },
-                    ...templateClassify
+                    {
+                      key: "all",
+                      name: "全部",
+                      icon: "📋",
+                      count: templateList.length,
+                      templates: [],
+                    },
+                    ...templateClassify,
                   ]}
                   renderItem={(item) => {
                     const isSelected = selectedClassify === item.key;
-                    
+
                     return (
                       <List.Item
                         style={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected ? "#e6f7ff" : "transparent",
-                          borderRadius: "4px",
-                          padding: "8px 12px",
-                          marginBottom: "4px",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          ...STYLES.classifyItem,
+                          backgroundColor: isSelected
+                            ? STYLES.classifyItemSelected.backgroundColor
+                            : STYLES.classifyItemUnselected.backgroundColor,
                         }}
                         onClick={() => setSelectedClassify(item.key)}
                       >
                         <Space>
-                          <span style={{ fontSize: "16px" }}>{item.icon}</span>
+                          <span style={STYLES.iconSize}>{item.icon}</span>
                           <Typography.Text strong={isSelected}>
                             {item.name}
                           </Typography.Text>
@@ -1432,31 +2106,18 @@ export default function NativePluginPage() {
               </div>
 
               {/* 中间模板列表 */}
-              <div
-                style={{
-                  width: "300px",
-                  borderRight: "1px solid #f0f0f0",
-                  paddingLeft: "16px",
-                  paddingRight: "16px",
-                  paddingTop: "16px",
-                  overflowY: "auto",
-                  height: "100%",
-                }}
-              >
+              <div style={STYLES.drawerTemplateList}>
                 {selectedClassify ? (
                   <List
                     dataSource={currentTemplates}
                     renderItem={(template: NativePluginTemplateInfo) => (
                       <List.Item
                         style={{
-                          cursor: "pointer",
+                          ...STYLES.classifyItem,
                           backgroundColor:
                             selectedTemplate?.key === template.key
-                              ? "#e6f7ff"
-                              : "transparent",
-                          borderRadius: "4px",
-                          padding: "8px 12px",
-                          marginBottom: "4px",
+                              ? STYLES.classifyItemSelected.backgroundColor
+                              : STYLES.classifyItemUnselected.backgroundColor,
                         }}
                         onClick={() => handleTemplateClick(template)}
                       >
@@ -1472,8 +2133,11 @@ export default function NativePluginPage() {
                             </Space>
                           }
                           description={
-                            <Typography.Text type="secondary" style={{ fontSize: "12px" }}>
-                              {template.description || "无描述"}
+                            <Typography.Text
+                              type="secondary"
+                              style={STYLES.secondaryText}
+                            >
+                              {truncateText(template.description, 100)}
                             </Typography.Text>
                           }
                         />
@@ -1497,16 +2161,7 @@ export default function NativePluginPage() {
               </div>
 
               {/* 右侧创建表单 */}
-              <div
-                style={{
-                  flex: 1,
-                  paddingLeft: "16px",
-                  paddingRight: "16px",
-                  paddingTop: "16px",
-                  overflowY: "auto",
-                  height: "100%",
-                }}
-              >
+              <div style={STYLES.drawerForm}>
                 {selectedTemplate ? (
                   <Spin spinning={paramsLoading}>
                     <Card
@@ -1557,8 +2212,11 @@ export default function NativePluginPage() {
                           help="只能包含字母，用于AI识别使用"
                           rules={[
                             { required: true, message: "请输入插件名称" },
-                            { pattern: /^[a-zA-Z_]+$/, message: "插件名称只能包含字母和下划线" },
-                            {max: 30, message: "插件名称不能超过30个字符"},
+                            {
+                              pattern: /^[a-zA-Z_]+$/,
+                              message: "插件名称只能包含字母和下划线",
+                            },
+                            { max: 30, message: "插件名称不能超过30个字符" },
                           ]}
                         >
                           <Input placeholder="请输入插件名称（仅限字母和下划线）" />
@@ -1573,16 +2231,18 @@ export default function NativePluginPage() {
                             </Space>
                           }
                           help="插件标题，可中文，用于系统显示"
-                          rules={[{ required: true, message: "请输入插件标题" }]}
+                          rules={[
+                            { required: true, message: "请输入插件标题" },
+                          ]}
                         >
                           <Input placeholder="请输入插件标题" />
                         </Form.Item>
 
-                        <Form.Item
-                          name="description"
-                          label="描述"
-                        >
-                          <Input.TextArea rows={3} placeholder="请输入插件描述" />
+                        <Form.Item name="description" label="描述">
+                          <Input.TextArea
+                            rows={3}
+                            placeholder="请输入插件描述"
+                          />
                         </Form.Item>
 
                         <Row gutter={16}>
@@ -1592,10 +2252,14 @@ export default function NativePluginPage() {
                               label={
                                 <Space>
                                   <Typography.Text>分类</Typography.Text>
-                                  <Typography.Text type="danger">*</Typography.Text>
+                                  <Typography.Text type="danger">
+                                    *
+                                  </Typography.Text>
                                 </Space>
                               }
-                              rules={[{ required: true, message: "请选择分类" }]}
+                              rules={[
+                                { required: true, message: "请选择分类" },
+                              ]}
                             >
                               <Select
                                 placeholder="请选择分类"
@@ -1603,7 +2267,10 @@ export default function NativePluginPage() {
                                 style={{ width: "100%" }}
                               >
                                 {classifyList.map((item) => (
-                                  <Select.Option key={item.classifyId} value={item.classifyId}>
+                                  <Select.Option
+                                    key={item.classifyId}
+                                    value={item.classifyId}
+                                  >
                                     {item.name}
                                   </Select.Option>
                                 ))}
@@ -1616,96 +2283,19 @@ export default function NativePluginPage() {
                               label="是否公开"
                               valuePropName="checked"
                             >
-                              <Switch checkedChildren="公开" unCheckedChildren="私有" />
+                              <Switch
+                                checkedChildren="公开"
+                                unCheckedChildren="私有"
+                              />
                             </Form.Item>
                           </Col>
                         </Row>
 
                         <Divider>模板参数</Divider>
 
-                        {templateParams.map((param) => {
-                          const fieldType = param.fieldType;
-                          const isRequired = param.isRequired === true;
-
-                          // 根据字段类型渲染不同的表单项
-                          if (!param.key) return null;
-                          
-                          if (fieldType === PluginConfigFieldTypeObject.Boolean) {
-                            return (
-                              <Form.Item
-                                key={param.key}
-                                name={param.key}
-                                label={
-                                  <Space>
-                                    <Typography.Text>{param.key}</Typography.Text>
-                                    {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                                  </Space>
-                                }
-                                help={param.description || undefined}
-                                valuePropName="checked"
-                                rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                              >
-                                <Switch />
-                              </Form.Item>
-                            );
-                          } else if (
-                            fieldType === PluginConfigFieldTypeObject.Number ||
-                            fieldType === PluginConfigFieldTypeObject.Integer
-                          ) {
-                            return (
-                              <Form.Item
-                                key={param.key}
-                                name={param.key}
-                                label={
-                                  <Space>
-                                    <Typography.Text>{param.key}</Typography.Text>
-                                    {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                                  </Space>
-                                }
-                                help={param.description || undefined}
-                                rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                              >
-                                <InputNumber style={{ width: "100%" }} />
-                              </Form.Item>
-                            );
-                          } else if (fieldType === PluginConfigFieldTypeObject.Object || 
-                                     fieldType === PluginConfigFieldTypeObject.Map) {
-                            return (
-                              <Form.Item
-                                key={param.key}
-                                name={param.key}
-                                label={
-                                  <Space>
-                                    <Typography.Text>{param.key}</Typography.Text>
-                                    {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                                  </Space>
-                                }
-                                help={param.description || undefined}
-                                rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                              >
-                                <Input.TextArea rows={4} placeholder="请输入 JSON 格式" />
-                              </Form.Item>
-                            );
-                          } else {
-                            // 默认字符串类型
-                            return (
-                              <Form.Item
-                                key={param.key}
-                                name={param.key}
-                                label={
-                                  <Space>
-                                    <Typography.Text>{param.key}</Typography.Text>
-                                    {isRequired && <Typography.Text type="danger">*</Typography.Text>}
-                                  </Space>
-                                }
-                                help={param.description || undefined}
-                                rules={isRequired ? [{ required: true, message: `请输入${param.key}` }] : []}
-                              >
-                                <Input placeholder={param.exampleValue ? `示例: ${param.exampleValue}` : ""} />
-                              </Form.Item>
-                            );
-                          }
-                        })}
+                        {templateParams.map((param) =>
+                          renderParamFormItem(param, form)
+                        )}
                         {templateParams.length === 0 && !paramsLoading && (
                           <Empty
                             description="该模板暂无配置参数"
@@ -1738,7 +2328,7 @@ export default function NativePluginPage() {
           }
           open={runModalVisible}
           onCancel={handleCloseRunModal}
-          width={800}
+          width={1200}
           footer={[
             <Button key="cancel" onClick={handleCloseRunModal}>
               关闭
@@ -1756,7 +2346,25 @@ export default function NativePluginPage() {
         >
           <Spin spinning={runParamsLoading}>
             <Form layout="vertical">
-              <Form.Item label="运行参数是完整有效的 json 格式，如果是字符串则直接输入，如果是对象则输入 JSON 格式">
+              <Form.Item label="如果是字符串则直接输入，如果是对象则输入 JSON 格式，请勿上传太大的文件。">
+                {runningPlugin?.description && (
+                  <Alert
+                    message="插件描述"
+                    description={
+                      <Typography.Text
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {runningPlugin.description}
+                      </Typography.Text>
+                    }
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
                 <Input.TextArea
                   rows={8}
                   value={runParamsValue}
@@ -1767,38 +2375,85 @@ export default function NativePluginPage() {
               </Form.Item>
 
               {runResult && (
-                <Alert
-                  type={runResult.success ? "success" : "error"}
-                  message={runResult.success ? "运行成功" : "运行失败"}
-                  description={
-                    <Typography.Text
-                      style={{
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-all",
-                      }}
-                    >
-                      {runResult.message}
-                    </Typography.Text>
+                <Form.Item
+                  label={
+                    <Space>
+                      <Typography.Text strong>
+                        {runResult.success ? "运行成功" : "运行失败"}
+                      </Typography.Text>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<ExpandOutlined />}
+                        onClick={() => setResultFullscreenVisible(true)}
+                      >
+                        全屏查看
+                      </Button>
+                    </Space>
                   }
-                  showIcon
-                  style={{ marginTop: 16 }}
-                />
+                >
+                  <Input.TextArea
+                    readOnly
+                    rows={10}
+                    value={runResult.message || ""}
+                    style={STYLES.resultTextArea(runResult.success, autoWrap)}
+                  />
+                </Form.Item>
               )}
             </Form>
           </Spin>
-          {/* 自动换行按钮 */}
-          <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
-            <Space>
-              <Typography.Text>自动换行</Typography.Text>
-              <Switch
-                checked={autoWrap}
-                onChange={(checked) => setAutoWrap(checked)}
-              />
-            </Space>
-          </div>
         </Modal>
+
+        {/* 运行结果全屏查看模态窗口 */}
+        <Modal
+          title={
+            <Space>
+              <Typography.Text strong>运行结果</Typography.Text>
+              {runningPlugin && (
+                <Tag color="purple">{runningPlugin.pluginName}</Tag>
+              )}
+              {runResult && (
+                <Tag color={runResult.success ? "success" : "error"}>
+                  {runResult.success ? "成功" : "失败"}
+                </Tag>
+              )}
+            </Space>
+          }
+          open={resultFullscreenVisible}
+          onCancel={() => setResultFullscreenVisible(false)}
+          width="90%"
+          style={STYLES.fullscreenModal}
+          footer={[
+            <Button
+              key="close"
+              onClick={() => setResultFullscreenVisible(false)}
+            >
+              关闭
+            </Button>,
+          ]}
+        >
+          {runResult && (
+            <Input.TextArea
+              readOnly
+              rows={30}
+              value={runResult.message || ""}
+              style={STYLES.resultTextArea(runResult.success, autoWrap)}
+            />
+          )}
+        </Modal>
+
+        {/* 代码编辑器模态窗口 */}
+        <CodeEditorModal
+          open={codeEditorVisible}
+          initialValue={codeEditorInitialValue}
+          language="javascript"
+          title="代码编辑器"
+          onClose={handleCloseCodeEditor}
+          onConfirm={handleConfirmCodeEditor}
+          width={1200}
+          height="70vh"
+        />
       </div>
     </>
   );
 }
-

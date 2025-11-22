@@ -11,10 +11,13 @@
 
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" />
+		<PackageReference Include="Jint" />
 		<PackageReference Include="Markdig" />
 		<PackageReference Include="Microsoft.OpenApi.Readers" />
 		<PackageReference Include="ModelContextProtocol" />
 		<PackageReference Include="ModelContextProtocol-SemanticKernel" />
+		<PackageReference Include="MySqlConnector" />
+		<PackageReference Include="Npgsql" />
 	</ItemGroup>
 
 	<ItemGroup>

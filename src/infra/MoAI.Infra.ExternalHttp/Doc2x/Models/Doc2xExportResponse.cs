@@ -3,8 +3,7 @@
 /// <summary>
 /// 导出响应数据
 /// </summary>
-public class Doc2xExportResponse
+public class Doc2xExportResponse : Doc2xCode
 {
-    public string Code { get; set; }
     public Doc2xExportData Data { get; set; }
 }

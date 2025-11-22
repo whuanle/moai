@@ -31,7 +31,7 @@ public static class NativePluginFactory
             .Where(t => t.IsClass && !t.IsAbstract && t.IsAssignableTo(typeof(IToolPluginRuntime)))
             .ToArray();
 
-        List<NativePluginTemplateInfo> plugins = new List<NativePluginTemplateInfo>();
+        var plugins = new SortedList<string, NativePluginTemplateInfo>();
 
         foreach (var item in nativePluginTypes)
         {
@@ -52,7 +52,7 @@ public static class NativePluginFactory
                 IsTool = false,
             };
 
-            plugins.Add(plugin);
+            plugins.Add(internalPluginAttribute.Key, plugin);
         }
 
         foreach (var item in toolPluginTypes)
@@ -74,7 +74,7 @@ public static class NativePluginFactory
                 IsTool = true,
             };
 
-            plugins.Add(plugin);
+            plugins.Add(internalPluginAttribute.Key, plugin);
         }
 
         if (plugins.DistinctBy(x => x.Key).Count() != plugins.Count)
@@ -82,6 +82,6 @@ public static class NativePluginFactory
             Debug.Assert(false, "存在重复的内置插件Key，请检查插件定义");
         }
 
-        _plugins = plugins;
+        _plugins = plugins.Values.ToArray();
     }
 }

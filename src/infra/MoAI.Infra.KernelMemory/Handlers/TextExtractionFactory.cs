@@ -19,17 +19,13 @@ public class TextExtractionFactory
 {
     private readonly ILoggerFactory _loggerFactory;
 
-    public TextExtractionFactory(ILoggerFactory loggerFactory)
-    {
-        _loggerFactory = loggerFactory;
-    }
-
-    private readonly Dictionary<string, IContentDecoder> _defaultDecoders;
+    private readonly Dictionary<string, IContentDecoder> _defaultDecoders = new Dictionary<string, IContentDecoder>(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyCollection<IContentDecoder> Decoders => _defaultDecoders.Values;
 
-    public TextExtractionFactory() : this(DefaultLogger.Factory)
+    public TextExtractionFactory(ILoggerFactory loggerFactory)
     {
+        _loggerFactory = loggerFactory;
         _defaultDecoders = new Dictionary<string, IContentDecoder>(StringComparer.OrdinalIgnoreCase);
 
         RegisterImageDecoder();

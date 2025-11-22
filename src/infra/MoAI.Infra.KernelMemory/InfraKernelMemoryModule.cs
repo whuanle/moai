@@ -5,7 +5,7 @@ namespace MoAI.Infra;
 /// <summary>
 /// InfraKernelMemory.
 /// </summary>
-public class InfraKernelMemory : IModule
+public class InfraKernelMemoryModule : IModule
 {
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)

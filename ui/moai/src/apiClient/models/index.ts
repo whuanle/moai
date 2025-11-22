@@ -6360,6 +6360,7 @@ export const OAuthPrividerObject = {
  * 内置插件配置字段类型.
  */
 export const PluginConfigFieldTypeObject = {
+    Code: "code",
     String: "string",
     Number: "number",
     Boolean: "boolean",

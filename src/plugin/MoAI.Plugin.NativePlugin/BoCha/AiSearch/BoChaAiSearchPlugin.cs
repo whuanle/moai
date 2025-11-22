@@ -1,0 +1,141 @@
+#pragma warning disable CA1031 // 不捕获常规异常类型
+
+using Maomi;
+using Microsoft.SemanticKernel;
+using MoAI.Infra.BoCha;
+using MoAI.Infra.BoCha.Models;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.System.Text.Json;
+using MoAI.Plugin.Attributes;
+using MoAI.Plugin.Models;
+using MoAI.Plugin.Plugins.BoCha.Common;
+using System.ComponentModel;
+using System.Text.Json;
+
+namespace MoAI.Plugin.Plugins.BoCha.AiSearch;
+
+/// <summary>
+/// BoCha AI 搜索插件
+/// </summary>
+[NativePluginFieldConfig(
+    "bocha_ai_search",
+    Name = "BoCha AI 搜索",
+    Description = "使用 BoCha API 进行混合搜索。",
+    Classify = NativePluginClassify.Search)]
+[InjectOnTransient]
+public partial class BoChaAiSearchPlugin : INativePluginRuntime
+{
+    private readonly IBoChaClient _boChaClient;
+    private BoChaPluginConfig _config = default!;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BoChaAiSearchPlugin"/> class.
+    /// </summary>
+    /// <param name="boChaClient">BoCha 客户端。</param>
+    public BoChaAiSearchPlugin(IBoChaClient boChaClient)
+    {
+        _boChaClient = boChaClient;
+    }
+
+    /// <inheritdoc/>
+    public Task<string?> CheckConfigAsync(string config)
+    {
+        try
+        {
+            var objectParams = JsonSerializer.Deserialize<BoChaPluginConfig>(config);
+            if (string.IsNullOrWhiteSpace(objectParams?.Key))
+            {
+                return Task.FromResult<string?>("API Key 不能为空。");
+            }
+
+            return Task.FromResult<string?>(string.Empty);
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult<string?>($"参数解析失败: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc/>
+    public Task<Type> GetConfigTypeAsync()
+    {
+        return Task.FromResult(typeof(BoChaPluginConfig));
+    }
+
+    /// <inheritdoc/>
+    public Task<string> GetParamsExampleValue()
+    {
+        var example = new AiSearchRequest
+        {
+            Query = "什么是 AI Agent",
+            Freshness = "oneMonth",
+            Answer = false,
+            Count = 10,
+            Include = null,
+            Stream = false
+        };
+
+        return Task.FromResult(JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping));
+    }
+
+    /// <inheritdoc/>
+    public Task ImportConfigAsync(string config)
+    {
+        _config = JsonSerializer.Deserialize<BoChaPluginConfig>(config) ?? new BoChaPluginConfig();
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public async Task<string> TestAsync(string @params)
+    {
+        try
+        {
+            var testParams = JsonSerializer.Deserialize<AiSearchRequest>(@params)!;
+            var result = await InvokeAsync(testParams.Query, testParams.Freshness, testParams.Count, testParams.Answer, testParams.Include);
+            return JsonSerializer.Serialize(result, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+        }
+        catch (Exception ex)
+        {
+            throw new BusinessException(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 执行 BoCha AI 搜索。
+    /// </summary>
+    /// <param name="query">用户的搜索内容。</param>
+    /// <param name="freshness">搜索指定时间范围内的网页。</param>
+    /// <param name="count">每次搜索返回搜索结果的数量。</param>
+    /// <param name="answer">是否使用大模型进行回答。</param>
+    /// <param name="include">指定搜索的 site 范围。</param>
+    /// <returns>搜索结果。</returns>
+    [KernelFunction("invoke")]
+    [Description("执行 BoCha AI 搜索")]
+    public async Task<List<MessageObject>> InvokeAsync(
+        [Description("用户的搜索内容")] string query,
+        [Description("搜索时间范围 (e.g., noLimit, oneDay, oneWeek, oneMonth, oneYear)")] string freshness = "noLimit",
+        [Description("返回结果的数量 (最多50)")] int count = 10,
+        [Description("是否使用大模型进行回答")] bool answer = true,
+        [Description("指定搜索的网站范围 (e.g., qq.com|m.163.com)")] string? include = null)
+    {
+        if (string.IsNullOrWhiteSpace(_config?.Key))
+        {
+            throw new BusinessException("API Key 未配置。");
+        }
+
+        var request = new AiSearchRequest
+        {
+            Query = query,
+            Freshness = freshness,
+            Count = count,
+            Answer = answer,
+            Stream = false,
+            Include = include
+        };
+
+        var response = await _boChaClient.AiSearchAsync($"Bearer {_config.Key}", request);
+        _boChaClient.HandleApiError(response);
+
+        return response.Messages;
+    }
+}

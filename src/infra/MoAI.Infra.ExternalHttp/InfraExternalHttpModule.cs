@@ -1,5 +1,6 @@
 ﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
+using MoAI.Infra.BoCha;
 using MoAI.Infra.DingTalk;
 using MoAI.Infra.Doc2x;
 using MoAI.Infra.Feishu;
@@ -65,6 +66,11 @@ public class InfraExternalHttpModule : IModule
 
         context.Services.AddRefitClient<IDoc2xClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://v2.doc2x.noedgeai.com"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IBoChaClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.bocha.cn"))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
