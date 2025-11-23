@@ -8,6 +8,7 @@ using Maomi;
 using Microsoft.SemanticKernel;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.System.Text.Json;
+using MoAI.Plugin.Helpers;
 using MoAI.Plugin.Models;
 using System.ComponentModel;
 using System.Text;
@@ -98,7 +99,7 @@ public class WebContentFetchPlugin : IToolPluginRuntime
                 return document.DocumentElement.OuterHtml;
             }
 
-            return ExtractTextContent(document);
+            return AngleSharpHelper.ExtractTextContent(document);
         }
         catch (Exception ex)
         {
@@ -119,82 +120,5 @@ public class WebContentFetchPlugin : IToolPluginRuntime
         {
             throw new BusinessException(ex.Message);
         }
-    }
-
-    private static string ExtractTextContent(IDocument document)
-    {
-        // 使用StringBuilder来高效构建文本
-        StringBuilder textBuilder = new StringBuilder();
-
-        try
-        {
-            // 提取meta标签信息，特别是description
-            var metaTags = document.Head?.QuerySelectorAll("meta");
-            if (metaTags != null)
-            {
-                foreach (var metaTag in metaTags)
-                {
-                    var name = metaTag.GetAttribute("name")?.ToLower();
-                    var property = metaTag.GetAttribute("property")?.ToLower();
-                    var content = metaTag.GetAttribute("content");
-
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            textBuilder.AppendLine($"{name}: {content}");
-                        }
-                        else if (!string.IsNullOrEmpty(property))
-                        {
-                            textBuilder.AppendLine($"{property}: {content}");
-                        }
-                    }
-                }
-            }
-
-            // 提取标题
-            var title = document.Title;
-            if (!string.IsNullOrEmpty(title))
-            {
-                textBuilder.AppendLine(title);
-            }
-
-            // 过滤掉不需要的元素
-            var elements = document?.All.Where(e =>
-                e.NodeType == AngleSharp.Dom.NodeType.Element &&
-                e.LocalName != "script" &&
-                e.LocalName != "style" &&
-                e.LocalName != "noscript" &&
-                !string.IsNullOrWhiteSpace(e.TextContent));
-
-            if (elements != null)
-            {
-                foreach (var element in elements)
-                {
-                    try
-                    {
-                        var text = element.TextContent?.Trim();
-                        if (!string.IsNullOrEmpty(text) && element.ChildElementCount == 0)
-                        {
-                            textBuilder.AppendLine(text);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // 忽略单个元素处理错误，继续处理其他元素
-                        continue;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            // 如果处理出错，记录错误并尝试提取整个文档的文本
-            textBuilder.Clear();
-            textBuilder.AppendLine($"提取文本时发生错误: {ex.Message}");
-            textBuilder.AppendLine(document.Body?.TextContent?.Trim() ?? "");
-        }
-
-        return textBuilder.ToString();
     }
 }
