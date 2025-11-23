@@ -1,4 +1,6 @@
-﻿namespace MoAI.Infra.Exceptions;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace MoAI.Infra.Exceptions;
 
 /// <summary>
 /// 业务异常.
@@ -65,12 +67,12 @@ public class BusinessException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="BusinessException"/> class.
     /// </summary>
-    /// <param name="message"></param>
-    /// <param name="argments"></param>
-    public BusinessException(string message, params object[] argments)
-        : base(message)
+    /// <param name="format"></param>
+    /// <param name="args"></param>
+    public BusinessException([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
+        : base(format)
     {
-        Argments = argments;
+        Argments = args;
     }
 
     /// <summary>

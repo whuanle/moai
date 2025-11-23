@@ -23,7 +23,7 @@ public interface IFeishuWebHookClient
     /// <param name="request"></param>
     /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuApiResponse> SendPostAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookPostRequest request);
+    Task<FeishuCode> SendPostAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookPostRequest request);
 
     /// <summary>
     /// 推送消息.
@@ -32,7 +32,7 @@ public interface IFeishuWebHookClient
     /// <param name="request"></param>
     /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuApiResponse> SendTextAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookTextRequest request);
+    Task<FeishuCode> SendTextAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookTextRequest request);
 
     /// <summary>
     /// 推送消息.
@@ -41,7 +41,7 @@ public interface IFeishuWebHookClient
     /// <param name="request"></param>
     /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuApiResponse> SendShareChatAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookShareChatRequest request);
+    Task<FeishuCode> SendShareChatAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookShareChatRequest request);
 
     /// <summary>
     /// 推送消息.
@@ -50,7 +50,7 @@ public interface IFeishuWebHookClient
     /// <param name="request"></param>
     /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuApiResponse> SendImageAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookImageRequest request);
+    Task<FeishuCode> SendImageAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookImageRequest request);
 
     /// <summary>
     /// 推送消息.
@@ -59,5 +59,5 @@ public interface IFeishuWebHookClient
     /// <param name="request"></param>
     /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuApiResponse> SendInteractiveAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookInteractiveRequest request);
+    Task<FeishuCode> SendInteractiveAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookInteractiveRequest request);
 }

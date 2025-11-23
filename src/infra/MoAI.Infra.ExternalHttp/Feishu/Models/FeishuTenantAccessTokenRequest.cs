@@ -8,11 +8,11 @@ using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Feishu.Models;
 
-public class FeishuApiResponse
+public class FeishuTenantAccessTokenRequest
 {
-    [JsonPropertyName("code")]
-    public int Code { get; set; }
+    [JsonPropertyName("app_id")]
+    public string AppId { get; set; }
 
-    [JsonPropertyName("msg")]
-    public string Msg { get; set; }
+    [JsonPropertyName("app_secret")]
+    public string AppSecret { get; set; }
 }

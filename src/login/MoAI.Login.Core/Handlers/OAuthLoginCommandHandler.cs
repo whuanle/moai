@@ -225,7 +225,7 @@ state=STATE
 
     private async Task<OAuthBindUserProfile> GetOpenIdFromFeishuAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
     {
-        var feishuClient = _serviceProvider.GetRequiredService<IFeishuClient>();
+        var feishuClient = _serviceProvider.GetRequiredService<IFeishuAuthClient>();
         var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
         {
             Code = request.Code,

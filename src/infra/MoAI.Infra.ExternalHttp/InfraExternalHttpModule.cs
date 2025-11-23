@@ -14,7 +14,7 @@ using System.Text.Json.Serialization;
 namespace MoAI.Infra;
 
 /// <summary>
-/// InfraExternalHttpModule.
+/// 外部第三方接口对接.
 /// </summary>
 public class InfraExternalHttpModule : IModule
 {
@@ -44,7 +44,12 @@ public class InfraExternalHttpModule : IModule
             AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
-        context.Services.AddRefitClient<IFeishuClient>(settings)
+        context.Services.AddRefitClient<IFeishuAuthClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        context.Services.AddRefitClient<IFeishuApiClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));

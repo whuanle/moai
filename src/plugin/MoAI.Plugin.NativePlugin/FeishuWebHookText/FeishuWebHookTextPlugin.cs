@@ -97,7 +97,7 @@ public class FeishuWebHookTextPlugin : INativePluginRuntime
     /// <returns></returns>
     [KernelFunction("invoke")]
     [Description("发送文本消息到飞书")]
-    public async Task<FeishuApiResponse> InvokeAsync([Description("文本内容")] string text)
+    public async Task<FeishuCode> InvokeAsync([Description("文本内容")] string text)
     {
         var request = new FeishuWebHookTextRequest
         {
@@ -119,7 +119,7 @@ public class FeishuWebHookTextPlugin : INativePluginRuntime
         }
         catch (Exception ex)
         {
-            return new FeishuApiResponse
+            return new FeishuCode
             {
                 Code = -1,
                 Msg = ex.Message

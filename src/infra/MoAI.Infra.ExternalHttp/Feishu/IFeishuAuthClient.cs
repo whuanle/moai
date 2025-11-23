@@ -9,7 +9,10 @@ using Refit;
 
 namespace MoAI.Infra.Feishu;
 
-public interface IFeishuClient
+/// <summary>
+/// 飞书 oss 接口.
+/// </summary>
+public interface IFeishuAuthClient
 {
     public HttpClient Client { get; }
 
