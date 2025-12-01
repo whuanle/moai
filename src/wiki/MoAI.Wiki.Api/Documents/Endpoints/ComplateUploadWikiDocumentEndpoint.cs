@@ -10,7 +10,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 完成上传知识库文档上传.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/complete_upload_document")]
+[HttpPost($"{ApiPrefix.Document}/complete_upload_document")]
 
 public class ComplateUploadWikiDocumentEndpoint : Endpoint<ComplateUploadWikiDocumentCommand, EmptyCommandResponse>
 {
@@ -33,7 +33,7 @@ public class ComplateUploadWikiDocumentEndpoint : Endpoint<ComplateUploadWikiDoc
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

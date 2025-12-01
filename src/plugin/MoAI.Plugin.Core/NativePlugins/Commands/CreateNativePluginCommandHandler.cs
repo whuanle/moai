@@ -58,7 +58,7 @@ public class CreateNativePluginCommandHandler : IRequestHandler<CreateNativePlug
         }
 
         // 检查插件是否同名
-        var exists = await _databaseContext.PluginInternals
+        var exists = await _databaseContext.PluginNatives
             .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
         if (exists)
         {
@@ -84,7 +84,7 @@ public class CreateNativePluginCommandHandler : IRequestHandler<CreateNativePlug
             Config = request.Config ?? string.Empty
         };
 
-        _databaseContext.PluginInternals.Add(entity);
+        _databaseContext.PluginNatives.Add(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return new SimpleInt { Value = entity.Id };

@@ -16,9 +16,4 @@ public class QueryWikiBaseListCommand : IUserIdContext, IRequest<IReadOnlyCollec
     /// 查询类型.
     /// </summary>
     public WikiQueryType QueryType { get; init; }
-
-    /// <summary>
-    /// 筛选是否公开.
-    /// </summary>
-    public bool? IsPublic { get; init; }
 }

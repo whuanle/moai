@@ -22,6 +22,9 @@ public class DeleteWikiDocumentEventHandler : INotificationHandler<DeleteWikiDoc
     /// <inheritdoc/>
     public async Task Handle(DeleteWikiDocumentEvent notification, CancellationToken cancellationToken)
     {
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiWebDocuments.Where(x => x.WikiDocumentId == notification.DocumentId));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => x.Id == notification.DocumentId));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiPluginCrawlerPages.Where(a => a.WikiDocumentId == notification.DocumentId));
+
+        // 清空向量
     }
 }

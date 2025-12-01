@@ -56,20 +56,7 @@ public class InviteWikiUserCommandHandler : IRequestHandler<InviteWikiUserComman
 
         if (request.IsInvite)
         {
-            // 如果是系统知识库，对应管理员来说，不需要邀请
-            if (isCreator.IsSystem)
-            {
-                var adminUsers = await _mediator.Send(new QueryAdminIdsCommand());
-
-                foreach (var item in adminUsers.AdminIds)
-                {
-                    userIds.Remove(item);
-                }
-            }
-            else
-            {
-                userIds.Remove(isCreator.CreatorId);
-            }
+            userIds.Remove(isCreator.CreatorId);
 
             // 移除已存在的成员，避免重复邀请
             foreach (var wikiUser in wikiUsers)
@@ -92,19 +79,7 @@ public class InviteWikiUserCommandHandler : IRequestHandler<InviteWikiUserComman
         }
         else
         {
-            if (isCreator.IsSystem)
-            {
-                var adminUsers = await _mediator.Send(new QueryAdminIdsCommand());
-
-                foreach (var item in adminUsers.AdminIds)
-                {
-                    userIds.Remove(item);
-                }
-            }
-            else
-            {
-                userIds.Remove(isCreator.CreatorId);
-            }
+            userIds.Remove(isCreator.CreatorId);
 
             var toRemoveUsers = wikiUsers.Where(x => userIds.Contains(x.UserId)).ToList();
 

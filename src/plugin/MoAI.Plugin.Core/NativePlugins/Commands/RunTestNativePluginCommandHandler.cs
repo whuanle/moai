@@ -67,7 +67,7 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
         {
             var plugin = (service as INativePluginRuntime)!;
 
-            var entity = await _databaseContext.PluginInternals.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
+            var entity = await _databaseContext.PluginNatives.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
 
             if (entity == null)
             {

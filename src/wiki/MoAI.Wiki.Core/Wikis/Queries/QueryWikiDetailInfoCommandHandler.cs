@@ -44,7 +44,8 @@ public class QueryWikiDetailInfoCommandHandler : IRequestHandler<QueryWikiDetail
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
                 IsLock = x.IsLock,
-                IsSystem = x.IsSystem,
+
+                // 能够查看详细信息，说明是成员.
                 IsUser = true,
                 DocumentCount = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).Count()
             }).FirstOrDefaultAsync();

@@ -1,6 +1,6 @@
 ﻿using FastEndpoints;
 using FluentValidation;
-using MoAI.Wiki.Documents.Commands;
+using MoAI.Wiki.DocumentManager.Handlers;
 
 namespace MoAI.Wiki.Documents.Validators;
 

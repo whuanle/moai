@@ -48,6 +48,9 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsEmbedding)
+            .HasComment("是否已经向量化")
+            .HasColumnName("is_embedding");
         entity.Property(e => e.ObjectKey)
             .HasMaxLength(100)
             .HasComment("文件路径")

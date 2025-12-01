@@ -59,11 +59,11 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
         if (result.IsExist)
         {
             // 但是知识库文档没有
-            var exisWikitDocument = await _databaseContext.WikiDocuments.AnyAsync(x => x.WikiId == request.WikiId && x.FileId == result.FileId);
+            var exisWikitDocument = await _databaseContext.WikiDocuments.FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.FileId == result.FileId);
 
-            if (exisWikitDocument)
+            if (exisWikitDocument != null)
             {
-                throw new BusinessException("同一个知识库下不能有同名文件，请联系管理员") { StatusCode = 409 };
+                throw new BusinessException("同一个知识库下不能有相同文件 {0}", exisWikitDocument.FileName) { StatusCode = 409 };
             }
         }
 

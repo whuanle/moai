@@ -27,14 +27,10 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(CreateWikiCommand request, CancellationToken cancellationToken)
     {
-        // 个人知识库可以随便起名，重复没关系
-        if (request.IsSystem)
+        var exist = await _databaseContext.Wikis.AnyAsync(x => x.Name == request.Name, cancellationToken);
+        if (exist)
         {
-            var exist = await _databaseContext.Wikis.AnyAsync(x => x.IsSystem&& x.Name == request.Name, cancellationToken);
-            if (exist)
-            {
-                throw new BusinessException("系统知识库名称重复") { StatusCode = 409 };
-            }
+            throw new BusinessException("系统已存在同名知识库") { StatusCode = 409 };
         }
 
         var wikiEntity = new WikiEntity
@@ -43,8 +39,7 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
             Description = request.Description,
             EmbeddingModelId = default,
             EmbeddingDimensions = 1024,
-            IsSystem = request.IsSystem,
-            IsPublic = false,
+            IsPublic = request.IsPublic,
             IsLock = false
         };
 

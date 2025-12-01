@@ -21,5 +21,5 @@ public class CreateWikiCommand : IRequest<SimpleInt>
     /// <summary>
     /// 是否是系统知识库，创建后不允许修改此属性.
     /// </summary>
-    public bool IsSystem { get; init; }
+    public bool IsPublic { get; init; }
 }

@@ -13,12 +13,7 @@ public class QueryWikiCreatorCommandResponse
     /// <summary>
     /// 是否存在.
     /// </summary>
-    public bool IsExist { get; init; }
-
-    /// <summary>
-    /// 是否系统插件.
-    /// </summary>
-    public bool IsSystem { get; init; }
+    public bool WikiIsExist { get; init; }
 
     /// <summary>
     /// 是否公开.

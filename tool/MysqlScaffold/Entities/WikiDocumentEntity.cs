@@ -40,6 +40,11 @@ public partial class WikiDocumentEntity : IFullAudited
     public string FileType { get; set; } = default!;
 
     /// <summary>
+    /// 是否已经向量化.
+    /// </summary>
+    public bool IsEmbedding { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

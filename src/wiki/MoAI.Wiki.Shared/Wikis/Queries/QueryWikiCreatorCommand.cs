@@ -3,7 +3,6 @@ using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;
 
-
 /// <summary>
 /// 查询知识库创建信息.
 /// </summary>

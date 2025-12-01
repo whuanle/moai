@@ -10,7 +10,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 清空知识库文档向量.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/clear_document")]
+[HttpPost($"{ApiPrefix.Document}/clear_document")]
 public class ClearWikiDocumentEmbeddingEndpoint : Endpoint<ClearWikiDocumentEmbeddingCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -32,7 +32,7 @@ public class ClearWikiDocumentEmbeddingEndpoint : Endpoint<ClearWikiDocumentEmbe
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

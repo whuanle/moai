@@ -73,9 +73,6 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             {
                 await memoryClient.DeleteDocumentAsync(documentId: document.Id.ToString(), index: document.WikiId.ToString());
             }
-
-            await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentTasks.Where(x => x.DocumentId == request.DocumentId));
-            await _databaseContext.SaveChangesAsync();
         }
         else
         {
@@ -92,8 +89,6 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             {
                 await memoryClient.DeleteIndexAsync(index: wiki.Id.ToString());
             }
-
-            await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentTasks.Where(x => x.WikiId == request.WikiId));
 
             await _databaseContext.Wikis.Where(x => x.Id == wiki.Id).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
             await _databaseContext.SaveChangesAsync();

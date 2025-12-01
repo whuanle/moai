@@ -10,7 +10,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 取消文档向量化任务.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/create_document")]
+[HttpPost($"{ApiPrefix.Document}/create_document")]
 public class CancalWikiDocumentTaskEndpoint : Endpoint<CancalWikiDocumentTaskCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -32,7 +32,7 @@ public class CancalWikiDocumentTaskEndpoint : Endpoint<CancalWikiDocumentTaskCom
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

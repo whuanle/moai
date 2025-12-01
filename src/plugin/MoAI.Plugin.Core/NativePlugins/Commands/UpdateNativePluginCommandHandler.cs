@@ -30,7 +30,7 @@ public class UpdateNativePluginCommandHandler : IRequestHandler<UpdateNativePlug
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateNativePluginCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _databaseContext.PluginInternals.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
+        var entity = await _databaseContext.PluginNatives.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
 
         if (entity == null)
         {
@@ -59,7 +59,7 @@ public class UpdateNativePluginCommandHandler : IRequestHandler<UpdateNativePlug
         }
 
         // 检查插件是否同名
-        var exists = await _databaseContext.PluginInternals
+        var exists = await _databaseContext.PluginNatives
             .AnyAsync(x => x.PluginName == request.Name && x.Id != request.PluginId, cancellationToken);
         if (exists)
         {
@@ -79,7 +79,7 @@ public class UpdateNativePluginCommandHandler : IRequestHandler<UpdateNativePlug
         entity.IsPublic = request.IsPublic;
         entity.Config = request.Config;
 
-        _databaseContext.PluginInternals.Update(entity);
+        _databaseContext.PluginNatives.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

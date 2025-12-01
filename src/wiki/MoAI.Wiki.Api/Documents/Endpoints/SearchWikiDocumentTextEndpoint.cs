@@ -11,7 +11,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 搜索知识库.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/search")]
+[HttpPost($"{ApiPrefix.Document}/search")]
 
 public class SearchWikiDocumentTextEndpoint : Endpoint<SearchWikiDocumentTextCommand, SearchWikiDocumentTextCommandResponse>
 {
@@ -34,7 +34,7 @@ public class SearchWikiDocumentTextEndpoint : Endpoint<SearchWikiDocumentTextCom
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

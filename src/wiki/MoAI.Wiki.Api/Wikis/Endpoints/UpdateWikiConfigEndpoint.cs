@@ -37,20 +37,6 @@ public class UpdateWikiConfigEndpoint : Endpoint<UpdateWikiConfigCommand, EmptyC
             WikiId = req.WikiId
         });
 
-        // 只有超级管理员或知识库创建人可以修改配置
-        if (isCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                ContextUserId = _userContext.UserId
-            });
-
-            if (isAdmin.IsAdmin)
-            {
-                return await _mediator.Send(req);
-            }
-        }
-
         if (isCreator.CreatorId == _userContext.UserId)
         {
             return await _mediator.Send(req);

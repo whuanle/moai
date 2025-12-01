@@ -11,7 +11,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 预上传文档.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/preupload_document")]
+[HttpPost($"{ApiPrefix.Document}/preupload_document")]
 public class PreUploadWikiDocumentEndpoint : Endpoint<PreUploadWikiDocumentCommand, PreloadWikiDocumentResponse>
 {
     private readonly IMediator _mediator;
@@ -33,7 +33,7 @@ public class PreUploadWikiDocumentEndpoint : Endpoint<PreUploadWikiDocumentComma
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

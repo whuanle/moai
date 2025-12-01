@@ -11,7 +11,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 查询文档任务列表.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/task_list")]
+[HttpPost($"{ApiPrefix.Document}/task_list")]
 public class QueryWikiDocumentTaskListCommandEndpoint : Endpoint<QueryWikiDocumentTaskListCommand, IReadOnlyCollection<WikiDocumentTaskItem>>
 {
     private readonly IMediator _mediator;
@@ -33,7 +33,7 @@ public class QueryWikiDocumentTaskListCommandEndpoint : Endpoint<QueryWikiDocume
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

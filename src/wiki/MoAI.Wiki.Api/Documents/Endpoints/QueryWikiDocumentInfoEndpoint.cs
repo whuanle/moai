@@ -11,7 +11,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 查询文档信息.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/document_info")]
+[HttpPost($"{ApiPrefix.Document}/document_info")]
 public class QueryWikiDocumentInfoEndpoint : Endpoint<QueryWikiDocumentInfoCommand, QueryWikiDocumentListItem>
 {
     private readonly IMediator _mediator;
@@ -33,7 +33,7 @@ public class QueryWikiDocumentInfoEndpoint : Endpoint<QueryWikiDocumentInfoComma
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

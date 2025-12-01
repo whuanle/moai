@@ -26,14 +26,14 @@ public class DeleteNativePluginCommandHandler : IRequestHandler<DeleteNativePlug
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteNativePluginCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _databaseContext.PluginInternals.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
+        var entity = await _databaseContext.PluginNatives.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
 
         if (entity == null)
         {
             throw new BusinessException("未找到插件实例") { StatusCode = 404 };
         }
 
-        _databaseContext.PluginInternals.Remove(entity);
+        _databaseContext.PluginNatives.Remove(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

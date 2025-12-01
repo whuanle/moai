@@ -31,44 +31,38 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
     public async Task<IReadOnlyCollection<QueryWikiInfoResponse>> Handle(QueryWikiBaseListCommand request, CancellationToken cancellationToken)
     {
         /*
-         四种情况：
-         1，系统知识库
-         2，自己创建的
-         3，是知识库成员
-         4，无关，但是公开的知识库
+         三种情况：
+         1，自己创建的
+         2，是知识库成员
+         3，无关，但是公开的知识库
          */
 
         var query = _databaseContext.Wikis.AsQueryable();
 
-        if (request.QueryType == WikiQueryType.System)
+        if (request.QueryType == WikiQueryType.Own)
         {
-            query = query.Where(x => x.IsSystem);
+            query = query.Where(x => x.CreateUserId == request.ContextUserId);
         }
-        else
+        else if (request.QueryType == WikiQueryType.User)
         {
-            query = query.Where(x => !x.IsSystem);
-            if (request.QueryType == WikiQueryType.Own)
-            {
-                query = query.Where(x => x.CreateUserId == request.ContextUserId);
-            }
-            else if (request.QueryType == WikiQueryType.User)
-            {
-                query = query.Where(x => _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId && a.WikiId == x.Id));
-            }
+            query = query.Where(x => _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId && a.WikiId == x.Id));
         }
-
-        if (request.IsPublic == true)
+        else if (request.QueryType == WikiQueryType.Public)
         {
             query = query.Where(x => x.IsPublic);
         }
+        else
+        {
+            query = query.Where(x => x.CreateUserId == request.ContextUserId || _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId && a.WikiId == x.Id) || x.IsPublic);
+        }
 
+        // 列表查询不返回所有字段.
         var response = await query
             .OrderBy(x => x.Name)
             .Select(x => new QueryWikiInfoResponse
             {
                 WikiId = x.Id,
                 Name = x.Name,
-                IsSystem = x.IsSystem,
                 Description = x.Description,
                 IsPublic = x.IsPublic,
                 CreateUserId = x.CreateUserId,
@@ -79,15 +73,6 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
                 DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()
             })
             .ToListAsync(cancellationToken);
-
-        if (response.Where(x => x.IsSystem).Any())
-        {
-            var adminIds = await _mediator.Send(new QueryAdminIdsCommand());
-            foreach (var item in response.Where(x => x.IsSystem))
-            {
-                item.SetProperty(x => x.IsUser, adminIds.AdminIds.Contains(request.ContextUserId));
-            }
-        }
 
         await _mediator.Send(new FillUserInfoCommand { Items = response });
 

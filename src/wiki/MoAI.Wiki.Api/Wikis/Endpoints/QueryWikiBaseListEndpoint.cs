@@ -29,6 +29,7 @@ public class QueryWikiBaseListEndpoint : Endpoint<QueryWikiBaseListCommand, IRea
     /// <inheritdoc/>
     public override async Task<IReadOnlyCollection<QueryWikiInfoResponse>> ExecuteAsync(QueryWikiBaseListCommand req, CancellationToken ct)
     {
+        req.SetUserId(_userContext.UserId);
         return await _mediator.Send(req, ct);
     }
 }

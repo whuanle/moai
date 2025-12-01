@@ -54,9 +54,6 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.IsPublic)
             .HasComment("是否公开，公开后所有人都可以使用，但是不能进去操作")
             .HasColumnName("is_public");
-        entity.Property(e => e.IsSystem)
-            .HasComment("系统知识库")
-            .HasColumnName("is_system");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("知识库名称")

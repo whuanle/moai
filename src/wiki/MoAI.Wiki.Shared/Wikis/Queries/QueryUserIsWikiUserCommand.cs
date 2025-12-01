@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;
@@ -6,7 +7,7 @@ namespace MoAI.Wiki.Wikis.Queries;
 /// <summary>
 /// 查询用户是否在知识库协作成员中.
 /// </summary>
-public class QueryUserIsWikiUserCommand : IRequest<QueryUserIsWikiUserCommandResponse>
+public class QueryUserIsWikiUserCommand : IUserIdContext, IRequest<QueryUserIsWikiUserCommandResponse>
 {
     /// <summary>
     /// 知识库 id.
@@ -16,5 +17,5 @@ public class QueryUserIsWikiUserCommand : IRequest<QueryUserIsWikiUserCommandRes
     /// <summary>
     /// 用户 id.
     /// </summary>
-    public int UserId { get; init; }
+    public int ContextUserId { get; init; }
 }

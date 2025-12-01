@@ -2,7 +2,7 @@
 
 namespace MoAI.Wiki.Models;
 
-public enum WebDocumentCrawlPathRule
+public enum WikiCrawlerCrawlPathRule
 {
     /// <summary>
     /// 忽略.

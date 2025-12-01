@@ -29,11 +29,6 @@ public class QueryWikiInfoResponse : AuditsInfo
     public bool IsPublic { get; init; } = default!;
 
     /// <summary>
-    /// 是否是系统知识库.
-    /// </summary>
-    public bool IsSystem { get; init; }
-
-    /// <summary>
     /// 是否该知识库成员.
     /// </summary>
     public bool IsUser { get; init; }

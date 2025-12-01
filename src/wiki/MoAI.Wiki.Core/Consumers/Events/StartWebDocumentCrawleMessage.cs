@@ -1,6 +1,6 @@
 ﻿namespace MoAI.Wiki.Consumers.Events;
 
-public class StartWebDocumentCrawleMessage
+public class StartWikiCrawlerMessage
 {
     /// <summary>
     /// 知识库 id.
@@ -10,7 +10,10 @@ public class StartWebDocumentCrawleMessage
     /// <summary>
     /// 知识库 web 配置 id.
     /// </summary>
-    public int WebConfigId { get; init; }
+    public int ConfigId { get; init; }
 
+    /// <summary>
+    /// 任务 id.
+    /// </summary>
     public Guid TaskId { get; init; }
 }

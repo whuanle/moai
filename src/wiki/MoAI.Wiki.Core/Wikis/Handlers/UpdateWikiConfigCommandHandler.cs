@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AiModel.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
@@ -37,26 +38,38 @@ public class UpdateWikiConfigCommandHandler : IRequestHandler<UpdateWikiConfigCo
             throw new BusinessException("知识库不存在") { StatusCode = 500 };
         }
 
-        if (!wikiEntity.IsLock)
+        if (wikiEntity.Name != request.Name)
         {
-            wikiEntity.EmbeddingDimensions = request.EmbeddingDimensions;
-            wikiEntity.EmbeddingModelId = request.EmbeddingModelId;
-        }
-
-        if (request.Name != wikiEntity.Name && wikiEntity.IsSystem)
-        {
-            var exist = await _databaseContext.Wikis.AnyAsync(x => x.IsSystem && x.Id != wikiEntity.Id && x.Name == request.Name, cancellationToken);
+            var exist = await _databaseContext.Wikis.AnyAsync(x => x.Id != wikiEntity.Id && x.Name == request.Name, cancellationToken);
             if (exist)
             {
-                throw new BusinessException("系统知识库名称重复") { StatusCode = 409 };
+                throw new BusinessException("知识库名称重复") { StatusCode = 409 };
             }
+        }
+
+        if (request.EmbeddingDimensions != 0 && request.EmbeddingModelId != 0)
+        {
+            if (wikiEntity.IsLock)
+            {
+                throw new BusinessException("知识库已锁定配置，禁止更新") { StatusCode = 409 };
+            }
+
+            // 检查模型是否存在
+            var existAiModel = await _databaseContext.AiModels.AnyAsync(x => x.IsPublic && x.Id == request.EmbeddingModelId && x.AiModelType == AiModelType.Embedding.ToJsonString());
+            if (!existAiModel)
+            {
+                throw new BusinessException("模型不存在或非向量化模型");
+            }
+
+            wikiEntity.EmbeddingDimensions = request.EmbeddingDimensions;
+            wikiEntity.EmbeddingModelId = request.EmbeddingModelId;
         }
 
         wikiEntity.IsPublic = request.IsPublic;
         wikiEntity.Name = request.Name;
         wikiEntity.Description = request.Description;
 
-        _databaseContext.Update(wikiEntity);
+        _databaseContext.Wikis.Update(wikiEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

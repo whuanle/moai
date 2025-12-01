@@ -31,11 +31,16 @@ public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryWikiCreatorCo
             {
                 CreatorId = x.CreateUserId,
                 WikiId = x.Id,
-                IsSystem = x.IsSystem,
                 IsPublic = x.IsPublic,
-                IsExist = x.Id > 0
+                WikiIsExist = x.Id > 0
             }).FirstOrDefaultAsync(cancellationToken);
 
-        return wikiEntity;
+        return new QueryWikiCreatorCommandResponse
+        {
+            CreatorId = wikiEntity?.CreatorId ?? 0,
+            WikiId = wikiEntity?.WikiId ?? 0,
+            IsPublic = wikiEntity?.IsPublic ?? false,
+            WikiIsExist = wikiEntity?.WikiIsExist ?? false,
+        };
     }
 }

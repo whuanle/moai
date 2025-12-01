@@ -69,6 +69,18 @@ import PluginClassPage from "./components/admin/pluginClass/PluginClassPage";
 import PluginList from "./components/plugin/PluginList";
 import PluginManagerPage from "./components/admin/plugin/PluginManagerPage";
 import NativePluginPage from "./components/admin/nativeplugin/NativePluginPage";
+import WikiListPage from "./components/wiki/WikiListPage";
+import WikiLayout from "./components/wiki/WikiLayout";
+import WikiSettings from "./components/wiki/WikiSettings";
+import WikiDocument from "./components/wiki/WikiDocument";
+import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
+import WikiSearch from "./components/wiki/WikiSearch";
+import WikiUser from "./components/wiki/WikiUser";
+import WikiCrawleLayout from "./components/wiki/crawle/WikiCrawleLayout";
+import WikiCrawleConfig from "./components/wiki/crawle/WikiCrawleConfig";
+import WikiCrawle from "./components/wiki/WikiCrawle";
+import WikiCrawleDocument from "./components/wiki/crawle/WikiCrawleDocument";
+import WikiCrawleTask from "./components/wiki/crawle/WikiCrawleTask";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -198,14 +210,14 @@ function App() {
         label: <Link to="/app/index">首页</Link>,
       },
       {
-        key: "wiki",
-        icon: <BookOutlined />,
-        label: <Link to="/app/wiki/list">知识库</Link>,
-      },
-      {
         key: "prompt",
         icon: <BookOutlined />,
         label: <Link to="/app/prompt/list">提示词</Link>,
+      },
+      {
+        key: "wiki",
+        icon: <BookOutlined />,
+        label: <Link to="/app/wiki/list">知识库</Link>,
       },
       {
         key: "user",
@@ -385,9 +397,9 @@ function App() {
                   <Route path="usersetting" element={<UserSetting />} />
                   <Route path="oauth" element={<BindOAuth />} />
                 </Route>
-                {/* <Route path="wiki">
+                <Route path="wiki">
                   <Route index element={<Navigate to="list" replace />} />
-                  <Route path="list" element={<WikiPage />} />
+                  <Route path="list" element={<WikiListPage />} />
                   <Route path=":id" element={<WikiLayout />}>
                     <Route path="settings" element={<WikiSettings />} />
                     <Route index element={<WikiDocument />} />
@@ -403,10 +415,7 @@ function App() {
                       <Route path="task" element={<WikiCrawleTask />} />
                     </Route>
                   </Route>
-                </Route> */}
-                {/* <Route path="plugin">
-                  <Route index element={<Navigate to="list" replace />} />
-                </Route> */}
+                </Route>
                 <Route path="prompt">
                   <Route index element={<Navigate to="list" replace />} />
                   <Route path="list" element={<PromptListPage />} />

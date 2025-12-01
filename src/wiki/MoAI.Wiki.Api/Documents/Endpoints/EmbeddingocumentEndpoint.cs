@@ -10,7 +10,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 向量化文档.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/embedding_document")]
+[HttpPost($"{ApiPrefix.Document}/embedding_document")]
 public class EmbeddingocumentEndpoint : Endpoint<EmbeddingDocumentCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
@@ -32,7 +32,7 @@ public class EmbeddingocumentEndpoint : Endpoint<EmbeddingDocumentCommand, Empty
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

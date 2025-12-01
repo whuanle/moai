@@ -2,7 +2,7 @@
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Wiki.Documents.Queries;
+using MoAI.Wiki.DocumentManager.Queries;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 
@@ -11,7 +11,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 查询知识库文档列表.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/list")]
+[HttpPost($"{ApiPrefix.Document}/list")]
 
 public class QueryWikiDocumentListEndpoint : Endpoint<QueryWikiDocumentListCommand, QueryWikiDocumentListCommandResponse>
 {
@@ -34,7 +34,7 @@ public class QueryWikiDocumentListEndpoint : Endpoint<QueryWikiDocumentListComma
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

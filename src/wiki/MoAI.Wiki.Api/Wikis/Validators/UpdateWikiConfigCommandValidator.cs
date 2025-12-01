@@ -18,21 +18,12 @@ public class UpdateWikiConfigCommandValidator : Validator<UpdateWikiConfigComman
             .NotEmpty().WithMessage("知识库id不正确")
             .GreaterThan(0).WithMessage("知识库id不正确");
 
-        RuleFor(x => x.EmbeddingModelId)
-            .NotEmpty().WithMessage("模型id不正确")
-            .GreaterThan(0).WithMessage("模型id不正确");
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("知识库名称长度在 2-20 之间.")
+            .Length(2, 20).WithMessage("知识库名称长度在 2-20 之间.");
 
-        RuleFor(x => x.EmbeddingDimensions)
-            .NotEmpty().WithMessage("向量维度配置不正确")
-            .GreaterThan(0).WithMessage("向量维度配置不正确");
-
-        //RuleFor(x => x.EmbeddingBatchSize)
-        //    .NotEmpty().WithMessage("批处理大小配置不正确")
-        //    .GreaterThan(0).WithMessage("批处理大小配置不正确");
-
-        //RuleFor(x => x.MaxRetries)
-        //    .NotEmpty().WithMessage("文档处理最大重试次数0-5")
-        //    .GreaterThan(0).WithMessage("文档处理最大重试次数0-5")
-        //    .LessThan(5).WithMessage("文档处理最大重试次数0-5");
+        RuleFor(x => x.Description)
+            .NotEmpty().WithMessage("知识库描述长度在 2-255 之间.")
+            .Length(2, 255).WithMessage("知识库描述长度在 2-255 之间.");
     }
 }

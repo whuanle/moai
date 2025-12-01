@@ -30,19 +30,6 @@ public class CreateWikiEndpoint : Endpoint<CreateWikiCommand, SimpleInt>
     /// <inheritdoc/>
     public override async Task<SimpleInt> ExecuteAsync(CreateWikiCommand req, CancellationToken ct)
     {
-        if (req.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                ContextUserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("只有管理员可以创建系统知识库.") { StatusCode = 403 };
-            }
-        }
-
         return await _mediator.Send(req);
     }
 }

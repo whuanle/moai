@@ -32,7 +32,7 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
     /// <inheritdoc/>
     public async Task<QueryNativePluginListCommandResponse> Handle(QueryNativePluginListCommand request, CancellationToken cancellationToken)
     {
-        var query = _databaseContext.PluginInternals.AsQueryable();
+        var query = _databaseContext.PluginNatives.AsQueryable();
 
         if (!string.IsNullOrEmpty(request.Name))
         {
@@ -78,13 +78,13 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
 
         await _mediator.Send(new FillUserInfoCommand { Items = plugins });
 
-        var classifyCount = await _databaseContext.PluginInternals.GroupBy(x => x.ClassifyId).Select(x => new KeyValue<string, int>
+        var classifyCount = await _databaseContext.PluginNatives.GroupBy(x => x.ClassifyId).Select(x => new KeyValue<string, int>
         {
             Key = x.Key.ToString(),
             Value = x.Count()
         }).ToArrayAsync();
 
-        var templateClassifyCount = await _databaseContext.PluginInternals.GroupBy(x => x.TemplatePluginClassify).Select(x => new KeyValue<string, int>
+        var templateClassifyCount = await _databaseContext.PluginNatives.GroupBy(x => x.TemplatePluginClassify).Select(x => new KeyValue<string, int>
         {
             Key = x.Key,
             Value = x.Count()

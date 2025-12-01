@@ -56,7 +56,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
-        exists = await _databaseContext.PluginInternals
+        exists = await _databaseContext.PluginNatives
             .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
         if (exists)
         {

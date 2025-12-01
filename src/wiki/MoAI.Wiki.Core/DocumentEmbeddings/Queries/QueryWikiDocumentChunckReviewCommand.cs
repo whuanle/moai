@@ -41,6 +41,6 @@ public class QueryWikiDocumentChunckReviewCommandHandler : IRequestHandler<Query
         using var textExtractionHandler = ActivatorUtilities.CreateInstance<TextExtractionHandler>(serviceProvider, "extract");
 
 
-        return document ?? new QueryWikiDocumentChunckReviewCommandResponse();
+        return default!;
     }
 }

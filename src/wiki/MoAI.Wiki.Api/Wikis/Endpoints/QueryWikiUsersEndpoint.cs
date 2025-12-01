@@ -31,28 +31,9 @@ public class QueryWikiUsersEndpoint : Endpoint<QueryWikiUsersCommand, QueryWikiU
     /// <inheritdoc/>
     public override async Task<QueryWikiUsersCommandResponse> ExecuteAsync(QueryWikiUsersCommand req, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand
-        {
-            WikiId = req.WikiId
-        });
-
-        if (isCreator.IsSystem)
-        {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                ContextUserId = _userContext.UserId
-            });
-
-            if (isAdmin.IsAdmin)
-            {
-                return await _mediator.Send(req);
-            }
-        }
-
-        // 其他情况判断是不是成员
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

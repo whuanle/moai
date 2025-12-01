@@ -1,80 +1,80 @@
-﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
-using MoAI.Database;
-using MoAI.Infra.Exceptions;
-using MoAI.User.Queries;
-using MoAI.Wiki.Documents.Queries.Responses;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Wikis.Queries.Response;
+﻿//using MediatR;
+//using Microsoft.EntityFrameworkCore;
+//using MoAI.Database;
+//using MoAI.Infra.Exceptions;
+//using MoAI.User.Queries;
+//using MoAI.Wiki.Documents.Queries.Responses;
+//using MoAI.Wiki.Models;
+//using MoAI.Wiki.Wikis.Queries.Response;
 
-namespace MoAI.Wiki.Documents.Queries;
+//namespace MoAI.Wiki.Documents.Queries;
 
-/// <summary>
-/// 查询文档任务列表.
-/// </summary>
-public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWikiDocumentTaskListCommand, IReadOnlyCollection<WikiDocumentTaskItem>>
-{
-    private readonly DatabaseContext _databaseContext;
-    private readonly IMediator _mediator;
+///// <summary>
+///// 查询文档任务列表.
+///// </summary>
+//public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWikiDocumentTaskListCommand, IReadOnlyCollection<WikiDocumentTaskItem>>
+//{
+//    private readonly DatabaseContext _databaseContext;
+//    private readonly IMediator _mediator;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="QueryWikiDocumentTaskListCommandHandler"/> class.
-    /// </summary>
-    /// <param name="databaseContext"></param>
-    /// <param name="mediator"></param>
-    public QueryWikiDocumentTaskListCommandHandler(DatabaseContext databaseContext, IMediator mediator)
-    {
-        _databaseContext = databaseContext;
-        _mediator = mediator;
-    }
+//    /// <summary>
+//    /// Initializes a new instance of the <see cref="QueryWikiDocumentTaskListCommandHandler"/> class.
+//    /// </summary>
+//    /// <param name="databaseContext"></param>
+//    /// <param name="mediator"></param>
+//    public QueryWikiDocumentTaskListCommandHandler(DatabaseContext databaseContext, IMediator mediator)
+//    {
+//        _databaseContext = databaseContext;
+//        _mediator = mediator;
+//    }
 
-    /// <inheritdoc/>
-    public async Task<IReadOnlyCollection<WikiDocumentTaskItem>> Handle(QueryWikiDocumentTaskListCommand request, CancellationToken cancellationToken)
-    {
-        var query = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId);
-        var fileEntity = await query.Join(_databaseContext.Files, a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
-        {
-            DocumentId = a.Id,
-            FileName = b.FileName,
-            FileSize = b.FileSize,
-            ContentType = b.ContentType,
-            CreateTime = a.CreateTime,
-            CreateUserId = a.CreateUserId,
-            UpdateTime = a.UpdateTime,
-            UpdateUserId = a.UpdateUserId
-        }).FirstOrDefaultAsync();
+//    /// <inheritdoc/>
+//    public async Task<IReadOnlyCollection<WikiDocumentTaskItem>> Handle(QueryWikiDocumentTaskListCommand request, CancellationToken cancellationToken)
+//    {
+//        var query = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId);
+//        var fileEntity = await query.Join(_databaseContext.Files, a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
+//        {
+//            DocumentId = a.Id,
+//            FileName = b.FileName,
+//            FileSize = b.FileSize,
+//            ContentType = b.ContentType,
+//            CreateTime = a.CreateTime,
+//            CreateUserId = a.CreateUserId,
+//            UpdateTime = a.UpdateTime,
+//            UpdateUserId = a.UpdateUserId
+//        }).FirstOrDefaultAsync();
 
-        if (fileEntity == null)
-        {
-            throw new BusinessException("未找到文档") { StatusCode = 404 };
-        }
+//        if (fileEntity == null)
+//        {
+//            throw new BusinessException("未找到文档") { StatusCode = 404 };
+//        }
 
-        var result = await _databaseContext.WikiDocuments
-            .Where(x => x.Id == request.DocumentId)
-            .Join(_databaseContext.WikiDocumentTasks, a => a.Id, b => b.DocumentId, (a, b) => new WikiDocumentTaskItem
-            {
-                DocumentId = a.Id,
-                CreateTime = b.CreateTime,
-                CreateUserId = b.CreateUserId,
-                UpdateTime = b.UpdateTime,
-                UpdateUserId = b.UpdateUserId,
-                FileId = a.FileId,
-                FileName = fileEntity.FileName,
-                FileSize = fileEntity.FileSize,
-                ContentType = fileEntity.ContentType,
-                WikiId = a.WikiId,
-                State = (FileEmbeddingState)b.State,
-                Message = b.Message,
-                CreateUserName = string.Empty,
-                UpdateUserName = string.Empty,
-                Id = b.Id,
-                MaxTokensPerParagraph = b.MaxTokensPerParagraph,
-                OverlappingTokens = b.OverlappingTokens,
-                Tokenizer = b.Tokenizer,
-            }).OrderByDescending(x => x.CreateTime).ToListAsync(cancellationToken);
+//        var result = await _databaseContext.WikiDocuments
+//            .Where(x => x.Id == request.DocumentId)
+//            .Join(_databaseContext.WikiDocumentTasks, a => a.Id, b => b.DocumentId, (a, b) => new WikiDocumentTaskItem
+//            {
+//                DocumentId = a.Id,
+//                CreateTime = b.CreateTime,
+//                CreateUserId = b.CreateUserId,
+//                UpdateTime = b.UpdateTime,
+//                UpdateUserId = b.UpdateUserId,
+//                FileId = a.FileId,
+//                FileName = fileEntity.FileName,
+//                FileSize = fileEntity.FileSize,
+//                ContentType = fileEntity.ContentType,
+//                WikiId = a.WikiId,
+//                State = (FileEmbeddingState)b.State,
+//                Message = b.Message,
+//                CreateUserName = string.Empty,
+//                UpdateUserName = string.Empty,
+//                Id = b.Id,
+//                MaxTokensPerParagraph = b.MaxTokensPerParagraph,
+//                OverlappingTokens = b.OverlappingTokens,
+//                Tokenizer = b.Tokenizer,
+//            }).OrderByDescending(x => x.CreateTime).ToListAsync(cancellationToken);
 
-        await _mediator.Send(new FillUserInfoCommand { Items = result });
+//        await _mediator.Send(new FillUserInfoCommand { Items = result });
 
-        return result;
-    }
-}
+//        return result;
+//    }
+//}

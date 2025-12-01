@@ -91,11 +91,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
 
     /// <summary>
-    /// 内置插件.
-    /// </summary>
-    public virtual DbSet<PluginInternalEntity> PluginInternals { get; set; }
-
-    /// <summary>
     /// 插件使用量限制.
     /// </summary>
     public virtual DbSet<PluginLimitEntity> PluginLimits { get; set; }
@@ -104,6 +99,11 @@ public partial class DatabaseContext : DbContext
     /// 插件使用日志.
     /// </summary>
     public virtual DbSet<PluginLogEntity> PluginLogs { get; set; }
+
+    /// <summary>
+    /// 内置插件.
+    /// </summary>
+    public virtual DbSet<PluginNativeEntity> PluginNatives { get; set; }
 
     /// <summary>
     /// 提示词.
@@ -136,9 +136,14 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
 
     /// <summary>
-    /// 文档向量化任务状态.
+    /// 知识库插件配置.
     /// </summary>
-    public virtual DbSet<WikiDocumentTaskEntity> WikiDocumentTasks { get; set; }
+    public virtual DbSet<WikiPluginConfigEntity> WikiPluginConfigs { get; set; }
+
+    /// <summary>
+    /// 爬虫页面进度列表.
+    /// </summary>
+    public virtual DbSet<WikiPluginCrawlerPageEntity> WikiPluginCrawlerPages { get; set; }
 
     /// <summary>
     /// 知识库成员.
@@ -146,24 +151,9 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiUserEntity> WikiUsers { get; set; }
 
     /// <summary>
-    /// wiki网页抓取.
+    /// 工作任务.
     /// </summary>
-    public virtual DbSet<WikiWebConfigEntity> WikiWebConfigs { get; set; }
-
-    /// <summary>
-    /// 爬虫页面进度列表.
-    /// </summary>
-    public virtual DbSet<WikiWebCrawlePageStateEntity> WikiWebCrawlePageStates { get; set; }
-
-    /// <summary>
-    /// web爬虫状态.
-    /// </summary>
-    public virtual DbSet<WikiWebCrawleTaskEntity> WikiWebCrawleTasks { get; set; }
-
-    /// <summary>
-    /// 抓取的页面文档.
-    /// </summary>
-    public virtual DbSet<WikiWebDocumentEntity> WikiWebDocuments { get; set; }
+    public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

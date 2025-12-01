@@ -32,7 +32,7 @@ public class QueryNativePluginDetailCommandHandler : IRequestHandler<QueryNative
     /// <inheritdoc/>
     public async Task<NativePluginDetail> Handle(QueryNativePluginDetailCommand request, CancellationToken cancellationToken)
     {
-        var plugin = await _databaseContext.PluginInternals.Where(x => x.Id == request.PluginId)
+        var plugin = await _databaseContext.PluginNatives.Where(x => x.Id == request.PluginId)
             .Select(x => new NativePluginDetail
             {
                 PluginId = x.Id,

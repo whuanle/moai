@@ -32,6 +32,8 @@ import {
   LockOutlined,
   ReloadOutlined,
   PlusOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import { useParams, useNavigate } from "react-router";
@@ -40,7 +42,8 @@ import {
   QueryWikiDocumentListItem,
   ComplateUploadWikiDocumentCommand,
   DeleteWikiDocumentCommand,
-  PreUploadFileCommandResponse,
+  PreloadWikiDocumentResponse,
+  UpdateWikiDocumentFileNameCommand,
 } from "../../apiClient/models";
 import { FileSizeHelper } from "../../helper/FileSizeHelper";
 import { FileTypeHelper } from "../../helper/FileTypeHelper";
@@ -84,36 +87,62 @@ interface BatchUploadStatus {
 
 // 文件格式选项
 const FILE_FORMAT_OPTIONS = [
-  { value: ".md", label: ".md (Markdown)" },
-  { value: ".pdf", label: ".pdf (Portable Document Format)" },
-  { value: ".doc", label: ".doc (Microsoft Word 97-2003)" },
-  { value: ".docx", label: ".docx (Microsoft Word)" },
-  { value: ".xls", label: ".xls (Microsoft Excel 97-2003)" },
-  { value: ".xlsx", label: ".xlsx (Microsoft Excel)" },
-  { value: ".ppt", label: ".ppt (Microsoft PowerPoint 97-2003)" },
-  { value: ".pptx", label: ".pptx (Microsoft PowerPoint)" },
-  { value: ".txt", label: ".txt (Plain Text)" },
-  { value: ".rtf", label: ".rtf (Rich Text Format)" },
-  { value: ".odt", label: ".odt (OpenDocument Text)" },
-  { value: ".ods", label: ".ods (OpenDocument Spreadsheet)" },
-  { value: ".odp", label: ".odp (OpenDocument Presentation)" },
-  { value: ".csv", label: ".csv (Comma-Separated Values)" },
-  { value: ".json", label: ".json (JSON - JavaScript Object Notation)" },
-  { value: ".xml", label: ".xml (XML - eXtensible Markup Language)" },
-  { value: ".html", label: ".html (HTML - HyperText Markup Language)" },
-  { value: ".htm", label: ".htm (HTML - HyperText Markup Language)" },
-  { value: ".epub", label: ".epub (EPUB - Electronic Publication)" },
-  { value: ".mobi", label: ".mobi (MOBI - Mobipocket)" },
-  { value: ".ps", label: ".ps (PostScript)" },
-  { value: ".tex", label: ".tex (LaTeX Source Document)" },
-  { value: ".dvi", label: ".dvi (Device Independent File Format - LaTeX)" },
-  { value: ".djvu", label: ".djvu (DjVu)" },
-  { value: ".msg", label: ".msg (Microsoft Outlook Email Message)" },
-  { value: ".eml", label: ".eml (EML - Email Message)" },
-  { value: ".xps", label: ".xps (XML Paper Specification)" },
-  { value: ".gdoc", label: ".gdoc (Google Docs)" },
-  { value: ".gsheet", label: ".gsheet (Google Sheets)" },
-  { value: ".gslides", label: ".gslides (Google Slides)" },
+  {
+    label: "文本类",
+    options: [
+      { value: ".txt", label: ".txt (Plain Text)" },
+      { value: ".md", label: ".md (Markdown)" },
+    ],
+  },
+  {
+    label: "标记语言类",
+    options: [
+      { value: ".htm", label: ".htm (HTML)" },
+      { value: ".html", label: ".html (HTML)" },
+      { value: ".xhtml", label: ".xhtml (XHTML)" },
+      { value: ".xml", label: ".xml (XML)" },
+      { value: ".jsonld", label: ".jsonld (JSON-LD)" },
+    ],
+  },
+  {
+    label: "代码类",
+    options: [
+      { value: ".css", label: ".css (Cascading Style Sheets)" },
+      { value: ".js", label: ".js (JavaScript)" },
+      { value: ".sh", label: ".sh (Shell Script)" },
+    ],
+  },
+  {
+    label: "文档类",
+    options: [
+      { value: ".pdf", label: ".pdf (Portable Document Format)" },
+      { value: ".rtf", label: ".rtf (Rich Text Format)" },
+      { value: ".doc", label: ".doc (Microsoft Word 97-2003)" },
+      { value: ".docx", label: ".docx (Microsoft Word)" },
+      { value: ".ppt", label: ".ppt (Microsoft PowerPoint 97-2003)" },
+      { value: ".pptx", label: ".pptx (Microsoft PowerPoint)" },
+      { value: ".xls", label: ".xls (Microsoft Excel 97-2003)" },
+      { value: ".xlsx", label: ".xlsx (Microsoft Excel)" },
+    ],
+  },
+  {
+    label: "开放文档类",
+    options: [
+      { value: ".odt", label: ".odt (OpenDocument Text)" },
+      { value: ".ods", label: ".ods (OpenDocument Spreadsheet)" },
+      { value: ".odp", label: ".odp (OpenDocument Presentation)" },
+      { value: ".epub", label: ".epub (EPUB - Electronic Publication)" },
+    ],
+  },
+  {
+    label: "数据类",
+    options: [
+      { value: ".url", label: ".url (URL)" },
+      { value: ".text_embedding", label: ".text_embedding (Text Embedding)" },
+      { value: ".json", label: ".json (JSON)" },
+      { value: ".csv", label: ".csv (Comma-Separated Values)" },
+    ],
+  }
 ];
 
 // 自定义 Hook - 文档列表管理
@@ -201,7 +230,23 @@ const useDocumentList = (wikiId: number) => {
     }
   }, [wikiId, pagination.current, pagination.pageSize, searchText, fetchDocuments, messageApi]);
 
-
+  const updateDocumentFileName = useCallback(async (documentId: number, fileName: string) => {
+    try {
+      const client = GetApiClient();
+      const updateCommand: UpdateWikiDocumentFileNameCommand = {
+        wikiId,
+        documentId,
+        fileName,
+      };
+      await client.api.wiki.document.update_document_file_name.post(updateCommand);
+      messageApi.success("文档名称更新成功");
+      fetchDocuments(pagination.current, pagination.pageSize, searchText);
+    } catch (error) {
+      messageApi.error("文档名称更新失败");
+      console.error("Update document file name error:", error);
+      throw error; // 重新抛出错误，以便在编辑组件中处理
+    }
+  }, [wikiId, pagination.current, pagination.pageSize, searchText, fetchDocuments, messageApi]);
 
   return {
     documents,
@@ -213,6 +258,7 @@ const useDocumentList = (wikiId: number) => {
     contextHolder,
     fetchDocuments,
     deleteDocument,
+    updateDocumentFileName,
     setSearchText,
     setFilterMode,
     setSelectedFormats,
@@ -266,6 +312,7 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
       const completeCommand: ComplateUploadWikiDocumentCommand = {
         wikiId,
         fileId: uploadResult.fileId,
+        fileName: file.name,
         isSuccess: true,
       };
 
@@ -392,7 +439,7 @@ const UploadPrivateFile = async (
   client: MoAIClient,
   file: File,
   wikiId: number
-): Promise<PreUploadFileCommandResponse> => {
+): Promise<PreloadWikiDocumentResponse> => {
   const md5 = await GetFileMd5(file);
   const preUploadResponse = await client.api.wiki.document.preupload_document.post({
     wikiId,
@@ -444,20 +491,77 @@ const UploadPrivateFile = async (
   return preUploadResponse;
 };
 // 文档表格列配置
-const getTableColumns = (wikiId: number, navigate: any, deleteDocument: (id: number) => void) => [
+const getTableColumns = (
+  wikiId: number,
+  navigate: any,
+  deleteDocument: (id: number) => void,
+  updateDocumentFileName: (documentId: number, fileName: string) => Promise<void>,
+  editingDocumentId: number | null,
+  editingFileName: string,
+  handleDoubleClickEdit: (documentId: number, fileName: string) => void,
+  handleConfirmEdit: (documentId: number) => void,
+  handleCancelEdit: () => void,
+  setEditingFileName: (value: string) => void
+) => [
   {
     title: "文件名称",
     dataIndex: "fileName",
     key: "fileName",
     width: 200,
-    render: (text: string) => (
-      <Space>
-        <FileTextOutlined />
-        <Text ellipsis={{ tooltip: text }} style={{ maxWidth: 150 }}>
-          {text}
-        </Text>
-      </Space>
-    ),
+    render: (text: string, record: DocumentItem) => {
+      const isEditing = editingDocumentId === record.documentId;
+
+      if (isEditing) {
+        return (
+          <Space>
+            <FileTextOutlined />
+            <Input
+              value={editingFileName}
+              onChange={(e) => setEditingFileName(e.target.value)}
+              onPressEnter={() => handleConfirmEdit(record.documentId)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  handleCancelEdit();
+                }
+              }}
+              autoFocus
+              style={{ width: 400 }}
+              suffix={
+                <Space size={0}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CheckOutlined style={{ fontSize: 14 }} />}
+                    onClick={() => handleConfirmEdit(record.documentId)}
+                    style={{ padding: "0 4px", height: "auto", minWidth: "auto" }}
+                  />
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CloseOutlined style={{ fontSize: 14 }} />}
+                    onClick={handleCancelEdit}
+                    style={{ padding: "0 4px", height: "auto", minWidth: "auto" }}
+                  />
+                </Space>
+              }
+            />
+          </Space>
+        );
+      }
+
+      return (
+        <Space>
+          <FileTextOutlined />
+          <Text
+            onDoubleClick={() => handleDoubleClickEdit(record.documentId, text)}
+            ellipsis={{ tooltip: text }}
+            style={{ maxWidth: 150, cursor: "pointer" }}
+          >
+            {text}
+          </Text>
+        </Space>
+      );
+    },
   },
   {
     title: "文件大小",
@@ -638,6 +742,10 @@ export default function WikiDocument() {
   const wikiId = parseInt(id || "0");
   const navigate = useNavigate();
 
+  // 编辑文档名称的状态
+  const [editingDocumentId, setEditingDocumentId] = useState<number | null>(null);
+  const [editingFileName, setEditingFileName] = useState<string>("");
+
   const {
     documents,
     loading,
@@ -648,6 +756,7 @@ export default function WikiDocument() {
     contextHolder: listContextHolder,
     fetchDocuments,
     deleteDocument,
+    updateDocumentFileName,
     setSearchText,
     setFilterMode,
     setSelectedFormats,
@@ -696,7 +805,56 @@ export default function WikiDocument() {
     setSelectedFormats(values);
   }, [setSelectedFormats]);
 
-  const columns = getTableColumns(wikiId, navigate, deleteDocument);
+  // 处理双击开始编辑
+  const handleDoubleClickEdit = useCallback((documentId: number, fileName: string) => {
+    setEditingDocumentId(documentId);
+    setEditingFileName(fileName);
+  }, []);
+
+  // 处理确认编辑
+  const handleConfirmEdit = useCallback(async (documentId: number) => {
+    if (!editingFileName.trim() || editingFileName.trim() === "") {
+      setEditingDocumentId(null);
+      setEditingFileName("");
+      return;
+    }
+
+    const originalDocument = documents.find(doc => doc.documentId === documentId);
+    if (originalDocument && editingFileName.trim() === originalDocument.fileName) {
+      // 名称没有变化，直接取消编辑
+      setEditingDocumentId(null);
+      setEditingFileName("");
+      return;
+    }
+
+    try {
+      await updateDocumentFileName(documentId, editingFileName.trim());
+      setEditingDocumentId(null);
+      setEditingFileName("");
+    } catch (error) {
+      // 错误已在 updateDocumentFileName 中处理
+      // 如果更新失败，保持编辑状态，让用户可以重新编辑
+    }
+  }, [editingFileName, documents, updateDocumentFileName]);
+
+  // 处理取消编辑
+  const handleCancelEdit = useCallback(() => {
+    setEditingDocumentId(null);
+    setEditingFileName("");
+  }, []);
+
+  const columns = getTableColumns(
+    wikiId,
+    navigate,
+    deleteDocument,
+    updateDocumentFileName,
+    editingDocumentId,
+    editingFileName,
+    handleDoubleClickEdit,
+    handleConfirmEdit,
+    handleCancelEdit,
+    setEditingFileName
+  );
 
   return (
     <>

@@ -2,7 +2,7 @@
 using MediatR;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Wiki.Documents.Commands;
+using MoAI.Wiki.DocumentManager.Handlers;
 using MoAI.Wiki.Wikis.Queries;
 
 namespace MoAI.Wiki.Documents.Endpoints;
@@ -10,7 +10,7 @@ namespace MoAI.Wiki.Documents.Endpoints;
 /// <summary>
 /// 删除知识库文档.
 /// </summary>
-[HttpPost($"{ApiPrefix.Prefix}/document/delete_document")]
+[HttpPost($"{ApiPrefix.Document}/delete_document")]
 
 public class DeleteWikiDocumentEndpoint : Endpoint<DeleteWikiDocumentCommand, EmptyCommandResponse>
 {
@@ -33,7 +33,7 @@ public class DeleteWikiDocumentEndpoint : Endpoint<DeleteWikiDocumentCommand, Em
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {
-            UserId = _userContext.UserId,
+            ContextUserId = _userContext.UserId,
             WikiId = req.WikiId
         });
 

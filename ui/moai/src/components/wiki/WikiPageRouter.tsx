@@ -1,5 +1,4 @@
 import { RouteObject } from "react-router";
-import WikiPage from "./WikiPage";
 import WikiSettings from "./WikiSettings";
 import WikiDocument from "./WikiDocument";
 import WikiLayout from "./WikiLayout";
@@ -11,6 +10,7 @@ import WikiCrawleConfig from "./crawle/WikiCrawleConfig";
 import WikiCrawleLayout from "./crawle/WikiCrawleLayout";
 import WikiCrawleDocument from "./crawle/WikiCrawleDocument";
 import WikiCrawleTask from "./crawle/WikiCrawleTask";
+import WikiListPage from "./WikiListPage";
 
 export const WikiPageRouters: RouteObject[] = [
   {
@@ -18,7 +18,7 @@ export const WikiPageRouters: RouteObject[] = [
     children: [
       {
         path: "list",
-        Component: WikiPage,
+        Component: WikiListPage,
       },
       {
         path: ":id",
@@ -70,7 +70,7 @@ export const WikiPageRouters: RouteObject[] = [
       },
       {
         path: "",
-        Component: WikiPage,
+        Component: WikiListPage,
       },
     ],
   },

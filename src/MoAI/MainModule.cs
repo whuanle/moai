@@ -29,7 +29,7 @@ namespace MoAI;
 [InjectModule<AdminCoreModule>]
 [InjectModule<UserCoreModule>]
 [InjectModule<AiModelCoreModule>]
-//[InjectModule<WikiCoreModule>]
+[InjectModule<WikiCoreModule>]
 [InjectModule<PluginCoreModule>]
 [InjectModule<PromptCoreModule>]
 [InjectModule<AppAiAssistantCoreModule>]

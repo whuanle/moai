@@ -36,21 +36,14 @@ public class InviteWikiUserEndpoint : Endpoint<InviteWikiUserCommand, EmptyComma
             WikiId = req.WikiId
         });
 
-        if (isCreator.IsSystem)
+        if (!isCreator.WikiIsExist)
         {
-            var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-            {
-                ContextUserId = _userContext.UserId
-            });
-
-            if (!isAdmin.IsAdmin)
-            {
-                throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-            }
+            throw new BusinessException("未找到知识库.") { StatusCode = 404 };
         }
-        else if (isCreator.CreatorId != _userContext.UserId)
+
+        if (isCreator.CreatorId != _userContext.UserId)
         {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+            throw new BusinessException("知识库创建人才能操作.") { StatusCode = 404 };
         }
 
         return await _mediator.Send(req);

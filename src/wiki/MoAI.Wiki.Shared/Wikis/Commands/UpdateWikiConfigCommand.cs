@@ -30,12 +30,12 @@ public class UpdateWikiConfigCommand : IRequest<EmptyCommandResponse>
     public bool IsPublic { get; init; }
 
     /// <summary>
-    /// 指定进行文档向量化的模型.
+    /// 指定进行文档向量化的模型，为空则不更新 .
     /// </summary>
     public int EmbeddingModelId { get; set; }
 
     /// <summary>
-    /// 维度，跟模型有关，小于嵌入向量的最大值.
+    /// 维度，跟模型有关，小于嵌入向量的最大值，为空则不更新 .
     /// </summary>
     public int EmbeddingDimensions { get; set; }
 }
