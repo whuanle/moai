@@ -12,17 +12,17 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// 删除提示词.
 /// </summary>
 [HttpDelete($"{ApiPrefix.Prefix}/delete_prompt")]
-public class DeletePromptEndpoints : Endpoint<DeletePromptCommand, EmptyCommandResponse>
+public class DeletePromptEndpoint : Endpoint<DeletePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DeletePromptEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="DeletePromptEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public DeletePromptEndpoints(IMediator mediator, UserContext userContext)
+    public DeletePromptEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

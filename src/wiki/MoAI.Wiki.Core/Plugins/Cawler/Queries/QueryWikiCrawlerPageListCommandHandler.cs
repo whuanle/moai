@@ -6,14 +6,15 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
-using MoAI.Wiki.Plugins.WikiCrawler.Queries;
+using MoAI.Wiki.Plugins.Crawler.Queries;
+using MoAI.Wiki.Plugins.Crawler.Queries.Responses;
 
-namespace MoAI.Wiki.WikiCrawler.Queries;
+namespace MoAI.Wiki.Crawler.Queries;
 
 /// <summary>
-/// <inheritdoc cref="QueryWikiCrawlerPageListCommand"/>
+/// <inheritdoc cref="QueryWikiCrawlerPageTasksCommand"/>
 /// </summary>
-public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiCrawlerPageListCommand, QueryWikiCrawlerPageListCommandResponse>
+public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiCrawlerPageTasksCommand, QueryWikiCrawlerPageTasksCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
 
@@ -27,10 +28,10 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiCrawlerPageListCommandResponse> Handle(QueryWikiCrawlerPageListCommand request, CancellationToken cancellationToken)
+    public async Task<QueryWikiCrawlerPageTasksCommandResponse> Handle(QueryWikiCrawlerPageTasksCommand request, CancellationToken cancellationToken)
     {
         var workerState = await _databaseContext.WikiPluginConfigs.Where(x => x.Id == request.ConfigId)
-            .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "wiki_crawler"), a => a.Id, b => b.BindId, (a, b) => new
+            .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "crawler"), a => a.Id, b => b.BindId, (a, b) => new
             {
                 Id = a.Id,
                 CreateTime = a.CreateTime,
@@ -51,7 +52,7 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
 
         var pluginConfig = workerState.Config.JsonToObject<WikiCrawlerConfig>()!;
 
-        var pages = await _databaseContext.WikiPluginCrawlerPages
+        var pages = await _databaseContext.WikiPluginDocumentStates
             .OrderByDescending(x => x.CreateTime)
             .Where(x => x.ConfigId == request.ConfigId)
             .Join(
@@ -68,7 +69,7 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
             {
                 Id = a.Id,
                 CreateTime = a.CreateTime,
-                Url = a.Url,
+                Url = a.RelevanceKey,
                 IsEmbedding = b.IsEmbedding,
                 Message = a.Message,
                 WikiDocumentId = a.WikiDocumentId,
@@ -92,7 +93,7 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
             PageCount = pages.Length,
         };
 
-        return new QueryWikiCrawlerPageListCommandResponse
+        return new QueryWikiCrawlerPageTasksCommandResponse
         {
             Task = task,
             Pages = pages.ToList()

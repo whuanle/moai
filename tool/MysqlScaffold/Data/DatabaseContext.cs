@@ -141,9 +141,9 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiPluginConfigEntity> WikiPluginConfigs { get; set; }
 
     /// <summary>
-    /// 爬虫页面进度列表.
+    /// 知识库文档关联任务.
     /// </summary>
-    public virtual DbSet<WikiPluginCrawlerPageEntity> WikiPluginCrawlerPages { get; set; }
+    public virtual DbSet<WikiPluginDocumentStateEntity> WikiPluginDocumentStates { get; set; }
 
     /// <summary>
     /// 知识库成员.

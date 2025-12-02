@@ -12,17 +12,17 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// 修改提示词.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/update_prompt")]
-public class UpdatePromptEndpoints : Endpoint<UpdatePromptCommand, EmptyCommandResponse>
+public class UpdatePromptEndpoint : Endpoint<UpdatePromptCommand, EmptyCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdatePromptEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="UpdatePromptEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public UpdatePromptEndpoints(IMediator mediator, UserContext userContext)
+    public UpdatePromptEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

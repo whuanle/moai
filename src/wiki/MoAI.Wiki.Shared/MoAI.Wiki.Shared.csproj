@@ -15,8 +15,4 @@
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Plugins\Feishu\" />
-	</ItemGroup>
-
 </Project>

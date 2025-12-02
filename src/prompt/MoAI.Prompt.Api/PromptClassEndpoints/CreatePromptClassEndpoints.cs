@@ -12,17 +12,17 @@ namespace MoAI.Prompt.PromptClassEndpoints;
 /// 创建提示词分类.
 /// </summary>
 [HttpPost($"{ApiPrefix.AdminPrefix}/create_class")]
-public class CreatePromptClassEndpoints : Endpoint<CreatePromptClassifyCommand, SimpleInt>
+public class CreatePromptClassEndpoint : Endpoint<CreatePromptClassifyCommand, SimpleInt>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreatePromptClassEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="CreatePromptClassEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public CreatePromptClassEndpoints(IMediator mediator, UserContext userContext)
+    public CreatePromptClassEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

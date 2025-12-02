@@ -12,17 +12,17 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// 创建提示词.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/create_prompt")]
-public class CreatePromptEndpoints : Endpoint<CreatePromptCommand, SimpleInt>
+public class CreatePromptEndpoint : Endpoint<CreatePromptCommand, SimpleInt>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreatePromptEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="CreatePromptEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public CreatePromptEndpoints(IMediator mediator, UserContext userContext)
+    public CreatePromptEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

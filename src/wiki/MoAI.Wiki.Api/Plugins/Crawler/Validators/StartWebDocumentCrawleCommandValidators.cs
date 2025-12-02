@@ -1,13 +1,14 @@
 ﻿using FastEndpoints;
 using FluentValidation;
-using MoAI.Wiki.Plugins.WikiCrawler.Commands;
+using MoAI.Wiki.Plugins.Crawler.Commands;
+using MoAI.Wiki.Plugins.Feishu.Commands;
 
 namespace MoAI.Wiki.Plugins.Crawler.Validators;
 
 /// <summary>
 /// StartWikiCrawlerCommandValidators.
 /// </summary>
-public class StartWikiCrawlerCommandValidators : Validator<StartWikiCrawlerCommand>
+public class StartWikiCrawlerCommandValidators : Validator<UpdateWikiCrawlerConfigCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="StartWikiCrawlerCommandValidators"/> class.

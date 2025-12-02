@@ -1,12 +1,11 @@
-﻿using MediatR;
-using MoAI.Infra.Models;
+﻿using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Plugins.Crawler.Models;
 
 /// <summary>
 /// 爬虫配置.
 /// </summary>
-public class WikiCrawlerConfig
+public class WikiCrawlerConfig : IWikiPluginKey
 {
     /// <summary>
     /// 页面地址.
@@ -47,4 +46,7 @@ public class WikiCrawlerConfig
     /// 选择器，筛选页面的表达式，例如 ".content".
     /// </summary>
     public string Selector { get; set; } = default!;
+
+    /// <inheritdoc/>
+    public string PluginKey => "wiki_crawler";
 }

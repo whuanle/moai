@@ -9,6 +9,6 @@ internal static class ApiPrefix
 {
     public const string Prefix = "/wiki";
     public const string Document = "/wiki/document";
-    public const string PluginCrawler = "/wiki/crawler";
-    public const string PluginFeishu = "/wiki/feishu";
+    public const string PluginCrawler = "/wiki/plugin/crawler";
+    public const string PluginFeishu = "/wiki/plugin/feishu";
 }

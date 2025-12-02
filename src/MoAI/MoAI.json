@@ -3294,13 +3294,667 @@
         ]
       }
     },
-    "/api/wiki/web/create_crawle_config": {
+    "/api/wiki/plugin/cancel_task": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "取消爬虫任务.",
+        "operationId": "CancalWikiPluginTaskEndpoint",
+        "requestBody": {
+          "x-name": "CancalWikiPluginTaskCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancalWikiPluginTaskCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/delete_config": {
+      "delete": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "删除爬虫配置.",
+        "operationId": "DeleteWikiPluginConfigEndpoint",
+        "requestBody": {
+          "x-name": "DeleteWikiPluginConfigCommand",
+          "description": "",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteWikiPluginConfigCommand"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteWikiPluginConfigCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/config_list": {
+      "get": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "查询爬虫配置列表.",
+        "operationId": "QueryWikiPluginConfigListEndpoint",
+        "parameters": [
+          {
+            "name": "wikiId",
+            "in": "query",
+            "required": true,
+            "description": "知识库 id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pluginKey",
+            "in": "query",
+            "description": "筛选插件类型.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryWikiPluginConfigListCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/lanuch_task": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "启动插件任务.",
+        "operationId": "StartWikiPluginTaskEndpoint",
+        "requestBody": {
+          "x-name": "StartWikiPluginTaskCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartWikiPluginTaskCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleGuid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/feishu/query_page_state": {
+      "get": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "查询爬虫正在爬取的每个页状态.",
+        "operationId": "QueryWikiFeishuConfigTaskStateListEndpoint",
+        "parameters": [
+          {
+            "name": "wikiId",
+            "in": "query",
+            "required": true,
+            "description": "知识库id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "configId",
+            "in": "query",
+            "required": true,
+            "description": "id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryWikiFeishuPageTasksCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/feishu/config": {
+      "get": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "获取爬虫配置详细信息.",
+        "operationId": "QueryWikiFeishuConfigEndpoint",
+        "parameters": [
+          {
+            "name": "wikiId",
+            "in": "query",
+            "required": true,
+            "description": "知识库id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "configId",
+            "in": "query",
+            "required": true,
+            "description": "id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/feishu/update_config": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "修改爬虫配置.",
+        "operationId": "UpdateWikiFeishuConfigEndpoint",
+        "requestBody": {
+          "x-name": "UpdateWikiFeishuConfigCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWikiFeishuConfigCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/crawler/add_config": {
       "post": {
         "tags": [
           "Wiki"
         ],
         "summary": "创建爬虫配置.",
-        "operationId": "AddWikiCrawlerConfigEndpoints",
+        "operationId": "AddWikiCrawlerConfigEndpoint",
         "requestBody": {
           "x-name": "AddWikiCrawlerConfigCommand",
           "description": "",
@@ -3383,382 +4037,13 @@
         ]
       }
     },
-    "/api/wiki/web/cancel_crawle_task": {
-      "post": {
-        "tags": [
-          "Wiki"
-        ],
-        "summary": "取消爬虫任务.",
-        "operationId": "CancalCrawleTaskEndpoints",
-        "requestBody": {
-          "x-name": "CancalCrawleTaskCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancalCrawleTaskCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/wiki/web/delete_crawle_config": {
-      "delete": {
-        "tags": [
-          "Wiki"
-        ],
-        "summary": "删除爬虫配置.",
-        "operationId": "DeleteWikiCrawlerConfigEndpoints",
-        "requestBody": {
-          "x-name": "DeleteWikiCrawlerConfigCommand",
-          "description": "",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteWikiCrawlerConfigCommand"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteWikiCrawlerConfigCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmptyCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/wiki/web/query_crawle_config": {
+    "/api/wiki/plugin/crawler/config": {
       "get": {
         "tags": [
           "Wiki"
         ],
         "summary": "获取爬虫配置详细信息.",
-        "operationId": "QueryWikiConfigInfoEndpoints",
-        "parameters": [
-          {
-            "name": "wikiId",
-            "in": "query",
-            "required": true,
-            "description": "知识库id.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "wikiCrawlerConfigId",
-            "in": "query",
-            "required": true,
-            "description": "id.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryWikiCrawlerConfigCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/wiki/web/query_crawle_list": {
-      "get": {
-        "tags": [
-          "Wiki"
-        ],
-        "summary": "查询爬虫配置列表.",
-        "operationId": "QueryWikiCrawlerConfigListEndpoints",
-        "parameters": [
-          {
-            "name": "wikiId",
-            "in": "query",
-            "required": true,
-            "description": "知识库 id.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryWikiCrawlerConfigListCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/wiki/web/query_web_document_state_list": {
-      "get": {
-        "tags": [
-          "Wiki"
-        ],
-        "summary": "查询爬虫工作状态.",
-        "operationId": "QueryWikiCrawlerConfigTaskStateListEndpoints",
+        "operationId": "QueryWikiCrawlerConfigEndpoint",
         "parameters": [
           {
             "name": "wikiId",
@@ -3787,7 +4072,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryWikiCrawlerPageListCommandResponse"
+                  "$ref": "#/components/schemas/QueryWikiPluginrConfigCommandResponseOfWikiCrawlerConfig"
                 }
               }
             }
@@ -3850,33 +4135,42 @@
         ]
       }
     },
-    "/api/wiki/web/lanuch_crawle": {
-      "post": {
+    "/api/wiki/plugin/crawler/query_page_state": {
+      "get": {
         "tags": [
           "Wiki"
         ],
-        "summary": "启动爬虫.",
-        "operationId": "StartWikiCrawlerEndpoints",
-        "requestBody": {
-          "x-name": "StartWikiCrawlerCommand",
-          "description": "",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StartWikiCrawlerCommand"
-              }
+        "summary": "查询爬虫正在爬取的每个页状态.",
+        "operationId": "QueryWikiCrawlerConfigTaskStateListEndpoint",
+        "parameters": [
+          {
+            "name": "wikiId",
+            "in": "query",
+            "required": true,
+            "description": "知识库id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           },
-          "required": true,
-          "x-position": 1
-        },
+          {
+            "name": "configId",
+            "in": "query",
+            "required": true,
+            "description": "id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimpleGuid"
+                  "$ref": "#/components/schemas/QueryWikiCrawlerPageTasksCommandResponse"
                 }
               }
             }
@@ -3939,13 +4233,13 @@
         ]
       }
     },
-    "/api/wiki/web/update_crawle_config": {
+    "/api/wiki/plugin/crawler/update_config": {
       "post": {
         "tags": [
           "Wiki"
         ],
         "summary": "修改爬虫配置.",
-        "operationId": "UpdateWikiCrawlerConfigEndpoints",
+        "operationId": "UpdateWikiCrawlerConfigEndpoint",
         "requestBody": {
           "x-name": "UpdateWikiCrawlerConfigCommand",
           "description": "",
@@ -3966,6 +4260,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/plugin/feishu/add_config": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "创建爬虫配置.",
+        "operationId": "AddWikiFeishuConfigEndpoint",
+        "requestBody": {
+          "x-name": "AddWikiFeishuConfigCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddWikiFeishuConfigCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleInt"
                 }
               }
             }
@@ -7065,7 +7448,7 @@
           "Prompt"
         ],
         "summary": "创建提示词.",
-        "operationId": "CreatePromptEndpoints",
+        "operationId": "CreatePromptEndpoint",
         "requestBody": {
           "x-name": "CreatePromptCommand",
           "description": "",
@@ -7154,7 +7537,7 @@
           "Prompt"
         ],
         "summary": "删除提示词.",
-        "operationId": "DeletePromptEndpoints",
+        "operationId": "DeletePromptEndpoint",
         "requestBody": {
           "x-name": "DeletePromptCommand",
           "description": "",
@@ -7248,7 +7631,7 @@
           "Prompt"
         ],
         "summary": "查询提示词.",
-        "operationId": "QueryPrompListEndpoints",
+        "operationId": "QueryPrompListEndpoint",
         "requestBody": {
           "x-name": "QueryPromptListCommand",
           "description": "",
@@ -7425,7 +7808,7 @@
           "Prompt"
         ],
         "summary": "修改提示词.",
-        "operationId": "UpdatePromptEndpoints",
+        "operationId": "UpdatePromptEndpoint",
         "requestBody": {
           "x-name": "UpdatePromptCommand",
           "description": "",
@@ -7514,7 +7897,7 @@
           "Admin_Prompt"
         ],
         "summary": "创建提示词分类.",
-        "operationId": "CreatePromptClassEndpoints",
+        "operationId": "CreatePromptClassEndpoint",
         "requestBody": {
           "x-name": "CreatePromptClassifyCommand",
           "description": "",
@@ -7773,7 +8156,7 @@
           "Admin_Prompt"
         ],
         "summary": "修改提示词分类.",
-        "operationId": "UpdatePromptClassEndpoints",
+        "operationId": "UpdatePromptClassEndpoint",
         "requestBody": {
           "x-name": "UpdatePromptClassifyCommand",
           "description": "",
@@ -9441,7 +9824,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           },
           "createUserId": {
             "type": "integer",
@@ -9457,7 +9840,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           },
           "updateUserId": {
             "type": "integer",
@@ -10744,43 +11127,560 @@
           }
         }
       },
-      "AddWikiCrawlerConfigCommand": {
+      "CancalWikiPluginTaskCommand": {
+        "type": "object",
+        "description": "取消知识库插件任务.",
+        "additionalProperties": false,
         "required": [
           "wikiId",
-          "title"
+          "configId"
         ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          },
+          "configId": {
+            "type": "integer",
+            "description": "配置.",
+            "format": "int32"
+          }
+        }
+      },
+      "DeleteWikiPluginConfigCommand": {
+        "type": "object",
+        "description": "删除配置.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "configId",
+          "isDeleteDocuments"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
+          },
+          "configId": {
+            "type": "integer",
+            "description": "配置.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
+          },
+          "isDeleteDocuments": {
+            "type": "boolean",
+            "description": "是否删除该配置下的所有网页."
+          }
+        }
+      },
+      "QueryWikiPluginConfigListCommandResponse": {
+        "type": "object",
+        "description": "查询插件类型.",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "爬虫配置列表.",
+            "items": {
+              "$ref": "#/components/schemas/WikiPluginConfigSimpleItem"
+            }
+          }
+        }
+      },
+      "WikiPluginConfigSimpleItem": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/WikiCrawlerConfig"
+            "$ref": "#/components/schemas/AuditsInfo"
           },
           {
             "type": "object",
-            "description": "添加一个网页爬取配置.",
+            "description": "Plugin 配置.",
             "additionalProperties": false,
             "required": [
               "wikiId",
+              "configId",
               "title"
             ],
             "properties": {
               "wikiId": {
                 "type": "integer",
                 "description": "知识库 id.",
-                "format": "int32",
-                "minimum": 0.0,
-                "minLength": 1,
-                "nullable": false,
-                "exclusiveMinimum": true
+                "format": "int32"
+              },
+              "configId": {
+                "type": "integer",
+                "description": "配置 id.",
+                "format": "int32"
               },
               "title": {
                 "type": "string",
-                "description": "标题.",
-                "maxLength": 50,
-                "minLength": 0,
-                "nullable": false
+                "description": "爬虫标题."
               }
             }
           }
         ]
+      },
+      "QueryWikiPluginConfigListCommand": {
+        "type": "object",
+        "description": "查询插件类型.",
+        "additionalProperties": false
+      },
+      "StartWikiPluginTaskCommand": {
+        "type": "object",
+        "description": "开始启动知识库插件任务.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "configId",
+          "splitMethod",
+          "maxTokensPerParagraph",
+          "overlappingTokens",
+          "tokenizer"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          },
+          "configId": {
+            "type": "integer",
+            "description": "知识库 web 配置 id.",
+            "format": "int32"
+          },
+          "splitMethod": {
+            "type": "string",
+            "description": "文本分割方法，暂时不支持使用."
+          },
+          "maxTokensPerParagraph": {
+            "type": "integer",
+            "description": "每个段落最大 token 数量.",
+            "format": "int32"
+          },
+          "overlappingTokens": {
+            "type": "integer",
+            "description": "块之间重叠令牌的数量.",
+            "format": "int32"
+          },
+          "tokenizer": {
+            "description": "统计 tokens 数量的算法 支持: \"p50k\", \"cl100k\", \"o200k\".",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingTokenizer"
+              }
+            ]
+          }
+        }
+      },
+      "EmbeddingTokenizer": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "P50k",
+          "Cl100k",
+          "O200k"
+        ],
+        "enum": [
+          "p50k",
+          "cl100k",
+          "o200k"
+        ]
+      },
+      "QueryWikiFeishuPageTasksCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task",
+          "pages"
+        ],
+        "properties": {
+          "task": {
+            "description": "爬虫状态.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WikiFeishuTask"
+              }
+            ]
+          },
+          "pages": {
+            "type": "array",
+            "description": "每一个地址.",
+            "items": {
+              "$ref": "#/components/schemas/WikiFeishuPageItem"
+            }
+          }
+        }
+      },
+      "WikiFeishuTask": {
+        "type": "object",
+        "description": "每一页.",
+        "additionalProperties": false,
+        "required": [
+          "taskId",
+          "wikiId",
+          "configId",
+          "address",
+          "message",
+          "state",
+          "selector",
+          "createTime",
+          "pageCount",
+          "faildPageCount"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "id.",
+            "format": "uuid"
+          },
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库id.",
+            "format": "int32"
+          },
+          "configId": {
+            "type": "integer",
+            "description": "爬虫id.",
+            "format": "int32"
+          },
+          "address": {
+            "type": "string",
+            "description": "正在爬取的地址."
+          },
+          "message": {
+            "type": "string",
+            "description": "信息."
+          },
+          "state": {
+            "description": "爬取状态.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkerState"
+              }
+            ]
+          },
+          "selector": {
+            "type": "string",
+            "description": "选择器."
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1764667423638"
+          },
+          "pageCount": {
+            "type": "integer",
+            "description": "爬取成功的页面数量.",
+            "format": "int32"
+          },
+          "faildPageCount": {
+            "type": "integer",
+            "description": "爬取失败的页面数量.",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkerState": {
+        "type": "string",
+        "description": "任务通用状态.",
+        "x-enumNames": [
+          "None",
+          "Wait",
+          "Processing",
+          "Cancal",
+          "Successful",
+          "Failed"
+        ],
+        "enum": [
+          "none",
+          "wait",
+          "processing",
+          "cancal",
+          "successful",
+          "failed"
+        ]
+      },
+      "WikiFeishuPageItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "wikiDocumentId",
+          "relevanceKey",
+          "relevanceValue",
+          "message",
+          "createUserId",
+          "fileName",
+          "fileSize",
+          "isEmbedding",
+          "crawleState",
+          "createTime"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id.",
+            "format": "int32"
+          },
+          "wikiDocumentId": {
+            "type": "integer",
+            "description": "文档id.",
+            "format": "int32"
+          },
+          "relevanceKey": {
+            "type": "string",
+            "description": "正在爬取的地址."
+          },
+          "relevanceValue": {
+            "type": "string",
+            "description": "正在爬取的地址."
+          },
+          "message": {
+            "type": "string",
+            "description": "信息."
+          },
+          "createUserId": {
+            "type": "integer",
+            "description": "创建人.",
+            "format": "int32"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "文件."
+          },
+          "fileSize": {
+            "type": "integer",
+            "description": "文件大小.",
+            "format": "int32"
+          },
+          "isEmbedding": {
+            "type": "boolean",
+            "description": "是否有向量化内容."
+          },
+          "crawleState": {
+            "description": "爬取状态.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkerState"
+              }
+            ]
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1764667423638"
+          }
+        }
+      },
+      "QueryWikiFeishuPageTasksCommand": {
+        "type": "object",
+        "description": "查询这个爬虫的所有任务状态.",
+        "additionalProperties": false
+      },
+      "QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "wikiId",
+              "configId",
+              "title"
+            ],
+            "properties": {
+              "wikiId": {
+                "type": "integer",
+                "description": "知识库id.",
+                "format": "int32"
+              },
+              "configId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "title": {
+                "type": "string",
+                "description": "标题."
+              },
+              "config": {
+                "description": "配置.",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/WikiFeishuConfig"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "WikiFeishuConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "appId",
+          "appSecret",
+          "spaceId",
+          "parentNodeToken",
+          "pluginKey"
+        ],
+        "properties": {
+          "appId": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "appSecret": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "spaceId": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "parentNodeToken": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "pluginKey": {
+            "type": "string"
+          }
+        }
+      },
+      "QueryWikiFeishuConfigCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QueryWikiPluginConfigCommandOfWikiFeishuConfig"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "QueryWikiPluginConfigCommandOfWikiFeishuConfig": {
+        "type": "object",
+        "description": "查询插件配置内容.",
+        "additionalProperties": false
+      },
+      "UpdateWikiFeishuConfigCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UpdateWikiPluginConfigCommandOfWikiFeishuConfig"
+          },
+          {
+            "type": "object",
+            "description": "修改一个网页爬取配置.",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "UpdateWikiPluginConfigCommandOfWikiFeishuConfig": {
+        "type": "object",
+        "description": "修改一个网页爬取配置.\n类型.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "configId",
+          "title"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          },
+          "configId": {
+            "type": "integer",
+            "description": "配置 id.",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string",
+            "description": "标题."
+          },
+          "config": {
+            "description": "配置，前端传递不用填.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WikiFeishuConfig"
+              }
+            ]
+          }
+        }
+      },
+      "AddWikiCrawlerConfigCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AddWikiPluginConfigCommandOfWikiCrawlerConfig"
+          },
+          {
+            "type": "object",
+            "description": "添加一个网页爬取配置.",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "AddWikiPluginConfigCommandOfWikiCrawlerConfig": {
+        "type": "object",
+        "description": "添加配置.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "title",
+          "config"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32",
+            "minimum": 0.0,
+            "minLength": 1,
+            "nullable": false,
+            "exclusiveMinimum": true
+          },
+          "title": {
+            "type": "string",
+            "description": "标题.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
+          },
+          "config": {
+            "description": "配置，前端传递不用填.",
+            "nullable": false,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WikiCrawlerConfig"
+              }
+            ]
+          }
+        }
       },
       "WikiCrawlerConfig": {
         "type": "object",
@@ -10793,7 +11693,8 @@
           "limitMaxCount",
           "isCrawlOther",
           "isAutoEmbedding",
-          "selector"
+          "selector",
+          "pluginKey"
         ],
         "properties": {
           "address": {
@@ -10832,86 +11733,25 @@
           },
           "selector": {
             "type": "string",
-            "description": "选择器，筛选页面的表达式，例如 \".content\".",
-            "maxLength": 255,
-            "minLength": 0
+            "description": "选择器，筛选页面的表达式，例如 \".content\"."
+          },
+          "pluginKey": {
+            "type": "string"
           }
         }
       },
-      "CancalCrawleTaskCommand": {
-        "type": "object",
-        "description": "取消爬虫任务.",
-        "additionalProperties": false,
-        "required": [
-          "wikiId",
-          "configId"
-        ],
-        "properties": {
-          "wikiId": {
-            "type": "integer",
-            "description": "知识库 id.",
-            "format": "int32"
-          },
-          "configId": {
-            "type": "integer",
-            "description": "配置.",
-            "format": "int32"
-          }
-        }
-      },
-      "DeleteWikiCrawlerConfigCommand": {
-        "type": "object",
-        "description": "删除配置.",
-        "additionalProperties": false,
-        "required": [
-          "wikiId",
-          "configId",
-          "deleteDocuments"
-        ],
-        "properties": {
-          "wikiId": {
-            "type": "integer",
-            "description": "知识库 id.",
-            "format": "int32",
-            "minimum": 0.0,
-            "minLength": 1,
-            "nullable": false,
-            "exclusiveMinimum": true
-          },
-          "configId": {
-            "type": "integer",
-            "description": "配置.",
-            "format": "int32",
-            "minimum": 0.0,
-            "minLength": 1,
-            "nullable": false,
-            "exclusiveMinimum": true
-          },
-          "deleteDocuments": {
-            "type": "boolean",
-            "description": "是否删除该配置下的所有网页."
-          }
-        }
-      },
-      "QueryWikiCrawlerConfigCommandResponse": {
+      "QueryWikiPluginrConfigCommandResponseOfWikiCrawlerConfig": {
         "allOf": [
           {
             "$ref": "#/components/schemas/AuditsInfo"
           },
           {
             "type": "object",
-            "description": "配置.",
             "additionalProperties": false,
             "required": [
               "wikiId",
               "configId",
-              "title",
-              "address",
-              "limitAddress",
-              "limitMaxCount",
-              "isCrawlOther",
-              "isAutoEmbedding",
-              "selector"
+              "title"
             ],
             "properties": {
               "wikiId": {
@@ -10928,98 +11768,36 @@
                 "type": "string",
                 "description": "标题."
               },
-              "address": {
-                "type": "string",
-                "description": "页面地址."
-              },
-              "limitAddress": {
-                "type": "string",
-                "description": "限制自动爬取的网页都在该路径之下,limit_address跟address必须具有相同域名."
-              },
-              "limitMaxCount": {
-                "type": "integer",
-                "description": "最大抓取数量.",
-                "format": "int32"
-              },
-              "isCrawlOther": {
-                "type": "boolean",
-                "description": "是否抓取其它页面."
-              },
-              "isAutoEmbedding": {
-                "type": "boolean",
-                "description": "是否自动向量化."
-              },
-              "selector": {
-                "type": "string",
-                "description": "html 筛选器."
+              "config": {
+                "description": "配置.",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/WikiCrawlerConfig"
+                  }
+                ]
               }
             }
           }
         ]
       },
-      "QueryWikiCrawlerConfigICommand": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "QueryWikiCrawlerConfigListCommandResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "爬虫配置列表.",
-            "items": {
-              "$ref": "#/components/schemas/WikiWebConfigSimpleItem"
-            }
-          }
-        }
-      },
-      "WikiWebConfigSimpleItem": {
+      "QueryWikiCrawlerConfigCommand": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/AuditsInfo"
+            "$ref": "#/components/schemas/QueryWikiPluginConfigCommandOfWikiCrawlerConfig"
           },
           {
             "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "id",
-              "wikiId",
-              "title",
-              "address"
-            ],
-            "properties": {
-              "id": {
-                "type": "integer",
-                "description": "爬虫配置 id.",
-                "format": "int32"
-              },
-              "wikiId": {
-                "type": "integer",
-                "description": "知识库 id.",
-                "format": "int32"
-              },
-              "title": {
-                "type": "string",
-                "description": "爬虫标题."
-              },
-              "address": {
-                "type": "string",
-                "description": "爬虫地址."
-              }
-            }
+            "additionalProperties": false
           }
         ]
       },
-      "QueryWikiCrawlerConfigListCommand": {
+      "QueryWikiPluginConfigCommandOfWikiCrawlerConfig": {
         "type": "object",
-        "description": "查询知识库爬虫列表.",
+        "description": "查询插件配置内容.",
         "additionalProperties": false
       },
-      "QueryWikiCrawlerPageListCommandResponse": {
+      "QueryWikiCrawlerPageTasksCommandResponse": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -11101,7 +11879,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           },
           "pageCount": {
             "type": "integer",
@@ -11114,26 +11892,6 @@
             "format": "int32"
           }
         }
-      },
-      "WorkerState": {
-        "type": "string",
-        "description": "任务通用状态.",
-        "x-enumNames": [
-          "None",
-          "Wait",
-          "Processing",
-          "Cancal",
-          "Successful",
-          "Failed"
-        ],
-        "enum": [
-          "none",
-          "wait",
-          "processing",
-          "cancal",
-          "successful",
-          "failed"
-        ]
       },
       "WikiCrawlerPageItem": {
         "type": "object",
@@ -11200,26 +11958,82 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           }
         }
       },
-      "QueryWikiCrawlerPageListCommand": {
+      "QueryWikiCrawlerPageTasksCommand": {
         "type": "object",
-        "description": "查询爬虫任务列表.",
+        "description": "查询这个爬虫的所有任务状态.",
         "additionalProperties": false
       },
-      "StartWikiCrawlerCommand": {
+      "UpdateWikiCrawlerConfigCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UpdateWikiPluginConfigCommandOfWikiCrawlerConfig"
+          },
+          {
+            "type": "object",
+            "description": "修改一个网页爬取配置.",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "UpdateWikiPluginConfigCommandOfWikiCrawlerConfig": {
         "type": "object",
-        "description": "开始启动知识库 web 爬取任务.",
+        "description": "修改一个网页爬取配置.\n类型.",
         "additionalProperties": false,
         "required": [
           "wikiId",
           "configId",
-          "splitMethod",
-          "maxTokensPerParagraph",
-          "overlappingTokens",
-          "tokenizer"
+          "title"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          },
+          "configId": {
+            "type": "integer",
+            "description": "配置 id.",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string",
+            "description": "标题."
+          },
+          "config": {
+            "description": "配置，前端传递不用填.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WikiCrawlerConfig"
+              }
+            ]
+          }
+        }
+      },
+      "AddWikiFeishuConfigCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AddWikiPluginConfigCommandOfWikiFeishuConfig"
+          },
+          {
+            "type": "object",
+            "description": "飞书配置.",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "AddWikiPluginConfigCommandOfWikiFeishuConfig": {
+        "type": "object",
+        "description": "添加配置.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "title",
+          "config"
         ],
         "properties": {
           "wikiId": {
@@ -11231,101 +12045,23 @@
             "nullable": false,
             "exclusiveMinimum": true
           },
-          "configId": {
-            "type": "integer",
-            "description": "知识库 web 配置 id.",
-            "format": "int32",
-            "minimum": 0.0,
-            "minLength": 1,
-            "nullable": false,
-            "exclusiveMinimum": true
-          },
-          "splitMethod": {
+          "title": {
             "type": "string",
-            "description": "文本分割方法，暂时不支持使用."
+            "description": "标题.",
+            "maxLength": 50,
+            "minLength": 0,
+            "nullable": false
           },
-          "maxTokensPerParagraph": {
-            "type": "integer",
-            "description": "每个段落最大 token 数量.",
-            "format": "int32"
-          },
-          "overlappingTokens": {
-            "type": "integer",
-            "description": "块之间重叠令牌的数量.",
-            "format": "int32"
-          },
-          "tokenizer": {
-            "description": "统计 tokens 数量的算法 支持: \"p50k\", \"cl100k\", \"o200k\".",
+          "config": {
+            "description": "配置，前端传递不用填.",
+            "nullable": false,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/EmbeddingTokenizer"
+                "$ref": "#/components/schemas/WikiFeishuConfig"
               }
             ]
           }
         }
-      },
-      "EmbeddingTokenizer": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "P50k",
-          "Cl100k",
-          "O200k"
-        ],
-        "enum": [
-          "p50k",
-          "cl100k",
-          "o200k"
-        ]
-      },
-      "UpdateWikiCrawlerConfigCommand": {
-        "required": [
-          "wikiId",
-          "configId",
-          "title"
-        ],
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/WikiCrawlerConfig"
-          },
-          {
-            "type": "object",
-            "description": "修改一个网页爬取配置.",
-            "additionalProperties": false,
-            "required": [
-              "wikiId",
-              "configId",
-              "title"
-            ],
-            "properties": {
-              "wikiId": {
-                "type": "integer",
-                "description": "知识库 id.",
-                "format": "int32",
-                "minimum": 0.0,
-                "minLength": 1,
-                "nullable": false,
-                "exclusiveMinimum": true
-              },
-              "configId": {
-                "type": "integer",
-                "description": "配置 id.",
-                "format": "int32",
-                "minimum": 0.0,
-                "minLength": 1,
-                "nullable": false,
-                "exclusiveMinimum": true
-              },
-              "title": {
-                "type": "string",
-                "description": "标题.",
-                "maxLength": 50,
-                "minLength": 0,
-                "nullable": false
-              }
-            }
-          }
-        ]
       },
       "CancalWikiDocumentTaskCommand": {
         "type": "object",
@@ -11538,7 +12274,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1764561445120"
+            "example": "1764667423638"
           }
         }
       },
@@ -12013,7 +12749,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           },
           "tags": {
             "type": "array",
@@ -13241,7 +13977,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1764561445120"
+            "example": "1764667423638"
           }
         }
       },
@@ -14152,14 +14888,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           },
           "chatHistory": {
             "type": "array",
@@ -14237,7 +14973,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764561445120"
+            "example": "1764667423638"
           }
         }
       },

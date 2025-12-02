@@ -12,17 +12,17 @@ namespace MoAI.Prompt.PromptEndpoints;
 /// 查询提示词.
 /// </summary>
 [HttpPost($"{ApiPrefix.Prefix}/prompt_list")]
-public class QueryPrompListEndpoints : Endpoint<QueryPromptListCommand, QueryPromptListCommandResponse>
+public class QueryPrompListEndpoint : Endpoint<QueryPromptListCommand, QueryPromptListCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueryPrompListEndpoints"/> class.
+    /// Initializes a new instance of the <see cref="QueryPrompListEndpoint"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public QueryPrompListEndpoints(IMediator mediator, UserContext userContext)
+    public QueryPrompListEndpoint(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;

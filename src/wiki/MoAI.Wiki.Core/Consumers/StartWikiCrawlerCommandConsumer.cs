@@ -1,5 +1,4 @@
-﻿
-#pragma warning disable CA1031 // 不捕获常规异常类型
+﻿#pragma warning disable CA1031 // 不捕获常规异常类型
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -21,15 +20,13 @@ using MoAI.Storage.Commands;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
-using MoAIDocument.Core.Consumers.Events;
-using System;
 
 namespace MoAI.Wiki.Consumers;
 
 /// <summary>
 /// 爬取页面.
 /// </summary>
-[Consumer("crawle_document", Qos = 10)]
+[Consumer("wiki_crawle_document", Qos = 10)]
 public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage>
 {
     private readonly IMediator _mediator;
@@ -61,10 +58,10 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
     /// <inheritdoc/>
     public async Task ExecuteAsync(MessageHeader messageHeader, StartWikiCrawlerMessage message)
     {
-        var crawleTaskEntity = await _databaseContext.WorkerTasks
+        var workerTaskEntity = await _databaseContext.WorkerTasks
             .FirstOrDefaultAsync(x => x.Id == message.TaskId);
 
-        if (crawleTaskEntity == null || crawleTaskEntity.State >= (int)WorkerState.Cancal)
+        if (workerTaskEntity == null || workerTaskEntity.State >= (int)WorkerState.Cancal)
         {
             return;
         }
@@ -83,9 +80,9 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         // 删除索引
         await ClearCrawlerRecordAsync(message.WikiId, message.ConfigId);
 
-        crawleTaskEntity.State = (int)WorkerState.Processing;
-        crawleTaskEntity.Message = "正在爬取网页";
-        await UpdateCrawleStateAsync(crawleTaskEntity);
+        workerTaskEntity.State = (int)WorkerState.Processing;
+        workerTaskEntity.Message = "正在爬取网页";
+        await UpdateCrawleStateAsync(workerTaskEntity);
 
         var wikiWebConfig = wikiWebConfigEntity.Config.JsonToObject<WikiCrawlerConfig>()!;
 
@@ -101,19 +98,20 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         {
             var currentUrl = urls.Dequeue();
 
-            var pageEntity = new WikiPluginCrawlerPageEntity
+            var pageEntity = new WikiPluginDocumentStateEntity
             {
                 WikiId = wikiWebConfigEntity.WikiId,
                 ConfigId = wikiWebConfigEntity.Id,
-                Url = currentUrl.ToString(),
-                CreateUserId = crawleTaskEntity.CreateUserId,
-                UpdateUserId = crawleTaskEntity.UpdateUserId,
+                RelevanceKey = currentUrl.ToString(),
+                RelevanceValue = string.Empty,
+                CreateUserId = workerTaskEntity.CreateUserId,
+                UpdateUserId = workerTaskEntity.UpdateUserId,
                 State = (int)WorkerState.Processing,
                 Message = "正在处理"
             };
 
             // 插入页面处理记录
-            await _databaseContext.WikiPluginCrawlerPages.AddAsync(pageEntity);
+            await _databaseContext.WikiPluginDocumentStates.AddAsync(pageEntity);
             await _databaseContext.SaveChangesAsync();
 
             try
@@ -132,9 +130,9 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             }
 
             // 更新页面处理状态
-            _databaseContext.WikiPluginCrawlerPages.Update(pageEntity);
+            _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
             await _databaseContext.SaveChangesAsync();
-            await UpdateCrawleStateAsync(crawleTaskEntity);
+            await UpdateCrawleStateAsync(workerTaskEntity);
 
             if (pageCount >= wikiWebConfig.LimitMaxCount)
             {
@@ -142,19 +140,19 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 break;
             }
 
-            crawleTaskEntity = await _databaseContext.WorkerTasks
+            workerTaskEntity = await _databaseContext.WorkerTasks
             .FirstOrDefaultAsync(x => x.Id == message.TaskId);
 
-            if (crawleTaskEntity == null || crawleTaskEntity.State >= (int)WorkerState.Cancal)
+            if (workerTaskEntity == null || workerTaskEntity.State >= (int)WorkerState.Cancal)
             {
                 _logger.LogInformation("任务已取消，停止爬取，当前数量：{Count}", processedUrls.Count);
                 break;
             }
         }
 
-        crawleTaskEntity!.State = (int)WorkerState.Successful;
-        crawleTaskEntity.Message = "爬取完成";
-        await UpdateCrawleStateAsync(crawleTaskEntity);
+        workerTaskEntity!.State = (int)WorkerState.Successful;
+        workerTaskEntity.Message = "爬取完成";
+        await UpdateCrawleStateAsync(workerTaskEntity);
     }
 
     /// <inheritdoc/>
@@ -177,7 +175,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
     }
 
     // 开始爬取一个页面
-    private async Task CrawlePageAsync(Queue<Url> urls, HashSet<string> processedUrls, WikiPluginCrawlerPageEntity pageEntity, WikiCrawlerConfig wikiWebConfig, Url currentUrl)
+    private async Task CrawlePageAsync(Queue<Url> urls, HashSet<string> processedUrls, WikiPluginDocumentStateEntity pageEntity, WikiCrawlerConfig wikiWebConfig, Url currentUrl)
     {
         var googleBotUserAgent = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
         var requester = new DefaultHttpRequester(googleBotUserAgent);
@@ -259,7 +257,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         }
     }
 
-    private async Task SaveWikiCrawlerAsync(WikiPluginCrawlerPageEntity pageEntity, WikiCrawlerConfig wikiWebConfig, Url currentUrl, IDocument document)
+    private async Task SaveWikiCrawlerAsync(WikiPluginDocumentStateEntity pageEntity, WikiCrawlerConfig wikiWebConfig, Url currentUrl, IDocument document)
     {
         // 将文档存储为文件
         var filePath = Path.Combine(Path.GetTempPath(), DateTimeOffset.Now.ToUnixTimeMilliseconds() + ".html");
@@ -327,7 +325,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         await _databaseContext.SaveChangesAsync();
 
         pageEntity.WikiDocumentId = wikiDocument.Id;
-        _databaseContext.WikiPluginCrawlerPages.Update(pageEntity);
+        _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
         await _databaseContext.SaveChangesAsync();
 
         //if (wikiWebConfig.IsAutoEmbedding)
@@ -353,7 +351,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
     // 清空该爬虫的文档和向量.
     private async Task ClearCrawlerRecordAsync(int wikiId, int configId)
     {
-        var oldIds = _databaseContext.WikiPluginCrawlerPages.Where(x => x.ConfigId == configId)
+        var oldIds = _databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId)
             .Select(x => new
             {
                 PageId = x.Id,
@@ -369,8 +367,8 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         // 删除数据库数据
         await _databaseContext.SoftDeleteAsync(_databaseContext.Files.Where(x => _databaseContext.WikiDocuments.Where(a => documentIds.Contains(x.Id) && a.FileId == x.Id).Any()));
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => _databaseContext.WikiPluginCrawlerPages.Where(a => a.ConfigId == configId && a.WikiDocumentId == x.Id).Any()));
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiPluginCrawlerPages.Where(x => x.ConfigId == configId));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => _databaseContext.WikiPluginDocumentStates.Where(a => a.ConfigId == configId && a.WikiDocumentId == x.Id).Any()));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId));
 
         var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
         if (memoryDb == null)

@@ -1,111 +1,126 @@
-#pragma warning disable CS1591 // È±ÉÙ¶Ô¹«¹²¿É¼ûÀàĞÍ»ò³ÉÔ±µÄ XML ×¢ÊÍ
-#pragma warning disable CS8618 // ÔÚÍË³ö¹¹Ôìº¯ÊıÊ±£¬²»¿ÉÎª null µÄ×Ö¶Î±ØĞë°üº¬·Ç null Öµ¡£Çë¿¼ÂÇÌí¼Ó "required" ĞŞÊÎ·û»òÉùÃ÷Îª¿ÉÎª null¡£
+#pragma warning disable CS1591 // ç¼ºå°‘å¯¹å…¬å…±å¯è§ç±»å‹æˆ–æˆå‘˜çš„ XML æ³¨é‡Š
+#pragma warning disable CS8618 // åœ¨é€€å‡ºæ„é€ å‡½æ•°æ—¶ï¼Œä¸å¯ä¸º null çš„å­—æ®µå¿…é¡»åŒ…å«é null å€¼ã€‚è¯·è€ƒè™‘æ·»åŠ  "required" ä¿®é¥°ç¬¦æˆ–å£°æ˜ä¸ºå¯ä¸º nullã€‚
 #pragma warning disable SA1600 // Elements should be documented
-#pragma warning disable CA1002 // ²»Òª¹«¿ª·ºĞÍÁĞ±í
-#pragma warning disable CA2227 // ¼¯ºÏÊôĞÔÓ¦ÎªÖ»¶Á
+#pragma warning disable CA1002 // ä¸è¦å…¬å¼€æ³›å‹åˆ—è¡¨
+#pragma warning disable CA2227 // é›†åˆå±æ€§åº”ä¸ºåªè¯»
 
 using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Feishu.Models;
 
 /// <summary>
-/// Wiki ½ÚµãĞÅÏ¢¡£
+/// Wiki èŠ‚ç‚¹ä¿¡æ¯ã€‚
 /// </summary>
 public class WikiNode
 {
     /// <summary>
-    /// ÖªÊ¶¿Õ¼ä id¡£
+    /// çŸ¥è¯†ç©ºé—´ idã€‚
     /// </summary>
     [JsonPropertyName("space_id")]
     public string SpaceId { get; init; }
 
     /// <summary>
-    /// ½Úµã token¡£
+    /// èŠ‚ç‚¹ tokenã€‚
     /// </summary>
     [JsonPropertyName("node_token")]
     public string NodeToken { get; init; }
 
     /// <summary>
-    /// ¶ÔÓ¦ÎÄµµÀàĞÍµÄ token¡£
+    /// å¯¹åº”æ–‡æ¡£ç±»å‹çš„ tokenã€‚
     /// </summary>
     [JsonPropertyName("obj_token")]
     public string ObjToken { get; init; }
 
     /// <summary>
-    /// ÎÄµµÀàĞÍ¡£
+    /// æ–‡æ¡£ç±»å‹ã€‚
     /// </summary>
     /// <remarks>
-    /// ¿ÉÑ¡ÖµÓĞ£ºdoc, sheet, mindnote, bitable, file¡£
+    /// å¯é€‰å€¼æœ‰ï¼šdoc, sheet, mindnote, bitable, fileã€‚
     /// </remarks>
     [JsonPropertyName("obj_type")]
     public string ObjType { get; init; }
 
     /// <summary>
-    /// ¸¸½Úµã token¡£Èôµ±Ç°½ÚµãÎªÒ»¼¶½Úµã£¬¸¸½Úµã token Îª¿Õ¡£
+    /// çˆ¶èŠ‚ç‚¹ tokenã€‚è‹¥å½“å‰èŠ‚ç‚¹ä¸ºä¸€çº§èŠ‚ç‚¹ï¼Œçˆ¶èŠ‚ç‚¹ token ä¸ºç©ºã€‚
     /// </summary>
     [JsonPropertyName("parent_node_token")]
     public string ParentNodeToken { get; init; }
 
     /// <summary>
-    /// ½ÚµãÀàĞÍ¡£
+    /// èŠ‚ç‚¹ç±»å‹ã€‚
     /// </summary>
     /// <remarks>
-    /// ¿ÉÑ¡ÖµÓĞ£ºorigin, shortcut¡£
+    /// å¯é€‰å€¼æœ‰ï¼šorigin, shortcutã€‚
     /// </remarks>
     [JsonPropertyName("node_type")]
     public string NodeType { get; init; }
 
     /// <summary>
-    /// ¿ì½İ·½Ê½¶ÔÓ¦µÄÊµÌå node_token¡£
+    /// å¿«æ·æ–¹å¼å¯¹åº”çš„å®ä½“ node_tokenã€‚
     /// </summary>
     [JsonPropertyName("origin_node_token")]
     public string OriginNodeToken { get; init; }
 
     /// <summary>
-    /// ¿ì½İ·½Ê½¶ÔÓ¦µÄÊµÌåËùÔÚµÄ space id¡£
+    /// å¿«æ·æ–¹å¼å¯¹åº”çš„å®ä½“æ‰€åœ¨çš„ space idã€‚
     /// </summary>
     [JsonPropertyName("origin_space_id")]
     public string OriginSpaceId { get; init; }
 
     /// <summary>
-    /// ÊÇ·ñÓĞ×Ó½Úµã¡£
+    /// æ˜¯å¦æœ‰å­èŠ‚ç‚¹ã€‚
     /// </summary>
     [JsonPropertyName("has_child")]
     public bool HasChild { get; init; }
 
     /// <summary>
-    /// ÎÄµµ±êÌâ¡£
+    /// æ–‡æ¡£æ ‡é¢˜ã€‚
     /// </summary>
     [JsonPropertyName("title")]
     public string Title { get; init; }
 
     /// <summary>
-    /// ÎÄµµ´´½¨Ê±¼ä¡£
+    /// æ–‡æ¡£åˆ›å»ºæ—¶é—´ã€‚
     /// </summary>
     [JsonPropertyName("obj_create_time")]
     public string ObjCreateTime { get; init; }
 
     /// <summary>
-    /// ÎÄµµ×î½ü±à¼­Ê±¼ä¡£
+    /// æ–‡æ¡£æœ€è¿‘ç¼–è¾‘æ—¶é—´ã€‚
     /// </summary>
     [JsonPropertyName("obj_edit_time")]
     public string ObjEditTime { get; init; }
 
     /// <summary>
-    /// ½Úµã´´½¨Ê±¼ä¡£
+    /// èŠ‚ç‚¹åˆ›å»ºæ—¶é—´ã€‚
     /// </summary>
     [JsonPropertyName("node_create_time")]
     public string NodeCreateTime { get; init; }
 
     /// <summary>
-    /// ½Úµã´´½¨Õß¡£
+    /// èŠ‚ç‚¹åˆ›å»ºè€…ã€‚
     /// </summary>
     [JsonPropertyName("creator")]
     public string Creator { get; init; }
 
     /// <summary>
-    /// ½ÚµãËùÓĞÕß¡£
+    /// èŠ‚ç‚¹æ‰€æœ‰è€…ã€‚
     /// </summary>
     [JsonPropertyName("owner")]
     public string Owner { get; init; }
+
+    public override int GetHashCode()
+    {
+        return ObjToken.GetHashCode(StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is WikiNode node)
+        {
+            return string.Equals(ObjToken, node.ObjToken, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        return false;
+    }
 }

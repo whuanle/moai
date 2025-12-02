@@ -1,6 +1,6 @@
 ﻿using MoAI.Infra.Models;
 
-namespace MoAI.Wiki.Plugins.WikiCrawler.Queries.Responses;
+namespace MoAI.Wiki.Plugins.Crawler.Queries.Responses;
 
 /// <summary>
 /// 配置.
