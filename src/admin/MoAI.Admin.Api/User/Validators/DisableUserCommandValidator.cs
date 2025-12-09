@@ -7,7 +7,7 @@ namespace MoAI.Admin.OAuth.Validators;
 /// <summary>
 /// DisableUserCommandValidator.
 /// </summary>
-public class DisableUserCommandValidator : Validator<DisableUserCommand>
+public class DisableUserCommandValidator : AbstractValidator<DisableUserCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DisableUserCommandValidator"/> class.

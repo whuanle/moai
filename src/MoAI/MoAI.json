@@ -3498,10 +3498,10 @@
           {
             "name": "pluginKey",
             "in": "query",
+            "required": true,
             "description": "筛选插件类型.",
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": "string"
             }
           }
         ],
@@ -3663,104 +3663,6 @@
         ]
       }
     },
-    "/api/wiki/plugin/feishu/query_page_state": {
-      "get": {
-        "tags": [
-          "Wiki"
-        ],
-        "summary": "查询爬虫正在爬取的每个页状态.",
-        "operationId": "QueryWikiFeishuConfigTaskStateListEndpoint",
-        "parameters": [
-          {
-            "name": "wikiId",
-            "in": "query",
-            "required": true,
-            "description": "知识库id.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "configId",
-            "in": "query",
-            "required": true,
-            "description": "id.",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryWikiFeishuPageTasksCommandResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "An error occurred in the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BusinessValidationResult"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWTBearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/wiki/plugin/feishu/config": {
       "get": {
         "tags": [
@@ -3859,12 +3761,110 @@
         ]
       }
     },
+    "/api/wiki/plugin/feishu/query_page_state": {
+      "get": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "查询爬虫正在爬取的每个页状态.",
+        "operationId": "QueryWikiFeishuConfigTaskStateListEndpoint",
+        "parameters": [
+          {
+            "name": "wikiId",
+            "in": "query",
+            "required": true,
+            "description": "知识库id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "configId",
+            "in": "query",
+            "required": true,
+            "description": "id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryWikiFeishuPageTasksCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/wiki/plugin/feishu/update_config": {
       "post": {
         "tags": [
           "Wiki"
         ],
-        "summary": "修改爬虫配置.",
+        "summary": "修改飞书配置.",
         "operationId": "UpdateWikiFeishuConfigEndpoint",
         "requestBody": {
           "x-name": "UpdateWikiFeishuConfigCommand",
@@ -4327,7 +4327,7 @@
         "tags": [
           "Wiki"
         ],
-        "summary": "创建爬虫配置.",
+        "summary": "创建飞书配置.",
         "operationId": "AddWikiFeishuConfigEndpoint",
         "requestBody": {
           "x-name": "AddWikiFeishuConfigCommand",
@@ -4705,6 +4705,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/document/download_document": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "获取文档下载地址.",
+        "operationId": "DownloadWikiDocumentEndpoint",
+        "requestBody": {
+          "x-name": "DownloadWikiDocumentCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadWikiDocumentCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleString"
                 }
               }
             }
@@ -5331,6 +5420,184 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmptyCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/document/get_partition_document": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "获取切割文档.",
+        "operationId": "QueryWikiDocumentTextPartitionEndpoint",
+        "requestBody": {
+          "x-name": "QueryWikiDocumentTextPartitionCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryWikiDocumentTextPartitionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryWikiDocumentTextPartitionCommandResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred in the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessValidationResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTBearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wiki/document/text_partition_document": {
+      "post": {
+        "tags": [
+          "Wiki"
+        ],
+        "summary": "切割文档.",
+        "operationId": "WikiDocumentTextPartitionPrevieEndpoint",
+        "requestBody": {
+          "x-name": "WikiDocumentTextPartitionPreviewCommand",
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WikiDocumentTextPartitionPreviewCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WikiDocumentTextPartitionPreviewCommandResponse"
                 }
               }
             }
@@ -9824,7 +10091,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "createUserId": {
             "type": "integer",
@@ -9840,7 +10107,7 @@
             "description": "更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "updateUserId": {
             "type": "integer",
@@ -11298,6 +11565,99 @@
           "o200k"
         ]
       },
+      "QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuditsInfo"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "wikiId",
+              "configId",
+              "title"
+            ],
+            "properties": {
+              "wikiId": {
+                "type": "integer",
+                "description": "知识库id.",
+                "format": "int32"
+              },
+              "configId": {
+                "type": "integer",
+                "description": "id.",
+                "format": "int32"
+              },
+              "title": {
+                "type": "string",
+                "description": "标题."
+              },
+              "config": {
+                "description": "配置.",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/WikiFeishuConfig"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "WikiFeishuConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "appId",
+          "appSecret",
+          "spaceId",
+          "parentNodeToken",
+          "pluginKey"
+        ],
+        "properties": {
+          "appId": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "appSecret": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "spaceId": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "parentNodeToken": {
+            "type": "string",
+            "minLength": 1,
+            "nullable": false
+          },
+          "pluginKey": {
+            "type": "string"
+          }
+        }
+      },
+      "QueryWikiFeishuConfigCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QueryWikiPluginConfigCommandOfWikiFeishuConfig"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "QueryWikiPluginConfigCommandOfWikiFeishuConfig": {
+        "type": "object",
+        "description": "查询插件配置内容.",
+        "additionalProperties": false
+      },
       "QueryWikiFeishuPageTasksCommandResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -11380,7 +11740,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "pageCount": {
             "type": "integer",
@@ -11484,106 +11844,13 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           }
         }
       },
       "QueryWikiFeishuPageTasksCommand": {
         "type": "object",
         "description": "查询这个爬虫的所有任务状态.",
-        "additionalProperties": false
-      },
-      "QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuditsInfo"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "wikiId",
-              "configId",
-              "title"
-            ],
-            "properties": {
-              "wikiId": {
-                "type": "integer",
-                "description": "知识库id.",
-                "format": "int32"
-              },
-              "configId": {
-                "type": "integer",
-                "description": "id.",
-                "format": "int32"
-              },
-              "title": {
-                "type": "string",
-                "description": "标题."
-              },
-              "config": {
-                "description": "配置.",
-                "nullable": true,
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/WikiFeishuConfig"
-                  }
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "WikiFeishuConfig": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "appId",
-          "appSecret",
-          "spaceId",
-          "parentNodeToken",
-          "pluginKey"
-        ],
-        "properties": {
-          "appId": {
-            "type": "string",
-            "minLength": 1,
-            "nullable": false
-          },
-          "appSecret": {
-            "type": "string",
-            "minLength": 1,
-            "nullable": false
-          },
-          "spaceId": {
-            "type": "string",
-            "minLength": 1,
-            "nullable": false
-          },
-          "parentNodeToken": {
-            "type": "string",
-            "minLength": 1,
-            "nullable": false
-          },
-          "pluginKey": {
-            "type": "string"
-          }
-        }
-      },
-      "QueryWikiFeishuConfigCommand": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/QueryWikiPluginConfigCommandOfWikiFeishuConfig"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false
-          }
-        ]
-      },
-      "QueryWikiPluginConfigCommandOfWikiFeishuConfig": {
-        "type": "object",
-        "description": "查询插件配置内容.",
         "additionalProperties": false
       },
       "UpdateWikiFeishuConfigCommand": {
@@ -11879,7 +12146,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "pageCount": {
             "type": "integer",
@@ -11958,7 +12225,7 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           }
         }
       },
@@ -12190,6 +12457,27 @@
           }
         }
       },
+      "DownloadWikiDocumentCommand": {
+        "type": "object",
+        "description": "下载知识库文档.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "documentId"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          },
+          "documentId": {
+            "type": "integer",
+            "description": "文档 id.",
+            "format": "int32"
+          }
+        }
+      },
       "EmbeddingDocumentCommand": {
         "type": "object",
         "description": "向量化文档.",
@@ -12274,7 +12562,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1764667423638"
+            "example": "1765176385933"
           }
         }
       },
@@ -12749,7 +13037,7 @@
             "description": "Timestamp about the file/text partition.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "tags": {
             "type": "array",
@@ -12837,6 +13125,147 @@
             "maxLength": 100,
             "minLength": 0,
             "nullable": false
+          }
+        }
+      },
+      "QueryWikiDocumentTextPartitionCommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "maxTokensPerChunk",
+          "overlap",
+          "items"
+        ],
+        "properties": {
+          "maxTokensPerChunk": {
+            "type": "integer",
+            "description": "每个分块的最大 token 数（必须大于 0）",
+            "format": "int32"
+          },
+          "overlap": {
+            "type": "integer",
+            "description": "从一个块复制并重复到下一个块的标记数量，即重叠数量（必须大于等于 0）",
+            "format": "int32"
+          },
+          "chunkHeader": {
+            "type": "string",
+            "description": "可选，在每个分块前添加的标题.",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "description": "分块的内容.",
+            "items": {
+              "$ref": "#/components/schemas/WikiDocumentTextPartitionPreviewItem"
+            }
+          }
+        }
+      },
+      "WikiDocumentTextPartitionPreviewItem": {
+        "type": "object",
+        "description": "文档内容.",
+        "additionalProperties": false,
+        "required": [
+          "chunkId",
+          "order",
+          "text"
+        ],
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "description": "切片 id.",
+            "format": "int64",
+            "minimum": 0.0,
+            "example": "1415926535897934852"
+          },
+          "order": {
+            "type": "integer",
+            "description": "分块顺序.",
+            "format": "int32"
+          },
+          "text": {
+            "type": "string",
+            "description": "分块文本."
+          }
+        }
+      },
+      "QueryWikiDocumentTextPartitionCommand": {
+        "type": "object",
+        "description": "查询知识库文档被切割的块和切割配置.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "documentId"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库id.",
+            "format": "int32"
+          },
+          "documentId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "WikiDocumentTextPartitionPreviewCommandResponse": {
+        "type": "object",
+        "description": "类型.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "documentId"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库id.",
+            "format": "int32"
+          },
+          "documentId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          }
+        }
+      },
+      "WikiDocumentTextPartitionPreviewCommand": {
+        "type": "object",
+        "description": "切割知识库文档.",
+        "additionalProperties": false,
+        "required": [
+          "wikiId",
+          "documentId",
+          "maxTokensPerChunk",
+          "overlap"
+        ],
+        "properties": {
+          "wikiId": {
+            "type": "integer",
+            "description": "知识库id.",
+            "format": "int32"
+          },
+          "documentId": {
+            "type": "integer",
+            "description": "知识库 id.",
+            "format": "int32"
+          },
+          "maxTokensPerChunk": {
+            "type": "integer",
+            "description": "每个分块的最大 token 数（必须大于 0）",
+            "format": "int32"
+          },
+          "overlap": {
+            "type": "integer",
+            "description": "从一个块复制并重复到下一个块的标记数量，即重叠数量（必须大于等于 0）",
+            "format": "int32"
+          },
+          "chunkHeader": {
+            "type": "string",
+            "description": "可选，在每个分块前添加的标题.",
+            "nullable": true
           }
         }
       },
@@ -13977,7 +14406,7 @@
             "format": "int64",
             "minimum": 0.0,
             "nullable": true,
-            "example": "1764667423638"
+            "example": "1765176385933"
           }
         }
       },
@@ -14888,14 +15317,14 @@
             "description": "创建时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "updateTime": {
             "type": "string",
             "description": "最后更新时间.",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           },
           "chatHistory": {
             "type": "array",
@@ -14973,7 +15402,7 @@
             "type": "string",
             "format": "int64",
             "minimum": 0.0,
-            "example": "1764667423638"
+            "example": "1765176385933"
           }
         }
       },

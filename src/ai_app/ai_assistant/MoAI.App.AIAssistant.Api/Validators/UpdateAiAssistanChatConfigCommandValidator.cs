@@ -7,7 +7,7 @@ namespace MoAI.App.AIAssistant.Validators;
 /// <summary>
 /// UpdateAiAssistanChatConfigCommandValidator.
 /// </summary>
-public class UpdateAiAssistanChatConfigCommandValidator : Validator<UpdateAiAssistanChatConfigCommand>
+public class UpdateAiAssistanChatConfigCommandValidator : AbstractValidator<UpdateAiAssistanChatConfigCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateAiAssistanChatConfigCommandValidator"/> class.

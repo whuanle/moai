@@ -7,7 +7,7 @@
 ///// <summary>
 ///// UpdateWikiInfoCommandValidator
 ///// </summary>
-//public class UpdateWikiInfoCommandValidator : Validator<UpdateWikiInfoCommand>
+//public class UpdateWikiInfoCommandValidator : AbstractValidator<UpdateWikiInfoCommand>
 //{
 //    /// <summary>
 //    /// Initializes a new instance of the <see cref="UpdateWikiInfoCommandValidator"/> class.

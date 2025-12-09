@@ -1,4 +1,6 @@
-﻿namespace MoAI.AiModel.Models;
+﻿using MoAI.AI.Models;
+
+namespace MoAI.AiModel.Models;
 
 /// <summary>
 /// 模型提供商信息.

@@ -4,7 +4,7 @@ using MoAI.Login.Commands;
 
 namespace MoAI.Admin.OAuth.Validators;
 
-public class UpdateOAuthConnectionCommandValidator : Validator<UpdateOAuthConnectionCommand>
+public class UpdateOAuthConnectionCommandValidator : AbstractValidator<UpdateOAuthConnectionCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOAuthConnectionCommandValidator"/> class.

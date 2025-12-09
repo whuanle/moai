@@ -7,7 +7,7 @@ namespace MoAI.Plugin.Validators;
 /// <summary>
 /// CreatePluginClassifyCommandValidator.
 /// </summary>
-public class CreatePluginClassifyCommandValidator : Validator<CreatePluginClassifyCommand>
+public class CreatePluginClassifyCommandValidator : AbstractValidator<CreatePluginClassifyCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CreatePluginClassifyCommandValidator"/> class.

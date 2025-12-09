@@ -7,7 +7,7 @@ namespace MoAI.Admin.OAuth.Validators;
 /// <summary>
 /// ResetUserPasswordCommandValidator.
 /// </summary>
-public class ResetUserPasswordCommandValidator : Validator<ResetUserPasswordCommand>
+public class ResetUserPasswordCommandValidator : AbstractValidator<ResetUserPasswordCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResetUserPasswordCommandValidator"/> class.

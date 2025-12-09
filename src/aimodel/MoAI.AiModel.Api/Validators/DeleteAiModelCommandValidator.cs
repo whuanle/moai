@@ -7,7 +7,7 @@ namespace MoAI.AiModel.Validators;
 /// <summary>
 /// DeleteAiModelCommandValidator.
 /// </summary>
-public class DeleteAiModelCommandValidator : Validator<DeleteAiModelCommand>
+public class DeleteAiModelCommandValidator : AbstractValidator<DeleteAiModelCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteAiModelCommandValidator"/> class.

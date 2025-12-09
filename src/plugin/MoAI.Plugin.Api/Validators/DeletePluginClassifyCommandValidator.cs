@@ -7,7 +7,7 @@ namespace MoAI.Plugin.Validators;
 /// <summary>
 /// DeletePluginClassifyCommandValidator.
 /// </summary>
-public class DeletePluginClassifyCommandValidator : Validator<DeletePluginClassifyCommand>
+public class DeletePluginClassifyCommandValidator : AbstractValidator<DeletePluginClassifyCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeletePluginClassifyCommandValidator"/> class.

@@ -1,4 +1,6 @@
-﻿namespace MoAI.AiModel.Models;
+﻿using MoAI.AI.Models;
+
+namespace MoAI.AiModel.Models;
 
 /// <summary>
 /// AI 模型.

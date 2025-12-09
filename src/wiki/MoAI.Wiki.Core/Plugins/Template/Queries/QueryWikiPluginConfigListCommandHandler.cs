@@ -40,7 +40,7 @@ public class QueryWikiPluginConfigListCommandHandler : IRequestHandler<QueryWiki
                 CreateTime = x.CreateTime,
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
-                UpdateTime = x.UpdateTime
+                UpdateTime = x.UpdateTime,
             })
             .ToListAsync(cancellationToken);
 

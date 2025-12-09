@@ -45,6 +45,17 @@ public partial class WikiDocumentEntity : IFullAudited
     public bool IsEmbedding { get; set; }
 
     /// <summary>
+    /// 版本号，可与向量元数据对比，确认最新文档版本号是否一致.
+    /// </summary>
+    public long VersionNo { get; set; }
+    public string SpliceConfig { get; set; }
+
+    /// <summary>
+    /// 是否有更新，需要重新进行向量化.
+    /// </summary>
+    public bool IsUpdate { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

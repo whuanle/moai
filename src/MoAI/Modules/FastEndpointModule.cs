@@ -71,7 +71,6 @@ public class FastEndpointModule : IModule
                     };
 
                     // 要与 SerializerSettings 对应序列化配置和显示的 Swagger 类型
-                    // todo: 后续添加，https://maomi.whuanle.cn/10.web.html#%E6%A8%A1%E5%9E%8B%E7%B1%BB%E5%B1%9E%E6%80%A7%E7%B1%BB%E5%9E%8B%E5%A4%84%E7%90%86
                     s.SchemaSettings.TypeMappers.Add(
                         new PrimitiveTypeMapper(
                             typeof(Guid),
@@ -94,7 +93,6 @@ public class FastEndpointModule : IModule
                     s.NumberHandling = JsonNumberHandling.AllowReadingFromString;
 
                     // 这里配置的转换器不会起效，只能用于生成文档，需要 UseFastEndpoints 配置请求和响应序列化
-                    // https://maomi.whuanle.cn/10.web.html#%E6%A8%A1%E5%9E%8B%E7%B1%BB%E5%B1%9E%E6%80%A7%E7%B1%BB%E5%9E%8B%E5%A4%84%E7%90%86
                     s.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
                     // s.Converters.Add(new DateTimeOffsetConverter());

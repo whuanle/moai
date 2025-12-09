@@ -76,11 +76,6 @@ import WikiDocument from "./components/wiki/WikiDocument";
 import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
 import WikiSearch from "./components/wiki/WikiSearch";
 import WikiUser from "./components/wiki/WikiUser";
-import WikiCrawleLayout from "./components/wiki/crawle/WikiCrawleLayout";
-import WikiCrawleConfig from "./components/wiki/crawle/WikiCrawleConfig";
-import WikiCrawle from "./components/wiki/WikiCrawle";
-import WikiCrawleDocument from "./components/wiki/crawle/WikiCrawleDocument";
-import WikiCrawleTask from "./components/wiki/crawle/WikiCrawleTask";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -407,13 +402,6 @@ function App() {
                     <Route path="document/:documentId/embedding" element={<DocumentEmbedding />} />
                     <Route path="search" element={<WikiSearch />} />
                     <Route path="user" element={<WikiUser />} />
-                    <Route path="crawle" element={<WikiCrawle />} />
-                    <Route path="crawle/:crawleId" element={<WikiCrawleLayout />}>
-                      <Route index element={<Navigate to="config" replace />} />
-                      <Route path="config" element={<WikiCrawleConfig />} />
-                      <Route path="document" element={<WikiCrawleDocument />} />
-                      <Route path="task" element={<WikiCrawleTask />} />
-                    </Route>
                   </Route>
                 </Route>
                 <Route path="prompt">

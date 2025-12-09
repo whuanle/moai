@@ -1,5 +1,6 @@
 ﻿using Maomi;
 using Microsoft.KernelMemory;
+using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Services;
 using MoAI.Infra.Extensions;

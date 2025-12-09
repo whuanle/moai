@@ -26,6 +26,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AI.Kit\MoAI.AI.Kit.csproj" />
 		<ProjectReference Include="..\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
 	</ItemGroup>
 

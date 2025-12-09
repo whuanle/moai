@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Database;

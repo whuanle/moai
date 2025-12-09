@@ -3,6 +3,7 @@
 using Maomi;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.AI.OpenAI;
+using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Services;
 using MoAI.Infra.Extensions;

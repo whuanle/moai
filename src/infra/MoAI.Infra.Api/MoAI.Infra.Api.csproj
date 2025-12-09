@@ -7,7 +7,6 @@
 
 	<ItemGroup>
 	  <PackageReference Include="FastEndpoints" />
-	  <PackageReference Include="FluentValidation" />
 	</ItemGroup>
 
 	<ItemGroup>

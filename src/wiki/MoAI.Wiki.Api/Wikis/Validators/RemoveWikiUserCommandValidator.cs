@@ -7,7 +7,7 @@
 ///// <summary>
 ///// RemoveWikiUserCommandValidator
 ///// </summary>
-//public class RemoveWikiUserCommandValidator : Validator<RemoveWikiUserCommand>
+//public class RemoveWikiUserCommandValidator : AbstractValidator<RemoveWikiUserCommand>
 //{
 //    /// <summary>
 //    /// Initializes a new instance of the <see cref="RemoveWikiUserCommandValidator"/> class.

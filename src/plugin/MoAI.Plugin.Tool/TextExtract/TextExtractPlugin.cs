@@ -42,13 +42,13 @@ namespace MoAI.Plugin.Plugins.TextExtract;
 [InjectOnTransient]
 public class TextExtractPlugin : IToolPluginRuntime
 {
-    private readonly MoAiTextExtractionHandler _textExtractionHandler;
+    private readonly KmTextExtractionHandler _textExtractionHandler;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TextExtractPlugin"/> class.
     /// </summary>
     /// <param name="textExtractionHandler"></param>
-    public TextExtractPlugin(MoAiTextExtractionHandler textExtractionHandler)
+    public TextExtractPlugin(KmTextExtractionHandler textExtractionHandler)
     {
         _textExtractionHandler = textExtractionHandler;
     }
@@ -79,7 +79,7 @@ public class TextExtractPlugin : IToolPluginRuntime
     {
         try
         {
-            var (text, _) = await _textExtractionHandler.ExtractUrlAsync(url, fileName);
+            var text = await _textExtractionHandler.ExtractUrlAsync(new Uri(url), fileName);
             return text;
         }
         catch (Exception ex)

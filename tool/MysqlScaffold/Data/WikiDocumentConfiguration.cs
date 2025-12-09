@@ -51,6 +51,9 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
         entity.Property(e => e.IsEmbedding)
             .HasComment("是否已经向量化")
             .HasColumnName("is_embedding");
+        entity.Property(e => e.IsUpdate)
+            .HasComment("是否有更新，需要重新进行向量化")
+            .HasColumnName("is_update");
         entity.Property(e => e.ObjectKey)
             .HasMaxLength(100)
             .HasComment("文件路径")
@@ -64,6 +67,10 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasComment("最后修改人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.VersionNo)
+            .HasComment("版本号，可与向量元数据对比，确认最新文档版本号是否一致")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("version_no");
         entity.Property(e => e.WikiId)
             .HasComment("知识库id")
             .HasColumnType("int(11)")

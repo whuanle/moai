@@ -7,7 +7,7 @@ namespace MoAI.App.AIAssistant.Validators;
 /// <summary>
 /// QueryAiAssistantChatHistoryCommandValidator.
 /// </summary>
-public class QueryAiAssistantChatHistoryCommandValidator : Validator<QueryUserViewAiAssistantChatHistoryCommand>
+public class QueryAiAssistantChatHistoryCommandValidator : AbstractValidator<QueryUserViewAiAssistantChatHistoryCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAiAssistantChatHistoryCommandValidator"/> class.

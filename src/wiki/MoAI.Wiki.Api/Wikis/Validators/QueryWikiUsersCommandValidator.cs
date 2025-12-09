@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Wikis.Validators;
 /// <summary>
 /// QueryWikiUsersCommandValidator
 /// </summary>
-public class QueryWikiUsersCommandValidator : Validator<QueryWikiUsersCommand>
+public class QueryWikiUsersCommandValidator : AbstractValidator<QueryWikiUsersCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryWikiUsersCommandValidator"/> class.

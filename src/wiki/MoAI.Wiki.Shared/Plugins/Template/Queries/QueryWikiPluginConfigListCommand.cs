@@ -17,5 +17,5 @@ public class QueryWikiPluginConfigListCommand : IRequest<QueryWikiPluginConfigLi
     /// <summary>
     /// 筛选插件类型.
     /// </summary>
-    public string? PluginKey { get; init; }
+    public string PluginKey { get; init; }
 }

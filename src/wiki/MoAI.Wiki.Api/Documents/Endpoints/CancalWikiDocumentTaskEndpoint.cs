@@ -1,7 +1,9 @@
 ﻿using FastEndpoints;
 using MediatR;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Wiki.DocumentManager.Handlers;
 using MoAI.Wiki.Documents.Commands;
 using MoAI.Wiki.Wikis.Queries;
 

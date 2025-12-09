@@ -2,7 +2,6 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using MoAI.AI.Models;
-using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
 namespace MoAI.AI.Commands;

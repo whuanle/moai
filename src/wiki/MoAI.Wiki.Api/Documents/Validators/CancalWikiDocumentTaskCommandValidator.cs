@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// CancalWikiDocumentTaskCommandValidator.
 /// </summary>
-public class CancalWikiDocumentTaskCommandValidator : Validator<CancalWikiDocumentTaskCommand>
+public class CancalWikiDocumentTaskCommandValidator : AbstractValidator<CancalWikiDocumentTaskCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CancalWikiDocumentTaskCommandValidator"/> class.

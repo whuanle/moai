@@ -7,7 +7,7 @@ namespace MoAI.Admin.OAuth.Validators;
 /// <summary>
 /// DeleteUserCommandValidator.
 /// </summary>
-public class DeleteUserCommandValidator : Validator<DeleteUserCommand>
+public class DeleteUserCommandValidator : AbstractValidator<DeleteUserCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteUserCommandValidator"/> class.

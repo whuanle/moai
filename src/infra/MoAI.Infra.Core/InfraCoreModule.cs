@@ -1,4 +1,5 @@
-﻿using Maomi;
+﻿using FluentValidation;
+using Maomi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,8 +14,7 @@ namespace MoAI.Infra;
 /// </summary>
 [InjectModule<InfraConfigurationModule>]
 [InjectModule<InfraExternalHttpModule>]
-[InjectModule<InfraKernelMemoryModule>]
-public class InfraCoreModule : IModule
+public class InfraCoreModule : ModuleCore
 {
     private readonly IConfigurationManager _configurationManager;
     private readonly ILogger<InfraCoreModule> _logger;
@@ -30,9 +30,12 @@ public class InfraCoreModule : IModule
         _logger = logger;
     }
 
+    private ServiceContext _serviceContext;
+
     /// <inheritdoc/>
-    public void ConfigureServices(ServiceContext context)
+    public override void ConfigureServices(ServiceContext context)
     {
+        _serviceContext = context;
         var systemOptions = _configurationManager.GetSection("MoAI").Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");
 
         context.Services.AddSingleton<IIdProvider>(new DefaultIdProvider(0));
@@ -42,5 +45,14 @@ public class InfraCoreModule : IModule
 
         // 注册默认服务，会被上层模块覆盖
         context.Services.AddScoped<UserContext, DefaultUserContext>();
+    }
+
+    /// <inheritdoc/>
+    public override void TypeFilter(Type type)
+    {
+        if (type.IsClass && type.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IModelValidator<>)).Any())
+        {
+            _serviceContext.Services.AddScoped(typeof(IValidator).MakeGenericType(type), type);
+        }
     }
 }

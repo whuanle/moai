@@ -7,7 +7,7 @@ namespace MoAI.App.AIAssistant.Validators;
 /// <summary>
 /// AIAssistantChatObjectValidator.
 /// </summary>
-public class AIAssistantChatObjectValidator : Validator<AIAssistantChatObject>
+public class AIAssistantChatObjectValidator : AbstractValidator<AIAssistantChatObject>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="AIAssistantChatObjectValidator"/> class.

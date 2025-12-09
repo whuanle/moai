@@ -6,7 +6,6 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using MoAI.AI.Abstract;
 using MoAI.AI.Commands;
 using MoAI.AI.Models;
-using MoAI.AiModel.Models;
 using MoAI.Infra.Extensions;
 using System.Runtime.CompilerServices;
 using System.Text;

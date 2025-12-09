@@ -5,7 +5,7 @@ using MoAI.Login.Queries;
 namespace MoAI.Login.Validators;
 
 /// <inheritdoc/>
-public class QueryRepeatedUserNameCommandValidator : Validator<QueryRepeatedUserNameCommand>
+public class QueryRepeatedUserNameCommandValidator : AbstractValidator<QueryRepeatedUserNameCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryRepeatedUserNameCommandValidator"/> class.

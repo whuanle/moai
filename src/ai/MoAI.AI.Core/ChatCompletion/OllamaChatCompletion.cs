@@ -3,7 +3,7 @@
 using Maomi;
 using Microsoft.SemanticKernel;
 using MoAI.AI.Abstract;
-using MoAI.AiModel.Models;
+using MoAI.AI.Models;
 
 namespace MoAI.AI.ChatCompletion;
 

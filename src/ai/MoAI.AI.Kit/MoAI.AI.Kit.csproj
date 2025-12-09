@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.AI</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="PdfPig" />
+		<PackageReference Include="Microsoft.KernelMemory.Abstractions" />
+		<PackageReference Include="Microsoft.KernelMemory.Core" />
+		<PackageReference Include="RecursiveTextSplitter" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\aimodel\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
+	</ItemGroup>
+</Project>

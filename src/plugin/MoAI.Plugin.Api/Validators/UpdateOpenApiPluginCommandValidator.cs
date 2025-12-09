@@ -7,7 +7,7 @@ namespace MoAI.Plugin.Validators;
 /// <summary>
 /// UpdateOpenApiPluginCommandValidator.
 /// </summary>
-public class UpdateOpenApiPluginCommandValidator : Validator<UpdateOpenApiPluginCommand>
+public class UpdateOpenApiPluginCommandValidator : AbstractValidator<UpdateOpenApiPluginCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOpenApiPluginCommandValidator"/> class.

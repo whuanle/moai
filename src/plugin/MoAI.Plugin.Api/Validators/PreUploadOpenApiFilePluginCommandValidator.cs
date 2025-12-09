@@ -7,7 +7,7 @@ namespace MoAI.Plugin.Validators;
 /// <summary>
 /// PreUploadOpenApiFilePluginCommandValidator.
 /// </summary>
-public class PreUploadOpenApiFilePluginCommandValidator : Validator<PreUploadOpenApiFilePluginCommand>
+public class PreUploadOpenApiFilePluginCommandValidator : AbstractValidator<PreUploadOpenApiFilePluginCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="PreUploadOpenApiFilePluginCommandValidator"/> class.

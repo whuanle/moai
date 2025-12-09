@@ -1,20 +1,16 @@
 ﻿using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Storage.Commands.Models;
 
 namespace MoAI.Storage.Commands;
 
 /// <summary>
-/// 下载文件到指定位置.
+/// 下载文件.
 /// </summary>
-public class DownloadFileCommand : IRequest<EmptyCommandResponse>
+public class DownloadFileCommand : IRequest<DownloadFileCommandResponse>
 {
     /// <summary>
     /// key.
     /// </summary>
-    public string ObjectKey { get; init; } = default!;
-
-    /// <summary>
-    /// 本地路径.
-    /// </summary>
-    public string LocalFilePath { get; init; } = default!;
+    public int FileId { get; init; } = default!;
 }

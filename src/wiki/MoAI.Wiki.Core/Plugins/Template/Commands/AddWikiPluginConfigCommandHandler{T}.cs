@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Maomi;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;

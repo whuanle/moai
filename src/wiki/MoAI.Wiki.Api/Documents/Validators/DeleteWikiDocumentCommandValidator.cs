@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// DeleteWikiDocumentCommandValidator.
 /// </summary>
-public class DeleteWikiDocumentCommandValidator : Validator<DeleteWikiDocumentCommand>
+public class DeleteWikiDocumentCommandValidator : AbstractValidator<DeleteWikiDocumentCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiDocumentCommandValidator"/> class.

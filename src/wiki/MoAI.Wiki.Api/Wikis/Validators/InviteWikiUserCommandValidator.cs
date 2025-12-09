@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Wikis.Validators;
 /// <summary>
 /// InviteWikiUserCommandValidator
 /// </summary>
-public class InviteWikiUserCommandValidator : Validator<InviteWikiUserCommand>
+public class InviteWikiUserCommandValidator : AbstractValidator<InviteWikiUserCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="InviteWikiUserCommandValidator"/> class.

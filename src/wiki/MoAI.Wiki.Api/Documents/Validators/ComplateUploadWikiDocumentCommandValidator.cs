@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// ComplateUploadWikiDocumentCommandValidator.
 /// </summary>
-public class ComplateUploadWikiDocumentCommandValidator : Validator<ComplateUploadWikiDocumentCommand>
+public class ComplateUploadWikiDocumentCommandValidator : AbstractValidator<ComplateUploadWikiDocumentCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ComplateUploadWikiDocumentCommandValidator"/> class.

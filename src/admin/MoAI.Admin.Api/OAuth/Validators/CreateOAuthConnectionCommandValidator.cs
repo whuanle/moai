@@ -7,7 +7,7 @@ namespace MoAI.Admin.OAuth.Validators;
 /// <summary>
 /// CreateOAuthConnectionCommandValidator.
 /// </summary>
-public class CreateOAuthConnectionCommandValidator : Validator<CreateOAuthConnectionCommand>
+public class CreateOAuthConnectionCommandValidator : AbstractValidator<CreateOAuthConnectionCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateOAuthConnectionCommandValidator"/> class.

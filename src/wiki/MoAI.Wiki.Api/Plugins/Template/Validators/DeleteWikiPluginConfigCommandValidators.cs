@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Plugins.Template.Validators;
 /// <summary>
 /// DeleteWikiPluginConfigCommandValidators.
 /// </summary>
-public class DeleteWikiPluginConfigCommandValidators : Validator<DeleteWikiPluginConfigCommand>
+public class DeleteWikiPluginConfigCommandValidators : AbstractValidator<DeleteWikiPluginConfigCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiPluginConfigCommandValidators"/> class.

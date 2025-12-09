@@ -5,7 +5,7 @@ using MoAI.Login.Commands;
 namespace MoAI.Login.Validators;
 
 /// <inheritdoc/>
-public class RegisterUserCommandValidator : Validator<RegisterUserCommand>
+public class RegisterUserCommandValidator : AbstractValidator<RegisterUserCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="RegisterUserCommandValidator"/> class.

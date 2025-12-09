@@ -10,6 +10,8 @@ import { DocumentRequestBuilderNavigationMetadata, type DocumentRequestBuilder }
 // @ts-ignore
 import { Invite_wiki_userRequestBuilderRequestsMetadata, type Invite_wiki_userRequestBuilder } from './invite_wiki_user/index.js';
 // @ts-ignore
+import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
+// @ts-ignore
 import { Query_wiki_infoRequestBuilderRequestsMetadata, type Query_wiki_infoRequestBuilder } from './query_wiki_info/index.js';
 // @ts-ignore
 import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequestBuilder } from './query_wiki_list/index.js';
@@ -17,8 +19,6 @@ import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequ
 import { Query_wiki_usersRequestBuilderRequestsMetadata, type Query_wiki_usersRequestBuilder } from './query_wiki_users/index.js';
 // @ts-ignore
 import { type Update_wiki_configRequestBuilder, Update_wiki_configRequestBuilderRequestsMetadata } from './update_wiki_config/index.js';
-// @ts-ignore
-import { type WebRequestBuilder, WebRequestBuilderNavigationMetadata } from './web/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -43,6 +43,10 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      */
     get invite_wiki_user(): Invite_wiki_userRequestBuilder;
     /**
+     * The plugin property
+     */
+    get plugin(): PluginRequestBuilder;
+    /**
      * The query_wiki_info property
      */
     get query_wiki_info(): Query_wiki_infoRequestBuilder;
@@ -58,10 +62,6 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The update_wiki_config property
      */
     get update_wiki_config(): Update_wiki_configRequestBuilder;
-    /**
-     * The web property
-     */
-    get web(): WebRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -83,6 +83,9 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     invite_wiki_user: {
         requestsMetadata: Invite_wiki_userRequestBuilderRequestsMetadata,
     },
+    plugin: {
+        navigationMetadata: PluginRequestBuilderNavigationMetadata,
+    },
     query_wiki_info: {
         requestsMetadata: Query_wiki_infoRequestBuilderRequestsMetadata,
     },
@@ -94,9 +97,6 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     update_wiki_config: {
         requestsMetadata: Update_wiki_configRequestBuilderRequestsMetadata,
-    },
-    web: {
-        navigationMetadata: WebRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

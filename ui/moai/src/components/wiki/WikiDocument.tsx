@@ -34,6 +34,7 @@ import {
   PlusOutlined,
   CheckOutlined,
   CloseOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import { useParams, useNavigate } from "react-router";
@@ -44,6 +45,7 @@ import {
   DeleteWikiDocumentCommand,
   PreloadWikiDocumentResponse,
   UpdateWikiDocumentFileNameCommand,
+  DownloadWikiDocumentCommand,
 } from "../../apiClient/models";
 import { FileSizeHelper } from "../../helper/FileSizeHelper";
 import { FileTypeHelper } from "../../helper/FileTypeHelper";
@@ -501,7 +503,8 @@ const getTableColumns = (
   handleDoubleClickEdit: (documentId: number, fileName: string) => void,
   handleConfirmEdit: (documentId: number) => void,
   handleCancelEdit: () => void,
-  setEditingFileName: (value: string) => void
+  setEditingFileName: (value: string) => void,
+  handleDownload: (documentId: number, fileName: string) => void
 ) => [
   {
     title: "文件名称",
@@ -613,9 +616,9 @@ const getTableColumns = (
     ),
   },
   {
-    title: "向量化",
+    title: "操作",
     key: "action",
-    width: 120,
+    width: 180,
     fixed: "right" as const,
     render: (_: unknown, record: DocumentItem) => (
       <Space>
@@ -626,6 +629,16 @@ const getTableColumns = (
         >
           向量化
         </Button>
+        <Tooltip title="下载文档">
+          <Button
+            type="link"
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownload(record.documentId, record.fileName)}
+          >
+            下载
+          </Button>
+        </Tooltip>
         <Popconfirm
           title="删除文档"
           description="确定要删除这个文档吗？删除后无法恢复。"
@@ -843,6 +856,35 @@ export default function WikiDocument() {
     setEditingFileName("");
   }, []);
 
+  // 处理下载文档
+  const handleDownload = useCallback(async (documentId: number, fileName: string) => {
+    try {
+      const client = GetApiClient();
+      const downloadCommand: DownloadWikiDocumentCommand = {
+        wikiId,
+        documentId,
+      };
+      
+      const response = await client.api.wiki.document.download_document.post(downloadCommand);
+      
+      if (response?.value) {
+        // 创建一个临时的 a 标签来触发下载
+        const link = document.createElement("a");
+        link.href = response.value;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        message.success("下载已开始");
+      } else {
+        message.error("获取下载地址失败");
+      }
+    } catch (error) {
+      console.error("Download document error:", error);
+      message.error("下载失败");
+    }
+  }, [wikiId]);
+
   const columns = getTableColumns(
     wikiId,
     navigate,
@@ -853,7 +895,8 @@ export default function WikiDocument() {
     handleDoubleClickEdit,
     handleConfirmEdit,
     handleCancelEdit,
-    setEditingFileName
+    setEditingFileName,
+    handleDownload
   );
 
   return (

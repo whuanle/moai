@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using MoAI.AiModel.Models;
+using MoAI.AI.Models;
 using MoAI.AiModel.Queries.Respones;
 
 namespace MoAI.AiModel.Queries;

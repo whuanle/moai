@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// SearchWikiDocumentTextCommandValidator.
 /// </summary>
-public class SearchWikiDocumentTextCommandValidator : Validator<SearchWikiDocumentTextCommand>
+public class SearchWikiDocumentTextCommandValidator : AbstractValidator<SearchWikiDocumentTextCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="SearchWikiDocumentTextCommandValidator"/> class.

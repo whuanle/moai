@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Plugins.Crawler.Validators;
 /// <summary>
 /// AddWikiFeishuConfigCommandValidators.
 /// </summary>
-public class AddWikiFeishuConfigCommandValidators : Validator<AddWikiFeishuConfigCommand>
+public class AddWikiFeishuConfigCommandValidators : AbstractValidator<AddWikiFeishuConfigCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="AddWikiFeishuConfigCommandValidators"/> class.

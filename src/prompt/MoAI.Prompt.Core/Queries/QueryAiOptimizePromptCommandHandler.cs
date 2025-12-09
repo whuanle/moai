@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.Commands;
-using MoAI.AiModel.Models;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Prompt.Queries.Responses;

@@ -7,7 +7,7 @@ namespace MoAI.Plugin.Validators;
 /// <summary>
 /// RefreshMcpServerPluginCommandValidator.
 /// </summary>
-public class RefreshMcpServerPluginCommandValidator : Validator<RefreshMcpServerPluginCommand>
+public class RefreshMcpServerPluginCommandValidator : AbstractValidator<RefreshMcpServerPluginCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="RefreshMcpServerPluginCommandValidator"/> class.

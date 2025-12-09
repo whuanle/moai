@@ -1,7 +1,5 @@
 ﻿using FastEndpoints;
 using MediatR;
-using MoAI.Common.Queries;
-using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
 

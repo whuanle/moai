@@ -9,6 +9,8 @@
     <PackageVersion Include="AngleSharp.Js" Version="1.0.0-beta.45" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.2.1" />
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.1.2" />
+    <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.17.1" />
     <PackageVersion Include="FluentValidation" Version="12.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageVersion Include="Jint" Version="4.4.2" />
@@ -47,6 +49,7 @@
     <PackageVersion Include="MySqlConnector" Version="2.5.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Npgsql" Version="10.0.0-rc.1" />
+    <PackageVersion Include="PdfPig" Version="0.1.13-alpha-20251203-c70b3" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
     <PackageVersion Include="FastEndpoints" Version="6.2.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
@@ -56,11 +59,13 @@
     <PackageVersion Include="Maomi.MQ.RabbitMQ.MediatR" Version="2.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.12.1" />
+    <PackageVersion Include="RecursiveTextSplitter" Version="1.0.2" />
     <PackageVersion Include="Refit" Version="8.0.0" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="8.0.0" />
     <PackageVersion Include="RulesEngine" Version="6.0.0" />
     <PackageVersion Include="SmartFormat.NET" Version="3.6.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.31" />
+    <PackageVersion Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="11.0.0" />
     <PackageVersion Include="StackExchange.Redis.Extensions.System.Text.Json" Version="11.0.0" />

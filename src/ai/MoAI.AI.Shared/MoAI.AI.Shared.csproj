@@ -10,7 +10,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\aimodel\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	</ItemGroup>
 

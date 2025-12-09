@@ -1,4 +1,5 @@
 ﻿using Microsoft.KernelMemory;
+using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 
 namespace MoAI.AiModel.Services;

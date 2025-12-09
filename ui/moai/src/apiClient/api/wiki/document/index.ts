@@ -12,6 +12,8 @@ import { Delete_documentRequestBuilderRequestsMetadata, type Delete_documentRequ
 // @ts-ignore
 import { Document_infoRequestBuilderRequestsMetadata, type Document_infoRequestBuilder } from './document_info/index.js';
 // @ts-ignore
+import { Download_documentRequestBuilderRequestsMetadata, type Download_documentRequestBuilder } from './download_document/index.js';
+// @ts-ignore
 import { Embedding_documentRequestBuilderRequestsMetadata, type Embedding_documentRequestBuilder } from './embedding_document/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
@@ -50,6 +52,10 @@ export interface DocumentRequestBuilder extends BaseRequestBuilder<DocumentReque
      * The document_info property
      */
     get document_info(): Document_infoRequestBuilder;
+    /**
+     * The download_document property
+     */
+    get download_document(): Download_documentRequestBuilder;
     /**
      * The embedding_document property
      */
@@ -97,6 +103,9 @@ export const DocumentRequestBuilderNavigationMetadata: Record<Exclude<keyof Docu
     },
     document_info: {
         requestsMetadata: Document_infoRequestBuilderRequestsMetadata,
+    },
+    download_document: {
+        requestsMetadata: Download_documentRequestBuilderRequestsMetadata,
     },
     embedding_document: {
         requestsMetadata: Embedding_documentRequestBuilderRequestsMetadata,

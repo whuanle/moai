@@ -48,5 +48,5 @@ public class WikiCrawlerConfig : IWikiPluginKey
     public string Selector { get; set; } = default!;
 
     /// <inheritdoc/>
-    public string PluginKey => "wiki_crawler";
+    public string PluginKey => "crawler";
 }

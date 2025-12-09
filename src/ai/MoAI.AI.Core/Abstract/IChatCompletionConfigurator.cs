@@ -1,5 +1,5 @@
 ﻿using Microsoft.SemanticKernel;
-using MoAI.AiModel.Models;
+using MoAI.AI.Models;
 
 namespace MoAI.AI.Abstract;
 

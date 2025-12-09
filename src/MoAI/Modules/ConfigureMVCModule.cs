@@ -2,6 +2,7 @@
 using Maomi;
 using MoAI.Infra;
 using MoAI.Storage;
+using System.Text.Json;
 
 namespace MoAI.Modules;
 
@@ -28,6 +29,11 @@ public class ConfigureMVCModule : IModule
     {
         var mvcBuilder = context.Services.AddControllers(o =>
         {
+           // 序列化配置
+           // o.Filters.Add<>();
+        }).AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         });
 
         AddApplicationParts(mvcBuilder, context);
@@ -45,8 +51,6 @@ public class ConfigureMVCModule : IModule
         });
 
         context.Services.AddValidatorsFromAssemblies(context.Modules.Select(x => x.Assembly).Distinct());
-
-        // context.Services.AddFluentValidationAutoValidation();
     }
 
     private static void AddApplicationParts(IMvcBuilder builder, ServiceContext context)

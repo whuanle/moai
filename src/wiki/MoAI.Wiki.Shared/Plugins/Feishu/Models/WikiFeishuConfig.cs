@@ -12,5 +12,5 @@ public class WikiFeishuConfig: IWikiPluginKey
 
     public string ParentNodeToken { get; set; }
 
-    public string PluginKey => "wiki_feishu";
+    public string PluginKey => "feishu";
 }

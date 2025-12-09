@@ -7,7 +7,7 @@ namespace MoAI.AiModel.Validators;
 /// <summary>
 /// AddAiModelCommandValidator.
 /// </summary>
-public class AddAiModelCommandValidator : Validator<AddAiModelCommand>
+public class AddAiModelCommandValidator : AbstractValidator<AddAiModelCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="AddAiModelCommandValidator"/> class.

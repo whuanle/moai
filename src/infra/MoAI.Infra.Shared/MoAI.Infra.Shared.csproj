@@ -6,9 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Maomi.Core" />
-	  <PackageReference Include="MediatR" />
-	  <PackageReference Include="Microsoft.IdentityModel.Tokens" />
+		<PackageReference Include="Maomi.Core" />
+		<PackageReference Include="MediatR" />
+		<PackageReference Include="FluentValidation" />
+		<PackageReference Include="Microsoft.IdentityModel.Tokens" />
 	</ItemGroup>
 
 </Project>

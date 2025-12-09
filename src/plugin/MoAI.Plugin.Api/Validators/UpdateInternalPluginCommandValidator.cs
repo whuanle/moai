@@ -7,7 +7,7 @@ namespace MoAI.Plugin.Validators;
 /// <summary>
 /// UpdateNativePluginCommandValidator.
 /// </summary>
-public class UpdateNativePluginCommandValidator : Validator<UpdateNativePluginCommand>
+public class UpdateNativePluginCommandValidator : AbstractValidator<UpdateNativePluginCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateNativePluginCommandValidator"/> class.

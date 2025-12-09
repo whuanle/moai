@@ -7,7 +7,7 @@ namespace MoAI.App.AIAssistant.Validators;
 /// <summary>
 /// DeleteAiAssistantChatCommandValidator.
 /// </summary>
-public class DeleteAiAssistantChatCommandValidator : Validator<DeleteAiAssistantChatCommand>
+public class DeleteAiAssistantChatCommandValidator : AbstractValidator<DeleteAiAssistantChatCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteAiAssistantChatCommandValidator"/> class.

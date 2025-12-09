@@ -7,7 +7,7 @@ namespace MoAI.App.AIAssistant.Validators;
 /// <summary>
 /// DeleteAiAssistantChatOneRecordCommandValidator.
 /// </summary>
-public class DeleteAiAssistantChatOneRecordCommandValidator : Validator<DeleteAiAssistantChatOneRecordCommand>
+public class DeleteAiAssistantChatOneRecordCommandValidator : AbstractValidator<DeleteAiAssistantChatOneRecordCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteAiAssistantChatOneRecordCommandValidator"/> class.

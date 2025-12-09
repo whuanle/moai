@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// EmbeddingDocumentCommandValidator.
 /// </summary>
-public class EmbeddingDocumentCommandValidator : Validator<EmbeddingDocumentCommand>
+public class EmbeddingDocumentCommandValidator : AbstractValidator<EmbeddingDocumentCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="EmbeddingDocumentCommandValidator"/> class.

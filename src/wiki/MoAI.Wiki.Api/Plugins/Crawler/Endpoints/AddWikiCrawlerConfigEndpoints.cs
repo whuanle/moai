@@ -43,6 +43,11 @@ public class AddWikiCrawlerConfigEndpoint : Endpoint<AddWikiCrawlerConfigCommand
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
 
-        return await _mediator.Send((AddWikiPluginConfigCommand<WikiCrawlerConfig>)req);
+        return await _mediator.Send(new AddWikiPluginConfigCommand<WikiCrawlerConfig>
+        {
+            Config = req.Config,
+            Title = req.Title,
+            WikiId = req.WikiId
+        });
     }
 }

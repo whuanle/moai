@@ -20,10 +20,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\ai\MoAI.AI.Kit\MoAI.AI.Kit.csproj" />
 		<ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
-		<ProjectReference Include="..\..\infra\MoAI.Infra.KernelMemory\MoAI.Infra.KernelMemory.csproj" />
 		<ProjectReference Include="..\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 	</ItemGroup>
 

@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// QueryWikiDocumentInfoCommandValidator.
 /// </summary>
-public class QueryWikiDocumentTaskListCommandValidator : Validator<QueryWikiDocumentTaskListCommand>
+public class QueryWikiDocumentTaskListCommandValidator : AbstractValidator<QueryWikiDocumentTaskListCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryWikiDocumentTaskListCommandValidator"/> class.

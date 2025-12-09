@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Validators;
 /// <summary>
 /// ClearWikiDocumentEmbeddingCommandValidator.
 /// </summary>
-public class ClearWikiDocumentEmbeddingCommandValidator : Validator<ClearWikiDocumentEmbeddingCommand>
+public class ClearWikiDocumentEmbeddingCommandValidator : AbstractValidator<ClearWikiDocumentEmbeddingCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ClearWikiDocumentEmbeddingCommandValidator"/> class.

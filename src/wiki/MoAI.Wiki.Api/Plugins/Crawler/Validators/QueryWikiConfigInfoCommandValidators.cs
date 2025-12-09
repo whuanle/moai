@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Plugins.Crawler.Validators;
 /// <summary>
 /// QueryWikiCrawlerConfigCommandValidators.
 /// </summary>
-public class QueryWikiCrawlerConfigCommandValidators : Validator<QueryWikiCrawlerConfigCommand>
+public class QueryWikiCrawlerConfigCommandValidators : AbstractValidator<QueryWikiCrawlerConfigCommand>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryWikiCrawlerConfigCommandValidators"/> class.
