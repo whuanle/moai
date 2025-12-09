@@ -6,10 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Validators\PreUploadOpenApiFileCommandValidator.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
 	  <ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />

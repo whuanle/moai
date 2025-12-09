@@ -4,6 +4,7 @@
 #pragma warning disable SA1600 // Elements should be documented
 
 using FluentValidation;
+using MediatR;
 using Microsoft.SemanticKernel;
 using Microsoft.VisualBasic.FileIO;
 using MoAI.Infra.Feishu;

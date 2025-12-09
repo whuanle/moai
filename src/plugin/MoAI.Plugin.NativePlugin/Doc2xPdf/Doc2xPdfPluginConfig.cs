@@ -5,6 +5,8 @@
 
 using FluentValidation;
 using Maomi;
+using MediatR;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.SemanticKernel;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Feishu;

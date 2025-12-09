@@ -1,5 +1,9 @@
 ﻿using FluentValidation;
 using Maomi;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.Routing;
+using MoAI.Filters;
 using MoAI.Infra;
 using MoAI.Storage;
 using System.Text.Json;
@@ -29,8 +33,9 @@ public class ConfigureMVCModule : IModule
     {
         var mvcBuilder = context.Services.AddControllers(o =>
         {
-           // 序列化配置
-           // o.Filters.Add<>();
+            // 序列化配置
+            // o.Filters.Add<>();
+            o.Conventions.Add(new ApiApplicationModelConvention("/api"));
         }).AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;

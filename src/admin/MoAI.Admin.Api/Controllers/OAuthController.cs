@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MoAI.Admin.OAuth.Queries.Responses;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -36,12 +37,11 @@ public class OAuthController : ControllerBase
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateOAuthConnectionCommand req, CancellationToken ct)
+    public async Task<EmptyCommandResponse> Create([FromBody] CreateOAuthConnectionCommand req, CancellationToken ct)
     {
         await CheckIsAdminAsync(ct);
 
-        var result = await _mediator.Send(req, ct);
-        return Ok(result);
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -51,12 +51,11 @@ public class OAuthController : ControllerBase
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromBody] DeleteOAuthConnectionCommand req, CancellationToken ct)
+    public async Task<EmptyCommandResponse> Delete([FromBody] DeleteOAuthConnectionCommand req, CancellationToken ct)
     {
         await CheckIsAdminAsync(ct);
 
-        var result = await _mediator.Send(req, ct);
-        return Ok(result);
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -65,12 +64,11 @@ public class OAuthController : ControllerBase
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpGet("detail_list")]
-    public async Task<IActionResult> DetailList(CancellationToken ct)
+    public async Task<QueryAllOAuthPrividerDetailCommandResponse> DetailList(CancellationToken ct)
     {
         await CheckIsAdminAsync(ct);
 
-        var result = await _mediator.Send(new QueryAllOAuthPrividerDetailCommand(), ct);
-        return Ok(result);
+        return await _mediator.Send(new QueryAllOAuthPrividerDetailCommand(), ct);
     }
 
     /// <summary>
@@ -80,12 +78,11 @@ public class OAuthController : ControllerBase
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpPut("update")]
-    public async Task<IActionResult> Update([FromBody] UpdateOAuthConnectionCommand req, CancellationToken ct)
+    public async Task<EmptyCommandResponse> Update([FromBody] UpdateOAuthConnectionCommand req, CancellationToken ct)
     {
         await CheckIsAdminAsync(ct);
 
-        var result = await _mediator.Send(req, ct);
-        return Ok(result);
+        return await _mediator.Send(req, ct);
     }
 
     private async Task CheckIsAdminAsync(CancellationToken ct)

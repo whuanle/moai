@@ -1,13 +1,13 @@
 ﻿using FluentValidation;
 
-namespace MoAI.Infra.Defaults;
+namespace MediatR;
 
 /// <summary>
 /// 模型验证.
 /// </summary>
 /// <typeparam name="T">模型类型.</typeparam>
 public interface IModelValidator<T>
-    where T : class, new()
+    where T : class, IModelValidator<T>, new()
 {
     /// <summary>
     /// 模型验证.

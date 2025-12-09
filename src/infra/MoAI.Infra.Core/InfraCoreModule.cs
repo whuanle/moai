@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Maomi;
+using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -52,7 +53,7 @@ public class InfraCoreModule : ModuleCore
     {
         if (type.IsClass && type.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IModelValidator<>)).Any())
         {
-            _serviceContext.Services.AddScoped(typeof(IValidator).MakeGenericType(type), type);
+            _serviceContext.Services.AddScoped(typeof(IValidator<>).MakeGenericType(type), typeof(AutoValidator<>).MakeGenericType(type));
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Documents.Commands;
@@ -6,7 +7,7 @@ namespace MoAI.Wiki.Documents.Commands;
 /// <summary>
 /// 取消文档处理任务.
 /// </summary>
-public class CancalWikiDocumentTaskCommand : IRequest<EmptyCommandResponse>
+public class CancalWikiDocumentTaskCommand : IRequest<EmptyCommandResponse>, IModelValidator<CancalWikiDocumentTaskCommand>
 {
     /// <summary>
     /// 知识库id.
@@ -22,4 +23,16 @@ public class CancalWikiDocumentTaskCommand : IRequest<EmptyCommandResponse>
     /// 任务 id.
     /// </summary>
     public Guid TaskId { get; set; } = default!;
+
+    /// <inheritdoc/>
+    public void Validate(AbstractValidator<CancalWikiDocumentTaskCommand> validate)
+    {
+        validate.RuleFor(x => x.WikiId)
+            .NotEmpty().WithMessage("知识库id不正确")
+            .GreaterThan(0).WithMessage("知识库id不正确");
+
+        validate.RuleFor(x => x.DocumentId)
+            .NotEmpty().WithMessage("文档id不正确")
+            .GreaterThan(0).WithMessage("文档id不正确");
+    }
 }

@@ -1,5 +1,7 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using MoAI.AI.Models;
+using MoAI.Infra.Defaults;
 using MoAI.Infra.Models;
 
 namespace MoAI.AiModel.Commands;
@@ -7,7 +9,7 @@ namespace MoAI.AiModel.Commands;
 /// <summary>
 /// 修改 AI 模型.
 /// </summary>
-public class UpdateAiModelCommand : AiEndpoint, IRequest<EmptyCommandResponse>
+public class UpdateAiModelCommand : AiEndpoint, IRequest<EmptyCommandResponse>, IModelValidator<UpdateAiModelCommand>
 {
     /// <summary>
     /// AI 模型 id.
@@ -18,4 +20,22 @@ public class UpdateAiModelCommand : AiEndpoint, IRequest<EmptyCommandResponse>
     /// 公开给用户使用.
     /// </summary>
     public bool IsPublic { get; init; }
+
+    /// <inheritdoc/>
+    public void Validate(AbstractValidator<UpdateAiModelCommand> validate)
+    {
+        validate.RuleFor(x => x.AiModelId)
+            .NotEmpty().WithMessage("模型id有误");
+
+        validate.RuleFor(x => x.Title)
+            .NotEmpty().WithMessage("模型名称不能为空")
+            .MaximumLength(50).WithMessage("模型名称不能超过50个字符");
+
+        validate.RuleFor(x => x.Key)
+            .NotEmpty().WithMessage("密钥不能为空");
+
+        validate.RuleFor(x => x.Endpoint)
+            .NotEmpty().WithMessage("请求端点不能为空")
+            .MaximumLength(500).WithMessage("请求端点不能超过255个字符");
+    }
 }

@@ -10,7 +10,7 @@
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
 		<PackageReference Include="Maomi.I18n.AspNetCore" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
-		<PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Condition=" '$(Configuration)' == 'Debug' ">
+		<PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Condition=" '$(Configuration)' == 'Debug1' ">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>

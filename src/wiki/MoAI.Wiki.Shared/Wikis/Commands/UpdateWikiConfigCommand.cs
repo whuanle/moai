@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
@@ -7,7 +8,7 @@ namespace MoAI.Wiki.Wikis.Commands;
 /// <summary>
 /// 更新知识库设置信息.
 /// </summary>
-public class UpdateWikiConfigCommand : IRequest<EmptyCommandResponse>
+public class UpdateWikiConfigCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateWikiConfigCommand>
 {
     /// <summary>
     /// 知识库 id.
@@ -38,4 +39,20 @@ public class UpdateWikiConfigCommand : IRequest<EmptyCommandResponse>
     /// 维度，跟模型有关，小于嵌入向量的最大值，为空则不更新 .
     /// </summary>
     public int EmbeddingDimensions { get; set; }
+
+    /// <inheritdoc/>
+    public void Validate(AbstractValidator<UpdateWikiConfigCommand> validate)
+    {
+        validate.RuleFor(x => x.WikiId)
+            .NotEmpty().WithMessage("知识库id不正确")
+            .GreaterThan(0).WithMessage("知识库id不正确");
+
+        validate.RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("知识库名称长度在 2-20 之间.")
+            .Length(2, 20).WithMessage("知识库名称长度在 2-20 之间.");
+
+        validate.RuleFor(x => x.Description)
+            .NotEmpty().WithMessage("知识库描述长度在 2-255 之间.")
+            .Length(2, 255).WithMessage("知识库描述长度在 2-255 之间.");
+    }
 }

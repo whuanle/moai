@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
@@ -7,7 +8,7 @@ namespace MoAI.Wiki.Documents.Commands;
 /// <summary>
 /// 向量化文档.
 /// </summary>
-public class EmbeddingDocumentCommand : IRequest<EmptyCommandResponse>
+public class EmbeddingDocumentCommand : IRequest<EmptyCommandResponse>, IModelValidator<EmbeddingDocumentCommand>
 {
     /// <summary>
     /// 知识库 id.
@@ -38,4 +39,16 @@ public class EmbeddingDocumentCommand : IRequest<EmptyCommandResponse>
     /// 统计 tokens 数量的算法 支持: "p50k", "cl100k", "o200k".
     /// </summary>
     public EmbeddingTokenizer Tokenizer { get; set; } = EmbeddingTokenizer.P50k;
+
+    /// <inheritdoc/>
+    public void Validate(AbstractValidator<EmbeddingDocumentCommand> validate)
+    {
+        validate.RuleFor(x => x.WikiId)
+            .NotEmpty().WithMessage("知识库id不正确")
+            .GreaterThan(0).WithMessage("知识库id不正确");
+
+        validate.RuleFor(x => x.DocumentId)
+            .NotEmpty().WithMessage("文档id不正确")
+            .GreaterThan(0).WithMessage("文档id不正确");
+    }
 }
