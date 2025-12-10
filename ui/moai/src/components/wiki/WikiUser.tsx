@@ -80,9 +80,9 @@ export default function WikiUser({}: WikiUserProps) {
 
     try {
       setInviteLoading(true);
-      await apiClient.api.wiki.invite_wiki_user.post({
+      await apiClient.api.wiki.manager.invite_wiki_user.post({
         wikiId: parseInt(id),
-        userName: values.userName,
+        userNames: [values.userName],
       });
 
       messageApi.success("邀请用户成功");
@@ -105,8 +105,9 @@ export default function WikiUser({}: WikiUserProps) {
 
     try {
       setRemoveLoading(true);
-      await apiClient.api.wiki.remove_wiki_user.post({
+      await apiClient.api.wiki.manager.invite_wiki_user.post({
         wikiId: parseInt(id),
+        isInvite: false,
         userIds: selectedUserIds,
       });
 
@@ -149,7 +150,6 @@ export default function WikiUser({}: WikiUserProps) {
       render: (record: QueryWikiUsersCommandResponseItem) => (
         <Space>
           <Avatar 
-            src={record.avatarPath} 
             icon={<UserOutlined />}
             size="default"
           />

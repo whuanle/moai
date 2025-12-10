@@ -161,7 +161,7 @@ const useWikiList = () => {
     try {
       const client = GetApiClient();
       const deleteCommand: DeleteWikiCommand = { wikiId: id };
-      await client.api.wiki.delete_wiki.delete(deleteCommand);
+      await client.api.wiki.manager.delete_wiki.delete(deleteCommand);
       messageApi.success("删除成功");
       fetchWikiList(currentFilter);
     } catch (error) {

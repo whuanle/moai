@@ -700,15 +700,6 @@ export function createCreatePluginClassifyCommandFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {CreatePromptClassifyCommand}
- */
-// @ts-ignore
-export function createCreatePromptClassifyCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCreatePromptClassifyCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreatePromptCommand}
  */
 // @ts-ignore
@@ -1212,19 +1203,6 @@ export function createPreUploadWikiDocumentCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createProcessingAiAssistantChatCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoProcessingAiAssistantChatCommand;
-}
-/**
- * 创建提示词分类.
- */
-export interface CreatePromptClassifyCommand extends Parsable {
-    /**
-     * 分类描述.
-     */
-    description?: string | null;
-    /**
-     * 分类名称.
-     */
-    name?: string | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2001,15 +1979,6 @@ export function createUpdatePluginClassifyCommandFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UpdatePromptClassifyCommand}
- */
-// @ts-ignore
-export function createUpdatePromptClassifyCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUpdatePromptClassifyCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdatePromptCommand}
  */
 // @ts-ignore
@@ -2682,17 +2651,6 @@ export function deserializeIntoCreatePluginClassifyCommand(createPluginClassifyC
     return {
         "description": n => { createPluginClassifyCommand.description = n.getStringValue(); },
         "name": n => { createPluginClassifyCommand.name = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoCreatePromptClassifyCommand(createPromptClassifyCommand: Partial<CreatePromptClassifyCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "description": n => { createPromptClassifyCommand.description = n.getStringValue(); },
-        "name": n => { createPromptClassifyCommand.name = n.getStringValue(); },
     }
 }
 /**
@@ -4252,8 +4210,13 @@ export function deserializeIntoUpdateNativePluginCommand(updateNativePluginComma
 // @ts-ignore
 export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        ...deserializeIntoCreateOAuthConnectionCommand(updateOAuthConnectionCommand),
+        "iconUrl": n => { updateOAuthConnectionCommand.iconUrl = n.getStringValue(); },
+        "key": n => { updateOAuthConnectionCommand.key = n.getStringValue(); },
+        "name": n => { updateOAuthConnectionCommand.name = n.getStringValue(); },
         "oAuthConnectionId": n => { updateOAuthConnectionCommand.oAuthConnectionId = n.getGuidValue(); },
+        "provider": n => { updateOAuthConnectionCommand.provider = n.getEnumValue<OAuthPrivider>(OAuthPrividerObject); },
+        "secret": n => { updateOAuthConnectionCommand.secret = n.getStringValue(); },
+        "wellKnown": n => { updateOAuthConnectionCommand.wellKnown = n.getStringValue(); },
     }
 }
 /**
@@ -4286,18 +4249,6 @@ export function deserializeIntoUpdatePluginClassifyCommand(updatePluginClassifyC
         "classifyId": n => { updatePluginClassifyCommand.classifyId = n.getNumberValue(); },
         "description": n => { updatePluginClassifyCommand.description = n.getStringValue(); },
         "name": n => { updatePluginClassifyCommand.name = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoUpdatePromptClassifyCommand(updatePromptClassifyCommand: Partial<UpdatePromptClassifyCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "classifyId": n => { updatePromptClassifyCommand.classifyId = n.getNumberValue(); },
-        "description": n => { updatePromptClassifyCommand.description = n.getStringValue(); },
-        "name": n => { updatePromptClassifyCommand.name = n.getStringValue(); },
     }
 }
 /**
@@ -6687,17 +6638,6 @@ export function serializeCreatePluginClassifyCommand(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeCreatePromptClassifyCommand(writer: SerializationWriter, createPromptClassifyCommand: Partial<CreatePromptClassifyCommand> | undefined | null = {}) : void {
-    if (createPromptClassifyCommand) {
-        writer.writeStringValue("description", createPromptClassifyCommand.description);
-        writer.writeStringValue("name", createPromptClassifyCommand.name);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeCreatePromptCommand(writer: SerializationWriter, createPromptCommand: Partial<CreatePromptCommand> | undefined | null = {}) : void {
     if (createPromptCommand) {
         writer.writeStringValue("content", createPromptCommand.content);
@@ -8250,8 +8190,13 @@ export function serializeUpdateNativePluginCommand(writer: SerializationWriter, 
 // @ts-ignore
 export function serializeUpdateOAuthConnectionCommand(writer: SerializationWriter, updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (updateOAuthConnectionCommand) {
-        serializeCreateOAuthConnectionCommand(writer, updateOAuthConnectionCommand)
+        writer.writeStringValue("iconUrl", updateOAuthConnectionCommand.iconUrl);
+        writer.writeStringValue("key", updateOAuthConnectionCommand.key);
+        writer.writeStringValue("name", updateOAuthConnectionCommand.name);
         writer.writeGuidValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
+        writer.writeEnumValue<OAuthPrivider>("provider", updateOAuthConnectionCommand.provider);
+        writer.writeStringValue("secret", updateOAuthConnectionCommand.secret);
+        writer.writeStringValue("wellKnown", updateOAuthConnectionCommand.wellKnown);
     }
 }
 /**
@@ -8284,18 +8229,6 @@ export function serializeUpdatePluginClassifyCommand(writer: SerializationWriter
         writer.writeNumberValue("classifyId", updatePluginClassifyCommand.classifyId);
         writer.writeStringValue("description", updatePluginClassifyCommand.description);
         writer.writeStringValue("name", updatePluginClassifyCommand.name);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeUpdatePromptClassifyCommand(writer: SerializationWriter, updatePromptClassifyCommand: Partial<UpdatePromptClassifyCommand> | undefined | null = {}) : void {
-    if (updatePromptClassifyCommand) {
-        writer.writeNumberValue("classifyId", updatePromptClassifyCommand.classifyId);
-        writer.writeStringValue("description", updatePromptClassifyCommand.description);
-        writer.writeStringValue("name", updatePromptClassifyCommand.name);
     }
 }
 /**
@@ -8819,11 +8752,35 @@ export interface UpdateNativePluginCommand extends Parsable {
 /**
  * 更新 OAuth2.0 连接配置.
  */
-export interface UpdateOAuthConnectionCommand extends CreateOAuthConnectionCommand, Parsable {
+export interface UpdateOAuthConnectionCommand extends Parsable {
+    /**
+     * 图标地址.
+     */
+    iconUrl?: string | null;
+    /**
+     * 应用key.
+     */
+    key?: string | null;
+    /**
+     * 认证名称.
+     */
+    name?: string | null;
     /**
      * id.
      */
     oAuthConnectionId?: Guid | null;
+    /**
+     * 提供商.
+     */
+    provider?: OAuthPrivider | null;
+    /**
+     * 密钥.
+     */
+    secret?: string | null;
+    /**
+     * 发现端口.
+     */
+    wellKnown?: string | null;
 }
 /**
  * 更新 openapi 文件，支持 json、yaml.
@@ -8878,23 +8835,6 @@ export interface UpdateOpenApiPluginCommand extends Parsable {
  * 修改插件分类.
  */
 export interface UpdatePluginClassifyCommand extends Parsable {
-    /**
-     * 分类 id.
-     */
-    classifyId?: number | null;
-    /**
-     * 分类描述.
-     */
-    description?: string | null;
-    /**
-     * 分类名称.
-     */
-    name?: string | null;
-}
-/**
- * 修改提示词分类.
- */
-export interface UpdatePromptClassifyCommand extends Parsable {
     /**
      * 分类 id.
      */

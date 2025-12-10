@@ -13,7 +13,7 @@ namespace MoAI.AiModel.Controllers;
 /// ai 模型.
 /// </summary>
 [ApiController]
-[Route("/public/aimodel")]
+[Route("/aimodel")]
 public partial class AiModelController : ControllerBase
 {
     private readonly IMediator _mediator;

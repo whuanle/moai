@@ -50,7 +50,7 @@ export default function BindOAuth({ onBindSuccess }: BindOAuthProps) {
   const fetchBoundAccounts = useCallback(async () => {
     try {
       const client = GetApiClient();
-      const response = await client.api.user.oauth_list.get();
+      const response = await client.api.user.oauth.oauth_list.get();
       
       if (response && response.items) {
         setBoundAccounts(response.items);
@@ -87,7 +87,7 @@ export default function BindOAuth({ onBindSuccess }: BindOAuthProps) {
       } as UnbindUserAccountCommand;
       
       console.log("发送解绑请求:", requestData);
-      await client.api.user.unbindOauth.post(requestData);
+      await client.api.user.oauth.unbindOauth.post(requestData);
       
       console.log("解绑请求成功");
       messageApi.success("解绑成功");

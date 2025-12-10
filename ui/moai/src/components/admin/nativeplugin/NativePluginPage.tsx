@@ -541,7 +541,7 @@ export default function NativePluginPage() {
   const fetchClassifyList = useCallback(async () => {
     try {
       const client = GetApiClient();
-      const response = await client.api.admin_plugin.classify_list.get();
+      const response = await client.api.plugin.classify_list.get();
       if (response?.items) {
         setClassifyList(response.items || []);
       }
@@ -558,7 +558,7 @@ export default function NativePluginPage() {
     try {
       const client = GetApiClient();
       const requestData: QueryNativePluginListCommand = {};
-      const response = await client.api.admin_plugin.native_plugin_list.post(
+      const response = await client.api.admin.native_plugin.list.post(
         requestData
       );
       if (response?.items) {
@@ -578,7 +578,7 @@ export default function NativePluginPage() {
       const requestData: QueryNativePluginTemplateListCommand = {
         classify: undefined, // 不传分类参数，获取所有分类的数量
       };
-      const response = await client.api.admin_plugin.native_template_list.post(
+      const response = await client.api.admin.native_plugin.template_list.post(
         requestData
       );
       if (response?.classifyCount) {
@@ -622,7 +622,7 @@ export default function NativePluginPage() {
       const requestData: QueryNativePluginTemplateListCommand = {
         classify: classify || undefined,
       };
-      const response = await client.api.admin_plugin.native_template_list.post(
+      const response = await client.api.admin.native_plugin.template_list.post(
         requestData
       );
 
@@ -675,7 +675,7 @@ export default function NativePluginPage() {
         classifyId: classifyId,
         templatePluginClassify: templatePluginClassify,
       };
-      const response = await client.api.admin_plugin.native_plugin_list.post(
+      const response = await client.api.admin.native_plugin.list.post(
         requestData
       );
 
@@ -775,7 +775,7 @@ export default function NativePluginPage() {
           pluginId: record.pluginId,
         };
         const detailResponse =
-          await client.api.admin_plugin.native_plugin_detail.post(
+          await client.api.admin.native_plugin.detail.post(
             detailRequest
           );
 
@@ -795,7 +795,7 @@ export default function NativePluginPage() {
               templatePluginKey: detailResponse.templatePluginKey,
             };
             const paramsResponse =
-              await client.api.admin_plugin.native_template_params.post(
+              await client.api.admin.native_plugin.template_params.post(
                 paramsRequest
               );
 
@@ -877,7 +877,7 @@ export default function NativePluginPage() {
           pluginId: record.pluginId,
         };
         const detailResponse =
-          await client.api.admin_plugin.native_plugin_detail.post(
+          await client.api.admin.native_plugin.detail.post(
             detailRequest
           );
 
@@ -895,7 +895,7 @@ export default function NativePluginPage() {
             templatePluginKey: detailResponse.templatePluginKey,
           };
           const paramsResponse =
-            await client.api.admin_plugin.native_template_params.post(
+            await client.api.admin.native_plugin.template_params.post(
               paramsRequest
             );
 
@@ -996,7 +996,7 @@ export default function NativePluginPage() {
         params: paramsString,
       };
 
-      const response = await client.api.admin_plugin.run_native_plugin.post(
+      const response = await client.api.admin.native_plugin.run_test.post(
         requestData
       );
 
@@ -1089,7 +1089,7 @@ export default function NativePluginPage() {
             : undefined,
       };
 
-      await client.api.admin_plugin.update_native_plugin.post(requestData);
+      await client.api.admin.native_plugin.update.post(requestData);
 
       messageApi.success("内置插件更新成功");
       handleCloseEditDrawer();
@@ -1121,7 +1121,7 @@ export default function NativePluginPage() {
         const requestData: DeleteNativePluginCommand = {
           pluginId: pluginId,
         };
-        await client.api.admin_plugin.delete_native_plugin.delete(requestData);
+        await client.api.admin.native_plugin.deletePath.delete(requestData);
 
         messageApi.success("内置插件删除成功");
         // 先刷新全部插件列表（用于左侧分类数量统计）
@@ -1167,7 +1167,7 @@ export default function NativePluginPage() {
           templatePluginKey: template.key,
         };
         const paramsResponse =
-          await client.api.admin_plugin.native_template_params.post(
+          await client.api.admin.native_plugin.template_params.post(
             paramsRequest
           );
         const exampleValue = getJsonString(paramsResponse?.exampleValue!);
@@ -1423,7 +1423,7 @@ export default function NativePluginPage() {
       const requestData: QueryNativePluginTemplateListCommand = {
         classify: undefined,
       };
-      const response = await client.api.admin_plugin.native_template_list.post(
+      const response = await client.api.admin.native_plugin.template_list.post(
         requestData
       );
       if (response) {
@@ -1513,7 +1513,7 @@ export default function NativePluginPage() {
           templatePluginKey: templateKey,
         };
         const response =
-          await client.api.admin_plugin.native_template_params.post(
+          await client.api.admin.native_plugin.template_params.post(
             requestData
           );
         if (response?.items) {
@@ -1645,7 +1645,7 @@ export default function NativePluginPage() {
             : undefined,
       };
 
-      const response = await client.api.admin_plugin.create_native_plugin.post(
+      const response = await client.api.admin.native_plugin.create.post(
         requestData
       );
 

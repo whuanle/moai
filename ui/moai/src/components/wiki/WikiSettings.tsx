@@ -37,7 +37,7 @@ export default function WikiSettings() {
   const fetchEmbeddingModels = async () => {
     try {
       setModelsLoading(true);
-      const response = await apiClient.api.aimodel.public_modellist.post({
+      const response = await apiClient.api.public.aimodel.modellist.post({
         aiModelType: "embedding",
       });
 
@@ -103,7 +103,7 @@ export default function WikiSettings() {
         updateData.embeddingModelId = values.embeddingModelId;
       }
 
-      await apiClient.api.wiki.update_wiki_config.post(updateData);
+      await apiClient.api.wiki.manager.update_wiki_config.post(updateData);
 
       messageApi.success("保存成功");
       // 重新获取知识库信息并更新表单

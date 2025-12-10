@@ -134,7 +134,7 @@ export default function PromptCreatePage() {
     setAiModelLoading(true);
     try {
       const client = GetApiClient();
-      const res = await client.api.aimodel.public_modellist.post({
+      const res = await client.api.aimodel.modellist.post({
         aiModelType: "chat"
       });
       const models = (res?.aiModels || [])

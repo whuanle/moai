@@ -18,7 +18,7 @@ public class CustomResultFactory : IFluentValidationAutoValidationResultFactory
         BusinessValidationResult validationResult = new()
         {
             Code = 400,
-            Detail = "请求参数验证失败",
+            Detail = validationProblemDetails!.Detail!,
             Errors = errors,
             Extensions = validationProblemDetails?.Extensions.AsReadOnly()
         };

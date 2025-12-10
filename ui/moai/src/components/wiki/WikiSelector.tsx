@@ -15,6 +15,7 @@ import { GetApiClient } from "../ServiceClient";
 import {
   QueryWikiBaseListCommand,
   QueryWikiInfoResponse,
+  WikiQueryTypeObject,
 } from "../../apiClient/models";
 
 const { Title, Text } = Typography;
@@ -42,7 +43,7 @@ const WikiSelector: React.FC<WikiSelectorProps> = ({
     try {
       const client = GetApiClient();
       const command: QueryWikiBaseListCommand = {
-        isUser: true, // 只显示用户有权限的知识库
+        queryType: WikiQueryTypeObject.User, // 只显示用户有权限的知识库
       };
       const response = await client.api.wiki.query_wiki_list.post(command);
 

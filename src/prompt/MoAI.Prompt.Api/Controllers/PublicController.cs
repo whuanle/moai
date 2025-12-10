@@ -10,7 +10,7 @@ namespace MoAI.Prompt.Controllers;
 /// 提示词.
 /// </summary>
 [ApiController]
-[Route("/public/plugin")]
+[Route("/prompt")]
 public class PublicController : ControllerBase
 {
     private readonly IMediator _mediator;

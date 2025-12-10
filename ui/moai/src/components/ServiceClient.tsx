@@ -22,7 +22,6 @@ import {
 import { FormInstance, message } from "antd";
 import { IsTokenExpired } from "../helper/TokenHelper";
 import { GetFileMd5 } from "../helper/Md5Helper";
-import { PreUploadFileCommandResponse } from "@/apiClient/models";
 import { FileTypeHelper } from "../helper/FileTypeHelper";
 // import {
 //   PreUploadFileCommandResponse,
@@ -118,57 +117,57 @@ export const RefreshAccessToken = async function (refreshToken: string) {
   });
 };
 
-// 上传公开类型的文件
-export const UploadPublicFile = async (
-  client: MoAIClient,
-  file: File
-): Promise<PreUploadFileCommandResponse> => {
-  const md5 = await GetFileMd5(file);
-  const preUploadResponse = await client.api.storage.pre_upload_image.post({
-    contentType: FileTypeHelper.getFileType(file),
-    fileName: file.name,
-    mD5: md5,
-    fileSize: file.size,
-  });
+// // 上传公开类型的文件
+// export const UploadPublicFile = async (
+//   client: MoAIClient,
+//   file: File
+// ): Promise<PreUploadFileCommandResponse> => {
+//   const md5 = await GetFileMd5(file);
+//   const preUploadResponse = await client.api.storage.pre_upload_image.post({
+//     contentType: FileTypeHelper.getFileType(file),
+//     fileName: file.name,
+//     mD5: md5,
+//     fileSize: file.size,
+//   });
 
-  if (!preUploadResponse) {
-    throw new Error("获取预签名URL失败");
-  }
+//   if (!preUploadResponse) {
+//     throw new Error("获取预签名URL失败");
+//   }
 
-  if (preUploadResponse.isExist === true) {
-    return preUploadResponse;
-  }
+//   if (preUploadResponse.isExist === true) {
+//     return preUploadResponse;
+//   }
 
-  if (!preUploadResponse.uploadUrl) {
-    throw new Error("获取预签名URL失败");
-  }
+//   if (!preUploadResponse.uploadUrl) {
+//     throw new Error("获取预签名URL失败");
+//   }
 
-  const uploadUrl = preUploadResponse.uploadUrl;
-  if (!uploadUrl) {
-    throw new Error("获取预签名URL失败");
-  }
+//   const uploadUrl = preUploadResponse.uploadUrl;
+//   if (!uploadUrl) {
+//     throw new Error("获取预签名URL失败");
+//   }
 
-  // 使用 fetch API 上传到预签名的 S3 URL
-  const uploadResponse = await fetch(uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: {
-      "Content-Type": FileTypeHelper.getFileType(file),
-      "x-amz-meta-max-file-size": file.size.toString(),
-      "Authorization": `Bearer ${localStorage.getItem("userinfo.accessToken")}`,
-    },
-  });
+//   // 使用 fetch API 上传到预签名的 S3 URL
+//   const uploadResponse = await fetch(uploadUrl, {
+//     method: "PUT",
+//     body: file,
+//     headers: {
+//       "Content-Type": FileTypeHelper.getFileType(file),
+//       "x-amz-meta-max-file-size": file.size.toString(),
+//       "Authorization": `Bearer ${localStorage.getItem("userinfo.accessToken")}`,
+//     },
+//   });
 
-  if (uploadResponse.status !== 200) {
-    console.error("upload file error:");
-    console.error(uploadResponse);
-    throw new Error(uploadResponse.statusText);
-  }
+//   if (uploadResponse.status !== 200) {
+//     console.error("upload file error:");
+//     console.error(uploadResponse);
+//     throw new Error(uploadResponse.statusText);
+//   }
 
-  await client.api.storage.complate_url.post({
-    fileId: preUploadResponse.fileId,
-    isSuccess: true,
-  });
+//   await client.api.storage.complate_url.post({
+//     fileId: preUploadResponse.fileId,
+//     isSuccess: true,
+//   });
 
-  return preUploadResponse;
-};
+//   return preUploadResponse;
+// };

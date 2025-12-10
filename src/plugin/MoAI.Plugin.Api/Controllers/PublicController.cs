@@ -10,7 +10,7 @@ namespace MoAI.Plugin.Controllers;
 /// 插件分类.
 /// </summary>
 [ApiController]
-[Route("/public/plugin")]
+[Route("/plugin")]
 public class PublicController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -28,7 +28,7 @@ public class PublicController : ControllerBase
     }
 
     /// <summary>
-    /// 获取分类列表.
+    /// 获取插件分类列表.
     /// </summary>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryPluginClassifyListCommandResponse"/>，包含分类列表数据.</returns>

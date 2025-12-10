@@ -56,6 +56,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
         }
 
         connection.Key = request.Key;
+        connection.Name = request.Name;
         connection.IconUrl = request.IconUrl;
 
         if (!string.IsNullOrEmpty(request.Secret))

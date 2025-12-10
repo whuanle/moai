@@ -14,8 +14,6 @@ import { ReloadOutlined } from "@ant-design/icons";
 import { GetApiClient } from "../../ServiceClient";
 import {
   PromptClassifyItem,
-  CreatePromptClassifyCommand,
-  UpdatePromptClassifyCommand,
 } from "../../../apiClient/models";
 import { proxyFormRequestError, proxyRequestError } from "../../../helper/RequestError";
 
@@ -75,7 +73,7 @@ export default function PromptClassPage() {
   const handleDeleteClick = async (item: PromptClassifyItem) => {
     try {
       const client = GetApiClient();
-      await client.api.admin_prompt.delete_class.delete({
+      await client.api.admin.promptclassify.delete_class.delete({
         promptId: item.classifyId!,
       });
       messageApi.success("分类删除成功");
@@ -89,11 +87,11 @@ export default function PromptClassPage() {
   };
 
   // 处理新增分类提交
-  const handleAddSubmit = async (values: CreatePromptClassifyCommand) => {
+  const handleAddSubmit = async (values: { name: string; description: string }) => {
     setSubmitting(true);
     try {
       const client = GetApiClient();
-      await client.api.admin_prompt.create_class.post(values);
+      await client.api.admin.promptclassify.create_class.post(values as any);
 
       messageApi.success("分类添加成功");
       setAddModalVisible(false);
@@ -115,13 +113,13 @@ export default function PromptClassPage() {
       const client = GetApiClient();
 
       // 构建请求参数
-      const requestBody: UpdatePromptClassifyCommand = {
+      const requestBody: { classifyId: number; name: string; description: string } = {
         classifyId: values.classifyId,
         name: values.name,
         description: values.description,
       };
 
-      await client.api.admin_prompt.update_class.post(requestBody);
+      await client.api.admin.promptclassify.update_class.post(requestBody as any);
 
       messageApi.success("分类更新成功");
       setEditModalVisible(false);

@@ -6,15 +6,17 @@ import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } f
 // @ts-ignore
 import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from './admin/index.js';
 // @ts-ignore
+import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
+// @ts-ignore
 import { AppRequestBuilderNavigationMetadata, type AppRequestBuilder } from './app/index.js';
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
 import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
 // @ts-ignore
-import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
+import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
 // @ts-ignore
-import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
+import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
@@ -37,6 +39,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get admin(): AdminRequestBuilder;
     /**
+     * The aimodel property
+     */
+    get aimodel(): AimodelRequestBuilder;
+    /**
      * The app property
      */
     get app(): AppRequestBuilder;
@@ -49,13 +55,13 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get download(): DownloadRequestBuilder;
     /**
+     * The plugin property
+     */
+    get plugin(): PluginRequestBuilder;
+    /**
      * The prompt property
      */
     get prompt(): PromptRequestBuilder;
-    /**
-     * The public property
-     */
-    get public(): PublicRequestBuilder;
     /**
      * The storage property
      */
@@ -83,6 +89,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     admin: {
         navigationMetadata: AdminRequestBuilderNavigationMetadata,
     },
+    aimodel: {
+        navigationMetadata: AimodelRequestBuilderNavigationMetadata,
+    },
     app: {
         navigationMetadata: AppRequestBuilderNavigationMetadata,
     },
@@ -92,11 +101,11 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     download: {
         navigationMetadata: DownloadRequestBuilderNavigationMetadata,
     },
+    plugin: {
+        navigationMetadata: PluginRequestBuilderNavigationMetadata,
+    },
     prompt: {
         navigationMetadata: PromptRequestBuilderNavigationMetadata,
-    },
-    public: {
-        navigationMetadata: PublicRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

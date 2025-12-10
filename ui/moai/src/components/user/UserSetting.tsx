@@ -5,24 +5,19 @@ import {
   Input,
   Button,
   Avatar,
-  Upload,
   message,
   Space,
   Typography,
   Row,
   Col,
-  Divider,
   Spin,
   Descriptions,
   Statistic,
   Tag,
-  Tooltip,
   Alert,
-  Image,
 } from 'antd';
 import {
   UserOutlined,
-  UploadOutlined,
   SaveOutlined,
   EditOutlined,
   LockOutlined,
@@ -31,25 +26,18 @@ import {
   CrownOutlined,
   SafetyOutlined,
   InfoCircleOutlined,
-  LinkOutlined,
 } from '@ant-design/icons';
-import { GetApiClient, UploadPublicFile } from '../ServiceClient';
+import { GetApiClient } from '../ServiceClient';
 import { GetUserDetailInfo, GetServiceInfo } from '../../InitService';
 import { proxyRequestError } from '../../helper/RequestError';
-import { FileTypeHelper } from '../../helper/FileTypeHelper';
 import { RsaHelper } from '../../helper/RsaHalper';
 import useAppStore from '../../stateshare/store';
-import { useNavigate } from 'react-router';
 
-const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
+const { Text, Paragraph } = Typography;
 
 export default function UserSetting() {
-  const navigate = useNavigate();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [passwordEditing, setPasswordEditing] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -98,7 +86,7 @@ export default function UserSetting() {
     setUserInfoLoading(true);
     try {
       const client = GetApiClient();
-      await client.api.user.update_user.post({
+      await client.api.user.account.update_user.post({
         userName: values.userName,
         nickName: values.nickName,
         email: values.email,
@@ -153,7 +141,7 @@ export default function UserSetting() {
       );
 
       const client = GetApiClient();
-      await client.api.user.update_password.post({
+      await client.api.user.account.update_password.post({
         password: encryptedPassword,
       });
 
@@ -168,56 +156,6 @@ export default function UserSetting() {
     }
   };
 
-  // 检查文件是否为图片
-  const isImageFile = (file: File): boolean => {
-    const fileType = FileTypeHelper.getFileType(file);
-    return fileType.startsWith('image/');
-  };
-
-  // 处理头像上传
-  const handleAvatarUpload = async (file: File) => {
-    // 检查文件类型
-    if (!isImageFile(file)) {
-      messageApi.error('只能上传图片文件！');
-      return false;
-    }
-
-    // 检查文件大小（限制为5MB）
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      messageApi.error('图片文件大小不能超过5MB！');
-      return false;
-    }
-
-    setUploading(true);
-    try {
-      const client = GetApiClient();
-      
-      // 第一步：上传文件到服务器
-      const uploadResult = await UploadPublicFile(client, file);
-      
-      if (!uploadResult || !uploadResult.fileId) {
-        throw new Error('文件上传失败');
-      }
-
-      // 第二步：保存用户头像
-      await client.api.user.upload_avatar.post({
-        fileId: uploadResult.fileId,
-        userId: userInfo?.userId || 0,
-      });
-
-      // 上传成功后刷新用户信息
-      await fetchUserInfo();
-      
-      messageApi.success('头像上传成功');
-    } catch (error) {
-      proxyRequestError(error, messageApi, '头像上传失败');
-    } finally {
-      setUploading(false);
-    }
-
-    return false; // 阻止默认的上传行为
-  };
 
   return (
     <>
@@ -377,32 +315,24 @@ export default function UserSetting() {
             </Card>
           </Col>
 
-          {/* 用户头像卡片 */}
+          {/* 用户信息卡片 */}
           <Col xs={24} lg={8}>
             <Card
               title={
                 <Space>
                   <UserOutlined />
-                  <span>头像设置</span>
+                  <span>用户信息</span>
                 </Space>
               }
               bodyStyle={{ textAlign: 'center' }}
             >
               <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <Image
-                  width={120}
-                  height={120}
-                  src={userInfo?.avatarPath || undefined}
-                  fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ19ynY6NxRAAGoydJ1zPw2Zgp2wgjTp0i2czRBUfQU1PFS0XJiMV6irxBiMvLlL4oZzJ4skZR4I/3e6+W3AI5BaXFs3Q/4ws5gq/IMRgFbAyQZGHYcRZ0YGC0x+jCDGfEO/AfH+GAplC7xIMwPEBPYqCD4/9eDgLdAHAb7JhDzA=="
+                <Avatar
+                  size={120}
+                  icon={<UserOutlined />}
                   style={{ 
                     border: '4px solid #f0f0f0',
-                    borderRadius: '50%',
-                    cursor: 'pointer',
-                    objectFit: 'cover'
-                  }}
-                  preview={{
-                    mask: '点击查看大图',
-                    maskClassName: 'custom-mask'
+                    backgroundColor: '#1890ff'
                   }}
                 />
                 
@@ -424,31 +354,6 @@ export default function UserSetting() {
                     </Tag>
                   </Descriptions.Item>
                 </Descriptions>
-
-                <Upload
-                  name="avatar"
-                  showUploadList={false}
-                  beforeUpload={handleAvatarUpload}
-                  accept="image/*"
-                  disabled={uploading}
-                >
-                  <Button 
-                    icon={<UploadOutlined />} 
-                    type="dashed"
-                    loading={uploading}
-                    block
-                  >
-                    {uploading ? '上传中...' : '更换头像'}
-                  </Button>
-                </Upload>
-                
-                <Alert
-                  message="头像上传提示"
-                  description="支持 JPG、PNG、GIF 等格式，文件大小不超过 5MB"
-                  type="info"
-                  showIcon
-                  icon={<InfoCircleOutlined />}
-                />
               </Space>
             </Card>
           </Col>

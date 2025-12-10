@@ -1,4 +1,5 @@
 ﻿using FluentValidation.Results;
+using System.Diagnostics;
 
 namespace MoAI.Infra.Models;
 
@@ -10,7 +11,7 @@ public class BusinessValidationResult
     /// <summary>
     /// 请求上下文 ID.
     /// </summary>
-    public string RequestId { get; init; } = string.Empty;
+    public string RequestId { get; init; } = Activity.Current?.TraceId.ToString() ?? string.Empty;
 
     /// <summary>
     /// 错误码.

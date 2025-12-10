@@ -7,7 +7,7 @@ import { ModellistRequestBuilderRequestsMetadata, type ModellistRequestBuilder }
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/public/aimodel
+ * Builds and executes requests for operations under /api/aimodel
  */
 export interface AimodelRequestBuilder extends BaseRequestBuilder<AimodelRequestBuilder> {
     /**
@@ -18,7 +18,7 @@ export interface AimodelRequestBuilder extends BaseRequestBuilder<AimodelRequest
 /**
  * Uri template for the request builder.
  */
-export const AimodelRequestBuilderUriTemplate = "{+baseurl}/api/public/aimodel";
+export const AimodelRequestBuilderUriTemplate = "{+baseurl}/api/aimodel";
 /**
  * Metadata for all the navigation properties in the request builder.
  */
