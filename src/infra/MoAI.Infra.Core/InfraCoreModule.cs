@@ -51,9 +51,22 @@ public class InfraCoreModule : ModuleCore
     /// <inheritdoc/>
     public override void TypeFilter(Type type)
     {
-        if (type.IsClass && type.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IModelValidator<>)).Any())
+        if (type.IsClass)
         {
+            var validator = type.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IModelValidator<>)).FirstOrDefault();
+            if (validator == null)
+            {
+                return;
+            }
+
+            // 避免继承
+            if (validator.GenericTypeArguments[0] != type)
+            {
+                return;
+            }
+
             _serviceContext.Services.AddScoped(typeof(IValidator<>).MakeGenericType(type), typeof(AutoValidator<>).MakeGenericType(type));
+            _serviceContext.Services.AddScoped(type);
         }
     }
 }

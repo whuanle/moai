@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Complate_urlRequestBuilder extends BaseRequestBuilder<Complate_urlRequestBuilder> {
     /**
-     * 完成文件上传，私有和公有文件都可以使用.
+     * 完成上传回调.POST {ApiPrefix.Prefix}/complate_url
      * @param body 结束上传文件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface Complate_urlRequestBuilder extends BaseRequestBuilder<Complate_
      */
      post(body: ComplateFileUploadCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 完成文件上传，私有和公有文件都可以使用.
+     * 完成上传回调.POST {ApiPrefix.Prefix}/complate_url
      * @param body 结束上传文件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

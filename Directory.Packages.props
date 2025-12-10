@@ -63,6 +63,7 @@
     <PackageVersion Include="Refit" Version="8.0.0" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="8.0.0" />
     <PackageVersion Include="RulesEngine" Version="6.0.0" />
+    <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="1.5.0" />
     <PackageVersion Include="SmartFormat.NET" Version="3.6.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.31" />
     <PackageVersion Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />

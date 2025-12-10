@@ -8,6 +8,7 @@ namespace MoAI.Storage;
 /// <summary>
 /// StorageCoreModule.
 /// </summary>
+[InjectModule<StorageSharedModule>]
 [InjectModule<StorageLocalModule>]
 [InjectModule<StorageApiModule>]
 public class StorageCoreModule : IModule

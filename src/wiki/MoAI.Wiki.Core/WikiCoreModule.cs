@@ -11,6 +11,7 @@ namespace MoAI.Wiki;
 /// <summary>
 /// WikiCodeModule.
 /// </summary>
+[InjectModule<WikiSharedModule>]
 [InjectModule<WikiApiModule>]
 public class WikiCoreModule : IModule
 {

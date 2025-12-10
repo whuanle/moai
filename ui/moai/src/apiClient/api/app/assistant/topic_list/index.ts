@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Topic_listRequestBuilder extends BaseRequestBuilder<Topic_listRequestBuilder> {
     /**
-     * 获取用户所有话题记录.
+     * 获取用户所有话题记录。
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAiAssistantChatTopicListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,7 +22,7 @@ export interface Topic_listRequestBuilder extends BaseRequestBuilder<Topic_listR
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAiAssistantChatTopicListCommandResponse | undefined>;
     /**
-     * 获取用户所有话题记录.
+     * 获取用户所有话题记录。
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

@@ -6,6 +6,7 @@ namespace MoAI.AiModel.Core;
 /// <summary>
 /// AiModelCoreModule.
 /// </summary>
+[InjectModule<AiModelSharedModule>]
 [InjectModule<AiModelApiModule>]
 public class AiModelCoreModule : IModule
 {

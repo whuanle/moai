@@ -20,33 +20,18 @@ export interface Oauth_prividersRequestBuilder extends BaseRequestBuilder<Oauth_
      * @throws {BusinessValidationResult} error when the service returns a 409 status code
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
-     get(requestConfiguration?: RequestConfiguration<Oauth_prividersRequestBuilderGetQueryParameters> | undefined) : Promise<QueryAllOAuthPrividerCommandResponse | undefined>;
+     get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAllOAuthPrividerCommandResponse | undefined>;
     /**
      * 获取第三方登录列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
-     toGetRequestInformation(requestConfiguration?: RequestConfiguration<Oauth_prividersRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
-}
-/**
- * 获取第三方登录列表.
- */
-export interface Oauth_prividersRequestBuilderGetQueryParameters {
-    /**
-     * 要跳转的路径.
-     */
-    redirectUrl?: string;
+     toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
 }
 /**
  * Uri template for the request builder.
  */
-export const Oauth_prividersRequestBuilderUriTemplate = "{+baseurl}/api/account/oauth_prividers{?RedirectUrl*}";
-/**
- * Mapper for query parameters from symbol name to serialization name represented as a constant.
- */
-const Oauth_prividersRequestBuilderGetQueryParametersMapper: Record<string, string> = {
-    "redirectUrl": "RedirectUrl",
-};
+export const Oauth_prividersRequestBuilderUriTemplate = "{+baseurl}/api/account/oauth_prividers";
 /**
  * Metadata for all the requests in the request builder.
  */
@@ -63,7 +48,6 @@ export const Oauth_prividersRequestBuilderRequestsMetadata: RequestsMetadata = {
         },
         adapterMethodName: "send",
         responseBodyFactory:  createQueryAllOAuthPrividerCommandResponseFromDiscriminatorValue,
-        queryParametersMapper: Oauth_prividersRequestBuilderGetQueryParametersMapper,
     },
 };
 /* tslint:enable */

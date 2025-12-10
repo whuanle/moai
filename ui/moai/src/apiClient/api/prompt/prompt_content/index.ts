@@ -40,7 +40,7 @@ export interface Prompt_contentRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const Prompt_contentRequestBuilderUriTemplate = "{+baseurl}/api/prompt/prompt_content?PromptId={PromptId}";
+export const Prompt_contentRequestBuilderUriTemplate = "{+baseurl}/api/prompt/prompt_content{?PromptId*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */

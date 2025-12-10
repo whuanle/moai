@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Guid, type Parsable, type ParsableFactory
  */
 export interface Chat_historyRequestBuilder extends BaseRequestBuilder<Chat_historyRequestBuilder> {
     /**
-     * 获取话题详细内容.
+     * 获取话题详细内容。
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAiAssistantChatHistoryCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface Chat_historyRequestBuilder extends BaseRequestBuilder<Chat_hist
      */
      get(requestConfiguration?: RequestConfiguration<Chat_historyRequestBuilderGetQueryParameters> | undefined) : Promise<QueryAiAssistantChatHistoryCommandResponse | undefined>;
     /**
-     * 获取话题详细内容.
+     * 获取话题详细内容。
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<Chat_historyRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 获取话题详细内容.
+ * 获取话题详细内容。
  */
 export interface Chat_historyRequestBuilderGetQueryParameters {
     /**
@@ -44,7 +44,7 @@ export interface Chat_historyRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const Chat_historyRequestBuilderUriTemplate = "{+baseurl}/api/app/assistant/chat_history?ChatId={ChatId}&IsBaseInfo={IsBaseInfo}";
+export const Chat_historyRequestBuilderUriTemplate = "{+baseurl}/api/app/assistant/chat_history{?ChatId*,IsBaseInfo*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */

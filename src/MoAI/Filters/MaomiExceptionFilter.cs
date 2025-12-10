@@ -1,5 +1,4 @@
-﻿
-#pragma warning disable SA1118 // Parameter should not span multiple lines
+﻿#pragma warning disable SA1118 // Parameter should not span multiple lines
 using Maomi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

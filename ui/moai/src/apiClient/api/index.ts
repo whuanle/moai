@@ -4,15 +4,7 @@
 // @ts-ignore
 import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } from './account/index.js';
 // @ts-ignore
-import { Admin_aimodelRequestBuilderNavigationMetadata, type Admin_aimodelRequestBuilder } from './admin_aimodel/index.js';
-// @ts-ignore
-import { Admin_pluginRequestBuilderNavigationMetadata, type Admin_pluginRequestBuilder } from './admin_plugin/index.js';
-// @ts-ignore
-import { Admin_promptRequestBuilderNavigationMetadata, type Admin_promptRequestBuilder } from './admin_prompt/index.js';
-// @ts-ignore
 import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from './admin/index.js';
-// @ts-ignore
-import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
 // @ts-ignore
 import { AppRequestBuilderNavigationMetadata, type AppRequestBuilder } from './app/index.js';
 // @ts-ignore
@@ -21,6 +13,8 @@ import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } fro
 import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
 // @ts-ignore
 import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
+// @ts-ignore
+import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
@@ -43,22 +37,6 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get admin(): AdminRequestBuilder;
     /**
-     * The admin_aimodel property
-     */
-    get admin_aimodel(): Admin_aimodelRequestBuilder;
-    /**
-     * The admin_plugin property
-     */
-    get admin_plugin(): Admin_pluginRequestBuilder;
-    /**
-     * The admin_prompt property
-     */
-    get admin_prompt(): Admin_promptRequestBuilder;
-    /**
-     * The aimodel property
-     */
-    get aimodel(): AimodelRequestBuilder;
-    /**
      * The app property
      */
     get app(): AppRequestBuilder;
@@ -74,6 +52,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The prompt property
      */
     get prompt(): PromptRequestBuilder;
+    /**
+     * The public property
+     */
+    get public(): PublicRequestBuilder;
     /**
      * The storage property
      */
@@ -101,18 +83,6 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     admin: {
         navigationMetadata: AdminRequestBuilderNavigationMetadata,
     },
-    admin_aimodel: {
-        navigationMetadata: Admin_aimodelRequestBuilderNavigationMetadata,
-    },
-    admin_plugin: {
-        navigationMetadata: Admin_pluginRequestBuilderNavigationMetadata,
-    },
-    admin_prompt: {
-        navigationMetadata: Admin_promptRequestBuilderNavigationMetadata,
-    },
-    aimodel: {
-        navigationMetadata: AimodelRequestBuilderNavigationMetadata,
-    },
     app: {
         navigationMetadata: AppRequestBuilderNavigationMetadata,
     },
@@ -124,6 +94,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     prompt: {
         navigationMetadata: PromptRequestBuilderNavigationMetadata,
+    },
+    public: {
+        navigationMetadata: PublicRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

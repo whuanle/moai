@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Delete_chatRequestBuilder extends BaseRequestBuilder<Delete_chatRequestBuilder> {
     /**
-     * 删除对话.
+     * 删除对话。
      * @param body 删除对话记录.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface Delete_chatRequestBuilder extends BaseRequestBuilder<Delete_cha
      */
      delete(body: DeleteAiAssistantChatCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 删除对话.
+     * 删除对话。
      * @param body 删除对话记录.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

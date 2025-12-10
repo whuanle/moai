@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface EncryptionRequestBuilder extends BaseRequestBuilder<EncryptionRequestBuilder> {
     /**
-     * 加密接口，通过.
+     * 加密接口，通过 RSA 加密传入的字符串.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleString>}
@@ -23,7 +23,7 @@ export interface EncryptionRequestBuilder extends BaseRequestBuilder<EncryptionR
      */
      post(body: SimpleString, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SimpleString | undefined>;
     /**
-     * 加密接口，通过.
+     * 加密接口，通过 RSA 加密传入的字符串.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

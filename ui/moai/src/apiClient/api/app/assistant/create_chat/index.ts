@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Create_chatRequestBuilder extends BaseRequestBuilder<Create_chatRequestBuilder> {
     /**
-     * 发起新的聊天，检查用户是否有知识库、插件灯权限，如果检查通过，返回聊天 id.
+     * 发起新的聊天，检查用户是否有知识库、插件等权限，如果检查通过，返回聊天 id。
      * @param body 对话参数.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<CreateAiAssistantChatCommandResponse>}
@@ -23,7 +23,7 @@ export interface Create_chatRequestBuilder extends BaseRequestBuilder<Create_cha
      */
      post(body: AIAssistantChatObject, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<CreateAiAssistantChatCommandResponse | undefined>;
     /**
-     * 发起新的聊天，检查用户是否有知识库、插件灯权限，如果检查通过，返回聊天 id.
+     * 发起新的聊天，检查用户是否有知识库、插件等权限，如果检查通过，返回聊天 id。
      * @param body 对话参数.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

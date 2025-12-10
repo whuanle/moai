@@ -4,11 +4,9 @@
 // @ts-ignore
 import { CreateRequestBuilderRequestsMetadata, type CreateRequestBuilder } from './create/index.js';
 // @ts-ignore
-import { Delete_wikiRequestBuilderRequestsMetadata, type Delete_wikiRequestBuilder } from './delete_wiki/index.js';
-// @ts-ignore
 import { DocumentRequestBuilderNavigationMetadata, type DocumentRequestBuilder } from './document/index.js';
 // @ts-ignore
-import { Invite_wiki_userRequestBuilderRequestsMetadata, type Invite_wiki_userRequestBuilder } from './invite_wiki_user/index.js';
+import { ManagerRequestBuilderNavigationMetadata, type ManagerRequestBuilder } from './manager/index.js';
 // @ts-ignore
 import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
 // @ts-ignore
@@ -17,8 +15,6 @@ import { Query_wiki_infoRequestBuilderRequestsMetadata, type Query_wiki_infoRequ
 import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequestBuilder } from './query_wiki_list/index.js';
 // @ts-ignore
 import { Query_wiki_usersRequestBuilderRequestsMetadata, type Query_wiki_usersRequestBuilder } from './query_wiki_users/index.js';
-// @ts-ignore
-import { type Update_wiki_configRequestBuilder, Update_wiki_configRequestBuilderRequestsMetadata } from './update_wiki_config/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -31,17 +27,13 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      */
     get create(): CreateRequestBuilder;
     /**
-     * The delete_wiki property
-     */
-    get delete_wiki(): Delete_wikiRequestBuilder;
-    /**
      * The document property
      */
     get document(): DocumentRequestBuilder;
     /**
-     * The invite_wiki_user property
+     * The manager property
      */
-    get invite_wiki_user(): Invite_wiki_userRequestBuilder;
+    get manager(): ManagerRequestBuilder;
     /**
      * The plugin property
      */
@@ -58,10 +50,6 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The query_wiki_users property
      */
     get query_wiki_users(): Query_wiki_usersRequestBuilder;
-    /**
-     * The update_wiki_config property
-     */
-    get update_wiki_config(): Update_wiki_configRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -74,14 +62,11 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     create: {
         requestsMetadata: CreateRequestBuilderRequestsMetadata,
     },
-    delete_wiki: {
-        requestsMetadata: Delete_wikiRequestBuilderRequestsMetadata,
-    },
     document: {
         navigationMetadata: DocumentRequestBuilderNavigationMetadata,
     },
-    invite_wiki_user: {
-        requestsMetadata: Invite_wiki_userRequestBuilderRequestsMetadata,
+    manager: {
+        navigationMetadata: ManagerRequestBuilderNavigationMetadata,
     },
     plugin: {
         navigationMetadata: PluginRequestBuilderNavigationMetadata,
@@ -94,9 +79,6 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     query_wiki_users: {
         requestsMetadata: Query_wiki_usersRequestBuilderRequestsMetadata,
-    },
-    update_wiki_config: {
-        requestsMetadata: Update_wiki_configRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

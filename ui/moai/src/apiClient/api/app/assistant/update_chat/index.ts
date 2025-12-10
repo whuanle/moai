@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Update_chatRequestBuilder extends BaseRequestBuilder<Update_chatRequestBuilder> {
     /**
-     * 更新聊天参数.
+     * 更新聊天参数。
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface Update_chatRequestBuilder extends BaseRequestBuilder<Update_cha
      */
      post(body: UpdateAiAssistanChatConfigCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 更新聊天参数.
+     * 更新聊天参数。
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

@@ -1,12 +1,15 @@
 ﻿using FluentValidation;
 using Maomi;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.AspNetCore.Mvc.Routing;
 using MoAI.Filters;
 using MoAI.Infra;
 using MoAI.Storage;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Enums;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Interceptors;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace MoAI.Modules;
 
@@ -31,15 +34,31 @@ public class ConfigureMVCModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        context.Services.Configure<ApiBehaviorOptions>(options =>
+        {
+            // 禁用默认的模型验证器.
+            options.SuppressModelStateInvalidFilter = true;
+        });
+
         var mvcBuilder = context.Services.AddControllers(o =>
         {
-            // 序列化配置
-            // o.Filters.Add<>();
+            o.Filters.Add<MaomiExceptionFilter>();
             o.Conventions.Add(new ApiApplicationModelConvention("/api"));
         }).AddJsonOptions(options =>
         {
-            options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            var jsonOptions = options.JsonSerializerOptions;
+            jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            jsonOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            jsonOptions.PropertyNameCaseInsensitive = true;
+            jsonOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+
+            jsonOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+            // jsonOptions.Converters.Add(item: new DateTimeOffsetConverter());
+            jsonOptions.Converters.Add(JsonMetadataServices.DecimalConverter);
         });
+
+        Validation(context);
 
         AddApplicationParts(mvcBuilder, context);
 
@@ -48,14 +67,38 @@ public class ConfigureMVCModule : IModule
             options.AddPolicy(
                 name: "AllowSpecificOrigins",
                 policy =>
-                              {
-                                  policy.AllowAnyOrigin()
-                                  .AllowAnyHeader()
-                                  .AllowAnyMethod();
-                              });
+                {
+                    policy.AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                });
         });
 
         context.Services.AddValidatorsFromAssemblies(context.Modules.Select(x => x.Assembly).Distinct());
+    }
+
+    private static void Validation(ServiceContext context)
+    {
+        // 模型验证
+        context.Services.AddFluentValidationAutoValidation(configuration =>
+        {
+            // 禁用 ASP.NET Core 的模型验证.
+            configuration.DisableBuiltInModelValidation = true;
+            configuration.OverrideDefaultResultFactoryWith<CustomResultFactory>();
+        });
+
+        ValidatorOptions.Global.PropertyNameResolver = (type, memberInfo, expression) =>
+        {
+            var name = memberInfo?.Name;
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            return char.ToLowerInvariant(name[0]) + (name.Length > 1 ? name.Substring(1) : string.Empty);
+        };
+
+        //context.Services.AddTransient<IGlobalValidationInterceptor, LowerCaseValidationInterceptor>();
     }
 
     private static void AddApplicationParts(IMvcBuilder builder, ServiceContext context)

@@ -13,8 +13,8 @@ namespace MoAI.Infra;
 /// <summary>
 /// 自动模型验证器.
 /// </summary>
-/// <typeparam name="T"></typeparam>
-public class AutoValidator<T> : AbstractValidator<T>
+/// <typeparam name="T">类型.</typeparam>
+public class AutoValidator<T> : AbstractValidator<T>, IValidator<T>
     where T : class, IModelValidator<T>, new()
 {
     /// <summary>

@@ -25,12 +25,12 @@ public class BusinessValidationResult
     /// <summary>
     /// 具体错误列表.
     /// </summary>
-    public IReadOnlyCollection<BusinessExceptionError>? Errors { get; init; }
+    public IReadOnlyCollection<BusinessExceptionError>? Errors { get; init; } = Array.Empty<BusinessExceptionError>();
 
     /// <summary>
     /// 扩展.
     /// </summary>
-    public IReadOnlyDictionary<string, object?>? Extensions { get; set; }
+    public IReadOnlyDictionary<string, object?>? Extensions { get; set; } = new Dictionary<string, object?>();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BusinessValidationResult"/> class.

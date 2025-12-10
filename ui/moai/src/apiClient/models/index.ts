@@ -745,15 +745,6 @@ export function createDeleteAiAssistantChatOneRecordCommandFromDiscriminatorValu
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {DeleteAiModelCommand}
- */
-// @ts-ignore
-export function createDeleteAiModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoDeleteAiModelCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {DeleteNativePluginCommand}
  */
 // @ts-ignore
@@ -1677,6 +1668,24 @@ export function createQueryWikiDocumentTaskListCommandFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiDocumentTextPartitionCommand}
+ */
+// @ts-ignore
+export function createQueryWikiDocumentTextPartitionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiDocumentTextPartitionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiDocumentTextPartitionCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiDocumentTextPartitionCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiDocumentTextPartitionCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiFeishuPageTasksCommandResponse}
  */
 // @ts-ignore
@@ -2153,6 +2162,33 @@ export function createWikiDocumentTaskItemFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentTextPartitionPreviewCommand}
+ */
+// @ts-ignore
+export function createWikiDocumentTextPartitionPreviewCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentTextPartitionPreviewCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentTextPartitionPreviewCommandResponse}
+ */
+// @ts-ignore
+export function createWikiDocumentTextPartitionPreviewCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentTextPartitionPreviewCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentTextPartitionPreviewItem}
+ */
+// @ts-ignore
+export function createWikiDocumentTextPartitionPreviewItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentTextPartitionPreviewItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {WikiFeishuConfig}
  */
 // @ts-ignore
@@ -2207,15 +2243,6 @@ export interface DeleteAiAssistantChatOneRecordCommand extends Parsable {
      * 记录id.
      */
     recordId?: string | null;
-}
-/**
- * 删除 ai 模型.
- */
-export interface DeleteAiModelCommand extends Parsable {
-    /**
-     * 模型 id.
-     */
-    aiModelId?: number | null;
 }
 /**
  * 删除内置插件实例.
@@ -2713,16 +2740,6 @@ export function deserializeIntoDeleteAiAssistantChatOneRecordCommand(deleteAiAss
     return {
         "chatId": n => { deleteAiAssistantChatOneRecordCommand.chatId = n.getGuidValue(); },
         "recordId": n => { deleteAiAssistantChatOneRecordCommand.recordId = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoDeleteAiModelCommand(deleteAiModelCommand: Partial<DeleteAiModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "aiModelId": n => { deleteAiModelCommand.aiModelId = n.getNumberValue(); },
     }
 }
 /**
@@ -3829,6 +3846,30 @@ export function deserializeIntoQueryWikiDocumentTaskListCommand(queryWikiDocumen
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiDocumentTextPartitionCommand(queryWikiDocumentTextPartitionCommand: Partial<QueryWikiDocumentTextPartitionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentId": n => { queryWikiDocumentTextPartitionCommand.documentId = n.getNumberValue(); },
+        "wikiId": n => { queryWikiDocumentTextPartitionCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiDocumentTextPartitionCommandResponse(queryWikiDocumentTextPartitionCommandResponse: Partial<QueryWikiDocumentTextPartitionCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkHeader": n => { queryWikiDocumentTextPartitionCommandResponse.chunkHeader = n.getStringValue(); },
+        "items": n => { queryWikiDocumentTextPartitionCommandResponse.items = n.getCollectionOfObjectValues<WikiDocumentTextPartitionPreviewItem>(createWikiDocumentTextPartitionPreviewItemFromDiscriminatorValue); },
+        "maxTokensPerChunk": n => { queryWikiDocumentTextPartitionCommandResponse.maxTokensPerChunk = n.getNumberValue(); },
+        "overlap": n => { queryWikiDocumentTextPartitionCommandResponse.overlap = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryWikiFeishuPageTasksCommandResponse(queryWikiFeishuPageTasksCommandResponse: Partial<QueryWikiFeishuPageTasksCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pages": n => { queryWikiFeishuPageTasksCommandResponse.pages = n.getCollectionOfObjectValues<WikiFeishuPageItem>(createWikiFeishuPageItemFromDiscriminatorValue); },
@@ -4482,6 +4523,43 @@ export function deserializeIntoWikiDocumentTaskItem(wikiDocumentTaskItem: Partia
         "state": n => { wikiDocumentTaskItem.state = n.getEnumValue<FileEmbeddingState>(FileEmbeddingStateObject); },
         "tokenizer": n => { wikiDocumentTaskItem.tokenizer = n.getStringValue(); },
         "wikiId": n => { wikiDocumentTaskItem.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiDocumentTextPartitionPreviewCommand(wikiDocumentTextPartitionPreviewCommand: Partial<WikiDocumentTextPartitionPreviewCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkHeader": n => { wikiDocumentTextPartitionPreviewCommand.chunkHeader = n.getStringValue(); },
+        "documentId": n => { wikiDocumentTextPartitionPreviewCommand.documentId = n.getNumberValue(); },
+        "maxTokensPerChunk": n => { wikiDocumentTextPartitionPreviewCommand.maxTokensPerChunk = n.getNumberValue(); },
+        "overlap": n => { wikiDocumentTextPartitionPreviewCommand.overlap = n.getNumberValue(); },
+        "wikiId": n => { wikiDocumentTextPartitionPreviewCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiDocumentTextPartitionPreviewCommandResponse(wikiDocumentTextPartitionPreviewCommandResponse: Partial<WikiDocumentTextPartitionPreviewCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentId": n => { wikiDocumentTextPartitionPreviewCommandResponse.documentId = n.getNumberValue(); },
+        "wikiId": n => { wikiDocumentTextPartitionPreviewCommandResponse.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiDocumentTextPartitionPreviewItem(wikiDocumentTextPartitionPreviewItem: Partial<WikiDocumentTextPartitionPreviewItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkId": n => { wikiDocumentTextPartitionPreviewItem.chunkId = n.getStringValue(); },
+        "order": n => { wikiDocumentTextPartitionPreviewItem.order = n.getNumberValue(); },
+        "text": n => { wikiDocumentTextPartitionPreviewItem.text = n.getStringValue(); },
     }
 }
 /**
@@ -5745,7 +5823,7 @@ export interface QueryPromptListCommand extends PagedParamter, Parsable {
      */
     condition?: PromptFilterCondition | null;
     /**
-     * 通过上下文自动配置id.
+     * 通过上下文自动配置id，前端不需要传递.
      */
     contextUserId?: number | null;
     /**
@@ -5857,7 +5935,7 @@ export interface QueryUserViewAiModelListCommandResponse extends Parsable {
  */
 export interface QueryWikiBaseListCommand extends Parsable {
     /**
-     * 通过上下文自动配置id.
+     * 通过上下文自动配置id，前端不需要传递.
      */
     contextUserId?: number | null;
     /**
@@ -5954,6 +6032,37 @@ export interface QueryWikiDocumentTaskListCommand extends Parsable {
      * 知识库id.
      */
     wikiId?: number | null;
+}
+/**
+ * 查询知识库文档被切割的块和切割配置.
+ */
+export interface QueryWikiDocumentTextPartitionCommand extends Parsable {
+    /**
+     * 知识库 id.
+     */
+    documentId?: number | null;
+    /**
+     * 知识库id.
+     */
+    wikiId?: number | null;
+}
+export interface QueryWikiDocumentTextPartitionCommandResponse extends Parsable {
+    /**
+     * 可选，在每个分块前添加的标题.
+     */
+    chunkHeader?: string | null;
+    /**
+     * 分块的内容.
+     */
+    items?: WikiDocumentTextPartitionPreviewItem[] | null;
+    /**
+     * 每个分块的最大 token 数（必须大于 0）
+     */
+    maxTokensPerChunk?: number | null;
+    /**
+     * 从一个块复制并重复到下一个块的标记数量，即重叠数量（必须大于等于 0）
+     */
+    overlap?: number | null;
 }
 export interface QueryWikiFeishuPageTasksCommandResponse extends Parsable {
     /**
@@ -6629,16 +6738,6 @@ export function serializeDeleteAiAssistantChatOneRecordCommand(writer: Serializa
     if (deleteAiAssistantChatOneRecordCommand) {
         writer.writeGuidValue("chatId", deleteAiAssistantChatOneRecordCommand.chatId);
         writer.writeStringValue("recordId", deleteAiAssistantChatOneRecordCommand.recordId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeDeleteAiModelCommand(writer: SerializationWriter, deleteAiModelCommand: Partial<DeleteAiModelCommand> | undefined | null = {}) : void {
-    if (deleteAiModelCommand) {
-        writer.writeNumberValue("aiModelId", deleteAiModelCommand.aiModelId);
     }
 }
 /**
@@ -7745,6 +7844,30 @@ export function serializeQueryWikiDocumentTaskListCommand(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiDocumentTextPartitionCommand(writer: SerializationWriter, queryWikiDocumentTextPartitionCommand: Partial<QueryWikiDocumentTextPartitionCommand> | undefined | null = {}) : void {
+    if (queryWikiDocumentTextPartitionCommand) {
+        writer.writeNumberValue("documentId", queryWikiDocumentTextPartitionCommand.documentId);
+        writer.writeNumberValue("wikiId", queryWikiDocumentTextPartitionCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiDocumentTextPartitionCommandResponse(writer: SerializationWriter, queryWikiDocumentTextPartitionCommandResponse: Partial<QueryWikiDocumentTextPartitionCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiDocumentTextPartitionCommandResponse) {
+        writer.writeStringValue("chunkHeader", queryWikiDocumentTextPartitionCommandResponse.chunkHeader);
+        writer.writeCollectionOfObjectValues<WikiDocumentTextPartitionPreviewItem>("items", queryWikiDocumentTextPartitionCommandResponse.items, serializeWikiDocumentTextPartitionPreviewItem);
+        writer.writeNumberValue("maxTokensPerChunk", queryWikiDocumentTextPartitionCommandResponse.maxTokensPerChunk);
+        writer.writeNumberValue("overlap", queryWikiDocumentTextPartitionCommandResponse.overlap);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryWikiFeishuPageTasksCommandResponse(writer: SerializationWriter, queryWikiFeishuPageTasksCommandResponse: Partial<QueryWikiFeishuPageTasksCommandResponse> | undefined | null = {}) : void {
     if (queryWikiFeishuPageTasksCommandResponse) {
         writer.writeCollectionOfObjectValues<WikiFeishuPageItem>("pages", queryWikiFeishuPageTasksCommandResponse.pages, serializeWikiFeishuPageItem);
@@ -8398,6 +8521,43 @@ export function serializeWikiDocumentTaskItem(writer: SerializationWriter, wikiD
         writer.writeEnumValue<FileEmbeddingState>("state", wikiDocumentTaskItem.state);
         writer.writeStringValue("tokenizer", wikiDocumentTaskItem.tokenizer);
         writer.writeNumberValue("wikiId", wikiDocumentTaskItem.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiDocumentTextPartitionPreviewCommand(writer: SerializationWriter, wikiDocumentTextPartitionPreviewCommand: Partial<WikiDocumentTextPartitionPreviewCommand> | undefined | null = {}) : void {
+    if (wikiDocumentTextPartitionPreviewCommand) {
+        writer.writeStringValue("chunkHeader", wikiDocumentTextPartitionPreviewCommand.chunkHeader);
+        writer.writeNumberValue("documentId", wikiDocumentTextPartitionPreviewCommand.documentId);
+        writer.writeNumberValue("maxTokensPerChunk", wikiDocumentTextPartitionPreviewCommand.maxTokensPerChunk);
+        writer.writeNumberValue("overlap", wikiDocumentTextPartitionPreviewCommand.overlap);
+        writer.writeNumberValue("wikiId", wikiDocumentTextPartitionPreviewCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiDocumentTextPartitionPreviewCommandResponse(writer: SerializationWriter, wikiDocumentTextPartitionPreviewCommandResponse: Partial<WikiDocumentTextPartitionPreviewCommandResponse> | undefined | null = {}) : void {
+    if (wikiDocumentTextPartitionPreviewCommandResponse) {
+        writer.writeNumberValue("documentId", wikiDocumentTextPartitionPreviewCommandResponse.documentId);
+        writer.writeNumberValue("wikiId", wikiDocumentTextPartitionPreviewCommandResponse.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiDocumentTextPartitionPreviewItem(writer: SerializationWriter, wikiDocumentTextPartitionPreviewItem: Partial<WikiDocumentTextPartitionPreviewItem> | undefined | null = {}) : void {
+    if (wikiDocumentTextPartitionPreviewItem) {
+        writer.writeStringValue("chunkId", wikiDocumentTextPartitionPreviewItem.chunkId);
+        writer.writeNumberValue("order", wikiDocumentTextPartitionPreviewItem.order);
+        writer.writeStringValue("text", wikiDocumentTextPartitionPreviewItem.text);
     }
 }
 /**
@@ -9163,6 +9323,61 @@ export interface WikiDocumentTaskItem extends AuditsInfo, Parsable {
      * 知识库id.
      */
     wikiId?: number | null;
+}
+/**
+ * 切割知识库文档.
+ */
+export interface WikiDocumentTextPartitionPreviewCommand extends Parsable {
+    /**
+     * 可选，在每个分块前添加的标题.
+     */
+    chunkHeader?: string | null;
+    /**
+     * 知识库 id.
+     */
+    documentId?: number | null;
+    /**
+     * 每个分块的最大 token 数（必须大于 0）
+     */
+    maxTokensPerChunk?: number | null;
+    /**
+     * 从一个块复制并重复到下一个块的标记数量，即重叠数量（必须大于等于 0）
+     */
+    overlap?: number | null;
+    /**
+     * 知识库id.
+     */
+    wikiId?: number | null;
+}
+/**
+ * 类型.
+ */
+export interface WikiDocumentTextPartitionPreviewCommandResponse extends Parsable {
+    /**
+     * 知识库 id.
+     */
+    documentId?: number | null;
+    /**
+     * 知识库id.
+     */
+    wikiId?: number | null;
+}
+/**
+ * 文档内容.
+ */
+export interface WikiDocumentTextPartitionPreviewItem extends Parsable {
+    /**
+     * 切片 id.
+     */
+    chunkId?: string | null;
+    /**
+     * 分块顺序.
+     */
+    order?: number | null;
+    /**
+     * 分块文本.
+     */
+    text?: string | null;
 }
 export interface WikiFeishuConfig extends Parsable {
     /**

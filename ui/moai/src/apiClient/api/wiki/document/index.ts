@@ -16,6 +16,8 @@ import { Download_documentRequestBuilderRequestsMetadata, type Download_document
 // @ts-ignore
 import { Embedding_documentRequestBuilderRequestsMetadata, type Embedding_documentRequestBuilder } from './embedding_document/index.js';
 // @ts-ignore
+import { Get_partition_documentRequestBuilderRequestsMetadata, type Get_partition_documentRequestBuilder } from './get_partition_document/index.js';
+// @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
 import { Preupload_documentRequestBuilderRequestsMetadata, type Preupload_documentRequestBuilder } from './preupload_document/index.js';
@@ -23,6 +25,8 @@ import { Preupload_documentRequestBuilderRequestsMetadata, type Preupload_docume
 import { SearchRequestBuilderRequestsMetadata, type SearchRequestBuilder } from './search/index.js';
 // @ts-ignore
 import { Task_listRequestBuilderRequestsMetadata, type Task_listRequestBuilder } from './task_list/index.js';
+// @ts-ignore
+import { Text_partition_documentRequestBuilderRequestsMetadata, type Text_partition_documentRequestBuilder } from './text_partition_document/index.js';
 // @ts-ignore
 import { type Update_document_file_nameRequestBuilder, Update_document_file_nameRequestBuilderRequestsMetadata } from './update_document_file_name/index.js';
 // @ts-ignore
@@ -61,6 +65,10 @@ export interface DocumentRequestBuilder extends BaseRequestBuilder<DocumentReque
      */
     get embedding_document(): Embedding_documentRequestBuilder;
     /**
+     * The get_partition_document property
+     */
+    get get_partition_document(): Get_partition_documentRequestBuilder;
+    /**
      * The list property
      */
     get list(): ListRequestBuilder;
@@ -76,6 +84,10 @@ export interface DocumentRequestBuilder extends BaseRequestBuilder<DocumentReque
      * The task_list property
      */
     get task_list(): Task_listRequestBuilder;
+    /**
+     * The text_partition_document property
+     */
+    get text_partition_document(): Text_partition_documentRequestBuilder;
     /**
      * The update_document_file_name property
      */
@@ -110,6 +122,9 @@ export const DocumentRequestBuilderNavigationMetadata: Record<Exclude<keyof Docu
     embedding_document: {
         requestsMetadata: Embedding_documentRequestBuilderRequestsMetadata,
     },
+    get_partition_document: {
+        requestsMetadata: Get_partition_documentRequestBuilderRequestsMetadata,
+    },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
     },
@@ -121,6 +136,9 @@ export const DocumentRequestBuilderNavigationMetadata: Record<Exclude<keyof Docu
     },
     task_list: {
         requestsMetadata: Task_listRequestBuilderRequestsMetadata,
+    },
+    text_partition_document: {
+        requestsMetadata: Text_partition_documentRequestBuilderRequestsMetadata,
     },
     update_document_file_name: {
         requestsMetadata: Update_document_file_nameRequestBuilderRequestsMetadata,

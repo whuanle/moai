@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface UpdateRequestBuilder extends BaseRequestBuilder<UpdateRequestBuilder> {
     /**
-     * 更新 OAuth2.0 连接配置.
+     * 更新连接配置.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface UpdateRequestBuilder extends BaseRequestBuilder<UpdateRequestBu
      */
      put(body: UpdateOAuthConnectionCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 更新 OAuth2.0 连接配置.
+     * 更新连接配置.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

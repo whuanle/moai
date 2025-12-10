@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Disable_userRequestBuilder extends BaseRequestBuilder<Disable_userRequestBuilder> {
     /**
-     * 禁用用户.
+     * 禁用/启用用户.
      * @param body 禁用启用用户.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface Disable_userRequestBuilder extends BaseRequestBuilder<Disable_u
      */
      post(body: DisableUserCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 禁用用户.
+     * 禁用/启用用户.
      * @param body 禁用启用用户.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

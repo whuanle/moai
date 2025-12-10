@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface SearchRequestBuilder extends BaseRequestBuilder<SearchRequestBuilder> {
     /**
-     * 搜索知识库.
+     * 搜索知识库文本.
      * @param body 搜索知识库文档分片.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SearchWikiDocumentTextCommandResponse>}
@@ -23,7 +23,7 @@ export interface SearchRequestBuilder extends BaseRequestBuilder<SearchRequestBu
      */
      post(body: SearchWikiDocumentTextCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SearchWikiDocumentTextCommandResponse | undefined>;
     /**
-     * 搜索知识库.
+     * 搜索知识库文本.
      * @param body 搜索知识库文档分片.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

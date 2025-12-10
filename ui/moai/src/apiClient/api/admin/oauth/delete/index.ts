@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface DeleteRequestBuilder extends BaseRequestBuilder<DeleteRequestBuilder> {
     /**
-     * 删除认证方式.
+     * 删除连接配置.
      * @param body 删除认证方式.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface DeleteRequestBuilder extends BaseRequestBuilder<DeleteRequestBu
      */
      delete(body: DeleteOAuthConnectionCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 删除认证方式.
+     * 删除连接配置.
      * @param body 删除认证方式.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

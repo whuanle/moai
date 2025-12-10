@@ -6,6 +6,7 @@ namespace MoAIPrompt.Core;
 /// <summary>
 /// PromptCoreModule.
 /// </summary>
+[InjectModule<PromptSharedModule>]
 [InjectModule<PromptApiModule>]
 public class PromptCoreModule : IModule
 {

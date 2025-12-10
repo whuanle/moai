@@ -9,6 +9,7 @@ namespace MoAI.Login;
 /// <summary>
 /// LoginCoreModule.
 /// </summary>
+[InjectModule<LoginSharedModule>]
 [InjectModule<LoginApiModule>]
 public class LoginCoreModule : IModule
 {

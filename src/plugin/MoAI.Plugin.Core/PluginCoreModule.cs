@@ -11,6 +11,7 @@ namespace MoAI.Plugin;
 /// <summary>
 /// PluginCoreModule.
 /// </summary>
+[InjectModule<PlugnSharedModule>]
 [InjectModule<PluginApiModule>]
 [InjectModule<NativePluginModule>]
 [InjectModule<ToolPluginModule>]

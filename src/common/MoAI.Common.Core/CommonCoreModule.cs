@@ -5,6 +5,7 @@ namespace MoAI.Common;
 /// <summary>
 /// PublicCoreModule.
 /// </summary>
+[InjectModule<CommonSharedModule>]
 [InjectModule<CommonApiModule>]
 public class CommonCoreModule : IModule
 {

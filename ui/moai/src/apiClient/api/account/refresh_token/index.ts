@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Refresh_tokenRequestBuilder extends BaseRequestBuilder<Refresh_tokenRequestBuilder> {
     /**
-     * 刷新token.
+     * 刷新 token.
      * @param body 刷新 token.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<RefreshTokenCommandResponse>}
@@ -23,7 +23,7 @@ export interface Refresh_tokenRequestBuilder extends BaseRequestBuilder<Refresh_
      */
      post(body: RefreshTokenCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<RefreshTokenCommandResponse | undefined>;
     /**
-     * 刷新token.
+     * 刷新 token.
      * @param body 刷新 token.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using MediatR;
-using MoAI.Infra.Defaults;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.AIAssistant.Models;

@@ -4,8 +4,6 @@
 // @ts-ignore
 import { Ai_optmize_promptRequestBuilderRequestsMetadata, type Ai_optmize_promptRequestBuilder } from './ai_optmize_prompt/index.js';
 // @ts-ignore
-import { Class_listRequestBuilderRequestsMetadata, type Class_listRequestBuilder } from './class_list/index.js';
-// @ts-ignore
 import { Create_promptRequestBuilderRequestsMetadata, type Create_promptRequestBuilder } from './create_prompt/index.js';
 // @ts-ignore
 import { Delete_promptRequestBuilderRequestsMetadata, type Delete_promptRequestBuilder } from './delete_prompt/index.js';
@@ -26,10 +24,6 @@ export interface PromptRequestBuilder extends BaseRequestBuilder<PromptRequestBu
      * The ai_optmize_prompt property
      */
     get ai_optmize_prompt(): Ai_optmize_promptRequestBuilder;
-    /**
-     * The class_list property
-     */
-    get class_list(): Class_listRequestBuilder;
     /**
      * The create_prompt property
      */
@@ -61,9 +55,6 @@ export const PromptRequestBuilderUriTemplate = "{+baseurl}/api/prompt";
 export const PromptRequestBuilderNavigationMetadata: Record<Exclude<keyof PromptRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     ai_optmize_prompt: {
         requestsMetadata: Ai_optmize_promptRequestBuilderRequestsMetadata,
-    },
-    class_list: {
-        requestsMetadata: Class_listRequestBuilderRequestsMetadata,
     },
     create_prompt: {
         requestsMetadata: Create_promptRequestBuilderRequestsMetadata,
