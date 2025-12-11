@@ -46,6 +46,7 @@ import {
   PreloadWikiDocumentResponse,
   UpdateWikiDocumentFileNameCommand,
   DownloadWikiDocumentCommand,
+  BusinessValidationResult,
 } from "../../apiClient/models";
 import { FileSizeHelper } from "../../helper/FileSizeHelper";
 import { FileTypeHelper } from "../../helper/FileTypeHelper";
@@ -58,6 +59,44 @@ import { GetFileMd5 } from "../../helper/Md5Helper";
 
 const { Text, Title } = Typography;
 const { Search } = Input;
+
+// 辅助函数：检查错误是否为 BusinessValidationResult 并提取错误信息
+const getErrorMessage = (error: any, defaultMessage: string): string => {
+  // 优先检查 BusinessValidationResult 的 detail 属性
+  // 使用可选链操作符安全地访问属性
+  if (error?.detail && typeof error.detail === "string") {
+    const detail = error.detail.trim();
+    if (detail) {
+      return detail;
+    }
+  }
+  
+  // 检查错误是否被包装在某个属性中（某些 API 客户端可能会将错误包装起来）
+  if (error?.error?.detail && typeof error.error.detail === "string") {
+    const detail = error.error.detail.trim();
+    if (detail) {
+      return detail;
+    }
+  }
+  
+  if (error?.response?.detail && typeof error.response.detail === "string") {
+    const detail = error.response.detail.trim();
+    if (detail) {
+      return detail;
+    }
+  }
+  
+  // 如果不是 BusinessValidationResult，尝试其他方式获取错误信息
+  if (error instanceof Error) {
+    return error.message || defaultMessage;
+  }
+  
+  if (typeof error === "string") {
+    return error;
+  }
+  
+  return defaultMessage;
+};
 
 // 类型定义
 interface DocumentItem {
@@ -209,7 +248,8 @@ const useDocumentList = (wikiId: number) => {
         });
       }
     } catch (error) {
-      messageApi.error("获取文档列表失败");
+      const errorMessage = getErrorMessage(error, "获取文档列表失败");
+      messageApi.error(errorMessage);
       console.error("Fetch documents error:", error);
     } finally {
       setLoading(false);
@@ -227,7 +267,8 @@ const useDocumentList = (wikiId: number) => {
       messageApi.success("删除成功");
       fetchDocuments(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
-      messageApi.error("删除失败");
+      const errorMessage = getErrorMessage(error, "删除失败");
+      messageApi.error(errorMessage);
       console.error("Delete document error:", error);
     }
   }, [wikiId, pagination.current, pagination.pageSize, searchText, fetchDocuments, messageApi]);
@@ -244,7 +285,8 @@ const useDocumentList = (wikiId: number) => {
       messageApi.success("文档名称更新成功");
       fetchDocuments(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
-      messageApi.error("文档名称更新失败");
+      const errorMessage = getErrorMessage(error, "文档名称更新失败");
+      messageApi.error(errorMessage);
       console.error("Update document file name error:", error);
       throw error; // 重新抛出错误，以便在编辑组件中处理
     }
@@ -335,13 +377,12 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
         };
       });
 
-      // 上传成功后从文件列表中移除
-      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-
       return true;
     } catch (error) {
       console.error("Upload failed:", error);
       
+      // 使用 getErrorMessage 处理所有类型的错误，包括 BusinessValidationResult
+      const errorMessage = getErrorMessage(error, "上传失败");
       setBatchUploadStatus(prev => {
         if (!prev) return prev;
         const newStatuses = [...prev.uploadStatuses];
@@ -349,7 +390,7 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
           file,
           status: "error",
           progress: 0,
-          message: error instanceof Error ? error.message : "上传失败",
+          message: errorMessage,
         };
         return {
           ...prev,
@@ -366,35 +407,87 @@ const useFileUpload = (wikiId: number, onUploadSuccess: () => void) => {
       return;
     }
 
+    // 保存文件列表副本，避免在循环过程中因状态更新导致索引错位
+    const filesToUpload = [...selectedFiles];
+
     // 初始化批量上传状态
-    const initialStatuses: UploadStatus[] = selectedFiles.map(file => ({
+    const initialStatuses: UploadStatus[] = filesToUpload.map(file => ({
       file,
       status: "waiting",
       progress: 0,
     }));
 
     setBatchUploadStatus({
-      files: selectedFiles,
+      files: filesToUpload,
       currentIndex: 0,
       uploadStatuses: initialStatuses,
       isUploading: true,
     });
 
     // 逐个上传文件
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
       const success = await uploadSingleFile(file, i);
       
       if (!success) {
-        messageApi.error(`${file.name} 上传失败`);
+        // 错误信息已经在 uploadSingleFile 中通过 batchUploadStatus 显示
+        // 这里不再重复显示，避免重复提示
       }
     }
 
-    // 上传完成，清空上传状态
-    setBatchUploadStatus(null);
-
-    messageApi.info("已处理当前文件上传列表");
-    onUploadSuccess();
+    // 上传完成，只移除成功上传的文件，保留失败的文件
+    setBatchUploadStatus(prev => {
+      if (!prev) return null;
+      
+      // 找出所有成功上传的文件
+      const successfulFiles = prev.uploadStatuses
+        .filter(status => status.status === "success")
+        .map(status => status.file);
+      
+      // 从 selectedFiles 中移除成功上传的文件
+      if (successfulFiles.length > 0) {
+        setSelectedFiles(currentFiles => 
+          currentFiles.filter(file => 
+            !successfulFiles.some(successFile => 
+              successFile.name === file.name && 
+              successFile.size === file.size &&
+              successFile.lastModified === file.lastModified
+            )
+          )
+        );
+      }
+      
+      // 统计上传结果
+      const successCount = prev.uploadStatuses.filter(s => s.status === "success").length;
+      const errorCount = prev.uploadStatuses.filter(s => s.status === "error").length;
+      
+      // 显示上传结果消息
+      if (successCount > 0 && errorCount > 0) {
+        messageApi.info(`${successCount} 个文件上传成功，${errorCount} 个文件上传失败`);
+        onUploadSuccess();
+      } else if (successCount > 0) {
+        messageApi.success(`${successCount} 个文件上传成功`);
+        onUploadSuccess();
+      } else if (errorCount > 0) {
+        messageApi.warning(`${errorCount} 个文件上传失败，请检查后重试`);
+      }
+      
+      // 如果还有未完成的文件（失败或等待），保留上传状态
+      const hasIncompleteFiles = prev.uploadStatuses.some(
+        status => status.status !== "success"
+      );
+      
+      if (hasIncompleteFiles) {
+        // 保留上传状态，但标记上传过程已结束
+        return {
+          ...prev,
+          isUploading: false,
+        };
+      }
+      
+      // 所有文件都已完成（成功或失败），清空上传状态
+      return null;
+    });
   }, [selectedFiles, uploadSingleFile, messageApi, onUploadSuccess]);
 
   const handleUploadModalCancel = useCallback(() => {
@@ -492,6 +585,7 @@ const UploadPrivateFile = async (
 
   return preUploadResponse;
 };
+
 // 文档表格列配置
 const getTableColumns = (
   wikiId: number,
@@ -880,8 +974,9 @@ export default function WikiDocument() {
         message.error("获取下载地址失败");
       }
     } catch (error) {
+      const errorMessage = getErrorMessage(error, "下载失败");
       console.error("Download document error:", error);
-      message.error("下载失败");
+      message.error(errorMessage);
     }
   }, [wikiId]);
 

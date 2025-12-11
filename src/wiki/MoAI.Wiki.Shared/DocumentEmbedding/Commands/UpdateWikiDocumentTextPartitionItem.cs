@@ -1,18 +1,13 @@
 ﻿using FluentValidation;
 using MediatR;
+using MoAI.Infra.Models;
+using MoAI.Wiki.DocumentEmbedding.Models;
+using MoAI.Wiki.Embeddings.Models;
 
-namespace MoAI.Wiki.DocumentEmbedding.Models;
+namespace MoAI.Wiki.DocumentEmbedding.Commands;
 
-/// <summary>
-/// 文档内容.
-/// </summary>
-public class WikiDocumentTextPartitionPreviewItem : IModelValidator<WikiDocumentTextPartitionPreviewItem>
+public class UpdateWikiDocumentTextPartitionItem
 {
-    /// <summary>
-    /// 切片 id.
-    /// </summary>
-    public long ChunkId { get; init; }
-
     /// <summary>
     /// 分块顺序.
     /// </summary>

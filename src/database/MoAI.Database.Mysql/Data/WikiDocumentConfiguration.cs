@@ -71,6 +71,10 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasComment("版本号，可与向量元数据对比，确认最新文档版本号是否一致")
             .HasColumnType("bigint(20)")
             .HasColumnName("version_no");
+        entity.Property(e => e.SliceConfig)
+            .HasComment("版本号，可与向量元数据对比，确认最新文档版本号是否一致")
+            .HasColumnType("varchar(2000)")
+            .HasColumnName("slice_config").HasDefaultValue("'{}'");
         entity.Property(e => e.WikiId)
             .HasComment("知识库id")
             .HasColumnType("int(11)")

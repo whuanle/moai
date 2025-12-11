@@ -75,4 +75,27 @@ public class EmbeddingsController : ControllerBase
 
         return await _mediator.Send(req, ct);
     }
+
+    /// <summary>
+    /// 预览文档切割结果，根据请求参数返回分片预览数据.
+    /// </summary>
+    /// <param name="req">预览切割的命令对象，包含 WikiId、DocumentId、MaxTokensPerChunk、Overlap 等参数.</param>
+    /// <param name="ct">取消令牌，可选.</param>
+    /// <returns>返回 <see cref="WikiDocumentTextPartitionPreviewCommandResponse"/>，包含预览结果.</returns>
+    [HttpPost("update_text_partition_document")]
+    public async Task<EmptyCommandResponse> UpdatePartitionDocument([FromBody] UpdateWikiDocumentTextPartitionCommand req, CancellationToken ct = default)
+    {
+        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
+        {
+            ContextUserId = _userContext.UserId,
+            WikiId = req.WikiId
+        }, ct);
+
+        if (!userIsWikiUser.IsWikiUser)
+        {
+            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
+        }
+
+        return await _mediator.Send(req, ct);
+    }
 }

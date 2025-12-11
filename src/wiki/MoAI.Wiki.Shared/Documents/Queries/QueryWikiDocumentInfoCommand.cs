@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
+using MoAI.Infra.Models;
+using MoAI.Wiki.Embeddings.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Documents.Queries;
@@ -7,7 +9,7 @@ namespace MoAI.Wiki.Documents.Queries;
 /// <summary>
 /// 查询单个文档信息.
 /// </summary>
-public class QueryWikiDocumentInfoCommand : IRequest<QueryWikiDocumentListItem>, IModelValidator<QueryWikiDocumentInfoCommand>
+public class QueryWikiDocumentInfoCommand : IRequest<QueryWikiDocumentInfoCommandResponse>, IModelValidator<QueryWikiDocumentInfoCommand>
 {
     /// <summary>
     /// 知识库 id.

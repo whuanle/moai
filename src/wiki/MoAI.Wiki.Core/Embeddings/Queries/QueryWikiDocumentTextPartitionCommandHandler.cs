@@ -29,15 +29,15 @@ public class QueryWikiDocumentTextPartitionCommandHandler : IRequestHandler<Quer
     {
         List<WikiDocumentTextPartitionPreviewItem> chunks = new();
 
-        var documentEntity = await _databaseContext.WikiDocuments.FirstOrDefaultAsync(x => x.Id == request.WikiId && x.Id == request.DocumentId, cancellationToken);
+        var documentEntity = await _databaseContext.WikiDocuments.FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.Id == request.DocumentId, cancellationToken);
         if (documentEntity == null)
         {
             throw new BusinessException("未找到文档");
         }
 
-        var chunkConfig = documentEntity.SpliceConfig.JsonToObject<PlainTextChunkerOptions>()!;
+        var chunkConfig = documentEntity.SliceConfig.JsonToObject<PlainTextChunkerOptions>()!;
 
-        var partitionItems = await _databaseContext.WikiDocumentSliceContentPreviews.Where(x => x.WikiId == x.WikiId && x.Id == request.DocumentId).ToArrayAsync();
+        var partitionItems = await _databaseContext.WikiDocumentSliceContentPreviews.Where(x => x.WikiId == x.WikiId && x.DocumentId == request.DocumentId).ToArrayAsync();
 
         foreach (var item in partitionItems)
         {
@@ -51,10 +51,10 @@ public class QueryWikiDocumentTextPartitionCommandHandler : IRequestHandler<Quer
 
         return new QueryWikiDocumentTextPartitionCommandResponse
         {
+            Items = chunks.OrderBy(x => x.Order).ToArray(),
             ChunkHeader = chunkConfig.ChunkHeader,
             MaxTokensPerChunk = chunkConfig.MaxTokensPerChunk,
-            Overlap = chunkConfig.Overlap,
-            Items = chunks.OrderBy(x => x.Order).ToArray()
+            Overlap = chunkConfig.Overlap
         };
     }
 }

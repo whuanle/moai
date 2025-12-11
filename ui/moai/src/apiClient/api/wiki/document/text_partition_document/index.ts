@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Text_partition_documentRequestBuilder extends BaseRequestBuilder<Text_partition_documentRequestBuilder> {
     /**
      * 预览文档切割结果，根据请求参数返回分片预览数据.
-     * @param body 切割知识库文档.
+     * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<WikiDocumentTextPartitionPreviewCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Text_partition_documentRequestBuilder extends BaseRequestBuilde
      post(body: WikiDocumentTextPartitionPreviewCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<WikiDocumentTextPartitionPreviewCommandResponse | undefined>;
     /**
      * 预览文档切割结果，根据请求参数返回分片预览数据.
-     * @param body 切割知识库文档.
+     * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

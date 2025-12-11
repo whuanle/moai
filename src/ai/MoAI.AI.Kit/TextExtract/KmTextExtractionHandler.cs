@@ -11,6 +11,7 @@ using Microsoft.KernelMemory.Text;
 using MoAI.AI.TextExtract;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Put;
+using System.IO;
 using System.Text;
 
 namespace MoAI.Infra.Handlers;
@@ -106,21 +107,10 @@ public sealed class KmTextExtractionHandler : IDisposable
 
     private async Task<string> Extract(string fileName, string fileType, Stream stream, CancellationToken cancellationToken)
     {
-        Task<Stream> AsyncStreamDelegate() => Task.FromResult<Stream>(stream);
-        using StreamableFileContent streamableContent = new(fileName, stream.Length, fileType, DateTimeOffset.Now, AsyncStreamDelegate);
-
-        var fileContent = await BinaryData.FromStreamAsync(await streamableContent.GetStreamAsync().ConfigureAwait(false), cancellationToken)
-            .ConfigureAwait(false);
-
-        if (fileContent.ToArray().Length > 0)
-        {
-            return await ExtractTextAsync(fileType, fileName, fileContent, cancellationToken).ConfigureAwait(false);
-        }
-
-        return string.Empty;
+        return await ExtractTextAsync(fileType, fileName, stream, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<string> ExtractTextAsync(string mineType, string fileName, BinaryData fileContent, CancellationToken cancellationToken)
+    private async Task<string> ExtractTextAsync(string mineType, string fileName, Stream fileContent, CancellationToken cancellationToken)
     {
         // Define default empty content
         var content = new FileContent(MimeTypes.PlainText);

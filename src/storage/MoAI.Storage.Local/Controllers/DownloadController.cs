@@ -9,7 +9,7 @@ namespace MoAI.Storage.Controllers;
 /// <summary>
 /// 下载文件.
 /// </summary>
-[Route($"/api")]
+[Route("/download")]
 [AllowAnonymous]
 public class DownloadController : ControllerBase
 {
@@ -32,7 +32,7 @@ public class DownloadController : ControllerBase
     /// <param name="expiry"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    [HttpGet("download/{filename}")]
+    [HttpGet("{filename}")]
     public IActionResult DownloadPrivateFile([FromRoute] string filename, [FromQuery] string key, [FromQuery] ulong expiry, [FromQuery] string token)
     {
         // 已过期

@@ -37,7 +37,7 @@ export default function WikiSettings() {
   const fetchEmbeddingModels = async () => {
     try {
       setModelsLoading(true);
-      const response = await apiClient.api.public.aimodel.modellist.post({
+      const response = await apiClient.api.aimodel.modellist.post({
         aiModelType: "embedding",
       });
 

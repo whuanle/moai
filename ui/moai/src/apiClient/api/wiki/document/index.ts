@@ -30,6 +30,8 @@ import { Text_partition_documentRequestBuilderRequestsMetadata, type Text_partit
 // @ts-ignore
 import { type Update_document_file_nameRequestBuilder, Update_document_file_nameRequestBuilderRequestsMetadata } from './update_document_file_name/index.js';
 // @ts-ignore
+import { type Update_text_partition_documentRequestBuilder, Update_text_partition_documentRequestBuilderRequestsMetadata } from './update_text_partition_document/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -92,6 +94,10 @@ export interface DocumentRequestBuilder extends BaseRequestBuilder<DocumentReque
      * The update_document_file_name property
      */
     get update_document_file_name(): Update_document_file_nameRequestBuilder;
+    /**
+     * The update_text_partition_document property
+     */
+    get update_text_partition_document(): Update_text_partition_documentRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -142,6 +148,9 @@ export const DocumentRequestBuilderNavigationMetadata: Record<Exclude<keyof Docu
     },
     update_document_file_name: {
         requestsMetadata: Update_document_file_nameRequestBuilderRequestsMetadata,
+    },
+    update_text_partition_document: {
+        requestsMetadata: Update_text_partition_documentRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

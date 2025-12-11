@@ -205,7 +205,7 @@ public partial class DocumentController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryWikiDocumentListItem"/> 包含文档信息.</returns>
     [HttpPost("document_info")]
-    public async Task<QueryWikiDocumentListItem> QueryWikiDocumentInfo([FromBody] QueryWikiDocumentInfoCommand req, CancellationToken ct = default)
+    public async Task<QueryWikiDocumentInfoCommandResponse> QueryWikiDocumentInfo([FromBody] QueryWikiDocumentInfoCommand req, CancellationToken ct = default)
     {
         var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
         {

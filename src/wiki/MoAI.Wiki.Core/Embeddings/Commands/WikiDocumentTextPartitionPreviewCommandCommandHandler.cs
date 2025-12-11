@@ -11,6 +11,7 @@ using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Handlers;
+using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using MoAI.Wiki.DocumentEmbedding.Commands;
 using MoAI.Wiki.DocumentEmbedding.Models;
@@ -67,7 +68,7 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
 
         var text = await _textExtractionHandler.ExtractAsync(filePath: saveFile.LocalFilePath, cancellationToken: cancellationToken);
 
-        List<WikiDocumentTextPartitionPreviewItem> chunks = new();
+        List<WikiDocumentTextPartitionPreviewItem> chunks = new List<WikiDocumentTextPartitionPreviewItem>();
         var tokerizer = await GetTokenizer(request, cancellationToken);
 
         var kmTextPartitioningHandler = new KmTextPartitioningHandler(tokerizer);
@@ -106,7 +107,7 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
 
         await _databaseContext.WikiDocumentSliceContentPreviews.Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId).ExecuteDeleteAsync();
         await _databaseContext.WikiDocumentSliceContentPreviews.AddRangeAsync(entities, cancellationToken);
-        document.SpliceConfig = new PlainTextChunkerOptions
+        document.SliceConfig = new PlainTextChunkerOptions
         {
             MaxTokensPerChunk = request.MaxTokensPerChunk,
             Overlap = request.Overlap,
