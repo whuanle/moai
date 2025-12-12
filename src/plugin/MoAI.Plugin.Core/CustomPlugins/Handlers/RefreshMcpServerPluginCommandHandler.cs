@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -67,10 +68,7 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
             throw new BusinessException("访问 MCP 服务器失败") { StatusCode = 409 };
         }
 
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginId == pluginEntity.Id));
 

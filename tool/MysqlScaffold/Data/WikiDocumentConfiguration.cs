@@ -58,6 +58,11 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasMaxLength(100)
             .HasComment("文件路径")
             .HasColumnName("object_key");
+        entity.Property(e => e.SliceConfig)
+            .HasMaxLength(2000)
+            .HasDefaultValueSql("'{}'")
+            .HasComment("切割配置")
+            .HasColumnName("slice_config");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("最后更新时间")

@@ -138,17 +138,22 @@ public partial class DatabaseContext : DbContext
     /// <summary>
     /// 文档切片原始内容表.
     /// </summary>
-    public virtual DbSet<WikiDocumentSliceContentEntity> WikiDocumentSliceContents { get; set; }
+    public virtual DbSet<WikiDocumentChunkContentEntity> WikiDocumentChunkContents { get; set; }
 
     /// <summary>
     /// 文档切片预览.
     /// </summary>
-    public virtual DbSet<WikiDocumentSliceContentPreviewEntity> WikiDocumentSliceContentPreviews { get; set; }
+    public virtual DbSet<WikiDocumentChunkContentPreviewEntity> WikiDocumentChunkContentPreviews { get; set; }
 
     /// <summary>
     /// 切片衍生内容表（提问/提纲/摘要）.
     /// </summary>
-    public virtual DbSet<WikiDocumentSliceDerivativeEntity> WikiDocumentSliceDerivatives { get; set; }
+    public virtual DbSet<WikiDocumentChunkDerivativeEntity> WikiDocumentChunkDerivatives { get; set; }
+
+    /// <summary>
+    /// 切片衍生内容表（提问/提纲/摘要）.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkDerivativePreviewEntity> WikiDocumentChunkDerivativePreviews { get; set; }
 
     /// <summary>
     /// 知识库插件配置.

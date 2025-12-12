@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -66,10 +67,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         var pluginEntitiy = new PluginEntity()
         {

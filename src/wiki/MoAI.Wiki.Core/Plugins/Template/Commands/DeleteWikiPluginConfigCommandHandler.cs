@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Services;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -40,10 +41,7 @@ public class DeleteWikiPluginConfigCommandHandler : IRequestHandler<DeleteWikiPl
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteWikiPluginConfigCommand request, CancellationToken cancellationToken)
     {
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         if (request.IsDeleteDocuments)
         {

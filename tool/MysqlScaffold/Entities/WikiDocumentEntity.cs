@@ -50,6 +50,11 @@ public partial class WikiDocumentEntity : IFullAudited
     public long VersionNo { get; set; }
 
     /// <summary>
+    /// 切割配置.
+    /// </summary>
+    public string SliceConfig { get; set; } = default!;
+
+    /// <summary>
     /// 是否有更新，需要重新进行向量化.
     /// </summary>
     public bool IsUpdate { get; set; }

@@ -32,9 +32,11 @@ import {
   EditOutlined,
   DeleteOutlined,
   DragOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { formatDateTime } from "../../helper/DateTimeHelper";
 import CodeEditorModal from "../common/CodeEditorModal";
+import type { WikiDocumentDerivativeItem, ParagrahProcessorMetadataType } from "../../apiClient/models";
 
 const { Panel } = Collapse;
 
@@ -70,7 +72,17 @@ interface PartitionPreviewItem {
   chunkId: string;
   order: number;
   text: string;
+  derivatives?: WikiDocumentDerivativeItem[] | null;
 }
+
+// 衍生类型映射
+const DerivativeTypeMap: Record<string, string> = {
+  outline: "大纲",
+  question: "问题",
+  keyword: "关键词",
+  summary: "摘要",
+  aggregatedSubParagraph: "聚合段落",
+};
 
 // 自定义Hook - 文档信息管理
 const useDocumentInfo = (wikiId: string, documentId: string) => {
@@ -212,7 +224,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     try {
       setLoading(true);
       const apiClient = GetApiClient();
-      const response = await apiClient.api.wiki.document.get_partition_document.post({
+      const response = await apiClient.api.wiki.document.get_chunks.post({
         wikiId: parseInt(wikiId),
         documentId: parseInt(documentId),
       });
@@ -231,10 +243,11 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
             chunkId: item.chunkId || "",
             order: item.order || 0,
             text: item.text || "",
+            derivatives: item.derivatives || null,
           })),
-          chunkHeader: response.chunkHeader,
-          maxTokensPerChunk: response.maxTokensPerChunk,
-          overlap: response.overlap,
+          chunkHeader: null, // 新API可能不返回这些字段
+          maxTokensPerChunk: null,
+          overlap: null,
         });
       }
     } catch (error) {
@@ -245,49 +258,63 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     }
   }, [wikiId, documentId, messageApi]);
 
-  // 先定义 updatePartitionDocument，因为其他函数会依赖它
-  const updatePartitionDocument = useCallback(async (items?: PartitionPreviewItem[]) => {
+  // 重新排序并保存到后端
+  const reorderAndSave = useCallback(async (items: PartitionPreviewItem[]) => {
     if (!wikiId || !documentId) {
       console.error("Missing wikiId or documentId:", { wikiId, documentId });
       return;
     }
 
-    // 如果传入了 items，使用传入的 items，否则使用 previewData 中的 items
-    const itemsToUpdate = items !== undefined ? items : previewData?.items;
-    // 允许空数组，因为删除所有块时 items 可能为空
-    if (itemsToUpdate === undefined) {
-      console.error("No items to update:", { items, previewData });
+    try {
+      const apiClient = GetApiClient();
+      // 使用 update_chunks_order API 更新排序
+      await apiClient.api.wiki.document.update_chunks_order.post({
+        wikiId: parseInt(wikiId),
+        documentId: parseInt(documentId),
+        chunks: items.map((item) => ({
+          chunkId: item.chunkId,
+          order: item.order,
+        })),
+      });
+      
+      messageApi.success("排序已更新");
+    } catch (error) {
+      console.error("Failed to update chunks order:", error);
+      messageApi.error("更新排序失败");
+      throw error;
+    }
+  }, [wikiId, documentId, messageApi]);
+
+  // 更新chunk内容
+  // 注意：如果后端有 update_chunk API（单数），需要先运行 npm run syncapi 同步API客户端
+  // 然后可以将 update_chnuks 改为 update_chunk
+  const updateChunkContent = useCallback(async (chunkId: string, text: string, derivatives?: WikiDocumentDerivativeItem[] | null) => {
+    if (!wikiId || !documentId) {
+      console.error("Missing wikiId or documentId:", { wikiId, documentId });
       return;
     }
 
     try {
-      console.log("Updating partition document:", {
+      const apiClient = GetApiClient();
+      // TODO: 如果后端提供了 update_chunk API，应该使用它而不是 update_chnuks
+      // 使用 update_chnuks API 更新chunk（传入单个chunk的数组）
+      await apiClient.api.wiki.document.update_chnuks.post({
         wikiId: parseInt(wikiId),
         documentId: parseInt(documentId),
-        itemsCount: itemsToUpdate.length,
+        chunks: [{
+          chunkId: chunkId,
+          text: text,
+          derivatives: derivatives || null,
+        }],
       });
       
-      const apiClient = GetApiClient();
-      const requestBody = {
-        wikiId: parseInt(wikiId),
-        documentId: parseInt(documentId),
-        items: itemsToUpdate.map((item) => ({
-          order: item.order,
-          text: item.text,
-        })),
-      };
-      
-      console.log("Request body:", requestBody);
-      
-      await apiClient.api.wiki.document.update_text_partition_document.post(requestBody);
-      messageApi.success("切割文档已更新");
-      console.log("Update successful");
+      messageApi.success("文本块已更新");
     } catch (error) {
-      console.error("Failed to update partition document:", error);
-      messageApi.error("更新切割文档失败");
-      throw error; // 重新抛出错误，让调用者知道保存失败
+      console.error("Failed to update chunk:", error);
+      messageApi.error("更新文本块失败");
+      throw error;
     }
-  }, [wikiId, documentId, previewData, messageApi]);
+  }, [wikiId, documentId, messageApi]);
 
   const updateItem = useCallback(
     async (chunkId: string, newText: string) => {
@@ -298,62 +325,75 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
         return;
       }
       
-      // 计算更新后的 items
+      // 找到要更新的item
+      const itemToUpdate = currentData.items.find((item) => item.chunkId === chunkId);
+      if (!itemToUpdate) {
+        console.error("Cannot find item with chunkId:", chunkId);
+        return;
+      }
+      
+      // 更新状态
       const updatedItems = currentData.items.map((item) =>
         item.chunkId === chunkId ? { ...item, text: newText } : item
       );
       
-      // 更新状态
       setPreviewData({
         ...currentData,
         items: updatedItems,
       });
       
-      // 更新内存后，自动调用 updatePartitionDocument
+      // 调用更新API
       try {
-        await updatePartitionDocument(updatedItems);
+        await updateChunkContent(chunkId, newText, itemToUpdate.derivatives);
       } catch (error) {
         // 如果更新失败，重新获取数据以恢复状态
         await fetchPartitionPreview();
         throw error;
       }
     },
-    [updatePartitionDocument, fetchPartitionPreview]
+    [updateChunkContent, fetchPartitionPreview]
   );
 
-  const deleteItem = useCallback(async (order: number) => {
-    // 直接从 ref 获取最新的 previewData，避免闭包问题
-    const currentData = previewDataRef.current;
-    if (!currentData) {
-      console.error("Cannot delete item: previewData is null");
+  const deleteItem = useCallback(async (chunkId: string) => {
+    if (!wikiId || !documentId) {
+      console.error("Missing wikiId or documentId");
       return;
     }
-    
-    // 计算更新后的 items，按 order 过滤
-    const filtered = currentData.items.filter((item) => item.order !== order);
-    // 更新 order：重新排序，确保 order 从 1 开始连续
-    const updatedItems = filtered.map((item, index) => ({
-      ...item,
-      order: index + 1,
-    }));
-    
-    console.log("Deleting item by order:", order, "original count:", currentData.items.length, "updated count:", updatedItems.length, "updatedItems:", updatedItems);
-    
-    // 更新状态
-    setPreviewData({
-      ...currentData,
-      items: updatedItems,
-    });
-    
-    // 更新内存后，自动调用 updatePartitionDocument
+
     try {
-      await updatePartitionDocument(updatedItems);
-    } catch (error) {
-      // 如果更新失败，重新获取数据以恢复状态
+      const apiClient = GetApiClient();
+      await apiClient.api.wiki.document.delete_chunk.post({
+        wikiId: parseInt(wikiId),
+        documentId: parseInt(documentId),
+        chunkId: chunkId,
+      });
+      
+      messageApi.success("文本块已删除");
+      
+      // 删除后重新获取数据
       await fetchPartitionPreview();
+      
+      // 重新排序（从0开始）
+      const currentData = previewDataRef.current;
+      if (currentData && currentData.items.length > 0) {
+        const reorderedItems = currentData.items
+          .filter((item) => item.chunkId !== chunkId)
+          .map((item, index) => ({
+            ...item,
+            order: index,
+          }));
+        
+        if (reorderedItems.length > 0) {
+          await reorderAndSave(reorderedItems);
+          await fetchPartitionPreview();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      messageApi.error("删除文本块失败");
       throw error;
     }
-  }, [updatePartitionDocument, fetchPartitionPreview]);
+  }, [wikiId, documentId, messageApi, fetchPartitionPreview, reorderAndSave]);
 
   const reorderItems = useCallback(async (fromIndex: number, toIndex: number) => {
     // 直接从 ref 获取最新的 previewData，避免闭包问题
@@ -367,10 +407,10 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     const newItems = [...currentData.items];
     const [removed] = newItems.splice(fromIndex, 1);
     newItems.splice(toIndex, 0, removed);
-    // 更新 order
+    // 更新 order：从 0 开始重新生成
     const updatedItems = newItems.map((item, index) => ({
       ...item,
-      order: index + 1,
+      order: index,
     }));
     
     // 更新状态
@@ -379,15 +419,63 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       items: updatedItems,
     });
     
-    // 更新内存后，自动调用 updatePartitionDocument
+    // 调用排序API保存
     try {
-      await updatePartitionDocument(updatedItems);
+      await reorderAndSave(updatedItems);
+      // 重新获取数据以确保同步
+      await fetchPartitionPreview();
     } catch (error) {
       // 如果更新失败，重新获取数据以恢复状态
       await fetchPartitionPreview();
       throw error;
     }
-  }, [updatePartitionDocument, fetchPartitionPreview]);
+  }, [reorderAndSave, fetchPartitionPreview]);
+
+  // 新增chunk
+  const addChunk = useCallback(async (text: string, derivatives?: WikiDocumentDerivativeItem[] | null) => {
+    if (!wikiId || !documentId) {
+      console.error("Missing wikiId or documentId");
+      return;
+    }
+
+    try {
+      const currentData = previewDataRef.current;
+      const maxOrder = currentData && currentData.items && currentData.items.length > 0 
+        ? Math.max(...currentData.items.map((item) => item.order ?? 0))
+        : -1;
+      const newOrder = maxOrder + 1;
+
+      const apiClient = GetApiClient();
+      await apiClient.api.wiki.document.add_chunk.post({
+        wikiId: parseInt(wikiId),
+        documentId: parseInt(documentId),
+        text: text,
+        order: newOrder,
+        derivatives: derivatives || null,
+      });
+      
+      messageApi.success("文本块已添加");
+      
+      // 添加后重新获取数据
+      await fetchPartitionPreview();
+      
+      // 重新排序（从0开始）
+      const updatedData = previewDataRef.current;
+      if (updatedData && updatedData.items.length > 0) {
+        const reorderedItems = updatedData.items.map((item, index) => ({
+          ...item,
+          order: index,
+        }));
+        
+        await reorderAndSave(reorderedItems);
+        await fetchPartitionPreview();
+      }
+    } catch (error) {
+      console.error("Failed to add chunk:", error);
+      messageApi.error("添加文本块失败");
+      throw error;
+    }
+  }, [wikiId, documentId, messageApi, fetchPartitionPreview, reorderAndSave]);
 
   return {
     previewData,
@@ -397,7 +485,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     updateItem,
     deleteItem,
     reorderItems,
-    updatePartitionDocument,
+    addChunk,
   };
 };
 
@@ -451,6 +539,95 @@ const usePartitionOperations = (
     contextHolder,
     submitPartition,
     setPreviewItems,
+  };
+};
+
+// 自定义Hook - 获取AI模型列表
+const useAiModelList = () => {
+  const [modelList, setModelList] = useState<Array<{ id: number; name: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+
+  const fetchModelList = useCallback(async () => {
+    try {
+      setLoading(true);
+      const apiClient = GetApiClient();
+      const response = await apiClient.api.aimodel.modellist.post({
+        aiModelType: "chat",
+      });
+
+      if (response?.aiModels) {
+        const models = response.aiModels
+          .filter((item: any) => item.id != null && item.name != null)
+          .map((item: any) => ({
+            id: item.id!,
+            name: item.name || "",
+          }));
+        setModelList(models);
+      }
+    } catch (error) {
+      console.error("Failed to fetch AI model list:", error);
+      messageApi.error("获取AI模型列表失败");
+    } finally {
+      setLoading(false);
+    }
+  }, [messageApi]);
+
+  return {
+    modelList,
+    loading,
+    contextHolder,
+    fetchModelList,
+  };
+};
+
+// 自定义Hook - 智能切割操作
+const useAiPartitionOperations = (
+  wikiId: string,
+  documentId: string,
+  onSuccess: () => void
+) => {
+  const [loading, setLoading] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+
+  const submitAiPartition = useCallback(
+    async (values: any) => {
+      if (!wikiId || !documentId) {
+        messageApi.error("缺少必要的参数");
+        return;
+      }
+
+      if (!values.aiModelId) {
+        messageApi.error("请选择AI模型");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const apiClient = GetApiClient();
+        await apiClient.api.wiki.document.ai_text_partition_document.post({
+          wikiId: parseInt(wikiId),
+          documentId: parseInt(documentId),
+          aiModelId: values.aiModelId,
+          promptTemplate: values.promptTemplate || null,
+        });
+
+        messageApi.success("智能切割任务已提交");
+        onSuccess();
+      } catch (error) {
+        console.error("Failed to submit AI partition task:", error);
+        messageApi.error("智能切割失败");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [wikiId, documentId, messageApi, onSuccess]
+  );
+
+  return {
+    loading,
+    contextHolder,
+    submitAiPartition,
   };
 };
 
@@ -553,6 +730,7 @@ export default function DocumentEmbedding() {
   const { id: wikiId, documentId } = useParams();
   const [form] = Form.useForm();
   const [partitionForm] = Form.useForm();
+  const [aiPartitionForm] = Form.useForm();
   const [activePartitionTab, setActivePartitionTab] = useState<string>("normal");
   const [codeEditorVisible, setCodeEditorVisible] = useState(false);
   const [codeEditorInitialValue, setCodeEditorInitialValue] = useState<string>("");
@@ -581,7 +759,7 @@ export default function DocumentEmbedding() {
     updateItem: updatePreviewItem,
     deleteItem: deletePreviewItem,
     reorderItems: reorderPreviewItems,
-    updatePartitionDocument,
+    addChunk: addPreviewChunk,
   } = usePartitionPreview(wikiId || "", documentId || "");
   const {
     loading: partitionLoading,
@@ -601,14 +779,29 @@ export default function DocumentEmbedding() {
     fetchTasks();
     fetchDocumentInfo();
   });
+  const {
+    modelList,
+    loading: modelListLoading,
+    contextHolder: modelListContextHolder,
+    fetchModelList,
+  } = useAiModelList();
+  const {
+    loading: aiPartitionLoading,
+    contextHolder: aiPartitionContextHolder,
+    submitAiPartition,
+  } = useAiPartitionOperations(wikiId || "", documentId || "", async () => {
+    fetchDocumentInfo();
+    await fetchPartitionPreview();
+  });
 
   useEffect(() => {
     if (wikiId && documentId) {
       fetchDocumentInfo();
       fetchTasks();
       fetchPartitionPreview();
+      fetchModelList();
     }
-  }, [wikiId, documentId, fetchDocumentInfo, fetchTasks, fetchPartitionPreview]);
+  }, [wikiId, documentId, fetchDocumentInfo, fetchTasks, fetchPartitionPreview, fetchModelList]);
 
   // 当获取到文档信息后，如果有 partionConfig，则更新表单默认值
   useEffect(() => {
@@ -643,6 +836,13 @@ export default function DocumentEmbedding() {
     [submitPartition]
   );
 
+  const handleAiPartitionSubmit = useCallback(
+    async (values: any) => {
+      await submitAiPartition(values);
+    },
+    [submitAiPartition]
+  );
+
   const handleOpenCodeEditor = useCallback(
     (chunkId: string, currentText: string) => {
       setEditingChunkId(chunkId);
@@ -658,35 +858,61 @@ export default function DocumentEmbedding() {
     setCodeEditorInitialValue("");
   }, []);
 
+  const handleAddChunk = useCallback(async () => {
+    setCodeEditorInitialValue("");
+    setEditingChunkId(null);
+    setCodeEditorVisible(true);
+  }, []);
+
+  const handleConfirmAddChunk = useCallback(
+    async (value: string) => {
+      try {
+        await addPreviewChunk(value);
+        setCodeEditorVisible(false);
+        setCodeEditorInitialValue("");
+        setEditingChunkId(null);
+      } catch (error) {
+        console.error("Failed to add chunk:", error);
+        message.error("添加失败，请重试");
+      }
+    },
+    [addPreviewChunk]
+  );
+
   const handleConfirmCodeEditor = useCallback(
     async (value: string) => {
-      if (!editingChunkId || !previewData) {
-        console.error("Missing editingChunkId or previewData");
-        return;
-      }
-
       try {
-        // updateItem 会自动更新内存并调用 updatePartitionDocument
-        await updatePreviewItem(editingChunkId, value);
+        if (editingChunkId) {
+          // 编辑现有chunk
+          if (!previewData) {
+            console.error("Missing previewData");
+            return;
+          }
+          await updatePreviewItem(editingChunkId, value);
+        } else {
+          // 新增chunk
+          await handleConfirmAddChunk(value);
+          return; // handleConfirmAddChunk 已经处理了关闭逻辑
+        }
         setCodeEditorVisible(false);
         setEditingChunkId(null);
         setCodeEditorInitialValue("");
       } catch (error) {
-        console.error("Failed to update partition document:", error);
+        console.error("Failed to save:", error);
         // 不关闭编辑器，让用户知道保存失败
         message.error("保存失败，请重试");
       }
     },
-    [editingChunkId, previewData, updatePreviewItem]
+    [editingChunkId, previewData, updatePreviewItem, handleConfirmAddChunk]
   );
 
   const handleDeleteItem = useCallback(
-    async (order: number) => {
+    async (chunkId: string) => {
       if (!previewData) return;
       
       try {
-        // deleteItem 会自动更新内存并调用 updatePartitionDocument
-        await deletePreviewItem(order);
+        // deleteItem 会自动更新内存并重新排序
+        await deletePreviewItem(chunkId);
       } catch (error) {
         console.error("Failed to delete item:", error);
         // 错误已经在 deleteItem 中处理，这里不需要额外处理
@@ -837,6 +1063,8 @@ export default function DocumentEmbedding() {
       {embedContextHolder}
       {partitionContextHolder}
       {previewContextHolder}
+      {modelListContextHolder}
+      {aiPartitionContextHolder}
 
       {/* 文档切割卡片 */}
       <Collapse
@@ -1022,7 +1250,35 @@ export default function DocumentEmbedding() {
                 key: "smart",
                 label: "智能切割",
                 children: (
-                  <div>
+                  <Form
+                    form={aiPartitionForm}
+                    layout="vertical"
+                    onFinish={handleAiPartitionSubmit}
+                    initialValues={{
+                      promptTemplate: `你是一个专业的中文知识库文档拆分助手。
+
+请根据用户提供的完整文档内容按照以下要求拆分文本：
+
+1. 每个文本块长度尽量不超过 1000 个字符，可根据语义适当调整。
+2. 相邻文本块需要保留约 50 个字符的重叠内容以保证上下文衔接。
+3.尽可能不要拆开代码或段落，尽可能让语义相近的内容在一个段落内。
+
+3. 只允许引用原文内容，不要编造或总结。
+
+4. 输出统一使用 JSON，格式如下：
+
+{
+  "chunks": [
+    { "order": 1, "text": "第一块原文内容" },
+    { "order": 2, "text": "第二块原文内容" }
+  ]
+}
+
+order 从 1 开始递增，text 为对应的原文片段。
+
+只输出 JSON，不要附加其他解释。`,
+                    }}
+                  >
                     {documentInfo && (
                       <>
                         {/* 文档信息统计 */}
@@ -1044,16 +1300,101 @@ export default function DocumentEmbedding() {
                           </Col>
                         </Row>
 
+                        {/* 智能切割配置表单 */}
+                        <Row gutter={[16, 16]}>
+                          <Col span={8}>
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: "14px",
+                                  fontWeight: 500,
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                AI模型
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "12px",
+                                  marginBottom: "8px",
+                                  color: "#8c8c8c",
+                                  minHeight: "36px",
+                                }}
+                              >
+                                选择用于智能切割的AI模型。
+                              </div>
+                              <Form.Item
+                                name="aiModelId"
+                                rules={[
+                                  { required: true, message: "请选择AI模型" },
+                                ]}
+                              >
+                                <Select
+                                  placeholder="请选择AI模型"
+                                  loading={modelListLoading}
+                                  options={modelList.map((model) => ({
+                                    label: model.name,
+                                    value: model.id,
+                                  }))}
+                                />
+                              </Form.Item>
+                            </div>
+                          </Col>
+                        </Row>
+
+                        <Row gutter={[16, 16]}>
+                          <Col span={24}>
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: "14px",
+                                  fontWeight: 500,
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                提示词模板
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "12px",
+                                  marginBottom: "8px",
+                                  color: "#8c8c8c",
+                                }}
+                              >
+                                用于指导AI进行智能切割的提示词模板，请务必提示模型输出 JSON 格式的数据。
+                              </div>
+                              <Form.Item name="promptTemplate">
+                                <Input.TextArea
+                                  rows={4}
+                                  placeholder="请输入提示词模板"
+                                />
+                              </Form.Item>
+                            </div>
+                          </Col>
+                        </Row>
+
+                        <Form.Item>
+                          <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={aiPartitionLoading}
+                            icon={<ScissorOutlined />}
+                          >
+                            智能切割
+                          </Button>
+                        </Form.Item>
+
+                        {/* 提示信息 */}
                         <Alert
-                          message="智能切割功能"
-                          description="智能切割功能正在开发中，敬请期待。"
+                          message="智能切割说明"
+                          description="智能切割使用AI模型来理解文档内容，按照语义和上下文进行更智能的分段，适合复杂文档的切割需求。"
                           type="info"
                           showIcon
                           style={{ marginTop: 16 }}
                         />
                       </>
                     )}
-                  </div>
+                  </Form>
                 ),
               },
             ]}
@@ -1078,6 +1419,17 @@ export default function DocumentEmbedding() {
                 loading={previewLoading}
                 size="small"
               />
+              <Button
+                type="text"
+                icon={<PlusOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddChunk();
+                }}
+                size="small"
+              >
+                新增块
+              </Button>
             </Space>
           }
           key="preview"
@@ -1119,8 +1471,7 @@ export default function DocumentEmbedding() {
                               color: "#8c8c8c",
                             }}
                           />
-                          <Tag color="blue">#{item.order}</Tag>
-                          <span style={{ fontSize: "12px" }}>标题: {item.chunkId}</span>
+                          <Tag color="blue">#{item.order + 1}</Tag>
                         </Space>
                         <Space>
                           <Button
@@ -1137,7 +1488,7 @@ export default function DocumentEmbedding() {
                             description="确定要删除这个文本块吗？"
                             onConfirm={(e) => {
                               e?.stopPropagation();
-                              handleDeleteItem(item.order);
+                              handleDeleteItem(item.chunkId);
                             }}
                             onCancel={(e) => {
                               e?.stopPropagation();
@@ -1166,21 +1517,9 @@ export default function DocumentEmbedding() {
                     bodyStyle={{ padding: "12px" }}
                     onClick={() => handleOpenCodeEditor(item.chunkId, item.text)}
                   >
-                    {previewData.chunkHeader && (
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          marginBottom: "6px",
-                          color: "#1890ff",
-                        }}
-                      >
-                        {previewData.chunkHeader}
-                      </div>
-                    )}
                     <Typography.Paragraph
                       style={{
-                        marginBottom: 0,
+                        marginBottom: item.derivatives && item.derivatives.length > 0 ? "12px" : 0,
                         fontSize: "13px",
                         lineHeight: "1.6",
                         whiteSpace: "pre-wrap",
@@ -1192,6 +1531,28 @@ export default function DocumentEmbedding() {
                     >
                       {displayText}
                     </Typography.Paragraph>
+                    {item.derivatives && item.derivatives.length > 0 && (
+                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
+                        {item.derivatives.map((derivative, idx) => (
+                          <div key={idx} style={{ marginBottom: "8px" }}>
+                            <Tag color="purple" style={{ marginBottom: "4px" }}>
+                              {DerivativeTypeMap[derivative.derivativeType || ""] || derivative.derivativeType || "未知"}
+                            </Tag>
+                            <Typography.Text
+                              style={{
+                                fontSize: "12px",
+                                color: "#666",
+                                display: "block",
+                                marginTop: "4px",
+                              }}
+                              ellipsis
+                            >
+                              {derivative.derivativeContent}
+                            </Typography.Text>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </Card>
                 );
               })}
@@ -1439,7 +1800,7 @@ export default function DocumentEmbedding() {
         open={codeEditorVisible}
         initialValue={codeEditorInitialValue}
         language="plaintext"
-        title="编辑文本块"
+        title={editingChunkId ? "编辑文本块" : "新增文本块"}
         onClose={handleCloseCodeEditor}
         onConfirm={handleConfirmCodeEditor}
         width={1200}

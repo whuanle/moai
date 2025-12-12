@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
@@ -30,10 +31,7 @@ public class ComplateUploadWikiDocumentCommandHandler : IRequestHandler<Complate
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(ComplateUploadWikiDocumentCommand request, CancellationToken cancellationToken)
     {
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         _ = await _mediator.Send(new ComplateFileUploadCommand
         {

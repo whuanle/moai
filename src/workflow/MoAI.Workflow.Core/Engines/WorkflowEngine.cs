@@ -121,6 +121,7 @@ public class WorkflowEngine
                 }
             }
         }
+    }
 
     private static async Task JavaScriptNodeAction(
         WorkflowJavaScriptExecuteNodefinition javascriptNodeDefinition,

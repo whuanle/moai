@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
 using MoAI.AiModel.Services;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -39,10 +40,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(ClearWikiDocumentEmbeddingCommand request, CancellationToken cancellationToken)
     {
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
         if (memoryDb == null)

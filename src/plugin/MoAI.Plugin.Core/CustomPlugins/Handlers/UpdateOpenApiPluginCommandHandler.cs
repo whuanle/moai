@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Readers;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -106,10 +107,7 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
             throw new BusinessException("导入文件失败.");
         }
 
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         pluginEntity.OpenapiFileId = fileEntity.Id;
         pluginEntity.OpenapiFileName = request.FileName;

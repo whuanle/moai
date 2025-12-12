@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.CustomPlugins.Commands;
@@ -39,10 +40,7 @@ public class DeletePluginCommandHandler : IRequestHandler<DeletePluginCommand, E
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         _databaseContext.Plugins.Remove(pluginEntity);
 

@@ -48,7 +48,11 @@ public partial class WikiDocumentEntity : IFullAudited
     /// 版本号，可与向量元数据对比，确认最新文档版本号是否一致.
     /// </summary>
     public long VersionNo { get; set; }
-    public string SliceConfig { get; set; }
+
+    /// <summary>
+    /// 切割配置.
+    /// </summary>
+    public string SliceConfig { get; set; } = default!;
 
     /// <summary>
     /// 是否有更新，需要重新进行向量化.

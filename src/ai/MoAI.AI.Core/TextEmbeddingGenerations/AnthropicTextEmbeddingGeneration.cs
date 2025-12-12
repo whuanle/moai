@@ -1,5 +1,7 @@
 ﻿using Maomi;
 using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.AI;
+using Microsoft.KernelMemory.AI.AzureOpenAI;
 using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Services;
@@ -22,5 +24,11 @@ public class AnthropicTextEmbeddingGeneration : ITextEmbeddingGeneration
             Tokenizer = wikiConfig.EmbeddingModelTokenizer.ToJsonString(),
             MaxTokenOut = endpoint.TextOutput,
         });
+    }
+
+    /// <inheritdoc/>
+    public ITextEmbeddingGenerator GetTextEmbeddingGenerator(AiEndpoint endpoint)
+    {
+        throw new NotImplementedException();
     }
 }

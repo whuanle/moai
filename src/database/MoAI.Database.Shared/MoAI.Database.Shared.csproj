@@ -17,8 +17,4 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Helper\" />
-	</ItemGroup>
 </Project>

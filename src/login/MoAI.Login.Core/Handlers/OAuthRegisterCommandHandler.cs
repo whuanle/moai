@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
+using MoAI.Database.Helper;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Services;
@@ -71,10 +72,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             throw new BusinessException("该 OAuth 用户已被注册") { StatusCode = 409 };
         }
 
-        using TransactionScope transactionScope = new TransactionScope(
-            scopeOption: TransactionScopeOption.Required,
-            asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled,
-            transactionOptions: new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted });
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         var userName = "u" + Guid.CreateVersion7().ToString("N");
         var registerUserCommand = new RegisterUserCommand()

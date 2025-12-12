@@ -9,6 +9,7 @@
 		<PackageReference Include="PdfPig" />
 		<PackageReference Include="Microsoft.KernelMemory.Abstractions" />
 		<PackageReference Include="Microsoft.KernelMemory.Core" />
+		<PackageReference Include="Microsoft.SemanticKernel" />
 		<PackageReference Include="RecursiveTextSplitter" />
 	</ItemGroup>
 

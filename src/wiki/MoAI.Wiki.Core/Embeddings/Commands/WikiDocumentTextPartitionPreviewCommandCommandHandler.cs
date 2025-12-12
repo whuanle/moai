@@ -6,6 +6,8 @@ using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Chunkers;
 using Microsoft.KernelMemory.Handlers;
 using MimeKit;
+using MoAI.AI.Commands;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -68,7 +70,7 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
 
         var text = await _textExtractionHandler.ExtractAsync(filePath: saveFile.LocalFilePath, cancellationToken: cancellationToken);
 
-        List<WikiDocumentTextPartitionPreviewItem> chunks = new List<WikiDocumentTextPartitionPreviewItem>();
+        List<WikiDocumenChunkItem> chunks = new List<WikiDocumenChunkItem>();
         var tokerizer = await GetTokenizer(request, cancellationToken);
 
         var kmTextPartitioningHandler = new KmTextPartitioningHandler(tokerizer);
@@ -82,7 +84,7 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
         int i = 0;
         foreach (var item in partitionItems)
         {
-            chunks.Add(new WikiDocumentTextPartitionPreviewItem
+            chunks.Add(new WikiDocumenChunkItem
             {
                 Order = i,
                 Text = item
@@ -91,11 +93,11 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
             i++;
         }
 
-        var entities = new List<WikiDocumentSliceContentPreviewEntity>();
+        var entities = new List<WikiDocumentChunkContentPreviewEntity>();
 
         foreach (var entity in chunks)
         {
-            entities.Add(new WikiDocumentSliceContentPreviewEntity
+            entities.Add(new WikiDocumentChunkContentPreviewEntity
             {
                 WikiId = request.WikiId,
                 DocumentId = request.DocumentId,
@@ -105,8 +107,8 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
             });
         }
 
-        await _databaseContext.WikiDocumentSliceContentPreviews.Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId).ExecuteDeleteAsync();
-        await _databaseContext.WikiDocumentSliceContentPreviews.AddRangeAsync(entities, cancellationToken);
+        await _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId).ExecuteDeleteAsync();
+        await _databaseContext.WikiDocumentChunkContentPreviews.AddRangeAsync(entities, cancellationToken);
         document.SliceConfig = new PlainTextChunkerOptions
         {
             MaxTokensPerChunk = request.MaxTokensPerChunk,
