@@ -11,11 +11,6 @@ public class EmbeddingConfig
     public int EmbeddingModelId { get; set; }
 
     /// <summary>
-    /// 分词器.
-    /// </summary>
-    public EmbeddingTokenizer EmbeddingModelTokenizer { get; set; } = default!;
-
-    /// <summary>
     /// 维度，跟模型有关，小于嵌入向量的最大值.
     /// </summary>
     public int EmbeddingDimensions { get; set; }

@@ -44,7 +44,7 @@ public class OutlineGenerationStrategy : IParagraphPreprocessStrategy
                 new KeyValueString
                 {
                     Key = ParagrahProcessorMetadataType.Outline.ToJsonString(),
-                    Value = StrategyType.ToString()
+                    Value = outline
                 }
             }
         };

@@ -3,6 +3,7 @@ using MoAI.AI.Models;
 
 namespace MoAI.AI.Abstract;
 
+// todo： 删除
 /// <summary>
 /// 构建聊天完成配置器接口.
 /// </summary>

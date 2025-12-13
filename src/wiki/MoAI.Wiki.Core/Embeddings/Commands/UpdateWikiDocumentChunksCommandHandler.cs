@@ -7,6 +7,7 @@ using MoAI.Database.Entities;
 using MoAI.Database.Helper;
 using MoAI.Infra.Models;
 using MoAI.Wiki.DocumentEmbedding.Commands;
+using MoAI.Wiki.Embedding.Commands;
 using System.Transactions;
 
 namespace MoAI.Wiki.DocumentEmbeddings.Queries;
@@ -55,16 +56,19 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
             entity.SliceLength = item.Text.Length;
             entity.SliceOrder = item.Order;
 
-            foreach (var derivative in item.Derivatives)
+            if (item.Derivatives != null && item.Derivatives.Count > 0)
             {
-                derivativePreviewEntities.Add(new WikiDocumentChunkDerivativePreviewEntity
+                foreach (var derivative in item.Derivatives)
                 {
-                    WikiId = request.WikiId,
-                    DocumentId = request.DocumentId,
-                    SliceId = entity.Id,
-                    DerivativeType = (int)derivative.DerivativeType,
-                    DerivativeContent = derivative.DerivativeContent
-                });
+                    derivativePreviewEntities.Add(new WikiDocumentChunkDerivativePreviewEntity
+                    {
+                        WikiId = request.WikiId,
+                        DocumentId = request.DocumentId,
+                        SliceId = entity.Id,
+                        DerivativeType = (int)derivative.DerivativeType,
+                        DerivativeContent = derivative.DerivativeContent
+                    });
+                }
             }
         }
 
@@ -74,7 +78,10 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
             .Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId && chunkIds.Contains(x.SliceId))
             .ExecuteDeleteAsync();
 
-        await _databaseContext.WikiDocumentChunkDerivativePreviews.AddRangeAsync(derivativePreviewEntities, cancellationToken);
+        if (derivativePreviewEntities.Count > 0)
+        {
+            await _databaseContext.WikiDocumentChunkDerivativePreviews.AddRangeAsync(derivativePreviewEntities, cancellationToken);
+        }
 
         _databaseContext.WikiDocumentChunkContentPreviews.UpdateRange(chunks);
 

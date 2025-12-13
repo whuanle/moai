@@ -2,6 +2,7 @@
 
 namespace MoAI.AiModel.Services;
 
+// todo： 废弃
 /// <summary>
 /// 知识库客户端配置器.
 /// </summary>

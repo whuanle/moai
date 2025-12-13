@@ -1,14 +1,21 @@
-﻿//using Maomi.MQ;
+﻿//#pragma warning disable SKEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
+
+//using Maomi.MQ;
 //using MediatR;
 //using Microsoft.EntityFrameworkCore;
 //using Microsoft.Extensions.DependencyInjection;
 //using Microsoft.Extensions.Logging;
 //using Microsoft.KernelMemory;
+//using Microsoft.KernelMemory.Chunkers;
 //using Microsoft.KernelMemory.Configuration;
+//using Microsoft.SemanticKernel.Memory;
+//using MoAI.AI.MemoryDb;
+//using MoAI.AI.Models;
 //using MoAI.AiModel.Models;
 //using MoAI.AiModel.Services;
 //using MoAI.Database;
 //using MoAI.Infra;
+//using MoAI.Infra.Exceptions;
 //using MoAI.Infra.Extensions;
 //using MoAI.Storage.Queries;
 //using MoAI.Wiki.Models;
@@ -26,6 +33,7 @@
 //    private readonly SystemOptions _systemOptions;
 //    private readonly IMediator _mediator;
 //    private readonly IServiceProvider _serviceProvider;
+//    private readonly IAiClientBuilder _aiClientBuilder;
 //    private readonly ILogger<EmbeddingDocumentCommandConsumer> _logger;
 
 //    /// <summary>
@@ -36,53 +44,73 @@
 //    /// <param name="mediator"></param>
 //    /// <param name="serviceProvider"></param>
 //    /// <param name="logger"></param>
-//    public EmbeddingDocumentCommandConsumer(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider, ILogger<EmbeddingDocumentCommandConsumer> logger)
+//    public EmbeddingDocumentCommandConsumer(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider, ILogger<EmbeddingDocumentCommandConsumer> logger, IAiClientBuilder aiClientBuilder)
 //    {
 //        _databaseContext = databaseContext;
 //        _systemOptions = systemOptions;
 //        _mediator = mediator;
 //        _serviceProvider = serviceProvider;
 //        _logger = logger;
+//        _aiClientBuilder = aiClientBuilder;
 //    }
 
 //    /// <inheritdoc/>
 //    public async Task ExecuteAsync(MessageHeader messageHeader, EmbeddingDocumentTaskMesage message)
 //    {
-//        var documentTask = await _databaseContext.WikiDocumentTasks
-//             .FirstOrDefaultAsync(x => x.DocumentId == message.DocumentId && x.Id == message.TaskId);
+//        var workerTask = await _databaseContext.WorkerTasks.AsNoTracking()
+//             .FirstOrDefaultAsync(x => x.Id == message.TaskId);
 
-//        // 不需要处理
-//        if (documentTask == null || documentTask.State > (int)FileEmbeddingState.Processing)
+//        // 不需要处理或有其它线程在执行
+//        if (workerTask == null || workerTask.State >= (int)WorkerState.Processing)
 //        {
 //            return;
 //        }
-
-//        await SetStartStateAsync(documentTask);
 
 //        var documenEntity = await _databaseContext.WikiDocuments.Where(x => x.Id == message.DocumentId).FirstOrDefaultAsync();
 
 //        if (documenEntity == null)
 //        {
-//            await SetFaildStateAsync(documentTask, "文档不存在");
+//            await SetStateAsync(message.TaskId, WorkerState.Successful);
 //            return;
 //        }
 
+//        var plainTextChunkerOptions = documenEntity.SliceConfig.JsonToObject<PlainTextChunkerOptions>();
+
+//        await SetStateAsync(message.TaskId, WorkerState.Processing);
+
 //        var filePath = await _mediator.Send(new QueryFileLocalPathCommand
 //        {
-//            Visibility = FileVisibility.Private,
-//            ObjectKey = documenEntity.ObjectKey,
+//            ObjectKey = documenEntity.ObjectKey
 //        });
 
 //        var (wikiConfig, aiEndpoint) = await GetWikiConfigAsync(documenEntity.WikiId);
 
 //        if (wikiConfig == null || aiEndpoint == null)
 //        {
-//            await SetFaildStateAsync(documentTask, "知识库未配置向量化模型");
+//            await SetStateAsync(message.TaskId, WorkerState.Failed, "知识库未配置向量化模型");
 //            return;
 //        }
 
+//        // 读取需要向量化的文本
+//        var chunks = await _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.DocumentId == documenEntity.Id)
+//            .ToListAsync();
+
+//        if (chunks.Count == 0)
+//        {
+//            await SetStateAsync(message.TaskId, WorkerState.Successful);
+//            return;
+//        }
+
+//        var chunkIds = chunks.Select(x => x.Id).ToArray();
+//        var derivedContents = await _databaseContext.WikiDocumentChunkDerivativePreviews
+//            .Where(x => chunkIds.Contains(x.SliceId))
+//            .ToListAsync();
+
 //        // 构建客户端
-//        var memoryBuilder = new KernelMemoryBuilder().WithSimpleFileStorage(Path.GetTempPath());
+//        var memoryBuilder = new KernelMemoryBuilder()
+//            .WithoutTextGenerator();
+
+//        //.WithSimpleFileStorage(Path.GetTempPath());
 
 //        var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(aiEndpoint.Provider);
 
@@ -93,17 +121,33 @@
 
 //        if (textEmbeddingGeneration == null)
 //        {
-//            await SetFaildStateAsync(documentTask, "不支持的模型供应商");
+//            await SetStateAsync(message.TaskId, WorkerState.Failed, $"不支持的模型供应商 {aiEndpoint.Provider}");
 //            return;
 //        }
 
-//        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+//        var textEmbeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(aiEndpoint);
+
+//        var memoryDb = _aiClientBuilder.CreateMemoryDb(textEmbeddingGenerator, _systemOptions.Wiki.DBType.JsonToObject<MemoryDbType>());
 
 //        if (memoryDb == null)
 //        {
-//            await SetFaildStateAsync(documentTask, "不支持的数据库");
+//            await SetStateAsync(message.TaskId, WorkerState.Failed, "不支持的数据库类型，请联系管理员");
 //            return;
 //        }
+
+//        // 删除这个文档以前的向量
+//        var records = memoryDb.GetListAsync(
+//            index: message.WikiId.ToString(),
+//            limit: -1,
+//            filters: [MemoryFilters.ByDocument(message.DocumentId.ToString())],
+//            cancellationToken: CancellationToken.None);
+
+//        await foreach (var record in records.WithCancellation(CancellationToken.None).ConfigureAwait(false))
+//        {
+//            await memoryDb.DeleteAsync(index: message.WikiId.ToString(), record, cancellationToken: CancellationToken.None).ConfigureAwait(false);
+//        }
+
+//        // 开始生成新的向量
 
 //        textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
 //        memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
@@ -112,17 +156,17 @@
 //            .WithCustomTextPartitioningOptions(
 //            new TextPartitioningOptions
 //            {
-//                MaxTokensPerParagraph = documentTask.MaxTokensPerParagraph,
-//                OverlappingTokens = documentTask.OverlappingTokens,
+//                MaxTokensPerParagraph = plainTextChunkerOptions!.MaxTokensPerChunk,
+//                OverlappingTokens = plainTextChunkerOptions.Overlap,
 //            })
 //            .Build();
 
 //        // 先删除历史记录
-//        await memoryClient.DeleteDocumentAsync(documentTask.DocumentId.ToString(), index: documentTask.WikiId.ToString());
+//        await memoryClient.DeleteDocumentAsync(workerTask.DocumentId.ToString(), index: workerTask.WikiId.ToString());
 
 //        var docs = new Microsoft.KernelMemory.Document()
 //        {
-//            Id = documentTask.DocumentId.ToString(),
+//            Id = workerTask.DocumentId.ToString(),
 //        };
 
 //        // 自行读取流以便自定义文件名称
@@ -133,16 +177,16 @@
 
 //        try
 //        {
-//            var taskId = await memoryClient.ImportDocumentAsync(docs, index: documentTask.WikiId.ToString());
+//            var taskId = await memoryClient.ImportDocumentAsync(docs, index: workerTask.WikiId.ToString());
 //        }
 //        catch (Exception ex)
 //        {
-//            _logger.LogError(ex, "Document vectorization failed. Document ID: {DocumentId}, Task ID: {TaskId}", documentTask.DocumentId, documentTask.Id);
-//            await SetFaildStateAsync(documentTask, ex.Message);
+//            _logger.LogError(ex, "Document vectorization failed. Document ID: {DocumentId}, Task ID: {TaskId}", workerTask.DocumentId, workerTask.Id);
+//            await SetFaildStateAsync(workerTask, ex.Message);
 //            throw;
 //        }
 
-//        await SetComplateStateAsync(documentTask);
+//        await SetComplateStateAsync(workerTask);
 //    }
 
 //    /// <inheritdoc/>
@@ -212,27 +256,34 @@
 //        return (result?.WikiConfig, result?.AiEndpoint);
 //    }
 
-//    private async Task SetFaildStateAsync(MoAI.Database.Entities.WikiDocumentTaskEntity documentTask, string message)
+//    private async Task SetExceptionStateAsync(Guid taskId, WorkerState state, Exception? ex = null)
 //    {
-//        documentTask.State = (int)FileEmbeddingState.Failed;
-//        documentTask.Message = message;
-//        _databaseContext.WikiDocumentTasks.Update(documentTask);
-//        await _databaseContext.SaveChangesAsync();
+//        _logger.LogError(ex, "Task processing failed.");
+//        await SetStateAsync(taskId, state, ex?.Message);
 //    }
 
-//    private async Task SetStartStateAsync(MoAI.Database.Entities.WikiDocumentTaskEntity documentTask)
+//    private async Task SetStateAsync(Guid taskId, WorkerState state, string? message = null)
 //    {
-//        documentTask.State = (int)FileEmbeddingState.Processing;
-//        documentTask.Message = "任务开始处理";
-//        _databaseContext.WikiDocumentTasks.Update(documentTask);
-//        await _databaseContext.SaveChangesAsync();
-//    }
+//        // 设置之前先检查状态
+//        var workerTask = await _databaseContext.WorkerTasks.AsNoTracking()
+//             .FirstOrDefaultAsync(x => x.Id == taskId);
 
-//    private async Task SetComplateStateAsync(MoAI.Database.Entities.WikiDocumentTaskEntity documentTask)
-//    {
-//        documentTask.State = (int)FileEmbeddingState.Successful;
-//        documentTask.Message = "任务处理完成";
-//        _databaseContext.WikiDocumentTasks.Update(documentTask);
+//        // 不需要处理或有其它线程在执行
+//        if (workerTask == null || workerTask.State > (int)WorkerState.Processing)
+//        {
+//            throw new BusinessException("当前任务已结束");
+//        }
+
+//        workerTask.State = (int)state;
+//        if (!string.IsNullOrEmpty(message))
+//        {
+//            workerTask.Message = message;
+//        }
+//        else
+//        {
+//            workerTask.Message = state.ToJsonString();
+//        }
+//        _databaseContext.WorkerTasks.Update(workerTask);
 //        await _databaseContext.SaveChangesAsync();
 //    }
 //}

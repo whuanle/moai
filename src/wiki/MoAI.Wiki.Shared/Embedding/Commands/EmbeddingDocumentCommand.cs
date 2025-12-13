@@ -3,7 +3,7 @@ using MediatR;
 using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
-namespace MoAI.Wiki.Documents.Commands;
+namespace MoAI.Wiki.Embedding.Commands;
 
 /// <summary>
 /// 向量化文档.
@@ -21,24 +21,14 @@ public class EmbeddingDocumentCommand : IRequest<EmptyCommandResponse>, IModelVa
     public int DocumentId { get; init; }
 
     /// <summary>
-    /// 文本分割方法，暂时不支持使用.
+    /// 是否将 chunk 源文本也向量化.
     /// </summary>
-    public string SplitMethod { get; set; } = default!;
+    public bool IsEmbedSourceText { get; init; } = true;
 
     /// <summary>
-    /// 每个段落最大 token 数量.
+    /// 向量化衍生数据.
     /// </summary>
-    public int MaxTokensPerParagraph { get; set; } = 1000;
-
-    /// <summary>
-    /// 块之间重叠令牌的数量.
-    /// </summary>
-    public int OverlappingTokens { get; set; } = 100;
-
-    /// <summary>
-    /// 统计 tokens 数量的算法 支持: "p50k", "cl100k", "o200k".
-    /// </summary>
-    public EmbeddingTokenizer Tokenizer { get; set; } = EmbeddingTokenizer.P50k;
+    public bool IsEmbedDerivedData { get; init; } = true;
 
     /// <inheritdoc/>
     public void Validate(AbstractValidator<EmbeddingDocumentCommand> validate)

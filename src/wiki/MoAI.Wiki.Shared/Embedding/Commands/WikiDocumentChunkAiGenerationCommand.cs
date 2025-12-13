@@ -2,6 +2,7 @@
 using MediatR;
 using MoAI.AI.Models;
 using MoAI.Infra.Models;
+using MoAI.Wiki.DocumentEmbedding.Models;
 using MoAI.Wiki.Embedding.Models;
 
 namespace MoAI.Wiki.Embedding.Commands;
@@ -9,7 +10,7 @@ namespace MoAI.Wiki.Embedding.Commands;
 /// <summary>
 /// 使用 Ai 对文本块进行策略处理.
 /// </summary>
-public class WikiDocumentTextPartitionAiGenerationCommand : IRequest<WikiDocumentTextPartitionAiGenerationCommandResponse>, IModelValidator<WikiDocumentTextPartitionAiGenerationCommand>
+public class WikiDocumentChunkAiGenerationCommand : IRequest<WikiDocumentChunkAiGenerationCommandResponse>, IModelValidator<WikiDocumentChunkAiGenerationCommand>
 {
     /// <summary>
     /// 知识库id.
@@ -32,7 +33,7 @@ public class WikiDocumentTextPartitionAiGenerationCommand : IRequest<WikiDocumen
     public IReadOnlyCollection<KeyValue<long, string>> Chunks { get; init; } = Array.Empty<KeyValue<long, string>>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumentTextPartitionAiGenerationCommand> validate)
+    public void Validate(AbstractValidator<WikiDocumentChunkAiGenerationCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0);
         validate.RuleFor(x => x.Chunks).NotNull()

@@ -21,6 +21,10 @@ import {
   Tabs,
   Input,
   Popconfirm,
+  Modal,
+  List,
+  Divider,
+  Checkbox,
 } from "antd";
 
 import { GetApiClient } from "../ServiceClient";
@@ -33,10 +37,23 @@ import {
   DeleteOutlined,
   DragOutlined,
   PlusOutlined,
+  CloseOutlined,
+  CheckOutlined,
+  DownOutlined,
+  UpOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { formatDateTime } from "../../helper/DateTimeHelper";
 import CodeEditorModal from "../common/CodeEditorModal";
-import type { WikiDocumentDerivativeItem, ParagrahProcessorMetadataType } from "../../apiClient/models";
+import type { 
+  WikiDocumentDerivativeItem, 
+  ParagrahProcessorMetadataType, 
+  ParagrahProcessorMetadataType as DerivativeType,
+  PreprocessStrategyType,
+  KeyValueOfInt64AndString,
+  AddWikiDocumentDerivativeItem,
+} from "../../apiClient/models";
+import { proxyRequestError } from "../../helper/RequestError";
 
 const { Panel } = Collapse;
 
@@ -75,13 +92,494 @@ interface PartitionPreviewItem {
   derivatives?: WikiDocumentDerivativeItem[] | null;
 }
 
-// 衍生类型映射
+// 衍生类型映射（支持多种格式）
 const DerivativeTypeMap: Record<string, string> = {
+  // 小写格式
   outline: "大纲",
   question: "问题",
   keyword: "关键词",
   summary: "摘要",
   aggregatedSubParagraph: "聚合段落",
+  // 枚举键名格式（首字母大写）
+  Outline: "大纲",
+  Question: "问题",
+  Keyword: "关键词",
+  Summary: "摘要",
+  AggregatedSubParagraph: "聚合段落",
+};
+
+// 衍生类型选项
+const DerivativeTypeOptions = [
+  { label: "大纲", value: "outline" },
+  { label: "问题", value: "question" },
+  { label: "关键词", value: "keyword" },
+  { label: "摘要", value: "summary" },
+  { label: "聚合段落", value: "aggregatedSubParagraph" },
+];
+
+// 预处理策略选项
+const PreprocessStrategyOptions = [
+  { label: "大纲生成", value: "outlineGeneration" },
+  { label: "问题生成", value: "questionGeneration" },
+  { label: "关键词摘要融合", value: "keywordSummaryFusion" },
+  { label: "语义聚合", value: "semanticAggregation" },
+];
+
+// Chunk 编辑组件
+interface ChunkEditModalProps {
+  open: boolean;
+  chunkId: string | null;
+  initialText: string;
+  initialDerivatives: WikiDocumentDerivativeItem[] | null | undefined;
+  wikiId: string;
+  documentId: string;
+  modelList: Array<{ id: number; name: string }>;
+  onClose: () => void;
+  onSave: (text: string, derivatives: WikiDocumentDerivativeItem[] | null) => void;
+}
+
+const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
+  open,
+  chunkId,
+  initialText,
+  initialDerivatives,
+  wikiId,
+  documentId,
+  modelList,
+  onClose,
+  onSave,
+}) => {
+  const [textEditorVisible, setTextEditorVisible] = useState(false);
+  const [textEditorValue, setTextEditorValue] = useState(initialText);
+  const [derivatives, setDerivatives] = useState<WikiDocumentDerivativeItem[]>(
+    initialDerivatives || []
+  );
+  const [editingDerivativeIndex, setEditingDerivativeIndex] = useState<number | null>(null);
+  const [newDerivativeType, setNewDerivativeType] = useState<DerivativeType | null>(null);
+  const [newDerivativeContent, setNewDerivativeContent] = useState<string>("");
+  const [aiGenerateVisible, setAiGenerateVisible] = useState(false);
+  const [aiModelId, setAiModelId] = useState<number | null>(null);
+  const [preprocessStrategyType, setPreprocessStrategyType] = useState<PreprocessStrategyType | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+
+  useEffect(() => {
+    if (open) {
+      setTextEditorValue(initialText);
+      setDerivatives(initialDerivatives || []);
+    }
+  }, [open, initialText, initialDerivatives]);
+
+  const handleTextEditorConfirm = (value: string) => {
+    setTextEditorValue(value);
+    setTextEditorVisible(false);
+  };
+
+  const handleAddDerivative = () => {
+    if (!newDerivativeType || !newDerivativeContent.trim()) {
+      message.warning("请选择类型并输入内容");
+      return;
+    }
+    setDerivatives([
+      ...derivatives,
+      {
+        derivativeType: newDerivativeType,
+        derivativeContent: newDerivativeContent.trim(),
+      },
+    ]);
+    setNewDerivativeType(null);
+    setNewDerivativeContent("");
+  };
+
+  const handleEditDerivative = (index: number, type: DerivativeType, content: string) => {
+    const updated = [...derivatives];
+    updated[index] = {
+      derivativeType: type,
+      derivativeContent: content,
+    };
+    setDerivatives(updated);
+    setEditingDerivativeIndex(null);
+  };
+
+  const handleDeleteDerivative = (index: number) => {
+    setDerivatives(derivatives.filter((_, i) => i !== index));
+  };
+
+  const handleSave = () => {
+    onSave(textEditorValue, derivatives.length > 0 ? derivatives : null);
+  };
+
+  const handleAiGenerate = useCallback(async () => {
+    if (!chunkId) {
+      messageApi.warning("请先保存文本块");
+      return;
+    }
+    if (!aiModelId) {
+      messageApi.warning("请选择AI模型");
+      return;
+    }
+    if (!preprocessStrategyType) {
+      messageApi.warning("请选择优化策略");
+      return;
+    }
+    if (!textEditorValue.trim()) {
+      messageApi.warning("文本内容不能为空");
+      return;
+    }
+
+    try {
+      setAiGenerating(true);
+      const apiClient = GetApiClient();
+      
+      // 构建 chunks 参数
+      const chunks: KeyValueOfInt64AndString[] = [{
+        key: chunkId,
+        value: textEditorValue,
+      }];
+
+      const response = await apiClient.api.wiki.document.ai_generation_chunk.post({
+        wikiId: parseInt(wikiId),
+        aiModelId: aiModelId,
+        chunks: chunks,
+        preprocessStrategyType: preprocessStrategyType,
+      });
+
+      if (response?.items && response.items.length > 0) {
+        // 处理响应，将结果添加到 derivatives
+        const newDerivatives: WikiDocumentDerivativeItem[] = [];
+        
+        response.items.forEach((item) => {
+          if (item.value) {
+            const result = item.value;
+            
+            // 处理 metadata（包含关键词、摘要、问题列表等）
+            if (result.metadata && result.metadata.length > 0) {
+              result.metadata.forEach((meta) => {
+                if (meta.key && meta.value) {
+                  // 根据 key 确定衍生类型
+                  let derivativeType: DerivativeType | null = null;
+                  const keyLower = meta.key.toLowerCase();
+                  if (keyLower.includes("outline") || keyLower.includes("大纲")) {
+                    derivativeType = "outline";
+                  } else if (keyLower.includes("question") || keyLower.includes("问题")) {
+                    derivativeType = "question";
+                  } else if (keyLower.includes("keyword") || keyLower.includes("关键词")) {
+                    derivativeType = "keyword";
+                  } else if (keyLower.includes("summary") || keyLower.includes("摘要")) {
+                    derivativeType = "summary";
+                  } else {
+                    // 默认根据策略类型确定
+                    switch (preprocessStrategyType) {
+                      case "outlineGeneration":
+                        derivativeType = "outline";
+                        break;
+                      case "questionGeneration":
+                        derivativeType = "question";
+                        break;
+                      case "keywordSummaryFusion":
+                        derivativeType = "keyword";
+                        break;
+                      case "semanticAggregation":
+                        derivativeType = "aggregatedSubParagraph";
+                        break;
+                    }
+                  }
+                  
+                  if (derivativeType) {
+                    newDerivatives.push({
+                      derivativeType: derivativeType,
+                      derivativeContent: meta.value,
+                    });
+                  }
+                }
+              });
+            }
+            
+            // 如果没有 metadata，使用 preprocessedText 或 originalText
+            if (newDerivatives.length === 0) {
+              let derivativeType: DerivativeType | null = null;
+              switch (preprocessStrategyType) {
+                case "outlineGeneration":
+                  derivativeType = "outline";
+                  break;
+                case "questionGeneration":
+                  derivativeType = "question";
+                  break;
+                case "keywordSummaryFusion":
+                  derivativeType = "keyword";
+                  break;
+                case "semanticAggregation":
+                  derivativeType = "aggregatedSubParagraph";
+                  break;
+              }
+              
+              const content = result.processedText || result.originalText || "";
+              if (content && derivativeType) {
+                newDerivatives.push({
+                  derivativeType: derivativeType,
+                  derivativeContent: content,
+                });
+              }
+            }
+          }
+        });
+
+        if (newDerivatives.length > 0) {
+          setDerivatives([...derivatives, ...newDerivatives]);
+          messageApi.success(`成功生成 ${newDerivatives.length} 个衍生内容`);
+          setAiGenerateVisible(false);
+          setAiModelId(null);
+          setPreprocessStrategyType(null);
+        } else {
+          messageApi.warning("AI生成未返回有效内容");
+        }
+      } else {
+        messageApi.warning("AI生成未返回结果");
+      }
+    } catch (error) {
+      console.error("Failed to generate AI derivatives:", error);
+
+      proxyRequestError(error, messageApi, "AI生成失败，请重试");
+    } finally {
+      setAiGenerating(false);
+    }
+  }, [chunkId, aiModelId, preprocessStrategyType, textEditorValue, wikiId, derivatives, messageApi]);
+
+  return (
+    <>
+      <Modal
+        title={chunkId ? "编辑文本块" : "新增文本块"}
+        open={open}
+        onCancel={onClose}
+        onOk={handleSave}
+        width={1000}
+        okText="保存"
+        cancelText="取消"
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>文本内容</div>
+          <Button
+            type="default"
+            icon={<EditOutlined />}
+            onClick={() => setTextEditorVisible(true)}
+            style={{ width: "100%" }}
+          >
+            编辑文本
+          </Button>
+          <Typography.Paragraph
+            style={{
+              marginTop: 12,
+              padding: 12,
+              backgroundColor: "#f5f5f5",
+              borderRadius: 4,
+              maxHeight: 200,
+              overflow: "auto",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {textEditorValue || "(空)"}
+          </Typography.Paragraph>
+        </div>
+
+        <Divider />
+
+        <div>
+          <div style={{ marginBottom: 16, fontWeight: 500, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>衍生内容</span>
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={() => setAiGenerateVisible(!aiGenerateVisible)}
+              disabled={!chunkId}
+            >
+              AI 生成策略
+            </Button>
+          </div>
+
+          {/* AI 生成策略面板 */}
+          {aiGenerateVisible && (
+            <div style={{ marginBottom: 16, padding: 16, backgroundColor: "#f0f7ff", borderRadius: 4, border: "1px solid #91d5ff" }}>
+              <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                <div>
+                  <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>AI 模型</div>
+                  <Select
+                    placeholder="请选择AI模型"
+                    value={aiModelId}
+                    onChange={setAiModelId}
+                    style={{ width: "100%" }}
+                    options={modelList.map((model) => ({
+                      label: model.name,
+                      value: model.id,
+                    }))}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>优化策略</div>
+                  <Select
+                    placeholder="请选择优化策略"
+                    value={preprocessStrategyType}
+                    onChange={setPreprocessStrategyType}
+                    style={{ width: "100%" }}
+                    options={PreprocessStrategyOptions}
+                  />
+                </div>
+                <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+                  <Button onClick={() => {
+                    setAiGenerateVisible(false);
+                    setAiModelId(null);
+                    setPreprocessStrategyType(null);
+                  }}>
+                    取消
+                  </Button>
+                  <Button
+                    type="primary"
+                    loading={aiGenerating}
+                    onClick={handleAiGenerate}
+                    disabled={!aiModelId || !preprocessStrategyType}
+                  >
+                    生成
+                  </Button>
+                </Space>
+              </Space>
+            </div>
+          )}
+          
+          {/* 新增衍生内容 */}
+          <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#fafafa", borderRadius: 4 }}>
+            <Space.Compact style={{ width: "100%" }}>
+              <Select
+                placeholder="选择类型"
+                value={newDerivativeType}
+                onChange={setNewDerivativeType}
+                style={{ width: 150 }}
+                options={DerivativeTypeOptions}
+              />
+              <Input
+                placeholder="输入内容"
+                value={newDerivativeContent}
+                onChange={(e) => setNewDerivativeContent(e.target.value)}
+                onPressEnter={handleAddDerivative}
+                style={{ flex: 1 }}
+              />
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddDerivative}>
+                添加
+              </Button>
+            </Space.Compact>
+          </div>
+
+          {/* 衍生内容列表 */}
+          <List
+            dataSource={derivatives}
+            locale={{ emptyText: "暂无衍生内容" }}
+            renderItem={(item, index) => (
+              <List.Item
+                actions={[
+                  <Button
+                    key="edit"
+                    type="link"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={() => setEditingDerivativeIndex(index)}
+                  >
+                    编辑
+                  </Button>,
+                  <Popconfirm
+                    key="delete"
+                    title="确认删除"
+                    description="确定要删除这个衍生内容吗？"
+                    onConfirm={() => handleDeleteDerivative(index)}
+                    okText="确认"
+                    cancelText="取消"
+                  >
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                    >
+                      删除
+                    </Button>
+                  </Popconfirm>,
+                ]}
+              >
+                {editingDerivativeIndex === index ? (
+                  <Space.Compact style={{ width: "100%" }}>
+                    <Select
+                      value={item.derivativeType || null}
+                      onChange={(value) => {
+                        const updated = [...derivatives];
+                        updated[index] = {
+                          ...updated[index],
+                          derivativeType: value,
+                        };
+                        setDerivatives(updated);
+                      }}
+                      style={{ width: 150 }}
+                      options={DerivativeTypeOptions}
+                    />
+                    <Input
+                      value={item.derivativeContent || ""}
+                      onChange={(e) => {
+                        const updated = [...derivatives];
+                        updated[index] = {
+                          ...updated[index],
+                          derivativeContent: e.target.value,
+                        };
+                        setDerivatives(updated);
+                      }}
+                      onPressEnter={() => setEditingDerivativeIndex(null)}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      type="primary"
+                      icon={<CheckOutlined />}
+                      onClick={() => setEditingDerivativeIndex(null)}
+                    >
+                      完成
+                    </Button>
+                  </Space.Compact>
+                ) : (
+                  <List.Item.Meta
+                    title={
+                      <Tag color="purple">
+                        {DerivativeTypeMap[item.derivativeType || ""] || item.derivativeType || "未知"}
+                      </Tag>
+                    }
+                    description={
+                      <Typography.Text
+                        style={{
+                          fontSize: 13,
+                          color: "#666",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {item.derivativeContent || "(空)"}
+                      </Typography.Text>
+                    }
+                  />
+                )}
+              </List.Item>
+            )}
+          />
+        </div>
+      </Modal>
+
+      {/* 文本编辑器 */}
+      <CodeEditorModal
+        open={textEditorVisible}
+        initialValue={textEditorValue}
+        language="plaintext"
+        title="编辑文本内容"
+        onClose={() => setTextEditorVisible(false)}
+        onConfirm={handleTextEditorConfirm}
+        width={1200}
+        height="70vh"
+      />
+    </>
+  );
 };
 
 // 自定义Hook - 文档信息管理
@@ -239,12 +737,23 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
         });
 
         setPreviewData({
-          items: sortedItems.map((item) => ({
-            chunkId: item.chunkId || "",
-            order: item.order || 0,
-            text: item.text || "",
-            derivatives: item.derivatives || null,
-          })),
+          items: sortedItems.map((item) => {
+            // 调试：检查原始数据
+            if (item.derivatives && item.derivatives.length > 0) {
+              console.log("Raw item derivatives:", item.derivatives);
+              console.log("First derivative:", item.derivatives[0]);
+              console.log("Keys in first derivative:", item.derivatives[0] ? Object.keys(item.derivatives[0]) : []);
+            }
+            
+            return {
+              chunkId: item.chunkId ?? "",
+              order: item.order ?? 0,
+              text: item.text ?? "",
+              // 直接使用 API 返回的 derivatives，不做额外映射
+              // API 客户端已经处理了字段名转换
+              derivatives: item.derivatives ?? null,
+            };
+          }),
           chunkHeader: null, // 新API可能不返回这些字段
           maxTokensPerChunk: null,
           overlap: null,
@@ -286,9 +795,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
   }, [wikiId, documentId, messageApi]);
 
   // 更新chunk内容
-  // 注意：如果后端有 update_chunk API（单数），需要先运行 npm run syncapi 同步API客户端
-  // 然后可以将 update_chnuks 改为 update_chunk
-  const updateChunkContent = useCallback(async (chunkId: string, text: string, derivatives?: WikiDocumentDerivativeItem[] | null) => {
+  const updateChunkContent = useCallback(async (chunkId: string, text: string, order: number, derivatives?: WikiDocumentDerivativeItem[] | null) => {
     if (!wikiId || !documentId) {
       console.error("Missing wikiId or documentId:", { wikiId, documentId });
       return;
@@ -296,7 +803,6 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
 
     try {
       const apiClient = GetApiClient();
-      // TODO: 如果后端提供了 update_chunk API，应该使用它而不是 update_chnuks
       // 使用 update_chnuks API 更新chunk（传入单个chunk的数组）
       await apiClient.api.wiki.document.update_chnuks.post({
         wikiId: parseInt(wikiId),
@@ -304,6 +810,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
         chunks: [{
           chunkId: chunkId,
           text: text,
+          order: order,
           derivatives: derivatives || null,
         }],
       });
@@ -317,7 +824,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
   }, [wikiId, documentId, messageApi]);
 
   const updateItem = useCallback(
-    async (chunkId: string, newText: string) => {
+    async (chunkId: string, newText: string, newDerivatives?: WikiDocumentDerivativeItem[] | null) => {
       // 直接从 ref 获取最新的 previewData，避免闭包问题
       const currentData = previewDataRef.current;
       if (!currentData) {
@@ -334,7 +841,9 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       
       // 更新状态
       const updatedItems = currentData.items.map((item) =>
-        item.chunkId === chunkId ? { ...item, text: newText } : item
+        item.chunkId === chunkId
+          ? { ...item, text: newText, derivatives: newDerivatives !== undefined ? newDerivatives : item.derivatives }
+          : item
       );
       
       setPreviewData({
@@ -344,7 +853,12 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       
       // 调用更新API
       try {
-        await updateChunkContent(chunkId, newText, itemToUpdate.derivatives);
+        await updateChunkContent(
+          chunkId, 
+          newText, 
+          itemToUpdate.order ?? 0,
+          newDerivatives !== undefined ? newDerivatives : itemToUpdate.derivatives
+        );
       } catch (error) {
         // 如果更新失败，重新获取数据以恢复状态
         await fetchPartitionPreview();
@@ -477,6 +991,26 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     }
   }, [wikiId, documentId, messageApi, fetchPartitionPreview, reorderAndSave]);
 
+  // 重新排序所有 chunks（从 0 开始）
+  const reorderAllChunks = useCallback(async () => {
+    const currentData = previewDataRef.current;
+    if (!currentData || !currentData.items || currentData.items.length === 0) {
+      return;
+    }
+
+    const reorderedItems = currentData.items.map((item, index) => ({
+      ...item,
+      order: index,
+    }));
+
+    try {
+      await reorderAndSave(reorderedItems);
+      await fetchPartitionPreview();
+    } catch (error) {
+      console.error("Failed to reorder all chunks:", error);
+    }
+  }, [reorderAndSave, fetchPartitionPreview]);
+
   return {
     previewData,
     loading,
@@ -486,6 +1020,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     deleteItem,
     reorderItems,
     addChunk,
+    reorderAllChunks,
   };
 };
 
@@ -731,11 +1266,21 @@ export default function DocumentEmbedding() {
   const [form] = Form.useForm();
   const [partitionForm] = Form.useForm();
   const [aiPartitionForm] = Form.useForm();
+  const [messageApi, contextHolder] = message.useMessage();
   const [activePartitionTab, setActivePartitionTab] = useState<string>("normal");
-  const [codeEditorVisible, setCodeEditorVisible] = useState(false);
-  const [codeEditorInitialValue, setCodeEditorInitialValue] = useState<string>("");
+  const [chunkEditModalVisible, setChunkEditModalVisible] = useState(false);
   const [editingChunkId, setEditingChunkId] = useState<string | null>(null);
+  const [editingChunkText, setEditingChunkText] = useState<string>("");
+  const [editingChunkDerivatives, setEditingChunkDerivatives] = useState<WikiDocumentDerivativeItem[] | null | undefined>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [expandedDerivatives, setExpandedDerivatives] = useState<Set<string>>(new Set());
+  const [batchGenerateVisible, setBatchGenerateVisible] = useState(false);
+  const [selectedChunkIds, setSelectedChunkIds] = useState<Set<string>>(new Set());
+  const [batchAiModelId, setBatchAiModelId] = useState<number | null>(null);
+  const [batchPreprocessStrategyType, setBatchPreprocessStrategyType] = useState<PreprocessStrategyType | null>(null);
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchGenerateResults, setBatchGenerateResults] = useState<Map<string, WikiDocumentDerivativeItem[]>>(new Map());
 
   // 使用自定义Hooks
   const {
@@ -760,6 +1305,7 @@ export default function DocumentEmbedding() {
     deleteItem: deletePreviewItem,
     reorderItems: reorderPreviewItems,
     addChunk: addPreviewChunk,
+    reorderAllChunks: reorderAllPreviewChunks,
   } = usePartitionPreview(wikiId || "", documentId || "");
   const {
     loading: partitionLoading,
@@ -768,6 +1314,10 @@ export default function DocumentEmbedding() {
   } = usePartitionOperations(wikiId || "", documentId || "", async () => {
     fetchDocumentInfo();
     await fetchPartitionPreview();
+    // 切割后重新排序 - 等待数据加载完成
+    setTimeout(() => {
+      reorderAllPreviewChunks();
+    }, 500);
   });
   const {
     loading: embedLoading,
@@ -792,6 +1342,10 @@ export default function DocumentEmbedding() {
   } = useAiPartitionOperations(wikiId || "", documentId || "", async () => {
     fetchDocumentInfo();
     await fetchPartitionPreview();
+    // AI 切割后重新排序 - 等待数据加载完成
+    setTimeout(() => {
+      reorderAllPreviewChunks();
+    }, 500);
   });
 
   useEffect(() => {
@@ -843,67 +1397,44 @@ export default function DocumentEmbedding() {
     [submitAiPartition]
   );
 
-  const handleOpenCodeEditor = useCallback(
-    (chunkId: string, currentText: string) => {
+  const handleOpenChunkEditor = useCallback(
+    (chunkId: string | null, currentText: string, currentDerivatives?: WikiDocumentDerivativeItem[] | null) => {
       setEditingChunkId(chunkId);
-      setCodeEditorInitialValue(currentText || "");
-      setCodeEditorVisible(true);
+      setEditingChunkText(currentText || "");
+      setEditingChunkDerivatives(currentDerivatives || null);
+      setChunkEditModalVisible(true);
     },
     []
   );
 
-  const handleCloseCodeEditor = useCallback(() => {
-    setCodeEditorVisible(false);
+  const handleCloseChunkEditor = useCallback(() => {
+    setChunkEditModalVisible(false);
     setEditingChunkId(null);
-    setCodeEditorInitialValue("");
+    setEditingChunkText("");
+    setEditingChunkDerivatives(null);
   }, []);
 
-  const handleAddChunk = useCallback(async () => {
-    setCodeEditorInitialValue("");
-    setEditingChunkId(null);
-    setCodeEditorVisible(true);
-  }, []);
+  const handleAddChunk = useCallback(() => {
+    handleOpenChunkEditor(null, "", null);
+  }, [handleOpenChunkEditor]);
 
-  const handleConfirmAddChunk = useCallback(
-    async (value: string) => {
-      try {
-        await addPreviewChunk(value);
-        setCodeEditorVisible(false);
-        setCodeEditorInitialValue("");
-        setEditingChunkId(null);
-      } catch (error) {
-        console.error("Failed to add chunk:", error);
-        message.error("添加失败，请重试");
-      }
-    },
-    [addPreviewChunk]
-  );
-
-  const handleConfirmCodeEditor = useCallback(
-    async (value: string) => {
+  const handleSaveChunk = useCallback(
+    async (text: string, derivatives: WikiDocumentDerivativeItem[] | null) => {
       try {
         if (editingChunkId) {
           // 编辑现有chunk
-          if (!previewData) {
-            console.error("Missing previewData");
-            return;
-          }
-          await updatePreviewItem(editingChunkId, value);
+          await updatePreviewItem(editingChunkId, text, derivatives);
         } else {
           // 新增chunk
-          await handleConfirmAddChunk(value);
-          return; // handleConfirmAddChunk 已经处理了关闭逻辑
+          await addPreviewChunk(text, derivatives);
         }
-        setCodeEditorVisible(false);
-        setEditingChunkId(null);
-        setCodeEditorInitialValue("");
+        handleCloseChunkEditor();
       } catch (error) {
-        console.error("Failed to save:", error);
-        // 不关闭编辑器，让用户知道保存失败
+        console.error("Failed to save chunk:", error);
         message.error("保存失败，请重试");
       }
     },
-    [editingChunkId, previewData, updatePreviewItem, handleConfirmAddChunk]
+    [editingChunkId, updatePreviewItem, addPreviewChunk, handleCloseChunkEditor]
   );
 
   const handleDeleteItem = useCallback(
@@ -921,23 +1452,226 @@ export default function DocumentEmbedding() {
     [previewData, deletePreviewItem]
   );
 
+  // 批量生成策略
+  const handleBatchGenerate = useCallback(async () => {
+    if (!batchAiModelId) {
+      messageApi.warning("请选择AI模型");
+      return;
+    }
+    if (!batchPreprocessStrategyType) {
+      messageApi.warning("请选择优化策略");
+      return;
+    }
+    if (selectedChunkIds.size === 0) {
+      messageApi.warning("请至少选择一个文本块");
+      return;
+    }
+    if (!previewData) {
+      messageApi.warning("没有可用的文本块");
+      return;
+    }
+
+    try {
+      setBatchGenerating(true);
+      const apiClient = GetApiClient();
+      
+      // 构建 chunks 参数，只包含选中的块
+      const selectedItems = previewData.items.filter(item => selectedChunkIds.has(item.chunkId));
+      const chunks: KeyValueOfInt64AndString[] = selectedItems.map(item => ({
+        key: item.chunkId,
+        value: item.text,
+      }));
+
+      const response = await apiClient.api.wiki.document.ai_generation_chunk.post({
+        wikiId: parseInt(wikiId || ""),
+        aiModelId: batchAiModelId,
+        chunks: chunks,
+        preprocessStrategyType: batchPreprocessStrategyType,
+      });
+
+      if (response?.items && response.items.length > 0) {
+        // 处理响应，按 chunkId 匹配结果
+        const resultsMap = new Map<string, WikiDocumentDerivativeItem[]>();
+        
+        response.items.forEach((item) => {
+          if (item.key && item.value) {
+            const chunkId = item.key;
+            const result = item.value;
+            const derivatives: WikiDocumentDerivativeItem[] = [];
+            
+            // 处理 metadata（包含关键词、摘要、问题列表等）
+            if (result.metadata && result.metadata.length > 0) {
+              result.metadata.forEach((meta) => {
+                if (meta.key && meta.value) {
+                  // 根据 key 确定衍生类型
+                  let derivativeType: DerivativeType | null = null;
+                  const keyLower = meta.key.toLowerCase();
+                  if (keyLower.includes("outline") || keyLower.includes("大纲")) {
+                    derivativeType = "outline";
+                  } else if (keyLower.includes("question") || keyLower.includes("问题")) {
+                    derivativeType = "question";
+                  } else if (keyLower.includes("keyword") || keyLower.includes("关键词")) {
+                    derivativeType = "keyword";
+                  } else if (keyLower.includes("summary") || keyLower.includes("摘要")) {
+                    derivativeType = "summary";
+                  } else {
+                    // 默认根据策略类型确定
+                    switch (batchPreprocessStrategyType) {
+                      case "outlineGeneration":
+                        derivativeType = "outline";
+                        break;
+                      case "questionGeneration":
+                        derivativeType = "question";
+                        break;
+                      case "keywordSummaryFusion":
+                        derivativeType = "keyword";
+                        break;
+                      case "semanticAggregation":
+                        derivativeType = "aggregatedSubParagraph";
+                        break;
+                    }
+                  }
+                  
+                  if (derivativeType) {
+                    derivatives.push({
+                      derivativeType: derivativeType,
+                      derivativeContent: meta.value,
+                    });
+                  }
+                }
+              });
+            }
+            
+            // 如果没有 metadata，使用 processedText 或 originalText
+            if (derivatives.length === 0) {
+              let derivativeType: DerivativeType | null = null;
+              switch (batchPreprocessStrategyType) {
+                case "outlineGeneration":
+                  derivativeType = "outline";
+                  break;
+                case "questionGeneration":
+                  derivativeType = "question";
+                  break;
+                case "keywordSummaryFusion":
+                  derivativeType = "keyword";
+                  break;
+                case "semanticAggregation":
+                  derivativeType = "aggregatedSubParagraph";
+                  break;
+              }
+              
+              const content = result.processedText || result.originalText || "";
+              if (content && derivativeType) {
+                derivatives.push({
+                  derivativeType: derivativeType,
+                  derivativeContent: content,
+                });
+              }
+            }
+            
+            if (derivatives.length > 0) {
+              resultsMap.set(chunkId, derivatives);
+            }
+          }
+        });
+        
+        setBatchGenerateResults(resultsMap);
+        messageApi.success(`成功生成 ${resultsMap.size} 个文本块的衍生内容`);
+      } else {
+        messageApi.warning("AI生成未返回结果");
+      }
+    } catch (error) {
+      console.error("Failed to batch generate derivatives:", error);
+      proxyRequestError(error, messageApi);
+    } finally {
+      setBatchGenerating(false);
+    }
+  }, [batchAiModelId, batchPreprocessStrategyType, selectedChunkIds, previewData, wikiId, messageApi]);
+
+  // 保存批量生成结果
+  const handleSaveBatchResults = useCallback(async () => {
+    if (batchGenerateResults.size === 0) {
+      messageApi.warning("没有可保存的结果");
+      return;
+    }
+
+    try {
+      const apiClient = GetApiClient();
+      
+      // 将所有衍生内容转换为 AddWikiDocumentDerivativeItem[] 格式
+      const derivativesToAdd: AddWikiDocumentDerivativeItem[] = [];
+      
+      batchGenerateResults.forEach((derivatives, chunkId) => {
+        if (derivatives && derivatives.length > 0) {
+          derivatives.forEach((derivative) => {
+            derivativesToAdd.push({
+              chunkId: chunkId,
+              derivativeContent: derivative.derivativeContent || null,
+              derivativeType: derivative.derivativeType || null,
+            });
+          });
+        }
+      });
+
+      if (derivativesToAdd.length === 0) {
+        messageApi.warning("没有可保存的衍生内容");
+        return;
+      }
+
+      // 调用批量添加衍生内容 API
+      if (!wikiId || !documentId) {
+        messageApi.error("缺少必要的参数");
+        return;
+      }
+
+      await apiClient.api.wiki.document.add_chunk_derivatives.post({
+        wikiId: parseInt(wikiId),
+        documentId: parseInt(documentId),
+        aiModelId: batchAiModelId || null,
+        derivatives: derivativesToAdd,
+      });
+
+      messageApi.success(`成功保存 ${derivativesToAdd.length} 条衍生内容`);
+      
+      // 重新获取数据以刷新显示
+      await fetchPartitionPreview();
+      
+      // 清空结果并关闭模态窗口
+      setBatchGenerateResults(new Map());
+      setBatchGenerateVisible(false);
+      setSelectedChunkIds(new Set());
+      setBatchAiModelId(null);
+      setBatchPreprocessStrategyType(null);
+    } catch (error) {
+      console.error("Failed to save batch results:", error);
+      proxyRequestError(error, messageApi);
+    }
+  }, [batchGenerateResults, wikiId, documentId, batchAiModelId, messageApi, fetchPartitionPreview]);
+
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", index.toString());
-    const target = e.currentTarget as HTMLElement;
-    target.style.opacity = "0.5";
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  }, [draggedIndex]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(null);
   }, []);
 
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    target.style.opacity = "1";
+  const handleDragEnd = useCallback(() => {
     setDraggedIndex(null);
+    setDragOverIndex(null);
   }, []);
 
   const handleDrop = useCallback(
@@ -949,16 +1683,13 @@ export default function DocumentEmbedding() {
       const dragIndex = draggedIndex;
       if (dragIndex !== dropIndex) {
         try {
-          // reorderItems 会自动更新内存并调用 updatePartitionDocument
           await reorderPreviewItems(dragIndex, dropIndex);
         } catch (error) {
           console.error("Failed to reorder items:", error);
-          // 错误已经在 reorderItems 中处理，这里不需要额外处理
         }
       }
-      const target = e.currentTarget as HTMLElement;
-      target.style.opacity = "1";
       setDraggedIndex(null);
+      setDragOverIndex(null);
     },
     [draggedIndex, reorderPreviewItems]
   );
@@ -1058,6 +1789,7 @@ export default function DocumentEmbedding() {
 
   return (
     <>
+      {contextHolder}
       {docContextHolder}
       {tasksContextHolder}
       {embedContextHolder}
@@ -1430,6 +2162,21 @@ order 从 1 开始递增，text 为对应的原文片段。
               >
                 新增块
               </Button>
+              <Button
+                type="text"
+                icon={<ThunderboltOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setBatchGenerateVisible(true);
+                  // 初始化选中所有块
+                  if (previewData && previewData.items.length > 0) {
+                    setSelectedChunkIds(new Set(previewData.items.map(item => item.chunkId)));
+                  }
+                }}
+                size="small"
+              >
+                批量生成策略
+              </Button>
             </Space>
           }
           key="preview"
@@ -1441,17 +2188,15 @@ order 从 1 开始递增，text 为对应的原文片段。
           ) : previewData && previewData.items.length > 0 ? (
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "12px",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(450px, 1fr))",
+                gap: "16px",
               }}
             >
               {previewData.items.map((item, index) => {
-                // 只显示前500字
-                const displayText =
-                  item.text && item.text.length > 500
-                    ? item.text.substring(0, 500) + "..."
-                    : item.text || "";
+                const isDragging = draggedIndex === index;
+                const isDragOver = dragOverIndex === index;
+                const displayText = item.text || "(空)";
 
                 return (
                   <Card
@@ -1459,7 +2204,8 @@ order 从 1 开始递增，text 为对应的原文片段。
                     size="small"
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={handleDragOver}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
                     onDragEnd={handleDragEnd}
                     onDrop={(e) => handleDrop(e, index)}
                     title={
@@ -1472,6 +2218,11 @@ order 从 1 开始递增，text 为对应的原文片段。
                             }}
                           />
                           <Tag color="blue">#{item.order + 1}</Tag>
+                          <Tag color="default" title={item.chunkId || "未设置"}>
+                            ID: {item.chunkId 
+                              ? (item.chunkId.length > 20 ? `${item.chunkId.substring(0, 20)}...` : item.chunkId)
+                              : "N/A"}
+                          </Tag>
                         </Space>
                         <Space>
                           <Button
@@ -1480,9 +2231,11 @@ order 从 1 开始递增，text 为对应的原文片段。
                             icon={<EditOutlined />}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleOpenCodeEditor(item.chunkId, item.text);
+                              handleOpenChunkEditor(item.chunkId, item.text, item.derivatives);
                             }}
-                          />
+                          >
+                            编辑
+                          </Button>
                           <Popconfirm
                             title="确认删除"
                             description="确定要删除这个文本块吗？"
@@ -1504,53 +2257,164 @@ order 从 1 开始递增，text 为对应的原文片段。
                               onClick={(e) => {
                                 e.stopPropagation();
                               }}
-                            />
+                            >
+                              删除
+                            </Button>
                           </Popconfirm>
                         </Space>
                       </Space>
                     }
                     style={{
-                      width: "400px",
                       marginBottom: 0,
-                      cursor: "pointer",
+                      cursor: isDragging ? "grabbing" : "grab",
+                      opacity: isDragging ? 0.5 : 1,
+                      border: isDragOver ? "2px dashed #1890ff" : "1px solid #d9d9d9",
+                      backgroundColor: isDragOver ? "#e6f7ff" : "white",
+                      transition: "all 0.2s",
                     }}
-                    bodyStyle={{ padding: "12px" }}
-                    onClick={() => handleOpenCodeEditor(item.chunkId, item.text)}
+                    bodyStyle={{ padding: "16px" }}
                   >
-                    <Typography.Paragraph
-                      style={{
-                        marginBottom: item.derivatives && item.derivatives.length > 0 ? "12px" : 0,
-                        fontSize: "13px",
-                        lineHeight: "1.6",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        maxHeight: "150px",
-                        overflow: "hidden",
-                      }}
-                      ellipsis={{ rows: 5, expandable: false }}
-                    >
-                      {displayText}
-                    </Typography.Paragraph>
-                    {item.derivatives && item.derivatives.length > 0 && (
-                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
-                        {item.derivatives.map((derivative, idx) => (
-                          <div key={idx} style={{ marginBottom: "8px" }}>
-                            <Tag color="purple" style={{ marginBottom: "4px" }}>
-                              {DerivativeTypeMap[derivative.derivativeType || ""] || derivative.derivativeType || "未知"}
-                            </Tag>
-                            <Typography.Text
-                              style={{
-                                fontSize: "12px",
-                                color: "#666",
-                                display: "block",
-                                marginTop: "4px",
-                              }}
-                              ellipsis
-                            >
-                              {derivative.derivativeContent}
-                            </Typography.Text>
-                          </div>
-                        ))}
+                    {/* 文本内容 */}
+                    <div style={{ marginBottom: item.derivatives && item.derivatives.length > 0 ? 16 : 0 }}>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12, marginBottom: 8, display: "block" }}
+                      >
+                        文本内容
+                      </Typography.Text>
+                      <Typography.Paragraph
+                        style={{
+                          fontSize: "14px",
+                          lineHeight: "1.6",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          marginBottom: 0,
+                          maxHeight: "200px",
+                          overflow: "auto",
+                          padding: "8px",
+                          backgroundColor: "#fafafa",
+                          borderRadius: "4px",
+                        }}
+                        ellipsis={{ rows: 8, expandable: false }}
+                      >
+                        {displayText}
+                      </Typography.Paragraph>
+                    </div>
+
+                    {/* 衍生内容 */}
+                    {(() => {
+                      const hasDerivatives = item.derivatives && Array.isArray(item.derivatives) && item.derivatives.length > 0;
+                      if (!hasDerivatives) {
+                        console.log("No derivatives for item:", item.chunkId, "derivatives:", item.derivatives);
+                      }
+                      return hasDerivatives;
+                    })() && item.derivatives && (
+                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                          >
+                            衍生内容 ({item.derivatives.length})
+                          </Typography.Text>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={expandedDerivatives.has(item.chunkId) ? <UpOutlined /> : <DownOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newExpanded = new Set(expandedDerivatives);
+                              if (newExpanded.has(item.chunkId)) {
+                                newExpanded.delete(item.chunkId);
+                              } else {
+                                newExpanded.add(item.chunkId);
+                              }
+                              setExpandedDerivatives(newExpanded);
+                            }}
+                            style={{ padding: 0, height: "auto" }}
+                          >
+                            {expandedDerivatives.has(item.chunkId) ? "收起" : "展开"}
+                          </Button>
+                        </div>
+                        {expandedDerivatives.has(item.chunkId) && (
+                          <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                            {item.derivatives.map((derivative: any, idx: number) => {
+                            // 尝试多种可能的字段名
+                            const type = derivative?.derivativeType 
+                              ?? derivative?.DerivativeType 
+                              ?? derivative?.type 
+                              ?? null;
+                            const content = derivative?.derivativeContent 
+                              ?? derivative?.DerivativeContent 
+                              ?? derivative?.content 
+                              ?? "";
+                            
+                            // 调试：打印实际数据
+                            if (idx === 0) {
+                              console.log("Displaying derivative:", {
+                                raw: derivative,
+                                type: type,
+                                content: content,
+                                keys: derivative ? Object.keys(derivative) : [],
+                                hasDerivativeType: 'derivativeType' in (derivative || {}),
+                                hasDerivativeContent: 'derivativeContent' in (derivative || {}),
+                              });
+                            }
+                            
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  padding: "8px 12px",
+                                  backgroundColor: "#f5f5f5",
+                                  borderRadius: "4px",
+                                  border: "1px solid #e8e8e8",
+                                }}
+                              >
+                                <Tag
+                                  color="purple"
+                                  style={{ marginBottom: 6, marginRight: 0 }}
+                                >
+                                  {(() => {
+                                    if (!type) {
+                                      console.log("Type is null/undefined for derivative:", derivative);
+                                      return "未知";
+                                    }
+                                    // 尝试直接匹配
+                                    if (DerivativeTypeMap[type]) {
+                                      return DerivativeTypeMap[type];
+                                    }
+                                    // 尝试转换为字符串后匹配
+                                    const typeStr = String(type);
+                                    if (DerivativeTypeMap[typeStr]) {
+                                      return DerivativeTypeMap[typeStr];
+                                    }
+                                    // 尝试小写匹配
+                                    const typeLower = typeStr.toLowerCase();
+                                    if (DerivativeTypeMap[typeLower]) {
+                                      return DerivativeTypeMap[typeLower];
+                                    }
+                                    // 返回原始值
+                                    console.log("Type not found in map:", type, "available keys:", Object.keys(DerivativeTypeMap));
+                                    return typeStr;
+                                  })()}
+                                </Tag>
+                                <Typography.Text
+                                  style={{
+                                    fontSize: "13px",
+                                    color: "#666",
+                                    display: "block",
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {content || "(空)"}
+                                </Typography.Text>
+                              </div>
+                            );
+                          })}
+                          </Space>
+                        )}
                       </div>
                     )}
                   </Card>
@@ -1795,17 +2659,255 @@ order 从 1 开始递增，text 为对应的原文片段。
         />
       </Card>
 
-      {/* 代码编辑器模态窗口 */}
-      <CodeEditorModal
-        open={codeEditorVisible}
-        initialValue={codeEditorInitialValue}
-        language="plaintext"
-        title={editingChunkId ? "编辑文本块" : "新增文本块"}
-        onClose={handleCloseCodeEditor}
-        onConfirm={handleConfirmCodeEditor}
-        width={1200}
-        height="70vh"
+      {/* Chunk 编辑模态窗口 */}
+      <ChunkEditModal
+        open={chunkEditModalVisible}
+        chunkId={editingChunkId}
+        initialText={editingChunkText}
+        initialDerivatives={editingChunkDerivatives}
+        wikiId={wikiId || ""}
+        documentId={documentId || ""}
+        modelList={modelList}
+        onClose={handleCloseChunkEditor}
+        onSave={handleSaveChunk}
       />
+
+      {/* 批量生成策略模态窗口 */}
+      <Modal
+        title="批量生成策略"
+        open={batchGenerateVisible}
+        onCancel={() => {
+          setBatchGenerateVisible(false);
+          setBatchGenerateResults(new Map());
+          setSelectedChunkIds(new Set());
+          setBatchAiModelId(null);
+          setBatchPreprocessStrategyType(null);
+        }}
+        width={800}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setBatchGenerateVisible(false);
+              setBatchGenerateResults(new Map());
+              setSelectedChunkIds(new Set());
+              setBatchAiModelId(null);
+              setBatchPreprocessStrategyType(null);
+            }}
+          >
+            取消
+          </Button>,
+          batchGenerateResults.size > 0 && (
+            <Button
+              key="save"
+              type="primary"
+              onClick={handleSaveBatchResults}
+            >
+              保存结果
+            </Button>
+          ),
+          <Button
+            key="generate"
+            type="primary"
+            loading={batchGenerating}
+            onClick={handleBatchGenerate}
+            disabled={!batchAiModelId || !batchPreprocessStrategyType || selectedChunkIds.size === 0}
+          >
+            生成
+          </Button>,
+        ].filter(Boolean)}
+        destroyOnClose
+      >
+        <Space direction="vertical" style={{ width: "100%" }} size="large">
+          {/* AI 模型选择 */}
+          <div>
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>AI 模型</div>
+            <Select
+              placeholder="请选择AI模型"
+              value={batchAiModelId}
+              onChange={setBatchAiModelId}
+              style={{ width: "100%" }}
+              options={modelList.map((model) => ({
+                label: model.name,
+                value: model.id,
+              }))}
+            />
+          </div>
+
+          {/* 优化策略选择 */}
+          <div>
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>优化策略</div>
+            <Select
+              placeholder="请选择优化策略"
+              value={batchPreprocessStrategyType}
+              onChange={setBatchPreprocessStrategyType}
+              style={{ width: "100%" }}
+              options={PreprocessStrategyOptions}
+            />
+          </div>
+
+          {/* 块列表选择 */}
+          <div>
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>
+              选择文本块 ({selectedChunkIds.size} / {previewData?.items.length || 0})
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <Space>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => {
+                    if (previewData) {
+                      setSelectedChunkIds(new Set(previewData.items.map(item => item.chunkId)));
+                    }
+                  }}
+                >
+                  全选
+                </Button>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => {
+                    setSelectedChunkIds(new Set());
+                  }}
+                >
+                  全不选
+                </Button>
+              </Space>
+            </div>
+            <div
+              style={{
+                maxHeight: "300px",
+                overflow: "auto",
+                border: "1px solid #d9d9d9",
+                borderRadius: "4px",
+                padding: "8px",
+              }}
+            >
+              <Space direction="vertical" style={{ width: "100%" }} size="small">
+                {previewData?.items.map((item) => (
+                  <div key={item.chunkId} style={{ display: "flex", alignItems: "flex-start" }}>
+                    <Checkbox
+                      checked={selectedChunkIds.has(item.chunkId)}
+                      onChange={(e) => {
+                        const newSelected = new Set(selectedChunkIds);
+                        if (e.target.checked) {
+                          newSelected.add(item.chunkId);
+                        } else {
+                          newSelected.delete(item.chunkId);
+                        }
+                        setSelectedChunkIds(newSelected);
+                      }}
+                    >
+                      <div style={{ marginLeft: 8, flex: 1 }}>
+                        <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                          #{item.order + 1} - {item.chunkId.substring(0, 20)}...
+                        </div>
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: 12 }}
+                          ellipsis={{ tooltip: item.text || "(空)" }}
+                        >
+                          {item.text || "(空)"}
+                        </Typography.Text>
+                      </div>
+                    </Checkbox>
+                  </div>
+                ))}
+              </Space>
+            </div>
+          </div>
+
+          {/* 生成结果预览 */}
+          {batchGenerateResults.size > 0 && (
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                生成结果 ({batchGenerateResults.size} 个文本块)
+              </div>
+              <div
+                style={{
+                  maxHeight: "300px",
+                  overflow: "auto",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "4px",
+                  padding: "8px",
+                  backgroundColor: "#fafafa",
+                }}
+              >
+                <Space direction="vertical" style={{ width: "100%" }} size="small">
+                  {Array.from(batchGenerateResults.entries()).map(([chunkId, derivatives]) => {
+                    const item = previewData?.items.find(i => i.chunkId === chunkId);
+                    return (
+                      <div
+                        key={chunkId}
+                        style={{
+                          padding: "8px",
+                          backgroundColor: "white",
+                          borderRadius: "4px",
+                          border: "1px solid #e8e8e8",
+                          position: "relative",
+                        }}
+                      >
+                        <div style={{ fontWeight: 500, marginBottom: 8 }}>
+                          #{item?.order !== undefined ? item.order + 1 : "?"} - {chunkId.substring(0, 20)}...
+                        </div>
+                        <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                          {derivatives.map((derivative, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                padding: "4px 8px",
+                                backgroundColor: "#f5f5f5",
+                                borderRadius: "4px",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <Tag color="purple" style={{ marginRight: 8 }}>
+                                  {DerivativeTypeMap[derivative.derivativeType || ""] || derivative.derivativeType || "未知"}
+                                </Tag>
+                                <Typography.Text
+                                  style={{ fontSize: 12 }}
+                                  ellipsis={{ tooltip: derivative.derivativeContent || "(空)" }}
+                                >
+                                  {derivative.derivativeContent || "(空)"}
+                                </Typography.Text>
+                              </div>
+                              <Button
+                                type="text"
+                                danger
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                onClick={() => {
+                                  const newResults = new Map(batchGenerateResults);
+                                  const currentDerivatives = newResults.get(chunkId) || [];
+                                  const updatedDerivatives = currentDerivatives.filter((_, index) => index !== idx);
+                                  
+                                  if (updatedDerivatives.length > 0) {
+                                    newResults.set(chunkId, updatedDerivatives);
+                                  } else {
+                                    // 如果删除后没有衍生内容了，也删除该文本块的条目
+                                    newResults.delete(chunkId);
+                                  }
+                                  
+                                  setBatchGenerateResults(newResults);
+                                }}
+                                style={{ marginLeft: 8, flexShrink: 0 }}
+                              />
+                            </div>
+                          ))}
+                        </Space>
+                      </div>
+                    );
+                  })}
+                </Space>
+              </div>
+            </div>
+          )}
+        </Space>
+      </Modal>
     </>
   );
 }

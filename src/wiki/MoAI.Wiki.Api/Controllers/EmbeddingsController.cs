@@ -139,10 +139,23 @@ public class EmbeddingsController : ControllerBase
     /// <param name="ct">取消令牌，可选.</param>
     /// <returns>返回 <see cref="WikiDocumentTextPartitionPreviewCommandResponse"/>，包含预览结果.</returns>
     [HttpPost("ai_generation_chunk")]
-    public async Task<WikiDocumentTextPartitionAiGenerationCommandResponse> UpdatePartitionDocument([FromBody] WikiDocumentTextPartitionAiGenerationCommand req, CancellationToken ct = default)
+    public async Task<WikiDocumentChunkAiGenerationCommandResponse> UpdatePartitionDocument([FromBody] WikiDocumentChunkAiGenerationCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 批量增加衍生内容.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpPost("add_chunk_derivatives")]
+    public async Task<EmptyCommandResponse> AddChunkDerivatives([FromBody] AddWikiDocumentChunkDerivativeCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
         return await _mediator.Send(req, ct);
     }
 

@@ -24,6 +24,7 @@ public class KeyValue<TKey, TValue>
     /// <param name="value"></param>
     public KeyValue(TKey key, TValue value)
     {
+        Key = key;
         Value = value;
     }
 

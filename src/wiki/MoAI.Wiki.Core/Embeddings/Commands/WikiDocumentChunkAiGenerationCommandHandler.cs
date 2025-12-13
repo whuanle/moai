@@ -7,6 +7,7 @@ using MoAI.AI.Models;
 using MoAI.AI.ParagraphPreprocess;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Embedding.Models;
@@ -14,26 +15,26 @@ using MoAI.Wiki.Embedding.Models;
 namespace MoAI.Wiki.DocumentEmbeddings.Queries;
 
 /// <summary>
-/// <inheritdoc cref="WikiDocumentTextPartitionAiGenerationCommand"/>
+/// <inheritdoc cref="WikiDocumentChunkAiGenerationCommand"/>
 /// </summary>
-public class WikiDocumentTextPartitionAiGenerationCommandHandler : IRequestHandler<WikiDocumentTextPartitionAiGenerationCommand, WikiDocumentTextPartitionAiGenerationCommandResponse>
+public class WikiDocumentChunkAiGenerationCommandHandler : IRequestHandler<WikiDocumentChunkAiGenerationCommand, WikiDocumentChunkAiGenerationCommandResponse>
 {
     private readonly IParagraphPreprocessBuilder _paragraphPreprocessAiBuilder;
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WikiDocumentTextPartitionAiGenerationCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="WikiDocumentChunkAiGenerationCommandHandler"/> class.
     /// </summary>
     /// <param name="paragraphPreprocessAiBuilder"></param>
     /// <param name="databaseContext"></param>
-    public WikiDocumentTextPartitionAiGenerationCommandHandler(IParagraphPreprocessBuilder paragraphPreprocessAiBuilder, DatabaseContext databaseContext)
+    public WikiDocumentChunkAiGenerationCommandHandler(IParagraphPreprocessBuilder paragraphPreprocessAiBuilder, DatabaseContext databaseContext)
     {
         _paragraphPreprocessAiBuilder = paragraphPreprocessAiBuilder;
         _databaseContext = databaseContext;
     }
 
     /// <inheritdoc/>
-    public async Task<WikiDocumentTextPartitionAiGenerationCommandResponse> Handle(WikiDocumentTextPartitionAiGenerationCommand request, CancellationToken cancellationToken)
+    public async Task<WikiDocumentChunkAiGenerationCommandResponse> Handle(WikiDocumentChunkAiGenerationCommand request, CancellationToken cancellationToken)
     {
         List<KeyValue<long, ParagraphPreprocessResult>> list = new();
         var chunkOrders = request.Chunks.Select(x => x).ToArray();
@@ -46,6 +47,11 @@ public class WikiDocumentTextPartitionAiGenerationCommandHandler : IRequestHandl
         if (chatAiModel == null)
         {
             throw new BusinessException("未找到可用 ai 模型");
+        }
+
+        if (chatAiModel.AiModelType != AiModelType.Chat.ToJsonString())
+        {
+            throw new BusinessException("该模型非对话模型");
         }
 
         var embeddingAiModel = await _databaseContext.Wikis
@@ -102,14 +108,14 @@ public class WikiDocumentTextPartitionAiGenerationCommandHandler : IRequestHandl
         // 智能处理文本块
         var documentPreprocessor = _paragraphPreprocessAiBuilder.GetDocumentPreprocessor(chatAiEndpoint, embeddingAiEndpoint);
 
-        var preprocessResults = await documentPreprocessor.PreprocessBatchAsync(chunkOrders.Select(x => x.Value).ToArray(), request.PreprocessStrategyType);
+        var preprocessResults = await documentPreprocessor.PreprocessBatchAsync<long>(chunkOrders.ToDictionary(x => x.Key, x => x.Value), request.PreprocessStrategyType);
 
-        for (int i = 0; i < preprocessResults.Count; i++)
+        foreach (var item in preprocessResults)
         {
-            list.Add(new KeyValue<long, ParagraphPreprocessResult>(chunkOrders[i].Key, preprocessResults[i]));
+            list.Add(new KeyValue<long, ParagraphPreprocessResult>(item.Key, item.Value));
         }
 
-        return new WikiDocumentTextPartitionAiGenerationCommandResponse
+        return new WikiDocumentChunkAiGenerationCommandResponse
         {
             Items = list
         };

@@ -5,6 +5,8 @@ using MoAI.AiModel.Models;
 
 namespace MoAI.AiModel.Services;
 
+// todo： 准备废弃
+
 /// <summary>
 /// 向量化构建接口.
 /// </summary>

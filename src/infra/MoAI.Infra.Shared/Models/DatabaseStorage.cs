@@ -14,4 +14,14 @@ public class DatabaseStorage
     /// 系统数据库连接字符串.
     /// </summary>
     public string ConnectionString { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 账号.
+    /// </summary>
+    public string? UserName { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 密码.
+    /// </summary>
+    public string? Password { get; init; } = string.Empty;
 }

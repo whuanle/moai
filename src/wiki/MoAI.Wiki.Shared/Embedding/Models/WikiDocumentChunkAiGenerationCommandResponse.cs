@@ -5,7 +5,7 @@ using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Embedding.Models;
 
-public class WikiDocumentTextPartitionAiGenerationCommandResponse
+public class WikiDocumentChunkAiGenerationCommandResponse
 {
     /// <summary>
     /// 每段结果.

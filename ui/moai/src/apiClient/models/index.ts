@@ -19,6 +19,27 @@ export interface AddAiModelCommand extends AiEndpoint, Parsable {
 export interface AddWikiCrawlerConfigCommand extends AddWikiPluginConfigCommandOfWikiCrawlerConfig, Parsable {
 }
 /**
+ * 批量增加衍生内容.
+ */
+export interface AddWikiDocumentChunkDerivativeCommand extends Parsable {
+    /**
+     * Ai 模型.
+     */
+    aiModelId?: number | null;
+    /**
+     * 要处理的文本块的 chunkId 和内容.
+     */
+    derivatives?: AddWikiDocumentDerivativeItem[] | null;
+    /**
+     * 文档id.
+     */
+    documentId?: number | null;
+    /**
+     * 知识库id.
+     */
+    wikiId?: number | null;
+}
+/**
  * 手动添加一个新的块.
  */
 export interface AddWikiDocumentChunksCommand extends Parsable {
@@ -42,6 +63,23 @@ export interface AddWikiDocumentChunksCommand extends Parsable {
      * 知识库id.
      */
     wikiId?: number | null;
+}
+/**
+ * 切片衍生内容.
+ */
+export interface AddWikiDocumentDerivativeItem extends Parsable {
+    /**
+     * 关联的切片 id.
+     */
+    chunkId?: string | null;
+    /**
+     * 提问/提纲/摘要内容.
+     */
+    derivativeContent?: string | null;
+    /**
+     * 衍生类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
+     */
+    derivativeType?: ParagrahProcessorMetadataType | null;
 }
 /**
  * 飞书配置.
@@ -491,11 +529,29 @@ export function createAddWikiCrawlerConfigCommandFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AddWikiDocumentChunkDerivativeCommand}
+ */
+// @ts-ignore
+export function createAddWikiDocumentChunkDerivativeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAddWikiDocumentChunkDerivativeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AddWikiDocumentChunksCommand}
  */
 // @ts-ignore
 export function createAddWikiDocumentChunksCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAddWikiDocumentChunksCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AddWikiDocumentDerivativeItem}
+ */
+// @ts-ignore
+export function createAddWikiDocumentDerivativeItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAddWikiDocumentDerivativeItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2246,6 +2302,24 @@ export function createWikiDocumentAiTextPartionCommandFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentChunkAiGenerationCommand}
+ */
+// @ts-ignore
+export function createWikiDocumentChunkAiGenerationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentChunkAiGenerationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentChunkAiGenerationCommandResponse}
+ */
+// @ts-ignore
+export function createWikiDocumentChunkAiGenerationCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentChunkAiGenerationCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {WikiDocumentChunksOrderItem}
  */
 // @ts-ignore
@@ -2269,24 +2343,6 @@ export function createWikiDocumentDerivativeItemFromDiscriminatorValue(parseNode
 // @ts-ignore
 export function createWikiDocumentTaskItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoWikiDocumentTaskItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiDocumentTextPartitionAiGenerationCommand}
- */
-// @ts-ignore
-export function createWikiDocumentTextPartitionAiGenerationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiDocumentTextPartitionAiGenerationCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiDocumentTextPartitionAiGenerationCommandResponse}
- */
-// @ts-ignore
-export function createWikiDocumentTextPartitionAiGenerationCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiDocumentTextPartitionAiGenerationCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2500,6 +2556,19 @@ export function deserializeIntoAddWikiCrawlerConfigCommand(addWikiCrawlerConfigC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAddWikiDocumentChunkDerivativeCommand(addWikiDocumentChunkDerivativeCommand: Partial<AddWikiDocumentChunkDerivativeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { addWikiDocumentChunkDerivativeCommand.aiModelId = n.getNumberValue(); },
+        "derivatives": n => { addWikiDocumentChunkDerivativeCommand.derivatives = n.getCollectionOfObjectValues<AddWikiDocumentDerivativeItem>(createAddWikiDocumentDerivativeItemFromDiscriminatorValue); },
+        "documentId": n => { addWikiDocumentChunkDerivativeCommand.documentId = n.getNumberValue(); },
+        "wikiId": n => { addWikiDocumentChunkDerivativeCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAddWikiDocumentChunksCommand(addWikiDocumentChunksCommand: Partial<AddWikiDocumentChunksCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "derivatives": n => { addWikiDocumentChunksCommand.derivatives = n.getCollectionOfObjectValues<WikiDocumentDerivativeItem>(createWikiDocumentDerivativeItemFromDiscriminatorValue); },
@@ -2507,6 +2576,18 @@ export function deserializeIntoAddWikiDocumentChunksCommand(addWikiDocumentChunk
         "order": n => { addWikiDocumentChunksCommand.order = n.getNumberValue(); },
         "text": n => { addWikiDocumentChunksCommand.text = n.getStringValue(); },
         "wikiId": n => { addWikiDocumentChunksCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAddWikiDocumentDerivativeItem(addWikiDocumentDerivativeItem: Partial<AddWikiDocumentDerivativeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkId": n => { addWikiDocumentDerivativeItem.chunkId = n.getStringValue(); },
+        "derivativeContent": n => { addWikiDocumentDerivativeItem.derivativeContent = n.getStringValue(); },
+        "derivativeType": n => { addWikiDocumentDerivativeItem.derivativeType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
     }
 }
 /**
@@ -4762,6 +4843,29 @@ export function deserializeIntoWikiDocumentAiTextPartionCommand(wikiDocumentAiTe
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoWikiDocumentChunkAiGenerationCommand(wikiDocumentChunkAiGenerationCommand: Partial<WikiDocumentChunkAiGenerationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { wikiDocumentChunkAiGenerationCommand.aiModelId = n.getNumberValue(); },
+        "chunks": n => { wikiDocumentChunkAiGenerationCommand.chunks = n.getCollectionOfObjectValues<KeyValueOfInt64AndString>(createKeyValueOfInt64AndStringFromDiscriminatorValue); },
+        "preprocessStrategyType": n => { wikiDocumentChunkAiGenerationCommand.preprocessStrategyType = n.getEnumValue<PreprocessStrategyType>(PreprocessStrategyTypeObject); },
+        "wikiId": n => { wikiDocumentChunkAiGenerationCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiDocumentChunkAiGenerationCommandResponse(wikiDocumentChunkAiGenerationCommandResponse: Partial<WikiDocumentChunkAiGenerationCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { wikiDocumentChunkAiGenerationCommandResponse.items = n.getCollectionOfObjectValues<KeyValueOfInt64AndParagraphPreprocessResult>(createKeyValueOfInt64AndParagraphPreprocessResultFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoWikiDocumentChunksOrderItem(wikiDocumentChunksOrderItem: Partial<WikiDocumentChunksOrderItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "chunkId": n => { wikiDocumentChunksOrderItem.chunkId = n.getStringValue(); },
@@ -4775,8 +4879,8 @@ export function deserializeIntoWikiDocumentChunksOrderItem(wikiDocumentChunksOrd
 // @ts-ignore
 export function deserializeIntoWikiDocumentDerivativeItem(wikiDocumentDerivativeItem: Partial<WikiDocumentDerivativeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "DerivativeContent": n => { wikiDocumentDerivativeItem.derivativeContent = n.getStringValue(); },
-        "DerivativeType": n => { wikiDocumentDerivativeItem.derivativeType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
+        "derivativeContent": n => { wikiDocumentDerivativeItem.derivativeContent = n.getStringValue(); },
+        "derivativeType": n => { wikiDocumentDerivativeItem.derivativeType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
     }
 }
 /**
@@ -4799,29 +4903,6 @@ export function deserializeIntoWikiDocumentTaskItem(wikiDocumentTaskItem: Partia
         "state": n => { wikiDocumentTaskItem.state = n.getEnumValue<FileEmbeddingState>(FileEmbeddingStateObject); },
         "tokenizer": n => { wikiDocumentTaskItem.tokenizer = n.getStringValue(); },
         "wikiId": n => { wikiDocumentTaskItem.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoWikiDocumentTextPartitionAiGenerationCommand(wikiDocumentTextPartitionAiGenerationCommand: Partial<WikiDocumentTextPartitionAiGenerationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "aiModelId": n => { wikiDocumentTextPartitionAiGenerationCommand.aiModelId = n.getNumberValue(); },
-        "chunks": n => { wikiDocumentTextPartitionAiGenerationCommand.chunks = n.getCollectionOfObjectValues<KeyValueOfInt64AndString>(createKeyValueOfInt64AndStringFromDiscriminatorValue); },
-        "preprocessStrategyType": n => { wikiDocumentTextPartitionAiGenerationCommand.preprocessStrategyType = n.getEnumValue<PreprocessStrategyType>(PreprocessStrategyTypeObject); },
-        "wikiId": n => { wikiDocumentTextPartitionAiGenerationCommand.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoWikiDocumentTextPartitionAiGenerationCommandResponse(wikiDocumentTextPartitionAiGenerationCommandResponse: Partial<WikiDocumentTextPartitionAiGenerationCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "items": n => { wikiDocumentTextPartitionAiGenerationCommandResponse.items = n.getCollectionOfObjectValues<KeyValueOfInt64AndParagraphPreprocessResult>(createKeyValueOfInt64AndParagraphPreprocessResultFromDiscriminatorValue); },
     }
 }
 /**
@@ -6722,6 +6803,19 @@ export function serializeAddWikiCrawlerConfigCommand(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAddWikiDocumentChunkDerivativeCommand(writer: SerializationWriter, addWikiDocumentChunkDerivativeCommand: Partial<AddWikiDocumentChunkDerivativeCommand> | undefined | null = {}) : void {
+    if (addWikiDocumentChunkDerivativeCommand) {
+        writer.writeNumberValue("aiModelId", addWikiDocumentChunkDerivativeCommand.aiModelId);
+        writer.writeCollectionOfObjectValues<AddWikiDocumentDerivativeItem>("derivatives", addWikiDocumentChunkDerivativeCommand.derivatives, serializeAddWikiDocumentDerivativeItem);
+        writer.writeNumberValue("documentId", addWikiDocumentChunkDerivativeCommand.documentId);
+        writer.writeNumberValue("wikiId", addWikiDocumentChunkDerivativeCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAddWikiDocumentChunksCommand(writer: SerializationWriter, addWikiDocumentChunksCommand: Partial<AddWikiDocumentChunksCommand> | undefined | null = {}) : void {
     if (addWikiDocumentChunksCommand) {
         writer.writeCollectionOfObjectValues<WikiDocumentDerivativeItem>("derivatives", addWikiDocumentChunksCommand.derivatives, serializeWikiDocumentDerivativeItem);
@@ -6729,6 +6823,18 @@ export function serializeAddWikiDocumentChunksCommand(writer: SerializationWrite
         writer.writeNumberValue("order", addWikiDocumentChunksCommand.order);
         writer.writeStringValue("text", addWikiDocumentChunksCommand.text);
         writer.writeNumberValue("wikiId", addWikiDocumentChunksCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAddWikiDocumentDerivativeItem(writer: SerializationWriter, addWikiDocumentDerivativeItem: Partial<AddWikiDocumentDerivativeItem> | undefined | null = {}) : void {
+    if (addWikiDocumentDerivativeItem) {
+        writer.writeStringValue("chunkId", addWikiDocumentDerivativeItem.chunkId);
+        writer.writeStringValue("derivativeContent", addWikiDocumentDerivativeItem.derivativeContent);
+        writer.writeEnumValue<ParagrahProcessorMetadataType>("derivativeType", addWikiDocumentDerivativeItem.derivativeType);
     }
 }
 /**
@@ -8984,6 +9090,29 @@ export function serializeWikiDocumentAiTextPartionCommand(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeWikiDocumentChunkAiGenerationCommand(writer: SerializationWriter, wikiDocumentChunkAiGenerationCommand: Partial<WikiDocumentChunkAiGenerationCommand> | undefined | null = {}) : void {
+    if (wikiDocumentChunkAiGenerationCommand) {
+        writer.writeNumberValue("aiModelId", wikiDocumentChunkAiGenerationCommand.aiModelId);
+        writer.writeCollectionOfObjectValues<KeyValueOfInt64AndString>("chunks", wikiDocumentChunkAiGenerationCommand.chunks, serializeKeyValueOfInt64AndString);
+        writer.writeEnumValue<PreprocessStrategyType>("preprocessStrategyType", wikiDocumentChunkAiGenerationCommand.preprocessStrategyType);
+        writer.writeNumberValue("wikiId", wikiDocumentChunkAiGenerationCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiDocumentChunkAiGenerationCommandResponse(writer: SerializationWriter, wikiDocumentChunkAiGenerationCommandResponse: Partial<WikiDocumentChunkAiGenerationCommandResponse> | undefined | null = {}) : void {
+    if (wikiDocumentChunkAiGenerationCommandResponse) {
+        writer.writeCollectionOfObjectValues<KeyValueOfInt64AndParagraphPreprocessResult>("items", wikiDocumentChunkAiGenerationCommandResponse.items, serializeKeyValueOfInt64AndParagraphPreprocessResult);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeWikiDocumentChunksOrderItem(writer: SerializationWriter, wikiDocumentChunksOrderItem: Partial<WikiDocumentChunksOrderItem> | undefined | null = {}) : void {
     if (wikiDocumentChunksOrderItem) {
         writer.writeStringValue("chunkId", wikiDocumentChunksOrderItem.chunkId);
@@ -8997,8 +9126,8 @@ export function serializeWikiDocumentChunksOrderItem(writer: SerializationWriter
 // @ts-ignore
 export function serializeWikiDocumentDerivativeItem(writer: SerializationWriter, wikiDocumentDerivativeItem: Partial<WikiDocumentDerivativeItem> | undefined | null = {}) : void {
     if (wikiDocumentDerivativeItem) {
-        writer.writeStringValue("DerivativeContent", wikiDocumentDerivativeItem.derivativeContent);
-        writer.writeEnumValue<ParagrahProcessorMetadataType>("DerivativeType", wikiDocumentDerivativeItem.derivativeType);
+        writer.writeStringValue("derivativeContent", wikiDocumentDerivativeItem.derivativeContent);
+        writer.writeEnumValue<ParagrahProcessorMetadataType>("derivativeType", wikiDocumentDerivativeItem.derivativeType);
     }
 }
 /**
@@ -9021,29 +9150,6 @@ export function serializeWikiDocumentTaskItem(writer: SerializationWriter, wikiD
         writer.writeEnumValue<FileEmbeddingState>("state", wikiDocumentTaskItem.state);
         writer.writeStringValue("tokenizer", wikiDocumentTaskItem.tokenizer);
         writer.writeNumberValue("wikiId", wikiDocumentTaskItem.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeWikiDocumentTextPartitionAiGenerationCommand(writer: SerializationWriter, wikiDocumentTextPartitionAiGenerationCommand: Partial<WikiDocumentTextPartitionAiGenerationCommand> | undefined | null = {}) : void {
-    if (wikiDocumentTextPartitionAiGenerationCommand) {
-        writer.writeNumberValue("aiModelId", wikiDocumentTextPartitionAiGenerationCommand.aiModelId);
-        writer.writeCollectionOfObjectValues<KeyValueOfInt64AndString>("chunks", wikiDocumentTextPartitionAiGenerationCommand.chunks, serializeKeyValueOfInt64AndString);
-        writer.writeEnumValue<PreprocessStrategyType>("preprocessStrategyType", wikiDocumentTextPartitionAiGenerationCommand.preprocessStrategyType);
-        writer.writeNumberValue("wikiId", wikiDocumentTextPartitionAiGenerationCommand.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeWikiDocumentTextPartitionAiGenerationCommandResponse(writer: SerializationWriter, wikiDocumentTextPartitionAiGenerationCommandResponse: Partial<WikiDocumentTextPartitionAiGenerationCommandResponse> | undefined | null = {}) : void {
-    if (wikiDocumentTextPartitionAiGenerationCommandResponse) {
-        writer.writeCollectionOfObjectValues<KeyValueOfInt64AndParagraphPreprocessResult>("items", wikiDocumentTextPartitionAiGenerationCommandResponse.items, serializeKeyValueOfInt64AndParagraphPreprocessResult);
     }
 }
 /**
@@ -9864,6 +9970,33 @@ export interface WikiDocumentAiTextPartionCommand extends Parsable {
     wikiId?: number | null;
 }
 /**
+ * 使用 Ai 对文本块进行策略处理.
+ */
+export interface WikiDocumentChunkAiGenerationCommand extends Parsable {
+    /**
+     * Ai 模型.
+     */
+    aiModelId?: number | null;
+    /**
+     * 要处理的文本块的 chunkId 和内容.
+     */
+    chunks?: KeyValueOfInt64AndString[] | null;
+    /**
+     * 使用何种文档处理策略.
+     */
+    preprocessStrategyType?: PreprocessStrategyType | null;
+    /**
+     * 知识库id.
+     */
+    wikiId?: number | null;
+}
+export interface WikiDocumentChunkAiGenerationCommandResponse extends Parsable {
+    /**
+     * 每段结果.
+     */
+    items?: KeyValueOfInt64AndParagraphPreprocessResult[] | null;
+}
+/**
  * 切片排序.
  */
 export interface WikiDocumentChunksOrderItem extends Parsable {
@@ -9876,6 +10009,9 @@ export interface WikiDocumentChunksOrderItem extends Parsable {
      */
     order?: number | null;
 }
+/**
+ * 切片衍生内容.
+ */
 export interface WikiDocumentDerivativeItem extends Parsable {
     /**
      * 提问/提纲/摘要内容.
@@ -9938,33 +10074,6 @@ export interface WikiDocumentTaskItem extends AuditsInfo, Parsable {
      * 知识库id.
      */
     wikiId?: number | null;
-}
-/**
- * 使用 Ai 对文本块进行策略处理.
- */
-export interface WikiDocumentTextPartitionAiGenerationCommand extends Parsable {
-    /**
-     * Ai 模型.
-     */
-    aiModelId?: number | null;
-    /**
-     * 要处理的文本块的 chunkId 和内容.
-     */
-    chunks?: KeyValueOfInt64AndString[] | null;
-    /**
-     * 使用何种文档处理策略.
-     */
-    preprocessStrategyType?: PreprocessStrategyType | null;
-    /**
-     * 知识库id.
-     */
-    wikiId?: number | null;
-}
-export interface WikiDocumentTextPartitionAiGenerationCommandResponse extends Parsable {
-    /**
-     * 每段结果.
-     */
-    items?: KeyValueOfInt64AndParagraphPreprocessResult[] | null;
 }
 /**
  * 切割知识库文档.

@@ -9,6 +9,7 @@ using MoAI.Wiki.Documents.Commands;
 using MoAI.Wiki.Documents.Commands.Responses;
 using MoAI.Wiki.Documents.Queries;
 using MoAI.Wiki.Documents.Queries.Responses;
+using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 

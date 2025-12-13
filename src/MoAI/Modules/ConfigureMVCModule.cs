@@ -56,6 +56,7 @@ public class ConfigureMVCModule : IModule
 
             // jsonOptions.Converters.Add(item: new DateTimeOffsetConverter());
             jsonOptions.Converters.Add(JsonMetadataServices.DecimalConverter);
+            jsonOptions.Converters.Add(new LongStringConverter());
         });
 
         Validation(context);
@@ -82,7 +83,7 @@ public class ConfigureMVCModule : IModule
         // 模型验证
         context.Services.AddFluentValidationAutoValidation(configuration =>
         {
-            // 禁用 ASP.NET Core 的模型验证.
+            // 禁用 ASP.NET Core 的模型验证，代理全局统一模型验证.
             configuration.DisableBuiltInModelValidation = true;
             configuration.OverrideDefaultResultFactoryWith<CustomResultFactory>();
         });
@@ -97,8 +98,6 @@ public class ConfigureMVCModule : IModule
 
             return char.ToLowerInvariant(name[0]) + (name.Length > 1 ? name.Substring(1) : string.Empty);
         };
-
-        //context.Services.AddTransient<IGlobalValidationInterceptor, LowerCaseValidationInterceptor>();
     }
 
     private static void AddApplicationParts(IMvcBuilder builder, ServiceContext context)
