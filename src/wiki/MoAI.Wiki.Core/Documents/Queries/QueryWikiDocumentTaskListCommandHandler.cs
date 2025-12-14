@@ -12,7 +12,7 @@ namespace MoAI.Wiki.Documents.Queries;
 /// <summary>
 /// 查询文档任务列表.
 /// </summary>
-public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWikiDocumentTaskListCommand, IReadOnlyCollection<WikiDocumentTaskItem>>
+public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWikiDocumentTaskListCommand, IReadOnlyCollection<WikiDocumentEmbeddingTaskItem>>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
@@ -29,7 +29,7 @@ public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWiki
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyCollection<WikiDocumentTaskItem>> Handle(QueryWikiDocumentTaskListCommand request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<WikiDocumentEmbeddingTaskItem>> Handle(QueryWikiDocumentTaskListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId);
         var fileEntity = await query.Join(_databaseContext.Files, a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
@@ -51,7 +51,7 @@ public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWiki
 
         var result = await _databaseContext.WikiDocuments
             .Where(x => x.Id == request.DocumentId)
-            .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "wiki"), a => a.Id, b => b.BindId, (a, b) => new WikiDocumentTaskItem
+            .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "embedding"), a => a.Id, b => b.BindId, (a, b) => new WikiDocumentEmbeddingTaskItem
             {
                 DocumentId = a.Id,
                 CreateTime = b.CreateTime,
@@ -63,14 +63,11 @@ public class QueryWikiDocumentTaskListCommandHandler : IRequestHandler<QueryWiki
                 FileSize = fileEntity.FileSize,
                 ContentType = fileEntity.ContentType,
                 WikiId = a.WikiId,
-                State = (FileEmbeddingState)b.State,
+                State = (WorkerState)b.State,
                 Message = b.Message,
                 CreateUserName = string.Empty,
                 UpdateUserName = string.Empty,
                 Id = b.Id,
-                MaxTokensPerParagraph = default,
-                OverlappingTokens = default,
-                Tokenizer = default,
             }).OrderByDescending(x => x.CreateTime).ToListAsync(cancellationToken);
 
         await _mediator.Send(new FillUserInfoCommand { Items = result });

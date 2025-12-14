@@ -5,6 +5,8 @@ using MoAI.Infra.Models;
 using MoAI.Wiki.DocumentEmbedding.Commands;
 using MoAI.Wiki.DocumentEmbedding.Models;
 using MoAI.Wiki.DocumentEmbeddings.Queries;
+using MoAI.Wiki.Documents.Queries;
+using MoAI.Wiki.Documents.Queries.Responses;
 using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Embedding.Models;
 using MoAI.Wiki.Wikis.Queries;
@@ -158,6 +160,63 @@ public class EmbeddingsController : ControllerBase
         await CheckUserIsMemberAsync(req.WikiId, ct);
         return await _mediator.Send(req, ct);
     }
+
+    /// <summary>
+    /// 向量化文档.
+    /// </summary>
+    /// <param name="req">向量化文档的命令对象.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/> 表示操作结果.</returns>
+    [HttpPost("embedding_document")]
+    public async Task<EmptyCommandResponse> Embeddingocument([FromBody] EmbeddingDocumentCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 取消文档向量化任务.
+    /// </summary>
+    /// <param name="req">取消任务的命令对象.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/> 表示操作结果.</returns>
+    [HttpPost("cancal_embedding")]
+    public async Task<EmptyCommandResponse> CancalWikiDocumentTask([FromBody] CancalWikiDocumentTaskCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 清空知识库文档向量.
+    /// </summary>
+    /// <param name="req">清空向量的命令对象.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/> 表示操作结果.</returns>
+    [HttpPost("clear_embeddingt")]
+    public async Task<EmptyCommandResponse> ClearWikiDocumentEmbedding([FromBody] ClearWikiDocumentEmbeddingCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询文档的向量化任务列表.
+    /// </summary>
+    /// <param name="req">查询任务列表的命令对象, 包含 WikiId 与筛选信息.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="IReadOnlyCollection{WikiDocumentTaskItem}"/> 包含任务项集合.</returns>
+    [HttpPost("task_list")]
+    public async Task<IReadOnlyCollection<WikiDocumentEmbeddingTaskItem>> QueryWikiDocumentTaskList([FromBody] QueryWikiDocumentTaskListCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
 
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {

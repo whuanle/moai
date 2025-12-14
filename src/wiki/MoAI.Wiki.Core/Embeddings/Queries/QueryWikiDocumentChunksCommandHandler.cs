@@ -38,11 +38,11 @@ public class QueryWikiDocumentChunksCommandHandler : IRequestHandler<QueryWikiDo
 
         var partitionItems = await _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.WikiId == x.WikiId && x.DocumentId == request.DocumentId).ToArrayAsync();
         var sliceIds = partitionItems.Select(x => x.Id).ToArray();
-        var derivativeItems = await _databaseContext.WikiDocumentChunkDerivativePreviews.Where(x => x.DocumentId == request.DocumentId && sliceIds.Contains(x.SliceId)).ToArrayAsync();
+        var derivativeItems = await _databaseContext.WikiDocumentChunkDerivativePreviews.Where(x => x.DocumentId == request.DocumentId && sliceIds.Contains(x.ChunkId)).ToArrayAsync();
 
         foreach (var item in partitionItems)
         {
-            var derivatives = derivativeItems.Where(x => x.SliceId == item.Id).Select(x => new WikiDocumentDerivativeItem
+            var derivatives = derivativeItems.Where(x => x.ChunkId == item.Id).Select(x => new WikiDocumentDerivativeItem
             {
                 DerivativeType = (ParagrahProcessorMetadataType)x.DerivativeType,
                 DerivativeContent = x.DerivativeContent

@@ -27,9 +27,19 @@ public interface IAiClientBuilder : IDisposable
     IMemoryDb CreateMemoryDb(ITextEmbeddingGenerator textEmbeddingGenerator, MemoryDbType memoryDbType);
 
     /// <summary>
+    /// 配置 km 客户端.
+    /// </summary>
+    /// <param name="endpoint"></param>
+    /// <param name="memoryDbType"></param>
+    /// <param name="embeddingDimensions"></param>
+    /// <returns></returns>
+    IMemoryDb CreateMemoryDb(AiEndpoint endpoint, MemoryDbType memoryDbType, int embeddingDimensions);
+
+    /// <summary>
     /// 创建 Ai 模型向量化客户端.
     /// </summary>
     /// <param name="endpoint"></param>
+    /// <param name="embeddingDimensions">知识库向量的维度</param>
     /// <returns></returns>
-    ITextEmbeddingGenerator CreateTextEmbeddingGenerator(AiEndpoint endpoint);
+    ITextEmbeddingGenerator CreateTextEmbeddingGenerator(AiEndpoint endpoint, int embeddingDimensions);
 }

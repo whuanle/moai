@@ -2338,11 +2338,11 @@ export function createWikiDocumentDerivativeItemFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiDocumentTaskItem}
+ * @returns {WikiDocumentEmbeddingTaskItem}
  */
 // @ts-ignore
-export function createWikiDocumentTaskItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiDocumentTaskItem;
+export function createWikiDocumentEmbeddingTaskItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentEmbeddingTaskItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3110,10 +3110,8 @@ export function deserializeIntoDownloadWikiDocumentCommand(downloadWikiDocumentC
 export function deserializeIntoEmbeddingDocumentCommand(embeddingDocumentCommand: Partial<EmbeddingDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "documentId": n => { embeddingDocumentCommand.documentId = n.getNumberValue(); },
-        "maxTokensPerParagraph": n => { embeddingDocumentCommand.maxTokensPerParagraph = n.getNumberValue(); },
-        "overlappingTokens": n => { embeddingDocumentCommand.overlappingTokens = n.getNumberValue(); },
-        "splitMethod": n => { embeddingDocumentCommand.splitMethod = n.getStringValue(); },
-        "tokenizer": n => { embeddingDocumentCommand.tokenizer = n.getEnumValue<EmbeddingTokenizer>(EmbeddingTokenizerObject); },
+        "isEmbedSourceText": n => { embeddingDocumentCommand.isEmbedSourceText = n.getBooleanValue(); },
+        "threadCount": n => { embeddingDocumentCommand.threadCount = n.getNumberValue(); },
         "wikiId": n => { embeddingDocumentCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -4888,21 +4886,18 @@ export function deserializeIntoWikiDocumentDerivativeItem(wikiDocumentDerivative
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoWikiDocumentTaskItem(wikiDocumentTaskItem: Partial<WikiDocumentTaskItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoWikiDocumentEmbeddingTaskItem(wikiDocumentEmbeddingTaskItem: Partial<WikiDocumentEmbeddingTaskItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        ...deserializeIntoAuditsInfo(wikiDocumentTaskItem),
-        "contentType": n => { wikiDocumentTaskItem.contentType = n.getStringValue(); },
-        "documentId": n => { wikiDocumentTaskItem.documentId = n.getNumberValue(); },
-        "fileId": n => { wikiDocumentTaskItem.fileId = n.getNumberValue(); },
-        "fileName": n => { wikiDocumentTaskItem.fileName = n.getStringValue(); },
-        "fileSize": n => { wikiDocumentTaskItem.fileSize = n.getStringValue(); },
-        "id": n => { wikiDocumentTaskItem.id = n.getGuidValue(); },
-        "maxTokensPerParagraph": n => { wikiDocumentTaskItem.maxTokensPerParagraph = n.getNumberValue(); },
-        "message": n => { wikiDocumentTaskItem.message = n.getStringValue(); },
-        "overlappingTokens": n => { wikiDocumentTaskItem.overlappingTokens = n.getNumberValue(); },
-        "state": n => { wikiDocumentTaskItem.state = n.getEnumValue<FileEmbeddingState>(FileEmbeddingStateObject); },
-        "tokenizer": n => { wikiDocumentTaskItem.tokenizer = n.getStringValue(); },
-        "wikiId": n => { wikiDocumentTaskItem.wikiId = n.getNumberValue(); },
+        ...deserializeIntoAuditsInfo(wikiDocumentEmbeddingTaskItem),
+        "contentType": n => { wikiDocumentEmbeddingTaskItem.contentType = n.getStringValue(); },
+        "documentId": n => { wikiDocumentEmbeddingTaskItem.documentId = n.getNumberValue(); },
+        "fileId": n => { wikiDocumentEmbeddingTaskItem.fileId = n.getNumberValue(); },
+        "fileName": n => { wikiDocumentEmbeddingTaskItem.fileName = n.getStringValue(); },
+        "fileSize": n => { wikiDocumentEmbeddingTaskItem.fileSize = n.getStringValue(); },
+        "id": n => { wikiDocumentEmbeddingTaskItem.id = n.getGuidValue(); },
+        "message": n => { wikiDocumentEmbeddingTaskItem.message = n.getStringValue(); },
+        "state": n => { wikiDocumentEmbeddingTaskItem.state = n.getEnumValue<WorkerState>(WorkerStateObject); },
+        "wikiId": n => { wikiDocumentEmbeddingTaskItem.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -5043,21 +5038,13 @@ export interface EmbeddingDocumentCommand extends Parsable {
      */
     documentId?: number | null;
     /**
-     * 每个段落最大 token 数量.
+     * 是否将 chunk 源文本也向量化.
      */
-    maxTokensPerParagraph?: number | null;
+    isEmbedSourceText?: boolean | null;
     /**
-     * 块之间重叠令牌的数量.
+     * 并发线程数量.
      */
-    overlappingTokens?: number | null;
-    /**
-     * 文本分割方法，暂时不支持使用.
-     */
-    splitMethod?: string | null;
-    /**
-     * 统计 tokens 数量的算法 支持: "p50k", "cl100k", "o200k".
-     */
-    tokenizer?: EmbeddingTokenizer | null;
+    threadCount?: number | null;
     /**
      * 知识库 id.
      */
@@ -5069,7 +5056,6 @@ export type EmbeddingTokenizer = (typeof EmbeddingTokenizerObject)[keyof typeof 
  */
 export interface EmptyCommandResponse extends Parsable {
 }
-export type FileEmbeddingState = (typeof FileEmbeddingStateObject)[keyof typeof FileEmbeddingStateObject];
 /**
  * 导入 mcp 服务.
  */
@@ -6364,7 +6350,7 @@ export interface QueryUserViewAiModelListCommandResponse extends Parsable {
  */
 export interface QueryWikiBaseListCommand extends Parsable {
     /**
-     * 通过上下文自动配置id，前端不需要传递.
+     * The contextUserId property
      */
     contextUserId?: number | null;
     /**
@@ -7357,10 +7343,8 @@ export function serializeDownloadWikiDocumentCommand(writer: SerializationWriter
 export function serializeEmbeddingDocumentCommand(writer: SerializationWriter, embeddingDocumentCommand: Partial<EmbeddingDocumentCommand> | undefined | null = {}) : void {
     if (embeddingDocumentCommand) {
         writer.writeNumberValue("documentId", embeddingDocumentCommand.documentId);
-        writer.writeNumberValue("maxTokensPerParagraph", embeddingDocumentCommand.maxTokensPerParagraph);
-        writer.writeNumberValue("overlappingTokens", embeddingDocumentCommand.overlappingTokens);
-        writer.writeStringValue("splitMethod", embeddingDocumentCommand.splitMethod);
-        writer.writeEnumValue<EmbeddingTokenizer>("tokenizer", embeddingDocumentCommand.tokenizer);
+        writer.writeBooleanValue("isEmbedSourceText", embeddingDocumentCommand.isEmbedSourceText);
+        writer.writeNumberValue("threadCount", embeddingDocumentCommand.threadCount);
         writer.writeNumberValue("wikiId", embeddingDocumentCommand.wikiId);
     }
 }
@@ -9135,21 +9119,18 @@ export function serializeWikiDocumentDerivativeItem(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeWikiDocumentTaskItem(writer: SerializationWriter, wikiDocumentTaskItem: Partial<WikiDocumentTaskItem> | undefined | null = {}) : void {
-    if (wikiDocumentTaskItem) {
-        serializeAuditsInfo(writer, wikiDocumentTaskItem)
-        writer.writeStringValue("contentType", wikiDocumentTaskItem.contentType);
-        writer.writeNumberValue("documentId", wikiDocumentTaskItem.documentId);
-        writer.writeNumberValue("fileId", wikiDocumentTaskItem.fileId);
-        writer.writeStringValue("fileName", wikiDocumentTaskItem.fileName);
-        writer.writeStringValue("fileSize", wikiDocumentTaskItem.fileSize);
-        writer.writeGuidValue("id", wikiDocumentTaskItem.id);
-        writer.writeNumberValue("maxTokensPerParagraph", wikiDocumentTaskItem.maxTokensPerParagraph);
-        writer.writeStringValue("message", wikiDocumentTaskItem.message);
-        writer.writeNumberValue("overlappingTokens", wikiDocumentTaskItem.overlappingTokens);
-        writer.writeEnumValue<FileEmbeddingState>("state", wikiDocumentTaskItem.state);
-        writer.writeStringValue("tokenizer", wikiDocumentTaskItem.tokenizer);
-        writer.writeNumberValue("wikiId", wikiDocumentTaskItem.wikiId);
+export function serializeWikiDocumentEmbeddingTaskItem(writer: SerializationWriter, wikiDocumentEmbeddingTaskItem: Partial<WikiDocumentEmbeddingTaskItem> | undefined | null = {}) : void {
+    if (wikiDocumentEmbeddingTaskItem) {
+        serializeAuditsInfo(writer, wikiDocumentEmbeddingTaskItem)
+        writer.writeStringValue("contentType", wikiDocumentEmbeddingTaskItem.contentType);
+        writer.writeNumberValue("documentId", wikiDocumentEmbeddingTaskItem.documentId);
+        writer.writeNumberValue("fileId", wikiDocumentEmbeddingTaskItem.fileId);
+        writer.writeStringValue("fileName", wikiDocumentEmbeddingTaskItem.fileName);
+        writer.writeStringValue("fileSize", wikiDocumentEmbeddingTaskItem.fileSize);
+        writer.writeGuidValue("id", wikiDocumentEmbeddingTaskItem.id);
+        writer.writeStringValue("message", wikiDocumentEmbeddingTaskItem.message);
+        writer.writeEnumValue<WorkerState>("state", wikiDocumentEmbeddingTaskItem.state);
+        writer.writeNumberValue("wikiId", wikiDocumentEmbeddingTaskItem.wikiId);
     }
 }
 /**
@@ -10025,7 +10006,7 @@ export interface WikiDocumentDerivativeItem extends Parsable {
 /**
  * 文档列表.
  */
-export interface WikiDocumentTaskItem extends AuditsInfo, Parsable {
+export interface WikiDocumentEmbeddingTaskItem extends AuditsInfo, Parsable {
     /**
      * 文件类型.
      */
@@ -10051,25 +10032,13 @@ export interface WikiDocumentTaskItem extends AuditsInfo, Parsable {
      */
     id?: Guid | null;
     /**
-     * 每段最大token数量.
-     */
-    maxTokensPerParagraph?: number | null;
-    /**
      * 执行信息.
      */
     message?: string | null;
     /**
-     * 重叠的token数量.
-     */
-    overlappingTokens?: number | null;
-    /**
      * 任务状态.
      */
-    state?: FileEmbeddingState | null;
-    /**
-     * 分词器.
-     */
-    tokenizer?: string | null;
+    state?: WorkerState | null;
     /**
      * 知识库id.
      */
@@ -10264,17 +10233,6 @@ export const EmbeddingTokenizerObject = {
     P50k: "p50k",
     Cl100k: "cl100k",
     O200k: "o200k",
-} as const;
-/**
- * 向量化状态.
- */
-export const FileEmbeddingStateObject = {
-    None: "none",
-    Wait: "wait",
-    Processing: "processing",
-    Cancal: "cancal",
-    Successful: "successful",
-    Failed: "failed",
 } as const;
 /**
  * 内置插件分类.

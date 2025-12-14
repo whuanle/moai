@@ -2,9 +2,8 @@
 using Microsoft.KernelMemory.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using MoAI.AI.Abstract;
+using MoAI.AI.MemoryDb;
 using MoAI.AI.Models;
-using MoAI.AiModel.Services;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.AI.ParagraphPreprocess;
@@ -15,6 +14,7 @@ namespace MoAI.AI.ParagraphPreprocess;
 internal class ParagraphPreprocessAiClient : IParagraphPreprocessAiClient
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IAiClientBuilder _aiClientBuilder;
 
     private readonly AiEndpoint _chat;
     private readonly AiEndpoint _embedding;
@@ -30,18 +30,14 @@ internal class ParagraphPreprocessAiClient : IParagraphPreprocessAiClient
         _chat = chat;
         _embedding = embedding;
         _serviceProvider = serviceProvider;
+        _aiClientBuilder = _serviceProvider.GetRequiredService<IAiClientBuilder>();
     }
 
     public async Task<string> GenerateTextAsync(string prompt)
     {
         var kernelBuilder = Kernel.CreateBuilder();
-        var chatCompletionConfigurator = _serviceProvider.GetKeyedService<IChatCompletionConfigurator>(_chat.Provider);
-        if (chatCompletionConfigurator == null)
-        {
-            throw new BusinessException("暂不支持该模型");
-        }
 
-        var kernel = chatCompletionConfigurator.Configure(kernelBuilder, _chat).Build();
+        var kernel = _aiClientBuilder.Configure(kernelBuilder, _chat).Build();
 
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
 
@@ -79,9 +75,10 @@ internal class ParagraphPreprocessAiClient : IParagraphPreprocessAiClient
     /// </summary>
     private async Task<float[]> GetEmbeddingAsync(string text)
     {
-        var textEmbeddingGeneration = _serviceProvider.GetRequiredKeyedService<ITextEmbeddingGeneration>(_embedding.Provider);
         var textTokenizer = MoAI.AI.Helpers.TokenizerFactory.GetTokenizerForModel(_embedding.Name);
-        ITextEmbeddingGenerator embeddingGenerator = textEmbeddingGeneration.GetTextEmbeddingGenerator(_embedding);
+
+        // 固定 500，避免维度大，模型不支持
+        ITextEmbeddingGenerator embeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(_embedding, 500);
 
         var embedding = await embeddingGenerator.GenerateEmbeddingAsync(text);
 

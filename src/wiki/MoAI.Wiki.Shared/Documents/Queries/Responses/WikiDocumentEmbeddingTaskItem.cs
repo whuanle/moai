@@ -6,7 +6,7 @@ namespace MoAI.Wiki.Documents.Queries.Responses;
 /// <summary>
 /// 文档列表.
 /// </summary>
-public class WikiDocumentTaskItem : AuditsInfo
+public class WikiDocumentEmbeddingTaskItem : AuditsInfo
 {
     /// <summary>
     /// id.
@@ -46,25 +46,10 @@ public class WikiDocumentTaskItem : AuditsInfo
     /// <summary>
     /// 任务状态.
     /// </summary>
-    public FileEmbeddingState State { get; set; }
+    public WorkerState State { get; set; }
 
     /// <summary>
     /// 执行信息.
     /// </summary>
     public string Message { get; set; } = default!;
-
-    /// <summary>
-    /// 每段最大token数量.
-    /// </summary>
-    public int MaxTokensPerParagraph { get; set; }
-
-    /// <summary>
-    /// 重叠的token数量.
-    /// </summary>
-    public int OverlappingTokens { get; set; }
-
-    /// <summary>
-    /// 分词器.
-    /// </summary>
-    public string Tokenizer { get; set; } = default!;
 }

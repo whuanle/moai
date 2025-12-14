@@ -14,14 +14,4 @@ public class EmbeddingConfig
     /// 维度，跟模型有关，小于嵌入向量的最大值.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
-
-    /// <summary>
-    /// 批处理大小.
-    /// </summary>
-    public int EmbeddingBatchSize { get; set; }
-
-    /// <summary>
-    /// 文档处理最大重试次数.
-    /// </summary>
-    public int MaxRetries { get; set; }
 }

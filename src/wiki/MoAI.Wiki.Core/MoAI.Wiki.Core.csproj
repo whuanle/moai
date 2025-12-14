@@ -21,4 +21,8 @@
 	  <ProjectReference Include="..\MoAI.Wiki.Api\MoAI.Wiki.Api.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Documents\Handlers\" />
+	</ItemGroup>
+
 </Project>

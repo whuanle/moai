@@ -64,7 +64,7 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
                     {
                         WikiId = request.WikiId,
                         DocumentId = request.DocumentId,
-                        SliceId = entity.Id,
+                        ChunkId = entity.Id,
                         DerivativeType = (int)derivative.DerivativeType,
                         DerivativeContent = derivative.DerivativeContent
                     });
@@ -75,7 +75,7 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         await _databaseContext.WikiDocumentChunkDerivativePreviews
-            .Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId && chunkIds.Contains(x.SliceId))
+            .Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId && chunkIds.Contains(x.ChunkId))
             .ExecuteDeleteAsync();
 
         if (derivativePreviewEntities.Count > 0)

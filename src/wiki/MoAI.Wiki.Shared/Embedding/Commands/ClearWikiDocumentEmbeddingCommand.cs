@@ -2,7 +2,7 @@
 using MediatR;
 using MoAI.Infra.Models;
 
-namespace MoAI.Wiki.Documents.Commands;
+namespace MoAI.Wiki.Embedding.Commands;
 
 /// <summary>
 /// 清空知识库文档向量.

@@ -3,8 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using MoAI.AI.Abstract;
 using MoAI.AI.Commands;
+using MoAI.AI.MemoryDb;
 using MoAI.AI.Models;
 using MoAI.Infra.Extensions;
 using System.Runtime.CompilerServices;
@@ -18,14 +18,17 @@ namespace MoAI.AI.Handlers;
 public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletionsCommand, IOpenAIChatCompletionsObject>
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IAiClientBuilder _aiClientBuilder;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ChatCompletionsCommandHandler"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
-    public ChatCompletionsCommandHandler(IServiceProvider serviceProvider)
+    /// <param name="aiClientBuilder"></param>
+    public ChatCompletionsCommandHandler(IServiceProvider serviceProvider, IAiClientBuilder aiClientBuilder)
     {
         _serviceProvider = serviceProvider;
+        _aiClientBuilder = aiClientBuilder;
     }
 
     /// <inheritdoc/>
@@ -42,20 +45,12 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
         List<OpenAI.Chat.ChatTokenUsage> useages = new List<OpenAI.Chat.ChatTokenUsage>();
 
         var kernelBuilder = Kernel.CreateBuilder();
-        var chatCompletionConfigurator = _serviceProvider.GetKeyedService<IChatCompletionConfigurator>(request.Endpoint.Provider);
-        if (chatCompletionConfigurator == null)
-        {
-            chatCompletionConfigurator = _serviceProvider.GetKeyedService<IChatCompletionConfigurator>(AiProvider.Custom);
-
-            // throw new BusinessException("暂不支持该模型");
-        }
-
         foreach (var plugin in request.Plugins)
         {
             kernelBuilder.Plugins.Add(plugin);
         }
 
-        var kernel = chatCompletionConfigurator!.Configure(kernelBuilder, request.Endpoint)
+        var kernel = _aiClientBuilder.Configure(kernelBuilder, request.Endpoint)
             .Build();
 
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();

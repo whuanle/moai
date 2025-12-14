@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Queries;
 /// <summary>
 /// 查询文档任务列表.
 /// </summary>
-public class QueryWikiDocumentTaskListCommand : IRequest<IReadOnlyCollection<WikiDocumentTaskItem>>, IModelValidator<QueryWikiDocumentTaskListCommand>
+public class QueryWikiDocumentTaskListCommand : IRequest<IReadOnlyCollection<WikiDocumentEmbeddingTaskItem>>, IModelValidator<QueryWikiDocumentTaskListCommand>
 {
     /// <summary>
     /// 知识库id.

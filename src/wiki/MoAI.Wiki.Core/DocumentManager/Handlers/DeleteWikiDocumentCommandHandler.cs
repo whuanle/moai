@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
-using MoAI.AiModel.Services;
+using MoAI.AI.MemoryDb;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using MoAI.Wiki.Events;
@@ -21,6 +23,7 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
     private readonly IMediator _mediator;
     private readonly SystemOptions _systemOptions;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IAiClientBuilder _aiClientBuilder;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiDocumentCommandHandler"/> class.
@@ -29,17 +32,47 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
     /// <param name="mediator"></param>
     /// <param name="systemOptions"></param>
     /// <param name="serviceProvider"></param>
-    public DeleteWikiDocumentCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions, IServiceProvider serviceProvider)
+    /// <param name="aiClientBuilder"></param>
+    public DeleteWikiDocumentCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions, IServiceProvider serviceProvider, IAiClientBuilder aiClientBuilder)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
         _systemOptions = systemOptions;
         _serviceProvider = serviceProvider;
+        _aiClientBuilder = aiClientBuilder;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteWikiDocumentCommand request, CancellationToken cancellationToken)
     {
+        var aiModel = await _databaseContext.Wikis
+        .Where(x => x.Id == request.WikiId)
+        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new AiEndpoint
+        {
+            Name = x.Name,
+            DeploymentName = x.DeploymentName,
+            Title = x.Title,
+            AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
+            Provider = x.AiProvider.JsonToObject<AiProvider>(),
+            ContextWindowTokens = x.ContextWindowTokens,
+            Endpoint = x.Endpoint,
+            Abilities = new ModelAbilities
+            {
+                Files = x.Files,
+                FunctionCall = x.FunctionCall,
+                ImageOutput = x.ImageOutput,
+                Vision = x.IsVision,
+            },
+            MaxDimension = x.MaxDimension,
+            TextOutput = x.TextOutput,
+            Key = x.Key,
+        }).FirstOrDefaultAsync();
+
+        if (aiModel == null)
+        {
+            throw new BusinessException("知识库未配置嵌入模型") { StatusCode = 400 };
+        }
+
         // 删除数据库记录，附属表不需要删除
         var document = await _databaseContext.WikiDocuments
             .Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId)
@@ -53,23 +86,14 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
         _databaseContext.WikiDocuments.Remove(document);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
-        if (memoryDb == null)
+        // todo: 要改
+        var textEmbeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(aiModel, 500);
+        var memoryClient = _aiClientBuilder.CreateMemoryDb(textEmbeddingGenerator, _systemOptions.Wiki.DBType.JsonToObject<MemoryDbType>());
+
+        await memoryClient.DeleteAsync(index: document.WikiId.ToString(), new Microsoft.KernelMemory.MemoryStorage.MemoryRecord
         {
-            throw new BusinessException("不支持的文档数据库");
-        }
-
-        IKernelMemoryBuilder memoryBuilder = new KernelMemoryBuilder();
-        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
-
-        // 删除文档向量
-        var memoryClient = memoryBuilder
-            .WithSimpleFileStorage(Path.GetTempPath())
-            .WithoutEmbeddingGenerator()
-            .WithoutTextGenerator()
-            .Build();
-
-        await memoryClient.DeleteDocumentAsync(documentId: document.Id.ToString(), index: document.WikiId.ToString());
+            Id = document.Id.ToString()
+        });
 
         // 删除 oss 文件
         await _mediator.Send(new DeleteFileCommand { FileIds = new[] { document.FileId } });

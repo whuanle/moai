@@ -34,7 +34,7 @@ public class DeleteWikiDocumentChunkCommandHandler : IRequestHandler<DeleteWikiD
             .ExecuteDeleteAsync();
 
         await _databaseContext.WikiDocumentChunkDerivativePreviews
-            .Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId && x.SliceId == request.ChunkId)
+            .Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId && x.ChunkId == request.ChunkId)
             .ExecuteDeleteAsync();
 
         transactionScope.Complete();

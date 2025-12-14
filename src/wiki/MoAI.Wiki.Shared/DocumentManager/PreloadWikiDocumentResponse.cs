@@ -1,4 +1,4 @@
-﻿namespace MoAI.Wiki.Documents.Commands.Responses;
+﻿namespace MoAI.Wiki.DocumentManager;
 
 public class PreloadWikiDocumentResponse
 {

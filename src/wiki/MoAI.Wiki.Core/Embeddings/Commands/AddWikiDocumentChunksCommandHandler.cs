@@ -53,7 +53,7 @@ public class AddWikiDocumentChunksCommandHandler : IRequestHandler<AddWikiDocume
                 {
                     WikiId = request.WikiId,
                     DocumentId = request.DocumentId,
-                    SliceId = chunkEntity.Id,
+                    ChunkId = chunkEntity.Id,
                     DerivativeType = (int)item.DerivativeType,
                     DerivativeContent = item.DerivativeContent
                 });

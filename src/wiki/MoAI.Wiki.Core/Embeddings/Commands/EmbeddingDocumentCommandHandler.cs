@@ -80,8 +80,8 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
             {
                 WikiId = request.WikiId,
                 DocumentId = request.DocumentId,
-                IsEmbedDerivedData = request.IsEmbedDerivedData,
                 IsEmbedSourceText = request.IsEmbedSourceText,
+                ThreadCount = request.ThreadCount ?? 5
             }.ToJsonString(),
             Message = "任务已创建"
         };

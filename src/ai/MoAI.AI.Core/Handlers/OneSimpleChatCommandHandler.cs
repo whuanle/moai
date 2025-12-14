@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using MoAI.AI.Abstract;
 using MoAI.AI.Commands;
+using MoAI.AI.MemoryDb;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.AI.Handlers;
@@ -14,27 +14,24 @@ namespace MoAI.AI.Handlers;
 public class OneSimpleChatCommandHandler : IRequestHandler<OneSimpleChatCommand, OneSimpleChatCommandResponse>
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IAiClientBuilder _aiClientBuilder;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OneSimpleChatCommandHandler"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
-    public OneSimpleChatCommandHandler(IServiceProvider serviceProvider)
+    public OneSimpleChatCommandHandler(IServiceProvider serviceProvider, IAiClientBuilder aiClientBuilder)
     {
         _serviceProvider = serviceProvider;
+        _aiClientBuilder = aiClientBuilder;
     }
 
     /// <inheritdoc/>
     public async Task<OneSimpleChatCommandResponse> Handle(OneSimpleChatCommand request, CancellationToken cancellationToken)
     {
         var kernelBuilder = Kernel.CreateBuilder();
-        var chatCompletionConfigurator = _serviceProvider.GetKeyedService<IChatCompletionConfigurator>(request.Endpoint.Provider);
-        if (chatCompletionConfigurator == null)
-        {
-            throw new BusinessException("暂不支持该模型");
-        }
 
-        var kernel = chatCompletionConfigurator.Configure(kernelBuilder, request.Endpoint)
+        var kernel = _aiClientBuilder.Configure(kernelBuilder, request.Endpoint)
             .Build();
 
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();

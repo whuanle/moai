@@ -15,6 +15,7 @@ using Microsoft.KernelMemory.MemoryDb.SQLServer;
 using Microsoft.KernelMemory.MemoryStorage;
 using Microsoft.KernelMemory.Postgres;
 using Microsoft.SemanticKernel;
+using MoAI.AI.MemoryDb;
 using MoAI.AI.Models;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
@@ -22,7 +23,7 @@ using OpenAI;
 using StackExchange.Redis;
 using System.ClientModel;
 
-namespace MoAI.AI.MemoryDb;
+namespace MoAI.AI;
 
 [InjectOnScoped]
 public class AiClientBuilder : IDisposable, IAiClientBuilder
@@ -47,6 +48,7 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
         _loggerFactory = loggerFactory;
     }
 
+    /// <inheritdoc/>
     public IKernelBuilder Configure(IKernelBuilder kernelBuilder, AiEndpoint endpoint)
     {
         var provider = endpoint.Provider;
@@ -104,11 +106,10 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
         }
 
         throw new BusinessException("不支持该模型接口");
-
     }
 
-
-    public ITextEmbeddingGenerator CreateTextEmbeddingGenerator(AiEndpoint endpoint)
+    /// <inheritdoc/>
+    public ITextEmbeddingGenerator CreateTextEmbeddingGenerator(AiEndpoint endpoint, int embeddingDimensions)
     {
         var provider = endpoint.Provider;
         if (provider == AiProvider.Azure)
@@ -121,6 +122,8 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
                 Deployment = endpoint.DeploymentName,
                 Auth = AzureOpenAIConfig.AuthTypes.APIKey,
                 MaxTokenTotal = endpoint.ContextWindowTokens,
+
+                EmbeddingDimensions = embeddingDimensions
             });
         }
 
@@ -132,7 +135,8 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
                 Endpoint = endpoint.Endpoint,
                 APIKey = endpoint.Key,
 
-                EmbeddingModelMaxTokenTotal = endpoint.TextOutput
+                EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
+                EmbeddingDimensions = embeddingDimensions
             });
         }
 
@@ -146,12 +150,22 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
                 Deployment = endpoint.DeploymentName,
                 Auth = AzureOpenAIConfig.AuthTypes.APIKey,
                 MaxTokenTotal = endpoint.ContextWindowTokens,
+
+                EmbeddingDimensions = embeddingDimensions
             });
         }
 
         throw new BusinessException("不支持该模型接口");
     }
 
+    /// <inheritdoc/>
+    public IMemoryDb CreateMemoryDb(AiEndpoint endpoint, MemoryDbType memoryDbType, int embeddingDimensions)
+    {
+        var textEmbeddingGenerator = CreateTextEmbeddingGenerator(endpoint, embeddingDimensions);
+        return CreateMemoryDb(textEmbeddingGenerator, memoryDbType);
+    }
+
+    /// <inheritdoc/>
     public IMemoryDb CreateMemoryDb(ITextEmbeddingGenerator textEmbeddingGenerator, MemoryDbType memoryDbType)
     {
         if (memoryDbType == MemoryDbType.ElasticSearch)
@@ -204,7 +218,7 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
         if (memoryDbType == MemoryDbType.SQLServer)
         {
-            var sqlOptions = new Microsoft.KernelMemory.MemoryDb.SQLServer.SqlServerConfig
+            var sqlOptions = new SqlServerConfig
             {
                 ConnectionString = _systemOptions.Wiki.ConnectionString,
             };
@@ -213,6 +227,14 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
         }
 
         throw new BusinessException("不支持该存储类型");
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing)
@@ -229,12 +251,5 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
             disposedValue = true;
         }
-    }
-
-    public void Dispose()
-    {
-        // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

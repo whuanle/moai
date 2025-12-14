@@ -5,7 +5,6 @@ using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
-using MoAI.Wiki.Documents.Commands.Responses;
 using MoAI.Wiki.Helpers;
 
 namespace MoAI.Wiki.DocumentManager.Handlers;

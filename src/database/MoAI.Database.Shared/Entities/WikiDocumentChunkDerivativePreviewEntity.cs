@@ -27,7 +27,7 @@ public partial class WikiDocumentChunkDerivativePreviewEntity : IFullAudited
     /// <summary>
     /// 关联切片ID（表A主键）.
     /// </summary>
-    public long SliceId { get; set; }
+    public long ChunkId { get; set; }
 
     /// <summary>
     /// 衍生类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.

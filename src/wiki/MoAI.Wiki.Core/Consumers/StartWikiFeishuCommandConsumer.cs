@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CA1031 // 不捕获常规异常类型
-using AngleSharp.Dom;
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
-using MoAI.AiModel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
@@ -280,29 +278,29 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
         await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => _databaseContext.WikiPluginDocumentStates.Where(a => a.ConfigId == configId && a.WikiDocumentId == x.Id).Any()));
         await _databaseContext.SoftDeleteAsync(_databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId));
 
-        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
-        if (memoryDb == null)
-        {
-            throw new BusinessException("不支持的文档数据库");
-        }
+        //var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
+        //if (memoryDb == null)
+        //{
+        //    throw new BusinessException("不支持的文档数据库");
+        //}
 
-        // 删除知识库文档
-        // 构建客户端
-        var memoryBuilder = new KernelMemoryBuilder()
-            .WithSimpleFileStorage(Path.GetTempPath());
+        //// 删除知识库文档
+        //// 构建客户端
+        //var memoryBuilder = new KernelMemoryBuilder()
+        //    .WithSimpleFileStorage(Path.GetTempPath());
 
-        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
+        //memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
 
-        var memoryClient = memoryBuilder
-            .WithoutTextGenerator()
-            .WithoutEmbeddingGenerator()
-            .Build();
+        //var memoryClient = memoryBuilder
+        //    .WithoutTextGenerator()
+        //    .WithoutEmbeddingGenerator()
+        //    .Build();
 
-        // 删除向量
-        foreach (var documentId in documentIds)
-        {
-            await memoryClient.DeleteDocumentAsync(documentId.ToString(), index: wikiId.ToString());
-        }
+        //// 删除向量
+        //foreach (var documentId in documentIds)
+        //{
+        //    await memoryClient.DeleteDocumentAsync(documentId.ToString(), index: wikiId.ToString());
+        //}
     }
 
     private async Task SaveContentAsync(WikiPluginDocumentStateEntity pageEntity, string fileName, string text)

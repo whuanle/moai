@@ -26,9 +26,9 @@ public class EmbeddingDocumentCommand : IRequest<EmptyCommandResponse>, IModelVa
     public bool IsEmbedSourceText { get; init; } = true;
 
     /// <summary>
-    /// 向量化衍生数据.
+    /// 并发线程数量.
     /// </summary>
-    public bool IsEmbedDerivedData { get; init; } = true;
+    public int? ThreadCount { get; init; } = 5;
 
     /// <inheritdoc/>
     public void Validate(AbstractValidator<EmbeddingDocumentCommand> validate)

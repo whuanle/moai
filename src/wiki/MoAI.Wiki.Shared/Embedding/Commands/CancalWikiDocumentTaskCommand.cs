@@ -2,7 +2,7 @@
 using MediatR;
 using MoAI.Infra.Models;
 
-namespace MoAI.Wiki.Documents.Commands;
+namespace MoAI.Wiki.Embedding.Commands;
 
 /// <summary>
 /// 取消文档处理任务.

@@ -10,11 +10,11 @@ import { Ai_generation_chunkRequestBuilderRequestsMetadata, type Ai_generation_c
 // @ts-ignore
 import { Ai_text_partition_documentRequestBuilderRequestsMetadata, type Ai_text_partition_documentRequestBuilder } from './ai_text_partition_document/index.js';
 // @ts-ignore
-import { Clear_documentRequestBuilderRequestsMetadata, type Clear_documentRequestBuilder } from './clear_document/index.js';
+import { Cancal_embeddingRequestBuilderRequestsMetadata, type Cancal_embeddingRequestBuilder } from './cancal_embedding/index.js';
+// @ts-ignore
+import { Clear_embeddingtRequestBuilderRequestsMetadata, type Clear_embeddingtRequestBuilder } from './clear_embeddingt/index.js';
 // @ts-ignore
 import { Complete_upload_documentRequestBuilderRequestsMetadata, type Complete_upload_documentRequestBuilder } from './complete_upload_document/index.js';
-// @ts-ignore
-import { Create_documentRequestBuilderRequestsMetadata, type Create_documentRequestBuilder } from './create_document/index.js';
 // @ts-ignore
 import { Delete_chunkRequestBuilderRequestsMetadata, type Delete_chunkRequestBuilder } from './delete_chunk/index.js';
 // @ts-ignore
@@ -67,17 +67,17 @@ export interface DocumentRequestBuilder extends BaseRequestBuilder<DocumentReque
      */
     get ai_text_partition_document(): Ai_text_partition_documentRequestBuilder;
     /**
-     * The clear_document property
+     * The cancal_embedding property
      */
-    get clear_document(): Clear_documentRequestBuilder;
+    get cancal_embedding(): Cancal_embeddingRequestBuilder;
+    /**
+     * The clear_embeddingt property
+     */
+    get clear_embeddingt(): Clear_embeddingtRequestBuilder;
     /**
      * The complete_upload_document property
      */
     get complete_upload_document(): Complete_upload_documentRequestBuilder;
-    /**
-     * The create_document property
-     */
-    get create_document(): Create_documentRequestBuilder;
     /**
      * The delete_chunk property
      */
@@ -155,14 +155,14 @@ export const DocumentRequestBuilderNavigationMetadata: Record<Exclude<keyof Docu
     ai_text_partition_document: {
         requestsMetadata: Ai_text_partition_documentRequestBuilderRequestsMetadata,
     },
-    clear_document: {
-        requestsMetadata: Clear_documentRequestBuilderRequestsMetadata,
+    cancal_embedding: {
+        requestsMetadata: Cancal_embeddingRequestBuilderRequestsMetadata,
+    },
+    clear_embeddingt: {
+        requestsMetadata: Clear_embeddingtRequestBuilderRequestsMetadata,
     },
     complete_upload_document: {
         requestsMetadata: Complete_upload_documentRequestBuilderRequestsMetadata,
-    },
-    create_document: {
-        requestsMetadata: Create_documentRequestBuilderRequestsMetadata,
     },
     delete_chunk: {
         requestsMetadata: Delete_chunkRequestBuilderRequestsMetadata,

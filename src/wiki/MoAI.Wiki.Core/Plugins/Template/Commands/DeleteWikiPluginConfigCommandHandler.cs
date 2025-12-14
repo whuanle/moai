@@ -2,11 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.KernelMemory;
-using MoAI.AiModel.Services;
+using Microsoft.KernelMemory.MemoryStorage;
+using MoAI.AI.MemoryDb;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using System.Transactions;
@@ -22,6 +25,7 @@ public class DeleteWikiPluginConfigCommandHandler : IRequestHandler<DeleteWikiPl
     private readonly SystemOptions _systemOptions;
     private readonly IMediator _mediator;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IAiClientBuilder _aiClientBuilder;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiPluginConfigCommandHandler"/> class.
@@ -30,22 +34,55 @@ public class DeleteWikiPluginConfigCommandHandler : IRequestHandler<DeleteWikiPl
     /// <param name="systemOptions"></param>
     /// <param name="mediator"></param>
     /// <param name="serviceProvider"></param>
-    public DeleteWikiPluginConfigCommandHandler(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider)
+    /// <param name="aiClientBuilder"></param>
+    public DeleteWikiPluginConfigCommandHandler(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider, IAiClientBuilder aiClientBuilder)
     {
         _databaseContext = databaseContext;
         _systemOptions = systemOptions;
         _mediator = mediator;
         _serviceProvider = serviceProvider;
+        _aiClientBuilder = aiClientBuilder;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteWikiPluginConfigCommand request, CancellationToken cancellationToken)
     {
+        var aiModel = await _databaseContext.Wikis
+        .Where(x => x.Id == request.WikiId)
+        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new AiEndpoint
+        {
+            Name = x.Name,
+            DeploymentName = x.DeploymentName,
+            Title = x.Title,
+            AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
+            Provider = x.AiProvider.JsonToObject<AiProvider>(),
+            ContextWindowTokens = x.ContextWindowTokens,
+            Endpoint = x.Endpoint,
+            Abilities = new ModelAbilities
+            {
+                Files = x.Files,
+                FunctionCall = x.FunctionCall,
+                ImageOutput = x.ImageOutput,
+                Vision = x.IsVision,
+            },
+            MaxDimension = x.MaxDimension,
+            TextOutput = x.TextOutput,
+            Key = x.Key,
+        }).FirstOrDefaultAsync();
+
+        if (aiModel == null)
+        {
+            throw new BusinessException("知识库未配置嵌入模型") { StatusCode = 400 };
+        }
+
+        var textEmbeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(aiModel, 500);
+        var memoryClient = _aiClientBuilder.CreateMemoryDb(textEmbeddingGenerator, _systemOptions.Wiki.DBType.JsonToObject<MemoryDbType>());
+
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         if (request.IsDeleteDocuments)
         {
-            await DeleteDocumentsAsync(request, cancellationToken);
+            await DeleteDocumentsAsync(request, memoryClient, cancellationToken);
         }
 
         // 删除配置
@@ -58,7 +95,7 @@ public class DeleteWikiPluginConfigCommandHandler : IRequestHandler<DeleteWikiPl
         return EmptyCommandResponse.Default;
     }
 
-    private async Task DeleteDocumentsAsync(DeleteWikiPluginConfigCommand request, CancellationToken cancellationToken)
+    private async Task DeleteDocumentsAsync(DeleteWikiPluginConfigCommand request, IMemoryDb memoryDb, CancellationToken cancellationToken)
     {
         var webDocumentIds = await _databaseContext.WikiPluginDocumentStates.Where(x => x.WikiId == request.WikiId).Select(x => x.WikiDocumentId)
             .ToArrayAsync();
@@ -70,25 +107,12 @@ public class DeleteWikiPluginConfigCommandHandler : IRequestHandler<DeleteWikiPl
         _databaseContext.WikiDocuments.RemoveRange(documents);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
-        if (memoryDb == null)
-        {
-            throw new BusinessException("不支持的文档数据库");
-        }
-
-        IKernelMemoryBuilder memoryBuilder = new KernelMemoryBuilder();
-        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
-
-        // 删除文档向量
-        var memoryClient = memoryBuilder
-            .WithSimpleFileStorage(Path.GetTempPath())
-            .WithoutEmbeddingGenerator()
-            .WithoutTextGenerator()
-            .Build();
-
         foreach (var document in documents)
         {
-            await memoryClient.DeleteDocumentAsync(documentId: document.Id.ToString(), index: document.WikiId.ToString());
+            await memoryDb.DeleteAsync(index: document.WikiId.ToString(), new Microsoft.KernelMemory.MemoryStorage.MemoryRecord
+            {
+                Id = document.Id.ToString()
+            });
 
             // 删除 oss 文件
             await _mediator.Send(new DeleteFileCommand { FileIds = new[] { document.FileId } });

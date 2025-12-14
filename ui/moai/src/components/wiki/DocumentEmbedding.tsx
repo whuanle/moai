@@ -677,7 +677,7 @@ const useTaskList = (wikiId: string, documentId: string) => {
     async (taskId: string) => {
       try {
         const apiClient = GetApiClient();
-        await apiClient.api.wiki.document.create_document.post({
+        await apiClient.api.wiki.document.cancal_embedding.post({
           taskId: taskId,
           wikiId: parseInt(wikiId),
           documentId: parseInt(documentId),
@@ -1189,9 +1189,8 @@ const useEmbeddingOperations = (
         await apiClient.api.wiki.document.embedding_document.post({
           wikiId: parseInt(wikiId),
           documentId: parseInt(documentId),
-          tokenizer: values.tokenizer,
-          maxTokensPerParagraph: values.maxTokensPerParagraph,
-          overlappingTokens: values.overlappingTokens,
+          isEmbedSourceText: values.isEmbedSourceText ?? false,
+          threadCount: values.threadCount ?? null,
         });
 
         messageApi.success("向量化任务已提交");
@@ -1215,7 +1214,7 @@ const useEmbeddingOperations = (
     try {
       setClearLoading(true);
       const apiClient = GetApiClient();
-      await apiClient.api.wiki.document.clear_document.post({
+      await apiClient.api.wiki.document.clear_embeddingt.post({
         wikiId: parseInt(wikiId),
         documentId: parseInt(documentId),
       });
@@ -1719,24 +1718,6 @@ export default function DocumentEmbedding() {
       ellipsis: true,
     },
     {
-      title: "分词器",
-      dataIndex: "tokenizer",
-      key: "tokenizer",
-      width: 120,
-    },
-    {
-      title: "每段最大Token数",
-      dataIndex: "maxTokensPerParagraph",
-      key: "maxTokensPerParagraph",
-      width: 150,
-    },
-    {
-      title: "重叠Token数",
-      dataIndex: "overlappingTokens",
-      key: "overlappingTokens",
-      width: 120,
-    },
-    {
       title: "状态",
       dataIndex: "state",
       key: "state",
@@ -1800,7 +1781,7 @@ export default function DocumentEmbedding() {
 
       {/* 文档切割卡片 */}
       <Collapse
-        defaultActiveKey={["partition"]}
+        defaultActiveKey={[]}
         style={{ marginBottom: 16 }}
       >
         <Panel
@@ -2428,7 +2409,7 @@ order 从 1 开始递增，text 为对应的原文片段。
       </Collapse>
 
       {/* 文档向量化卡片 */}
-      <Collapse defaultActiveKey={["embedding"]}>
+      <Collapse defaultActiveKey={[]}>
         <Panel
           header={
             <Space>
@@ -2480,9 +2461,8 @@ order 从 1 开始递增，text 为对应的原文片段。
               layout="vertical"
               onFinish={handleSubmit}
               initialValues={{
-                tokenizer: "cl100k",
-                maxTokensPerParagraph: 1000,
-                overlappingTokens: 100,
+                isEmbedSourceText: false,
+                threadCount: 5,
               }}
             >
               <Row gutter={[16, 16]}>
@@ -2495,7 +2475,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                         marginBottom: "8px",
                       }}
                     >
-                      分词器
+                      是否将 chunk 源文本也向量化
                     </div>
                     <div
                       style={{
@@ -2504,20 +2484,13 @@ order 从 1 开始递增，text 为对应的原文片段。
                         color: "#8c8c8c",
                       }}
                     >
-                      本地检测文档token 数量的算法。
+                      是否将 chunk 源文本也向量化。
                     </div>
                     <Form.Item
-                      name="tokenizer"
-                      rules={[{ required: true, message: "请选择分词器" }]}
+                      name="isEmbedSourceText"
+                      valuePropName="checked"
                     >
-                      <Select
-                        placeholder="请选择分词器"
-                        options={[
-                          { label: "p50k", value: "p50k" },
-                          { label: "cl100k", value: "cl100k" },
-                          { label: "o200k", value: "o200k" },
-                        ]}
-                      />
+                      <Checkbox>将 chunk 源文本也向量化</Checkbox>
                     </Form.Item>
                   </div>
                 </Col>
@@ -2530,7 +2503,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                         marginBottom: "8px",
                       }}
                     >
-                      每段最大Token数
+                      并发线程数量
                     </div>
                     <div
                       style={{
@@ -2539,52 +2512,16 @@ order 从 1 开始递增，text 为对应的原文片段。
                         color: "#8c8c8c",
                       }}
                     >
-                      当对文档进行分段时，每个分段通常包含一个段落。此参数控制每个段落的最大token数量。
+                      并发线程数量，用于控制向量化任务的并发度。
                     </div>
                     <Form.Item
-                      name="maxTokensPerParagraph"
-                      rules={[
-                        { required: true, message: "请输入每段最大Token数" },
-                      ]}
+                      name="threadCount"
                     >
                       <InputNumber
                         min={1}
-                        max={100000}
-                        style={{ width: "100%" }}
-                      />
-                    </Form.Item>
-                  </div>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]}>
-                <Col span={12}>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        marginBottom: "8px",
-                      }}
-                    >
-                      重叠Token数
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        marginBottom: "8px",
-                        color: "#8c8c8c",
-                      }}
-                    >
-                      分段之间的重叠token数量，用于保持上下文的连贯性。
-                    </div>
-                    <Form.Item
-                      name="overlappingTokens"
-                      rules={[{ required: true, message: "请输入重叠Token数" }]}
-                    >
-                      <InputNumber
-                        min={0}
-                        max={1000}
+                              max={100}
+                              placeholder="请输入并发线程数量（可选）"
+                              value={5}
                         style={{ width: "100%" }}
                       />
                     </Form.Item>
@@ -2631,33 +2568,39 @@ order 从 1 开始递增，text 为对应的原文片段。
       </Collapse>
 
       {/* 任务列表 */}
-      <Card
-        title={
-          <Space>
-            <ClockCircleOutlined />
-            <span>任务列表</span>
-            <Button
-              type="text"
-              icon={<ReloadOutlined />}
-              onClick={fetchTasks}
-              loading={tasksLoading}
-            />
-          </Space>
-        }
-        style={{ marginTop: 16 }}
-      >
-        <Table
-          columns={taskColumns}
-          dataSource={tasks}
-          rowKey="id"
-          loading={tasksLoading}
-          scroll={{ x: 1200 }}
-          pagination={false}
-          locale={{
-            emptyText: <Empty description="暂无任务" />,
-          }}
-        />
-      </Card>
+      <Collapse defaultActiveKey={[]} style={{ marginTop: 16 }}>
+        <Panel
+          header={
+            <Space>
+              <ClockCircleOutlined />
+              <span>任务列表</span>
+              <Button
+                type="text"
+                icon={<ReloadOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fetchTasks();
+                }}
+                loading={tasksLoading}
+                size="small"
+              />
+            </Space>
+          }
+          key="tasks"
+        >
+          <Table
+            columns={taskColumns}
+            dataSource={tasks}
+            rowKey="id"
+            loading={tasksLoading}
+            scroll={{ x: 1200 }}
+            pagination={false}
+            locale={{
+              emptyText: <Empty description="暂无任务" />,
+            }}
+          />
+        </Panel>
+      </Collapse>
 
       {/* Chunk 编辑模态窗口 */}
       <ChunkEditModal

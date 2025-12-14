@@ -46,7 +46,7 @@ public class AddWikiDocumentChunkDerivativeCommandHandler : IRequestHandler<AddW
             {
                 WikiId = request.WikiId,
                 DocumentId = request.DocumentId,
-                SliceId = item.ChunkId,
+                ChunkId = item.ChunkId,
                 DerivativeType = (int)item.DerivativeType,
                 DerivativeContent = item.DerivativeContent
             });

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace MoAI.Wiki.Embedding.Models;
 
+/// <summary>
+/// 文档向量化配置.
+/// </summary>
 public class WikiDocumentEmbeddingConfig
 {
     /// <summary>
@@ -24,7 +27,7 @@ public class WikiDocumentEmbeddingConfig
     public bool IsEmbedSourceText { get; init; } = true;
 
     /// <summary>
-    /// 向量化衍生数据.
+    /// 并发线程数量.
     /// </summary>
-    public bool IsEmbedDerivedData { get; init; } = true;
+    public int ThreadCount { get; init; } = 5;
 }

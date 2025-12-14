@@ -5,39 +5,44 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 文档切片原始内容表.
+/// 切片向量化内容.
 /// </summary>
-public partial class WikiDocumentChunkContentEntity : IFullAudited
+public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
 {
     /// <summary>
-    /// 切片唯一ID（slice_id）.
+    /// 衍生内容唯一ID（derivative_id）.
     /// </summary>
-    public long Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
-    /// 关联知识库标识（冗余字段）.
+    /// 知识库id.
     /// </summary>
     public int WikiId { get; set; }
 
     /// <summary>
-    /// 关联文档唯一标识.
+    /// 关联文档唯一标识（冗余字段）.
     /// </summary>
     public int DocumentId { get; set; }
 
     /// <summary>
-    /// 原始切片内容.
+    /// 关联切片ID（表A主键）.
     /// </summary>
-    public string SliceContent { get; set; } = default!;
+    public Guid ChunkId { get; set; }
 
     /// <summary>
-    /// 切片在文档中的顺序.
+    /// 衍生类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
     /// </summary>
-    public int SliceOrder { get; set; }
+    public int DerivativeType { get; set; }
 
     /// <summary>
-    /// 切片字符长度.
+    /// 提问/提纲/摘要内容.
     /// </summary>
-    public int SliceLength { get; set; }
+    public string DerivativeContent { get; set; } = default!;
+
+    /// <summary>
+    /// 是否向量化.
+    /// </summary>
+    public bool IsEmbedding { get; set; }
 
     /// <summary>
     /// 创建人.
