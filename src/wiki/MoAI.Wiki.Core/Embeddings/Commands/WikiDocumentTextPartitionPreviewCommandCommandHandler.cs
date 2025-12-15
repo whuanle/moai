@@ -75,9 +75,15 @@ public class WikiDocumentTextPartitionPreviewCommandCommandHandler : IRequestHan
 
         var kmTextPartitioningHandler = new KmTextPartitioningHandler(tokerizer);
 
+        var mimetype = MimeTypes.GetMimeType(saveFile.LocalFilePath);
+        if (mimetype != Microsoft.KernelMemory.Pipeline.MimeTypes.MarkDown)
+        {
+            mimetype = Microsoft.KernelMemory.Pipeline.MimeTypes.PlainText;
+        }
+
         var partitionItems = await kmTextPartitioningHandler.PartitionAsync(
             text: text,
-            MimeTypes.GetMimeType(saveFile.LocalFilePath),
+            mimetype,
             request.MaxTokensPerChunk,
             request.Overlap,
             request.ChunkHeader);

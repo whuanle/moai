@@ -401,66 +401,6 @@ export interface ChatContentItem extends Parsable {
      */
     recordId?: string | null;
 }
-export interface Citation extends Parsable {
-    /**
-     * Link to the source, if available.
-     */
-    documentId?: string | null;
-    /**
-     * Link to the source, if available.
-     */
-    fileId?: string | null;
-    /**
-     * Link to the source, if available.
-     */
-    index?: string | null;
-    /**
-     * Link to the source, if available.
-     */
-    link?: string | null;
-    /**
-     * List of chunks/blocks of text used.
-     */
-    partitions?: Citation_Partition[] | null;
-    /**
-     * Type of source, e.g. PDF, Word, Chat, etc.
-     */
-    sourceContentType?: string | null;
-    /**
-     * Name of the source, e.g. file name.
-     */
-    sourceName?: string | null;
-    /**
-     * URL of the source, used for web pages and external data
-     */
-    sourceUrl?: string | null;
-}
-export interface Citation_Partition extends Parsable {
-    /**
-     * Timestamp about the file/text partition.
-     */
-    lastUpdate?: string | null;
-    /**
-     * Partition number, zero based
-     */
-    partitionNumber?: number | null;
-    /**
-     * Relevance of this partition against the given query.Value usually is between 0 and 1, when using cosine similarity.
-     */
-    relevance?: number | null;
-    /**
-     * Text page number / Audio segment number / Video scene number
-     */
-    sectionNumber?: number | null;
-    /**
-     * List of document tags
-     */
-    tags?: KeyValuePairOfStringAndListOfString[] | null;
-    /**
-     * Content of the document partition, aka chunk/block of text.
-     */
-    text?: string | null;
-}
 /**
  * 清空知识库文档向量.
  */
@@ -705,24 +645,6 @@ export function createCancalWikiPluginTaskCommandFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createChatContentItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoChatContentItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {Citation_Partition}
- */
-// @ts-ignore
-export function createCitation_PartitionFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCitation_Partition;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {Citation}
- */
-// @ts-ignore
-export function createCitationFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCitation;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1020,15 +942,6 @@ export function createKeyValueOfStringAndInt32FromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createKeyValueOfStringAndStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoKeyValueOfStringAndString;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {KeyValuePairOfStringAndListOfString}
- */
-// @ts-ignore
-export function createKeyValuePairOfStringAndListOfStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoKeyValuePairOfStringAndListOfString;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1943,15 +1856,6 @@ export function createRunTestNativePluginCommandResponseFromDiscriminatorValue(p
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {SearchResult}
- */
-// @ts-ignore
-export function createSearchResultFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoSearchResult;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SearchWikiDocumentTextCommand}
  */
 // @ts-ignore
@@ -1966,6 +1870,15 @@ export function createSearchWikiDocumentTextCommandFromDiscriminatorValue(parseN
 // @ts-ignore
 export function createSearchWikiDocumentTextCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSearchWikiDocumentTextCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SearchWikiDocumentTextItem}
+ */
+// @ts-ignore
+export function createSearchWikiDocumentTextItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSearchWikiDocumentTextItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2802,38 +2715,6 @@ export function deserializeIntoChatContentItem(chatContentItem: Partial<ChatCont
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoCitation(citation: Partial<Citation> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "documentId": n => { citation.documentId = n.getStringValue(); },
-        "fileId": n => { citation.fileId = n.getStringValue(); },
-        "index": n => { citation.index = n.getStringValue(); },
-        "link": n => { citation.link = n.getStringValue(); },
-        "partitions": n => { citation.partitions = n.getCollectionOfObjectValues<Citation_Partition>(createCitation_PartitionFromDiscriminatorValue); },
-        "sourceContentType": n => { citation.sourceContentType = n.getStringValue(); },
-        "sourceName": n => { citation.sourceName = n.getStringValue(); },
-        "sourceUrl": n => { citation.sourceUrl = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoCitation_Partition(citation_Partition: Partial<Citation_Partition> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "lastUpdate": n => { citation_Partition.lastUpdate = n.getStringValue(); },
-        "partitionNumber": n => { citation_Partition.partitionNumber = n.getNumberValue(); },
-        "relevance": n => { citation_Partition.relevance = n.getNumberValue(); },
-        "sectionNumber": n => { citation_Partition.sectionNumber = n.getNumberValue(); },
-        "tags": n => { citation_Partition.tags = n.getCollectionOfObjectValues<KeyValuePairOfStringAndListOfString>(createKeyValuePairOfStringAndListOfStringFromDiscriminatorValue); },
-        "text": n => { citation_Partition.text = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoClearWikiDocumentEmbeddingCommand(clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "documentId": n => { clearWikiDocumentEmbeddingCommand.documentId = n.getNumberValue(); },
@@ -3207,17 +3088,6 @@ export function deserializeIntoKeyValueOfStringAndString(keyValueOfStringAndStri
     return {
         "key": n => { keyValueOfStringAndString.key = n.getStringValue(); },
         "value": n => { keyValueOfStringAndString.value = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoKeyValuePairOfStringAndListOfString(keyValuePairOfStringAndListOfString: Partial<KeyValuePairOfStringAndListOfString> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "key": n => { keyValuePairOfStringAndListOfString.key = n.getStringValue(); },
-        "value": n => { keyValuePairOfStringAndListOfString.value = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
 /**
@@ -4344,21 +4214,14 @@ export function deserializeIntoRunTestNativePluginCommandResponse(runTestNativeP
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoSearchResult(searchResult: Partial<SearchResult> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "noResult": n => { searchResult.noResult = n.getBooleanValue(); },
-        "query": n => { searchResult.query = n.getStringValue(); },
-        "results": n => { searchResult.results = n.getCollectionOfObjectValues<Citation>(createCitationFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoSearchWikiDocumentTextCommand(searchWikiDocumentTextCommand: Partial<SearchWikiDocumentTextCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "aiModelId": n => { searchWikiDocumentTextCommand.aiModelId = n.getNumberValue(); },
         "documentId": n => { searchWikiDocumentTextCommand.documentId = n.getNumberValue(); },
+        "isAnswer": n => { searchWikiDocumentTextCommand.isAnswer = n.getBooleanValue(); },
+        "isOptimizeQuery": n => { searchWikiDocumentTextCommand.isOptimizeQuery = n.getBooleanValue(); },
+        "limit": n => { searchWikiDocumentTextCommand.limit = n.getNumberValue(); },
+        "minRelevance": n => { searchWikiDocumentTextCommand.minRelevance = n.getNumberValue(); },
         "query": n => { searchWikiDocumentTextCommand.query = n.getStringValue(); },
         "wikiId": n => { searchWikiDocumentTextCommand.wikiId = n.getNumberValue(); },
     }
@@ -4370,7 +4233,25 @@ export function deserializeIntoSearchWikiDocumentTextCommand(searchWikiDocumentT
 // @ts-ignore
 export function deserializeIntoSearchWikiDocumentTextCommandResponse(searchWikiDocumentTextCommandResponse: Partial<SearchWikiDocumentTextCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "searchResult": n => { searchWikiDocumentTextCommandResponse.searchResult = n.getObjectValue<SearchResult>(createSearchResultFromDiscriminatorValue); },
+        "answer": n => { searchWikiDocumentTextCommandResponse.answer = n.getStringValue(); },
+        "query": n => { searchWikiDocumentTextCommandResponse.query = n.getStringValue(); },
+        "searchResult": n => { searchWikiDocumentTextCommandResponse.searchResult = n.getCollectionOfObjectValues<SearchWikiDocumentTextItem>(createSearchWikiDocumentTextItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSearchWikiDocumentTextItem(searchWikiDocumentTextItem: Partial<SearchWikiDocumentTextItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkId": n => { searchWikiDocumentTextItem.chunkId = n.getGuidValue(); },
+        "chunkText": n => { searchWikiDocumentTextItem.chunkText = n.getStringValue(); },
+        "documentId": n => { searchWikiDocumentTextItem.documentId = n.getNumberValue(); },
+        "fileName": n => { searchWikiDocumentTextItem.fileName = n.getStringValue(); },
+        "fileType": n => { searchWikiDocumentTextItem.fileType = n.getStringValue(); },
+        "recordRelevance": n => { searchWikiDocumentTextItem.recordRelevance = n.getNumberValue(); },
+        "text": n => { searchWikiDocumentTextItem.text = n.getStringValue(); },
     }
 }
 /**
@@ -5174,16 +5055,6 @@ export interface KeyValueOfStringAndString extends Parsable {
      * Value.
      */
     value?: string | null;
-}
-export interface KeyValuePairOfStringAndListOfString extends Parsable {
-    /**
-     * The key property
-     */
-    key?: string | null;
-    /**
-     * The value property
-     */
-    value?: string[] | null;
 }
 /**
  * KeyValueString.
@@ -6350,7 +6221,7 @@ export interface QueryUserViewAiModelListCommandResponse extends Parsable {
  */
 export interface QueryWikiBaseListCommand extends Parsable {
     /**
-     * The contextUserId property
+     * 通过上下文自动配置id，前端不需要传递.
      */
     contextUserId?: number | null;
     /**
@@ -6726,30 +6597,36 @@ export interface RunTestNativePluginCommandResponse extends Parsable {
      */
     response?: string | null;
 }
-export interface SearchResult extends Parsable {
-    /**
-     * Whether the search didn't return any result
-     */
-    noResult?: boolean | null;
-    /**
-     * Client question.
-     */
-    query?: string | null;
-    /**
-     * List of the relevant sources used to produce the answer.Key = Document IDValue = List of partitions used from the document.
-     */
-    results?: Citation[] | null;
-}
 /**
  * 搜索知识库文档分片.
  */
 export interface SearchWikiDocumentTextCommand extends Parsable {
     /**
+     * 要使用的 ai 模型，如果 IsOptimizeQuery 或 IsAnswer = true，必须设置.
+     */
+    aiModelId?: number | null;
+    /**
      * 文档id，不设置时搜索整个知识库.
      */
     documentId?: number | null;
     /**
-     * 搜索文本，区配文本.
+     * 是否需要 ai 回答.
+     */
+    isAnswer?: boolean | null;
+    /**
+     * 优化提问.
+     */
+    isOptimizeQuery?: boolean | null;
+    /**
+     * 最大召回数量，但是最后聚合结果可能小于该值.
+     */
+    limit?: number | null;
+    /**
+     * 最小相关度，范围0.0-1.0，默认0表示不过滤.
+     */
+    minRelevance?: number | null;
+    /**
+     * 提问.
      */
     query?: string | null;
     /**
@@ -6759,9 +6636,47 @@ export interface SearchWikiDocumentTextCommand extends Parsable {
 }
 export interface SearchWikiDocumentTextCommandResponse extends Parsable {
     /**
-     * The searchResult property
+     * Ai 的回答.
      */
-    searchResult?: SearchResult | null;
+    answer?: string | null;
+    /**
+     * 提问.
+     */
+    query?: string | null;
+    /**
+     * 搜索结果.
+     */
+    searchResult?: SearchWikiDocumentTextItem[] | null;
+}
+export interface SearchWikiDocumentTextItem extends Parsable {
+    /**
+     * 此 id 不是切割预览中的文本 id.
+     */
+    chunkId?: Guid | null;
+    /**
+     * 被召回的文本块.
+     */
+    chunkText?: string | null;
+    /**
+     * 所属文档.
+     */
+    documentId?: number | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件类型.
+     */
+    fileType?: string | null;
+    /**
+     * 相关度.
+     */
+    recordRelevance?: number | null;
+    /**
+     * 被索引的文本.
+     */
+    text?: string | null;
 }
 /**
  * Serializes information the current object
@@ -7028,38 +6943,6 @@ export function serializeChatContentItem(writer: SerializationWriter, chatConten
         writer.writeStringValue("authorName", chatContentItem.authorName);
         writer.writeStringValue("content", chatContentItem.content);
         writer.writeStringValue("recordId", chatContentItem.recordId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeCitation(writer: SerializationWriter, citation: Partial<Citation> | undefined | null = {}) : void {
-    if (citation) {
-        writer.writeStringValue("documentId", citation.documentId);
-        writer.writeStringValue("fileId", citation.fileId);
-        writer.writeStringValue("index", citation.index);
-        writer.writeStringValue("link", citation.link);
-        writer.writeCollectionOfObjectValues<Citation_Partition>("partitions", citation.partitions, serializeCitation_Partition);
-        writer.writeStringValue("sourceContentType", citation.sourceContentType);
-        writer.writeStringValue("sourceName", citation.sourceName);
-        writer.writeStringValue("sourceUrl", citation.sourceUrl);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeCitation_Partition(writer: SerializationWriter, citation_Partition: Partial<Citation_Partition> | undefined | null = {}) : void {
-    if (citation_Partition) {
-        writer.writeStringValue("lastUpdate", citation_Partition.lastUpdate);
-        writer.writeNumberValue("partitionNumber", citation_Partition.partitionNumber);
-        writer.writeNumberValue("relevance", citation_Partition.relevance);
-        writer.writeNumberValue("sectionNumber", citation_Partition.sectionNumber);
-        writer.writeCollectionOfObjectValues<KeyValuePairOfStringAndListOfString>("tags", citation_Partition.tags, serializeKeyValuePairOfStringAndListOfString);
-        writer.writeStringValue("text", citation_Partition.text);
     }
 }
 /**
@@ -7440,17 +7323,6 @@ export function serializeKeyValueOfStringAndString(writer: SerializationWriter, 
     if (keyValueOfStringAndString) {
         writer.writeStringValue("key", keyValueOfStringAndString.key);
         writer.writeStringValue("value", keyValueOfStringAndString.value);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeKeyValuePairOfStringAndListOfString(writer: SerializationWriter, keyValuePairOfStringAndListOfString: Partial<KeyValuePairOfStringAndListOfString> | undefined | null = {}) : void {
-    if (keyValuePairOfStringAndListOfString) {
-        writer.writeStringValue("key", keyValuePairOfStringAndListOfString.key);
-        writer.writeCollectionOfPrimitiveValues<string>("value", keyValuePairOfStringAndListOfString.value);
     }
 }
 /**
@@ -8577,21 +8449,14 @@ export function serializeRunTestNativePluginCommandResponse(writer: Serializatio
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeSearchResult(writer: SerializationWriter, searchResult: Partial<SearchResult> | undefined | null = {}) : void {
-    if (searchResult) {
-        writer.writeBooleanValue("noResult", searchResult.noResult);
-        writer.writeStringValue("query", searchResult.query);
-        writer.writeCollectionOfObjectValues<Citation>("results", searchResult.results, serializeCitation);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeSearchWikiDocumentTextCommand(writer: SerializationWriter, searchWikiDocumentTextCommand: Partial<SearchWikiDocumentTextCommand> | undefined | null = {}) : void {
     if (searchWikiDocumentTextCommand) {
+        writer.writeNumberValue("aiModelId", searchWikiDocumentTextCommand.aiModelId);
         writer.writeNumberValue("documentId", searchWikiDocumentTextCommand.documentId);
+        writer.writeBooleanValue("isAnswer", searchWikiDocumentTextCommand.isAnswer);
+        writer.writeBooleanValue("isOptimizeQuery", searchWikiDocumentTextCommand.isOptimizeQuery);
+        writer.writeNumberValue("limit", searchWikiDocumentTextCommand.limit);
+        writer.writeNumberValue("minRelevance", searchWikiDocumentTextCommand.minRelevance);
         writer.writeStringValue("query", searchWikiDocumentTextCommand.query);
         writer.writeNumberValue("wikiId", searchWikiDocumentTextCommand.wikiId);
     }
@@ -8603,7 +8468,25 @@ export function serializeSearchWikiDocumentTextCommand(writer: SerializationWrit
 // @ts-ignore
 export function serializeSearchWikiDocumentTextCommandResponse(writer: SerializationWriter, searchWikiDocumentTextCommandResponse: Partial<SearchWikiDocumentTextCommandResponse> | undefined | null = {}) : void {
     if (searchWikiDocumentTextCommandResponse) {
-        writer.writeObjectValue<SearchResult>("searchResult", searchWikiDocumentTextCommandResponse.searchResult, serializeSearchResult);
+        writer.writeStringValue("answer", searchWikiDocumentTextCommandResponse.answer);
+        writer.writeStringValue("query", searchWikiDocumentTextCommandResponse.query);
+        writer.writeCollectionOfObjectValues<SearchWikiDocumentTextItem>("searchResult", searchWikiDocumentTextCommandResponse.searchResult, serializeSearchWikiDocumentTextItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSearchWikiDocumentTextItem(writer: SerializationWriter, searchWikiDocumentTextItem: Partial<SearchWikiDocumentTextItem> | undefined | null = {}) : void {
+    if (searchWikiDocumentTextItem) {
+        writer.writeGuidValue("chunkId", searchWikiDocumentTextItem.chunkId);
+        writer.writeStringValue("chunkText", searchWikiDocumentTextItem.chunkText);
+        writer.writeNumberValue("documentId", searchWikiDocumentTextItem.documentId);
+        writer.writeStringValue("fileName", searchWikiDocumentTextItem.fileName);
+        writer.writeStringValue("fileType", searchWikiDocumentTextItem.fileType);
+        writer.writeNumberValue("recordRelevance", searchWikiDocumentTextItem.recordRelevance);
+        writer.writeStringValue("text", searchWikiDocumentTextItem.text);
     }
 }
 /**

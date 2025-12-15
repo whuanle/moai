@@ -1,139 +1,279 @@
-﻿//using MediatR;
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.Extensions.DependencyInjection;
-//using Microsoft.KernelMemory;
-//using MoAI.AiModel.Models;
-//using MoAI.AiModel.Services;
-//using MoAI.Database;
-//using MoAI.Infra;
-//using MoAI.Infra.Exceptions;
-//using MoAI.Infra.Extensions;
-//using MoAI.Wiki.Wikis.Queries.Response;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.KernelMemory;
+using MoAI.AI.Commands;
+using MoAI.AI.MemoryDb;
+using MoAI.AI.Models;
+using MoAI.AiModel.Models;
+using MoAI.Database;
+using MoAI.Database.Entities;
+using MoAI.Infra;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
+using MoAI.Wiki.Wikis.Queries.Response;
+using System.Collections.Generic;
 
-//namespace MoAI.Wiki.Documents.Queries;
+namespace MoAI.Wiki.Documents.Queries;
 
-///// <summary>
-///// 搜索知识库文本.
-///// </summary>
-//public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDocumentTextCommand, SearchWikiDocumentTextCommandResponse>
-//{
-//    private readonly IServiceProvider _serviceProvider;
-//    private readonly DatabaseContext _databaseContext;
-//    private readonly SystemOptions _systemOptions;
+/// <summary>
+/// 搜索知识库文本.
+/// </summary>
+public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDocumentTextCommand, SearchWikiDocumentTextCommandResponse>
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly DatabaseContext _databaseContext;
+    private readonly SystemOptions _systemOptions;
+    private readonly IAiClientBuilder _aiClientBuilder;
+    private readonly IMediator _mediator;
 
-//    /// <summary>
-//    /// Initializes a new instance of the <see cref="SearchWikiDocumentTextCommandHandler"/> class.
-//    /// </summary>
-//    /// <param name="serviceProvider"></param>
-//    /// <param name="databaseContext"></param>
-//    /// <param name="systemOptions"></param>
-//    public SearchWikiDocumentTextCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, SystemOptions systemOptions)
-//    {
-//        _serviceProvider = serviceProvider;
-//        _databaseContext = databaseContext;
-//        _systemOptions = systemOptions;
-//    }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SearchWikiDocumentTextCommandHandler"/> class.
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="databaseContext"></param>
+    /// <param name="systemOptions"></param>
+    /// <param name="aiClientBuilder"></param>
+    /// <param name="mediator"></param>
+    public SearchWikiDocumentTextCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, SystemOptions systemOptions, IAiClientBuilder aiClientBuilder, IMediator mediator)
+    {
+        _serviceProvider = serviceProvider;
+        _databaseContext = databaseContext;
+        _systemOptions = systemOptions;
+        _aiClientBuilder = aiClientBuilder;
+        _mediator = mediator;
+    }
 
-//    /// <inheritdoc/>
-//    public async Task<SearchWikiDocumentTextCommandResponse> Handle(SearchWikiDocumentTextCommand request, CancellationToken cancellationToken)
-//    {
-//        var (wikiConfig, aiEndpoint) = await GetWikiConfigAsync(request.WikiId);
+    /// <inheritdoc/>
+    public async Task<SearchWikiDocumentTextCommandResponse> Handle(SearchWikiDocumentTextCommand request, CancellationToken cancellationToken)
+    {
+        var (wikiConfig, wikiAiEndpoint) = await GetWikiConfigAsync(request.WikiId);
 
-//        if (wikiConfig == null || aiEndpoint == null)
-//        {
-//            throw new BusinessException("知识库配置错误") { StatusCode = 409 };
-//        }
+        if (wikiConfig == null || wikiAiEndpoint == null)
+        {
+            throw new BusinessException("知识库配置错误") { StatusCode = 409 };
+        }
 
-//        // 构建客户端
-//        var memoryBuilder = new KernelMemoryBuilder().WithSimpleFileStorage(Path.GetTempPath());
+        AiEndpoint? chatAiEndpoint = null;
 
-//        var textEmbeddingGeneration = _serviceProvider.GetKeyedService<ITextEmbeddingGeneration>(aiEndpoint.Provider);
-//        var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
-//        if (memoryDb == null)
-//        {
-//            throw new BusinessException("不支持的文档数据库");
-//        }
+        if (request.AiModelId != 0)
+        {
+            chatAiEndpoint = await GetAiModelAsync(request);
+        }
 
-//        memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
+        // 1，优化提问
+        var query = request.Query;
+        var answer = string.Empty;
 
-//        if (textEmbeddingGeneration == null)
-//        {
-//            throw new BusinessException("不支持该模型提供商") { StatusCode = 409 };
-//        }
+        if (request.IsOptimizeQuery)
+        {
+            var optimizeCommand = new OneSimpleChatCommand
+            {
+                Endpoint = chatAiEndpoint!,
+                Question = request.Query,
+                Prompt = "请将用户的问题优化为适合在知识库中搜索的简洁关键词，去除多余的描述和礼貌用语，确保关键词准确反映用户的查询意图。",
+            };
 
-//        textEmbeddingGeneration.Configure(memoryBuilder, aiEndpoint, wikiConfig);
+            var optimizeResponse = await _mediator.Send(optimizeCommand, cancellationToken);
+            query = optimizeResponse.Content;
+        }
 
-//        var memoryClient = memoryBuilder.WithoutTextGenerator()
-//            .Build();
+        var wikiIndex = request.WikiId.ToString();
 
-//        MemoryFilter filter = new MemoryFilter();
-//        if (request.DocumentId != null)
-//        {
-//            var document = await _databaseContext.WikiDocuments.FirstOrDefaultAsync(x => x.Id == request.DocumentId);
-//            if (document == null)
-//            {
-//                throw new BusinessException("文档不存在") { StatusCode = 404 };
-//            }
+        var textEmbeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(wikiAiEndpoint, wikiConfig.EmbeddingDimensions);
+        var memoryDb = _aiClientBuilder.CreateMemoryDb(textEmbeddingGenerator, _systemOptions.Wiki.DBType.JsonToObject<MemoryDbType>());
 
-//            filter = new MemoryFilter
-//            {
-//                { "fileId", document.FileId.ToString() },
-//            };
-//        }
+        await CheckIndexIsExistAsync(memoryDb, wikiIndex, wikiConfig.EmbeddingDimensions);
 
-//        var query = string.IsNullOrEmpty(request.Query) ? string.Empty : request.Query;
-//        var searchResult = await memoryClient.SearchAsync(query: query, index: request.WikiId.ToString(), limit: 10, filter: filter);
+        MemoryFilter filter = new MemoryFilter();
+        if (request.DocumentId != null)
+        {
+            // 从文档里面筛选
+            var documentIndex = request.DocumentId.ToString();
+            filter.Add("document_id", documentIndex);
+        }
 
-//        if (searchResult == null)
-//        {
-//            return new SearchWikiDocumentTextCommandResponse
-//            {
-//                SearchResult = new SearchResult()
-//            };
-//        }
+        var results = await memoryDb.GetSimilarListAsync(index: wikiIndex, query, new[] { filter }, request.MinRelevance, request.Limit, true).ToArrayAsync();
 
-//        return new SearchWikiDocumentTextCommandResponse
-//        {
-//            SearchResult = searchResult,
-//        };
-//    }
+        if (results.Length == 0)
+        {
+            return new SearchWikiDocumentTextCommandResponse
+            {
+                Query = query
+            };
+        }
 
-//    private async Task<(EmbeddingConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
-//    {
-//        var result = await _databaseContext.Wikis
-//        .Where(x => x.Id == wikiId)
-//        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
-//        {
-//            WikiConfig = new EmbeddingConfig
-//            {
-//                EmbeddingDimensions = a.EmbeddingDimensions,
-//                EmbeddingBatchSize = a.EmbeddingBatchSize,
-//                MaxRetries = a.MaxRetries,
-//                EmbeddingModelTokenizer = a.EmbeddingModelTokenizer.JsonToObject<EmbeddingTokenizer>(),
-//                EmbeddingModelId = a.EmbeddingModelId,
-//            },
-//            AiEndpoint = new AiEndpoint
-//            {
-//                Name = x.Name,
-//                DeploymentName = x.DeploymentName,
-//                Title = x.Title,
-//                AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
-//                Provider = x.AiProvider.JsonToObject<AiProvider>(),
-//                ContextWindowTokens = x.ContextWindowTokens,
-//                Endpoint = x.Endpoint,
-//                Abilities = new ModelAbilities
-//                {
-//                    Files = x.Files,
-//                    FunctionCall = x.FunctionCall,
-//                    ImageOutput = x.ImageOutput,
-//                    Vision = x.IsVision,
-//                },
-//                MaxDimension = x.MaxDimension,
-//                TextOutput = x.TextOutput,
-//                Key = x.Key,
-//            }
-//        }).FirstOrDefaultAsync();
+        // 获取关联的文本块
+        var embeddingIds = results.Select(x => x.Item1.Id)
+            .Distinct()
+            .Select(x => Guid.Parse(x!)).ToArray();
 
-//        return (result?.WikiConfig, result?.AiEndpoint);
-//    }
-//}
+        var embeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
+            .Where(x => embeddingIds.Contains(x.Id))
+            .ToListAsync();
+
+        var chunkEmbeddingIds = embeddings.Where(x => x.ChunkId != default).Select(x => x.ChunkId).Distinct().ToArray();
+        var chunkEmbeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
+            .Where(x => chunkEmbeddingIds.Contains(x.Id))
+            .ToArrayAsync();
+
+        if (chunkEmbeddings.Length > 0)
+        {
+            embeddings.AddRange(chunkEmbeddings);
+        }
+
+        var documentIds = embeddings.Select(x => x.DocumentId).ToArray();
+        var documents = await _databaseContext.WikiDocuments.Where(x => documentIds.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                x.FileName,
+                x.FileType
+            }).ToArrayAsync();
+
+        List<SearchWikiDocumentTextItem> searches = new();
+
+        foreach (var item in results)
+        {
+            var embedding = embeddings.FirstOrDefault(x => x.Id == Guid.Parse(item.Item1.Id));
+            if (embedding == null)
+            {
+                continue;
+            }
+
+            WikiDocumentChunkEmbeddingEntity? chunkEmbedding = null!;
+            if (embedding.ChunkId != default)
+            {
+                chunkEmbedding = embeddings.FirstOrDefault(x => x.Id == embedding.ChunkId);
+            }
+
+            if (chunkEmbedding == null)
+            {
+                chunkEmbedding = embedding;
+            }
+
+            var document = documents.FirstOrDefault(x => x.Id == embedding.DocumentId);
+
+            var record = new SearchWikiDocumentTextItem
+            {
+                ChunkId = embedding.ChunkId,
+                Text = embedding.DerivativeContent,
+                ChunkText = chunkEmbedding.DerivativeContent,
+                RecordRelevance = item.Item2,
+                DocumentId = document?.Id ?? 0,
+                FileName = document?.FileName ?? string.Empty,
+                FileType = document?.FileType ?? string.Empty
+            };
+
+            searches.Add(record);
+        }
+
+        if (request.IsAnswer)
+        {
+            var optimizeCommand = new OneSimpleChatCommand
+            {
+                Endpoint = chatAiEndpoint!,
+                Question = request.Query,
+                Prompt = $"""
+仅根据下述事实，给出全面/详细的回答。
+您不知道知识的来源，只需回答。
+如果没有足够的信息，请回复“未找到信息”。
+问题：{request.Query}
+======
+事实：
+{string.Join("\n", searches.Select(x => x.ChunkText).Distinct())}
+""",
+            };
+
+            var optimizeResponse = await _mediator.Send(optimizeCommand, cancellationToken);
+            answer = optimizeResponse.Content;
+        }
+
+        return new SearchWikiDocumentTextCommandResponse
+        {
+            Query = query,
+            Answer = answer,
+            SearchResult = searches
+        };
+    }
+
+    private async Task<AiEndpoint> GetAiModelAsync(SearchWikiDocumentTextCommand request)
+    {
+        var aiModel = await _databaseContext.AiModels
+            .Where(x => x.Id == request.AiModelId && x.IsPublic)
+            .FirstOrDefaultAsync();
+
+        if (aiModel == null)
+        {
+            throw new BusinessException("未找到可用 ai 模型");
+        }
+
+        var aiEndpoint = new AiEndpoint
+        {
+            Name = aiModel.Name,
+            DeploymentName = aiModel.DeploymentName,
+            Title = aiModel.Title,
+            AiModelType = Enum.Parse<AiModelType>(aiModel.AiModelType, true),
+            Provider = Enum.Parse<AiProvider>(aiModel.AiProvider, true),
+            ContextWindowTokens = aiModel.ContextWindowTokens,
+            Endpoint = aiModel.Endpoint,
+            Key = aiModel.Key,
+            Abilities = new ModelAbilities
+            {
+                Files = aiModel.Files,
+                FunctionCall = aiModel.FunctionCall,
+                ImageOutput = aiModel.ImageOutput,
+                Vision = aiModel.IsVision,
+            },
+            MaxDimension = aiModel.MaxDimension,
+            TextOutput = aiModel.TextOutput
+        };
+
+        return aiEndpoint;
+    }
+
+    private static async Task CheckIndexIsExistAsync(Microsoft.KernelMemory.MemoryStorage.IMemoryDb memoryDb, string index, int vectorSize)
+    {
+        var indexs = await memoryDb.GetIndexesAsync();
+
+        if (!indexs.Contains(index))
+        {
+            await memoryDb.CreateIndexAsync(index, vectorSize);
+        }
+    }
+
+    private async Task<(EmbeddingConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
+    {
+        var result = await _databaseContext.Wikis
+        .Where(x => x.Id == wikiId)
+        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
+        {
+            WikiConfig = new EmbeddingConfig
+            {
+                EmbeddingDimensions = a.EmbeddingDimensions,
+                EmbeddingModelId = a.EmbeddingModelId,
+            },
+            AiEndpoint = new AiEndpoint
+            {
+                Name = x.Name,
+                DeploymentName = x.DeploymentName,
+                Title = x.Title,
+                AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
+                Provider = x.AiProvider.JsonToObject<AiProvider>(),
+                ContextWindowTokens = x.ContextWindowTokens,
+                Endpoint = x.Endpoint,
+                Abilities = new ModelAbilities
+                {
+                    Files = x.Files,
+                    FunctionCall = x.FunctionCall,
+                    ImageOutput = x.ImageOutput,
+                    Vision = x.IsVision,
+                },
+                MaxDimension = x.MaxDimension,
+                TextOutput = x.TextOutput,
+                Key = x.Key,
+            }
+        }).FirstOrDefaultAsync();
+
+        return (result?.WikiConfig, result?.AiEndpoint);
+    }
+}

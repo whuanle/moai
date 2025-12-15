@@ -45,6 +45,12 @@ public class InviteWikiUserCommandHandler : IRequestHandler<InviteWikiUserComman
         if (request.UserNames != null && request.UserNames.Count > 0)
         {
             var users = await _databaseContext.Users.Where(x => request.UserNames.Contains(x.UserName)).Select(x => x.Id).ToArrayAsync(cancellationToken);
+
+            if (users.Length != request.UserNames.Count)
+            {
+                throw new BusinessException("部分用户账号不存在");
+            }
+
             foreach (var userId in users)
             {
                 userIds.Add(userId);

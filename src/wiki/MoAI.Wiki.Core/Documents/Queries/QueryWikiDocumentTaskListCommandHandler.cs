@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.User.Queries;
-using MoAI.Wiki.Documents.Queries.Responses;
+using MoAI.Wiki.Documents.Models;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 

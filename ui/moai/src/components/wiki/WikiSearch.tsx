@@ -1,18 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "react-router";
 import {
   Card,
   Select,
   Input,
+  InputNumber,
   Button,
   Table,
   message,
   Space,
   Tag,
   Typography,
+  Form,
+  Checkbox,
   Row,
   Col,
-  Divider,
   Modal,
   Empty,
   Alert,
@@ -28,11 +30,11 @@ import { GetApiClient } from "../ServiceClient";
 import type {
   QueryWikiDocumentListItem,
   SearchWikiDocumentTextCommandResponse,
-  Citation,
-  Citation_Partition,
+  SearchWikiDocumentTextItem,
   QueryWikiDocumentListCommand,
   SearchWikiDocumentTextCommand,
 } from "../../apiClient/models";
+import { useAiModelList } from "./documentEmbedding/hooks/useAiModelList";
 
 const { Text } = Typography;
 
@@ -41,18 +43,6 @@ interface DocumentOption {
   value: number;
   label: string;
   documentId: number;
-}
-
-interface SearchResultItem {
-  key: string;
-  documentId: number;
-  fileName: string;
-  sourceContentType: string;
-  partitionNumber: number;
-  sectionNumber: number;
-  relevance: number;
-  text: string;
-  lastUpdate: string;
 }
 
 // 文档列表 hook
@@ -98,13 +88,23 @@ function useDocumentList(wikiId: number) {
 
 // 搜索 hook
 function useSearch(wikiId: number) {
-  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchWikiDocumentTextItem[]>([]);
+  const [searchAnswer, setSearchAnswer] = useState<string | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
   const performSearch = useCallback(
-    async (searchText: string, selectedDocumentId?: number) => {
-      if (!searchText.trim()) {
+    async (values: {
+      query: string;
+      documentId?: number;
+      limit?: number | null;
+      minRelevance?: number | null;
+      isOptimizeQuery?: boolean;
+      isAnswer?: boolean;
+      aiModelId?: number | null;
+    }) => {
+      const queryText = values?.query?.trim();
+      if (!queryText) {
         messageApi.warning("请输入搜索关键词");
         return;
       }
@@ -112,57 +112,45 @@ function useSearch(wikiId: number) {
         messageApi.error("缺少必要的参数");
         return;
       }
+      if (values?.limit && (values.limit < 1 || values.limit > 200)) {
+        messageApi.warning("召回数量需在 1-200 之间");
+        return;
+      }
+      if (
+        values?.minRelevance !== undefined &&
+        values.minRelevance !== null &&
+        (values.minRelevance < 0 || values.minRelevance > 1)
+      ) {
+        messageApi.warning("最小相关度范围为 0 - 1");
+        return;
+      }
+      if ((values?.isOptimizeQuery || values?.isAnswer) && !values?.aiModelId) {
+        messageApi.warning("开启优化/回答时需要选择 AI 模型");
+        return;
+      }
       try {
         setSearchLoading(true);
+        setSearchAnswer(null);
         const client = GetApiClient();
         const command: SearchWikiDocumentTextCommand = {
           wikiId,
-          query: searchText.trim(),
-          documentId: selectedDocumentId || undefined,
+          query: queryText,
+          documentId: values.documentId ?? null,
+          limit: values?.limit ?? null,
+          minRelevance: values?.minRelevance ?? null,
+          isOptimizeQuery: values?.isOptimizeQuery ?? false,
+          isAnswer: values?.isAnswer ?? false,
+          aiModelId: values?.aiModelId ?? 0,
         };
         const response: SearchWikiDocumentTextCommandResponse | undefined =
           await client.api.wiki.document.search.post(command);
-        if (response?.searchResult) {
-          const { searchResult } = response;
-          if (searchResult.noResult) {
-            setSearchResults([]);
-            messageApi.info("未找到相关结果");
-            return;
-          }
-          if (searchResult.results && searchResult.results.length > 0) {
-            const resultItems: SearchResultItem[] = [];
-            searchResult.results.forEach(
-              (citation: Citation, citationIndex: number) => {
-                if (citation.partitions && citation.partitions.length > 0) {
-                  citation.partitions.forEach(
-                    (partition: Citation_Partition, partitionIndex: number) => {
-                      resultItems.push({
-                        key: `${citationIndex}-${partitionIndex}`,
-                        documentId: parseInt(citation.documentId || "0"),
-                        fileName: citation.sourceName || "",
-                        sourceContentType: citation.sourceContentType || "",
-                        partitionNumber: partition.partitionNumber || 0,
-                        sectionNumber: partition.sectionNumber || 0,
-                        relevance: partition.relevance || 0,
-                        text: partition.text || "",
-                        lastUpdate: partition.lastUpdate || "",
-                      });
-                    }
-                  );
-                }
-              }
-            );
-            setSearchResults(resultItems);
-            messageApi.success(
-              `已返回排名靠前的 ${resultItems.length} 个相关结果`
-            );
-          } else {
-            setSearchResults([]);
-            messageApi.info("未找到相关结果");
-          }
-        } else {
-          setSearchResults([]);
+        const results = response?.searchResult ?? [];
+        setSearchResults(results);
+        setSearchAnswer(values?.isAnswer ? response?.answer ?? null : null);
+        if (!results || results.length === 0) {
           messageApi.info("未找到相关结果");
+        } else {
+          messageApi.success(`共返回 ${results.length} 条结果`);
         }
       } catch (error) {
         messageApi.error("搜索失败");
@@ -173,7 +161,12 @@ function useSearch(wikiId: number) {
     [wikiId, messageApi]
   );
 
-  return { searchResults, searchLoading, contextHolder, performSearch };
+  const resetResults = useCallback(() => {
+    setSearchResults([]);
+    setSearchAnswer(null);
+  }, []);
+
+  return { searchResults, searchLoading, searchAnswer, contextHolder, performSearch, resetResults };
 }
 
 // 文本详情弹窗 hook
@@ -212,7 +205,8 @@ export default function WikiSearch() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<
     number | undefined
   >();
-  const [searchText, setSearchText] = useState("");
+  const [form] = Form.useForm();
+  const [answerVisible, setAnswerVisible] = useState(false);
 
   // hooks
   const {
@@ -222,10 +216,18 @@ export default function WikiSearch() {
     fetchDocuments,
   } = useDocumentList(wikiId);
   const {
+    modelList,
+    loading: modelListLoading,
+    contextHolder: modelContextHolder,
+    fetchModelList,
+  } = useAiModelList();
+  const {
     searchResults,
     searchLoading,
+    searchAnswer,
     contextHolder: searchContextHolder,
     performSearch,
+    resetResults,
   } = useSearch(wikiId);
   const {
     visible: textModalVisible,
@@ -237,112 +239,114 @@ export default function WikiSearch() {
     close: closeModal,
   } = useTextModal();
 
-  useEffect(() => {
-    if (wikiId) fetchDocuments();
-  }, [wikiId, fetchDocuments]);
+  const dataSource = useMemo(
+    () =>
+      (searchResults || []).map((item, index) => ({
+        ...item,
+        key: item.chunkId || `${index}`,
+      })),
+    [searchResults]
+  );
 
-  // 搜索
-  const handleSearch = useCallback(() => {
-    performSearch(searchText, selectedDocumentId);
-  }, [performSearch, searchText, selectedDocumentId]);
-  const handlePressEnter = useCallback(() => {
-    handleSearch();
-  }, [handleSearch]);
-
-  // 表格列
-  const columns = [
-    {
-      title: "所属文档",
-      dataIndex: "fileName",
-      key: "fileName",
-      width: 200,
-      ellipsis: true,
-      fixed: "left" as const,
-      render: (text: string) => (
-        <Text strong ellipsis={{ tooltip: text }}>
-          {text}
-        </Text>
-      ),
-    },
-    {
-      title: "文件类型",
-      dataIndex: "sourceContentType",
-      key: "sourceContentType",
-      width: 150,
-      ellipsis: true,
-      render: (contentType: string) => (
-        <Tag color="blue" icon={<FileTextOutlined />}>
-          {contentType || "未知"}
-        </Tag>
-      ),
-    },
-    {
-      title: "分段号",
-      dataIndex: "partitionNumber",
-      key: "partitionNumber",
-      width: 80,
-      align: "center" as const,
-      render: (value: number) => <Text code>{value}</Text>,
-    },
-    {
-      title: "章节号",
-      dataIndex: "sectionNumber",
-      key: "sectionNumber",
-      width: 80,
-      align: "center" as const,
-      render: (value: number) => <Text code>{value}</Text>,
-    },
-    {
-      title: "相关度",
-      dataIndex: "relevance",
-      key: "relevance",
-      width: 100,
-      align: "center" as const,
-      render: (relevance: number) => (
-        <Tag
-          color={
-            relevance > 0.8 ? "green" : relevance > 0.6 ? "orange" : "default"
-          }
-        >
-          {(relevance * 100).toFixed(1)}%
-        </Tag>
-      ),
-    },
-    {
-      title: "文本内容",
-      dataIndex: "text",
-      key: "text",
-      ellipsis: true,
-      render: (text: string, record: SearchResultItem) => (
-        <Text
-          style={{ fontSize: 12, cursor: "pointer", color: "#1890ff" }}
-          ellipsis={{ tooltip: "点击查看完整内容" }}
-          onClick={() => showTextModal(text, record.fileName)}
-        >
-          {text}
-        </Text>
-      ),
-    },
-    {
-      title: "生成时间",
-      dataIndex: "lastUpdate",
-      key: "lastUpdate",
-      width: 150,
-      fixed: "right" as const,
-      render: (lastUpdate: string) => {
-        if (!lastUpdate) return "-";
-        try {
-          return new Date(lastUpdate).toLocaleString("zh-CN");
-        } catch {
-          return lastUpdate;
-        }
+  const columns = useMemo(
+    () => [
+      {
+        title: "序号",
+        key: "index",
+        width: 70,
+        align: "center" as const,
+        render: (_: any, __: any, index: number) => index + 1,
       },
-    },
-  ];
+      {
+        title: "文件名称",
+        dataIndex: "fileName",
+        key: "fileName",
+        width: 200,
+        ellipsis: true,
+        render: (value: string | null) => (
+          <Text ellipsis={{ tooltip: value || "N/A" }}>{value || "N/A"}</Text>
+        ),
+      },
+      {
+        title: "文件类型",
+        dataIndex: "fileType",
+        key: "fileType",
+        width: 150,
+        ellipsis: true,
+        render: (value: string | null) => (
+          <Tag color="blue" icon={<FileTextOutlined />}>
+            {value || "N/A"}
+          </Tag>
+        ),
+      },
+      {
+        title: "相关度",
+        dataIndex: "recordRelevance",
+        key: "recordRelevance",
+        width: 120,
+        align: "center" as const,
+        render: (relevance: number | null) => {
+          if (relevance === null || relevance === undefined) return "-";
+          const percent = relevance * 100;
+          const color =
+            percent >= 80 ? "green" : percent >= 60 ? "orange" : "default";
+          return <Tag color={color}>{`${percent.toFixed(2)}%`}</Tag>;
+        },
+      },
+      {
+        title: "索引文本",
+        dataIndex: "text",
+        key: "text",
+        ellipsis: true,
+        render: (text: string | null, record: SearchWikiDocumentTextItem) => (
+          <Text
+            style={{ fontSize: 12, cursor: "pointer", color: "#1890ff" }}
+            ellipsis={{ tooltip: "点击查看完整内容" }}
+            onClick={() => showTextModal(text || "", record.fileName || "")}
+          >
+            {text || "暂无数据"}
+          </Text>
+        ),
+      },
+      {
+        title: "召回文本块",
+        dataIndex: "chunkText",
+        key: "chunkText",
+        ellipsis: true,
+        render: (text: string | null, record: SearchWikiDocumentTextItem) => (
+          <Text
+            style={{ fontSize: 12, cursor: "pointer", color: "#1890ff" }}
+            ellipsis={{ tooltip: "点击查看完整内容" }}
+            onClick={() => showTextModal(text || "", record.fileName || "")}
+          >
+            {text || "暂无数据"}
+          </Text>
+        ),
+      },
+    ],
+    [showTextModal]
+  );
+
+  useEffect(() => {
+    if (wikiId) {
+      fetchDocuments();
+      fetchModelList();
+    }
+  }, [wikiId, fetchDocuments, fetchModelList]);
+
+  const handleSearch = useCallback(async () => {
+    const values = await form.validateFields();
+    setAnswerVisible(!!values?.isAnswer);
+    performSearch({
+      ...values,
+      documentId: selectedDocumentId,
+    });
+  }, [form, performSearch, selectedDocumentId]);
 
   return (
     <>
       {documentsContextHolder}
+      {modelContextHolder}
       {searchContextHolder}
       <Card
         title={
@@ -355,45 +359,146 @@ export default function WikiSearch() {
         bordered
         style={{ margin: 0 }}
       >
-        <Space.Compact
-          style={{ minWidth: "500px", maxWidth: "800", marginBottom: 16 }}
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            query: "",
+            limit: 20,
+            minRelevance: 0.0,
+            isOptimizeQuery: false,
+            isAnswer: false,
+            aiModelId: null,
+          }}
+          onFinish={handleSearch}
         >
-          <Select
-            placeholder="选择文档(留空搜索整个知识库)"
-            allowClear
-            style={{ width: 300 }}
-            value={selectedDocumentId}
-            onChange={setSelectedDocumentId}
-            options={documents}
-            showSearch
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
-            loading={documentsLoading}
-          />
-          <Input
-            placeholder="请输入搜索关键词"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onPressEnter={handlePressEnter}
-            allowClear
-            style={{ flex: 1, width: 400, marginLeft: "10px" }}
-          />
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSearch}
-            loading={searchLoading}
-            disabled={!searchText.trim()}
-            style={{ marginLeft: "10px" }}
+          <Form.Item label="选择文档（可选）">
+            <Select
+              placeholder="留空搜索整个知识库"
+              allowClear
+              style={{ width: 360 }}
+              value={selectedDocumentId}
+              onChange={setSelectedDocumentId}
+              options={documents}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              loading={documentsLoading}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="搜索内容"
+            name="query"
+            rules={[{ required: true, message: "请输入搜索关键词" }]}
           >
-            搜索
-          </Button>
-        </Space.Compact>
-        <Divider style={{ margin: "12px 0" }} />
-        <Table
+            <Input.TextArea
+              rows={3}
+              placeholder="输入待搜索的问题或文本"
+              allowClear
+              onPressEnter={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  form.submit();
+                }
+              }}
+            />
+          </Form.Item>
+
+          <Row gutter={[16, 12]} style={{ marginBottom: 8 }}>
+            <Col xs={24} sm={12} md={8} lg={8}>
+              <Form.Item label="最大召回数量" name="limit">
+                <InputNumber
+                  min={1}
+                  max={200}
+                  placeholder="默认 20"
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={8}>
+              <Form.Item label="最小相关度" name="minRelevance">
+                <InputNumber
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  placeholder="默认 0"
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={24} md={8} lg={8}>
+              <Form.Item label="AI 模型（可选）" name="aiModelId">
+                <Select
+                  allowClear
+                  placeholder="不选择则仅召回"
+                  loading={modelListLoading}
+                  options={modelList.map((model) => ({
+                    label: model.name,
+                    value: model.id,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={[16, 12]} style={{ marginBottom: 8 }}>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item
+                name="isOptimizeQuery"
+                valuePropName="checked"
+                style={{ marginBottom: 0 }}
+              >
+                <Checkbox>启用提问优化</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item
+                name="isAnswer"
+                valuePropName="checked"
+                style={{ marginBottom: 0 }}
+              >
+                <Checkbox>需要 AI 回答</Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Space  style={{ marginTop: 10 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<SearchOutlined />}
+              loading={searchLoading}
+            >
+              开始搜索
+            </Button>
+            <Button
+              onClick={() => {
+                form.resetFields();
+                resetResults();
+                setSelectedDocumentId(undefined);
+                setAnswerVisible(false);
+              }}
+            >
+              重置
+            </Button>
+          </Space>
+        </Form>
+
+        {answerVisible && (
+          <Alert
+            type={searchAnswer ? "success" : "info"}
+            showIcon
+            message="AI 回答"
+            description={searchAnswer || "未返回 AI 回答"}
+            style={{ margin: "16px 0" }}
+          />
+        )}
+
+        <Table style={{ marginTop: 20 }}
           columns={columns}
-          dataSource={searchResults}
+          dataSource={dataSource}
           loading={searchLoading}
           scroll={{ x: 1200, y: 400 }}
           size="small"
@@ -413,7 +518,7 @@ export default function WikiSearch() {
             message={
               <Space>
                 <InfoCircleOutlined />
-                <span>默认固定返回最符合要求的 10 条数据</span>
+                <span>按配置返回召回结果（默认 20 条）</span>
               </Space>
             }
             type="info"

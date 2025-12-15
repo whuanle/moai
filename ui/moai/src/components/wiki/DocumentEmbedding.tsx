@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams } from "react-router";
 import {
   Card,
@@ -42,6 +42,7 @@ import {
   DownOutlined,
   UpOutlined,
   ThunderboltOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { formatDateTime } from "../../helper/DateTimeHelper";
 import CodeEditorModal from "../common/CodeEditorModal";
@@ -52,12 +53,17 @@ import type {
   PreprocessStrategyType,
   KeyValueOfInt64AndString,
   AddWikiDocumentDerivativeItem,
+  SearchWikiDocumentTextCommand,
+  SearchWikiDocumentTextItem,
 } from "../../apiClient/models";
 import { proxyRequestError } from "../../helper/RequestError";
 
 const { Panel } = Collapse;
 
-// 类型定义
+/**
+ * 文档信息接口
+ * 用于存储文档的基本信息和切割配置
+ */
 interface DocumentInfo {
   documentId: number;
   fileName: string;
@@ -73,6 +79,10 @@ interface DocumentInfo {
   } | null;
 }
 
+/**
+ * 任务信息接口
+ * 用于存储文档处理任务的状态和详情
+ */
 interface TaskInfo {
   id: string;
   fileName: string;
@@ -85,6 +95,10 @@ interface TaskInfo {
   documentId: string;
 }
 
+/**
+ * 切割预览项接口
+ * 用于存储文档切割后的文本块及其衍生内容
+ */
 interface PartitionPreviewItem {
   chunkId: string;
   order: number;
@@ -92,7 +106,11 @@ interface PartitionPreviewItem {
   derivatives?: WikiDocumentDerivativeItem[] | null;
 }
 
-// 衍生类型映射（支持多种格式）
+/**
+ * 衍生类型映射表
+ * 支持多种格式的衍生类型名称映射（小写、首字母大写等）
+ * 用于统一显示衍生类型的友好名称
+ */
 const DerivativeTypeMap: Record<string, string> = {
   // 小写格式
   outline: "大纲",
@@ -108,7 +126,97 @@ const DerivativeTypeMap: Record<string, string> = {
   AggregatedSubParagraph: "聚合段落",
 };
 
-// 衍生类型选项
+/**
+ * 根据元数据key推断衍生类型
+ * 通过分析key的内容来确定对应的衍生类型
+ * @param key - 元数据的key
+ * @param strategyType - 预处理策略类型（作为后备方案）
+ * @returns 衍生类型
+ */
+const inferDerivativeTypeFromKey = (
+  key: string | null | undefined,
+  strategyType?: PreprocessStrategyType | null
+): DerivativeType | null => {
+  if (!key) {
+    // 如果没有key，根据策略类型推断
+    return inferDerivativeTypeFromStrategy(strategyType);
+  }
+  
+  const keyLower = key.toLowerCase();
+  if (keyLower.includes("outline") || keyLower.includes("大纲")) {
+    return "outline";
+  }
+  if (keyLower.includes("question") || keyLower.includes("问题")) {
+    return "question";
+  }
+  if (keyLower.includes("keyword") || keyLower.includes("关键词")) {
+    return "keyword";
+  }
+  if (keyLower.includes("summary") || keyLower.includes("摘要")) {
+    return "summary";
+  }
+  
+  // 如果无法从key推断，使用策略类型
+  return inferDerivativeTypeFromStrategy(strategyType);
+};
+
+/**
+ * 根据预处理策略类型推断衍生类型
+ * @param strategyType - 预处理策略类型
+ * @returns 衍生类型
+ */
+const inferDerivativeTypeFromStrategy = (
+  strategyType?: PreprocessStrategyType | null
+): DerivativeType | null => {
+  if (!strategyType) return null;
+  
+  switch (strategyType) {
+    case "outlineGeneration":
+      return "outline";
+    case "questionGeneration":
+      return "question";
+    case "keywordSummaryFusion":
+      return "keyword";
+    case "semanticAggregation":
+      return "aggregatedSubParagraph";
+    default:
+      return null;
+  }
+};
+
+/**
+ * 获取衍生类型的显示名称
+ * @param type - 衍生类型
+ * @returns 显示名称
+ */
+const getDerivativeTypeDisplayName = (type: string | null | undefined): string => {
+  if (!type) return "未知";
+  
+  // 尝试直接匹配
+  if (DerivativeTypeMap[type]) {
+    return DerivativeTypeMap[type];
+  }
+  
+  // 尝试转换为字符串后匹配
+  const typeStr = String(type);
+  if (DerivativeTypeMap[typeStr]) {
+    return DerivativeTypeMap[typeStr];
+  }
+  
+  // 尝试小写匹配
+  const typeLower = typeStr.toLowerCase();
+  if (DerivativeTypeMap[typeLower]) {
+    return DerivativeTypeMap[typeLower];
+  }
+  
+  // 返回原始值
+  return typeStr;
+};
+
+/**
+ * 衍生类型选项列表
+ * 用于下拉选择框的选项配置
+ */
 const DerivativeTypeOptions = [
   { label: "大纲", value: "outline" },
   { label: "问题", value: "question" },
@@ -117,7 +225,10 @@ const DerivativeTypeOptions = [
   { label: "聚合段落", value: "aggregatedSubParagraph" },
 ];
 
-// 预处理策略选项
+/**
+ * 预处理策略选项列表
+ * 用于AI生成时的策略选择
+ */
 const PreprocessStrategyOptions = [
   { label: "大纲生成", value: "outlineGeneration" },
   { label: "问题生成", value: "questionGeneration" },
@@ -125,7 +236,9 @@ const PreprocessStrategyOptions = [
   { label: "语义聚合", value: "semanticAggregation" },
 ];
 
-// Chunk 编辑组件
+/**
+ * Chunk编辑模态框组件的属性接口
+ */
 interface ChunkEditModalProps {
   open: boolean;
   chunkId: string | null;
@@ -138,6 +251,11 @@ interface ChunkEditModalProps {
   onSave: (text: string, derivatives: WikiDocumentDerivativeItem[] | null) => void;
 }
 
+/**
+ * Chunk编辑模态框组件
+ * 用于编辑单个文本块的内容和衍生内容
+ * 支持文本编辑、衍生内容管理和AI生成
+ */
 const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   open,
   chunkId,
@@ -163,9 +281,10 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   const [aiGenerating, setAiGenerating] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
+  // 当模态框打开时，初始化编辑内容
   useEffect(() => {
     if (open) {
-      setTextEditorValue(initialText);
+      setTextEditorValue(initialText || "");
       setDerivatives(initialDerivatives || []);
     }
   }, [open, initialText, initialDerivatives]);
@@ -175,13 +294,17 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
     setTextEditorVisible(false);
   };
 
-  const handleAddDerivative = () => {
-    if (!newDerivativeType || !newDerivativeContent.trim()) {
+  /**
+   * 添加新的衍生内容
+   * 验证输入后添加到列表
+   */
+  const handleAddDerivative = useCallback(() => {
+    if (!newDerivativeType || !newDerivativeContent?.trim()) {
       message.warning("请选择类型并输入内容");
       return;
     }
-    setDerivatives([
-      ...derivatives,
+    setDerivatives((prev) => [
+      ...prev,
       {
         derivativeType: newDerivativeType,
         derivativeContent: newDerivativeContent.trim(),
@@ -189,27 +312,60 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
     ]);
     setNewDerivativeType(null);
     setNewDerivativeContent("");
-  };
+  }, [newDerivativeType, newDerivativeContent]);
 
-  const handleEditDerivative = (index: number, type: DerivativeType, content: string) => {
-    const updated = [...derivatives];
-    updated[index] = {
-      derivativeType: type,
-      derivativeContent: content,
-    };
-    setDerivatives(updated);
+  /**
+   * 编辑衍生内容
+   * 更新指定索引的衍生内容
+   */
+  const handleEditDerivative = useCallback((index: number, type: DerivativeType, content: string) => {
+    setDerivatives((prev) => {
+      if (index < 0 || index >= prev.length) {
+        console.warn("Invalid derivative index:", index);
+        return prev;
+      }
+      const updated = [...prev];
+      updated[index] = {
+        derivativeType: type,
+        derivativeContent: content || "",
+      };
+      return updated;
+    });
     setEditingDerivativeIndex(null);
-  };
+  }, []);
 
-  const handleDeleteDerivative = (index: number) => {
-    setDerivatives(derivatives.filter((_, i) => i !== index));
-  };
+  /**
+   * 删除衍生内容
+   * 从列表中移除指定索引的衍生内容
+   */
+  const handleDeleteDerivative = useCallback((index: number) => {
+    setDerivatives((prev) => {
+      if (index < 0 || index >= prev.length) {
+        console.warn("Invalid derivative index:", index);
+        return prev;
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
 
-  const handleSave = () => {
-    onSave(textEditorValue, derivatives.length > 0 ? derivatives : null);
-  };
+  /**
+   * 保存编辑内容
+   * 将文本和衍生内容传递给父组件处理
+   */
+  const handleSave = useCallback(() => {
+    if (!textEditorValue?.trim()) {
+      message.warning("文本内容不能为空");
+      return;
+    }
+    onSave(textEditorValue.trim(), derivatives.length > 0 ? derivatives : null);
+  }, [textEditorValue, derivatives, onSave]);
 
+  /**
+   * AI生成衍生内容
+   * 调用AI接口生成文本块的衍生内容（大纲、问题、关键词等）
+   */
   const handleAiGenerate = useCallback(async () => {
+    // 参数验证
     if (!chunkId) {
       messageApi.warning("请先保存文本块");
       return;
@@ -222,7 +378,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
       messageApi.warning("请选择优化策略");
       return;
     }
-    if (!textEditorValue.trim()) {
+    if (!textEditorValue?.trim()) {
       messageApi.warning("文本内容不能为空");
       return;
     }
@@ -256,35 +412,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
             if (result.metadata && result.metadata.length > 0) {
               result.metadata.forEach((meta) => {
                 if (meta.key && meta.value) {
-                  // 根据 key 确定衍生类型
-                  let derivativeType: DerivativeType | null = null;
-                  const keyLower = meta.key.toLowerCase();
-                  if (keyLower.includes("outline") || keyLower.includes("大纲")) {
-                    derivativeType = "outline";
-                  } else if (keyLower.includes("question") || keyLower.includes("问题")) {
-                    derivativeType = "question";
-                  } else if (keyLower.includes("keyword") || keyLower.includes("关键词")) {
-                    derivativeType = "keyword";
-                  } else if (keyLower.includes("summary") || keyLower.includes("摘要")) {
-                    derivativeType = "summary";
-                  } else {
-                    // 默认根据策略类型确定
-                    switch (preprocessStrategyType) {
-                      case "outlineGeneration":
-                        derivativeType = "outline";
-                        break;
-                      case "questionGeneration":
-                        derivativeType = "question";
-                        break;
-                      case "keywordSummaryFusion":
-                        derivativeType = "keyword";
-                        break;
-                      case "semanticAggregation":
-                        derivativeType = "aggregatedSubParagraph";
-                        break;
-                    }
-                  }
-                  
+                  const derivativeType = inferDerivativeTypeFromKey(meta.key, preprocessStrategyType);
                   if (derivativeType) {
                     newDerivatives.push({
                       derivativeType: derivativeType,
@@ -297,22 +425,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
             
             // 如果没有 metadata，使用 preprocessedText 或 originalText
             if (newDerivatives.length === 0) {
-              let derivativeType: DerivativeType | null = null;
-              switch (preprocessStrategyType) {
-                case "outlineGeneration":
-                  derivativeType = "outline";
-                  break;
-                case "questionGeneration":
-                  derivativeType = "question";
-                  break;
-                case "keywordSummaryFusion":
-                  derivativeType = "keyword";
-                  break;
-                case "semanticAggregation":
-                  derivativeType = "aggregatedSubParagraph";
-                  break;
-              }
-              
+              const derivativeType = inferDerivativeTypeFromStrategy(preprocessStrategyType);
               const content = result.processedText || result.originalText || "";
               if (content && derivativeType) {
                 newDerivatives.push({
@@ -325,7 +438,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
         });
 
         if (newDerivatives.length > 0) {
-          setDerivatives([...derivatives, ...newDerivatives]);
+          setDerivatives((prev) => [...prev, ...newDerivatives]);
           messageApi.success(`成功生成 ${newDerivatives.length} 个衍生内容`);
           setAiGenerateVisible(false);
           setAiModelId(null);
@@ -343,7 +456,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
     } finally {
       setAiGenerating(false);
     }
-  }, [chunkId, aiModelId, preprocessStrategyType, textEditorValue, wikiId, derivatives, messageApi]);
+  }, [chunkId, aiModelId, preprocessStrategyType, textEditorValue, wikiId, messageApi]);
 
   return (
     <>
@@ -544,7 +657,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
                   <List.Item.Meta
                     title={
                       <Tag color="purple">
-                        {DerivativeTypeMap[item.derivativeType || ""] || item.derivativeType || "未知"}
+                        {getDerivativeTypeDisplayName(item.derivativeType)}
                       </Tag>
                     }
                     description={
@@ -582,13 +695,24 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   );
 };
 
-// 自定义Hook - 文档信息管理
+/**
+ * 自定义Hook：文档信息管理
+ * 负责获取和管理文档的基本信息
+ * @param wikiId - Wiki ID
+ * @param documentId - 文档 ID
+ * @returns 文档信息、加载状态和刷新函数
+ */
 const useDocumentInfo = (wikiId: string, documentId: string) => {
   const [documentInfo, setDocumentInfo] = useState<DocumentInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
+  /**
+   * 获取文档信息
+   * 从API获取文档的详细信息，包括切割配置
+   */
   const fetchDocumentInfo = useCallback(async () => {
+    // 参数验证
     if (!wikiId || !documentId) {
       messageApi.error("缺少必要的参数");
       return;
@@ -622,7 +746,7 @@ const useDocumentInfo = (wikiId: string, documentId: string) => {
       }
     } catch (error) {
       console.error("Failed to fetch document info:", error);
-      messageApi.error("获取文档信息失败");
+      proxyRequestError(error, messageApi, "获取文档信息失败");
     } finally {
       setLoading(false);
     }
@@ -631,13 +755,24 @@ const useDocumentInfo = (wikiId: string, documentId: string) => {
   return { documentInfo, loading, contextHolder, fetchDocumentInfo };
 };
 
-// 自定义Hook - 任务列表管理
+/**
+ * 自定义Hook：任务列表管理
+ * 负责获取和管理文档处理任务列表
+ * @param wikiId - Wiki ID
+ * @param documentId - 文档 ID
+ * @returns 任务列表、加载状态、刷新函数和取消任务函数
+ */
 const useTaskList = (wikiId: string, documentId: string) => {
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
+  /**
+   * 获取任务列表
+   * 从API获取文档的所有处理任务
+   */
   const fetchTasks = useCallback(async () => {
+    // 参数验证
     if (!wikiId || !documentId) {
       messageApi.error("缺少必要的参数");
       return;
@@ -651,30 +786,45 @@ const useTaskList = (wikiId: string, documentId: string) => {
         documentId: parseInt(documentId),
       });
 
-      if (response) {
-        const formattedTasks: TaskInfo[] = response.map((task: any) => ({
-          id: task.id || "",
-          fileName: task.fileName || "",
-          tokenizer: task.tokenizer || "",
-          maxTokensPerParagraph: task.maxTokensPerParagraph || 0,
-          overlappingTokens: task.overlappingTokens || 0,
-          state: task.state || "",
-          message: task.message || "",
-          createTime: task.createTime || "",
-          documentId: task.documentId || "",
-        }));
+      if (response && Array.isArray(response)) {
+        // 过滤并格式化任务数据，确保数据有效性
+        const formattedTasks: TaskInfo[] = response
+          .filter((task: any) => task && task.id) // 过滤无效任务
+          .map((task: any) => ({
+            id: String(task.id || ""),
+            fileName: String(task.fileName || ""),
+            tokenizer: String(task.tokenizer || ""),
+            maxTokensPerParagraph: typeof task.maxTokensPerParagraph === "number" ? task.maxTokensPerParagraph : 0,
+            overlappingTokens: typeof task.overlappingTokens === "number" ? task.overlappingTokens : 0,
+            state: String(task.state || ""),
+            message: String(task.message || ""),
+            createTime: String(task.createTime || ""),
+            documentId: String(task.documentId || ""),
+          }));
         setTasks(formattedTasks);
+      } else {
+        setTasks([]);
       }
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
-      messageApi.error("获取任务列表失败");
+      proxyRequestError(error, messageApi, "获取任务列表失败");
     } finally {
       setLoading(false);
     }
   }, [wikiId, documentId, messageApi]);
 
+  /**
+   * 取消任务
+   * 取消指定的文档处理任务
+   * @param taskId - 任务ID
+   */
   const cancelTask = useCallback(
     async (taskId: string) => {
+      // 参数验证
+      if (!taskId?.trim()) {
+        messageApi.warning("任务ID不能为空");
+        return;
+      }
       try {
         const apiClient = GetApiClient();
         await apiClient.api.wiki.document.cancal_embedding.post({
@@ -687,7 +837,7 @@ const useTaskList = (wikiId: string, documentId: string) => {
         fetchTasks();
       } catch (error) {
         console.error("Failed to cancel task:", error);
-        messageApi.error("取消任务失败");
+        proxyRequestError(error, messageApi, "取消任务失败");
       }
     },
     [wikiId, documentId, messageApi, fetchTasks]
@@ -696,7 +846,13 @@ const useTaskList = (wikiId: string, documentId: string) => {
   return { tasks, loading, contextHolder, fetchTasks, cancelTask };
 };
 
-// 自定义Hook - 获取切割预览
+/**
+ * 自定义Hook：切割预览管理
+ * 负责获取和管理文档切割预览数据，包括文本块的增删改查和排序
+ * @param wikiId - Wiki ID
+ * @param documentId - 文档 ID
+ * @returns 预览数据、加载状态和各种操作方法
+ */
 const usePartitionPreview = (wikiId: string, documentId: string) => {
   const [previewData, setPreviewData] = useState<{
     items: PartitionPreviewItem[];
@@ -714,8 +870,14 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     previewDataRef.current = previewData;
   }, [previewData]);
 
+  /**
+   * 获取切割预览数据
+   * 从API获取文档切割后的所有文本块及其衍生内容
+   */
   const fetchPartitionPreview = useCallback(async () => {
+    // 参数验证
     if (!wikiId || !documentId) {
+      console.warn("Missing wikiId or documentId for fetchPartitionPreview");
       return;
     }
 
@@ -728,13 +890,15 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       });
 
       if (response) {
-        const items = response.items || [];
-        // 按 order 排序
-        const sortedItems = [...items].sort((a, b) => {
-          const orderA = a.order ?? 0;
-          const orderB = b.order ?? 0;
-          return orderA - orderB;
-        });
+        const items = Array.isArray(response.items) ? response.items : [];
+        // 按 order 排序，确保数据有效性
+        const sortedItems = items
+          .filter((item) => item && item.chunkId) // 过滤无效项
+          .sort((a, b) => {
+            const orderA = typeof a.order === "number" ? a.order : 0;
+            const orderB = typeof b.order === "number" ? b.order : 0;
+            return orderA - orderB;
+          });
 
         setPreviewData({
           items: sortedItems.map((item) => {
@@ -761,16 +925,25 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       }
     } catch (error) {
       console.error("Failed to fetch partition preview:", error);
-      messageApi.error("获取切割预览失败");
+      proxyRequestError(error, messageApi, "获取切割预览失败");
     } finally {
       setLoading(false);
     }
   }, [wikiId, documentId, messageApi]);
 
-  // 重新排序并保存到后端
+  /**
+   * 重新排序并保存到后端
+   * 更新文本块的排序顺序
+   * @param items - 排序后的文本块列表
+   */
   const reorderAndSave = useCallback(async (items: PartitionPreviewItem[]) => {
+    // 参数验证
     if (!wikiId || !documentId) {
       console.error("Missing wikiId or documentId:", { wikiId, documentId });
+      return;
+    }
+    if (!items || items.length === 0) {
+      console.warn("Items array is empty");
       return;
     }
 
@@ -789,15 +962,31 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       messageApi.success("排序已更新");
     } catch (error) {
       console.error("Failed to update chunks order:", error);
-      messageApi.error("更新排序失败");
+      proxyRequestError(error, messageApi, "更新排序失败");
       throw error;
     }
   }, [wikiId, documentId, messageApi]);
 
-  // 更新chunk内容
+  /**
+   * 更新chunk内容
+   * 更新指定文本块的内容和衍生内容
+   * @param chunkId - 文本块ID
+   * @param text - 文本内容
+   * @param order - 排序顺序
+   * @param derivatives - 衍生内容列表
+   */
   const updateChunkContent = useCallback(async (chunkId: string, text: string, order: number, derivatives?: WikiDocumentDerivativeItem[] | null) => {
+    // 参数验证
     if (!wikiId || !documentId) {
       console.error("Missing wikiId or documentId:", { wikiId, documentId });
+      return;
+    }
+    if (!chunkId?.trim()) {
+      console.error("ChunkId is required");
+      return;
+    }
+    if (typeof order !== "number" || order < 0) {
+      console.error("Invalid order value:", order);
       return;
     }
 
@@ -818,13 +1007,25 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       messageApi.success("文本块已更新");
     } catch (error) {
       console.error("Failed to update chunk:", error);
-      messageApi.error("更新文本块失败");
+      proxyRequestError(error, messageApi, "更新文本块失败");
       throw error;
     }
   }, [wikiId, documentId, messageApi]);
 
+  /**
+   * 更新预览项
+   * 更新指定文本块的内容，同时更新本地状态和服务器数据
+   * @param chunkId - 文本块ID
+   * @param newText - 新的文本内容
+   * @param newDerivatives - 新的衍生内容列表
+   */
   const updateItem = useCallback(
     async (chunkId: string, newText: string, newDerivatives?: WikiDocumentDerivativeItem[] | null) => {
+      // 参数验证
+      if (!chunkId?.trim()) {
+        console.error("ChunkId is required");
+        return;
+      }
       // 直接从 ref 获取最新的 previewData，避免闭包问题
       const currentData = previewDataRef.current;
       if (!currentData) {
@@ -868,9 +1069,19 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     [updateChunkContent, fetchPartitionPreview]
   );
 
+  /**
+   * 删除文本块
+   * 删除指定的文本块，并重新排序剩余的文本块
+   * @param chunkId - 要删除的文本块ID
+   */
   const deleteItem = useCallback(async (chunkId: string) => {
+    // 参数验证
     if (!wikiId || !documentId) {
       console.error("Missing wikiId or documentId");
+      return;
+    }
+    if (!chunkId?.trim()) {
+      console.error("ChunkId is required");
       return;
     }
 
@@ -904,16 +1115,31 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       }
     } catch (error) {
       console.error("Failed to delete item:", error);
-      messageApi.error("删除文本块失败");
+      proxyRequestError(error, messageApi, "删除文本块失败");
       throw error;
     }
   }, [wikiId, documentId, messageApi, fetchPartitionPreview, reorderAndSave]);
 
+  /**
+   * 重新排序文本块
+   * 通过拖拽改变文本块的顺序
+   * @param fromIndex - 源索引
+   * @param toIndex - 目标索引
+   */
   const reorderItems = useCallback(async (fromIndex: number, toIndex: number) => {
+    // 参数验证
+    if (typeof fromIndex !== "number" || typeof toIndex !== "number") {
+      console.error("Invalid index values:", { fromIndex, toIndex });
+      return;
+    }
     // 直接从 ref 获取最新的 previewData，避免闭包问题
     const currentData = previewDataRef.current;
     if (!currentData) {
       console.error("Cannot reorder items: previewData is null");
+      return;
+    }
+    if (fromIndex < 0 || fromIndex >= currentData.items.length || toIndex < 0 || toIndex >= currentData.items.length) {
+      console.error("Index out of range:", { fromIndex, toIndex, length: currentData.items.length });
       return;
     }
     
@@ -945,10 +1171,20 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
     }
   }, [reorderAndSave, fetchPartitionPreview]);
 
-  // 新增chunk
+  /**
+   * 新增文本块
+   * 添加新的文本块到文档中
+   * @param text - 文本内容
+   * @param derivatives - 衍生内容列表
+   */
   const addChunk = useCallback(async (text: string, derivatives?: WikiDocumentDerivativeItem[] | null) => {
+    // 参数验证
     if (!wikiId || !documentId) {
       console.error("Missing wikiId or documentId");
+      return;
+    }
+    if (!text?.trim()) {
+      console.error("Text content is required");
       return;
     }
 
@@ -986,15 +1222,19 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
       }
     } catch (error) {
       console.error("Failed to add chunk:", error);
-      messageApi.error("添加文本块失败");
+      proxyRequestError(error, messageApi, "添加文本块失败");
       throw error;
     }
   }, [wikiId, documentId, messageApi, fetchPartitionPreview, reorderAndSave]);
 
-  // 重新排序所有 chunks（从 0 开始）
+  /**
+   * 重新排序所有文本块
+   * 将所有文本块的order从0开始重新编号
+   */
   const reorderAllChunks = useCallback(async () => {
     const currentData = previewDataRef.current;
-    if (!currentData || !currentData.items || currentData.items.length === 0) {
+    if (!currentData?.items || currentData.items.length === 0) {
+      console.warn("No items to reorder");
       return;
     }
 
@@ -1024,7 +1264,14 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
   };
 };
 
-// 自定义Hook - 文档切割操作
+/**
+ * 自定义Hook：文档切割操作
+ * 负责处理文档的普通切割操作
+ * @param wikiId - Wiki ID
+ * @param documentId - 文档 ID
+ * @param onSuccess - 成功回调函数
+ * @returns 加载状态和提交切割函数
+ */
 const usePartitionOperations = (
   wikiId: string,
   documentId: string,
@@ -1034,10 +1281,24 @@ const usePartitionOperations = (
   const [previewItems, setPreviewItems] = useState<PartitionPreviewItem[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
 
+  /**
+   * 提交切割任务
+   * 根据配置参数提交文档切割任务
+   * @param values - 切割配置参数
+   */
   const submitPartition = useCallback(
     async (values: any) => {
+      // 参数验证
       if (!wikiId || !documentId) {
         messageApi.error("缺少必要的参数");
+        return;
+      }
+      if (!values?.maxTokensPerChunk || values.maxTokensPerChunk <= 0) {
+        messageApi.warning("每段最大Token数必须大于0");
+        return;
+      }
+      if (values.overlap < 0) {
+        messageApi.warning("重叠Token数不能为负数");
         return;
       }
 
@@ -1060,7 +1321,7 @@ const usePartitionOperations = (
         }
       } catch (error) {
         console.error("Failed to submit partition task:", error);
-        messageApi.error("文档切割失败");
+        proxyRequestError(error, messageApi, "文档切割失败");
       } finally {
         setLoading(false);
       }
@@ -1077,7 +1338,11 @@ const usePartitionOperations = (
   };
 };
 
-// 自定义Hook - 获取AI模型列表
+/**
+ * 自定义Hook：获取AI模型列表
+ * 负责获取可用的AI模型列表
+ * @returns 模型列表、加载状态和刷新函数
+ */
 const useAiModelList = () => {
   const [modelList, setModelList] = useState<Array<{ id: number; name: string }>>([]);
   const [loading, setLoading] = useState(false);
@@ -1091,18 +1356,21 @@ const useAiModelList = () => {
         aiModelType: "chat",
       });
 
-      if (response?.aiModels) {
+      if (response?.aiModels && Array.isArray(response.aiModels)) {
+        // 过滤并格式化模型数据，确保数据有效性
         const models = response.aiModels
-          .filter((item: any) => item.id != null && item.name != null)
+          .filter((item: any) => item && typeof item.id === "number" && item.name)
           .map((item: any) => ({
-            id: item.id!,
-            name: item.name || "",
+            id: Number(item.id),
+            name: String(item.name || ""),
           }));
         setModelList(models);
+      } else {
+        setModelList([]);
       }
     } catch (error) {
       console.error("Failed to fetch AI model list:", error);
-      messageApi.error("获取AI模型列表失败");
+      proxyRequestError(error, messageApi, "获取AI模型列表失败");
     } finally {
       setLoading(false);
     }
@@ -1116,7 +1384,14 @@ const useAiModelList = () => {
   };
 };
 
-// 自定义Hook - 智能切割操作
+/**
+ * 自定义Hook：智能切割操作
+ * 负责处理文档的AI智能切割操作
+ * @param wikiId - Wiki ID
+ * @param documentId - 文档 ID
+ * @param onSuccess - 成功回调函数
+ * @returns 加载状态和提交智能切割函数
+ */
 const useAiPartitionOperations = (
   wikiId: string,
   documentId: string,
@@ -1125,14 +1400,20 @@ const useAiPartitionOperations = (
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
+  /**
+   * 提交智能切割任务
+   * 使用AI模型进行智能切割
+   * @param values - 智能切割配置参数
+   */
   const submitAiPartition = useCallback(
     async (values: any) => {
+      // 参数验证
       if (!wikiId || !documentId) {
         messageApi.error("缺少必要的参数");
         return;
       }
 
-      if (!values.aiModelId) {
+      if (!values?.aiModelId) {
         messageApi.error("请选择AI模型");
         return;
       }
@@ -1151,7 +1432,7 @@ const useAiPartitionOperations = (
         onSuccess();
       } catch (error) {
         console.error("Failed to submit AI partition task:", error);
-        messageApi.error("智能切割失败");
+        proxyRequestError(error, messageApi, "智能切割失败");
       } finally {
         setLoading(false);
       }
@@ -1166,7 +1447,14 @@ const useAiPartitionOperations = (
   };
 };
 
-// 自定义Hook - 向量化操作
+/**
+ * 自定义Hook：向量化操作
+ * 负责处理文档的向量化操作和向量清空
+ * @param wikiId - Wiki ID
+ * @param documentId - 文档 ID
+ * @param onSuccess - 成功回调函数
+ * @returns 加载状态、提交向量化函数和清空向量函数
+ */
 const useEmbeddingOperations = (
   wikiId: string,
   documentId: string,
@@ -1176,10 +1464,20 @@ const useEmbeddingOperations = (
   const [clearLoading, setClearLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
+  /**
+   * 提交向量化任务
+   * 根据配置参数提交文档向量化任务
+   * @param values - 向量化配置参数
+   */
   const submitEmbedding = useCallback(
     async (values: any) => {
+      // 参数验证
       if (!wikiId || !documentId) {
         messageApi.error("缺少必要的参数");
+        return;
+      }
+      if (values?.threadCount && (values.threadCount < 1 || values.threadCount > 100)) {
+        messageApi.warning("并发线程数量必须在1-100之间");
         return;
       }
 
@@ -1197,7 +1495,7 @@ const useEmbeddingOperations = (
         onSuccess();
       } catch (error) {
         console.error("Failed to submit embedding task:", error);
-        messageApi.error("提交向量化任务失败");
+        proxyRequestError(error, messageApi, "提交向量化任务失败");
       } finally {
         setLoading(false);
       }
@@ -1205,7 +1503,12 @@ const useEmbeddingOperations = (
     [wikiId, documentId, messageApi, onSuccess]
   );
 
+  /**
+   * 清空向量
+   * 清空文档的所有向量数据
+   */
   const clearVectors = useCallback(async () => {
+    // 参数验证
     if (!wikiId || !documentId) {
       messageApi.error("缺少必要的参数");
       return;
@@ -1223,7 +1526,7 @@ const useEmbeddingOperations = (
       onSuccess();
     } catch (error) {
       console.error("Failed to clear vectors:", error);
-      messageApi.error("清空向量失败");
+      proxyRequestError(error, messageApi, "清空向量失败");
     } finally {
       setClearLoading(false);
     }
@@ -1238,9 +1541,19 @@ const useEmbeddingOperations = (
   };
 };
 
-// 任务状态渲染组件
+/**
+ * 任务状态标签组件
+ * 根据任务状态显示不同颜色的标签
+ * @param state - 任务状态
+ */
 const TaskStatusTag: React.FC<{ state: string }> = ({ state }) => {
-  const getStatusColor = (state: string) => {
+  /**
+   * 根据任务状态获取标签颜色
+   * @param state - 任务状态
+   * @returns 标签颜色
+   */
+  const getStatusColor = useCallback((state: string) => {
+    if (!state) return "default";
     const lowerState = state.toLowerCase();
     switch (lowerState) {
       case "completed":
@@ -1254,17 +1567,22 @@ const TaskStatusTag: React.FC<{ state: string }> = ({ state }) => {
       default:
         return "default";
     }
-  };
+  }, []);
 
-  return <Tag color={getStatusColor(state)}>{state}</Tag>;
+  return <Tag color={getStatusColor(state)}>{state || "未知"}</Tag>;
 };
 
-// 主组件
+/**
+ * 文档嵌入主组件
+ * 负责文档的切割、预览、向量化等功能的统一管理
+ * 兼容浏览器：Chrome 90+、移动端主流浏览器
+ */
 export default function DocumentEmbedding() {
   const { id: wikiId, documentId } = useParams();
   const [form] = Form.useForm();
   const [partitionForm] = Form.useForm();
   const [aiPartitionForm] = Form.useForm();
+  const [recallForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const [activePartitionTab, setActivePartitionTab] = useState<string>("normal");
   const [chunkEditModalVisible, setChunkEditModalVisible] = useState(false);
@@ -1280,6 +1598,10 @@ export default function DocumentEmbedding() {
   const [batchPreprocessStrategyType, setBatchPreprocessStrategyType] = useState<PreprocessStrategyType | null>(null);
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchGenerateResults, setBatchGenerateResults] = useState<Map<string, WikiDocumentDerivativeItem[]>>(new Map());
+  const [recallLoading, setRecallLoading] = useState(false);
+  const [recallResults, setRecallResults] = useState<SearchWikiDocumentTextItem[]>([]);
+  const [recallAnswer, setRecallAnswer] = useState<string | null>(null);
+  const [recallAnswerVisible, setRecallAnswerVisible] = useState(false);
 
   // 使用自定义Hooks
   const {
@@ -1396,6 +1718,82 @@ export default function DocumentEmbedding() {
     [submitAiPartition]
   );
 
+  /**
+   * 召回测试搜索
+   * 调用 /api/wiki/document/search 接口查看召回结果
+   */
+  const handleRecallSearch = useCallback(
+    async (values: any) => {
+      const queryText = values?.query?.trim();
+      if (!queryText) {
+        messageApi.warning("请输入搜索关键词");
+        return;
+      }
+
+      if (!wikiId || !documentId) {
+        messageApi.error("缺少必要的参数");
+        return;
+      }
+
+      if (values?.limit && (values.limit < 1 || values.limit > 200)) {
+        messageApi.warning("召回数量需在 1-200 之间");
+        return;
+      }
+
+      if (
+        values?.minRelevance !== undefined &&
+        values.minRelevance !== null &&
+        (values.minRelevance < 0 || values.minRelevance > 1)
+      ) {
+        messageApi.warning("最小相关度范围为 0 - 1");
+        return;
+      }
+
+      if ((values?.isOptimizeQuery || values?.isAnswer) && !values?.aiModelId) {
+        messageApi.warning("开启优化/回答时需要选择 AI 模型");
+        return;
+      }
+
+      try {
+        setRecallLoading(true);
+        setRecallAnswer(null);
+        setRecallAnswerVisible(!!values?.isAnswer);
+        const apiClient = GetApiClient();
+        const command: SearchWikiDocumentTextCommand = {
+          wikiId: parseInt(wikiId, 10),
+          documentId: parseInt(documentId, 10),
+          query: queryText,
+          limit: values?.limit ?? null,
+          minRelevance: values?.minRelevance ?? null,
+          isOptimizeQuery: values?.isOptimizeQuery ?? false,
+          isAnswer: values?.isAnswer ?? false,
+          aiModelId: values?.aiModelId ?? 0,
+        };
+
+        const response = await apiClient.api.wiki.document.search.post(command);
+        const results = response?.searchResult ?? [];
+        setRecallResults(results);
+        if (values?.isAnswer) {
+          setRecallAnswer(response?.answer ?? null);
+        } else {
+          setRecallAnswer(null);
+        }
+
+        if (!results || results.length === 0) {
+          messageApi.info("未找到搜索结果");
+        } else {
+          messageApi.success(`共返回 ${results.length} 条结果`);
+        }
+      } catch (error) {
+        console.error("Failed to search recall:", error);
+        proxyRequestError(error, messageApi, "召回搜索失败");
+      } finally {
+        setRecallLoading(false);
+      }
+    },
+    [wikiId, documentId, messageApi]
+  );
+
   const handleOpenChunkEditor = useCallback(
     (chunkId: string | null, currentText: string, currentDerivatives?: WikiDocumentDerivativeItem[] | null) => {
       setEditingChunkId(chunkId);
@@ -1430,10 +1828,10 @@ export default function DocumentEmbedding() {
         handleCloseChunkEditor();
       } catch (error) {
         console.error("Failed to save chunk:", error);
-        message.error("保存失败，请重试");
+        proxyRequestError(error, messageApi, "保存失败，请重试");
       }
     },
-    [editingChunkId, updatePreviewItem, addPreviewChunk, handleCloseChunkEditor]
+    [editingChunkId, updatePreviewItem, addPreviewChunk, handleCloseChunkEditor, messageApi]
   );
 
   const handleDeleteItem = useCallback(
@@ -1451,7 +1849,10 @@ export default function DocumentEmbedding() {
     [previewData, deletePreviewItem]
   );
 
-  // 批量生成策略
+  /**
+   * 批量生成衍生内容
+   * 对选中的多个文本块批量生成衍生内容
+   */
   const handleBatchGenerate = useCallback(async () => {
     if (!batchAiModelId) {
       messageApi.warning("请选择AI模型");
@@ -1502,35 +1903,7 @@ export default function DocumentEmbedding() {
             if (result.metadata && result.metadata.length > 0) {
               result.metadata.forEach((meta) => {
                 if (meta.key && meta.value) {
-                  // 根据 key 确定衍生类型
-                  let derivativeType: DerivativeType | null = null;
-                  const keyLower = meta.key.toLowerCase();
-                  if (keyLower.includes("outline") || keyLower.includes("大纲")) {
-                    derivativeType = "outline";
-                  } else if (keyLower.includes("question") || keyLower.includes("问题")) {
-                    derivativeType = "question";
-                  } else if (keyLower.includes("keyword") || keyLower.includes("关键词")) {
-                    derivativeType = "keyword";
-                  } else if (keyLower.includes("summary") || keyLower.includes("摘要")) {
-                    derivativeType = "summary";
-                  } else {
-                    // 默认根据策略类型确定
-                    switch (batchPreprocessStrategyType) {
-                      case "outlineGeneration":
-                        derivativeType = "outline";
-                        break;
-                      case "questionGeneration":
-                        derivativeType = "question";
-                        break;
-                      case "keywordSummaryFusion":
-                        derivativeType = "keyword";
-                        break;
-                      case "semanticAggregation":
-                        derivativeType = "aggregatedSubParagraph";
-                        break;
-                    }
-                  }
-                  
+                  const derivativeType = inferDerivativeTypeFromKey(meta.key, batchPreprocessStrategyType);
                   if (derivativeType) {
                     derivatives.push({
                       derivativeType: derivativeType,
@@ -1543,22 +1916,7 @@ export default function DocumentEmbedding() {
             
             // 如果没有 metadata，使用 processedText 或 originalText
             if (derivatives.length === 0) {
-              let derivativeType: DerivativeType | null = null;
-              switch (batchPreprocessStrategyType) {
-                case "outlineGeneration":
-                  derivativeType = "outline";
-                  break;
-                case "questionGeneration":
-                  derivativeType = "question";
-                  break;
-                case "keywordSummaryFusion":
-                  derivativeType = "keyword";
-                  break;
-                case "semanticAggregation":
-                  derivativeType = "aggregatedSubParagraph";
-                  break;
-              }
-              
+              const derivativeType = inferDerivativeTypeFromStrategy(batchPreprocessStrategyType);
               const content = result.processedText || result.originalText || "";
               if (content && derivativeType) {
                 derivatives.push({
@@ -1587,7 +1945,10 @@ export default function DocumentEmbedding() {
     }
   }, [batchAiModelId, batchPreprocessStrategyType, selectedChunkIds, previewData, wikiId, messageApi]);
 
-  // 保存批量生成结果
+  /**
+   * 保存批量生成结果
+   * 将批量生成的衍生内容保存到服务器
+   */
   const handleSaveBatchResults = useCallback(async () => {
     if (batchGenerateResults.size === 0) {
       messageApi.warning("没有可保存的结果");
@@ -1693,7 +2054,14 @@ export default function DocumentEmbedding() {
     [draggedIndex, reorderPreviewItems]
   );
 
+  /**
+   * 判断任务是否可以取消
+   * 只有特定状态的任务才能被取消
+   * @param state - 任务状态
+   * @returns 是否可以取消
+   */
   const canCancelTask = useCallback((state: string) => {
+    if (!state) return false;
     const lowerState = state.toLowerCase();
     return (
       lowerState === "none" ||
@@ -1702,7 +2070,123 @@ export default function DocumentEmbedding() {
     );
   }, []);
 
-  const taskColumns = [
+  const recallDataSource = useMemo(
+    () =>
+      (recallResults || []).map((item, index) => ({
+        ...item,
+        key: item.chunkId || `${index}`,
+      })),
+    [recallResults]
+  );
+
+  const recallColumns = useMemo(
+    () => [
+      {
+        title: "序号",
+        key: "index",
+        width: 70,
+        align: "center" as const,
+        render: (_: any, __: any, index: number) => index + 1,
+      },
+      {
+        title: "Chunk ID",
+        dataIndex: "chunkId",
+        key: "chunkId",
+        width: 200,
+        ellipsis: true,
+        render: (value: string) => (
+          <Typography.Text code ellipsis={{ tooltip: value || "N/A" }}>
+            {value || "N/A"}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: "文档ID",
+        dataIndex: "documentId",
+        key: "documentId",
+        width: 120,
+        align: "center" as const,
+        render: (value: number | null) => (
+          <Typography.Text>{value ?? "-"}</Typography.Text>
+        ),
+      },
+      {
+        title: "文件名称",
+        dataIndex: "fileName",
+        key: "fileName",
+        width: 200,
+        ellipsis: true,
+        render: (value: string | null) => (
+          <Typography.Text ellipsis={{ tooltip: value || "N/A" }}>
+            {value || "N/A"}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: "文件类型",
+        dataIndex: "fileType",
+        key: "fileType",
+        width: 150,
+        ellipsis: true,
+        render: (value: string | null) => (
+          <Tag color="blue" icon={<FileTextOutlined />}>
+            {value || "N/A"}
+          </Tag>
+        ),
+      },
+      {
+        title: "相关度",
+        dataIndex: "recordRelevance",
+        key: "recordRelevance",
+        width: 120,
+        align: "center" as const,
+        render: (relevance: number | null) => {
+          if (relevance === null || relevance === undefined) return "-";
+          const percent = relevance * 100;
+          const color =
+            percent >= 80 ? "green" : percent >= 60 ? "orange" : "default";
+          return (
+            <Tag color={color}>{`${percent.toFixed(2)}%`}</Tag>
+          );
+        },
+      },
+      {
+        title: "索引文本",
+        dataIndex: "text",
+        key: "text",
+        ellipsis: true,
+        render: (text: string) => (
+          <Typography.Paragraph
+            style={{ marginBottom: 0 }}
+            ellipsis={{ rows: 2, tooltip: text || "暂无数据" }}
+          >
+            {text || "暂无数据"}
+          </Typography.Paragraph>
+        ),
+      },
+      {
+        title: "召回文本块",
+        dataIndex: "chunkText",
+        key: "chunkText",
+        ellipsis: true,
+        render: (text: string) => (
+          <Typography.Paragraph
+            style={{ marginBottom: 0 }}
+            ellipsis={{ rows: 2, tooltip: text || "暂无数据" }}
+          >
+            {text || "暂无数据"}
+          </Typography.Paragraph>
+        ),
+      },
+    ],
+    []
+  );
+
+  /**
+   * 任务列表表格列配置
+   * 使用useMemo优化，避免每次渲染都重新创建
+   */
+  const taskColumns = useMemo(() => [
     {
       title: "任务ID",
       dataIndex: "id",
@@ -1758,12 +2242,13 @@ export default function DocumentEmbedding() {
         </Space>
       ),
     },
-  ];
+  ], [canCancelTask, handleCancelTask]);
 
-  if (!documentId) {
+  // 参数验证：确保必要的路由参数存在
+  if (!wikiId || !documentId) {
     return (
       <Card>
-        <Empty description="缺少文档ID" />
+        <Empty description="缺少必要的参数（Wiki ID 或 Document ID）" />
       </Card>
     );
   }
@@ -2356,29 +2841,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                                   color="purple"
                                   style={{ marginBottom: 6, marginRight: 0 }}
                                 >
-                                  {(() => {
-                                    if (!type) {
-                                      console.log("Type is null/undefined for derivative:", derivative);
-                                      return "未知";
-                                    }
-                                    // 尝试直接匹配
-                                    if (DerivativeTypeMap[type]) {
-                                      return DerivativeTypeMap[type];
-                                    }
-                                    // 尝试转换为字符串后匹配
-                                    const typeStr = String(type);
-                                    if (DerivativeTypeMap[typeStr]) {
-                                      return DerivativeTypeMap[typeStr];
-                                    }
-                                    // 尝试小写匹配
-                                    const typeLower = typeStr.toLowerCase();
-                                    if (DerivativeTypeMap[typeLower]) {
-                                      return DerivativeTypeMap[typeLower];
-                                    }
-                                    // 返回原始值
-                                    console.log("Type not found in map:", type, "available keys:", Object.keys(DerivativeTypeMap));
-                                    return typeStr;
-                                  })()}
+                                  {getDerivativeTypeDisplayName(type)}
                                 </Tag>
                                 <Typography.Text
                                   style={{
@@ -2409,7 +2872,7 @@ order 从 1 开始递增，text 为对应的原文片段。
       </Collapse>
 
       {/* 文档向量化卡片 */}
-      <Collapse defaultActiveKey={[]}>
+      <Collapse  defaultActiveKey={[]} style={{ marginTop: 16 }}>
         <Panel
           header={
             <Space>
@@ -2539,15 +3002,24 @@ order 从 1 开始递增，text 为对应的原文片段。
                   >
                     开始向量化
                   </Button>
+                  
                   <Tooltip title="清空该文档的所有向量">
-                    <Button
-                      type="default"
-                      onClick={clearVectors}
-                      loading={clearLoading}
-                      danger
+                    <Popconfirm
+                      title="确认清空向量"
+                      description="确定要清空该文档的所有向量数据吗？此操作不可恢复。"
+                      onConfirm={clearVectors}
+                      okText="确认"
+                      cancelText="取消"
+                      okButtonProps={{ danger: true }}
                     >
-                      清空向量
-                    </Button>
+                      <Button
+                        type="default"
+                        loading={clearLoading}
+                        danger
+                      >
+                        清空向量
+                      </Button>
+                    </Popconfirm>
                   </Tooltip>
                 </Space>
               </Form.Item>
@@ -2564,6 +3036,147 @@ order 从 1 开始递增，text 为对应的原文片段。
             </>
           )
           )}
+        </Panel>
+      </Collapse>
+
+      {/* 召回测试卡片 */}
+      <Collapse defaultActiveKey={[]} style={{ marginTop: 16 }}>
+        <Panel
+          header={
+            <Space>
+              <ThunderboltOutlined />
+              <span>召回测试</span>
+            </Space>
+          }
+          key="recall-test"
+        >
+          <Form
+            form={recallForm}
+            layout="vertical"
+            onFinish={handleRecallSearch}
+            initialValues={{
+              limit: 20,
+              minRelevance: 0.0,
+              isOptimizeQuery: false,
+              isAnswer: false,
+            }}
+          >
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Form.Item
+                  label="搜索内容"
+                  name="query"
+                  rules={[{ required: true, message: "请输入搜索内容" }]}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="输入待测试的问题或文本"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Row gutter={[12, 12]}>
+                  <Col span={12}>
+                    <Form.Item label="最大召回数量" name="limit">
+                      <InputNumber
+                        min={1}
+                        max={200}
+                        style={{ width: "100%" }}
+                        placeholder="默认 20"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="最小相关度" name="minRelevance">
+                      <InputNumber
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        style={{ width: "100%" }}
+                        placeholder="默认 0"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="isOptimizeQuery"
+                      valuePropName="checked"
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Checkbox>启用提问优化</Checkbox>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="isAnswer"
+                      valuePropName="checked"
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Checkbox>需要 AI 回答</Checkbox>
+                    </Form.Item>
+                  </Col>
+                  <Col span={24}>
+                    <Form.Item label="AI 模型（可选）" name="aiModelId">
+                      <Select
+                        allowClear
+                        placeholder="不选择则仅召回"
+                        loading={modelListLoading}
+                        options={modelList.map((model) => ({
+                          label: model.name,
+                          value: model.id,
+                        }))}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+            <Form.Item>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={recallLoading}
+                  icon={<SearchOutlined />}
+                >
+                  开始召回
+                </Button>
+                <Button
+                  onClick={() => {
+                    recallForm.resetFields();
+                    setRecallResults([]);
+                  setRecallAnswer(null);
+                  setRecallAnswerVisible(false);
+                  }}
+                >
+                  重置
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+
+        {recallAnswerVisible && (
+          <Alert
+            type={recallAnswer ? "success" : "info"}
+            showIcon
+            message="AI 回答"
+            description={recallAnswer || "未返回 AI 回答"}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
+          <Table
+            columns={recallColumns}
+            dataSource={recallDataSource}
+            loading={recallLoading}
+            size="small"
+            pagination={false}
+            rowKey="key"
+            scroll={{ x: 1400 }}
+            locale={{
+              emptyText: <Empty description="暂无召回结果" />,
+            }}
+          />
         </Panel>
       </Collapse>
 
@@ -2809,7 +3422,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                             >
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <Tag color="purple" style={{ marginRight: 8 }}>
-                                  {DerivativeTypeMap[derivative.derivativeType || ""] || derivative.derivativeType || "未知"}
+                                  {getDerivativeTypeDisplayName(derivative.derivativeType)}
                                 </Tag>
                                 <Typography.Text
                                   style={{ fontSize: 12 }}

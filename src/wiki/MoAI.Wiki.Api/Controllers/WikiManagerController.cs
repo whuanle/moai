@@ -8,6 +8,9 @@ using MoAI.Wiki.Wikis.Queries;
 
 namespace MoAI.Wiki.Controllers;
 
+/// <summary>
+/// 管理知识库.
+/// </summary>
 [ApiController]
 [Route("/wiki/manager")]
 [Authorize]

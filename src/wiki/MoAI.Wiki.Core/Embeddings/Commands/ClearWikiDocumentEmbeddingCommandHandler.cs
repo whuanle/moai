@@ -1,17 +1,14 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.KernelMemory;
 using MoAI.AI.MemoryDb;
 using MoAI.AI.Models;
 using MoAI.Database;
-using MoAI.Database.Helper;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Extesions;
-using System.Transactions;
 
 namespace MoAI.Wiki.Embeddings.Commands;
 
@@ -53,54 +50,45 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             throw new BusinessException("知识库未配置嵌入模型") { StatusCode = 400 };
         }
 
+        // 清空向量
+        var embeddingIdsQuery = _databaseContext.WikiDocumentChunkEmbeddings
+            .Where(x => x.WikiId == request.WikiId);
+
+        if (request.DocumentId != null && request.DocumentId > 0)
+        {
+            embeddingIdsQuery = embeddingIdsQuery.Where(x => x.DocumentId == request.DocumentId);
+
+            await _databaseContext.WikiDocuments.Where(x => x.Id == request.WikiId && x.Id == request.DocumentId)
+                .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsEmbedding, false));
+            await _databaseContext.SaveChangesAsync();
+        }
+
+        var embeddingIds = await embeddingIdsQuery
+        .Select(x => x.Id)
+        .ToArrayAsync();
+
         // 清空向量不需要存储时，向量维度随便填
         var textEmbeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(aiModel, 500);
         var memoryClient = _aiClientBuilder.CreateMemoryDb(textEmbeddingGenerator, _systemOptions.Wiki.DBType.JsonToObject<MemoryDbType>());
 
-        if (request.DocumentId != null && request.DocumentId > 0)
+        foreach (var item in embeddingIds)
         {
-            var document = await _databaseContext.WikiDocuments
-                .Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (document == null)
+            await memoryClient.DeleteAsync(index: request.WikiId.ToString(), new Microsoft.KernelMemory.MemoryStorage.MemoryRecord
             {
-                throw new BusinessException("文档不存在") { StatusCode = 404 };
-            }
-
-            var wikiIndex = request.WikiId.ToString();
-            var documentIndex = request.DocumentId.ToString()!;
-
-            // 删除这个文档以前的向量
-            // __document_id
-            var records = memoryClient.GetListAsync(
-                index: wikiIndex,
-                limit: -1,
-                filters: [MemoryFilters.ByTag("document_id", documentIndex)],
-                cancellationToken: CancellationToken.None);
-
-            await foreach (var record in records.WithCancellation(CancellationToken.None).ConfigureAwait(false))
-            {
-                await memoryClient.DeleteAsync(index: wikiIndex, record, cancellationToken: CancellationToken.None).ConfigureAwait(false);
-            }
+                Id = item.ToString("N")
+            });
         }
-        else
+
+        await _databaseContext.WikiDocumentChunkEmbeddings
+            .Where(x => embeddingIds.Contains(x.Id))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var documentEmbeddingCount = await _databaseContext.WikiDocumentChunkEmbeddings.Where(x => x.WikiId == request.WikiId).CountAsync();
+
+        if (documentEmbeddingCount == 0)
         {
-            var wiki = await _databaseContext.Wikis
-                .Where(x => x.Id == request.WikiId)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (wiki == null)
-            {
-                throw new BusinessException("知识库不存在") { StatusCode = 404 };
-            }
-
-            using (TransactionScope t = new TransactionScope(scopeOption: TransactionScopeOption.Suppress, asyncFlowOption: TransactionScopeAsyncFlowOption.Enabled))
-            {
-                await memoryClient.DeleteIndexAsync(index: wiki.Id.ToString());
-            }
-
-            await _databaseContext.Wikis.Where(x => x.Id == wiki.Id).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
+            await memoryClient.DeleteIndexAsync(index: request.WikiId.ToString());
+            await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
             await _databaseContext.SaveChangesAsync();
         }
 

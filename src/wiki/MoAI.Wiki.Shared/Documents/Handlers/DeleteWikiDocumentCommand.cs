@@ -1,26 +1,26 @@
 ﻿using FluentValidation;
 using MediatR;
-using MoAI.Wiki.Documents.Models;
+using MoAI.Infra.Models;
 
-namespace MoAI.Wiki.Documents.Queries;
+namespace MoAI.Wiki.Documents.Handlers;
 
 /// <summary>
-/// 查询文档任务列表.
+/// 删除知识库文档.
 /// </summary>
-public class QueryWikiDocumentTaskListCommand : IRequest<IReadOnlyCollection<WikiDocumentEmbeddingTaskItem>>, IModelValidator<QueryWikiDocumentTaskListCommand>
+public class DeleteWikiDocumentCommand : IRequest<EmptyCommandResponse>, IModelValidator<DeleteWikiDocumentCommand>
 {
     /// <summary>
-    /// 知识库id.
+    /// 知识库 id.
     /// </summary>
-    public int WikiId { get; set; }
+    public int WikiId { get; init; }
 
     /// <summary>
-    /// 文档id.
+    /// 文档 id.
     /// </summary>
-    public int DocumentId { get; set; }
+    public int DocumentId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiDocumentTaskListCommand> validate)
+    public void Validate(AbstractValidator<DeleteWikiDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

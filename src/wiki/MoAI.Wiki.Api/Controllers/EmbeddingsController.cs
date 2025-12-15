@@ -5,11 +5,12 @@ using MoAI.Infra.Models;
 using MoAI.Wiki.DocumentEmbedding.Commands;
 using MoAI.Wiki.DocumentEmbedding.Models;
 using MoAI.Wiki.DocumentEmbeddings.Queries;
+using MoAI.Wiki.Documents.Models;
 using MoAI.Wiki.Documents.Queries;
-using MoAI.Wiki.Documents.Queries.Responses;
 using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Embedding.Models;
 using MoAI.Wiki.Wikis.Queries;
+using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Controllers;
 
@@ -217,6 +218,19 @@ public class EmbeddingsController : ControllerBase
         return await _mediator.Send(req, ct);
     }
 
+    /// <summary>
+    /// 召回测试.
+    /// </summary>
+    /// <param name="req">搜索命令对象, 包含 WikiId 与搜索词.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="SearchWikiDocumentTextCommandResponse"/> 包含搜索结果.</returns>
+    [HttpPost("search")]
+    public async Task<SearchWikiDocumentTextCommandResponse> SearchWikiDocumentText([FromBody] SearchWikiDocumentTextCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
 
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {

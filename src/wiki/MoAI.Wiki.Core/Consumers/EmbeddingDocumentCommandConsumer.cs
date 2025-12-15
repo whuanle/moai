@@ -13,6 +13,7 @@ using MoAI.Database.Entities;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
+using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Embedding.Models;
 using MoAI.Wiki.Models;
 using MoAIDocument.Core.Consumers.Events;
@@ -148,17 +149,11 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
         await CheckIndexIsExistAsync(memoryDb, wikiIndex, wikiConfig.EmbeddingDimensions);
 
         // 删除这个文档以前的向量
-        // __document_id
-        var records = memoryDb.GetListAsync(
-            index: wikiIndex,
-            limit: -1,
-            filters: [MemoryFilters.ByTag("document_id", documentIndex)],
-            cancellationToken: CancellationToken.None);
-
-        await foreach (var record in records.WithCancellation(CancellationToken.None).ConfigureAwait(false))
+        await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
         {
-            await memoryDb.DeleteAsync(index: wikiIndex, record, cancellationToken: CancellationToken.None).ConfigureAwait(false);
-        }
+            WikiId = message.WikiId,
+            DocumentId = message.DocumentId
+        });
 
         // 逐个向量化
         var parallelism = Math.Max(1, embddingConfig.ThreadCount);
@@ -237,6 +232,10 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
         documenEntity.IsEmbedding = true;
         _databaseContext.WikiDocuments.Update(documenEntity);
+
+        await _databaseContext.Wikis.Where(x => x.Id == message.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, true));
+        await _databaseContext.SaveChangesAsync();
+
         await _databaseContext.SaveChangesAsync();
     }
 

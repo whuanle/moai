@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Wiki.DocumentManager;
-using MoAI.Wiki.DocumentManager.Handlers;
 using MoAI.Wiki.DocumentManager.Queries;
+using MoAI.Wiki.Documents.Handlers;
+using MoAI.Wiki.Documents.Models;
 using MoAI.Wiki.Documents.Queries;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
@@ -35,7 +35,6 @@ public partial class DocumentController : ControllerBase
         _userContext = userContext;
     }
 
-
     /// <summary>
     /// 完成上传知识库文档上传.
     /// </summary>
@@ -45,16 +44,7 @@ public partial class DocumentController : ControllerBase
     [HttpPost("complete_upload_document")]
     public async Task<EmptyCommandResponse> ComplateUploadWikiDocument([FromBody] ComplateUploadWikiDocumentCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckUserIsMemberAsync(req.WikiId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -68,16 +58,7 @@ public partial class DocumentController : ControllerBase
     [HttpPost("delete_document")]
     public async Task<EmptyCommandResponse> DeleteWikiDocument([FromBody] DeleteWikiDocumentCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckUserIsMemberAsync(req.WikiId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -91,16 +72,7 @@ public partial class DocumentController : ControllerBase
     [HttpPost("download_document")]
     public async Task<SimpleString> DownloadWikiDocument([FromBody] DownloadWikiDocumentCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckUserIsMemberAsync(req.WikiId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -114,16 +86,7 @@ public partial class DocumentController : ControllerBase
     [HttpPost("preupload_document")]
     public async Task<PreloadWikiDocumentResponse> PreUploadWikiDocument([FromBody] PreUploadWikiDocumentCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckUserIsMemberAsync(req.WikiId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -137,16 +100,7 @@ public partial class DocumentController : ControllerBase
     [HttpPost("document_info")]
     public async Task<QueryWikiDocumentInfoCommandResponse> QueryWikiDocumentInfo([FromBody] QueryWikiDocumentInfoCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckUserIsMemberAsync(req.WikiId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -160,39 +114,7 @@ public partial class DocumentController : ControllerBase
     [HttpPost("list")]
     public async Task<QueryWikiDocumentListCommandResponse> QueryWikiDocumentList([FromBody] QueryWikiDocumentListCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 搜索知识库文本.
-    /// </summary>
-    /// <param name="req">搜索命令对象, 包含 WikiId 与搜索词.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="SearchWikiDocumentTextCommandResponse"/> 包含搜索结果.</returns>
-    [HttpPost("search")]
-    public async Task<SearchWikiDocumentTextCommandResponse> SearchWikiDocumentText([FromBody] SearchWikiDocumentTextCommand req, CancellationToken ct = default)
-    {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
-
-        if (!userIsWikiUser.IsWikiUser)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckUserIsMemberAsync(req.WikiId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -206,17 +128,24 @@ public partial class DocumentController : ControllerBase
     [HttpPost("update_document_file_name")]
     public async Task<EmptyCommandResponse> UpdateWikiDocumentFileName([FromBody] UpdateWikiDocumentFileNameCommand req, CancellationToken ct = default)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        }, ct);
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
+    {
+        var userIsWikiUser = await _mediator.Send(
+            new QueryUserIsWikiUserCommand
+            {
+                ContextUserId = _userContext.UserId,
+                WikiId = wikiId
+            },
+            ct);
 
         if (!userIsWikiUser.IsWikiUser)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
-
-        return await _mediator.Send(req, ct);
     }
 }
