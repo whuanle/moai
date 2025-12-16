@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
-using MoAI.Wiki.Plugins.Crawler.Queries.Responses;
+using MoAI.Wiki.Plugins.Crawler.Models;
 
 namespace MoAI.Wiki.Plugins.Crawler.Queries;
 

@@ -7,22 +7,21 @@ using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Crawler.Queries;
-using MoAI.Wiki.Plugins.Crawler.Queries.Responses;
 
 namespace MoAI.Wiki.Crawler.Queries;
 
 /// <summary>
 /// <inheritdoc cref="QueryWikiCrawlerPageTasksCommand"/>
 /// </summary>
-public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiCrawlerPageTasksCommand, QueryWikiCrawlerPageTasksCommandResponse>
+public class QueryWikiCrawlerPageTasksCommandHandler : IRequestHandler<QueryWikiCrawlerPageTasksCommand, QueryWikiCrawlerPageTasksCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueryWikiCrawlerPageListCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="QueryWikiCrawlerPageTasksCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    public QueryWikiCrawlerPageListCommandHandler(DatabaseContext databaseContext)
+    public QueryWikiCrawlerPageTasksCommandHandler(DatabaseContext databaseContext)
     {
         _databaseContext = databaseContext;
     }
@@ -31,6 +30,7 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
     public async Task<QueryWikiCrawlerPageTasksCommandResponse> Handle(QueryWikiCrawlerPageTasksCommand request, CancellationToken cancellationToken)
     {
         var workerState = await _databaseContext.WikiPluginConfigs.Where(x => x.Id == request.ConfigId)
+            .OrderByDescending(x => x.CreateTime)
             .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "crawler"), a => a.Id, b => b.BindId, (a, b) => new
             {
                 Id = a.Id,
@@ -44,14 +44,6 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
                 TaskId = b.Id
             })
             .FirstOrDefaultAsync();
-
-        if (workerState == null)
-        {
-            throw new BusinessException("未找到爬虫配置");
-        }
-
-        var pluginConfig = workerState.Config.JsonToObject<WikiCrawlerConfig>()!;
-
         var pages = await _databaseContext.WikiPluginDocumentStates
             .OrderByDescending(x => x.CreateTime)
             .Where(x => x.ConfigId == request.ConfigId)
@@ -73,25 +65,27 @@ public class QueryWikiCrawlerPageListCommandHandler : IRequestHandler<QueryWikiC
                 IsEmbedding = b.IsEmbedding,
                 Message = a.Message,
                 WikiDocumentId = a.WikiDocumentId,
-                CrawleState = (WorkerState)a.State,
                 FileName = b.FileName,
                 FileSize = b.FileSize,
                 CreateUserId = a.CreateUserId
             }).ToArrayAsync();
 
-        var task = new WikiCrawlerTask
+        WikiCrawlerTask? task = null;
+        if (workerState != null)
         {
-            TaskId = workerState.TaskId,
-            State = workerState.State,
-            Message = workerState.Message,
-            ConfigId = workerState.ConfigId,
-            WikiId = workerState.WikiId,
-            CreateTime = workerState.CreateTime,
-            Address = pluginConfig.Address,
-            Selector = pluginConfig.Selector,
-            FaildPageCount = pages.Count(x => x.CrawleState == WorkerState.Failed),
-            PageCount = pages.Length,
-        };
+            var pluginConfig = workerState.Config.JsonToObject<WikiCrawlerConfig>()!;
+
+            task = new WikiCrawlerTask
+            {
+                TaskId = workerState.TaskId,
+                Message = workerState.Message,
+                ConfigId = workerState.ConfigId,
+                WikiId = workerState.WikiId,
+                CreateTime = workerState.CreateTime,
+                FaildPageCount = pages.Count(x => x.CrawleState == WorkerState.Failed),
+                PageCount = pages.Length,
+            };
+        }
 
         return new QueryWikiCrawlerPageTasksCommandResponse
         {

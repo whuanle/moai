@@ -6,7 +6,6 @@ using MoAI.Infra.Models;
 using MoAI.Wiki.Plugins.Crawler.Commands;
 using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Crawler.Queries;
-using MoAI.Wiki.Plugins.Crawler.Queries.Responses;
 using MoAI.Wiki.Plugins.Feishu.Commands;
 using MoAI.Wiki.Plugins.Template.Commands;
 using MoAI.Wiki.Plugins.Template.Models;
@@ -38,7 +37,21 @@ public class CrawlerController : ControllerBase
     }
 
     /// <summary>
-    /// 创建爬虫配置.
+    /// 查询已经配置的爬虫插件实例列表.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpPost("config_list")]
+    public async Task<QueryWikiCrawlerPluginConfigListCommandResponse> QueryWikiCrawlerPluginConfigList([FromBody] QueryWikiCrawlerPluginConfigListCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 创建爬虫实例.
     /// </summary>
     /// <param name="req">创建配置的命令.</param>
     /// <param name="ct">取消令牌.</param>
@@ -48,12 +61,7 @@ public class CrawlerController : ControllerBase
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
-        return await _mediator.Send(new AddWikiPluginConfigCommand<WikiCrawlerConfig>
-        {
-            Config = req.Config,
-            Title = req.Title,
-            WikiId = req.WikiId
-        }, ct);
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -71,17 +79,31 @@ public class CrawlerController : ControllerBase
     }
 
     /// <summary>
+    /// 启动插件任务.
+    /// </summary>
+    /// <param name="req">启动任务命令.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回任务标识.</returns>
+    [HttpPost("lanuch_task")]
+    public async Task<SimpleGuid> StartWikiPluginTask([FromBody] StartWikiCrawlerPluginTaskCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 获取爬虫配置详细信息.
     /// </summary>
     /// <param name="req">查询配置的命令.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回配置内容.</returns>
     [HttpGet("config")]
-    public async Task<QueryWikiPluginrConfigCommandResponse<WikiCrawlerConfig>> QueryWikiCrawlerConfig([FromQuery] QueryWikiCrawlerConfigCommand req, CancellationToken ct = default)
+    public async Task<QueryWikiCrawlerConfigCommandResponse> QueryWikiCrawlerConfig([FromQuery] QueryWikiCrawlerConfigCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
-        return await _mediator.Send((QueryWikiPluginConfigCommand<WikiCrawlerConfig>)req, ct);
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -100,11 +122,13 @@ public class CrawlerController : ControllerBase
 
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = wikiId
-        }, ct);
+        var userIsWikiUser = await _mediator.Send(
+            new QueryUserIsWikiUserCommand
+            {
+                ContextUserId = _userContext.UserId,
+                WikiId = wikiId
+            },
+            ct);
 
         if (!userIsWikiUser.IsWikiUser)
         {

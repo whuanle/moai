@@ -34,20 +34,6 @@ public class WikiPluginController : ControllerBase
     }
 
     /// <summary>
-    /// 启动插件任务.
-    /// </summary>
-    /// <param name="req">启动任务命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回任务标识.</returns>
-    [HttpPost("lanuch_task")]
-    public async Task<SimpleGuid> StartWikiPluginTask([FromBody] StartWikiPluginTaskCommand req, CancellationToken ct = default)
-    {
-        await CheckUserIsMemberAsync(req.WikiId, ct);
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
     /// 取消插件任务.
     /// </summary>
     /// <param name="req">取消任务命令.</param>
@@ -91,11 +77,13 @@ public class WikiPluginController : ControllerBase
 
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = wikiId
-        }, ct);
+        var userIsWikiUser = await _mediator.Send(
+            new QueryUserIsWikiUserCommand
+            {
+                ContextUserId = _userContext.UserId,
+                WikiId = wikiId
+            },
+            ct);
 
         if (!userIsWikiUser.IsWikiUser)
         {

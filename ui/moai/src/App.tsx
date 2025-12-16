@@ -76,6 +76,8 @@ import WikiDocument from "./components/wiki/WikiDocument";
 import DocumentEmbedding from "./components/wiki/DocumentEmbedding";
 import WikiSearch from "./components/wiki/WikiSearch";
 import WikiUser from "./components/wiki/WikiUser";
+import CrawlerListPage from "./components/wiki/plugins/crawler/CrawlerListPage";
+import CrawlerDetailPage from "./components/wiki/plugins/crawler/CrawlerDetailPage";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -402,6 +404,8 @@ function App() {
                     <Route path="document/:documentId/embedding" element={<DocumentEmbedding />} />
                     <Route path="search" element={<WikiSearch />} />
                     <Route path="user" element={<WikiUser />} />
+                    <Route path="plugin/crawler/:configId" element={<CrawlerDetailPage />} />
+                    <Route path="plugin/crawler" element={<CrawlerListPage />} />
                   </Route>
                 </Route>
                 <Route path="prompt">

@@ -8,30 +8,31 @@ using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
+using MoAI.Wiki.Plugins.Template.Commands;
 
-namespace MoAI.Wiki.Plugins.Template.Commands;
+namespace MoAI.Wiki.Plugins.Feishu.Handlers;
 
 /// <summary>
-/// <inheritdoc cref="StartWikiPluginTaskCommand"/>
+/// <inheritdoc cref="StartWikiFeishuPluginTaskCommand"/>
 /// </summary>
-public class StartWikiPluginTaskCommandHandler : IRequestHandler<StartWikiPluginTaskCommand, SimpleGuid>
+public class StartWikiFeishuPluginTaskCommandHandler : IRequestHandler<StartWikiFeishuPluginTaskCommand, SimpleGuid>
 {
     private readonly IMessagePublisher _messagePublisher;
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="StartWikiPluginTaskCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="StartWikiFeishuPluginTaskCommandHandler"/> class.
     /// </summary>
     /// <param name="messagePublisher"></param>
     /// <param name="databaseContext"></param>
-    public StartWikiPluginTaskCommandHandler(IMessagePublisher messagePublisher, DatabaseContext databaseContext)
+    public StartWikiFeishuPluginTaskCommandHandler(IMessagePublisher messagePublisher, DatabaseContext databaseContext)
     {
         _messagePublisher = messagePublisher;
         _databaseContext = databaseContext;
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(StartWikiPluginTaskCommand request, CancellationToken cancellationToken)
+    public async Task<SimpleGuid> Handle(StartWikiFeishuPluginTaskCommand request, CancellationToken cancellationToken)
     {
         var existTask = await _databaseContext.WorkerTasks.AnyAsync(x => x.BindType == "wiki" && x.BindId == request.ConfigId && x.State < (int)WorkerState.Cancal, cancellationToken);
 

@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Add_configRequestBuilder extends BaseRequestBuilder<Add_configRequestBuilder> {
     /**
-     * 创建爬虫配置.
+     * 创建爬虫实例.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleInt>}
@@ -23,7 +23,7 @@ export interface Add_configRequestBuilder extends BaseRequestBuilder<Add_configR
      */
      post(body: AddWikiCrawlerConfigCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SimpleInt | undefined>;
     /**
-     * 创建爬虫配置.
+     * 创建爬虫实例.
      * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

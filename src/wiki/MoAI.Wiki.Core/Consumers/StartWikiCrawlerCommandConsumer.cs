@@ -11,6 +11,7 @@ using Microsoft.KernelMemory;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;
@@ -55,10 +56,12 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
     /// <inheritdoc/>
     public async Task ExecuteAsync(MessageHeader messageHeader, StartWikiCrawlerMessage message)
     {
-        var workerTaskEntity = await _databaseContext.WorkerTasks
-            .FirstOrDefaultAsync(x => x.Id == message.TaskId);
+        // 1，前置检查
+        var workerTask = await _databaseContext.WorkerTasks.AsNoTracking()
+             .FirstOrDefaultAsync(x => x.Id == message.TaskId);
 
-        if (workerTaskEntity == null || workerTaskEntity.State >= (int)WorkerState.Cancal)
+        // 不需要处理或有其它线程在执行
+        if (workerTask == null || workerTask.State > (int)WorkerState.Processing)
         {
             return;
         }
@@ -71,16 +74,6 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             return;
         }
 
-        // 清空当前任务记录
-        // 删除关联文档
-        // 删除向量
-        // 删除索引
-        await ClearCrawlerRecordAsync(message.WikiId, message.ConfigId);
-
-        workerTaskEntity.State = (int)WorkerState.Processing;
-        workerTaskEntity.Message = "正在爬取网页";
-        await UpdateCrawleStateAsync(workerTaskEntity);
-
         var wikiWebConfig = wikiWebConfigEntity.Config.JsonToObject<WikiCrawlerConfig>()!;
 
         Queue<Url> urls = new Queue<Url>();
@@ -88,74 +81,134 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         urls.Enqueue(new Url(wikiWebConfig.Address.ToString()));
 
-        var pageCount = 0;
-
         // 爬取每一个链接
         while (urls.Count > 0)
         {
-            var currentUrl = urls.Dequeue();
-
-            var pageEntity = new WikiPluginDocumentStateEntity
+            if (processedUrls.Count >= wikiWebConfig.LimitMaxCount)
             {
-                WikiId = wikiWebConfigEntity.WikiId,
-                ConfigId = wikiWebConfigEntity.Id,
-                RelevanceKey = currentUrl.ToString(),
-                RelevanceValue = string.Empty,
-                CreateUserId = workerTaskEntity.CreateUserId,
-                UpdateUserId = workerTaskEntity.UpdateUserId,
-                State = (int)WorkerState.Processing,
-                Message = "正在处理"
-            };
+                break;
+            }
 
-            // 插入页面处理记录
-            await _databaseContext.WikiPluginDocumentStates.AddAsync(pageEntity);
-            await _databaseContext.SaveChangesAsync();
+            await SetStateAsync(message.TaskId, WorkerState.Processing, "正在爬取页面");
+
+            var currentUrl = urls.Dequeue();
 
             try
             {
-                await CrawlePageAsync(urls, processedUrls, pageEntity, wikiWebConfig, currentUrl);
-                pageCount++;
-                pageEntity.State = (int)WorkerState.Successful;
-                pageEntity.Message = "成功";
+                // 检查这个地址有没有对应的文档
+                var overridePage = await CheckExistDocumentAsync(wikiWebConfigEntity.Id, currentUrl, wikiWebConfig.IsIgnoreExistPage);
+
+                if (overridePage.IsOverride)
+                {
+                    // 先抓取页面，不管本地的数据
+                    var uploadResult = await CrawlePageAsync(urls, processedUrls, wikiWebConfig, currentUrl, message.WikiId);
+
+                    // 如果页面没有任何变化，说明网页完全一样，跳过后续处理
+                    if (overridePage.WikiDocument != null && overridePage.WikiDocument.FileId == uploadResult.FileId)
+                    {
+                        continue;
+                    }
+
+                    // 新的页面，之前完全没有记录，直接插入
+                    if (overridePage.WikiStateDocument == null)
+                    {
+                        var documentEntity = new WikiDocumentEntity
+                        {
+                            WikiId = wikiWebConfigEntity.WikiId,
+                            FileId = uploadResult.FileId,
+                            FileName = uploadResult.FileMd5 + ".html",
+                            ObjectKey = uploadResult.ObjectKey,
+                            FileType = uploadResult.FileType,
+                            IsEmbedding = false,
+                        };
+
+                        await _databaseContext.WikiDocuments.AddAsync(documentEntity);
+                        await _databaseContext.SaveChangesAsync();
+
+                        var pageEntity = new WikiPluginDocumentStateEntity
+                        {
+                            WikiId = wikiWebConfigEntity.WikiId,
+                            ConfigId = wikiWebConfigEntity.Id,
+                            RelevanceKey = currentUrl.ToString(),
+                            RelevanceValue = string.Empty,
+                            CreateUserId = workerTask.CreateUserId,
+                            UpdateUserId = workerTask.UpdateUserId,
+                            Message = "正在处理",
+                            WikiDocumentId = documentEntity.Id
+                        };
+
+                        await _databaseContext.WikiPluginDocumentStates.AddAsync(pageEntity);
+                        await _databaseContext.SaveChangesAsync();
+
+                        continue;
+                    }
+
+                    // 存在，并且需要替换
+                    {
+                        // 先删除旧的文件
+                        await _mediator.Send(new DeleteFileCommand
+                        {
+                            FileIds = new[] { overridePage.WikiDocument!.FileId }
+                        });
+
+                        var documentEntity = overridePage.WikiDocument!;
+                        documentEntity.FileId = uploadResult.FileId;
+                        documentEntity.FileName = uploadResult.FileMd5 + ".html";
+                        documentEntity.ObjectKey = uploadResult.ObjectKey;
+                        documentEntity.FileType = uploadResult.FileType;
+
+                        _databaseContext.WikiDocuments.Update(documentEntity);
+                        await _databaseContext.SaveChangesAsync();
+
+                        var pageEntity = overridePage.WikiStateDocument!;
+                        pageEntity.WikiDocumentId = documentEntity.Id;
+                        _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
+                        await _databaseContext.SaveChangesAsync();
+                    }
+
+                    continue;
+                }
             }
             catch (Exception ex)
             {
-                pageCount++;
-                pageEntity.State = (int)WorkerState.Failed;
-                pageEntity.Message = ex.Message;
-                _logger.LogError(ex, "Webpage crawling exception,url:{URL}", currentUrl);
-            }
-
-            // 更新页面处理状态
-            _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
-            await _databaseContext.SaveChangesAsync();
-            await UpdateCrawleStateAsync(workerTaskEntity);
-
-            if (pageCount >= wikiWebConfig.LimitMaxCount)
-            {
-                _logger.LogInformation("已达到最大爬取数量，停止爬取，当前数量：{Count}", processedUrls.Count);
-                break;
-            }
-
-            workerTaskEntity = await _databaseContext.WorkerTasks
-            .FirstOrDefaultAsync(x => x.Id == message.TaskId);
-
-            if (workerTaskEntity == null || workerTaskEntity.State >= (int)WorkerState.Cancal)
-            {
-                _logger.LogInformation("任务已取消，停止爬取，当前数量：{Count}", processedUrls.Count);
-                break;
+                _logger.LogInformation(ex, "Crawler url error:{Url}", currentUrl);
             }
         }
 
-        workerTaskEntity!.State = (int)WorkerState.Successful;
-        workerTaskEntity.Message = "爬取完成";
-        await UpdateCrawleStateAsync(workerTaskEntity);
+        await SetStateAsync(message.TaskId, WorkerState.Successful, "爬取完成");
+    }
+
+    private async Task<(bool IsOverride, WikiPluginDocumentStateEntity? WikiStateDocument, WikiDocumentEntity? WikiDocument)> CheckExistDocumentAsync(int configId, Url currentUrl, bool isIgnore)
+    {
+        // 查找
+        var wikiStateDocument = await _databaseContext.WikiPluginDocumentStates
+            .FirstOrDefaultAsync(x => x.ConfigId == configId && x.RelevanceKey == currentUrl.ToString());
+
+        // 如果页面存在，替换还是忽略
+        if (wikiStateDocument == null)
+        {
+            return (true, null, null);
+        }
+
+        if (isIgnore)
+        {
+            return (false, null, null);
+        }
+
+        var wikiDocument = await _databaseContext.WikiDocuments
+            .FirstOrDefaultAsync(x => x.Id == wikiStateDocument.WikiDocumentId);
+
+        // 不清空向量，只替换文档和删除切割记录
+        _databaseContext.WikiPluginDocumentStates.Remove(wikiStateDocument);
+        await _databaseContext.SaveChangesAsync();
+
+        return (true, wikiStateDocument, wikiDocument);
     }
 
     /// <inheritdoc/>
-    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, StartWikiCrawlerMessage message)
+    public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, StartWikiCrawlerMessage? message)
     {
-        return Task.CompletedTask;
+        await SetExceptionStateAsync(message.TaskId, WorkerState.Wait, ex);
     }
 
     /// <inheritdoc/>
@@ -164,17 +217,10 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         return Task.FromResult(ConsumerState.Ack);
     }
 
-    // 更新爬虫状态.
-    private async Task UpdateCrawleStateAsync(WorkerTaskEntity crawleTaskEntity)
-    {
-        _databaseContext.WorkerTasks.Update(crawleTaskEntity);
-        await _databaseContext.SaveChangesAsync();
-    }
-
     // 开始爬取一个页面
-    private async Task CrawlePageAsync(Queue<Url> urls, HashSet<string> processedUrls, WikiPluginDocumentStateEntity pageEntity, WikiCrawlerConfig wikiWebConfig, Url currentUrl)
+    private async Task<FileUploadResult> CrawlePageAsync(Queue<Url> urls, HashSet<string> processedUrls, WikiCrawlerConfig wikiWebConfig, Url currentUrl, int wikiId)
     {
-        var googleBotUserAgent = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+        var googleBotUserAgent = wikiWebConfig.UserAgent;
         var requester = new DefaultHttpRequester(googleBotUserAgent);
 
         // 避免抓取视频和图片等大资源
@@ -195,19 +241,14 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         var context = BrowsingContext.New(config);
         var document = await context.OpenAsync(currentUrl, cancellationTokenSource.Token);
 
-        //// 开启不一定有好的效果
-        //if (wikiWebConfig.IsWaitJs)
-        //{
-        //    await Task.WhenAll(document.GetScriptDownloads());
-        //}
-
         /*
          爬取完成
          */
 
+        // 如果不需要爬取其他地址
         if (string.IsNullOrEmpty(wikiWebConfig.LimitAddress) || currentUrl.ToString().StartsWith(wikiWebConfig.LimitAddress, StringComparison.CurrentCultureIgnoreCase))
         {
-            await SaveWikiCrawlerAsync(pageEntity, wikiWebConfig, currentUrl, document);
+            return await SaveWikiCrawlerAsync(wikiWebConfig, currentUrl, document, wikiId);
         }
 
         var webHost = new Uri(wikiWebConfig.Address);
@@ -252,9 +293,11 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 urls.Enqueue(url);
             }
         }
+
+        return await SaveWikiCrawlerAsync(wikiWebConfig, currentUrl, document, wikiId);
     }
 
-    private async Task SaveWikiCrawlerAsync(WikiPluginDocumentStateEntity pageEntity, WikiCrawlerConfig wikiWebConfig, Url currentUrl, IDocument document)
+    private async Task<FileUploadResult> SaveWikiCrawlerAsync(WikiCrawlerConfig wikiWebConfig, Url currentUrl, IDocument document, int wikiId)
     {
         // 将文档存储为文件
         var filePath = Path.Combine(Path.GetTempPath(), DateTimeOffset.Now.ToUnixTimeMilliseconds() + ".html");
@@ -296,6 +339,27 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         // 计算文件 md5
         var md5 = HashHelper.ComputeFileMd5(filePath);
+        var objectKey = $"{wikiId}/{md5}.html";
+
+        // 检查知识库有没有对应的文件
+        // 要考虑一种情况，知识库有对应的文件，但是这个文件不属于这个爬虫任务上传的
+        // 所以这个文档可以被多方关联
+        var existingFile = await _databaseContext.WikiDocuments.AsNoTracking()
+            .Where(x => x.WikiId == wikiId && x.ObjectKey == objectKey)
+            .Select(x => new FileUploadResult
+            {
+                FileId = x.FileId,
+                FileMd5 = md5,
+                ObjectKey = x.ObjectKey,
+                FileType = x.FileType
+            })
+            .FirstOrDefaultAsync();
+
+        if (existingFile != null)
+        {
+            // 已经存在该文件，直接返回
+            return existingFile;
+        }
 
         // 上传文件
         var uploadResult = await _mediator.Send(new UploadFileStreamCommand
@@ -303,92 +367,42 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             MD5 = md5,
             ContentType = "text/html",
             FileSize = (int)fileStream.Length,
-            ObjectKey = $"{pageEntity.WikiId}/{pageEntity.ConfigId}/{md5}.html",
+            ObjectKey = objectKey,
             FileStream = fileStream
         });
 
-        // 插入新的记录
-        var wikiDocument = new WikiDocumentEntity
-        {
-            WikiId = pageEntity.WikiId,
-            FileId = uploadResult.FileId,
-            FileName = $"{md5}.html",
-            ObjectKey = uploadResult.ObjectKey,
-            FileType = ".html",
-            IsEmbedding = false
-        };
-
-        await _databaseContext.AddRangeAsync(wikiDocument);
-        await _databaseContext.SaveChangesAsync();
-
-        pageEntity.WikiDocumentId = wikiDocument.Id;
-        _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
-        await _databaseContext.SaveChangesAsync();
-
-        //if (wikiWebConfig.IsAutoEmbedding)
-        //{
-        //    var documentTaskEntity = new WorkerTaskEntity
-        //    {
-        //        DocumentId = wikiDocument.Id,
-        //        WikiId = wikiDocument.WikiId,
-        //        State = (int)FileEmbeddingState.Wait,
-        //        MaxTokensPerParagraph = webCrawleTaskEntity.MaxTokensPerParagraph,
-        //        OverlappingTokens = webCrawleTaskEntity.OverlappingTokens,
-        //        Tokenizer = TextToJsonExtensions.ToJsonString(webCrawleTaskEntity.Tokenizer),
-        //        Message = "任务已创建",
-        //        CreateUserId = webCrawleTaskEntity.CreateUserId,
-        //        UpdateUserId = webCrawleTaskEntity.UpdateUserId
-        //    };
-
-        //    await _databaseContext.WikiDocumentTasks.AddAsync(documentTaskEntity);
-        //    await _databaseContext.SaveChangesAsync();
-        //}
+        return uploadResult;
     }
 
-    // 清空该爬虫的文档和向量.
-    private async Task ClearCrawlerRecordAsync(int wikiId, int configId)
+    private async Task SetExceptionStateAsync(Guid taskId, WorkerState state, Exception? ex = null)
     {
-        var oldIds = _databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId)
-            .Select(x => new
-            {
-                PageId = x.Id,
-                x.WikiDocumentId
-            }).ToArray();
+        _logger.LogError(ex, "Task processing failed.");
+        await SetStateAsync(taskId, state, ex?.Message);
+    }
 
-        if (oldIds.Length == 0)
+    private async Task SetStateAsync(Guid taskId, WorkerState state, string? message = null)
+    {
+        // 设置之前先检查状态
+        var workerTask = await _databaseContext.WorkerTasks
+             .FirstOrDefaultAsync(x => x.Id == taskId);
+
+        // 不需要处理或有其它线程在执行
+        if (workerTask == null || workerTask.State > (int)WorkerState.Processing)
         {
-            return;
+            throw new BusinessException("当前任务已结束");
         }
 
-        var documentIds = oldIds.Select(x => x.WikiDocumentId).Where(x => x != 0).ToHashSet();
+        workerTask.State = (int)state;
+        if (!string.IsNullOrEmpty(message))
+        {
+            workerTask.Message = message;
+        }
+        else
+        {
+            workerTask.Message = state.ToJsonString();
+        }
 
-        // 删除数据库数据
-        await _databaseContext.SoftDeleteAsync(_databaseContext.Files.Where(x => _databaseContext.WikiDocuments.Where(a => documentIds.Contains(x.Id) && a.FileId == x.Id).Any()));
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => _databaseContext.WikiPluginDocumentStates.Where(a => a.ConfigId == configId && a.WikiDocumentId == x.Id).Any()));
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId));
-
-        //var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
-        //if (memoryDb == null)
-        //{
-        //    throw new BusinessException("不支持的文档数据库");
-        //}
-
-        //// 删除知识库文档
-        //// 构建客户端
-        //var memoryBuilder = new KernelMemoryBuilder()
-        //    .WithSimpleFileStorage(Path.GetTempPath());
-
-        //memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
-
-        //var memoryClient = memoryBuilder
-        //    .WithoutTextGenerator()
-        //    .WithoutEmbeddingGenerator()
-        //    .Build();
-
-        //// 删除向量
-        //foreach (var documentId in documentIds)
-        //{
-        //    await memoryClient.DeleteDocumentAsync(documentId.ToString(), index: wikiId.ToString());
-        //}
+        _databaseContext.WorkerTasks.Update(workerTask);
+        await _databaseContext.SaveChangesAsync();
     }
 }

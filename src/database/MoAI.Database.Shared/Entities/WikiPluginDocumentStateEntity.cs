@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using MoAI.Database.Audits;
+﻿using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
 
@@ -28,11 +26,6 @@ public partial class WikiPluginDocumentStateEntity : IFullAudited
     /// 文档id.
     /// </summary>
     public int WikiDocumentId { get; set; }
-
-    /// <summary>
-    /// 爬取状态.
-    /// </summary>
-    public int State { get; set; }
 
     /// <summary>
     /// 关联对象.

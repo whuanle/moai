@@ -2,15 +2,24 @@
 using MediatR;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Plugins.Feishu.Models;
-using MoAI.Wiki.Plugins.Template.Commands;
 
 namespace MoAI.Wiki.Plugins.Feishu.Commands;
 
 /// <summary>
 /// 飞书配置.
 /// </summary>
-public class AddWikiFeishuConfigCommand : AddWikiPluginConfigCommand<WikiFeishuConfig>, IRequest<SimpleInt>, IModelValidator<AddWikiFeishuConfigCommand>
+public class AddWikiFeishuConfigCommand : WikiFeishuConfig, IRequest<SimpleInt>, IModelValidator<AddWikiFeishuConfigCommand>
 {
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
+    public int WikiId { get; init; }
+
+    /// <summary>
+    /// 标题.
+    /// </summary>
+    public string Title { get; init; } = default!;
+
     /// <inheritdoc/>
     public void Validate(AbstractValidator<AddWikiFeishuConfigCommand> validate)
     {
@@ -22,18 +31,16 @@ public class AddWikiFeishuConfigCommand : AddWikiPluginConfigCommand<WikiFeishuC
             .NotEmpty().WithMessage("配置名称不能为空")
             .MaximumLength(50).WithMessage("配置名称不能超过50个字符");
 
-        validate.RuleFor(x => x.Config).NotNull();
-
-        validate.RuleFor(x => x.Config.AppId)
+        validate.RuleFor(x => x.AppId)
             .NotEmpty().WithMessage("不能为空");
 
-        validate.RuleFor(x => x.Config.AppSecret)
+        validate.RuleFor(x => x.AppSecret)
             .NotEmpty().WithMessage("不能为空");
 
-        validate.RuleFor(x => x.Config.SpaceId)
+        validate.RuleFor(x => x.SpaceId)
             .NotEmpty().WithMessage("不能为空");
 
-        validate.RuleFor(x => x.Config.ParentNodeToken)
+        validate.RuleFor(x => x.ParentNodeToken)
             .NotEmpty().WithMessage("不能为空");
     }
 }

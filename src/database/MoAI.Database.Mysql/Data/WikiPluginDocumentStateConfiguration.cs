@@ -54,10 +54,6 @@ public partial class WikiPluginDocumentStateConfiguration : IEntityTypeConfigura
             .HasDefaultValueSql("''")
             .HasComment("关联值")
             .HasColumnName("relevance_value");
-        entity.Property(e => e.State)
-            .HasComment("爬取状态")
-            .HasColumnType("int(11)")
-            .HasColumnName("state");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

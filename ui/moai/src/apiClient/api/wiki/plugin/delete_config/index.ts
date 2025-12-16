@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Delete_configRequestBuilder extends BaseRequestBuilder<Delete_configRequestBuilder> {
     /**
-     * 删除爬虫配置.
+     * 删除插件配置.
      * @param body 删除配置.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface Delete_configRequestBuilder extends BaseRequestBuilder<Delete_c
      */
      delete(body: DeleteWikiPluginConfigCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 删除爬虫配置.
+     * 删除插件配置.
      * @param body 删除配置.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

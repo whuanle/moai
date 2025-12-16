@@ -6,6 +6,8 @@ import { Add_configRequestBuilderRequestsMetadata, type Add_configRequestBuilder
 // @ts-ignore
 import { ConfigRequestBuilderRequestsMetadata, type ConfigRequestBuilder } from './config/index.js';
 // @ts-ignore
+import { Lanuch_taskRequestBuilderRequestsMetadata, type Lanuch_taskRequestBuilder } from './lanuch_task/index.js';
+// @ts-ignore
 import { Query_page_stateRequestBuilderRequestsMetadata, type Query_page_stateRequestBuilder } from './query_page_state/index.js';
 // @ts-ignore
 import { type Update_configRequestBuilder, Update_configRequestBuilderRequestsMetadata } from './update_config/index.js';
@@ -24,6 +26,10 @@ export interface FeishuRequestBuilder extends BaseRequestBuilder<FeishuRequestBu
      * The config property
      */
     get config(): ConfigRequestBuilder;
+    /**
+     * The lanuch_task property
+     */
+    get lanuch_task(): Lanuch_taskRequestBuilder;
     /**
      * The query_page_state property
      */
@@ -46,6 +52,9 @@ export const FeishuRequestBuilderNavigationMetadata: Record<Exclude<keyof Feishu
     },
     config: {
         requestsMetadata: ConfigRequestBuilderRequestsMetadata,
+    },
+    lanuch_task: {
+        requestsMetadata: Lanuch_taskRequestBuilderRequestsMetadata,
     },
     query_page_state: {
         requestsMetadata: Query_page_stateRequestBuilderRequestsMetadata,

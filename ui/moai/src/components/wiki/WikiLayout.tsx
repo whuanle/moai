@@ -80,6 +80,8 @@ export default function WikiLayout() {
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === "document") {
       navigate(`/app/wiki/${id}/document`);
+    } else if (key === "crawle") {
+      navigate(`/app/wiki/${id}/plugin/crawler`);
     } else {
       navigate(`/app/wiki/${id}/${key}`);
     }
@@ -89,7 +91,7 @@ export default function WikiLayout() {
     const path = location.pathname;
     if (path.includes("/settings")) {
       return "settings";
-    } else if (path.includes("/crawle")) {
+    } else if (path.includes("/plugin/crawler")) {
       return "crawle";
     } else if (path.includes("/search")) {
       return "search";
@@ -113,7 +115,7 @@ export default function WikiLayout() {
     }, {
       key: "search",
       icon: <SearchOutlined />,
-      label: "内容检索",
+      label: "召回测试",
     },
     {
       key: "user",

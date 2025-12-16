@@ -1,12 +1,21 @@
 ﻿using FluentValidation;
 using MediatR;
 using MoAI.Wiki.Plugins.Crawler.Models;
-using MoAI.Wiki.Plugins.Template.Queries;
 
 namespace MoAI.Wiki.Plugins.Crawler.Queries;
 
-public class QueryWikiCrawlerConfigCommand : QueryWikiPluginConfigCommand<WikiCrawlerConfig>, IModelValidator<QueryWikiCrawlerConfigCommand>
+public class QueryWikiCrawlerConfigCommand : IRequest<QueryWikiCrawlerConfigCommandResponse>, IModelValidator<QueryWikiCrawlerConfigCommand>
 {
+    /// <summary>
+    /// 知识库id.
+    /// </summary>
+    public int WikiId { get; init; }
+
+    /// <summary>
+    /// id.
+    /// </summary>
+    public int ConfigId { get; init; }
+
     /// <inheritdoc/>
     public void Validate(AbstractValidator<QueryWikiCrawlerConfigCommand> validate)
     {

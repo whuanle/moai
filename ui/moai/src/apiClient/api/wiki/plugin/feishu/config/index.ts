@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface ConfigRequestBuilder extends BaseRequestBuilder<ConfigRequestBuilder> {
     /**
-     * 获取爬虫配置详细信息.
+     * 获取飞书配置详情.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface ConfigRequestBuilder extends BaseRequestBuilder<ConfigRequestBu
      */
      get(requestConfiguration?: RequestConfiguration<ConfigRequestBuilderGetQueryParameters> | undefined) : Promise<QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig | undefined>;
     /**
-     * 获取爬虫配置详细信息.
+     * 获取飞书配置详情.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<ConfigRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 获取爬虫配置详细信息.
+ * 获取飞书配置详情.
  */
 export interface ConfigRequestBuilderGetQueryParameters {
     /**
@@ -44,7 +44,7 @@ export interface ConfigRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const ConfigRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/feishu/config?ConfigId={ConfigId}&WikiId={WikiId}";
+export const ConfigRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/feishu/config{?ConfigId*,WikiId*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */

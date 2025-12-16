@@ -1,7 +1,5 @@
-﻿using MediatR;
-using MoAI.Infra.Models;
+﻿using MoAI.Infra.Models;
 using MoAI.Wiki.Models;
-using MoAI.Wiki.Plugins.Crawler.Queries.Responses;
 
 namespace MoAI.Wiki.Plugins.Template.Models;
 public class QueryWikiPluginrConfigCommandResponse<T> : AuditsInfo

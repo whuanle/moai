@@ -12,8 +12,6 @@ import { Delete_configRequestBuilderRequestsMetadata, type Delete_configRequestB
 // @ts-ignore
 import { FeishuRequestBuilderNavigationMetadata, type FeishuRequestBuilder } from './feishu/index.js';
 // @ts-ignore
-import { Lanuch_taskRequestBuilderRequestsMetadata, type Lanuch_taskRequestBuilder } from './lanuch_task/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -40,10 +38,6 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The feishu property
      */
     get feishu(): FeishuRequestBuilder;
-    /**
-     * The lanuch_task property
-     */
-    get lanuch_task(): Lanuch_taskRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -67,9 +61,6 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     feishu: {
         navigationMetadata: FeishuRequestBuilderNavigationMetadata,
-    },
-    lanuch_task: {
-        requestsMetadata: Lanuch_taskRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

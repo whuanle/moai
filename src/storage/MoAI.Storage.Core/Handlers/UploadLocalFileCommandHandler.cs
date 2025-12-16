@@ -39,6 +39,8 @@ public class UploadLocalFileCommandHandler : IRequestHandler<UploadFileStreamCom
             {
                 FileId = fileEntity.Id,
                 ObjectKey = fileEntity.ObjectKey,
+                FileMd5 = fileEntity.FileMd5,
+                FileType = fileEntity.ContentType,
             };
         }
 
@@ -73,6 +75,8 @@ public class UploadLocalFileCommandHandler : IRequestHandler<UploadFileStreamCom
         {
             FileId = fileEntity.Id,
             ObjectKey = fileEntity.ObjectKey,
+            FileMd5 = fileEntity.FileMd5,
+            FileType = fileEntity.ContentType
         };
     }
 }

@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Config_listRequestBuilder extends BaseRequestBuilder<Config_listRequestBuilder> {
     /**
-     * 查询爬虫配置列表.
+     * 查询插件配置列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryWikiPluginConfigListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface Config_listRequestBuilder extends BaseRequestBuilder<Config_lis
      */
      get(requestConfiguration?: RequestConfiguration<Config_listRequestBuilderGetQueryParameters> | undefined) : Promise<QueryWikiPluginConfigListCommandResponse | undefined>;
     /**
-     * 查询爬虫配置列表.
+     * 查询插件配置列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<Config_listRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 查询爬虫配置列表.
+ * 查询插件配置列表.
  */
 export interface Config_listRequestBuilderGetQueryParameters {
     /**
@@ -44,7 +44,7 @@ export interface Config_listRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const Config_listRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/config_list?PluginKey={PluginKey}&WikiId={WikiId}";
+export const Config_listRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/config_list{?PluginKey*,WikiId*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */

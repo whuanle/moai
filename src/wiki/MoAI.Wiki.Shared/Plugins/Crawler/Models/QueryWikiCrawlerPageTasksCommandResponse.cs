@@ -1,15 +1,11 @@
-﻿using MediatR;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Plugins.Crawler.Models;
-
-namespace MoAI.Wiki.Plugins.Crawler.Queries.Responses;
+﻿namespace MoAI.Wiki.Plugins.Crawler.Models;
 
 public class QueryWikiCrawlerPageTasksCommandResponse
 {
     /// <summary>
-    /// 爬虫状态.
+    /// 爬虫状态，如果为空说明当前并没有正在跑的任务.
     /// </summary>
-    public WikiCrawlerTask Task { get; init; } = default!;
+    public WikiCrawlerTask? Task { get; init; } = default!;
 
     /// <summary>
     /// 每一个地址.

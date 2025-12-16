@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Query_page_stateRequestBuilder extends BaseRequestBuilder<Query_page_stateRequestBuilder> {
     /**
-     * 查询爬虫正在爬取的每个页状态.
+     * 查询飞书爬虫任务状态.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryWikiFeishuPageTasksCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface Query_page_stateRequestBuilder extends BaseRequestBuilder<Query
      */
      get(requestConfiguration?: RequestConfiguration<Query_page_stateRequestBuilderGetQueryParameters> | undefined) : Promise<QueryWikiFeishuPageTasksCommandResponse | undefined>;
     /**
-     * 查询爬虫正在爬取的每个页状态.
+     * 查询飞书爬虫任务状态.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<Query_page_stateRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 查询爬虫正在爬取的每个页状态.
+ * 查询飞书爬虫任务状态.
  */
 export interface Query_page_stateRequestBuilderGetQueryParameters {
     /**
@@ -44,7 +44,7 @@ export interface Query_page_stateRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const Query_page_stateRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/feishu/query_page_state?ConfigId={ConfigId}&WikiId={WikiId}";
+export const Query_page_stateRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/feishu/query_page_state{?ConfigId*,WikiId*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */

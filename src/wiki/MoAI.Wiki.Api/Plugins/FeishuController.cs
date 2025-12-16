@@ -46,7 +46,7 @@ public class FeishuController : ControllerBase
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
-        return await _mediator.Send((AddWikiPluginConfigCommand<WikiFeishuConfig>)req, ct);
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -57,6 +57,20 @@ public class FeishuController : ControllerBase
     /// <returns>返回操作结果.</returns>
     [HttpPost("update_config")]
     public async Task<EmptyCommandResponse> UpdateWikiFeishuConfig([FromBody] UpdateWikiFeishuConfigCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 启动插件任务.
+    /// </summary>
+    /// <param name="req">启动任务命令.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回任务标识.</returns>
+    [HttpPost("lanuch_task")]
+    public async Task<SimpleGuid> StartWikiPluginTask([FromBody] StartWikiFeishuPluginTaskCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 

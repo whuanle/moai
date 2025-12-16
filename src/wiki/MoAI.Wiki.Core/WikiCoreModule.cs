@@ -18,7 +18,5 @@ public class WikiCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddTransient<IRequestHandler<AddWikiPluginConfigCommand<WikiCrawlerConfig>, SimpleInt>, AddWikiPluginConfigCommandHandler<WikiCrawlerConfig>>();
-        context.Services.AddTransient<IRequestHandler<AddWikiPluginConfigCommand<WikiFeishuConfig>, SimpleInt>, AddWikiPluginConfigCommandHandler<WikiFeishuConfig>>();
     }
 }

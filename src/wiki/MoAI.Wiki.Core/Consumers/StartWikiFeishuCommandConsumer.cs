@@ -2,13 +2,10 @@
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.KernelMemory;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
-using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.Feishu.Models;
@@ -123,7 +120,6 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
                 RelevanceValue = currentNode.ObjToken,
                 CreateUserId = workerTaskEntity.CreateUserId,
                 UpdateUserId = workerTaskEntity.UpdateUserId,
-                State = (int)WorkerState.Processing,
                 Message = "正在处理"
             };
 
@@ -166,13 +162,11 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
                 await GetWikiNodes(feishuAccessToken, wikiWebConfig.SpaceId, currentNode.NodeToken, nodeTokenQueue);
 
                 pageCount++;
-                pageEntity.State = (int)WorkerState.Successful;
                 pageEntity.Message = "成功";
             }
             catch (Exception ex)
             {
                 pageCount++;
-                pageEntity.State = (int)WorkerState.Failed;
                 pageEntity.Message = ex.Message;
                 _logger.LogError(ex, "Webpage crawling exception,url:{URL}", currentNode.NodeToken);
             }

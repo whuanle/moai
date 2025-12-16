@@ -1,16 +1,49 @@
-﻿using MoAI.Wiki.Models;
+﻿using FluentValidation;
+using MediatR;
+using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Plugins.Feishu.Models;
 
-public class WikiFeishuConfig: IWikiPluginKey
+public class WikiFeishuConfig : IWikiPluginKey, IModelValidator<WikiFeishuConfig>
 {
-    public string AppId { get; set; }
+    /// <summary>
+    /// 飞书应用 id.
+    /// </summary>
+    public string AppId { get; init; } = string.Empty;
 
-    public string AppSecret { get; set; }
+    /// <summary>
+    /// 飞书应用密钥.
+    /// </summary>
+    public string AppSecret { get; init; } = string.Empty;
 
-    public string SpaceId { get; set; }
+    /// <summary>
+    /// 飞书知识库 id.
+    /// </summary>
+    public string SpaceId { get; init; } = string.Empty;
 
-    public string ParentNodeToken { get; set; }
+    /// <summary>
+    /// 顶部文档 token.
+    /// </summary>
+    public string ParentNodeToken { get; init; } = string.Empty;
 
+    /// <summary>
+    /// 插件名称.
+    /// </summary>
     public string PluginKey => "feishu";
+
+    /// <inheritdoc/>
+    public void Validate(AbstractValidator<WikiFeishuConfig> validate)
+    {
+        validate.RuleFor(x => x.AppId)
+            .NotEmpty().WithMessage("不能为空");
+
+        validate.RuleFor(x => x.AppSecret)
+            .NotEmpty().WithMessage("不能为空");
+
+        validate.RuleFor(x => x.SpaceId)
+            .NotEmpty().WithMessage("不能为空");
+
+        validate.RuleFor(x => x.ParentNodeToken)
+            .NotEmpty().WithMessage("不能为空");
+    }
 }
