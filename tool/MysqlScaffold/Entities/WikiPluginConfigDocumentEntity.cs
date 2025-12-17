@@ -5,14 +5,14 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 切片向量化内容.
+/// 知识库文档关联任务，这里的任务都是成功的.
 /// </summary>
-public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
+public partial class WikiPluginConfigDocumentEntity : IFullAudited
 {
     /// <summary>
-    /// 衍生内容唯一ID（derivative_id）.
+    /// id.
     /// </summary>
-    public Guid Id { get; set; }
+    public int Id { get; set; }
 
     /// <summary>
     /// 知识库id.
@@ -20,29 +20,24 @@ public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
     public int WikiId { get; set; }
 
     /// <summary>
-    /// 关联文档唯一标识（冗余字段）.
+    /// 爬虫id.
     /// </summary>
-    public int DocumentId { get; set; }
+    public int ConfigId { get; set; }
 
     /// <summary>
-    /// 源id，关联自身.
+    /// 文档id.
     /// </summary>
-    public Guid ChunkId { get; set; }
+    public int WikiDocumentId { get; set; }
 
     /// <summary>
-    /// 衍生类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
+    /// 关联对象.
     /// </summary>
-    public int DerivativeType { get; set; }
+    public string RelevanceKey { get; set; } = default!;
 
     /// <summary>
-    /// 提问/提纲/摘要内容.
+    /// 关联值.
     /// </summary>
-    public string DerivativeContent { get; set; } = default!;
-
-    /// <summary>
-    /// 是否被向量化.
-    /// </summary>
-    public bool IsEmbedding { get; set; }
+    public string RelevanceValue { get; set; } = default!;
 
     /// <summary>
     /// 创建人.

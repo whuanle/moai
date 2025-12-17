@@ -23,15 +23,14 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
 
         entity.HasIndex(e => new { e.DocumentId, e.DerivativeType }, "idx_doc_deriv");
 
-        entity.HasIndex(e => new { e.ChunkId, e.Id }, "idx_slice_deriv");
+        entity.HasIndex(e => e.Id, "idx_slice_deriv");
 
         entity.Property(e => e.Id)
+            .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("衍生内容唯一ID（derivative_id）")
-            .HasColumnType("bigint(20)")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)
-            .HasComment("关联切片ID（表A主键）")
-            .HasColumnType("bigint(20)")
+            .HasComment("源id，关联自身")
             .HasColumnName("chunk_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
@@ -58,6 +57,9 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsEmbedding)
+            .HasComment("是否被向量化")
+            .HasColumnName("is_embedding");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

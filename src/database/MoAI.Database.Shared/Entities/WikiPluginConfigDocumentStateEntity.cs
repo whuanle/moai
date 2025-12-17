@@ -1,11 +1,13 @@
-﻿using MoAI.Database.Audits;
+﻿using System;
+using System.Collections.Generic;
+using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 知识库文档关联任务.
+/// 知识库文档关联任务，这里的任务都是成功的.
 /// </summary>
-public partial class WikiPluginDocumentStateEntity : IFullAudited
+public partial class WikiPluginConfigDocumentStateEntity : IFullAudited
 {
     /// <summary>
     /// id.
@@ -23,11 +25,6 @@ public partial class WikiPluginDocumentStateEntity : IFullAudited
     public int ConfigId { get; set; }
 
     /// <summary>
-    /// 文档id.
-    /// </summary>
-    public int WikiDocumentId { get; set; }
-
-    /// <summary>
     /// 关联对象.
     /// </summary>
     public string RelevanceKey { get; set; } = default!;
@@ -41,6 +38,11 @@ public partial class WikiPluginDocumentStateEntity : IFullAudited
     /// 信息.
     /// </summary>
     public string Message { get; set; } = default!;
+
+    /// <summary>
+    /// 状态.
+    /// </summary>
+    public int State { get; set; }
 
     /// <summary>
     /// 创建人.

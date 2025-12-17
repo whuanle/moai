@@ -63,6 +63,15 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasComment("知识库id")
             .HasColumnType("int(11)")
             .HasColumnName("wiki_id");
+        entity.Property(e => e.WorkMessage)
+            .HasMaxLength(1000)
+            .HasComment("运行信息")
+            .HasColumnName("work_message")
+            .HasDefaultValue("''");
+        entity.Property(e => e.WorkState)
+            .HasComment("状态")
+            .HasColumnType("int(11)")
+            .HasColumnName("work_state");
 
         OnConfigurePartial(entity);
     }

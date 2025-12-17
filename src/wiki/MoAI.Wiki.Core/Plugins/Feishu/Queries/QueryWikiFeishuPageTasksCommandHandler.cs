@@ -1,9 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Feishu.Models;
 using MoAI.Wiki.Plugins.Feishu.Queries;
@@ -29,29 +27,20 @@ public class QueryWikiFeishuPageTasksCommandHandler : IRequestHandler<QueryWikiF
     /// <inheritdoc/>
     public async Task<QueryWikiFeishuPageTasksCommandResponse> Handle(QueryWikiFeishuPageTasksCommand request, CancellationToken cancellationToken)
     {
-        var workerState = await _databaseContext.WikiPluginConfigs.Where(x => x.Id == request.ConfigId)
-            .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "feishu"), a => a.Id, b => b.BindId, (a, b) => new
-            {
-                Id = a.Id,
-                CreateTime = a.CreateTime,
-                HaveTask = b != null,
-                State = (WorkerState)b.State,
-                Message = b.Message,
-                ConfigId = request.ConfigId,
-                WikiId = request.WikiId,
-                Config = a.Config,
-                TaskId = b.Id
-            })
-            .FirstOrDefaultAsync();
+        var wikiPluginConfigEntity = await _databaseContext.WikiPluginConfigs.FirstOrDefaultAsync(x => x.Id == request.ConfigId && x.WikiId == request.WikiId, cancellationToken);
 
-        if (workerState == null)
+        if (wikiPluginConfigEntity == null)
         {
-            throw new BusinessException("未找到配置");
+            throw new BusinessException("未找到知识库配置");
         }
 
-        var pluginConfig = workerState.Config.JsonToObject<WikiFeishuConfig>()!;
+        // 所有页面
+        var urlStates = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
+            .Where(x => x.ConfigId == request.ConfigId)
+            .ToArrayAsync();
 
-        var pages = await _databaseContext.WikiPluginDocumentStates
+        // 已经成功爬取的
+        var pageItems = await _databaseContext.WikiPluginConfigDocuments
             .OrderByDescending(x => x.CreateTime)
             .Where(x => x.ConfigId == request.ConfigId)
             .Join(
@@ -66,36 +55,47 @@ public class QueryWikiFeishuPageTasksCommandHandler : IRequestHandler<QueryWikiF
             b => b.Id,
             (a, b) => new WikiFeishuPageItem
             {
-                Id = a.Id,
-                CreateTime = a.CreateTime,
-                RelevanceKey = a.RelevanceKey,
-                RelevanceValue = a.RelevanceValue,
+                PageId = a.Id,
+                UpdateTime = a.UpdateTime,
+                NodeToken = a.RelevanceKey,
+                ObjToken = a.RelevanceValue,
                 IsEmbedding = b.IsEmbedding,
-                Message = a.Message,
+                Message = string.Empty,
                 WikiDocumentId = a.WikiDocumentId,
-                CrawleState = (WorkerState)a.State,
                 FileName = b.FileName,
                 FileSize = b.FileSize,
-                CreateUserId = a.CreateUserId
-            }).ToArrayAsync();
+                CreateUserId = a.CreateUserId,
+                State = WorkerState.Successful
+            }).ToListAsync();
 
-        var task = new WikiFeishuTask
+        foreach (var item in urlStates)
         {
-            TaskId = workerState.TaskId,
-            State = workerState.State,
-            Message = workerState.Message,
-            ConfigId = workerState.ConfigId,
-            WikiId = workerState.WikiId,
-            CreateTime = workerState.CreateTime,
-            Address = pluginConfig.ParentNodeToken,
-            FaildPageCount = pages.Count(x => x.CrawleState == WorkerState.Failed),
-            PageCount = pages.Length,
-        };
+            if (pageItems.Any(x => x.ObjToken == item.RelevanceValue))
+            {
+                continue;
+            }
+
+            pageItems.Add(new WikiFeishuPageItem
+            {
+                PageId = 0,
+                WikiDocumentId = 0,
+                NodeToken = item.RelevanceKey,
+                ObjToken = item.RelevanceValue,
+                State = (WorkerState)item.State,
+                Message = item.Message,
+                CreateUserId = item.CreateUserId,
+                FileName = string.Empty,
+                FileSize = 0,
+                IsEmbedding = false,
+                UpdateTime = item.UpdateTime
+            });
+        }
+
+        pageItems = pageItems.OrderByDescending(x => x.UpdateTime).ToList();
 
         return new QueryWikiFeishuPageTasksCommandResponse
         {
-            Task = task,
-            Pages = pages.ToList()
+            Items = pageItems
         };
     }
 }

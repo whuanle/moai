@@ -2,6 +2,9 @@
 
 namespace MoAI.Database;
 
+/// <summary>
+/// Mysql 数据库.
+/// </summary>
 public class MysqlDatabaseContext : DatabaseContext
 {
     /// <summary>

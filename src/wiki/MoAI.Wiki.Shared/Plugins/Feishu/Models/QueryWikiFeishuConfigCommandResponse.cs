@@ -1,12 +1,12 @@
 ﻿using MoAI.Infra.Models;
 using MoAI.Wiki.Models;
 
-namespace MoAI.Wiki.Plugins.Crawler.Models;
+namespace MoAI.Wiki.Plugins.Feishu.Models;
 
 /// <summary>
 /// 配置.
 /// </summary>
-public class QueryWikiCrawlerConfigCommandResponse : AuditsInfo
+public class QueryWikiFeishuConfigCommandResponse : AuditsInfo
 {
     /// <summary>
     /// 知识库id.
@@ -36,5 +36,5 @@ public class QueryWikiCrawlerConfigCommandResponse : AuditsInfo
     /// <summary>
     /// 配置.
     /// </summary>
-    public WikiCrawlerConfig Config { get; init; } = default!;
+    public WikiFeishuConfig Config { get; init; } = default!;
 }

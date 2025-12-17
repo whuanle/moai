@@ -7,17 +7,17 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 知识库文档关联任务.
+/// 知识库文档关联任务，这里的任务都是成功的.
 /// </summary>
-public partial class WikiPluginDocumentStateConfiguration : IEntityTypeConfiguration<WikiPluginDocumentStateEntity>
+public partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeConfiguration<WikiPluginConfigDocumentStateEntity>
 {
     /// <inheritdoc/>
-    public void Configure(EntityTypeBuilder<WikiPluginDocumentStateEntity> builder)
+    public void Configure(EntityTypeBuilder<WikiPluginConfigDocumentStateEntity> builder)
     {
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("wiki_plugin_document_state", tb => tb.HasComment("知识库文档关联任务"));
+        entity.ToTable("wiki_plugin_config_document_state", tb => tb.HasComment("知识库文档关联任务，这里的任务都是成功的"));
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -41,7 +41,7 @@ public partial class WikiPluginDocumentStateConfiguration : IEntityTypeConfigura
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Message)
-            .HasMaxLength(500)
+            .HasMaxLength(1000)
             .HasDefaultValueSql("''")
             .HasComment("信息")
             .HasColumnName("message");
@@ -54,6 +54,10 @@ public partial class WikiPluginDocumentStateConfiguration : IEntityTypeConfigura
             .HasDefaultValueSql("''")
             .HasComment("关联值")
             .HasColumnName("relevance_value");
+        entity.Property(e => e.State)
+            .HasComment("状态")
+            .HasColumnType("int(11)")
+            .HasColumnName("state");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")
@@ -64,10 +68,6 @@ public partial class WikiPluginDocumentStateConfiguration : IEntityTypeConfigura
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
-        entity.Property(e => e.WikiDocumentId)
-            .HasComment("文档id")
-            .HasColumnType("int(11)")
-            .HasColumnName("wiki_document_id");
         entity.Property(e => e.WikiId)
             .HasComment("知识库id")
             .HasColumnType("int(11)")
@@ -76,5 +76,5 @@ public partial class WikiPluginDocumentStateConfiguration : IEntityTypeConfigura
         OnConfigurePartial(entity);
     }
 
-    partial void OnConfigurePartial(EntityTypeBuilder<WikiPluginDocumentStateEntity> modelBuilder);
+    partial void OnConfigurePartial(EntityTypeBuilder<WikiPluginConfigDocumentStateEntity> modelBuilder);
 }

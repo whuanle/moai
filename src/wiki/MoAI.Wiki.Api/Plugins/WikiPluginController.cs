@@ -34,20 +34,6 @@ public class WikiPluginController : ControllerBase
     }
 
     /// <summary>
-    /// 取消插件任务.
-    /// </summary>
-    /// <param name="req">取消任务命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回操作结果.</returns>
-    [HttpPost("cancel_task")]
-    public async Task<EmptyCommandResponse> CancalWikiPluginTask([FromBody] CancalWikiPluginTaskCommand req, CancellationToken ct = default)
-    {
-        await CheckUserIsMemberAsync(req.WikiId, ct);
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
     /// 删除插件配置.
     /// </summary>
     /// <param name="req">删除配置命令.</param>
@@ -55,20 +41,6 @@ public class WikiPluginController : ControllerBase
     /// <returns>返回操作结果.</returns>
     [HttpDelete("delete_config")]
     public async Task<EmptyCommandResponse> DeleteWikiPluginConfig([FromBody] DeleteWikiPluginConfigCommand req, CancellationToken ct = default)
-    {
-        await CheckUserIsMemberAsync(req.WikiId, ct);
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 查询插件配置列表.
-    /// </summary>
-    /// <param name="req">查询命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回配置列表.</returns>
-    [HttpGet("config_list")]
-    public async Task<QueryWikiPluginConfigListCommandResponse> QueryWikiPluginConfigList([FromQuery] QueryWikiPluginConfigListCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 

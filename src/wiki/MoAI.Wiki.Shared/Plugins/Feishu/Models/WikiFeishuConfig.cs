@@ -27,6 +27,11 @@ public class WikiFeishuConfig : IWikiPluginKey, IModelValidator<WikiFeishuConfig
     public string ParentNodeToken { get; init; } = string.Empty;
 
     /// <summary>
+    /// 是否忽略已存在的页面.
+    /// </summary>
+    public bool IsIgnoreExistPage { get; init; }
+
+    /// <summary>
     /// 插件名称.
     /// </summary>
     public string PluginKey => "feishu";

@@ -35,6 +35,21 @@ public partial class WikiPluginConfigEntity : IFullAudited
     public string PluginType { get; set; } = default!;
 
     /// <summary>
+    /// 插件正在工作.
+    /// </summary>
+    public bool IsWorking { get; set; }
+
+    /// <summary>
+    /// 运行信息.
+    /// </summary>
+    public string WorkMessage { get; set; } = default!;
+
+    /// <summary>
+    /// 状态.
+    /// </summary>
+    public int WorkState { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

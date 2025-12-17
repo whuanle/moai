@@ -25,7 +25,7 @@ public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
     public int DocumentId { get; set; }
 
     /// <summary>
-    /// 关联切片ID（表A主键）.
+    /// 源id，关联自身.
     /// </summary>
     public Guid ChunkId { get; set; }
 
@@ -40,7 +40,7 @@ public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
     public string DerivativeContent { get; set; } = default!;
 
     /// <summary>
-    /// 是否向量化.
+    /// 是否被向量化.
     /// </summary>
     public bool IsEmbedding { get; set; }
 

@@ -1,14 +1,12 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Extensions;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Crawler.Queries;
 
-namespace MoAI.Wiki.Crawler.Queries;
+namespace MoAI.Wiki.Cawler.Queries;
 
 /// <summary>
 /// <inheritdoc cref="QueryWikiCrawlerPageTasksCommand"/>
@@ -29,22 +27,20 @@ public class QueryWikiCrawlerPageTasksCommandHandler : IRequestHandler<QueryWiki
     /// <inheritdoc/>
     public async Task<QueryWikiCrawlerPageTasksCommandResponse> Handle(QueryWikiCrawlerPageTasksCommand request, CancellationToken cancellationToken)
     {
-        var workerState = await _databaseContext.WikiPluginConfigs.Where(x => x.Id == request.ConfigId)
-            .OrderByDescending(x => x.CreateTime)
-            .Join(_databaseContext.WorkerTasks.Where(x => x.BindType == "crawler"), a => a.Id, b => b.BindId, (a, b) => new
-            {
-                Id = a.Id,
-                CreateTime = a.CreateTime,
-                HaveTask = b != null,
-                State = (WorkerState)b.State,
-                Message = b.Message,
-                ConfigId = request.ConfigId,
-                WikiId = request.WikiId,
-                Config = a.Config,
-                TaskId = b.Id
-            })
-            .FirstOrDefaultAsync();
-        var pages = await _databaseContext.WikiPluginDocumentStates
+        var wikiPluginConfigEntity = await _databaseContext.WikiPluginConfigs.FirstOrDefaultAsync(x => x.Id == request.ConfigId && x.WikiId == request.WikiId, cancellationToken);
+
+        if (wikiPluginConfigEntity == null)
+        {
+            throw new BusinessException("未找到知识库配置");
+        }
+
+        // 所有页面
+        var urlStates = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
+            .Where(x => x.ConfigId == request.ConfigId)
+            .ToArrayAsync();
+
+        // 已经成功爬取的
+        var pageItems = await _databaseContext.WikiPluginConfigDocuments
             .OrderByDescending(x => x.CreateTime)
             .Where(x => x.ConfigId == request.ConfigId)
             .Join(
@@ -59,38 +55,45 @@ public class QueryWikiCrawlerPageTasksCommandHandler : IRequestHandler<QueryWiki
             b => b.Id,
             (a, b) => new WikiCrawlerPageItem
             {
-                Id = a.Id,
-                CreateTime = a.CreateTime,
-                Url = a.RelevanceKey,
+                PageId = a.Id,
+                UpdateTime = a.UpdateTime,
+                Url = a.RelevanceValue,
                 IsEmbedding = b.IsEmbedding,
-                Message = a.Message,
+                Message = string.Empty,
                 WikiDocumentId = a.WikiDocumentId,
                 FileName = b.FileName,
                 FileSize = b.FileSize,
-                CreateUserId = a.CreateUserId
-            }).ToArrayAsync();
+                CreateUserId = a.CreateUserId,
+                State = WorkerState.Successful
+            }).ToListAsync();
 
-        WikiCrawlerTask? task = null;
-        if (workerState != null)
+        foreach (var item in urlStates)
         {
-            var pluginConfig = workerState.Config.JsonToObject<WikiCrawlerConfig>()!;
-
-            task = new WikiCrawlerTask
+            if (pageItems.Any(x => x.Url == item.RelevanceValue))
             {
-                TaskId = workerState.TaskId,
-                Message = workerState.Message,
-                ConfigId = workerState.ConfigId,
-                WikiId = workerState.WikiId,
-                CreateTime = workerState.CreateTime,
-                FaildPageCount = pages.Count(x => x.CrawleState == WorkerState.Failed),
-                PageCount = pages.Length,
-            };
+                continue;
+            }
+
+            pageItems.Add(new WikiCrawlerPageItem
+            {
+                PageId = 0,
+                WikiDocumentId = 0,
+                Url = item.RelevanceValue,
+                State = (WorkerState)item.State,
+                Message = item.Message,
+                CreateUserId = item.CreateUserId,
+                FileName = string.Empty,
+                FileSize = 0,
+                IsEmbedding = false,
+                UpdateTime = item.UpdateTime
+            });
         }
+
+        pageItems = pageItems.OrderByDescending(x => x.UpdateTime).ToList();
 
         return new QueryWikiCrawlerPageTasksCommandResponse
         {
-            Task = task,
-            Pages = pages.ToList()
+            Items = pageItems
         };
     }
 }

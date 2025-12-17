@@ -163,9 +163,14 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiPluginConfigEntity> WikiPluginConfigs { get; set; }
 
     /// <summary>
-    /// 知识库文档关联任务.
+    /// 知识库文档关联任务，这里的任务都是成功的.
     /// </summary>
-    public virtual DbSet<WikiPluginDocumentStateEntity> WikiPluginDocumentStates { get; set; }
+    public virtual DbSet<WikiPluginConfigDocumentEntity> WikiPluginConfigDocuments { get; set; }
+
+    /// <summary>
+    /// 知识库文档关联任务，这里的任务都是成功的.
+    /// </summary>
+    public virtual DbSet<WikiPluginConfigDocumentStateEntity> WikiPluginConfigDocumentStates { get; set; }
 
     /// <summary>
     /// 知识库成员.

@@ -7,27 +7,26 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 知识库插件配置.
+/// 知识库文档关联任务，这里的任务都是成功的.
 /// </summary>
-public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<WikiPluginConfigEntity>
+public partial class WikiPluginConfigDocumentConfiguration : IEntityTypeConfiguration<WikiPluginConfigDocumentEntity>
 {
     /// <inheritdoc/>
-    public void Configure(EntityTypeBuilder<WikiPluginConfigEntity> builder)
+    public void Configure(EntityTypeBuilder<WikiPluginConfigDocumentEntity> builder)
     {
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("wiki_plugin_config", tb => tb.HasComment("知识库插件配置"));
+        entity.ToTable("wiki_plugin_config_document", tb => tb.HasComment("知识库文档关联任务，这里的任务都是成功的"));
 
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
-        entity.Property(e => e.Config)
-            .HasMaxLength(1000)
-            .HasDefaultValueSql("'{}'")
-            .HasComment("配置")
-            .HasColumnName("config");
+        entity.Property(e => e.ConfigId)
+            .HasComment("爬虫id")
+            .HasColumnType("int(11)")
+            .HasColumnName("config_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")
@@ -41,17 +40,15 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.IsWorking)
-            .HasComment("插件正在工作")
-            .HasColumnName("is_working");
-        entity.Property(e => e.PluginType)
-            .HasMaxLength(10)
-            .HasComment("插件类型")
-            .HasColumnName("plugin_type");
-        entity.Property(e => e.Title)
-            .HasMaxLength(20)
-            .HasComment("插件标题")
-            .HasColumnName("title");
+        entity.Property(e => e.RelevanceKey)
+            .HasMaxLength(1000)
+            .HasComment("关联对象")
+            .HasColumnName("relevance_key");
+        entity.Property(e => e.RelevanceValue)
+            .HasMaxLength(1000)
+            .HasDefaultValueSql("''")
+            .HasComment("关联值")
+            .HasColumnName("relevance_value");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")
@@ -62,21 +59,17 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.WikiDocumentId)
+            .HasComment("文档id")
+            .HasColumnType("int(11)")
+            .HasColumnName("wiki_document_id");
         entity.Property(e => e.WikiId)
             .HasComment("知识库id")
             .HasColumnType("int(11)")
             .HasColumnName("wiki_id");
-        entity.Property(e => e.WorkMessage)
-            .HasMaxLength(1000)
-            .HasComment("运行信息")
-            .HasColumnName("work_message");
-        entity.Property(e => e.WorkState)
-            .HasComment("状态")
-            .HasColumnType("int(11)")
-            .HasColumnName("work_state");
 
         OnConfigurePartial(entity);
     }
 
-    partial void OnConfigurePartial(EntityTypeBuilder<WikiPluginConfigEntity> modelBuilder);
+    partial void OnConfigurePartial(EntityTypeBuilder<WikiPluginConfigDocumentEntity> modelBuilder);
 }

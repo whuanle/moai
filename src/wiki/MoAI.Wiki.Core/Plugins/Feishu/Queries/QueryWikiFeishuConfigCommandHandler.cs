@@ -5,33 +5,33 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.User.Queries;
 using MoAI.Wiki.Models;
-using MoAI.Wiki.Plugins.Crawler.Models;
-using MoAI.Wiki.Plugins.Crawler.Queries;
+using MoAI.Wiki.Plugins.Feishu.Models;
+using MoAI.Wiki.Plugins.Feishu.Queries;
 using MoAI.Wiki.Plugins.Template.Models;
 
-namespace MoAI.Wiki.Plugins.Cawler.Queries;
+namespace MoAI.Wiki.Plugins.Feishu.Queries;
 
 /// <summary>
-/// <see cref="QueryWikiCrawlerConfigCommand"/>
+/// <see cref="QueryWikiFeishuConfigCommand"/>
 /// </summary>
-public class QueryWikiCrawlerConfigCommandHandler : IRequestHandler<QueryWikiCrawlerConfigCommand, QueryWikiCrawlerConfigCommandResponse>
+public class QueryWikiFeishuConfigCommandHandler : IRequestHandler<QueryWikiFeishuConfigCommand, QueryWikiFeishuConfigCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueryWikiCrawlerConfigCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="QueryWikiFeishuConfigCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="mediator"></param>
-    public QueryWikiCrawlerConfigCommandHandler(DatabaseContext databaseContext, IMediator mediator)
+    public QueryWikiFeishuConfigCommandHandler(DatabaseContext databaseContext, IMediator mediator)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiCrawlerConfigCommandResponse> Handle(QueryWikiCrawlerConfigCommand request, CancellationToken cancellationToken)
+    public async Task<QueryWikiFeishuConfigCommandResponse> Handle(QueryWikiFeishuConfigCommand request, CancellationToken cancellationToken)
     {
         var wikiPluginConfigEntity = await _databaseContext.WikiPluginConfigs.FirstOrDefaultAsync(x => x.Id == request.ConfigId && x.WikiId == request.WikiId, cancellationToken);
 
@@ -40,8 +40,8 @@ public class QueryWikiCrawlerConfigCommandHandler : IRequestHandler<QueryWikiCra
             throw new BusinessException("未找到知识库配置");
         }
 
-        var config = wikiPluginConfigEntity.Config.JsonToObject<WikiCrawlerConfig>()!;
-        var responseConfig = new QueryWikiCrawlerConfigCommandResponse
+        var config = wikiPluginConfigEntity.Config.JsonToObject<WikiFeishuConfig>()!;
+        var responseConfig = new QueryWikiFeishuConfigCommandResponse
         {
             ConfigId = wikiPluginConfigEntity.Id,
             Title = wikiPluginConfigEntity.Title,

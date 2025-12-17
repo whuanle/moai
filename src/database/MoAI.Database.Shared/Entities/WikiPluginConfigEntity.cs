@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using MoAI.Database.Audits;
+﻿using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
 
@@ -33,6 +31,16 @@ public partial class WikiPluginConfigEntity : IFullAudited
     /// 插件类型.
     /// </summary>
     public string PluginType { get; set; } = default!;
+
+    /// <summary>
+    /// 运行信息.
+    /// </summary>
+    public string WorkMessage { get; set; } = default!;
+
+    /// <summary>
+    /// 状态.
+    /// </summary>
+    public int WorkState { get; set; }
 
     /// <summary>
     /// 创建人.

@@ -1,40 +1,46 @@
-﻿using MoAI.Infra.Models;
-using MoAI.Wiki.Models;
-using MoAI.Wiki.Plugins.Crawler.Models;
+﻿using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Plugins.Feishu.Models;
 
+/// <summary>
+/// 爬虫任务来表项.
+/// </summary>
 public class WikiFeishuPageItem
 {
     /// <summary>
     /// id.
     /// </summary>
-    public int Id { get; set; }
+    public int PageId { get; init; }
 
     /// <summary>
     /// 文档id.
     /// </summary>
-    public int WikiDocumentId { get; set; }
+    public int WikiDocumentId { get; init; }
 
     /// <summary>
-    /// 正在爬取的地址.
+    /// NodeToken.
     /// </summary>
-    public string RelevanceKey { get; set; } = default!;
+    public string NodeToken { get; init; } = default!;
 
     /// <summary>
-    /// 正在爬取的地址.
+    /// ObjToken.
     /// </summary>
-    public string RelevanceValue { get; set; } = default!;
+    public string ObjToken { get; init; } = default!;
+
+    /// <summary>
+    /// 爬取状态.
+    /// </summary>
+    public WorkerState State { get; init; }
 
     /// <summary>
     /// 信息.
     /// </summary>
-    public string Message { get; set; } = default!;
+    public string Message { get; init; } = default!;
 
     /// <summary>
     /// 创建人.
     /// </summary>
-    public int CreateUserId { get; set; }
+    public int CreateUserId { get; init; }
 
     /// <summary>
     /// 文件.
@@ -52,12 +58,7 @@ public class WikiFeishuPageItem
     public bool IsEmbedding { get; init; }
 
     /// <summary>
-    /// 爬取状态.
-    /// </summary>
-    public WorkerState CrawleState { get; set; }
-
-    /// <summary>
     /// 创建时间.
     /// </summary>
-    public DateTimeOffset CreateTime { get; set; }
+    public DateTimeOffset UpdateTime { get; init; }
 }

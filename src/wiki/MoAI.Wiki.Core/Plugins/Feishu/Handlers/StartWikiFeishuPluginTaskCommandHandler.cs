@@ -15,7 +15,7 @@ namespace MoAI.Wiki.Plugins.Feishu.Handlers;
 /// <summary>
 /// <inheritdoc cref="StartWikiFeishuPluginTaskCommand"/>
 /// </summary>
-public class StartWikiFeishuPluginTaskCommandHandler : IRequestHandler<StartWikiFeishuPluginTaskCommand, SimpleGuid>
+public class StartWikiFeishuPluginTaskCommandHandler : IRequestHandler<StartWikiFeishuPluginTaskCommand, EmptyCommandResponse>
 {
     private readonly IMessagePublisher _messagePublisher;
     private readonly DatabaseContext _databaseContext;
@@ -32,40 +32,46 @@ public class StartWikiFeishuPluginTaskCommandHandler : IRequestHandler<StartWiki
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(StartWikiFeishuPluginTaskCommand request, CancellationToken cancellationToken)
+    public async Task<EmptyCommandResponse> Handle(StartWikiFeishuPluginTaskCommand request, CancellationToken cancellationToken)
     {
-        var existTask = await _databaseContext.WorkerTasks.AnyAsync(x => x.BindType == "wiki" && x.BindId == request.ConfigId && x.State < (int)WorkerState.Cancal, cancellationToken);
+        var entity = await _databaseContext.WikiPluginConfigs.FirstOrDefaultAsync(x => x.Id == request.ConfigId && x.WikiId == request.WikiId, cancellationToken);
 
-        if (existTask == true)
+        if (entity == null)
         {
-            throw new BusinessException("当前知识库网页爬取任务正在进行中，请稍后再试.") { StatusCode = 400 };
+            throw new BusinessException("配置不存在") { StatusCode = 404 };
         }
 
-        var taskEntity = new WorkerTaskEntity
+        if (request.IsStart == true)
         {
-            BindType = "wiki",
-            BindId = request.ConfigId,
-            State = (int)WorkerState.Wait,
-            Data = request.ToJsonString(),
-            Message = "已提交"
-        };
+            if (entity.WorkState == (int)WorkerState.Processing || entity.WorkState == (int)WorkerState.Wait)
+            {
+                throw new BusinessException("当前已有任务在运行中") { StatusCode = 400 };
+            }
 
-        _databaseContext.WorkerTasks.Add(taskEntity);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+            entity.WorkState = (int)WorkerState.Wait;
+            _databaseContext.WikiPluginConfigs.Update(entity);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        // todo：后期改
-        var message = new StartWikiFeishuMessage
+            var message = new StartWikiFeishuMessage
+            {
+                WikiId = request.WikiId,
+                ConfigId = request.ConfigId,
+            };
+
+            await _messagePublisher.AutoPublishAsync(message);
+        }
+        else
         {
-            WikiId = request.WikiId,
-            ConfigId = request.ConfigId,
-            TaskId = taskEntity.Id
-        };
+            if (entity.WorkState < (int)WorkerState.Cancal)
+            {
+                throw new BusinessException("当前没有运行中的任务") { StatusCode = 400 };
+            }
 
-        await _messagePublisher.AutoPublishAsync(message);
+            entity.WorkState = (int)WorkerState.Cancal;
+            _databaseContext.WikiPluginConfigs.Update(entity);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+        }
 
-        return new SimpleGuid
-        {
-            Value = taskEntity.Id
-        };
+        return EmptyCommandResponse.Default;
     }
 }

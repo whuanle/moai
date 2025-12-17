@@ -1,14 +1,12 @@
 ﻿namespace MoAI.Wiki.Plugins.Crawler.Models;
 
+/// <summary>
+/// 爬取状态.
+/// </summary>
 public class QueryWikiCrawlerPageTasksCommandResponse
 {
     /// <summary>
-    /// 爬虫状态，如果为空说明当前并没有正在跑的任务.
+    /// 爬取完成的地址.
     /// </summary>
-    public WikiCrawlerTask? Task { get; init; } = default!;
-
-    /// <summary>
-    /// 每一个地址.
-    /// </summary>
-    public IReadOnlyCollection<WikiCrawlerPageItem> Pages { get; init; } = Array.Empty<WikiCrawlerPageItem>();
+    public IReadOnlyCollection<WikiCrawlerPageItem> Items { get; init; } = Array.Empty<WikiCrawlerPageItem>();
 }

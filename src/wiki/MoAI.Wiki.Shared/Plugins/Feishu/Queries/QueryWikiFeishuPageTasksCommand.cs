@@ -5,9 +5,9 @@ using MoAI.Wiki.Plugins.Feishu.Models;
 namespace MoAI.Wiki.Plugins.Feishu.Queries;
 
 /// <summary>
-/// 获取飞书配置.
+/// 查询这个爬虫的所有任务状态.
 /// </summary>
-public class QueryWikiFeishuConfigCommand : IRequest<QueryWikiFeishuConfigCommandResponse>, IModelValidator<QueryWikiFeishuConfigCommand>
+public class QueryWikiFeishuPageTasksCommand : IRequest<QueryWikiFeishuPageTasksCommandResponse>, IModelValidator<QueryWikiFeishuPageTasksCommand>
 {
     /// <summary>
     /// 知识库id.
@@ -20,7 +20,7 @@ public class QueryWikiFeishuConfigCommand : IRequest<QueryWikiFeishuConfigComman
     public int ConfigId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiFeishuConfigCommand> validate)
+    public void Validate(AbstractValidator<QueryWikiFeishuPageTasksCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

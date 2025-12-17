@@ -1,20 +1,20 @@
 ﻿using MoAI.Infra.Models;
 using MoAI.Wiki.Models;
 
-namespace MoAI.Wiki.Plugins.Crawler.Models;
+namespace MoAI.Wiki.Plugins.Feishu.Models;
 
 /// <summary>
-/// 配置.
+/// Plugin 配置.
 /// </summary>
-public class QueryWikiCrawlerConfigCommandResponse : AuditsInfo
+public class WikiFeishuPluginConfigSimpleItem : AuditsInfo
 {
     /// <summary>
-    /// 知识库id.
+    /// 知识库 id.
     /// </summary>
     public int WikiId { get; init; }
 
     /// <summary>
-    /// id.
+    /// 配置 id.
     /// </summary>
     public int ConfigId { get; init; }
 
@@ -34,7 +34,17 @@ public class QueryWikiCrawlerConfigCommandResponse : AuditsInfo
     public WorkerState WorkState { get; set; }
 
     /// <summary>
-    /// 配置.
+    /// 飞书知识库 id.
     /// </summary>
-    public WikiCrawlerConfig Config { get; init; } = default!;
+    public string SpaceId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 顶部文档 token.
+    /// </summary>
+    public string ParentNodeToken { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 页面数量.
+    /// </summary>
+    public int PageCount { get; set; }
 }

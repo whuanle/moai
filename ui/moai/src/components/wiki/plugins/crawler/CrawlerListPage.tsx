@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Card, Button, Table, Tag, Space, message, Spin, Popconfirm, Modal, Typography, Form, Input, Switch, InputNumber } from 'antd';
-import { PlusOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { GetApiClient } from '../../../ServiceClient';
 import { 
   QueryWikiCrawlerPluginConfigListCommand,
   QueryWikiCrawlerPluginConfigListCommandResponse,
   WikiCrawlerPluginConfigSimpleItem,
   AddWikiCrawlerConfigCommand,
-  UpdateWikiCrawlerConfigCommand,
   DeleteWikiPluginConfigCommand,
-  WikiCrawlerConfig
+  WorkerState,
+  WorkerStateObject
 } from '../../../../apiClient/models';
+import { proxyFormRequestError, proxyRequestError } from '../../../../helper/RequestError';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -25,9 +26,8 @@ export default function CrawlerListPage() {
   const [configs, setConfigs] = useState<WikiCrawlerPluginConfigSimpleItem[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
   
-  // 创建/编辑 Modal 相关状态
+  // 创建 Modal 相关状态
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<WikiCrawlerPluginConfigSimpleItem | null>(null);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +55,7 @@ export default function CrawlerListPage() {
       }
     } catch (error) {
       console.error('获取爬虫配置列表失败:', error);
-      messageApi.error('获取爬虫配置列表失败');
+      proxyRequestError(error, messageApi, '获取爬虫配置列表失败');
     } finally {
       setLoading(false);
     }
@@ -70,70 +70,14 @@ export default function CrawlerListPage() {
 
   // 处理创建配置
   const handleCreate = () => {
-    setEditingConfig(null);
     form.resetFields();
     form.setFieldsValue({
       isCrawlOther: false,
+      isIgnoreExistPage: false,
       limitMaxCount: 100,
       timeOutSecond: 30,
       userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
     });
-    setModalVisible(true);
-  };
-
-  // 处理编辑配置
-  const handleEdit = async (record: WikiCrawlerPluginConfigSimpleItem) => {
-    setEditingConfig(record);
-    
-    // 获取详细配置信息
-    try {
-      const client = GetApiClient();
-      const response = await client.api.wiki.plugin.crawler.config.get({
-        queryParameters: {
-          configId: record.configId || 0,
-          wikiId: wikiId || 0,
-        }
-      });
-
-      if (response) {
-        form.setFieldsValue({
-          title: record.title,
-          address: response.address,
-          isCrawlOther: response.isCrawlOther || false,
-          limitAddress: response.limitAddress,
-          limitMaxCount: response.limitMaxCount || 100,
-          selector: response.selector,
-          timeOutSecond: response.timeOutSecond || 30,
-          userAgent: response.userAgent,
-        });
-      } else {
-        // 如果没有详细配置，使用简单项的数据
-        form.setFieldsValue({
-          title: record.title,
-          address: record.config?.address,
-          isCrawlOther: record.config?.isCrawlOther || false,
-          limitAddress: record.config?.limitAddress,
-          limitMaxCount: record.config?.limitMaxCount || 100,
-          selector: record.config?.selector,
-          timeOutSecond: record.config?.timeOutSecond || 30,
-          userAgent: record.config?.userAgent,
-        });
-      }
-    } catch (error) {
-      console.error('获取配置详情失败:', error);
-      // 使用简单项的数据作为后备
-      form.setFieldsValue({
-        title: record.title,
-        address: record.config?.address,
-        isCrawlOther: record.config?.isCrawlOther || false,
-        limitAddress: record.config?.limitAddress,
-        limitMaxCount: record.config?.limitMaxCount || 100,
-        selector: record.config?.selector,
-        timeOutSecond: record.config?.timeOutSecond || 30,
-        userAgent: record.config?.userAgent,
-      });
-    }
-    
     setModalVisible(true);
   };
 
@@ -146,46 +90,28 @@ export default function CrawlerListPage() {
       setSaving(true);
       const client = GetApiClient();
 
-      if (editingConfig) {
-        // 更新配置
-        const updateBody: UpdateWikiCrawlerConfigCommand = {
-          configId: editingConfig.configId || 0,
-          wikiId: wikiId || 0,
-          title: values.title,
-          address: values.address,
-          isCrawlOther: values.isCrawlOther || false,
-          limitAddress: values.limitAddress,
-          limitMaxCount: values.limitMaxCount,
-          selector: values.selector,
-          timeOutSecond: values.timeOutSecond,
-          userAgent: values.userAgent,
-        };
+      // 创建配置
+      const addBody: AddWikiCrawlerConfigCommand = {
+        wikiId: wikiId || 0,
+        title: values.title,
+        address: values.address,
+        isCrawlOther: values.isCrawlOther || false,
+        limitAddress: values.limitAddress,
+        limitMaxCount: values.limitMaxCount,
+        selector: values.selector,
+        timeOutSecond: values.timeOutSecond,
+        userAgent: values.userAgent,
+        isIgnoreExistPage: values.isIgnoreExistPage || false,
+      };
 
-        await client.api.wiki.plugin.crawler.update_config.post(updateBody);
-        messageApi.success('更新成功');
-      } else {
-        // 创建配置
-        const addBody: AddWikiCrawlerConfigCommand = {
-          wikiId: wikiId || 0,
-          title: values.title,
-          address: values.address,
-          isCrawlOther: values.isCrawlOther || false,
-          limitAddress: values.limitAddress,
-          limitMaxCount: values.limitMaxCount,
-          selector: values.selector,
-          timeOutSecond: values.timeOutSecond,
-          userAgent: values.userAgent,
-        };
-
-        await client.api.wiki.plugin.crawler.add_config.post(addBody);
-        messageApi.success('创建成功');
-      }
+      await client.api.wiki.plugin.crawler.add_config.post(addBody);
+      messageApi.success('创建成功');
 
       setModalVisible(false);
       fetchConfigList();
     } catch (error) {
       console.error('保存配置失败:', error);
-      messageApi.error('保存失败');
+      proxyFormRequestError(error, messageApi, form, '保存失败');
     } finally {
       setSaving(false);
     }
@@ -206,7 +132,7 @@ export default function CrawlerListPage() {
       fetchConfigList();
     } catch (error) {
       console.error('删除配置失败:', error);
-      messageApi.error('删除失败');
+      proxyRequestError(error, messageApi, '删除失败');
     }
   };
 
@@ -220,37 +146,65 @@ export default function CrawlerListPage() {
     },
     {
       title: '地址',
-      dataIndex: ['config', 'address'],
+      dataIndex: 'address',
       key: 'address',
       ellipsis: true,
-      render: (text: string, record: WikiCrawlerPluginConfigSimpleItem) => {
-        return record.config?.address || '-';
-      },
+      render: (text: string) => text || '-',
     },
     {
       title: '状态',
-      dataIndex: 'isWorking',
-      key: 'isWorking',
-      render: (isWorking: boolean) => (
-        <Tag color={isWorking ? 'processing' : 'default'}>
-          {isWorking ? '运行中' : '已停止'}
-        </Tag>
-      ),
+      dataIndex: 'workState',
+      key: 'workState',
+      width: 120,
+      render: (state: WorkerState) => {
+        const stateMap: Record<string, { color: string; text: string }> = {
+          [WorkerStateObject.None]: { color: 'default', text: '未开始' },
+          [WorkerStateObject.Wait]: { color: 'default', text: '等待中' },
+          [WorkerStateObject.Processing]: { color: 'processing', text: '处理中' },
+          [WorkerStateObject.Successful]: { color: 'success', text: '成功' },
+          [WorkerStateObject.Failed]: { color: 'error', text: '失败' },
+          [WorkerStateObject.Cancal]: { color: 'default', text: '已取消' },
+        };
+        const stateInfo = stateMap[state || ''] || { color: 'default', text: '未知' };
+        return <Tag color={stateInfo.color}>{stateInfo.text}</Tag>;
+      },
     },
     {
       title: '页面数量',
-      dataIndex: 'count',
-      key: 'count',
+      dataIndex: 'pageCount',
+      key: 'pageCount',
+      width: 100,
       render: (count: number) => count || 0,
     },
     {
-      title: '最后修改时间',
-      dataIndex: 'updateTime',
-      key: 'updateTime',
+      title: '运行信息',
+      dataIndex: 'workMessage',
+      key: 'workMessage',
+      ellipsis: true,
+      render: (text: string) => text || '-',
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createTime',
+      key: 'createTime',
+      width: 180,
       render: (time: string) => time ? new Date(time).toLocaleString() : '-',
     },
     {
-      title: '最后修改人',
+      title: '创建人',
+      dataIndex: 'createUserName',
+      key: 'createUserName',
+      render: (name: string) => name || '-',
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updateTime',
+      key: 'updateTime',
+      width: 180,
+      render: (time: string) => time ? new Date(time).toLocaleString() : '-',
+    },
+    {
+      title: '更新人',
       dataIndex: 'updateUserName',
       key: 'updateUserName',
       render: (name: string) => name || '-',
@@ -258,6 +212,7 @@ export default function CrawlerListPage() {
     {
       title: '操作',
       key: 'action',
+      width: 150,
       render: (_: any, record: WikiCrawlerPluginConfigSimpleItem) => (
         <Space size="middle">
           <Button 
@@ -267,14 +222,6 @@ export default function CrawlerListPage() {
             onClick={() => navigate(`/app/wiki/${wikiId}/plugin/crawler/${record.configId}`)}
           >
             查看
-          </Button>
-          <Button 
-            type="link" 
-            size="small" 
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            编辑
           </Button>
           <Popconfirm
             title="确认删除"
@@ -347,9 +294,9 @@ export default function CrawlerListPage() {
         </Spin>
       </Card>
 
-      {/* 创建/编辑 Modal */}
+      {/* 创建 Modal */}
       <Modal
-        title={editingConfig ? '编辑爬虫配置' : '新增爬虫配置'}
+        title="新增爬虫配置"
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={handleSave}
@@ -381,6 +328,15 @@ export default function CrawlerListPage() {
             name="isCrawlOther"
             label="是否抓取其他页面"
             tooltip="会自动查找这个页面或对应目录下的其它页面"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+
+          <Form.Item
+            name="isIgnoreExistPage"
+            label="是否跳过已爬取页面"
+            tooltip="如果开启，将跳过已经爬取过的页面，避免重复爬取"
             valuePropName="checked"
           >
             <Switch />

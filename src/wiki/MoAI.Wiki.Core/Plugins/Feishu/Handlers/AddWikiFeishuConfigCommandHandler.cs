@@ -6,6 +6,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Plugins.Crawler.Commands;
+using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Feishu.Commands;
 using MoAI.Wiki.Plugins.Feishu.Models;
 

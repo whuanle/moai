@@ -354,19 +354,6 @@ export interface CancalWikiDocumentTaskCommand extends Parsable {
     wikiId?: number | null;
 }
 /**
- * 取消知识库插件任务.
- */
-export interface CancalWikiPluginTaskCommand extends Parsable {
-    /**
-     * 配置.
-     */
-    configId?: number | null;
-    /**
-     * 知识库 id.
-     */
-    wikiId?: number | null;
-}
-/**
  * 对话项.
  */
 export interface ChatContentItem extends Parsable {
@@ -591,15 +578,6 @@ export function createBusinessValidationResultFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createCancalWikiDocumentTaskCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCancalWikiDocumentTaskCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {CancalWikiPluginTaskCommand}
- */
-// @ts-ignore
-export function createCancalWikiPluginTaskCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCancalWikiPluginTaskCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1712,6 +1690,15 @@ export function createQueryWikiDocumentTaskListCommandFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiFeishuConfigCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiFeishuConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiFeishuConfigCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiFeishuPageTasksCommandResponse}
  */
 // @ts-ignore
@@ -1721,29 +1708,29 @@ export function createQueryWikiFeishuPageTasksCommandResponseFromDiscriminatorVa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiFeishuPluginConfigListCommand}
+ */
+// @ts-ignore
+export function createQueryWikiFeishuPluginConfigListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiFeishuPluginConfigListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiFeishuPluginConfigListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiFeishuPluginConfigListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiFeishuPluginConfigListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiInfoResponse}
  */
 // @ts-ignore
 export function createQueryWikiInfoResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryWikiInfoResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiPluginConfigListCommandResponse}
- */
-// @ts-ignore
-export function createQueryWikiPluginConfigListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiPluginConfigListCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig}
- */
-// @ts-ignore
-export function createQueryWikiPluginrConfigCommandResponseOfWikiFeishuConfigFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2170,15 +2157,6 @@ export function createWikiCrawlerPluginConfigSimpleItemFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiCrawlerTask}
- */
-// @ts-ignore
-export function createWikiCrawlerTaskFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiCrawlerTask;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {WikiDocumenChunkItem}
  */
 // @ts-ignore
@@ -2278,20 +2256,11 @@ export function createWikiFeishuPageItemFromDiscriminatorValue(parseNode: ParseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiFeishuTask}
+ * @returns {WikiFeishuPluginConfigSimpleItem}
  */
 // @ts-ignore
-export function createWikiFeishuTaskFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiFeishuTask;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiPluginConfigSimpleItem}
- */
-// @ts-ignore
-export function createWikiPluginConfigSimpleItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiPluginConfigSimpleItem;
+export function createWikiFeishuPluginConfigSimpleItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiFeishuPluginConfigSimpleItem;
 }
 /**
  * 删除对话记录.
@@ -2647,17 +2616,6 @@ export function deserializeIntoCancalWikiDocumentTaskCommand(cancalWikiDocumentT
         "documentId": n => { cancalWikiDocumentTaskCommand.documentId = n.getNumberValue(); },
         "taskId": n => { cancalWikiDocumentTaskCommand.taskId = n.getGuidValue(); },
         "wikiId": n => { cancalWikiDocumentTaskCommand.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoCancalWikiPluginTaskCommand(cancalWikiPluginTaskCommand: Partial<CancalWikiPluginTaskCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "configId": n => { cancalWikiPluginTaskCommand.configId = n.getNumberValue(); },
-        "wikiId": n => { cancalWikiPluginTaskCommand.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -3877,17 +3835,12 @@ export function deserializeIntoQueryWikiBaseListCommand(queryWikiBaseListCommand
 export function deserializeIntoQueryWikiCrawlerConfigCommandResponse(queryWikiCrawlerConfigCommandResponse: Partial<QueryWikiCrawlerConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryWikiCrawlerConfigCommandResponse),
-        "address": n => { queryWikiCrawlerConfigCommandResponse.address = n.getStringValue(); },
+        "config": n => { queryWikiCrawlerConfigCommandResponse.config = n.getObjectValue<WikiCrawlerConfig>(createWikiCrawlerConfigFromDiscriminatorValue); },
         "configId": n => { queryWikiCrawlerConfigCommandResponse.configId = n.getNumberValue(); },
-        "isCrawlOther": n => { queryWikiCrawlerConfigCommandResponse.isCrawlOther = n.getBooleanValue(); },
-        "limitAddress": n => { queryWikiCrawlerConfigCommandResponse.limitAddress = n.getStringValue(); },
-        "limitMaxCount": n => { queryWikiCrawlerConfigCommandResponse.limitMaxCount = n.getNumberValue(); },
-        "pluginKey": n => { queryWikiCrawlerConfigCommandResponse.pluginKey = n.getStringValue(); },
-        "selector": n => { queryWikiCrawlerConfigCommandResponse.selector = n.getStringValue(); },
-        "timeOutSecond": n => { queryWikiCrawlerConfigCommandResponse.timeOutSecond = n.getNumberValue(); },
         "title": n => { queryWikiCrawlerConfigCommandResponse.title = n.getStringValue(); },
-        "userAgent": n => { queryWikiCrawlerConfigCommandResponse.userAgent = n.getStringValue(); },
         "wikiId": n => { queryWikiCrawlerConfigCommandResponse.wikiId = n.getNumberValue(); },
+        "workMessage": n => { queryWikiCrawlerConfigCommandResponse.workMessage = n.getStringValue(); },
+        "workState": n => { queryWikiCrawlerConfigCommandResponse.workState = n.getEnumValue<WorkerState>(WorkerStateObject); },
     }
 }
 /**
@@ -3897,8 +3850,7 @@ export function deserializeIntoQueryWikiCrawlerConfigCommandResponse(queryWikiCr
 // @ts-ignore
 export function deserializeIntoQueryWikiCrawlerPageTasksCommandResponse(queryWikiCrawlerPageTasksCommandResponse: Partial<QueryWikiCrawlerPageTasksCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "pages": n => { queryWikiCrawlerPageTasksCommandResponse.pages = n.getCollectionOfObjectValues<WikiCrawlerPageItem>(createWikiCrawlerPageItemFromDiscriminatorValue); },
-        "task": n => { queryWikiCrawlerPageTasksCommandResponse.task = n.getObjectValue<WikiCrawlerTask>(createWikiCrawlerTaskFromDiscriminatorValue); },
+        "items": n => { queryWikiCrawlerPageTasksCommandResponse.items = n.getCollectionOfObjectValues<WikiCrawlerPageItem>(createWikiCrawlerPageItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -4033,10 +3985,45 @@ export function deserializeIntoQueryWikiDocumentTaskListCommand(queryWikiDocumen
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiFeishuConfigCommandResponse(queryWikiFeishuConfigCommandResponse: Partial<QueryWikiFeishuConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryWikiFeishuConfigCommandResponse),
+        "config": n => { queryWikiFeishuConfigCommandResponse.config = n.getObjectValue<WikiFeishuConfig>(createWikiFeishuConfigFromDiscriminatorValue); },
+        "configId": n => { queryWikiFeishuConfigCommandResponse.configId = n.getNumberValue(); },
+        "title": n => { queryWikiFeishuConfigCommandResponse.title = n.getStringValue(); },
+        "wikiId": n => { queryWikiFeishuConfigCommandResponse.wikiId = n.getNumberValue(); },
+        "workMessage": n => { queryWikiFeishuConfigCommandResponse.workMessage = n.getStringValue(); },
+        "workState": n => { queryWikiFeishuConfigCommandResponse.workState = n.getEnumValue<WorkerState>(WorkerStateObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryWikiFeishuPageTasksCommandResponse(queryWikiFeishuPageTasksCommandResponse: Partial<QueryWikiFeishuPageTasksCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "pages": n => { queryWikiFeishuPageTasksCommandResponse.pages = n.getCollectionOfObjectValues<WikiFeishuPageItem>(createWikiFeishuPageItemFromDiscriminatorValue); },
-        "task": n => { queryWikiFeishuPageTasksCommandResponse.task = n.getObjectValue<WikiFeishuTask>(createWikiFeishuTaskFromDiscriminatorValue); },
+        "items": n => { queryWikiFeishuPageTasksCommandResponse.items = n.getCollectionOfObjectValues<WikiFeishuPageItem>(createWikiFeishuPageItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiFeishuPluginConfigListCommand(queryWikiFeishuPluginConfigListCommand: Partial<QueryWikiFeishuPluginConfigListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "wikiId": n => { queryWikiFeishuPluginConfigListCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiFeishuPluginConfigListCommandResponse(queryWikiFeishuPluginConfigListCommandResponse: Partial<QueryWikiFeishuPluginConfigListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryWikiFeishuPluginConfigListCommandResponse.items = n.getCollectionOfObjectValues<WikiFeishuPluginConfigSimpleItem>(createWikiFeishuPluginConfigSimpleItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -4056,30 +4043,6 @@ export function deserializeIntoQueryWikiInfoResponse(queryWikiInfoResponse: Part
         "isUser": n => { queryWikiInfoResponse.isUser = n.getBooleanValue(); },
         "name": n => { queryWikiInfoResponse.name = n.getStringValue(); },
         "wikiId": n => { queryWikiInfoResponse.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryWikiPluginConfigListCommandResponse(queryWikiPluginConfigListCommandResponse: Partial<QueryWikiPluginConfigListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "items": n => { queryWikiPluginConfigListCommandResponse.items = n.getCollectionOfObjectValues<WikiPluginConfigSimpleItem>(createWikiPluginConfigSimpleItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig(queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig: Partial<QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig),
-        "config": n => { queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.config = n.getObjectValue<WikiFeishuConfig>(createWikiFeishuConfigFromDiscriminatorValue); },
-        "configId": n => { queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.configId = n.getNumberValue(); },
-        "title": n => { queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.title = n.getStringValue(); },
-        "wikiId": n => { queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -4322,6 +4285,7 @@ export function deserializeIntoSimpleString(simpleString: Partial<SimpleString> 
 export function deserializeIntoStartWikiCrawlerPluginTaskCommand(startWikiCrawlerPluginTaskCommand: Partial<StartWikiCrawlerPluginTaskCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "configId": n => { startWikiCrawlerPluginTaskCommand.configId = n.getNumberValue(); },
+        "isStart": n => { startWikiCrawlerPluginTaskCommand.isStart = n.getBooleanValue(); },
         "wikiId": n => { startWikiCrawlerPluginTaskCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -4333,6 +4297,7 @@ export function deserializeIntoStartWikiCrawlerPluginTaskCommand(startWikiCrawle
 export function deserializeIntoStartWikiFeishuPluginTaskCommand(startWikiFeishuPluginTaskCommand: Partial<StartWikiFeishuPluginTaskCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "configId": n => { startWikiFeishuPluginTaskCommand.configId = n.getNumberValue(); },
+        "isStart": n => { startWikiFeishuPluginTaskCommand.isStart = n.getBooleanValue(); },
         "wikiId": n => { startWikiFeishuPluginTaskCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -4620,6 +4585,7 @@ export function deserializeIntoWikiCrawlerConfig(wikiCrawlerConfig: Partial<Wiki
     return {
         "address": n => { wikiCrawlerConfig.address = n.getStringValue(); },
         "isCrawlOther": n => { wikiCrawlerConfig.isCrawlOther = n.getBooleanValue(); },
+        "isIgnoreExistPage": n => { wikiCrawlerConfig.isIgnoreExistPage = n.getBooleanValue(); },
         "limitAddress": n => { wikiCrawlerConfig.limitAddress = n.getStringValue(); },
         "limitMaxCount": n => { wikiCrawlerConfig.limitMaxCount = n.getNumberValue(); },
         "selector": n => { wikiCrawlerConfig.selector = n.getStringValue(); },
@@ -4634,14 +4600,14 @@ export function deserializeIntoWikiCrawlerConfig(wikiCrawlerConfig: Partial<Wiki
 // @ts-ignore
 export function deserializeIntoWikiCrawlerPageItem(wikiCrawlerPageItem: Partial<WikiCrawlerPageItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "crawleState": n => { wikiCrawlerPageItem.crawleState = n.getEnumValue<WorkerState>(WorkerStateObject); },
-        "createTime": n => { wikiCrawlerPageItem.createTime = n.getStringValue(); },
         "createUserId": n => { wikiCrawlerPageItem.createUserId = n.getNumberValue(); },
         "fileName": n => { wikiCrawlerPageItem.fileName = n.getStringValue(); },
         "fileSize": n => { wikiCrawlerPageItem.fileSize = n.getNumberValue(); },
-        "id": n => { wikiCrawlerPageItem.id = n.getNumberValue(); },
         "isEmbedding": n => { wikiCrawlerPageItem.isEmbedding = n.getBooleanValue(); },
         "message": n => { wikiCrawlerPageItem.message = n.getStringValue(); },
+        "pageId": n => { wikiCrawlerPageItem.pageId = n.getNumberValue(); },
+        "state": n => { wikiCrawlerPageItem.state = n.getEnumValue<WorkerState>(WorkerStateObject); },
+        "updateTime": n => { wikiCrawlerPageItem.updateTime = n.getStringValue(); },
         "url": n => { wikiCrawlerPageItem.url = n.getStringValue(); },
         "wikiDocumentId": n => { wikiCrawlerPageItem.wikiDocumentId = n.getNumberValue(); },
     }
@@ -4654,31 +4620,13 @@ export function deserializeIntoWikiCrawlerPageItem(wikiCrawlerPageItem: Partial<
 export function deserializeIntoWikiCrawlerPluginConfigSimpleItem(wikiCrawlerPluginConfigSimpleItem: Partial<WikiCrawlerPluginConfigSimpleItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(wikiCrawlerPluginConfigSimpleItem),
-        "config": n => { wikiCrawlerPluginConfigSimpleItem.config = n.getObjectValue<WikiCrawlerConfig>(createWikiCrawlerConfigFromDiscriminatorValue); },
+        "address": n => { wikiCrawlerPluginConfigSimpleItem.address = n.getStringValue(); },
         "configId": n => { wikiCrawlerPluginConfigSimpleItem.configId = n.getNumberValue(); },
-        "count": n => { wikiCrawlerPluginConfigSimpleItem.count = n.getNumberValue(); },
-        "isWorking": n => { wikiCrawlerPluginConfigSimpleItem.isWorking = n.getBooleanValue(); },
+        "pageCount": n => { wikiCrawlerPluginConfigSimpleItem.pageCount = n.getNumberValue(); },
         "title": n => { wikiCrawlerPluginConfigSimpleItem.title = n.getStringValue(); },
         "wikiId": n => { wikiCrawlerPluginConfigSimpleItem.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoWikiCrawlerTask(wikiCrawlerTask: Partial<WikiCrawlerTask> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "address": n => { wikiCrawlerTask.address = n.getStringValue(); },
-        "configId": n => { wikiCrawlerTask.configId = n.getNumberValue(); },
-        "createTime": n => { wikiCrawlerTask.createTime = n.getStringValue(); },
-        "faildPageCount": n => { wikiCrawlerTask.faildPageCount = n.getNumberValue(); },
-        "message": n => { wikiCrawlerTask.message = n.getStringValue(); },
-        "pageCount": n => { wikiCrawlerTask.pageCount = n.getNumberValue(); },
-        "selector": n => { wikiCrawlerTask.selector = n.getStringValue(); },
-        "state": n => { wikiCrawlerTask.state = n.getEnumValue<WorkerState>(WorkerStateObject); },
-        "taskId": n => { wikiCrawlerTask.taskId = n.getGuidValue(); },
-        "wikiId": n => { wikiCrawlerTask.wikiId = n.getNumberValue(); },
+        "workMessage": n => { wikiCrawlerPluginConfigSimpleItem.workMessage = n.getStringValue(); },
+        "workState": n => { wikiCrawlerPluginConfigSimpleItem.workState = n.getEnumValue<WorkerState>(WorkerStateObject); },
     }
 }
 /**
@@ -4803,6 +4751,7 @@ export function deserializeIntoWikiFeishuConfig(wikiFeishuConfig: Partial<WikiFe
     return {
         "appId": n => { wikiFeishuConfig.appId = n.getStringValue(); },
         "appSecret": n => { wikiFeishuConfig.appSecret = n.getStringValue(); },
+        "isIgnoreExistPage": n => { wikiFeishuConfig.isIgnoreExistPage = n.getBooleanValue(); },
         "parentNodeToken": n => { wikiFeishuConfig.parentNodeToken = n.getStringValue(); },
         "pluginKey": n => { wikiFeishuConfig.pluginKey = n.getStringValue(); },
         "spaceId": n => { wikiFeishuConfig.spaceId = n.getStringValue(); },
@@ -4815,16 +4764,16 @@ export function deserializeIntoWikiFeishuConfig(wikiFeishuConfig: Partial<WikiFe
 // @ts-ignore
 export function deserializeIntoWikiFeishuPageItem(wikiFeishuPageItem: Partial<WikiFeishuPageItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "crawleState": n => { wikiFeishuPageItem.crawleState = n.getEnumValue<WorkerState>(WorkerStateObject); },
-        "createTime": n => { wikiFeishuPageItem.createTime = n.getStringValue(); },
         "createUserId": n => { wikiFeishuPageItem.createUserId = n.getNumberValue(); },
         "fileName": n => { wikiFeishuPageItem.fileName = n.getStringValue(); },
         "fileSize": n => { wikiFeishuPageItem.fileSize = n.getNumberValue(); },
-        "id": n => { wikiFeishuPageItem.id = n.getNumberValue(); },
         "isEmbedding": n => { wikiFeishuPageItem.isEmbedding = n.getBooleanValue(); },
         "message": n => { wikiFeishuPageItem.message = n.getStringValue(); },
-        "relevanceKey": n => { wikiFeishuPageItem.relevanceKey = n.getStringValue(); },
-        "relevanceValue": n => { wikiFeishuPageItem.relevanceValue = n.getStringValue(); },
+        "nodeToken": n => { wikiFeishuPageItem.nodeToken = n.getStringValue(); },
+        "objToken": n => { wikiFeishuPageItem.objToken = n.getStringValue(); },
+        "pageId": n => { wikiFeishuPageItem.pageId = n.getNumberValue(); },
+        "state": n => { wikiFeishuPageItem.state = n.getEnumValue<WorkerState>(WorkerStateObject); },
+        "updateTime": n => { wikiFeishuPageItem.updateTime = n.getStringValue(); },
         "wikiDocumentId": n => { wikiFeishuPageItem.wikiDocumentId = n.getNumberValue(); },
     }
 }
@@ -4833,31 +4782,17 @@ export function deserializeIntoWikiFeishuPageItem(wikiFeishuPageItem: Partial<Wi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoWikiFeishuTask(wikiFeishuTask: Partial<WikiFeishuTask> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoWikiFeishuPluginConfigSimpleItem(wikiFeishuPluginConfigSimpleItem: Partial<WikiFeishuPluginConfigSimpleItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "address": n => { wikiFeishuTask.address = n.getStringValue(); },
-        "configId": n => { wikiFeishuTask.configId = n.getNumberValue(); },
-        "createTime": n => { wikiFeishuTask.createTime = n.getStringValue(); },
-        "faildPageCount": n => { wikiFeishuTask.faildPageCount = n.getNumberValue(); },
-        "message": n => { wikiFeishuTask.message = n.getStringValue(); },
-        "pageCount": n => { wikiFeishuTask.pageCount = n.getNumberValue(); },
-        "selector": n => { wikiFeishuTask.selector = n.getStringValue(); },
-        "state": n => { wikiFeishuTask.state = n.getEnumValue<WorkerState>(WorkerStateObject); },
-        "taskId": n => { wikiFeishuTask.taskId = n.getGuidValue(); },
-        "wikiId": n => { wikiFeishuTask.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoWikiPluginConfigSimpleItem(wikiPluginConfigSimpleItem: Partial<WikiPluginConfigSimpleItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(wikiPluginConfigSimpleItem),
-        "configId": n => { wikiPluginConfigSimpleItem.configId = n.getNumberValue(); },
-        "title": n => { wikiPluginConfigSimpleItem.title = n.getStringValue(); },
-        "wikiId": n => { wikiPluginConfigSimpleItem.wikiId = n.getNumberValue(); },
+        ...deserializeIntoAuditsInfo(wikiFeishuPluginConfigSimpleItem),
+        "configId": n => { wikiFeishuPluginConfigSimpleItem.configId = n.getNumberValue(); },
+        "pageCount": n => { wikiFeishuPluginConfigSimpleItem.pageCount = n.getNumberValue(); },
+        "parentNodeToken": n => { wikiFeishuPluginConfigSimpleItem.parentNodeToken = n.getStringValue(); },
+        "spaceId": n => { wikiFeishuPluginConfigSimpleItem.spaceId = n.getStringValue(); },
+        "title": n => { wikiFeishuPluginConfigSimpleItem.title = n.getStringValue(); },
+        "wikiId": n => { wikiFeishuPluginConfigSimpleItem.wikiId = n.getNumberValue(); },
+        "workMessage": n => { wikiFeishuPluginConfigSimpleItem.workMessage = n.getStringValue(); },
+        "workState": n => { wikiFeishuPluginConfigSimpleItem.workState = n.getEnumValue<WorkerState>(WorkerStateObject); },
     }
 }
 /**
@@ -6223,59 +6158,38 @@ export interface QueryWikiBaseListCommand extends Parsable {
  */
 export interface QueryWikiCrawlerConfigCommandResponse extends AuditsInfo, Parsable {
     /**
-     * 页面地址.
+     * 配置.
      */
-    address?: string | null;
+    config?: WikiCrawlerConfig | null;
     /**
      * id.
      */
     configId?: number | null;
     /**
-     * 是否抓取其它页面.
-     */
-    isCrawlOther?: boolean | null;
-    /**
-     * 限制自动爬取的网页都在该路径之下,limit_address跟address必须具有相同域名.
-     */
-    limitAddress?: string | null;
-    /**
-     * 最大抓取数量.
-     */
-    limitMaxCount?: number | null;
-    /**
-     * The pluginKey property
-     */
-    pluginKey?: string | null;
-    /**
-     * 选择器，筛选页面的表达式，例如 ".content".
-     */
-    selector?: string | null;
-    /**
-     * 超时时间，秒.
-     */
-    timeOutSecond?: number | null;
-    /**
-     * 标题.
+     * 插件标题.
      */
     title?: string | null;
-    /**
-     * 伪装标识.
-     */
-    userAgent?: string | null;
     /**
      * 知识库id.
      */
     wikiId?: number | null;
+    /**
+     * 运行信息.
+     */
+    workMessage?: string | null;
+    /**
+     * 状态.
+     */
+    workState?: WorkerState | null;
 }
+/**
+ * 爬取状态.
+ */
 export interface QueryWikiCrawlerPageTasksCommandResponse extends Parsable {
     /**
-     * 每一个地址.
+     * 爬取完成的地址.
      */
-    pages?: WikiCrawlerPageItem[] | null;
-    /**
-     * 爬虫状态.
-     */
-    task?: WikiCrawlerTask | null;
+    items?: WikiCrawlerPageItem[] | null;
 }
 /**
  * 查询已经配置的爬虫插件实例列表.
@@ -6416,15 +6330,58 @@ export interface QueryWikiDocumentTaskListCommand extends Parsable {
      */
     wikiId?: number | null;
 }
+/**
+ * 配置.
+ */
+export interface QueryWikiFeishuConfigCommandResponse extends AuditsInfo, Parsable {
+    /**
+     * 配置.
+     */
+    config?: WikiFeishuConfig | null;
+    /**
+     * id.
+     */
+    configId?: number | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+    /**
+     * 知识库id.
+     */
+    wikiId?: number | null;
+    /**
+     * 运行信息.
+     */
+    workMessage?: string | null;
+    /**
+     * 状态.
+     */
+    workState?: WorkerState | null;
+}
+/**
+ * 爬取状态.
+ */
 export interface QueryWikiFeishuPageTasksCommandResponse extends Parsable {
     /**
-     * 每一个地址.
+     * 爬取完成的地址.
      */
-    pages?: WikiFeishuPageItem[] | null;
+    items?: WikiFeishuPageItem[] | null;
+}
+/**
+ * 查询已经配置的爬虫插件实例列表.
+ */
+export interface QueryWikiFeishuPluginConfigListCommand extends Parsable {
     /**
-     * 爬虫状态.
+     * 知识库 id.
      */
-    task?: WikiFeishuTask | null;
+    wikiId?: number | null;
+}
+export interface QueryWikiFeishuPluginConfigListCommandResponse extends Parsable {
+    /**
+     * 配置列表.
+     */
+    items?: WikiFeishuPluginConfigSimpleItem[] | null;
 }
 /**
  * 知识库信息.
@@ -6464,33 +6421,6 @@ export interface QueryWikiInfoResponse extends AuditsInfo, Parsable {
     name?: string | null;
     /**
      * 知识库 id.
-     */
-    wikiId?: number | null;
-}
-/**
- * 查询插件类型.
- */
-export interface QueryWikiPluginConfigListCommandResponse extends Parsable {
-    /**
-     * 爬虫配置列表.
-     */
-    items?: WikiPluginConfigSimpleItem[] | null;
-}
-export interface QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig extends AuditsInfo, Parsable {
-    /**
-     * 配置.
-     */
-    config?: WikiFeishuConfig | null;
-    /**
-     * id.
-     */
-    configId?: number | null;
-    /**
-     * 标题.
-     */
-    title?: string | null;
-    /**
-     * 知识库id.
      */
     wikiId?: number | null;
 }
@@ -6935,17 +6865,6 @@ export function serializeCancalWikiDocumentTaskCommand(writer: SerializationWrit
         writer.writeNumberValue("documentId", cancalWikiDocumentTaskCommand.documentId);
         writer.writeGuidValue("taskId", cancalWikiDocumentTaskCommand.taskId);
         writer.writeNumberValue("wikiId", cancalWikiDocumentTaskCommand.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeCancalWikiPluginTaskCommand(writer: SerializationWriter, cancalWikiPluginTaskCommand: Partial<CancalWikiPluginTaskCommand> | undefined | null = {}) : void {
-    if (cancalWikiPluginTaskCommand) {
-        writer.writeNumberValue("configId", cancalWikiPluginTaskCommand.configId);
-        writer.writeNumberValue("wikiId", cancalWikiPluginTaskCommand.wikiId);
     }
 }
 /**
@@ -8165,17 +8084,12 @@ export function serializeQueryWikiBaseListCommand(writer: SerializationWriter, q
 export function serializeQueryWikiCrawlerConfigCommandResponse(writer: SerializationWriter, queryWikiCrawlerConfigCommandResponse: Partial<QueryWikiCrawlerConfigCommandResponse> | undefined | null = {}) : void {
     if (queryWikiCrawlerConfigCommandResponse) {
         serializeAuditsInfo(writer, queryWikiCrawlerConfigCommandResponse)
-        writer.writeStringValue("address", queryWikiCrawlerConfigCommandResponse.address);
+        writer.writeObjectValue<WikiCrawlerConfig>("config", queryWikiCrawlerConfigCommandResponse.config, serializeWikiCrawlerConfig);
         writer.writeNumberValue("configId", queryWikiCrawlerConfigCommandResponse.configId);
-        writer.writeBooleanValue("isCrawlOther", queryWikiCrawlerConfigCommandResponse.isCrawlOther);
-        writer.writeStringValue("limitAddress", queryWikiCrawlerConfigCommandResponse.limitAddress);
-        writer.writeNumberValue("limitMaxCount", queryWikiCrawlerConfigCommandResponse.limitMaxCount);
-        writer.writeStringValue("pluginKey", queryWikiCrawlerConfigCommandResponse.pluginKey);
-        writer.writeStringValue("selector", queryWikiCrawlerConfigCommandResponse.selector);
-        writer.writeNumberValue("timeOutSecond", queryWikiCrawlerConfigCommandResponse.timeOutSecond);
         writer.writeStringValue("title", queryWikiCrawlerConfigCommandResponse.title);
-        writer.writeStringValue("userAgent", queryWikiCrawlerConfigCommandResponse.userAgent);
         writer.writeNumberValue("wikiId", queryWikiCrawlerConfigCommandResponse.wikiId);
+        writer.writeStringValue("workMessage", queryWikiCrawlerConfigCommandResponse.workMessage);
+        writer.writeEnumValue<WorkerState>("workState", queryWikiCrawlerConfigCommandResponse.workState);
     }
 }
 /**
@@ -8185,8 +8099,7 @@ export function serializeQueryWikiCrawlerConfigCommandResponse(writer: Serializa
 // @ts-ignore
 export function serializeQueryWikiCrawlerPageTasksCommandResponse(writer: SerializationWriter, queryWikiCrawlerPageTasksCommandResponse: Partial<QueryWikiCrawlerPageTasksCommandResponse> | undefined | null = {}) : void {
     if (queryWikiCrawlerPageTasksCommandResponse) {
-        writer.writeCollectionOfObjectValues<WikiCrawlerPageItem>("pages", queryWikiCrawlerPageTasksCommandResponse.pages, serializeWikiCrawlerPageItem);
-        writer.writeObjectValue<WikiCrawlerTask>("task", queryWikiCrawlerPageTasksCommandResponse.task, serializeWikiCrawlerTask);
+        writer.writeCollectionOfObjectValues<WikiCrawlerPageItem>("items", queryWikiCrawlerPageTasksCommandResponse.items, serializeWikiCrawlerPageItem);
     }
 }
 /**
@@ -8321,10 +8234,45 @@ export function serializeQueryWikiDocumentTaskListCommand(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiFeishuConfigCommandResponse(writer: SerializationWriter, queryWikiFeishuConfigCommandResponse: Partial<QueryWikiFeishuConfigCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiFeishuConfigCommandResponse) {
+        serializeAuditsInfo(writer, queryWikiFeishuConfigCommandResponse)
+        writer.writeObjectValue<WikiFeishuConfig>("config", queryWikiFeishuConfigCommandResponse.config, serializeWikiFeishuConfig);
+        writer.writeNumberValue("configId", queryWikiFeishuConfigCommandResponse.configId);
+        writer.writeStringValue("title", queryWikiFeishuConfigCommandResponse.title);
+        writer.writeNumberValue("wikiId", queryWikiFeishuConfigCommandResponse.wikiId);
+        writer.writeStringValue("workMessage", queryWikiFeishuConfigCommandResponse.workMessage);
+        writer.writeEnumValue<WorkerState>("workState", queryWikiFeishuConfigCommandResponse.workState);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryWikiFeishuPageTasksCommandResponse(writer: SerializationWriter, queryWikiFeishuPageTasksCommandResponse: Partial<QueryWikiFeishuPageTasksCommandResponse> | undefined | null = {}) : void {
     if (queryWikiFeishuPageTasksCommandResponse) {
-        writer.writeCollectionOfObjectValues<WikiFeishuPageItem>("pages", queryWikiFeishuPageTasksCommandResponse.pages, serializeWikiFeishuPageItem);
-        writer.writeObjectValue<WikiFeishuTask>("task", queryWikiFeishuPageTasksCommandResponse.task, serializeWikiFeishuTask);
+        writer.writeCollectionOfObjectValues<WikiFeishuPageItem>("items", queryWikiFeishuPageTasksCommandResponse.items, serializeWikiFeishuPageItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiFeishuPluginConfigListCommand(writer: SerializationWriter, queryWikiFeishuPluginConfigListCommand: Partial<QueryWikiFeishuPluginConfigListCommand> | undefined | null = {}) : void {
+    if (queryWikiFeishuPluginConfigListCommand) {
+        writer.writeNumberValue("wikiId", queryWikiFeishuPluginConfigListCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiFeishuPluginConfigListCommandResponse(writer: SerializationWriter, queryWikiFeishuPluginConfigListCommandResponse: Partial<QueryWikiFeishuPluginConfigListCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiFeishuPluginConfigListCommandResponse) {
+        writer.writeCollectionOfObjectValues<WikiFeishuPluginConfigSimpleItem>("items", queryWikiFeishuPluginConfigListCommandResponse.items, serializeWikiFeishuPluginConfigSimpleItem);
     }
 }
 /**
@@ -8344,30 +8292,6 @@ export function serializeQueryWikiInfoResponse(writer: SerializationWriter, quer
         writer.writeBooleanValue("isUser", queryWikiInfoResponse.isUser);
         writer.writeStringValue("name", queryWikiInfoResponse.name);
         writer.writeNumberValue("wikiId", queryWikiInfoResponse.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryWikiPluginConfigListCommandResponse(writer: SerializationWriter, queryWikiPluginConfigListCommandResponse: Partial<QueryWikiPluginConfigListCommandResponse> | undefined | null = {}) : void {
-    if (queryWikiPluginConfigListCommandResponse) {
-        writer.writeCollectionOfObjectValues<WikiPluginConfigSimpleItem>("items", queryWikiPluginConfigListCommandResponse.items, serializeWikiPluginConfigSimpleItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig(writer: SerializationWriter, queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig: Partial<QueryWikiPluginrConfigCommandResponseOfWikiFeishuConfig> | undefined | null = {}) : void {
-    if (queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig) {
-        serializeAuditsInfo(writer, queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig)
-        writer.writeObjectValue<WikiFeishuConfig>("config", queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.config, serializeWikiFeishuConfig);
-        writer.writeNumberValue("configId", queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.configId);
-        writer.writeStringValue("title", queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.title);
-        writer.writeNumberValue("wikiId", queryWikiPluginrConfigCommandResponseOfWikiFeishuConfig.wikiId);
     }
 }
 /**
@@ -8610,6 +8534,7 @@ export function serializeSimpleString(writer: SerializationWriter, simpleString:
 export function serializeStartWikiCrawlerPluginTaskCommand(writer: SerializationWriter, startWikiCrawlerPluginTaskCommand: Partial<StartWikiCrawlerPluginTaskCommand> | undefined | null = {}) : void {
     if (startWikiCrawlerPluginTaskCommand) {
         writer.writeNumberValue("configId", startWikiCrawlerPluginTaskCommand.configId);
+        writer.writeBooleanValue("isStart", startWikiCrawlerPluginTaskCommand.isStart);
         writer.writeNumberValue("wikiId", startWikiCrawlerPluginTaskCommand.wikiId);
     }
 }
@@ -8621,6 +8546,7 @@ export function serializeStartWikiCrawlerPluginTaskCommand(writer: Serialization
 export function serializeStartWikiFeishuPluginTaskCommand(writer: SerializationWriter, startWikiFeishuPluginTaskCommand: Partial<StartWikiFeishuPluginTaskCommand> | undefined | null = {}) : void {
     if (startWikiFeishuPluginTaskCommand) {
         writer.writeNumberValue("configId", startWikiFeishuPluginTaskCommand.configId);
+        writer.writeBooleanValue("isStart", startWikiFeishuPluginTaskCommand.isStart);
         writer.writeNumberValue("wikiId", startWikiFeishuPluginTaskCommand.wikiId);
     }
 }
@@ -8908,6 +8834,7 @@ export function serializeWikiCrawlerConfig(writer: SerializationWriter, wikiCraw
     if (wikiCrawlerConfig) {
         writer.writeStringValue("address", wikiCrawlerConfig.address);
         writer.writeBooleanValue("isCrawlOther", wikiCrawlerConfig.isCrawlOther);
+        writer.writeBooleanValue("isIgnoreExistPage", wikiCrawlerConfig.isIgnoreExistPage);
         writer.writeStringValue("limitAddress", wikiCrawlerConfig.limitAddress);
         writer.writeNumberValue("limitMaxCount", wikiCrawlerConfig.limitMaxCount);
         writer.writeStringValue("selector", wikiCrawlerConfig.selector);
@@ -8922,14 +8849,14 @@ export function serializeWikiCrawlerConfig(writer: SerializationWriter, wikiCraw
 // @ts-ignore
 export function serializeWikiCrawlerPageItem(writer: SerializationWriter, wikiCrawlerPageItem: Partial<WikiCrawlerPageItem> | undefined | null = {}) : void {
     if (wikiCrawlerPageItem) {
-        writer.writeEnumValue<WorkerState>("crawleState", wikiCrawlerPageItem.crawleState);
-        writer.writeStringValue("createTime", wikiCrawlerPageItem.createTime);
         writer.writeNumberValue("createUserId", wikiCrawlerPageItem.createUserId);
         writer.writeStringValue("fileName", wikiCrawlerPageItem.fileName);
         writer.writeNumberValue("fileSize", wikiCrawlerPageItem.fileSize);
-        writer.writeNumberValue("id", wikiCrawlerPageItem.id);
         writer.writeBooleanValue("isEmbedding", wikiCrawlerPageItem.isEmbedding);
         writer.writeStringValue("message", wikiCrawlerPageItem.message);
+        writer.writeNumberValue("pageId", wikiCrawlerPageItem.pageId);
+        writer.writeEnumValue<WorkerState>("state", wikiCrawlerPageItem.state);
+        writer.writeStringValue("updateTime", wikiCrawlerPageItem.updateTime);
         writer.writeStringValue("url", wikiCrawlerPageItem.url);
         writer.writeNumberValue("wikiDocumentId", wikiCrawlerPageItem.wikiDocumentId);
     }
@@ -8942,31 +8869,13 @@ export function serializeWikiCrawlerPageItem(writer: SerializationWriter, wikiCr
 export function serializeWikiCrawlerPluginConfigSimpleItem(writer: SerializationWriter, wikiCrawlerPluginConfigSimpleItem: Partial<WikiCrawlerPluginConfigSimpleItem> | undefined | null = {}) : void {
     if (wikiCrawlerPluginConfigSimpleItem) {
         serializeAuditsInfo(writer, wikiCrawlerPluginConfigSimpleItem)
-        writer.writeObjectValue<WikiCrawlerConfig>("config", wikiCrawlerPluginConfigSimpleItem.config, serializeWikiCrawlerConfig);
+        writer.writeStringValue("address", wikiCrawlerPluginConfigSimpleItem.address);
         writer.writeNumberValue("configId", wikiCrawlerPluginConfigSimpleItem.configId);
-        writer.writeNumberValue("count", wikiCrawlerPluginConfigSimpleItem.count);
-        writer.writeBooleanValue("isWorking", wikiCrawlerPluginConfigSimpleItem.isWorking);
+        writer.writeNumberValue("pageCount", wikiCrawlerPluginConfigSimpleItem.pageCount);
         writer.writeStringValue("title", wikiCrawlerPluginConfigSimpleItem.title);
         writer.writeNumberValue("wikiId", wikiCrawlerPluginConfigSimpleItem.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeWikiCrawlerTask(writer: SerializationWriter, wikiCrawlerTask: Partial<WikiCrawlerTask> | undefined | null = {}) : void {
-    if (wikiCrawlerTask) {
-        writer.writeStringValue("address", wikiCrawlerTask.address);
-        writer.writeNumberValue("configId", wikiCrawlerTask.configId);
-        writer.writeStringValue("createTime", wikiCrawlerTask.createTime);
-        writer.writeNumberValue("faildPageCount", wikiCrawlerTask.faildPageCount);
-        writer.writeStringValue("message", wikiCrawlerTask.message);
-        writer.writeNumberValue("pageCount", wikiCrawlerTask.pageCount);
-        writer.writeStringValue("selector", wikiCrawlerTask.selector);
-        writer.writeEnumValue<WorkerState>("state", wikiCrawlerTask.state);
-        writer.writeGuidValue("taskId", wikiCrawlerTask.taskId);
-        writer.writeNumberValue("wikiId", wikiCrawlerTask.wikiId);
+        writer.writeStringValue("workMessage", wikiCrawlerPluginConfigSimpleItem.workMessage);
+        writer.writeEnumValue<WorkerState>("workState", wikiCrawlerPluginConfigSimpleItem.workState);
     }
 }
 /**
@@ -9091,6 +9000,7 @@ export function serializeWikiFeishuConfig(writer: SerializationWriter, wikiFeish
     if (wikiFeishuConfig) {
         writer.writeStringValue("appId", wikiFeishuConfig.appId);
         writer.writeStringValue("appSecret", wikiFeishuConfig.appSecret);
+        writer.writeBooleanValue("isIgnoreExistPage", wikiFeishuConfig.isIgnoreExistPage);
         writer.writeStringValue("parentNodeToken", wikiFeishuConfig.parentNodeToken);
         writer.writeStringValue("pluginKey", wikiFeishuConfig.pluginKey);
         writer.writeStringValue("spaceId", wikiFeishuConfig.spaceId);
@@ -9103,16 +9013,16 @@ export function serializeWikiFeishuConfig(writer: SerializationWriter, wikiFeish
 // @ts-ignore
 export function serializeWikiFeishuPageItem(writer: SerializationWriter, wikiFeishuPageItem: Partial<WikiFeishuPageItem> | undefined | null = {}) : void {
     if (wikiFeishuPageItem) {
-        writer.writeEnumValue<WorkerState>("crawleState", wikiFeishuPageItem.crawleState);
-        writer.writeStringValue("createTime", wikiFeishuPageItem.createTime);
         writer.writeNumberValue("createUserId", wikiFeishuPageItem.createUserId);
         writer.writeStringValue("fileName", wikiFeishuPageItem.fileName);
         writer.writeNumberValue("fileSize", wikiFeishuPageItem.fileSize);
-        writer.writeNumberValue("id", wikiFeishuPageItem.id);
         writer.writeBooleanValue("isEmbedding", wikiFeishuPageItem.isEmbedding);
         writer.writeStringValue("message", wikiFeishuPageItem.message);
-        writer.writeStringValue("relevanceKey", wikiFeishuPageItem.relevanceKey);
-        writer.writeStringValue("relevanceValue", wikiFeishuPageItem.relevanceValue);
+        writer.writeStringValue("nodeToken", wikiFeishuPageItem.nodeToken);
+        writer.writeStringValue("objToken", wikiFeishuPageItem.objToken);
+        writer.writeNumberValue("pageId", wikiFeishuPageItem.pageId);
+        writer.writeEnumValue<WorkerState>("state", wikiFeishuPageItem.state);
+        writer.writeStringValue("updateTime", wikiFeishuPageItem.updateTime);
         writer.writeNumberValue("wikiDocumentId", wikiFeishuPageItem.wikiDocumentId);
     }
 }
@@ -9121,31 +9031,17 @@ export function serializeWikiFeishuPageItem(writer: SerializationWriter, wikiFei
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeWikiFeishuTask(writer: SerializationWriter, wikiFeishuTask: Partial<WikiFeishuTask> | undefined | null = {}) : void {
-    if (wikiFeishuTask) {
-        writer.writeStringValue("address", wikiFeishuTask.address);
-        writer.writeNumberValue("configId", wikiFeishuTask.configId);
-        writer.writeStringValue("createTime", wikiFeishuTask.createTime);
-        writer.writeNumberValue("faildPageCount", wikiFeishuTask.faildPageCount);
-        writer.writeStringValue("message", wikiFeishuTask.message);
-        writer.writeNumberValue("pageCount", wikiFeishuTask.pageCount);
-        writer.writeStringValue("selector", wikiFeishuTask.selector);
-        writer.writeEnumValue<WorkerState>("state", wikiFeishuTask.state);
-        writer.writeGuidValue("taskId", wikiFeishuTask.taskId);
-        writer.writeNumberValue("wikiId", wikiFeishuTask.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeWikiPluginConfigSimpleItem(writer: SerializationWriter, wikiPluginConfigSimpleItem: Partial<WikiPluginConfigSimpleItem> | undefined | null = {}) : void {
-    if (wikiPluginConfigSimpleItem) {
-        serializeAuditsInfo(writer, wikiPluginConfigSimpleItem)
-        writer.writeNumberValue("configId", wikiPluginConfigSimpleItem.configId);
-        writer.writeStringValue("title", wikiPluginConfigSimpleItem.title);
-        writer.writeNumberValue("wikiId", wikiPluginConfigSimpleItem.wikiId);
+export function serializeWikiFeishuPluginConfigSimpleItem(writer: SerializationWriter, wikiFeishuPluginConfigSimpleItem: Partial<WikiFeishuPluginConfigSimpleItem> | undefined | null = {}) : void {
+    if (wikiFeishuPluginConfigSimpleItem) {
+        serializeAuditsInfo(writer, wikiFeishuPluginConfigSimpleItem)
+        writer.writeNumberValue("configId", wikiFeishuPluginConfigSimpleItem.configId);
+        writer.writeNumberValue("pageCount", wikiFeishuPluginConfigSimpleItem.pageCount);
+        writer.writeStringValue("parentNodeToken", wikiFeishuPluginConfigSimpleItem.parentNodeToken);
+        writer.writeStringValue("spaceId", wikiFeishuPluginConfigSimpleItem.spaceId);
+        writer.writeStringValue("title", wikiFeishuPluginConfigSimpleItem.title);
+        writer.writeNumberValue("wikiId", wikiFeishuPluginConfigSimpleItem.wikiId);
+        writer.writeStringValue("workMessage", wikiFeishuPluginConfigSimpleItem.workMessage);
+        writer.writeEnumValue<WorkerState>("workState", wikiFeishuPluginConfigSimpleItem.workState);
     }
 }
 /**
@@ -9212,6 +9108,10 @@ export interface StartWikiCrawlerPluginTaskCommand extends Parsable {
      */
     configId?: number | null;
     /**
+     * true 是启动任务，false 是停止任务.
+     */
+    isStart?: boolean | null;
+    /**
      * 知识库 id.
      */
     wikiId?: number | null;
@@ -9224,6 +9124,10 @@ export interface StartWikiFeishuPluginTaskCommand extends Parsable {
      * 知识库 web 配置 id.
      */
     configId?: number | null;
+    /**
+     * true 是启动任务，false 是停止任务.
+     */
+    isStart?: boolean | null;
     /**
      * 知识库 id.
      */
@@ -9698,6 +9602,10 @@ export interface WikiCrawlerConfig extends Parsable {
      */
     isCrawlOther?: boolean | null;
     /**
+     * 是否忽略已存在的页面.
+     */
+    isIgnoreExistPage?: boolean | null;
+    /**
      * 限制自动爬取的网页都在该路径之下,limit_address跟address必须具有相同域名.
      */
     limitAddress?: string | null;
@@ -9718,15 +9626,10 @@ export interface WikiCrawlerConfig extends Parsable {
      */
     userAgent?: string | null;
 }
+/**
+ * 爬虫任务来表项.
+ */
 export interface WikiCrawlerPageItem extends Parsable {
-    /**
-     * 爬取状态.
-     */
-    crawleState?: WorkerState | null;
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
     /**
      * 创建人.
      */
@@ -9740,10 +9643,6 @@ export interface WikiCrawlerPageItem extends Parsable {
      */
     fileSize?: number | null;
     /**
-     * id.
-     */
-    id?: number | null;
-    /**
      * 是否有向量化内容.
      */
     isEmbedding?: boolean | null;
@@ -9751,6 +9650,18 @@ export interface WikiCrawlerPageItem extends Parsable {
      * 信息.
      */
     message?: string | null;
+    /**
+     * id.
+     */
+    pageId?: number | null;
+    /**
+     * 爬取状态.
+     */
+    state?: WorkerState | null;
+    /**
+     * 创建时间.
+     */
+    updateTime?: string | null;
     /**
      * 正在爬取的地址.
      */
@@ -9765,9 +9676,9 @@ export interface WikiCrawlerPageItem extends Parsable {
  */
 export interface WikiCrawlerPluginConfigSimpleItem extends AuditsInfo, Parsable {
     /**
-     * 配置.
+     * 页面地址.
      */
-    config?: WikiCrawlerConfig | null;
+    address?: string | null;
     /**
      * 配置 id.
      */
@@ -9775,64 +9686,23 @@ export interface WikiCrawlerPluginConfigSimpleItem extends AuditsInfo, Parsable 
     /**
      * 页面数量.
      */
-    count?: number | null;
+    pageCount?: number | null;
     /**
-     * 正在爬取.
-     */
-    isWorking?: boolean | null;
-    /**
-     * 爬虫标题.
+     * 插件标题.
      */
     title?: string | null;
     /**
      * 知识库 id.
      */
     wikiId?: number | null;
-}
-/**
- * 每一页.
- */
-export interface WikiCrawlerTask extends Parsable {
     /**
-     * 正在爬取的地址.
+     * 运行信息.
      */
-    address?: string | null;
+    workMessage?: string | null;
     /**
-     * 爬虫id.
+     * 状态.
      */
-    configId?: number | null;
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
-    /**
-     * 爬取失败的页面数量.
-     */
-    faildPageCount?: number | null;
-    /**
-     * 信息.
-     */
-    message?: string | null;
-    /**
-     * 爬取成功的页面数量.
-     */
-    pageCount?: number | null;
-    /**
-     * 选择器.
-     */
-    selector?: string | null;
-    /**
-     * 爬取状态.
-     */
-    state?: WorkerState | null;
-    /**
-     * id.
-     */
-    taskId?: Guid | null;
-    /**
-     * 知识库id.
-     */
-    wikiId?: number | null;
+    workState?: WorkerState | null;
 }
 /**
  * 文档内容.
@@ -10006,6 +9876,10 @@ export interface WikiFeishuConfig extends Parsable {
      */
     appSecret?: string | null;
     /**
+     * 是否忽略已存在的页面.
+     */
+    isIgnoreExistPage?: boolean | null;
+    /**
      * 顶部文档 token.
      */
     parentNodeToken?: string | null;
@@ -10018,15 +9892,10 @@ export interface WikiFeishuConfig extends Parsable {
      */
     spaceId?: string | null;
 }
+/**
+ * 爬虫任务来表项.
+ */
 export interface WikiFeishuPageItem extends Parsable {
-    /**
-     * 爬取状态.
-     */
-    crawleState?: WorkerState | null;
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
     /**
      * 创建人.
      */
@@ -10040,10 +9909,6 @@ export interface WikiFeishuPageItem extends Parsable {
      */
     fileSize?: number | null;
     /**
-     * id.
-     */
-    id?: number | null;
-    /**
      * 是否有向量化内容.
      */
     isEmbedding?: boolean | null;
@@ -10052,79 +9917,66 @@ export interface WikiFeishuPageItem extends Parsable {
      */
     message?: string | null;
     /**
-     * 正在爬取的地址.
+     * NodeToken.
      */
-    relevanceKey?: string | null;
+    nodeToken?: string | null;
     /**
-     * 正在爬取的地址.
+     * ObjToken.
      */
-    relevanceValue?: string | null;
+    objToken?: string | null;
+    /**
+     * id.
+     */
+    pageId?: number | null;
+    /**
+     * 爬取状态.
+     */
+    state?: WorkerState | null;
+    /**
+     * 创建时间.
+     */
+    updateTime?: string | null;
     /**
      * 文档id.
      */
     wikiDocumentId?: number | null;
 }
 /**
- * 每一页.
- */
-export interface WikiFeishuTask extends Parsable {
-    /**
-     * 正在爬取的地址.
-     */
-    address?: string | null;
-    /**
-     * 爬虫id.
-     */
-    configId?: number | null;
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
-    /**
-     * 爬取失败的页面数量.
-     */
-    faildPageCount?: number | null;
-    /**
-     * 信息.
-     */
-    message?: string | null;
-    /**
-     * 爬取成功的页面数量.
-     */
-    pageCount?: number | null;
-    /**
-     * 选择器.
-     */
-    selector?: string | null;
-    /**
-     * 爬取状态.
-     */
-    state?: WorkerState | null;
-    /**
-     * id.
-     */
-    taskId?: Guid | null;
-    /**
-     * 知识库id.
-     */
-    wikiId?: number | null;
-}
-/**
  * Plugin 配置.
  */
-export interface WikiPluginConfigSimpleItem extends AuditsInfo, Parsable {
+export interface WikiFeishuPluginConfigSimpleItem extends AuditsInfo, Parsable {
     /**
      * 配置 id.
      */
     configId?: number | null;
     /**
-     * 爬虫标题.
+     * 页面数量.
+     */
+    pageCount?: number | null;
+    /**
+     * 顶部文档 token.
+     */
+    parentNodeToken?: string | null;
+    /**
+     * 飞书知识库 id.
+     */
+    spaceId?: string | null;
+    /**
+     * 插件标题.
      */
     title?: string | null;
     /**
      * 知识库 id.
      */
     wikiId?: number | null;
+    /**
+     * 运行信息.
+     */
+    workMessage?: string | null;
+    /**
+     * 状态.
+     */
+    workState?: WorkerState | null;
 }
 export type WikiQueryType = (typeof WikiQueryTypeObject)[keyof typeof WikiQueryTypeObject];
 export type WorkerState = (typeof WorkerStateObject)[keyof typeof WorkerStateObject];

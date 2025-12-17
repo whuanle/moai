@@ -43,7 +43,7 @@ public class CrawlerController : ControllerBase
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpPost("config_list")]
-    public async Task<QueryWikiCrawlerPluginConfigListCommandResponse> QueryWikiCrawlerPluginConfigList([FromBody] QueryWikiCrawlerPluginConfigListCommand req, CancellationToken ct = default)
+    public async Task<QueryWikiCrawlerPluginConfigListCommandResponse> ConfigListAsync([FromBody] QueryWikiCrawlerPluginConfigListCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
@@ -85,7 +85,7 @@ public class CrawlerController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回任务标识.</returns>
     [HttpPost("lanuch_task")]
-    public async Task<SimpleGuid> StartWikiPluginTask([FromBody] StartWikiCrawlerPluginTaskCommand req, CancellationToken ct = default)
+    public async Task<EmptyCommandResponse> StartWikiPluginTask([FromBody] StartWikiCrawlerPluginTaskCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 

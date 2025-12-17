@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using MediatR;
-using MoAI.AiModel.Models;
 using MoAI.Infra.Models;
 
 namespace MoAI.Wiki.Plugins.Template.Commands;
@@ -8,7 +7,7 @@ namespace MoAI.Wiki.Plugins.Template.Commands;
 /// <summary>
 /// 开始启动知识库插件任务.
 /// </summary>
-public class StartWikiCrawlerPluginTaskCommand : IRequest<EmptyCommandResponse>, IModelValidator<StartWikiCrawlerPluginTaskCommand>
+public class StartWikiFeishuPluginTaskCommand : IRequest<EmptyCommandResponse>, IModelValidator<StartWikiFeishuPluginTaskCommand>
 {
     /// <summary>
     /// 知识库 id.
@@ -26,7 +25,7 @@ public class StartWikiCrawlerPluginTaskCommand : IRequest<EmptyCommandResponse>,
     public bool IsStart { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<StartWikiCrawlerPluginTaskCommand> validate)
+    public void Validate(AbstractValidator<StartWikiFeishuPluginTaskCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.ConfigId).GreaterThan(0).WithMessage("配置ID错误");

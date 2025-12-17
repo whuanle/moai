@@ -1,14 +1,13 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using MoAI.Database;
 using MoAI.Infra.Extensions;
 using MoAI.User.Queries;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
-using MoAI.Wiki.Plugins.Template.Models;
+using MoAI.Wiki.Plugins.Crawler.Queries;
 
-namespace MoAI.Wiki.Plugins.Crawler.Queries;
+namespace MoAI.Wiki.Plugins.Cawler.Queries;
 
 /// <summary>
 /// <inheritdoc cref="QueryWikiCrawlerPluginConfigListCommand"/>
@@ -39,8 +38,9 @@ public class QueryWikiCrawlerPluginConfigListCommandHandler : IRequestHandler<Qu
                 Id = x.Id,
                 Title = x.Title,
                 WikiId = x.WikiId,
-                Count = _databaseContext.WikiPluginDocumentStates.Where(a => a.ConfigId == x.Id).Count(),
-                IsWorking = _databaseContext.WorkerTasks.Where(a => a.BindType == "crawler" && a.BindId == x.Id && a.State <= (int)WorkerState.Processing).Any(),
+                Count = _databaseContext.WikiPluginConfigDocuments.Where(a => a.ConfigId == x.Id).Count(),
+                x.WorkState,
+                x.WorkMessage,
                 Config = x.Config,
                 CreateTime = x.CreateTime,
                 CreateUserId = x.CreateUserId,
@@ -54,13 +54,14 @@ public class QueryWikiCrawlerPluginConfigListCommandHandler : IRequestHandler<Qu
             ConfigId = x.Id,
             Title = x.Title,
             WikiId = x.WikiId,
-            Config = x.Config.JsonToObject<WikiCrawlerConfig>()!,
-            IsWorking = x.IsWorking,
-            Count = x.Count,
             CreateTime = x.CreateTime,
             CreateUserId = x.CreateUserId,
             UpdateUserId = x.UpdateUserId,
-            UpdateTime = x.UpdateTime
+            UpdateTime = x.UpdateTime,
+            Address = x.Config.JsonToObject<WikiCrawlerConfig>()?.Address!,
+            PageCount = x.Count,
+            WorkMessage = x.WorkMessage,
+            WorkState = (WorkerState)x.WorkState
         }).ToList();
 
         await _mediator.Send(new FillUserInfoCommand

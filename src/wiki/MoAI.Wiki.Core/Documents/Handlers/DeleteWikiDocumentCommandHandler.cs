@@ -1,17 +1,12 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.KernelMemory;
 using MoAI.AI.MemoryDb;
-using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 using MoAI.Wiki.Embedding.Commands;
-using MoAI.Wiki.Events;
 
 namespace MoAI.Wiki.Documents.Handlers;
 
@@ -73,12 +68,6 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
         {
             await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
         }
-
-        await _mediator.Publish(new DeleteWikiDocumentEvent
-        {
-            WikiId = request.WikiId,
-            DocumentId = request.DocumentId
-        });
 
         return EmptyCommandResponse.Default;
     }

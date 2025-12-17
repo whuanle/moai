@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1031 // 不捕获常规异常类型
+using AngleSharp.Dom;
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.Feishu.Models;
@@ -55,31 +57,34 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
     /// <inheritdoc/>
     public async Task ExecuteAsync(MessageHeader messageHeader, StartWikiFeishuMessage message)
     {
-        var workerTaskEntity = await _databaseContext.WorkerTasks
-            .FirstOrDefaultAsync(x => x.Id == message.TaskId);
-
-        if (workerTaskEntity == null || workerTaskEntity.State >= (int)WorkerState.Cancal)
-        {
-            return;
-        }
-
-        var wikiWebConfigEntity = await _databaseContext.WikiPluginConfigs
-            .FirstOrDefaultAsync(x => x.Id == message.ConfigId && x.WikiId == message.WikiId);
+        // 1，前置检查
+        var wikiWebConfigEntity = await _databaseContext.WikiPluginConfigs.AsNoTracking()
+            .Where(x => x.Id == message.ConfigId && x.WikiId == message.WikiId)
+            .Select(x => new
+            {
+                x.Id,
+                x.Config,
+                x.WorkState,
+                x.WikiId,
+                x.UpdateUserId
+            })
+            .FirstOrDefaultAsync();
 
         if (wikiWebConfigEntity == null)
         {
             return;
         }
 
-        // 清空当前任务记录
-        // 删除关联文档
-        // 删除向量
-        // 删除索引
-        await ClearFeishuRecordAsync(message.WikiId, message.ConfigId);
+        // 任务已经结束了
+        if (wikiWebConfigEntity.WorkState > (int)WorkerState.Processing)
+        {
+            return;
+        }
 
-        workerTaskEntity.State = (int)WorkerState.Processing;
-        workerTaskEntity.Message = "正在爬取网页";
-        await UpdateCrawleStateAsync(workerTaskEntity);
+        await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+
+        // 清空所有页面爬取记录
+        await _databaseContext.WikiPluginConfigDocumentStates.Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId).ExecuteDeleteAsync();
 
         var wikiWebConfig = wikiWebConfigEntity.Config.JsonToObject<WikiFeishuConfig>()!;
 
@@ -91,110 +96,204 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
         if (tenantAccessToken.Code != 0)
         {
-            workerTaskEntity.State = (int)WorkerState.Failed;
-            workerTaskEntity.Message = $"获取飞书访问令牌失败，({tenantAccessToken.Code}){tenantAccessToken.Msg}";
-            await UpdateCrawleStateAsync(workerTaskEntity);
+            await SetExceptionStateAsync(message.ConfigId, WorkerState.Failed, new BusinessException($"获取飞书访问令牌失败，({tenantAccessToken.Code}){tenantAccessToken.Msg}"));
             return;
         }
 
         var feishuAccessToken = $"Bearer {tenantAccessToken.TenantAccessToken}";
 
-        Queue<WikiNode> nodeTokenQueue = new Queue<WikiNode>();
-        HashSet<WikiNode> processedTokens = new HashSet<WikiNode>();
+        Queue<WikiNode> workNodes = new Queue<WikiNode>();
 
         // 第一层
-        await GetWikiNodes(feishuAccessToken, wikiWebConfig.SpaceId, wikiWebConfig.ParentNodeToken, nodeTokenQueue);
-
-        var pageCount = 0;
+        await GetWikiNodes(message.WikiId, message.ConfigId, feishuAccessToken, wikiWebConfig.SpaceId, wikiWebConfig.ParentNodeToken, workNodes);
 
         // 爬取每一个链接
-        while (nodeTokenQueue.Count > 0)
+        while (workNodes.Count > 0)
         {
-            var currentNode = nodeTokenQueue.Dequeue();
+            // 每次爬取之前检查状态
+            await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
 
-            var pageEntity = new WikiPluginDocumentStateEntity
-            {
-                WikiId = wikiWebConfigEntity.WikiId,
-                ConfigId = wikiWebConfigEntity.Id,
-                RelevanceKey = currentNode.NodeToken,
-                RelevanceValue = currentNode.ObjToken,
-                CreateUserId = workerTaskEntity.CreateUserId,
-                UpdateUserId = workerTaskEntity.UpdateUserId,
-                Message = "正在处理"
-            };
-
-            // 插入页面处理记录
-            await _databaseContext.WikiPluginDocumentStates.AddAsync(pageEntity);
-            await _databaseContext.SaveChangesAsync();
+            var currentNode = workNodes.Dequeue();
 
             try
             {
-                var stringBuilder = new StringBuilder();
+                // 检查这个地址有没有对应的文档
+                var overridePage = await CheckExistDocumentAsync(wikiWebConfigEntity.Id, currentNode.NodeToken, wikiWebConfig.IsIgnoreExistPage);
 
-                // 先读取文档内容
-                var wikiPageResponse = await _feishuApiClient.GetDocumentBlocksAsync(feishuAccessToken, currentNode.ObjToken, new GetDocumentBlocksRequest
+                if (!overridePage.IsNext)
                 {
-                    PageSize = 500,
-                    PageToken = null
-                });
-
-                FeishuWikiToMarkdown.ToMarkdown(stringBuilder, wikiPageResponse.Data.Items);
-
-                _feishuApiClient.CheckCode(wikiPageResponse);
-
-                while (!string.IsNullOrEmpty(wikiPageResponse.Data.PageToken))
-                {
-                    // 先读取文档内容
-                    wikiPageResponse = await _feishuApiClient.GetDocumentBlocksAsync(feishuAccessToken, currentNode.ObjToken, new GetDocumentBlocksRequest
-                    {
-                        PageSize = 500,
-                        PageToken = null
-                    });
-
-                    FeishuWikiToMarkdown.ToMarkdown(stringBuilder, wikiPageResponse.Data.Items);
-
-                    _feishuApiClient.CheckCode(wikiPageResponse);
+                    await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Cancal);
+                    continue;
                 }
 
-                await SaveContentAsync(pageEntity, $"{currentNode.Title}.md", stringBuilder.ToString());
+                // 先抓取页面，保存的是对应的文件，但是不涉及业务
+                var uploadResult = await CrawlerPageAsync(workNodes, wikiWebConfig, feishuAccessToken, currentNode, message.WikiId, message.ConfigId);
 
-                // 识别当前文档的子文档
-                await GetWikiNodes(feishuAccessToken, wikiWebConfig.SpaceId, currentNode.NodeToken, nodeTokenQueue);
+                // 如果页面没有任何变化，说明网页完全一样，跳过后续处理
+                if (overridePage.WikiDocument != null && overridePage.WikiDocument.FileId == uploadResult.FileId)
+                {
+                    await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Cancal);
+                    continue;
+                }
 
-                pageCount++;
-                pageEntity.Message = "成功";
+                // 新的页面，之前完全没有记录，直接插入
+                if (overridePage.WikiConfigDocument == null)
+                {
+                    // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
+                    var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
+                        .Where(x => x.FileId == uploadResult.FileId)
+                        .FirstOrDefaultAsync();
+
+                    // 主要被其它地方使用了，都忽略本次操作
+                    if (existingDocument != null)
+                    {
+                        await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Cancal);
+                        continue;
+                    }
+
+                    var documentEntity = new WikiDocumentEntity
+                    {
+                        WikiId = wikiWebConfigEntity.WikiId,
+                        FileId = uploadResult.FileId,
+                        FileName = uploadResult.FileMd5 + ".html",
+                        ObjectKey = uploadResult.ObjectKey,
+                        FileType = uploadResult.FileType,
+                        IsEmbedding = false,
+                    };
+
+                    await _databaseContext.WikiDocuments.AddAsync(documentEntity);
+                    await _databaseContext.SaveChangesAsync();
+
+                    var pageEntity = new WikiPluginConfigDocumentEntity
+                    {
+                        WikiId = wikiWebConfigEntity.WikiId,
+                        ConfigId = wikiWebConfigEntity.Id,
+                        RelevanceKey = currentNode.NodeToken,
+                        RelevanceValue = currentNode.ObjToken,
+                        CreateUserId = wikiWebConfigEntity.UpdateUserId,
+                        UpdateUserId = wikiWebConfigEntity.UpdateUserId,
+                        WikiDocumentId = documentEntity.Id
+                    };
+
+                    await _databaseContext.WikiPluginConfigDocuments.AddAsync(pageEntity);
+                    await _databaseContext.SaveChangesAsync();
+
+                    await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Successful);
+                    continue;
+                }
+
+                // 记录存在，重新爬取后，碰到页面有没有变化
+                if (overridePage.WikiDocument != null)
+                {
+                    if (overridePage.WikiDocument.FileId == uploadResult.FileId)
+                    {
+                        await SetPageAsync(message.WikiId, configId: message.ConfigId, currentNode, WorkerState.Cancal);
+                        continue;
+                    }
+                }
+
+                // 存在，并且需要覆盖，因为抓取的页面有变化
+                {
+                    // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
+                    var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
+                        .Where(x => x.FileId == uploadResult.FileId)
+                        .FirstOrDefaultAsync();
+
+                    // 主要被其它地方使用了，都忽略本次操作
+                    if (existingDocument != null)
+                    {
+                        await SetPageAsync(message.WikiId, configId: message.ConfigId, currentNode, WorkerState.Cancal);
+                        continue;
+                    }
+
+                    // 先删除旧的文件
+                    await _mediator.Send(new DeleteFileCommand
+                    {
+                        FileIds = new[] { overridePage.WikiDocument!.FileId }
+                    });
+
+                    var documentEntity = overridePage.WikiDocument!;
+                    documentEntity.FileId = uploadResult.FileId;
+                    documentEntity.FileName = uploadResult.FileMd5 + ".html";
+                    documentEntity.ObjectKey = uploadResult.ObjectKey;
+                    documentEntity.FileType = uploadResult.FileType;
+
+                    _databaseContext.WikiDocuments.Update(documentEntity);
+                    await _databaseContext.SaveChangesAsync();
+
+                    var pageEntity = overridePage.WikiConfigDocument!;
+                    pageEntity.WikiDocumentId = documentEntity.Id;
+                    _databaseContext.WikiPluginConfigDocuments.Update(pageEntity);
+                    await _databaseContext.SaveChangesAsync();
+
+                    await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Successful);
+                }
+
+                continue;
             }
             catch (Exception ex)
             {
-                pageCount++;
-                pageEntity.Message = ex.Message;
-                _logger.LogError(ex, "Webpage crawling exception,url:{URL}", currentNode.NodeToken);
-            }
-
-            // 更新页面处理状态
-            _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
-            await _databaseContext.SaveChangesAsync();
-            await UpdateCrawleStateAsync(workerTaskEntity);
-
-            workerTaskEntity = await _databaseContext.WorkerTasks
-            .FirstOrDefaultAsync(x => x.Id == message.TaskId);
-
-            if (workerTaskEntity == null || workerTaskEntity.State >= (int)WorkerState.Cancal)
-            {
-                break;
+                _logger.LogInformation(ex, "Crawler url error:{NodeToken}", currentNode.NodeToken);
             }
         }
 
-        workerTaskEntity!.State = (int)WorkerState.Successful;
-        workerTaskEntity.Message = "爬取完成";
-        await UpdateCrawleStateAsync(workerTaskEntity);
+        await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
+    }
+
+    /// <inheritdoc/>
+    public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, StartWikiFeishuMessage message)
+    {
+        await SetExceptionStateAsync(message!.ConfigId, WorkerState.Wait, ex);
+    }
+
+    /// <inheritdoc/>
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, StartWikiFeishuMessage? message, Exception? ex)
+    {
+        return Task.FromResult(ConsumerState.Ack);
+    }
+
+    private async Task<FileUploadResult> CrawlerPageAsync(Queue<WikiNode> workNodeTokens, WikiFeishuConfig wikiWebConfig, string feishuAccessToken, WikiNode currentNode, int wikiId, int configId)
+    {
+        var stringBuilder = new StringBuilder();
+
+        // 先读取文档内容
+        var wikiPageResponse = await _feishuApiClient.GetDocumentBlocksAsync(feishuAccessToken, currentNode.ObjToken, new GetDocumentBlocksRequest
+        {
+            PageSize = 500,
+            PageToken = null
+        });
+
+        FeishuWikiToMarkdown.ToMarkdown(stringBuilder, wikiPageResponse.Data.Items);
+
+        _feishuApiClient.CheckCode(wikiPageResponse);
+
+        while (!string.IsNullOrEmpty(wikiPageResponse.Data.PageToken))
+        {
+            // 先读取文档内容
+            wikiPageResponse = await _feishuApiClient.GetDocumentBlocksAsync(feishuAccessToken, currentNode.ObjToken, new GetDocumentBlocksRequest
+            {
+                PageSize = 500,
+                PageToken = null
+            });
+
+            FeishuWikiToMarkdown.ToMarkdown(stringBuilder, wikiPageResponse.Data.Items);
+
+            _feishuApiClient.CheckCode(wikiPageResponse);
+        }
+
+        // 识别当前文档的子文档
+        await GetWikiNodes(wikiId, configId, feishuAccessToken, wikiWebConfig.SpaceId, currentNode.NodeToken, workNodeTokens);
+
+        return await SaveContentAsync(wikiId, stringBuilder.ToString());
     }
 
     // 获取当前层次的所有子节点
-    private async Task GetWikiNodes(string feishuAccessToken, string spaceId, string? nodeToken, Queue<WikiNode> nodes)
+    private async Task GetWikiNodes(int wikiId, int configId, string feishuAccessToken, string spaceId, string nodeToken, Queue<WikiNode> workNodes)
     {
         try
         {
+            List<WikiNode> newWikiNodes = new();
+
             var currentNodes = await _feishuApiClient.GetWikiNodesAsync(feishuAccessToken, spaceId, new GetWikiNodesRequest
             {
                 PageSize = 50,
@@ -205,7 +304,8 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
             foreach (var item in currentNodes.Data.Items)
             {
-                nodes.Enqueue(item);
+                workNodes.Enqueue(item);
+                newWikiNodes.Add(item);
             }
 
             while (!string.IsNullOrEmpty(currentNodes.Data.PageToken))
@@ -221,9 +321,12 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
                 foreach (var item in currentNodes.Data.Items)
                 {
-                    nodes.Enqueue(item);
+                    workNodes.Enqueue(item);
+                    newWikiNodes.Add(item);
                 }
             }
+
+            await SetPageAsync(wikiId, configId, newWikiNodes, WorkerState.Successful);
         }
         catch (Exception ex)
         {
@@ -231,73 +334,7 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
         }
     }
 
-    /// <inheritdoc/>
-    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, StartWikiFeishuMessage message)
-    {
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc/>
-    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, StartWikiFeishuMessage? message, Exception? ex)
-    {
-        return Task.FromResult(ConsumerState.Ack);
-    }
-
-    // 更新爬虫状态.
-    private async Task UpdateCrawleStateAsync(WorkerTaskEntity crawleTaskEntity)
-    {
-        _databaseContext.WorkerTasks.Update(crawleTaskEntity);
-        await _databaseContext.SaveChangesAsync();
-    }
-
-    // 清空该爬虫的文档和向量.
-    private async Task ClearFeishuRecordAsync(int wikiId, int configId)
-    {
-        var oldIds = _databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId)
-            .Select(x => new
-            {
-                PageId = x.Id,
-                x.WikiDocumentId
-            }).ToArray();
-
-        if (oldIds.Length == 0)
-        {
-            return;
-        }
-
-        var documentIds = oldIds.Select(x => x.WikiDocumentId).Where(x => x != 0).ToHashSet();
-
-        // 删除数据库数据
-        await _databaseContext.SoftDeleteAsync(_databaseContext.Files.Where(x => _databaseContext.WikiDocuments.Where(a => documentIds.Contains(x.Id) && a.FileId == x.Id).Any()));
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocuments.Where(x => _databaseContext.WikiPluginDocumentStates.Where(a => a.ConfigId == configId && a.WikiDocumentId == x.Id).Any()));
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiPluginDocumentStates.Where(x => x.ConfigId == configId));
-
-        //var memoryDb = _serviceProvider.GetKeyedService<IMemoryDbClient>(_systemOptions.Wiki.DBType);
-        //if (memoryDb == null)
-        //{
-        //    throw new BusinessException("不支持的文档数据库");
-        //}
-
-        //// 删除知识库文档
-        //// 构建客户端
-        //var memoryBuilder = new KernelMemoryBuilder()
-        //    .WithSimpleFileStorage(Path.GetTempPath());
-
-        //memoryBuilder = memoryDb.Configure(memoryBuilder, _systemOptions.Wiki.ConnectionString);
-
-        //var memoryClient = memoryBuilder
-        //    .WithoutTextGenerator()
-        //    .WithoutEmbeddingGenerator()
-        //    .Build();
-
-        //// 删除向量
-        //foreach (var documentId in documentIds)
-        //{
-        //    await memoryClient.DeleteDocumentAsync(documentId.ToString(), index: wikiId.ToString());
-        //}
-    }
-
-    private async Task SaveContentAsync(WikiPluginDocumentStateEntity pageEntity, string fileName, string text)
+    private async Task<FileUploadResult> SaveContentAsync(int wikiId, string text)
     {
         // 将文档存储为文件
         var filePath = Path.Combine(Path.GetTempPath(), DateTimeOffset.Now.ToUnixTimeMilliseconds() + ".md");
@@ -313,26 +350,197 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
             MD5 = md5,
             ContentType = "text/markdown",
             FileSize = (int)new FileInfo(filePath).Length,
-            ObjectKey = $"{pageEntity.WikiId}/{pageEntity.ConfigId}/{md5}.html",
+            ObjectKey = $"{wikiId}/{md5}.md",
             FileStream = streamReader
         });
 
-        // 插入新的记录
-        var wikiDocument = new WikiDocumentEntity
-        {
-            WikiId = pageEntity.WikiId,
-            FileId = uploadResult.FileId,
-            FileName = fileName,
-            ObjectKey = uploadResult.ObjectKey,
-            FileType = ".md",
-            IsEmbedding = false
-        };
+        return uploadResult;
+    }
 
-        await _databaseContext.AddRangeAsync(wikiDocument);
+    private async Task SetExceptionStateAsync(int wikiConfigId, WorkerState state, Exception? ex = null)
+    {
+        _logger.LogError(ex, "Task processing failed.");
+        await SetStateAsync(wikiConfigId, state, ex?.Message);
+    }
+
+    private async Task SetStateAsync(int wikiConfigId, WorkerState state, string? message = null)
+    {
+        // 设置之前先检查状态
+        var wikiWebConfigEntity = await _databaseContext.WikiPluginConfigs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == wikiConfigId);
+
+        if (wikiWebConfigEntity == null)
+        {
+            throw new BusinessException("当前配置不存在");
+        }
+
+        // 不需要处理或有其它线程在执行
+        if (wikiWebConfigEntity.WorkState > (int)WorkerState.Processing)
+        {
+            throw new BusinessException("当前任务已结束");
+        }
+
+        wikiWebConfigEntity.WorkState = (int)state;
+        if (!string.IsNullOrEmpty(message))
+        {
+            wikiWebConfigEntity.WorkMessage = message;
+        }
+        else
+        {
+            wikiWebConfigEntity.WorkMessage = state.ToJsonString();
+        }
+
+        var entityState = _databaseContext.WikiPluginConfigs.Update(wikiWebConfigEntity);
         await _databaseContext.SaveChangesAsync();
 
-        pageEntity.WikiDocumentId = wikiDocument.Id;
-        _databaseContext.WikiPluginDocumentStates.Update(pageEntity);
+        entityState.State = EntityState.Detached;
+    }
+
+    private async Task<(bool IsNext, WikiPluginConfigDocumentEntity? WikiConfigDocument, WikiDocumentEntity? WikiDocument)> CheckExistDocumentAsync(int configId, string nodeToken, bool isIgnore)
+    {
+        // 查找
+        var wikiConfigDocument = await _databaseContext.WikiPluginConfigDocuments
+            .FirstOrDefaultAsync(x => x.ConfigId == configId && x.RelevanceKey == nodeToken);
+
+        // 如果页面存在，替换还是忽略
+        if (wikiConfigDocument == null)
+        {
+            return (true, null, null);
+        }
+
+        if (isIgnore)
+        {
+            return (false, null, null);
+        }
+
+        // 如果要覆盖
+        var wikiDocument = await _databaseContext.WikiDocuments
+            .FirstOrDefaultAsync(x => x.Id == wikiConfigDocument.WikiDocumentId);
+
+        // 记录错漏
+        if (wikiDocument == null)
+        {
+            _databaseContext.WikiPluginConfigDocuments.Remove(wikiConfigDocument);
+            await _databaseContext.SaveChangesAsync();
+
+            return (true, null, null);
+        }
+
+        return (true, wikiConfigDocument, wikiDocument);
+    }
+
+    private async Task SetPageAsync(int wikiId, int configId, WikiNode wikiNode, WorkerState? workerState = null, Exception? ex = null)
+    {
+        var existState = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.WikiId == wikiId && x.ConfigId == configId && x.RelevanceKey == wikiNode.NodeToken);
+
+        if (workerState == null)
+        {
+            workerState = WorkerState.Wait;
+        }
+
+        string message = string.Empty;
+        switch (workerState)
+        {
+            case WorkerState.Wait:
+                message = "等待爬取";
+                break;
+            case WorkerState.Processing:
+                message = "正在爬取";
+                break;
+            case WorkerState.Successful:
+                message = "爬取成功";
+                break;
+            case WorkerState.Failed:
+                message = "爬取失败";
+                break;
+            case WorkerState.Cancal:
+                message = "爬取取消";
+                break;
+        }
+
+        if (ex != null)
+        {
+            message = ex.Message;
+        }
+
+        if (existState == null)
+        {
+            await _databaseContext.WikiPluginConfigDocumentStates.AddAsync(new WikiPluginConfigDocumentStateEntity
+            {
+                WikiId = wikiId,
+                Message = message,
+                RelevanceKey = wikiNode.NodeToken,
+                RelevanceValue = wikiNode.ObjToken,
+                ConfigId = configId,
+                State = (int)workerState,
+            });
+
+            await _databaseContext.SaveChangesAsync();
+
+            return;
+        }
+
+        existState.State = (int)workerState;
+        existState.Message = message;
+
+        _databaseContext.WikiPluginConfigDocumentStates.Update(existState);
+        await _databaseContext.SaveChangesAsync();
+    }
+
+    private async Task SetPageAsync(int wikiId, int configId, IReadOnlyCollection<WikiNode> wikiNodes, WorkerState? workerState = null, Exception? ex = null)
+    {
+        if (wikiNodes == null || wikiNodes.Count == 0)
+        {
+            return;
+        }
+
+        workerState ??= WorkerState.Wait;
+
+        string message = workerState switch
+        {
+            WorkerState.Wait => "等待爬取",
+            WorkerState.Processing => "正在爬取",
+            WorkerState.Successful => "爬取成功",
+            WorkerState.Failed => "爬取失败",
+            WorkerState.Cancal => "爬取取消",
+            _ => string.Empty
+        };
+
+        if (ex != null)
+        {
+            message = ex.Message;
+        }
+
+        var targetNodeTokens = wikiNodes.Select(x => x.NodeToken).ToArray();
+
+        if (targetNodeTokens.Length == 0)
+        {
+            return;
+        }
+
+        var existingNodeTokens = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
+            .Where(x => x.WikiId == wikiId && x.ConfigId == configId && targetNodeTokens.Contains(x.RelevanceKey))
+            .Select(x => x.RelevanceKey)
+            .ToListAsync();
+
+        var newNodeTokens = wikiNodes.ExceptBy(existingNodeTokens, x => x.NodeToken).ToList();
+        if (newNodeTokens.Count == 0)
+        {
+            return;
+        }
+
+        var entities = newNodeTokens.Select(node => new WikiPluginConfigDocumentStateEntity
+        {
+            WikiId = wikiId,
+            Message = message,
+            RelevanceKey = node.NodeToken,
+            RelevanceValue = node.ObjToken,
+            ConfigId = configId,
+            State = (int)workerState,
+        });
+
+        await _databaseContext.WikiPluginConfigDocumentStates.AddRangeAsync(entities);
         await _databaseContext.SaveChangesAsync();
     }
 }

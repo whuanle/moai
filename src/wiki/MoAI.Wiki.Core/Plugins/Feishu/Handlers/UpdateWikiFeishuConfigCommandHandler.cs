@@ -4,6 +4,8 @@ using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
+using MoAI.Wiki.Models;
+using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Feishu.Commands;
 using MoAI.Wiki.Plugins.Feishu.Models;
 
@@ -33,6 +35,11 @@ public class UpdateWikiFeishuConfigCommandHandler : IRequestHandler<UpdateWikiFe
         if (entity == null)
         {
             throw new BusinessException("配置不存在") { StatusCode = 404 };
+        }
+
+        if (entity.WorkState == (int)WorkerState.Processing || entity.WorkState == (int)WorkerState.Wait)
+        {
+            throw new BusinessException("当前已有任务在运行中") { StatusCode = 400 };
         }
 
         entity.Title = request.Title.Trim();

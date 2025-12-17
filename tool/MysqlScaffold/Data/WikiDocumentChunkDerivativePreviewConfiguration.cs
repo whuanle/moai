@@ -23,12 +23,16 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
 
         entity.HasIndex(e => new { e.DocumentId, e.DerivativeType }, "idx_doc_deriv");
 
-        entity.HasIndex(e => new { e.SliceId, e.Id }, "idx_slice_deriv");
+        entity.HasIndex(e => new { e.ChunkId, e.Id }, "idx_slice_deriv");
 
         entity.Property(e => e.Id)
             .HasComment("衍生内容唯一ID（derivative_id）")
             .HasColumnType("bigint(20)")
             .HasColumnName("id");
+        entity.Property(e => e.ChunkId)
+            .HasComment("关联切片ID（表A主键）")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("chunk_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")
@@ -54,10 +58,6 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.SliceId)
-            .HasComment("关联切片ID（表A主键）")
-            .HasColumnType("bigint(20)")
-            .HasColumnName("slice_id");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

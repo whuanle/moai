@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Wiki.Plugins.Crawler.Models;
+using MoAI.Wiki.Plugins.Crawler.Queries;
 using MoAI.Wiki.Plugins.Feishu.Commands;
 using MoAI.Wiki.Plugins.Feishu.Models;
 using MoAI.Wiki.Plugins.Feishu.Queries;
@@ -33,6 +35,20 @@ public class FeishuController : ControllerBase
     {
         _mediator = mediator;
         _userContext = userContext;
+    }
+
+    /// <summary>
+    /// 查询已经配置的飞书插件实例列表.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpPost("config_list")]
+    public async Task<QueryWikiFeishuPluginConfigListCommandResponse> ConfigListAsync([FromBody] QueryWikiFeishuPluginConfigListCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -70,7 +86,7 @@ public class FeishuController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回任务标识.</returns>
     [HttpPost("lanuch_task")]
-    public async Task<SimpleGuid> StartWikiPluginTask([FromBody] StartWikiFeishuPluginTaskCommand req, CancellationToken ct = default)
+    public async Task<EmptyCommandResponse> StartWikiPluginTask([FromBody] StartWikiFeishuPluginTaskCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
@@ -84,11 +100,11 @@ public class FeishuController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回配置内容.</returns>
     [HttpGet("config")]
-    public async Task<QueryWikiPluginrConfigCommandResponse<WikiFeishuConfig>> QueryWikiFeishuConfig([FromQuery] QueryWikiFeishuConfigCommand req, CancellationToken ct = default)
+    public async Task<QueryWikiFeishuConfigCommandResponse> QueryWikiFeishuConfig([FromQuery] QueryWikiFeishuConfigCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
-        return await _mediator.Send((QueryWikiPluginConfigCommand<WikiFeishuConfig>)req, ct);
+        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -107,11 +123,13 @@ public class FeishuController : ControllerBase
 
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
-        var userIsWikiUser = await _mediator.Send(new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = wikiId
-        }, ct);
+        var userIsWikiUser = await _mediator.Send(
+            new QueryUserIsWikiUserCommand
+            {
+                ContextUserId = _userContext.UserId,
+                WikiId = wikiId
+            },
+            ct);
 
         if (!userIsWikiUser.IsWikiUser)
         {
