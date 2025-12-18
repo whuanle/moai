@@ -10,7 +10,7 @@ namespace MoAI.Database.Entities;
 public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
 {
     /// <summary>
-    /// 衍生内容唯一ID（derivative_id）.
+    /// 元数据唯一ID（derivative_id）.
     /// </summary>
     public Guid Id { get; set; }
 
@@ -30,7 +30,7 @@ public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
     public Guid ChunkId { get; set; }
 
     /// <summary>
-    /// 衍生类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
+    /// 元数据类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
     /// </summary>
     public int DerivativeType { get; set; }
 

@@ -73,7 +73,7 @@ export default function CrawlerListPage() {
     form.resetFields();
     form.setFieldsValue({
       isCrawlOther: false,
-      isIgnoreExistPage: false,
+      isOverExistPage: false,
       limitMaxCount: 100,
       timeOutSecond: 30,
       userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -101,7 +101,7 @@ export default function CrawlerListPage() {
         selector: values.selector,
         timeOutSecond: values.timeOutSecond,
         userAgent: values.userAgent,
-        isIgnoreExistPage: values.isIgnoreExistPage || false,
+        isOverExistPage: values.isOverExistPage || false,
       };
 
       await client.api.wiki.plugin.crawler.add_config.post(addBody);
@@ -334,9 +334,9 @@ export default function CrawlerListPage() {
           </Form.Item>
 
           <Form.Item
-            name="isIgnoreExistPage"
-            label="是否跳过已爬取页面"
-            tooltip="如果开启，将跳过已经爬取过的页面，避免重复爬取"
+            name="isOverExistPage"
+            label="是否覆盖已爬取页面"
+            tooltip="如果开启，将覆盖已经爬取过的页面"
             valuePropName="checked"
           >
             <Switch />

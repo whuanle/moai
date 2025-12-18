@@ -1,6 +1,6 @@
 /**
  * Chunk编辑模态窗口组件
- * 用于编辑文本块内容和衍生内容
+ * 用于编辑文本块内容和元数据
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -106,8 +106,8 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   }, [textEditorValue, derivatives, onSave]);
 
   /**
-   * AI生成衍生内容
-   * 调用API生成衍生内容并添加到列表中
+   * AI生成元数据
+   * 调用API生成元数据并添加到列表中
    */
   const handleAiGenerate = useCallback(async () => {
     if (!chunkId) {
@@ -145,7 +145,7 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
       });
 
       if (response?.items && response.items.length > 0) {
-        // 使用工具函数提取衍生内容
+        // 使用工具函数提取元数据
         const newDerivatives = extractDerivativesFromResponse(
           response.items,
           preprocessStrategyType
@@ -153,7 +153,7 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
 
         if (newDerivatives.length > 0) {
           setDerivatives((prev) => [...prev, ...newDerivatives]);
-          messageApi.success(`成功生成 ${newDerivatives.length} 个衍生内容`);
+          messageApi.success(`成功生成 ${newDerivatives.length} 个元数据`);
           setAiGenerateVisible(false);
           setAiModelId(null);
           setPreprocessStrategyType(null);
@@ -221,7 +221,7 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
 
         <div>
           <div style={{ marginBottom: 16, fontWeight: 500, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>衍生内容</span>
+            <span>元数据</span>
             <Button
               type="dashed"
               icon={<PlusOutlined />}
@@ -280,7 +280,7 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
             </div>
           )}
           
-          {/* 新增衍生内容 */}
+          {/* 新增元数据 */}
           <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#fafafa", borderRadius: 4 }}>
             <Space.Compact style={{ width: "100%" }}>
               <Select
@@ -303,10 +303,10 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
             </Space.Compact>
           </div>
 
-          {/* 衍生内容列表 */}
+          {/* 元数据列表 */}
           <List
             dataSource={derivatives}
-            locale={{ emptyText: "暂无衍生内容" }}
+            locale={{ emptyText: "暂无元数据" }}
             renderItem={(item, index) => (
               <List.Item
                 actions={[
@@ -322,7 +322,7 @@ export const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
                   <Popconfirm
                     key="delete"
                     title="确认删除"
-                    description="确定要删除这个衍生内容吗？"
+                    description="确定要删除这个元数据吗？"
                     onConfirm={() => handleDeleteDerivative(index)}
                     okText="确认"
                     cancelText="取消"

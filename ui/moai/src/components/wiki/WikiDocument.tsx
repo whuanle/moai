@@ -740,7 +740,6 @@ const getTableColumns = (
           cancelText="取消"
           onConfirm={() => deleteDocument(record.documentId)}
         >
-          <Tooltip title="删除文档">
             <Button
               type="link"
               size="small"
@@ -749,7 +748,6 @@ const getTableColumns = (
             >
               删除
             </Button>
-          </Tooltip>
         </Popconfirm>
       </Space>
     ),

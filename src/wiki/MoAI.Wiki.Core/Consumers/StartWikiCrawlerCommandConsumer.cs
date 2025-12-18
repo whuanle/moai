@@ -15,6 +15,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;
+using MoAI.Wiki.Batch.Commands;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
@@ -47,6 +48,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
     {
         _mediator = mediator;
         _databaseContext = databaseContext;
+
         _systemOptions = systemOptions;
         _logger = logger;
         _messagePublisher = messagePublisher;
@@ -80,7 +82,11 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             return;
         }
 
-        await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+        var (isBreak, _) = await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+        if (isBreak)
+        {
+            return;
+        }
 
         // 清空所有页面爬取记录
         await _databaseContext.WikiPluginConfigDocumentStates.Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId).ExecuteDeleteAsync();
@@ -95,23 +101,26 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         workUrls.Enqueue(new Url(wikiWebConfig.Address.ToString()));
 
+        var pageCount = 0;
+
         // 爬取每一个链接
-        while (workUrls.Count > 0)
+        while (workUrls.Count > 0 && pageCount <= wikiWebConfig.LimitMaxCount)
         {
-            if (existUrl.Count >= wikiWebConfig.LimitMaxCount)
-            {
-                break;
-            }
+            _databaseContext.ChangeTracker.Clear();
 
             // 每次爬取之前检查状态
-            await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+            (isBreak, _) = await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+            if (isBreak)
+            {
+                return;
+            }
 
             var currentUrl = workUrls.Dequeue();
 
             try
             {
                 // 检查这个地址有没有对应的文档
-                var overridePage = await CheckExistDocumentAsync(message.ConfigId, currentUrl, wikiWebConfig.IsIgnoreExistPage);
+                var overridePage = await CheckExistDocumentAsync(message.ConfigId, currentUrl, !wikiWebConfig.IsOverExistPage);
 
                 if (!overridePage.IsNext)
                 {
@@ -132,6 +141,8 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 // 新的页面，之前完全没有记录，直接插入
                 if (overridePage.WikiConfigDocument == null)
                 {
+                    pageCount++;
+
                     // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
                     var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
                         .Where(x => x.FileId == uploadResult.FileId)
@@ -150,7 +161,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                         FileId = uploadResult.FileId,
                         FileName = uploadResult.FileMd5 + ".html",
                         ObjectKey = uploadResult.ObjectKey,
-                        FileType = uploadResult.FileType,
+                        FileType = ".html",
                         IsEmbedding = false,
                     };
 
@@ -178,6 +189,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 // 记录存在，重新爬取后，碰到页面有没有变化
                 if (overridePage.WikiDocument != null)
                 {
+                    pageCount++;
                     if (overridePage.WikiDocument.FileId == uploadResult.FileId)
                     {
                         await SetPageAsync(message.WikiId, configId: message.ConfigId, currentUrl, WorkerState.Cancal);
@@ -187,6 +199,8 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
                 // 存在，并且需要覆盖，因为抓取的页面有变化
                 {
+                    pageCount++;
+
                     // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
                     var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
                         .Where(x => x.FileId == uploadResult.FileId)
@@ -209,7 +223,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                     documentEntity.FileId = uploadResult.FileId;
                     documentEntity.FileName = uploadResult.FileMd5 + ".html";
                     documentEntity.ObjectKey = uploadResult.ObjectKey;
-                    documentEntity.FileType = uploadResult.FileType;
+                    documentEntity.FileType = ".html";
 
                     _databaseContext.WikiDocuments.Update(documentEntity);
                     await _databaseContext.SaveChangesAsync();
@@ -227,16 +241,49 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             catch (Exception ex)
             {
                 _logger.LogInformation(ex, "Crawler url error:{Url}", currentUrl);
+                await SetPageAsync(message.WikiId, message.ConfigId, currentUrl, WorkerState.Failed, ex);
             }
         }
 
-        await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
+        (isBreak, _) = await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
+        if (isBreak)
+        {
+            return;
+        }
+
+        try
+        {
+            if (message.Command != null && message.Command.IsAutoProcess && message.Command.AutoProcessConfig != null)
+            {
+                var documentIds = await _databaseContext.WikiPluginConfigDocuments.AsNoTracking()
+                    .Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId)
+                    .Select(x => x.WikiDocumentId)
+                    .ToListAsync();
+
+                await _mediator.Send(new WikiBatchProcessDocumentCommand
+                {
+                    WikiId = message.WikiId,
+                    AiPartion = message.Command.AutoProcessConfig.AiPartion,
+                    IsEmbedSourceText = message.Command.AutoProcessConfig.IsEmbedSourceText,
+                    Partion = message.Command.AutoProcessConfig.Partion,
+                    PreprocessStrategyType = message.Command.AutoProcessConfig.PreprocessStrategyType,
+                    ThreadCount = message.Command.AutoProcessConfig.ThreadCount,
+                    DocumentIds = documentIds,
+                    PreprocessStrategyAiModel = message.Command.AutoProcessConfig.PreprocessStrategyAiModel,
+                    IsEmbedding = message.Command.AutoProcessConfig.IsEmbedding
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Can't start WikiBatchProcessDocumentCommand");
+        }
     }
 
     /// <inheritdoc/>
     public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, StartWikiCrawlerMessage? message)
     {
-        await SetExceptionStateAsync(message!.ConfigId, WorkerState.Wait, ex);
+        await SetExceptionStateAsync(message!.ConfigId, WorkerState.Failed, ex);
     }
 
     /// <inheritdoc/>
@@ -294,14 +341,16 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
             await _databaseContext.SaveChangesAsync();
 
+            _databaseContext.ChangeTracker.Clear();
             return;
         }
 
         existState.State = (int)workerState;
         existState.Message = message;
 
-        _databaseContext.WikiPluginConfigDocumentStates.Update(existState);
+        var newState = _databaseContext.WikiPluginConfigDocumentStates.Update(existState);
         await _databaseContext.SaveChangesAsync();
+        _databaseContext.ChangeTracker.Clear();
     }
 
     private async Task SetPageAsync(int wikiId, int configId, List<string> urls, WorkerState? workerState = null, Exception? ex = null)
@@ -362,6 +411,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         await _databaseContext.WikiPluginConfigDocumentStates.AddRangeAsync(entities);
         await _databaseContext.SaveChangesAsync();
+        _databaseContext.ChangeTracker.Clear();
     }
 
     private async Task<(bool IsNext, WikiPluginConfigDocumentEntity? WikiConfigDocument, WikiDocumentEntity? WikiDocument)> CheckExistDocumentAsync(int configId, Url currentUrl, bool isIgnore)
@@ -476,7 +526,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             }
         }
 
-        await SetPageAsync(wikiId, configId, newUrls, WorkerState.Successful);
+        await SetPageAsync(wikiId, configId, newUrls, WorkerState.Wait);
 
         return await SaveWikiCrawlerAsync(wikiWebConfig, currentUrl, document, wikiId);
     }
@@ -517,9 +567,12 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         await document.ToHtmlAsync(writer);
         await writer.FlushAsync();
-        await writer.DisposeAsync();
         await fileStream.FlushAsync();
         fileStream.Seek(0, SeekOrigin.Begin);
+        await writer.DisposeAsync();
+        await fileStream.DisposeAsync();
+
+        using var htmlStream = File.OpenRead(filePath);
 
         // 计算文件 md5
         var md5 = HashHelper.ComputeFileMd5(filePath);
@@ -530,35 +583,37 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         {
             MD5 = md5,
             ContentType = "text/html",
-            FileSize = (int)fileStream.Length,
+            FileSize = (int)htmlStream.Length,
             ObjectKey = objectKey,
-            FileStream = fileStream
+            FileStream = htmlStream
         });
 
         return uploadResult;
     }
 
-    private async Task SetExceptionStateAsync(int wikiConfigId, WorkerState state, Exception? ex = null)
+    private async Task<(bool IsBreak, WorkerState WorkerState)> SetExceptionStateAsync(int wikiConfigId, WorkerState state, Exception? ex = null)
     {
         _logger.LogError(ex, "Task processing failed.");
-        await SetStateAsync(wikiConfigId, state, ex?.Message);
+        return await SetStateAsync(wikiConfigId, state, ex?.Message);
     }
 
-    private async Task SetStateAsync(int wikiConfigId, WorkerState state, string? message = null)
+    private async Task<(bool IsBreak, WorkerState WorkerState)> SetStateAsync(int wikiConfigId, WorkerState state, string? message = null)
     {
+        _databaseContext.ChangeTracker.Clear();
+
         // 设置之前先检查状态
         var wikiWebConfigEntity = await _databaseContext.WikiPluginConfigs.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == wikiConfigId);
 
         if (wikiWebConfigEntity == null)
         {
-            throw new BusinessException("当前配置不存在");
+            return (true, WorkerState.Cancal);
         }
 
         // 不需要处理或有其它线程在执行
         if (wikiWebConfigEntity.WorkState > (int)WorkerState.Processing)
         {
-            throw new BusinessException("当前任务已结束");
+            return (true, WorkerState.Cancal);
         }
 
         wikiWebConfigEntity.WorkState = (int)state;
@@ -573,7 +628,8 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
         var entityState = _databaseContext.WikiPluginConfigs.Update(wikiWebConfigEntity);
         await _databaseContext.SaveChangesAsync();
+        _databaseContext.ChangeTracker.Clear();
 
-        entityState.State = EntityState.Detached;
+        return (false, state);
     }
 }

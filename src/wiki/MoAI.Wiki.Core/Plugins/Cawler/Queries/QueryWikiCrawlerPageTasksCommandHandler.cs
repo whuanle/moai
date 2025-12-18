@@ -41,7 +41,7 @@ public class QueryWikiCrawlerPageTasksCommandHandler : IRequestHandler<QueryWiki
 
         // 已经成功爬取的
         var pageItems = await _databaseContext.WikiPluginConfigDocuments
-            .OrderByDescending(x => x.CreateTime)
+            .OrderByDescending(x => x.UpdateTime)
             .Where(x => x.ConfigId == request.ConfigId)
             .Join(
             _databaseContext.WikiDocuments.Join(_databaseContext.Files, a => a.FileId, b => b.Id, (a, b) => new
@@ -67,7 +67,7 @@ public class QueryWikiCrawlerPageTasksCommandHandler : IRequestHandler<QueryWiki
                 State = WorkerState.Successful
             }).ToListAsync();
 
-        foreach (var item in urlStates)
+        foreach (var item in urlStates.OrderByDescending(x => x.UpdateTime))
         {
             if (pageItems.Any(x => x.Url == item.RelevanceValue))
             {
@@ -89,7 +89,7 @@ public class QueryWikiCrawlerPageTasksCommandHandler : IRequestHandler<QueryWiki
             });
         }
 
-        pageItems = pageItems.OrderByDescending(x => x.UpdateTime).ToList();
+        pageItems = pageItems.OrderBy(x => x.State).ToList();
 
         return new QueryWikiCrawlerPageTasksCommandResponse
         {

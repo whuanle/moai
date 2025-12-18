@@ -1,6 +1,6 @@
 /**
  * AI生成结果处理工具函数
- * 用于解析和处理AI生成的衍生内容
+ * 用于解析和处理AI生成的元数据
  */
 
 import type { 
@@ -13,10 +13,10 @@ import {
 } from "../constants";
 
 /**
- * 从AI生成响应中提取衍生内容
+ * 从AI生成响应中提取元数据
  * @param responseItems API响应项数组
  * @param preprocessStrategyType 预处理策略类型
- * @returns 衍生内容数组
+ * @returns 元数据数组
  */
 export function extractDerivativesFromResponse(
   responseItems: Array<{ key?: string; value?: any }>,
@@ -66,10 +66,10 @@ export function extractDerivativesFromResponse(
 }
 
 /**
- * 从批量生成响应中提取衍生内容并按chunkId分组
+ * 从批量生成响应中提取元数据并按chunkId分组
  * @param responseItems API响应项数组
  * @param preprocessStrategyType 预处理策略类型
- * @returns 按chunkId分组的衍生内容Map
+ * @returns 按chunkId分组的元数据Map
  */
 export function extractBatchDerivativesFromResponse(
   responseItems: Array<{ key?: string; value?: any }>,

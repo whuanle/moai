@@ -150,7 +150,7 @@ public class EmbeddingsController : ControllerBase
     }
 
     /// <summary>
-    /// 批量增加衍生内容.
+    /// 批量增加元数据.
     /// </summary>
     /// <param name="req"></param>
     /// <param name="ct"></param>

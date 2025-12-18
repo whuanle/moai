@@ -6,7 +6,9 @@ import DocumentEmbedding from "./DocumentEmbedding";
 import WikiSearch from "./WikiSearch";
 import WikiUser from "./WikiUser";
 import WikiListPage from "./WikiListPage";
+import BatchListPage from "./BatchListPage";
 import { CrawlerPageRouters } from "./plugins/crawler/CrawlerPageRouter";
+import { FeishuPageRouters } from "./plugins/feishu/FeishuPageRouter";
 
 export const WikiPageRouters: RouteObject[] = [
   {
@@ -25,6 +27,7 @@ export const WikiPageRouters: RouteObject[] = [
             Component: WikiDocument,
           },
           ...CrawlerPageRouters,
+          ...FeishuPageRouters,
           {
             path: "settings",
             Component: WikiSettings,
@@ -40,6 +43,10 @@ export const WikiPageRouters: RouteObject[] = [
           {
             path: "user",
             Component: WikiUser,
+          },
+          {
+            path: "batch",
+            Component: BatchListPage,
           },
         ],
       },

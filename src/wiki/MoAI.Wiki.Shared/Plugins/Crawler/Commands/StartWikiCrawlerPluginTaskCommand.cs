@@ -1,7 +1,8 @@
 ﻿using FluentValidation;
 using MediatR;
-using MoAI.AiModel.Models;
+using MoAI.Infra;
 using MoAI.Infra.Models;
+using MoAI.Wiki.Batch.Models;
 
 namespace MoAI.Wiki.Plugins.Template.Commands;
 
@@ -25,10 +26,26 @@ public class StartWikiCrawlerPluginTaskCommand : IRequest<EmptyCommandResponse>,
     /// </summary>
     public bool IsStart { get; init; }
 
+    /// <summary>
+    /// 是否自动处理文档.
+    /// </summary>
+    public bool IsAutoProcess { get; init; }
+
+    /// <summary>
+    /// 自动处理配置.
+    /// </summary>
+    public WikiPluginAutoProcessConfig? AutoProcessConfig { get; init; }
+
     /// <inheritdoc/>
     public void Validate(AbstractValidator<StartWikiCrawlerPluginTaskCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.ConfigId).GreaterThan(0).WithMessage("配置ID错误");
+
+        validate.When(x => x.IsStart && x.IsAutoProcess, () =>
+        {
+            validate.RuleFor(x => x.AutoProcessConfig).NotNull().WithMessage("自动处理配置不能为空");
+            validate.RuleFor(x => x.AutoProcessConfig!).SetValidator(new AutoValidator<WikiPluginAutoProcessConfig>());
+        });
     }
 }

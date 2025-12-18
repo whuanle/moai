@@ -1,6 +1,6 @@
 /**
  * 切割预览卡片组件
- * 用于显示单个文本块及其衍生内容
+ * 用于显示单个文本块及其元数据
  */
 
 import { Card, Button, Space, Tag, Typography, Popconfirm } from "antd";
@@ -33,7 +33,7 @@ interface PartitionPreviewCardProps {
 
 /**
  * 切割预览卡片组件
- * 显示文本块内容、衍生内容，支持拖拽排序和编辑操作
+ * 显示文本块内容、元数据，支持拖拽排序和编辑操作
  */
 export const PartitionPreviewCard: React.FC<PartitionPreviewCardProps> = ({
   item,
@@ -82,7 +82,7 @@ export const PartitionPreviewCard: React.FC<PartitionPreviewCardProps> = ({
     return typeStr;
   };
 
-  // 获取衍生内容
+  // 获取元数据
   const getDerivativeContent = (derivative: any): string => {
     return derivative?.derivativeContent 
       ?? derivative?.DerivativeContent 
@@ -193,7 +193,7 @@ export const PartitionPreviewCard: React.FC<PartitionPreviewCardProps> = ({
         </Typography.Paragraph>
       </div>
 
-      {/* 衍生内容 */}
+      {/* 元数据 */}
       {hasDerivatives && item.derivatives && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -201,7 +201,7 @@ export const PartitionPreviewCard: React.FC<PartitionPreviewCardProps> = ({
               type="secondary"
               style={{ fontSize: 12 }}
             >
-              衍生内容 ({item.derivatives.length})
+              元数据 ({item.derivatives.length})
             </Typography.Text>
             <Button
               type="text"

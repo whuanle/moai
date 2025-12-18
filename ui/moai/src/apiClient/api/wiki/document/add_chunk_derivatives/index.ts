@@ -11,8 +11,8 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Add_chunk_derivativesRequestBuilder extends BaseRequestBuilder<Add_chunk_derivativesRequestBuilder> {
     /**
-     * 批量增加衍生内容.
-     * @param body 批量增加衍生内容.
+     * 批量增加元数据.
+     * @param body 批量增加元数据.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -23,8 +23,8 @@ export interface Add_chunk_derivativesRequestBuilder extends BaseRequestBuilder<
      */
      post(body: AddWikiDocumentChunkDerivativeCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 批量增加衍生内容.
-     * @param body 批量增加衍生内容.
+     * 批量增加元数据.
+     * @param body 批量增加元数据.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

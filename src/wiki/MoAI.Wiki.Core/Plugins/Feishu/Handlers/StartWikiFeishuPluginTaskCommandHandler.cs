@@ -2,9 +2,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
@@ -56,6 +54,7 @@ public class StartWikiFeishuPluginTaskCommandHandler : IRequestHandler<StartWiki
             {
                 WikiId = request.WikiId,
                 ConfigId = request.ConfigId,
+                Command = request
             };
 
             await _messagePublisher.AutoPublishAsync(message);

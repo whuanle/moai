@@ -78,6 +78,9 @@ import WikiSearch from "./components/wiki/WikiSearch";
 import WikiUser from "./components/wiki/WikiUser";
 import CrawlerListPage from "./components/wiki/plugins/crawler/CrawlerListPage";
 import CrawlerDetailPage from "./components/wiki/plugins/crawler/CrawlerDetailPage";
+import FeishuListPage from "./components/wiki/plugins/feishu/FeishuListPage";
+import FeishuDetailPage from "./components/wiki/plugins/feishu/FeishuDetailPage";
+import BatchListPage from "./components/wiki/BatchListPage";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -406,6 +409,9 @@ function App() {
                     <Route path="user" element={<WikiUser />} />
                     <Route path="plugin/crawler/:configId" element={<CrawlerDetailPage />} />
                     <Route path="plugin/crawler" element={<CrawlerListPage />} />
+                    <Route path="plugin/feishu/:configId" element={<FeishuDetailPage />} />
+                    <Route path="plugin/feishu" element={<FeishuListPage />} />
+                    <Route path="batch" element={<BatchListPage />} />
                   </Route>
                 </Route>
                 <Route path="prompt">

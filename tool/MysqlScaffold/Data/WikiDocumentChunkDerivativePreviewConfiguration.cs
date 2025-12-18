@@ -7,7 +7,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 切片衍生内容表（提问/提纲/摘要）.
+/// 切片元数据表（提问/提纲/摘要）.
 /// </summary>
 public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTypeConfiguration<WikiDocumentChunkDerivativePreviewEntity>
 {
@@ -17,7 +17,7 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("wiki_document_chunk_derivative_preview", tb => tb.HasComment("切片衍生内容表（提问/提纲/摘要）"));
+        entity.ToTable("wiki_document_chunk_derivative_preview", tb => tb.HasComment("切片元数据表（提问/提纲/摘要）"));
 
         entity.HasIndex(e => e.DerivativeType, "idx_deriv_type");
 
@@ -26,7 +26,7 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
         entity.HasIndex(e => new { e.ChunkId, e.Id }, "idx_slice_deriv");
 
         entity.Property(e => e.Id)
-            .HasComment("衍生内容唯一ID（derivative_id）")
+            .HasComment("元数据唯一ID（derivative_id）")
             .HasColumnType("bigint(20)")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)
@@ -47,7 +47,7 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
             .HasColumnType("text")
             .HasColumnName("derivative_content");
         entity.Property(e => e.DerivativeType)
-            .HasComment("衍生类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段")
+            .HasComment("元数据类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段")
             .HasColumnType("int(11)")
             .HasColumnName("derivative_type");
         entity.Property(e => e.DocumentId)

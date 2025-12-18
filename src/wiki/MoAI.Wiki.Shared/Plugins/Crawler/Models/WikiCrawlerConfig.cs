@@ -40,9 +40,9 @@ public class WikiCrawlerConfig : IWikiPluginKey, IModelValidator<WikiCrawlerConf
     public bool IsCrawlOther { get; set; }
 
     /// <summary>
-    /// 是否忽略已存在的页面.
+    /// 是否覆盖已存在的页面.
     /// </summary>
-    public bool IsIgnoreExistPage { get; init; }
+    public bool IsOverExistPage { get; init; }
 
     /// <summary>
     /// 选择器，筛选页面的表达式，例如 ".content".

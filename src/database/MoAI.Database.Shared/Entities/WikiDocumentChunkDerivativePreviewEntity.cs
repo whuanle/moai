@@ -5,12 +5,12 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 切片衍生内容表（提问/提纲/摘要）.
+/// 切片元数据表（提问/提纲/摘要）.
 /// </summary>
 public partial class WikiDocumentChunkDerivativePreviewEntity : IFullAudited
 {
     /// <summary>
-    /// 衍生内容唯一ID（derivative_id）.
+    /// 元数据唯一ID（derivative_id）.
     /// </summary>
     public long Id { get; set; }
 
@@ -30,7 +30,7 @@ public partial class WikiDocumentChunkDerivativePreviewEntity : IFullAudited
     public long ChunkId { get; set; }
 
     /// <summary>
-    /// 衍生类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
+    /// 元数据类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
     /// </summary>
     public int DerivativeType { get; set; }
 

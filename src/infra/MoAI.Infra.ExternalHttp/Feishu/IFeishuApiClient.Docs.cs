@@ -61,6 +61,20 @@ public partial interface IFeishuApiClient
     Task<GetWikiNodesResponse> GetWikiNodesAsync([Header("Authorization")] string authorization, [AliasAs("space_id")] string spaceId, [Query] GetWikiNodesRequest request);
 
     /// <summary>
+    /// 获取知识空间节点信息.
+    /// </summary>
+    /// <remarks>
+    /// <para>根据节点 token（或对应云文档 token）返回节点的空间、对象、权限及快捷方式等详细信息。</para>
+    /// <para>权限要求：节点阅读权限。</para>
+    /// <para>最后更新于 2025-08-22。</para>
+    /// </remarks>
+    /// <param name="authorization"></param>
+    /// <param name="request">请求参数。</param>
+    /// <returns>知识空间节点信息。</returns>
+    [Get("/open-apis/wiki/v2/spaces/get_node")]
+    Task<GetWikiNodeInfoResponse> GetWikiNodeInfoAsync([Header("Authorization")] string authorization, [Query] GetWikiNodeInfoRequest request);
+
+    /// <summary>
     /// 获取文档基本信息.
     /// </summary>
     /// <remarks>

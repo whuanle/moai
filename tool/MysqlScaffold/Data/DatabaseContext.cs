@@ -141,7 +141,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentPreviewEntity> WikiDocumentChunkContentPreviews { get; set; }
 
     /// <summary>
-    /// 切片衍生内容表（提问/提纲/摘要）.
+    /// 切片元数据表（提问/提纲/摘要）.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkDerivativePreviewEntity> WikiDocumentChunkDerivativePreviews { get; set; }
 

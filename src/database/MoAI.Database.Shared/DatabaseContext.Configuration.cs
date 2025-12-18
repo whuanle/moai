@@ -180,16 +180,23 @@ public partial class DatabaseContext
         }
         else if (args.Entry.State == EntityState.Modified && args.Entry.Entity is IModificationAudited modificationAudited)
         {
-            modificationAudited.UpdateUserId = userContext?.UserId ?? default(int);
+            if (userContext != null && userContext.UserId != 0)
+            {
+                modificationAudited.UpdateUserId = userContext.UserId;
+            }
+
             modificationAudited.UpdateTime = DateTimeOffset.Now;
         }
         else if (args.Entry.State == EntityState.Deleted && args.Entry.Entity is IDeleteAudited deleteAudited)
         {
             args.Entry.State = EntityState.Modified;
-
             deleteAudited.IsDeleted = DateTimeOffset.Now.Ticks;
-            deleteAudited.UpdateUserId = userContext?.UserId ?? default(int);
             deleteAudited.UpdateTime = DateTimeOffset.Now;
+
+            if (userContext != null && userContext.UserId != 0)
+            {
+                deleteAudited.UpdateUserId = userContext.UserId;
+            }
         }
     }
 }

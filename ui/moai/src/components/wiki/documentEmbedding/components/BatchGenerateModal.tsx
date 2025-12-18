@@ -1,6 +1,6 @@
 /**
  * 批量生成策略模态窗口组件
- * 用于批量生成多个文本块的衍生内容
+ * 用于批量生成多个文本块的元数据
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -80,7 +80,7 @@ export const BatchGenerateModal: React.FC<BatchGenerateModalProps> = ({
       setGenerating(true);
       const results = await onGenerate(selectedChunkIds, aiModelId, preprocessStrategyType);
       setGenerateResults(results);
-      messageApi.success(`成功生成 ${results.size} 个文本块的衍生内容`);
+      messageApi.success(`成功生成 ${results.size} 个文本块的元数据`);
     } catch (error) {
       console.error("Failed to batch generate derivatives:", error);
       proxyRequestError(error, messageApi, "批量生成失败");

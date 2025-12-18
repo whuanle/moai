@@ -16,6 +16,7 @@ import {
   FileTextOutlined,
   UserOutlined,
   SearchOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import "./Wiki.css";
@@ -82,6 +83,10 @@ export default function WikiLayout() {
       navigate(`/app/wiki/${id}/document`);
     } else if (key === "crawle") {
       navigate(`/app/wiki/${id}/plugin/crawler`);
+    } else if (key === "feishu") {
+      navigate(`/app/wiki/${id}/plugin/feishu`);
+    } else if (key === "batch") {
+      navigate(`/app/wiki/${id}/batch`);
     } else {
       navigate(`/app/wiki/${id}/${key}`);
     }
@@ -93,12 +98,16 @@ export default function WikiLayout() {
       return "settings";
     } else if (path.includes("/plugin/crawler")) {
       return "crawle";
+    } else if (path.includes("/plugin/feishu")) {
+      return "feishu";
     } else if (path.includes("/search")) {
       return "search";
     } else if (path.includes("/user")) {
       return "user";
     } else if (path.includes("/document")) {
       return "document";
+    } else if (path.includes("/batch")) {
+      return "batch";
     }
     return "detail";
   };
@@ -112,6 +121,14 @@ export default function WikiLayout() {
       key: "crawle",
       icon: <FileTextOutlined />,
       label: "爬虫",
+    }, {
+      key: "feishu",
+      icon: <FileTextOutlined />,
+      label: "飞书知识库",
+    }, {
+      key: "batch",
+      icon: <ThunderboltOutlined />,
+      label: "批处理任务",
     }, {
       key: "search",
       icon: <SearchOutlined />,

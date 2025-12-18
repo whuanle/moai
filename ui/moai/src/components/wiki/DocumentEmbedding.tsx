@@ -97,7 +97,7 @@ interface TaskInfo {
 
 /**
  * 切割预览项接口
- * 用于存储文档切割后的文本块及其衍生内容
+ * 用于存储文档切割后的文本块及其元数据
  */
 interface PartitionPreviewItem {
   chunkId: string;
@@ -253,8 +253,8 @@ interface ChunkEditModalProps {
 
 /**
  * Chunk编辑模态框组件
- * 用于编辑单个文本块的内容和衍生内容
- * 支持文本编辑、衍生内容管理和AI生成
+ * 用于编辑单个文本块的内容和元数据
+ * 支持文本编辑、元数据管理和AI生成
  */
 const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   open,
@@ -295,7 +295,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   };
 
   /**
-   * 添加新的衍生内容
+   * 添加新的元数据
    * 验证输入后添加到列表
    */
   const handleAddDerivative = useCallback(() => {
@@ -315,8 +315,8 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   }, [newDerivativeType, newDerivativeContent]);
 
   /**
-   * 编辑衍生内容
-   * 更新指定索引的衍生内容
+   * 编辑元数据
+   * 更新指定索引的元数据
    */
   const handleEditDerivative = useCallback((index: number, type: DerivativeType, content: string) => {
     setDerivatives((prev) => {
@@ -335,8 +335,8 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   }, []);
 
   /**
-   * 删除衍生内容
-   * 从列表中移除指定索引的衍生内容
+   * 删除元数据
+   * 从列表中移除指定索引的元数据
    */
   const handleDeleteDerivative = useCallback((index: number) => {
     setDerivatives((prev) => {
@@ -350,7 +350,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
 
   /**
    * 保存编辑内容
-   * 将文本和衍生内容传递给父组件处理
+   * 将文本和元数据传递给父组件处理
    */
   const handleSave = useCallback(() => {
     if (!textEditorValue?.trim()) {
@@ -361,8 +361,8 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
   }, [textEditorValue, derivatives, onSave]);
 
   /**
-   * AI生成衍生内容
-   * 调用AI接口生成文本块的衍生内容（大纲、问题、关键词等）
+   * AI生成元数据
+   * 调用AI接口生成文本块的元数据（大纲、问题、关键词等）
    */
   const handleAiGenerate = useCallback(async () => {
     // 参数验证
@@ -439,7 +439,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
 
         if (newDerivatives.length > 0) {
           setDerivatives((prev) => [...prev, ...newDerivatives]);
-          messageApi.success(`成功生成 ${newDerivatives.length} 个衍生内容`);
+          messageApi.success(`成功生成 ${newDerivatives.length} 个元数据`);
           setAiGenerateVisible(false);
           setAiModelId(null);
           setPreprocessStrategyType(null);
@@ -500,7 +500,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
 
         <div>
           <div style={{ marginBottom: 16, fontWeight: 500, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>衍生内容</span>
+            <span>元数据</span>
             <Button
               type="dashed"
               icon={<PlusOutlined />}
@@ -559,7 +559,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
             </div>
           )}
           
-          {/* 新增衍生内容 */}
+          {/* 新增元数据 */}
           <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#fafafa", borderRadius: 4 }}>
             <Space.Compact style={{ width: "100%" }}>
               <Select
@@ -582,10 +582,10 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
             </Space.Compact>
           </div>
 
-          {/* 衍生内容列表 */}
+          {/* 元数据列表 */}
           <List
             dataSource={derivatives}
-            locale={{ emptyText: "暂无衍生内容" }}
+            locale={{ emptyText: "暂无元数据" }}
             renderItem={(item, index) => (
               <List.Item
                 actions={[
@@ -601,7 +601,7 @@ const ChunkEditModal: React.FC<ChunkEditModalProps> = ({
                   <Popconfirm
                     key="delete"
                     title="确认删除"
-                    description="确定要删除这个衍生内容吗？"
+                    description="确定要删除这个元数据吗？"
                     onConfirm={() => handleDeleteDerivative(index)}
                     okText="确认"
                     cancelText="取消"
@@ -872,7 +872,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
 
   /**
    * 获取切割预览数据
-   * 从API获取文档切割后的所有文本块及其衍生内容
+   * 从API获取文档切割后的所有文本块及其元数据
    */
   const fetchPartitionPreview = useCallback(async () => {
     // 参数验证
@@ -969,11 +969,11 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
 
   /**
    * 更新chunk内容
-   * 更新指定文本块的内容和衍生内容
+   * 更新指定文本块的内容和元数据
    * @param chunkId - 文本块ID
    * @param text - 文本内容
    * @param order - 排序顺序
-   * @param derivatives - 衍生内容列表
+   * @param derivatives - 元数据列表
    */
   const updateChunkContent = useCallback(async (chunkId: string, text: string, order: number, derivatives?: WikiDocumentDerivativeItem[] | null) => {
     // 参数验证
@@ -1017,7 +1017,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
    * 更新指定文本块的内容，同时更新本地状态和服务器数据
    * @param chunkId - 文本块ID
    * @param newText - 新的文本内容
-   * @param newDerivatives - 新的衍生内容列表
+   * @param newDerivatives - 新的元数据列表
    */
   const updateItem = useCallback(
     async (chunkId: string, newText: string, newDerivatives?: WikiDocumentDerivativeItem[] | null) => {
@@ -1175,7 +1175,7 @@ const usePartitionPreview = (wikiId: string, documentId: string) => {
    * 新增文本块
    * 添加新的文本块到文档中
    * @param text - 文本内容
-   * @param derivatives - 衍生内容列表
+   * @param derivatives - 元数据列表
    */
   const addChunk = useCallback(async (text: string, derivatives?: WikiDocumentDerivativeItem[] | null) => {
     // 参数验证
@@ -1850,8 +1850,8 @@ export default function DocumentEmbedding() {
   );
 
   /**
-   * 批量生成衍生内容
-   * 对选中的多个文本块批量生成衍生内容
+   * 批量生成元数据
+   * 对选中的多个文本块批量生成元数据
    */
   const handleBatchGenerate = useCallback(async () => {
     if (!batchAiModelId) {
@@ -1933,7 +1933,7 @@ export default function DocumentEmbedding() {
         });
         
         setBatchGenerateResults(resultsMap);
-        messageApi.success(`成功生成 ${resultsMap.size} 个文本块的衍生内容`);
+        messageApi.success(`成功生成 ${resultsMap.size} 个文本块的元数据`);
       } else {
         messageApi.warning("AI生成未返回结果");
       }
@@ -1947,7 +1947,7 @@ export default function DocumentEmbedding() {
 
   /**
    * 保存批量生成结果
-   * 将批量生成的衍生内容保存到服务器
+   * 将批量生成的元数据保存到服务器
    */
   const handleSaveBatchResults = useCallback(async () => {
     if (batchGenerateResults.size === 0) {
@@ -1958,7 +1958,7 @@ export default function DocumentEmbedding() {
     try {
       const apiClient = GetApiClient();
       
-      // 将所有衍生内容转换为 AddWikiDocumentDerivativeItem[] 格式
+      // 将所有元数据转换为 AddWikiDocumentDerivativeItem[] 格式
       const derivativesToAdd: AddWikiDocumentDerivativeItem[] = [];
       
       batchGenerateResults.forEach((derivatives, chunkId) => {
@@ -1974,11 +1974,11 @@ export default function DocumentEmbedding() {
       });
 
       if (derivativesToAdd.length === 0) {
-        messageApi.warning("没有可保存的衍生内容");
+        messageApi.warning("没有可保存的元数据");
         return;
       }
 
-      // 调用批量添加衍生内容 API
+      // 调用批量添加元数据 API
       if (!wikiId || !documentId) {
         messageApi.error("缺少必要的参数");
         return;
@@ -1991,7 +1991,7 @@ export default function DocumentEmbedding() {
         derivatives: derivativesToAdd,
       });
 
-      messageApi.success(`成功保存 ${derivativesToAdd.length} 条衍生内容`);
+      messageApi.success(`成功保存 ${derivativesToAdd.length} 条元数据`);
       
       // 重新获取数据以刷新显示
       await fetchPartitionPreview();
@@ -2767,7 +2767,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                       </Typography.Paragraph>
                     </div>
 
-                    {/* 衍生内容 */}
+                    {/* 元数据 */}
                     {(() => {
                       const hasDerivatives = item.derivatives && Array.isArray(item.derivatives) && item.derivatives.length > 0;
                       if (!hasDerivatives) {
@@ -2781,7 +2781,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                             type="secondary"
                             style={{ fontSize: 12 }}
                           >
-                            衍生内容 ({item.derivatives.length})
+                            元数据 ({item.derivatives.length})
                           </Typography.Text>
                           <Button
                             type="text"
@@ -3444,7 +3444,7 @@ order 从 1 开始递增，text 为对应的原文片段。
                                   if (updatedDerivatives.length > 0) {
                                     newResults.set(chunkId, updatedDerivatives);
                                   } else {
-                                    // 如果删除后没有衍生内容了，也删除该文本块的条目
+                                    // 如果删除后没有元数据了，也删除该文本块的条目
                                     newResults.delete(chunkId);
                                   }
                                   

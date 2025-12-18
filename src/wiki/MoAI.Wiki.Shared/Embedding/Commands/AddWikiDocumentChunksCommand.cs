@@ -31,7 +31,7 @@ public class AddWikiDocumentChunksCommand : IRequest<EmptyCommandResponse>, IMod
     public string Text { get; set; } = string.Empty;
 
     /// <summary>
-    /// 衍生内容.
+    /// 元数据.
     /// </summary>
     public IReadOnlyCollection<WikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<WikiDocumentDerivativeItem>();
 

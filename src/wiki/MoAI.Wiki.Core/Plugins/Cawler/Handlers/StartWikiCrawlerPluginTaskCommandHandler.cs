@@ -56,6 +56,7 @@ public class StartWikiCrawlerPluginTaskCommandHandler : IRequestHandler<StartWik
             {
                 WikiId = request.WikiId,
                 ConfigId = request.ConfigId,
+                Command = request
             };
 
             await _messagePublisher.AutoPublishAsync(message);

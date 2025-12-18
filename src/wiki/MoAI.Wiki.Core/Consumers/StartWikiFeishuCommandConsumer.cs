@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1031 // 不捕获常规异常类型
-using AngleSharp.Dom;
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,9 +12,11 @@ using MoAI.Infra.Feishu;
 using MoAI.Infra.Feishu.Models;
 using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;
+using MoAI.Wiki.Batch.Commands;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Feishu.Models;
+using System.IO;
 using System.Text;
 
 namespace MoAI.Wiki.Consumers;
@@ -26,6 +27,8 @@ namespace MoAI.Wiki.Consumers;
 [Consumer("wiki_feishu_document", Qos = 10)]
 public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 {
+    private const int MaxFileNameLength = 120;
+
     private readonly IMediator _mediator;
     private readonly DatabaseContext _databaseContext;
     private readonly SystemOptions _systemOptions;
@@ -33,6 +36,8 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
     private readonly IMessagePublisher _messagePublisher;
     private readonly IServiceProvider _serviceProvider;
     private readonly IFeishuApiClient _feishuApiClient;
+
+    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StartWikiFeishuCommandConsumer"/> class.
@@ -43,6 +48,7 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
     /// <param name="logger"></param>
     /// <param name="messagePublisher"></param>
     /// <param name="serviceProvider"></param>
+    /// <param name="feishuApiClient"></param>
     public StartWikiFeishuCommandConsumer(IMediator mediator, DatabaseContext databaseContext, SystemOptions systemOptions, ILogger<StartWikiFeishuCommandConsumer> logger, IMessagePublisher messagePublisher, IServiceProvider serviceProvider, IFeishuApiClient feishuApiClient)
     {
         _mediator = mediator;
@@ -81,7 +87,11 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
             return;
         }
 
-        await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+        var (isBreak, _) = await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+        if (isBreak)
+        {
+            return;
+        }
 
         // 清空所有页面爬取记录
         await _databaseContext.WikiPluginConfigDocumentStates.Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId).ExecuteDeleteAsync();
@@ -104,21 +114,40 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
         Queue<WikiNode> workNodes = new Queue<WikiNode>();
 
-        // 第一层
-        await GetWikiNodes(message.WikiId, message.ConfigId, feishuAccessToken, wikiWebConfig.SpaceId, wikiWebConfig.ParentNodeToken, workNodes);
+        if (string.IsNullOrEmpty(wikiWebConfig.ParentNodeToken))
+        {
+            // 不填写具体节点时，自动从根开始遍历第一层
+            await GetWikiNodes(message.WikiId, message.ConfigId, feishuAccessToken, wikiWebConfig.SpaceId, wikiWebConfig.ParentNodeToken, workNodes);
+        }
+        else
+        {
+            // 获取这个节点的信息
+            var parentNode = await _feishuApiClient.GetWikiNodeInfoAsync(feishuAccessToken, new GetWikiNodeInfoRequest
+            {
+                Token = wikiWebConfig.ParentNodeToken,
+            });
+
+            workNodes.Enqueue(parentNode.Data.Node);
+        }
 
         // 爬取每一个链接
         while (workNodes.Count > 0)
         {
+            _databaseContext.ChangeTracker.Clear();
+
             // 每次爬取之前检查状态
-            await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+            (isBreak, _) = await SetStateAsync(message.ConfigId, WorkerState.Processing, "正在爬取页面");
+            if (isBreak)
+            {
+                return;
+            }
 
             var currentNode = workNodes.Dequeue();
 
             try
             {
                 // 检查这个地址有没有对应的文档
-                var overridePage = await CheckExistDocumentAsync(wikiWebConfigEntity.Id, currentNode.NodeToken, wikiWebConfig.IsIgnoreExistPage);
+                var overridePage = await CheckExistDocumentAsync(wikiWebConfigEntity.Id, currentNode.NodeToken, !wikiWebConfig.IsOverExistPage);
 
                 if (!overridePage.IsNext)
                 {
@@ -155,9 +184,9 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
                     {
                         WikiId = wikiWebConfigEntity.WikiId,
                         FileId = uploadResult.FileId,
-                        FileName = uploadResult.FileMd5 + ".html",
+                        FileName = BuildMarkdownFileName(currentNode.Title, uploadResult.FileMd5) + ".md",
                         ObjectKey = uploadResult.ObjectKey,
-                        FileType = uploadResult.FileType,
+                        FileType = ".md",
                         IsEmbedding = false,
                     };
 
@@ -214,9 +243,9 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
                     var documentEntity = overridePage.WikiDocument!;
                     documentEntity.FileId = uploadResult.FileId;
-                    documentEntity.FileName = uploadResult.FileMd5 + ".html";
+                    documentEntity.FileName = BuildMarkdownFileName(currentNode.Title, uploadResult.FileMd5) + ".md";
                     documentEntity.ObjectKey = uploadResult.ObjectKey;
-                    documentEntity.FileType = uploadResult.FileType;
+                    documentEntity.FileType = ".md";
 
                     _databaseContext.WikiDocuments.Update(documentEntity);
                     await _databaseContext.SaveChangesAsync();
@@ -234,16 +263,49 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
             catch (Exception ex)
             {
                 _logger.LogInformation(ex, "Crawler url error:{NodeToken}", currentNode.NodeToken);
+                await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Failed, ex);
             }
         }
 
-        await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
+        (isBreak, _) = await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
+        if (isBreak)
+        {
+            return;
+        }
+
+        try
+        {
+            if (message.Command != null && message.Command.IsAutoProcess && message.Command.AutoProcessConfig != null)
+            {
+                var documentIds = await _databaseContext.WikiPluginConfigDocuments.AsNoTracking()
+                    .Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId)
+                    .Select(x => x.WikiDocumentId)
+                    .ToListAsync();
+
+                await _mediator.Send(new WikiBatchProcessDocumentCommand
+                {
+                    WikiId = message.WikiId,
+                    AiPartion = message.Command.AutoProcessConfig.AiPartion,
+                    IsEmbedSourceText = message.Command.AutoProcessConfig.IsEmbedSourceText,
+                    Partion = message.Command.AutoProcessConfig.Partion,
+                    PreprocessStrategyType = message.Command.AutoProcessConfig.PreprocessStrategyType,
+                    ThreadCount = message.Command.AutoProcessConfig.ThreadCount,
+                    DocumentIds = documentIds,
+                    PreprocessStrategyAiModel = message.Command.AutoProcessConfig.PreprocessStrategyAiModel,
+                    IsEmbedding = message.Command.AutoProcessConfig.IsEmbedding
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Can't start WikiBatchProcessDocumentCommand");
+        }
     }
 
     /// <inheritdoc/>
     public async Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, StartWikiFeishuMessage message)
     {
-        await SetExceptionStateAsync(message!.ConfigId, WorkerState.Wait, ex);
+        await SetExceptionStateAsync(message!.ConfigId, WorkerState.Failed, ex);
     }
 
     /// <inheritdoc/>
@@ -302,6 +364,11 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
             _feishuApiClient.CheckCode(currentNodes);
 
+            if (currentNodes.Data.Items == null || currentNodes.Data.Items.Count == 0)
+            {
+                return;
+            }
+
             foreach (var item in currentNodes.Data.Items)
             {
                 workNodes.Enqueue(item);
@@ -343,6 +410,7 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
         // 计算文件 md5
         var md5 = HashHelper.ComputeFileMd5(filePath);
+        streamReader.Seek(0, SeekOrigin.Begin);
 
         // 上传文件
         var uploadResult = await _mediator.Send(new UploadFileStreamCommand
@@ -357,27 +425,29 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
         return uploadResult;
     }
 
-    private async Task SetExceptionStateAsync(int wikiConfigId, WorkerState state, Exception? ex = null)
+    private async Task<(bool IsBreak, WorkerState WorkerState)> SetExceptionStateAsync(int wikiConfigId, WorkerState state, Exception? ex = null)
     {
         _logger.LogError(ex, "Task processing failed.");
-        await SetStateAsync(wikiConfigId, state, ex?.Message);
+        return await SetStateAsync(wikiConfigId, state, ex?.Message);
     }
 
-    private async Task SetStateAsync(int wikiConfigId, WorkerState state, string? message = null)
+    private async Task<(bool IsBreak, WorkerState WorkerState)> SetStateAsync(int wikiConfigId, WorkerState state, string? message = null)
     {
+        _databaseContext.ChangeTracker.Clear();
+
         // 设置之前先检查状态
         var wikiWebConfigEntity = await _databaseContext.WikiPluginConfigs.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == wikiConfigId);
 
         if (wikiWebConfigEntity == null)
         {
-            throw new BusinessException("当前配置不存在");
+            return (true, WorkerState.Cancal);
         }
 
         // 不需要处理或有其它线程在执行
         if (wikiWebConfigEntity.WorkState > (int)WorkerState.Processing)
         {
-            throw new BusinessException("当前任务已结束");
+            return (true, WorkerState.Cancal);
         }
 
         wikiWebConfigEntity.WorkState = (int)state;
@@ -392,8 +462,9 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
         var entityState = _databaseContext.WikiPluginConfigs.Update(wikiWebConfigEntity);
         await _databaseContext.SaveChangesAsync();
+        _databaseContext.ChangeTracker.Clear();
 
-        entityState.State = EntityState.Detached;
+        return (false, state);
     }
 
     private async Task<(bool IsNext, WikiPluginConfigDocumentEntity? WikiConfigDocument, WikiDocumentEntity? WikiDocument)> CheckExistDocumentAsync(int configId, string nodeToken, bool isIgnore)
@@ -432,7 +503,7 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
     private async Task SetPageAsync(int wikiId, int configId, WikiNode wikiNode, WorkerState? workerState = null, Exception? ex = null)
     {
         var existState = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.WikiId == wikiId && x.ConfigId == configId && x.RelevanceKey == wikiNode.NodeToken);
+            .FirstOrDefaultAsync(x => x.WikiId == wikiId && x.ConfigId == configId && x.RelevanceKey == wikiNode.ObjToken);
 
         if (workerState == null)
         {
@@ -478,17 +549,19 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
 
             await _databaseContext.SaveChangesAsync();
 
+            _databaseContext.ChangeTracker.Clear();
             return;
         }
 
         existState.State = (int)workerState;
         existState.Message = message;
 
-        _databaseContext.WikiPluginConfigDocumentStates.Update(existState);
+        var newState = _databaseContext.WikiPluginConfigDocumentStates.Update(existState);
         await _databaseContext.SaveChangesAsync();
+        _databaseContext.ChangeTracker.Clear();
     }
 
-    private async Task SetPageAsync(int wikiId, int configId, IReadOnlyCollection<WikiNode> wikiNodes, WorkerState? workerState = null, Exception? ex = null)
+    private async Task SetPageAsync(int wikiId, int configId, List<WikiNode> wikiNodes, WorkerState? workerState = null, Exception? ex = null)
     {
         if (wikiNodes == null || wikiNodes.Count == 0)
         {
@@ -512,35 +585,86 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
             message = ex.Message;
         }
 
-        var targetNodeTokens = wikiNodes.Select(x => x.NodeToken).ToArray();
+        var targetNodes = wikiNodes
+            .Distinct()
+            .ToList();
 
-        if (targetNodeTokens.Length == 0)
+        if (targetNodes.Count == 0)
         {
             return;
         }
 
+        var tagerNodeTokens = targetNodes.Select(x => x.NodeToken).ToList();
+
         var existingNodeTokens = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
-            .Where(x => x.WikiId == wikiId && x.ConfigId == configId && targetNodeTokens.Contains(x.RelevanceKey))
-            .Select(x => x.RelevanceKey)
+            .Where(x => x.WikiId == wikiId && x.ConfigId == configId && tagerNodeTokens.Contains(x.RelevanceKey))
+            .Select(x => new WikiNode
+            {
+                NodeToken = x.RelevanceKey,
+                ObjToken = x.RelevanceValue
+            })
             .ToListAsync();
 
-        var newNodeTokens = wikiNodes.ExceptBy(existingNodeTokens, x => x.NodeToken).ToList();
+        var newNodeTokens = targetNodes.Except(existingNodeTokens).ToList();
         if (newNodeTokens.Count == 0)
         {
             return;
         }
 
-        var entities = newNodeTokens.Select(node => new WikiPluginConfigDocumentStateEntity
+        var entities = newNodeTokens.Select(item => new WikiPluginConfigDocumentStateEntity
         {
             WikiId = wikiId,
             Message = message,
-            RelevanceKey = node.NodeToken,
-            RelevanceValue = node.ObjToken,
+            RelevanceKey = item.NodeToken,
+            RelevanceValue = item.ObjToken,
             ConfigId = configId,
             State = (int)workerState,
         });
 
         await _databaseContext.WikiPluginConfigDocumentStates.AddRangeAsync(entities);
         await _databaseContext.SaveChangesAsync();
+        _databaseContext.ChangeTracker.Clear();
+    }
+
+    private static string BuildMarkdownFileName(string? rawTitle, string md5)
+    {
+        if (string.IsNullOrWhiteSpace(rawTitle))
+        {
+            return md5;
+        }
+
+        var trimmedTitle = rawTitle.Trim();
+        var builder = new StringBuilder(trimmedTitle.Length);
+
+        foreach (var ch in trimmedTitle)
+        {
+            if (char.IsWhiteSpace(ch))
+            {
+                builder.Append('_');
+                continue;
+            }
+
+            if (char.IsControl(ch) || Array.IndexOf(InvalidFileNameChars, ch) >= 0)
+            {
+                builder.Append('_');
+                continue;
+            }
+
+            builder.Append(ch);
+        }
+
+        var sanitized = builder.ToString().Trim('_');
+
+        if (string.IsNullOrEmpty(sanitized))
+        {
+            return md5;
+        }
+
+        if (sanitized.Length > MaxFileNameLength)
+        {
+            sanitized = sanitized[..MaxFileNameLength];
+        }
+
+        return sanitized;
     }
 }

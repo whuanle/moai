@@ -27,9 +27,9 @@ public class WikiFeishuConfig : IWikiPluginKey, IModelValidator<WikiFeishuConfig
     public string ParentNodeToken { get; init; } = string.Empty;
 
     /// <summary>
-    /// 是否忽略已存在的页面.
+    /// 是否覆盖已存在的页面.
     /// </summary>
-    public bool IsIgnoreExistPage { get; init; }
+    public bool IsOverExistPage { get; init; }
 
     /// <summary>
     /// 插件名称.

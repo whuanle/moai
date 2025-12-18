@@ -1,4 +1,6 @@
-﻿namespace MoAI.Wiki.Consumers.Events;
+﻿using MoAI.Wiki.Plugins.Template.Commands;
+
+namespace MoAI.Wiki.Consumers.Events;
 
 /// <summary>
 /// StartWikiFeishuMessage.
@@ -14,4 +16,9 @@ public class StartWikiFeishuMessage
     /// 知识库 web 配置 id.
     /// </summary>
     public int ConfigId { get; init; }
+
+    /// <summary>
+    /// 命令参数.
+    /// </summary>
+    public StartWikiFeishuPluginTaskCommand Command { get; init; } = default!;
 }

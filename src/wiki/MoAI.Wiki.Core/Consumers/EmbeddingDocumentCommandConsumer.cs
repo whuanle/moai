@@ -17,7 +17,6 @@ using MoAI.Wiki.Embedding.Commands;
 using MoAI.Wiki.Embedding.Models;
 using MoAI.Wiki.Models;
 using MoAIDocument.Core.Consumers.Events;
-using System.Threading;
 
 namespace MoAIDocument.Core.Consumers;
 
