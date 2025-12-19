@@ -31,7 +31,7 @@ public class QueryWikiDocumentListCommand : PagedParamter, IRequest<QueryWikiDoc
     public IReadOnlyCollection<string> ExcludeFileTypes { get; init; } = Array.Empty<string>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiDocumentListCommand> validate)
+    public static void Validate(AbstractValidator<QueryWikiDocumentListCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

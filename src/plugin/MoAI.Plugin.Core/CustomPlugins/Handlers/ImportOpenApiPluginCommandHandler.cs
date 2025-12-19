@@ -48,17 +48,10 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
             throw new BusinessException("文件不存在") { StatusCode = 404 };
         }
 
-        // 检查插件是否同名
+        // 检查插件有同名插件
         var exists = await _databaseContext.Plugins
             .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
 
-        if (exists)
-        {
-            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
-        }
-
-        exists = await _databaseContext.PluginNatives
-            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
         if (exists)
         {
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
@@ -86,23 +79,32 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
 
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        var pluginEntity = new PluginEntity
+        var pluginCustomEntity = new PluginCustomEntity
         {
             OpenapiFileName = request.FileName,
-            PluginName = request.Name,
-            Description = request.Description,
             Headers = TextToJsonExtensions.ToJsonString(Array.Empty<KeyValueString>()),
             Queries = TextToJsonExtensions.ToJsonString(Array.Empty<KeyValueString>()),
             OpenapiFileId = fileEntity.Id,
             Server = apiReaderResult.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty,
-            Type = (int)PluginType.OpenApi,
-            Title = request.Title,
-            IsPublic = request.IsPublic,
-            ClassifyId = request.ClassifyId
+            Type = (int)PluginType.OpenApi
         };
 
-        await _databaseContext.Plugins.AddAsync(pluginEntity, cancellationToken);
+        await _databaseContext.PluginCustoms.AddAsync(pluginCustomEntity, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        var pluginEntitiy = new PluginEntity()
+        {
+            PluginName = request.Name,
+            Title = request.Title,
+            Type = (int)PluginType.MCP,
+            IsPublic = request.IsPublic,
+            ClassifyId = request.ClassifyId,
+            PluginId = pluginCustomEntity.Id,
+            Description = request.Description
+        };
+
+        await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);
+        await _databaseContext.SaveChangesAsync();
 
         List<PluginFunctionEntity> pluginFunctionEntities = new();
 
@@ -117,7 +119,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
                 Name = operationId,
                 Summary = summary,
                 Path = pathEntry.Key,
-                PluginId = pluginEntity.Id,
+                PluginCustomId = pluginCustomEntity.Id,
             });
         }
 
@@ -126,7 +128,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
 
         transactionScope.Complete();
 
-        return pluginEntity.Id;
+        return pluginEntitiy.Id;
     }
 
     private static async Task<ReadResult> ReadOpemApiFileAsync(QueryFileLocalPathCommandResponse openFilePath)

@@ -10,27 +10,32 @@ namespace MoAI.Plugin.CustomPlugins.Commands;
 public class PreUploadOpenApiFilePluginCommand : IRequest<PreUploadOpenApiFilePluginCommandResponse>, IModelValidator<PreUploadOpenApiFilePluginCommand>
 {
     /// <summary>
+    /// 主要目的是检测避免有插件同名.
+    /// </summary>
+    public string PluginName { get; init; } = default!;
+
+    /// <summary>
     /// 文件名称.
     /// </summary>
-    public string FileName { get; set; } = default!;
+    public string FileName { get; init; } = default!;
 
     /// <summary>
     /// 文件类型.
     /// </summary>
-    public string ContentType { get; set; } = default!;
+    public string ContentType { get; init; } = default!;
 
     /// <summary>
     /// 文件大小.
     /// </summary>
-    public int FileSize { get; set; } = default!;
+    public int FileSize { get; init; } = default!;
 
     /// <summary>
     /// 文件 MD5.
     /// </summary>
-    public string MD5 { get; set; } = default!;
+    public string MD5 { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<PreUploadOpenApiFilePluginCommand> validate)
+    public static void Validate(AbstractValidator<PreUploadOpenApiFilePluginCommand> validate)
     {
         validate.RuleFor(x => x.ContentType)
             .NotEmpty().WithMessage("文件类型不正确.")

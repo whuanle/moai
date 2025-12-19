@@ -37,7 +37,7 @@ public class StartWikiFeishuPluginTaskCommand : IRequest<EmptyCommandResponse>, 
     public WikiPluginAutoProcessConfig? AutoProcessConfig { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<StartWikiFeishuPluginTaskCommand> validate)
+    public static void Validate(AbstractValidator<StartWikiFeishuPluginTaskCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.ConfigId).GreaterThan(0).WithMessage("配置ID错误");

@@ -25,7 +25,7 @@ public class DeleteWikiPluginConfigCommand : IRequest<EmptyCommandResponse>, IMo
     public bool IsDeleteDocuments { get; set; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeleteWikiPluginConfigCommand> validate)
+    public static void Validate(AbstractValidator<DeleteWikiPluginConfigCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

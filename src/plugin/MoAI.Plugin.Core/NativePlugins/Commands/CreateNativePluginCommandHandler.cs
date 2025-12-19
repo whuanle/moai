@@ -1,11 +1,15 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Entities;
+using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
+using MoAI.Plugin.Models;
 using MoAI.Plugin.NativePlugins.Commands;
 using MoAI.Plugin.Plugins;
+using System.Transactions;
 
 namespace MoAI.Plugin.Commands;
 
@@ -16,28 +20,31 @@ public class CreateNativePluginCommandHandler : IRequestHandler<CreateNativePlug
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly DatabaseContext _databaseContext;
+    private readonly INativePluginFactory _nativePluginFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateNativePluginCommandHandler"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="databaseContext"></param>
-    public CreateNativePluginCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext)
+    /// <param name="nativePluginFactory"></param>
+    public CreateNativePluginCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, INativePluginFactory nativePluginFactory)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
+        _nativePluginFactory = nativePluginFactory;
     }
 
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(CreateNativePluginCommand request, CancellationToken cancellationToken)
     {
-        var pluginInfo = NativePluginFactory.Plugins.FirstOrDefault(x => x.Key == request.TemplatePluginKey);
+        var pluginInfo = _nativePluginFactory.GetPluginByKey(request.TemplatePluginKey);
         if (pluginInfo == null)
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
 
-        if (pluginInfo.IsTool)
+        if (pluginInfo.PluginType != PluginType.NativePlugin)
         {
             throw new BusinessException("不能创建工具模板插件实例") { StatusCode = 409 };
         }
@@ -57,36 +64,49 @@ public class CreateNativePluginCommandHandler : IRequestHandler<CreateNativePlug
             throw new BusinessException(checkResult) { StatusCode = 409 };
         }
 
+        // 不能跟内置工具插件重名
+        var pluginTemplates = _nativePluginFactory.GetPlugins();
+        if (pluginTemplates.Any(x => x.PluginType == PluginType.ToolPlugin && x.Key == request.Name))
+        {
+            throw new BusinessException("不能跟内置工具插件重名") { StatusCode = 409 };
+        }
+
         // 检查插件是否同名
-        var exists = await _databaseContext.PluginNatives
+        var exists = await _databaseContext.Plugins
             .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
         if (exists)
         {
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
-        exists = await _databaseContext.Plugins
-            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
-        if (exists)
-        {
-            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
-        }
+        using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        var entity = new MoAI.Database.Entities.PluginNativeEntity
+        var pluginNativeEntity = new PluginNativeEntity
         {
             TemplatePluginClassify = pluginInfo.Classify.ToJsonString(),
             TemplatePluginKey = request.TemplatePluginKey,
-            Title = request.Title,
-            Description = request.Description,
-            ClassifyId = request.ClassifyId,
-            IsPublic = request.IsPublic,
-            PluginName = pluginInfo.Key,
-            Config = request.Config ?? string.Empty
+            Config = request.Config ?? "{}"
         };
 
-        _databaseContext.PluginNatives.Add(entity);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+        await _databaseContext.PluginNatives.AddAsync(pluginNativeEntity, cancellationToken);
+        await _databaseContext.SaveChangesAsync();
 
-        return new SimpleInt { Value = entity.Id };
+        var pluginEntitiy = new PluginEntity()
+        {
+            PluginName = request.Name,
+            Title = request.Title,
+            Type = (int)PluginType.NativePlugin,
+            IsPublic = request.IsPublic,
+            ClassifyId = request.ClassifyId,
+            PluginId = pluginNativeEntity.Id,
+            Description = request.Description
+        };
+
+        await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);
+        await _databaseContext.SaveChangesAsync();
+
+        transactionScope.Complete();
+
+        return new SimpleInt { Value = pluginEntitiy.Id };
     }
 }

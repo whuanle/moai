@@ -15,9 +15,9 @@ public partial class PluginFunctionEntity : IFullAudited
     public int Id { get; set; }
 
     /// <summary>
-    /// 插件路径.
+    /// plugin_custom_id.
     /// </summary>
-    public int PluginId { get; set; }
+    public int PluginCustomId { get; set; }
 
     /// <summary>
     /// 函数名称.

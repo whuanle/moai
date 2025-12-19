@@ -21,7 +21,7 @@ public class QueryUserViewAiAssistantChatHistoryCommand : IRequest<QueryAiAssist
     public bool IsBaseInfo { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryUserViewAiAssistantChatHistoryCommand> validate)
+    public static void Validate(AbstractValidator<QueryUserViewAiAssistantChatHistoryCommand> validate)
     {
         validate.RuleFor(x => x.ChatId)
             .NotEmpty().WithMessage("对话id不正确.")

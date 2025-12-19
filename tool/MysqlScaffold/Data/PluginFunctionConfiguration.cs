@@ -45,10 +45,10 @@ public partial class PluginFunctionConfiguration : IEntityTypeConfiguration<Plug
             .HasDefaultValueSql("''")
             .HasComment("api路径")
             .HasColumnName("path");
-        entity.Property(e => e.PluginId)
-            .HasComment("插件路径")
+        entity.Property(e => e.PluginCustomId)
+            .HasComment("plugin_custom_id")
             .HasColumnType("int(11)")
-            .HasColumnName("plugin_id");
+            .HasColumnName("plugin_custom_id");
         entity.Property(e => e.Summary)
             .HasMaxLength(1000)
             .HasDefaultValueSql("''")

@@ -15,7 +15,7 @@ public class DeletePluginClassifyCommand : IRequest<EmptyCommandResponse>, IMode
     public int ClassifyId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeletePluginClassifyCommand> validate)
+    public static void Validate(AbstractValidator<DeletePluginClassifyCommand> validate)
     {
         validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类id不正确.");
     }

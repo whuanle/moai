@@ -20,7 +20,7 @@ public class QueryWikiFeishuPageTasksCommand : IRequest<QueryWikiFeishuPageTasks
     public int ConfigId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiFeishuPageTasksCommand> validate)
+    public static void Validate(AbstractValidator<QueryWikiFeishuPageTasksCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

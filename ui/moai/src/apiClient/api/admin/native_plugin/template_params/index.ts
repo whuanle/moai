@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Template_paramsRequestBuilder extends BaseRequestBuilder<Template_paramsRequestBuilder> {
     /**
      * 查询模板参数列表.
-     * @param body 获取一个内置插件模板需要的配置参数和运行参数.
+     * @param body 获取一个内置插件模板需要的配置参数和运行示例值.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryNativePluginTemplateParamsCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Template_paramsRequestBuilder extends BaseRequestBuilder<Templa
      post(body: QueryNativePluginTemplateParamsCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryNativePluginTemplateParamsCommandResponse | undefined>;
     /**
      * 查询模板参数列表.
-     * @param body 获取一个内置插件模板需要的配置参数和运行参数.
+     * @param body 获取一个内置插件模板需要的配置参数和运行示例值.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

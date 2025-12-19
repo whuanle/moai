@@ -1,4 +1,5 @@
 #pragma warning disable CA1031 // 不捕获常规异常类型
+#pragma warning disable SA1118 // Parameter should not span multiple lines
 
 using Maomi;
 using Microsoft.SemanticKernel;
@@ -17,11 +18,12 @@ namespace MoAI.Plugin.Plugins.BoCha.SemanticRerank;
 /// <summary>
 /// BoCha 语义排序插件
 /// </summary>
-[NativePluginFieldConfig(
+[NativePluginConfig(
     "bocha_semantic_rerank",
     Name = "BoCha 语义排序",
     Description = "使用 BoCha API 对文档进行语义排序，返回 query 跟 documents 每个文本的相关度",
-    Classify = NativePluginClassify.Search)]
+    Classify = NativePluginClassify.Search,
+    ConfigType = typeof(BoChaPluginConfig))]
 [InjectOnTransient]
 public partial class BoChaSemanticRerankPlugin : INativePluginRuntime
 {
@@ -35,6 +37,26 @@ public partial class BoChaSemanticRerankPlugin : INativePluginRuntime
     public BoChaSemanticRerankPlugin(IBoChaClient boChaClient)
     {
         _boChaClient = boChaClient;
+    }
+
+    /// <inheritdoc/>
+    public static string GetParamsExampleValue()
+    {
+        var example = new SemanticRerankRequest
+        {
+            Query = "全球变暖",
+            Documents = new List<string>
+            {
+                "全球变暖导致海平面上升。",
+                "苹果公司发布了新款手机。",
+                "气候变化对农业产生了深远影响。"
+            },
+            Model = "gte-rerank",
+            ReturnDocuments = false,
+            TopN = 3
+        };
+
+        return JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
     }
 
     /// <inheritdoc/>
@@ -54,32 +76,6 @@ public partial class BoChaSemanticRerankPlugin : INativePluginRuntime
         {
             return Task.FromResult<string?>($"参数解析失败: {ex.Message}");
         }
-    }
-
-    /// <inheritdoc/>
-    public Task<Type> GetConfigTypeAsync()
-    {
-        return Task.FromResult(typeof(BoChaPluginConfig));
-    }
-
-    /// <inheritdoc/>
-    public Task<string> GetParamsExampleValue()
-    {
-        var example = new SemanticRerankRequest
-        {
-            Query = "全球变暖",
-            Documents = new List<string>
-            {
-                "全球变暖导致海平面上升。",
-                "苹果公司发布了新款手机。",
-                "气候变化对农业产生了深远影响。"
-            },
-            Model = "gte-rerank",
-            ReturnDocuments = false,
-            TopN = 3
-        };
-
-        return Task.FromResult(JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping));
     }
 
     /// <inheritdoc/>

@@ -20,7 +20,7 @@ public class QueryWikiDocumentTaskListCommand : IRequest<IReadOnlyCollection<Wik
     public int DocumentId { get; set; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiDocumentTaskListCommand> validate)
+    public static void Validate(AbstractValidator<QueryWikiDocumentTaskListCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

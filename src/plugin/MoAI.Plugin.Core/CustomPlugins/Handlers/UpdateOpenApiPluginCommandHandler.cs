@@ -9,6 +9,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.CustomPlugins.Commands;
+using MoAI.Plugin.Models;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Queries;
 using MoAI.Storage.Queries.Response;
@@ -41,42 +42,48 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateOpenApiPluginCommand request, CancellationToken cancellationToken)
     {
-        var pluginEntity = await _databaseContext.Plugins.Where(x => x.Id == request.PluginId).FirstOrDefaultAsync(cancellationToken);
+        // 检查插件有同名插件
+        var pluginEntity = await _databaseContext.Plugins
+            .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
 
         if (pluginEntity == null)
+        {
+            throw new BusinessException("插件不存在") { StatusCode = 409 };
+        }
+
+        var pluginCustomEntity = await _databaseContext.PluginCustoms
+            .FirstOrDefaultAsync(x => x.Id == pluginEntity.PluginId && x.Type == (int)PluginType.OpenApi, cancellationToken);
+
+        if (pluginCustomEntity == null)
         {
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
         // 检查插件是否同名
         var exists = await _databaseContext.Plugins
-            .AnyAsync(x => x.PluginName == request.Name && x.Id == request.PluginId, cancellationToken);
+            .AnyAsync(x => x.PluginName == request.Name && x.Id != request.PluginId, cancellationToken);
 
         if (exists)
         {
-            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+            throw new BusinessException("插件名称已被使用") { StatusCode = 409 };
         }
 
-        exists = await _databaseContext.PluginNatives
-            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
-        if (exists)
-        {
-            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
-        }
-
-        pluginEntity.Title = request.Title;
         pluginEntity.IsPublic = request.IsPublic;
         pluginEntity.Description = request.Description;
-        pluginEntity.Queries = request.Query.ToJsonString();
-        pluginEntity.Headers = request.Header.ToJsonString();
+        pluginEntity.Title = request.Name;
         pluginEntity.PluginName = request.Name;
-        pluginEntity.Server = request.ServerUrl.ToString();
         pluginEntity.ClassifyId = request.ClassifyId;
 
+        pluginCustomEntity.Queries = request.Query.ToJsonString();
+        pluginCustomEntity.Headers = request.Header.ToJsonString();
+        pluginCustomEntity.Server = request.ServerUrl.ToString();
+
         // 没有覆盖 openapi 文件
-        if (request.FileId == request.FileId || request.FileId == 0 || request.FileId == pluginEntity.OpenapiFileId)
+        if (request.FileId == request.FileId || request.FileId == 0 || request.FileId == pluginCustomEntity.OpenapiFileId)
         {
             _databaseContext.Update(pluginEntity);
+            _databaseContext.Update(pluginCustomEntity);
+
             await _databaseContext.SaveChangesAsync(cancellationToken);
             return EmptyCommandResponse.Default;
         }
@@ -109,10 +116,10 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
 
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        pluginEntity.OpenapiFileId = fileEntity.Id;
-        pluginEntity.OpenapiFileName = request.FileName;
+        pluginCustomEntity.OpenapiFileId = fileEntity.Id;
+        pluginCustomEntity.OpenapiFileName = request.FileName;
 
-        _databaseContext.Plugins.Update(pluginEntity);
+        _databaseContext.PluginCustoms.Update(pluginCustomEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         List<PluginFunctionEntity> pluginFunctionEntities = new();
@@ -128,11 +135,11 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
                 Name = operationId,
                 Summary = summary,
                 Path = pathEntry.Key,
-                PluginId = pluginEntity.Id,
+                PluginCustomId = pluginCustomEntity.Id,
             });
         }
 
-        await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginId == pluginEntity.Id));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginCustomId == pluginCustomEntity.Id));
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync();

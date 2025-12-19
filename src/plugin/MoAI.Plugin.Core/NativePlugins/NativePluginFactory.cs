@@ -1,9 +1,11 @@
 ﻿#pragma warning disable CA1810 // 以内联方式初始化引用类型的静态字段
 
-using MoAI.Infra.Exceptions;
+using Maomi;
 using MoAI.Plugin.Attributes;
+using MoAI.Plugin.Models;
 using MoAI.Plugin.NativePlugins.Queries.Responses;
 using MoAI.Plugin.Plugins;
+using MoAI.Plugin.Plugins.BoCha.AiSearch;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -12,14 +14,11 @@ namespace MoAI.Plugin;
 /// <summary>
 /// 插件工厂.
 /// </summary>
-public static class NativePluginFactory
+[InjectOnSingleton]
+public class NativePluginFactory : INativePluginFactory
 {
-    private static readonly IReadOnlyCollection<NativePluginTemplateInfo> _plugins;
-
-    /// <summary>
-    /// 插件列表.
-    /// </summary>
-    public static IReadOnlyCollection<NativePluginTemplateInfo> Plugins => _plugins;
+    private static readonly Dictionary<string, NativePluginTemplateInfo> _plugins;
+    private static readonly IReadOnlyCollection<NativePluginTemplateInfo> _pluginList;
 
     static NativePluginFactory()
     {
@@ -31,11 +30,11 @@ public static class NativePluginFactory
             .Where(t => t.IsClass && !t.IsAbstract && t.IsAssignableTo(typeof(IToolPluginRuntime)))
             .ToArray();
 
-        var plugins = new SortedList<string, NativePluginTemplateInfo>();
+        var plugins = new Dictionary<string, NativePluginTemplateInfo>();
 
         foreach (var item in nativePluginTypes)
         {
-            var internalPluginAttribute = item.GetCustomAttribute<NativePluginFieldConfigAttribute>();
+            var internalPluginAttribute = item.GetCustomAttribute<NativePluginConfigAttribute>();
 
             if (internalPluginAttribute == null)
             {
@@ -49,7 +48,10 @@ public static class NativePluginFactory
                 Name = internalPluginAttribute.Name,
                 Type = item,
                 Classify = internalPluginAttribute.Classify,
-                IsTool = false,
+                PluginType = PluginType.NativePlugin,
+                ConfigType = internalPluginAttribute.ConfigType,
+                FieldTemplates = GetFieldTemplates(internalPluginAttribute.ConfigType!),
+                ExampleValue = GetExampleValue(item)
             };
 
             plugins.Add(internalPluginAttribute.Key, plugin);
@@ -57,7 +59,7 @@ public static class NativePluginFactory
 
         foreach (var item in toolPluginTypes)
         {
-            var internalPluginAttribute = item.GetCustomAttribute<NativePluginFieldConfigAttribute>();
+            var internalPluginAttribute = item.GetCustomAttribute<NativePluginConfigAttribute>();
 
             if (internalPluginAttribute == null)
             {
@@ -71,7 +73,9 @@ public static class NativePluginFactory
                 Name = internalPluginAttribute.Name,
                 Type = item,
                 Classify = internalPluginAttribute.Classify,
-                IsTool = true,
+                PluginType = PluginType.ToolPlugin,
+                ConfigType = internalPluginAttribute.ConfigType,
+                ExampleValue = GetExampleValue(item)
             };
 
             plugins.Add(internalPluginAttribute.Key, plugin);
@@ -82,6 +86,51 @@ public static class NativePluginFactory
             Debug.Assert(false, "存在重复的内置插件Key，请检查插件定义");
         }
 
-        _plugins = plugins.Values.ToArray();
+        _plugins = plugins;
+        _pluginList = plugins.Values.ToArray();
+    }
+
+    /// <inheritdoc/>
+    public NativePluginTemplateInfo? GetPluginByKey(string key)
+    {
+        _plugins.TryGetValue(key, out var plugin);
+        return plugin;
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyCollection<NativePluginTemplateInfo> GetPlugins()
+    {
+        return _pluginList;
+    }
+
+    private static List<NativePluginConfigFieldTemplate> GetFieldTemplates(Type configType)
+    {
+        List<NativePluginConfigFieldTemplate> templates = new();
+        var properties = configType.GetProperties();
+
+        foreach (var item in properties)
+        {
+            var nativePluginConfigFieldAttribute = item.GetCustomAttribute<NativePluginConfigFieldAttribute>();
+            if (nativePluginConfigFieldAttribute != null)
+            {
+                templates.Add(new NativePluginConfigFieldTemplate
+                {
+                    Key = item.Name,
+                    Description = nativePluginConfigFieldAttribute.Description,
+                    IsRequired = nativePluginConfigFieldAttribute.IsRequired,
+                    FieldType = nativePluginConfigFieldAttribute.FieldType,
+                    ExampleValue = nativePluginConfigFieldAttribute.ExampleValue,
+                });
+            }
+        }
+
+        return templates;
+    }
+
+    private static string GetExampleValue(Type type)
+    {
+        var methodInfo = type.GetMethod(nameof(IToolPluginRuntime.GetParamsExampleValue), BindingFlags.Static | BindingFlags.Public);
+        var result = methodInfo!.Invoke(null, null);
+        return result!.ToString()!;
     }
 }

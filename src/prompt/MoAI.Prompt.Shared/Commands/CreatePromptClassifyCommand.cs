@@ -20,7 +20,7 @@ public class CreatePromptClassifyCommand : IRequest<SimpleInt>, IModelValidator<
     public string? Description { get; init; } = string.Empty;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CreatePromptClassifyCommand> validate)
+    public static void Validate(AbstractValidator<CreatePromptClassifyCommand> validate)
     {
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("名称不能为空")

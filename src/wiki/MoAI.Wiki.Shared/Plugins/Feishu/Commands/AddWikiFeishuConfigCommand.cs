@@ -21,7 +21,7 @@ public class AddWikiFeishuConfigCommand : WikiFeishuConfig, IRequest<SimpleInt>,
     public string Title { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<AddWikiFeishuConfigCommand> validate)
+    public static void Validate(AbstractValidator<AddWikiFeishuConfigCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

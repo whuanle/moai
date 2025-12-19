@@ -15,7 +15,7 @@ public class QueryRepeatedUserNameCommand : IRequest<SimpleBool>, IModelValidato
     public string UserName { get; set; } = string.Empty;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryRepeatedUserNameCommand> validate)
+    public static void Validate(AbstractValidator<QueryRepeatedUserNameCommand> validate)
     {
         validate.RuleFor(x => x.UserName).NotEmpty().MinimumLength(5).MaximumLength(20).WithMessage("长度 5-30 字符.");
     }

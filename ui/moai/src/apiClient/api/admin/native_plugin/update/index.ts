@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface UpdateRequestBuilder extends BaseRequestBuilder<UpdateRequestBuilder> {
     /**
      * 更新内置插件.
-     * @param body 修改内置插件实例.
+     * @param body 修改内置插件实例，也可以修改 tool，但是只能修改 ClassifyId，其它参数无法修改.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface UpdateRequestBuilder extends BaseRequestBuilder<UpdateRequestBu
      post(body: UpdateNativePluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
      * 更新内置插件.
-     * @param body 修改内置插件实例.
+     * @param body 修改内置插件实例，也可以修改 tool，但是只能修改 ClassifyId，其它参数无法修改.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

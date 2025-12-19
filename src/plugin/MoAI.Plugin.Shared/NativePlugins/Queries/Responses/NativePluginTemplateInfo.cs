@@ -1,4 +1,5 @@
 ﻿using MoAI.Plugin.Models;
+using MoAI.Plugin.Plugins;
 using System.Text.Json.Serialization;
 
 namespace MoAI.Plugin.NativePlugins.Queries.Responses;
@@ -35,7 +36,23 @@ public class NativePluginTemplateInfo
     public NativePluginClassify Classify { get; init; }
 
     /// <summary>
-    /// 是否需要配置，需要配置的插件都需要实例化并存储到数据库.
+    /// 插件类型.
     /// </summary>
-    public bool IsTool { get; init; } = true;
+    public PluginType PluginType { get; init; }
+
+    /// <summary>
+    /// 配置模型类，tool 插件没有.
+    /// </summary>
+    [JsonIgnore]
+    public Type? ConfigType { get; init; } = default!;
+
+    /// <summary>
+    /// 字段模板.
+    /// </summary>
+    public IReadOnlyCollection<NativePluginConfigFieldTemplate> FieldTemplates { get; init; } = Array.Empty<NativePluginConfigFieldTemplate>();
+
+    /// <summary>
+    /// 示例值.
+    /// </summary>
+    public string ExampleValue { get; init; } = string.Empty;
 }

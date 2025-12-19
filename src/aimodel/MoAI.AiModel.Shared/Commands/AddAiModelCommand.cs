@@ -16,7 +16,7 @@ public class AddAiModelCommand : AiEndpoint, IRequest<SimpleInt>, IModelValidato
     /// </summary>
     public bool IsPublic { get; init; }
 
-    public void Validate(AbstractValidator<AddAiModelCommand> validate)
+    public static void Validate(AbstractValidator<AddAiModelCommand> validate)
     {
         validate.RuleFor(x => x.Title)
             .NotEmpty().WithMessage("模型名称不能为空")

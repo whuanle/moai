@@ -13,7 +13,7 @@ namespace MoAI.Plugin.Plugins.FlowWait;
 /// <summary>
 /// 流程等待插件.
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "flow_wait",
     Name = "流程等待",
     Description = "让工作流等待指定时间后运行",
@@ -23,9 +23,8 @@ namespace MoAI.Plugin.Plugins.FlowWait;
 public class FlowWaitPlugin : IToolPluginRuntime
 {
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
         var example = new FlowWaitParams
         {
             WaitTimeInSeconds = 10 // 示例：等待 10 秒

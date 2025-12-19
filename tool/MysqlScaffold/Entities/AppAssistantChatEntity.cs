@@ -32,12 +32,12 @@ public partial class AppAssistantChatEntity : IFullAudited
     /// <summary>
     /// 要使用的知识库id.
     /// </summary>
-    public int WikiId { get; set; }
+    public string WikiIds { get; set; } = default!;
 
     /// <summary>
-    /// 要使用的插件id.
+    /// 要使用的插件.
     /// </summary>
-    public string PluginIds { get; set; } = default!;
+    public string PluginS { get; set; } = default!;
 
     /// <summary>
     /// 对话影响参数.

@@ -20,7 +20,7 @@ public class WikiDocumentDerivativeItem : IModelValidator<WikiDocumentDerivative
     public string DerivativeContent { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumentDerivativeItem> validate)
+    public static void Validate(AbstractValidator<WikiDocumentDerivativeItem> validate)
     {
         validate.RuleFor(x => x.DerivativeContent).NotEmpty();
     }

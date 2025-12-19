@@ -45,7 +45,7 @@ public class ImportOpenApiPluginCommand : IRequest<SimpleInt>, IModelValidator<I
     public bool IsPublic { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<ImportOpenApiPluginCommand> validate)
+    public static void Validate(AbstractValidator<ImportOpenApiPluginCommand> validate)
     {
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("插件名称长度在 2-30 之间.")

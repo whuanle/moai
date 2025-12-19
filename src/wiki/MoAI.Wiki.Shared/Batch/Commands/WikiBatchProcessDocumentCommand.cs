@@ -57,7 +57,7 @@ public class WikiBatchProcessDocumentCommand : IRequest<EmptyCommandResponse>, I
     public int? ThreadCount { get; init; } = 5;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiBatchProcessDocumentCommand> validate)
+    public static void Validate(AbstractValidator<WikiBatchProcessDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

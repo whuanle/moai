@@ -3,7 +3,7 @@
 namespace MoAI.Plugin.Attributes;
 
 /// <summary>
-/// 内置插件字段.
+/// 原生插件字段配置，在插件配置的模型类字段使用.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class NativePluginConfigFieldAttribute : Attribute

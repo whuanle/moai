@@ -11,6 +11,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+	  <Folder Include="Templates\Queries\" />
 	  <Folder Include="ToolPlugins\Commands\" />
 	  <Folder Include="ToolPlugins\Queries\" />
 	</ItemGroup>

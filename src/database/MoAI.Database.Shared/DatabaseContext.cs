@@ -93,6 +93,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginEntity> Plugins { get; set; }
 
     /// <summary>
+    /// 插件.
+    /// </summary>
+    public virtual DbSet<PluginCustomEntity> PluginCustoms { get; set; }
+
+    /// <summary>
     /// 插件函数.
     /// </summary>
     public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
@@ -111,6 +116,11 @@ public partial class DatabaseContext : DbContext
     /// 内置插件.
     /// </summary>
     public virtual DbSet<PluginNativeEntity> PluginNatives { get; set; }
+
+    /// <summary>
+    /// 内置插件.
+    /// </summary>
+    public virtual DbSet<PluginToolEntity> PluginTools { get; set; }
 
     /// <summary>
     /// 提示词.
@@ -148,7 +158,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentPreviewEntity> WikiDocumentChunkContentPreviews { get; set; }
 
     /// <summary>
-    /// 切片元数据表（提问/提纲/摘要）.
+    /// 切片元数据内容表（提问/提纲/摘要）.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkDerivativePreviewEntity> WikiDocumentChunkDerivativePreviews { get; set; }
 
@@ -168,7 +178,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiPluginConfigDocumentEntity> WikiPluginConfigDocuments { get; set; }
 
     /// <summary>
-    /// 知识库文档关联任务，这里的任务都是成功的.
+    /// 知识库文档关联任务.
     /// </summary>
     public virtual DbSet<WikiPluginConfigDocumentStateEntity> WikiPluginConfigDocumentStates { get; set; }
 

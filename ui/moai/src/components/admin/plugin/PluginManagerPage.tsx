@@ -37,18 +37,18 @@ import { GetApiClient } from "../../ServiceClient";
 import {
   ImportMcpServerPluginCommand,
   KeyValueString,
-  QueryPluginBaseListCommand,
-  QueryPluginBaseListCommandResponse,
+  QueryCustomPluginBaseListCommand,
+  QueryCustomPluginBaseListCommandResponse,
   PluginBaseInfoItem,
   PluginTypeObject,
   UpdateMcpServerPluginCommand,
   UpdateOpenApiPluginCommand,
   DeletePluginCommand,
-  QueryPluginDetailCommand,
-  QueryPluginDetailCommandResponse,
+  QueryCustomPluginDetailCommand,
+  QueryCustomPluginDetailCommandResponse,
   PreUploadOpenApiFilePluginCommandResponse,
-  QueryPluginFunctionsListCommand,
-  QueryPluginFunctionsListCommandResponse,
+  QueryCustomPluginFunctionsListCommand,
+  QueryCustomPluginFunctionsListCommandResponse,
   PluginFunctionItem,
   PluginClassifyItem,
 } from "../../../apiClient/models";
@@ -257,7 +257,7 @@ export default function PluginManagerPage() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const requestData: QueryPluginBaseListCommand = {
+      const requestData: QueryCustomPluginBaseListCommand = {
         name: searchName || undefined,
         type: filterType as any || undefined,
       };
@@ -266,9 +266,8 @@ export default function PluginManagerPage() {
       if (response?.items) {
         let filteredItems = response.items;
         // 过滤掉内置插件
-        filteredItems = filteredItems.filter(
-          (item) => item.type !== PluginTypeObject.Internal
-        );
+        filteredItems = filteredItems
+
         // 前端筛选分类（如果后端不支持分类筛选）
         if (filterClassifyId !== undefined) {
           filteredItems = filteredItems.filter(
@@ -305,7 +304,7 @@ export default function PluginManagerPage() {
 
       try {
         const client = GetApiClient();
-        const requestData: QueryPluginDetailCommand = {
+        const requestData: QueryCustomPluginDetailCommand = {
           pluginId: record.pluginId,
         };
 
@@ -428,7 +427,7 @@ export default function PluginManagerPage() {
 
       try {
         const client = GetApiClient();
-        const requestData: QueryPluginFunctionsListCommand = {
+        const requestData: QueryCustomPluginFunctionsListCommand = {
           pluginId: record.pluginId,
         };
 
@@ -1061,13 +1060,11 @@ export default function PluginManagerPage() {
                     setLoading(true);
                     try {
                       const client = GetApiClient();
-                      const requestData: QueryPluginBaseListCommand = {};
+                      const requestData: QueryCustomPluginBaseListCommand = {};
                       const response = await client.api.admin.custom_plugin.plugin_list.post(requestData);
                       if (response?.items) {
                         // 过滤掉内置插件
-                        const filteredItems = response.items.filter(
-                          (item) => item.type !== PluginTypeObject.Internal
-                        );
+                        const filteredItems = response.items
                         setPluginList(filteredItems);
                       }
                     } catch (error) {

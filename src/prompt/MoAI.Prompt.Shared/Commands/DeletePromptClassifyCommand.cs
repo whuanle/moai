@@ -15,7 +15,7 @@ public class DeletePromptClassifyCommand : IRequest<EmptyCommandResponse>, IMode
     public int ClassifyId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeletePromptClassifyCommand> validate)
+    public static void Validate(AbstractValidator<DeletePromptClassifyCommand> validate)
     {
         validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类ID不能为空");
     }

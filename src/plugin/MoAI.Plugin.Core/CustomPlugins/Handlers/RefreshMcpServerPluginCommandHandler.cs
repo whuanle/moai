@@ -38,10 +38,19 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(RefreshMcpServerPluginCommand request, CancellationToken cancellationToken)
     {
+        // 检查插件有同名插件
         var pluginEntity = await _databaseContext.Plugins
-            .FirstOrDefaultAsync(x => x.Id == request.PluginId && x.Type == (int)PluginType.MCP, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
 
         if (pluginEntity == null)
+        {
+            throw new BusinessException("插件不存在") { StatusCode = 409 };
+        }
+
+        var pluginCustomEntity = await _databaseContext.PluginCustoms
+            .FirstOrDefaultAsync(x => x.Id == pluginEntity.PluginId && x.Type == (int)PluginType.MCP, cancellationToken);
+
+        if (pluginCustomEntity == null)
         {
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
@@ -51,26 +60,26 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
 
         try
         {
-            var importMcpServerPluginCommand = new ImportMcpServerPluginCommand
+            var importMcpServerPluginCommand = new McpServerPluginConnectionOptions
             {
                 Name = pluginEntity.PluginName,
                 Description = pluginEntity.Description,
-                ServerUrl = new Uri(pluginEntity.Server),
-                Header = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(pluginEntity.Headers)!,
-                Query = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(pluginEntity.Queries)!,
+                ServerUrl = new Uri(pluginCustomEntity.Server),
+                Header = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(pluginCustomEntity.Headers)!,
+                Query = TextToJsonExtensions.JsonToObject<IReadOnlyCollection<KeyValueString>>(pluginCustomEntity.Queries)!,
             };
 
-            pluginFunctionEntities = await GetPluginFunctions(importMcpServerPluginCommand);
+            pluginFunctionEntities = await GetPluginFunctions(pluginCustomEntity.Id, importMcpServerPluginCommand);
         }
         catch (Exception ex)
         {
             _logger.LogInformation(ex, $"Failed to connect to the MCP server.");
-            throw new BusinessException("访问 MCP 服务器失败") { StatusCode = 409 };
+            throw new BusinessException("访问 MCP 服务器失败 {Message}", ex.Message) { StatusCode = 409 };
         }
 
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginId == pluginEntity.Id));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.PluginFunctions.Where(x => x.PluginCustomId == pluginCustomEntity.Id));
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync();
@@ -80,7 +89,7 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
         return EmptyCommandResponse.Default;
     }
 
-    private async Task<IReadOnlyCollection<PluginFunctionEntity>> GetPluginFunctions(McpServerPluginConnectionOptions request)
+    private async Task<IReadOnlyCollection<PluginFunctionEntity>> GetPluginFunctions(int pluginId, McpServerPluginConnectionOptions request)
     {
         var defaultOptions = new McpClientOptions
         {
@@ -120,6 +129,7 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
         {
             var pluginEntity = new PluginFunctionEntity
             {
+                PluginCustomId = pluginId,
                 Path = tool.Name,
                 Name = tool.Name,
                 Summary = tool.Description

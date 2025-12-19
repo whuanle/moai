@@ -53,7 +53,7 @@ public class WikiCrawlerConfig : IWikiPluginKey, IModelValidator<WikiCrawlerConf
     public string PluginKey => "crawler";
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiCrawlerConfig> validate)
+    public static void Validate(AbstractValidator<WikiCrawlerConfig> validate)
     {
         validate.RuleFor(x => x.Address)
             .NotEmpty().WithMessage("抓取地址不能为空")

@@ -16,11 +16,12 @@ namespace MoAI.Plugin.JavaScriptExecutor;
 /// <summary>
 /// JavaScript 执行插件.
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "javascript_executor",
     Name = "JavaScript 执行器",
     Description = "执行指定的 JavaScript 代码，限制最大内存4MB、超时4s、最大语句1000行",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ConfigType = typeof(JavaScriptExecutorConfig))]
 [Description("执行指定的 JavaScript 代码")]
 [InjectOnTransient]
 public class JavaScriptExecutorPlugin : INativePluginRuntime
@@ -28,9 +29,8 @@ public class JavaScriptExecutorPlugin : INativePluginRuntime
     private JavaScriptExecutorConfig _config = default!;
 
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
         var example = new
         {
             id = 1,
@@ -104,12 +104,6 @@ public class JavaScriptExecutorPlugin : INativePluginRuntime
         {
             return $"JavaScript 代码解析失败: {ex.Message}";
         }
-    }
-
-    /// <inheritdoc/>
-    public async Task<Type> GetConfigTypeAsync()
-    {
-        return await Task.FromResult(typeof(JavaScriptExecutorConfig));
     }
 
     /// <inheritdoc/>

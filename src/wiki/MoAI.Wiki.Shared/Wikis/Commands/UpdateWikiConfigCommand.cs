@@ -41,7 +41,7 @@ public class UpdateWikiConfigCommand : IRequest<EmptyCommandResponse>, IModelVal
     public int EmbeddingDimensions { get; set; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateWikiConfigCommand> validate)
+    public static void Validate(AbstractValidator<UpdateWikiConfigCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

@@ -12,28 +12,41 @@ namespace MoAI.Plugin.Queries;
 /// <summary>
 /// <inheritdoc cref="QueryNativePluginTemplateListCommand"/>
 /// </summary>
-public class QueryNativePluginTemplateListCommandHandler : IRequestHandler<QueryNativePluginTemplateListCommand, QueryInternalTemplatePluginListCommandResponse>
+public class QueryNativePluginTemplateListCommandHandler : IRequestHandler<QueryNativePluginTemplateListCommand, QueryNativePluginTemplateListCommandResponse>
 {
+    private readonly INativePluginFactory _nativePluginFactory;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueryNativePluginTemplateListCommandHandler"/> class.
+    /// </summary>
+    /// <param name="nativePluginFactory"></param>
+    public QueryNativePluginTemplateListCommandHandler(INativePluginFactory nativePluginFactory)
+    {
+        _nativePluginFactory = nativePluginFactory;
+    }
+
     /// <inheritdoc/>
-    public async Task<QueryInternalTemplatePluginListCommandResponse> Handle(QueryNativePluginTemplateListCommand request, CancellationToken cancellationToken)
+    public async Task<QueryNativePluginTemplateListCommandResponse> Handle(QueryNativePluginTemplateListCommand request, CancellationToken cancellationToken)
     {
         await Task.CompletedTask;
+
+        var pluginTemplates = _nativePluginFactory.GetPlugins();
 
         NativePluginTemplateInfo[] plugins;
 
         if (request.Classify != null)
         {
-            plugins = NativePluginFactory.Plugins.Where(x => x.Classify == request.Classify).ToArray();
+            plugins = pluginTemplates.Where(x => x.Classify == request.Classify).ToArray();
         }
         else
         {
-            plugins = NativePluginFactory.Plugins.ToArray();
+            plugins = pluginTemplates.ToArray();
         }
 
-        return new QueryInternalTemplatePluginListCommandResponse
+        return new QueryNativePluginTemplateListCommandResponse
         {
             Plugins = plugins,
-            ClassifyCount = NativePluginFactory.Plugins.GroupBy(x => x.Classify).Select(x => new KeyValue<string, int>
+            ClassifyCount = pluginTemplates.GroupBy(x => x.Classify).Select(x => new KeyValue<string, int>
             {
                 Key = x.Key.ToString(),
                 Value = x.Count()

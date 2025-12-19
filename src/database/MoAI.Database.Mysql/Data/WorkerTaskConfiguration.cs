@@ -28,7 +28,7 @@ public partial class WorkerTaskConfiguration : IEntityTypeConfiguration<WorkerTa
             .HasColumnType("int(11)")
             .HasColumnName("bind_id");
         entity.Property(e => e.BindType)
-            .HasMaxLength(10)
+            .HasMaxLength(20)
             .HasComment("关联类型")
             .HasColumnName("bind_type");
         entity.Property(e => e.CreateTime)
@@ -41,9 +41,9 @@ public partial class WorkerTaskConfiguration : IEntityTypeConfiguration<WorkerTa
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Data)
-            .HasMaxLength(2000)
             .HasDefaultValueSql("'{}'")
             .HasComment("自定义数据,json格式")
+            .HasColumnType("json")
             .HasColumnName("data");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")

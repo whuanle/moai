@@ -7,7 +7,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 知识库文档关联任务，这里的任务都是成功的.
+/// 知识库文档关联任务.
 /// </summary>
 public partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeConfiguration<WikiPluginConfigDocumentStateEntity>
 {
@@ -17,7 +17,7 @@ public partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeCon
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("wiki_plugin_config_document_state", tb => tb.HasComment("知识库文档关联任务，这里的任务都是成功的"));
+        entity.ToTable("wiki_plugin_config_document_state", tb => tb.HasComment("知识库文档关联任务"));
 
         entity.Property(e => e.Id)
             .HasComment("id")

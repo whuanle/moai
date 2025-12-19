@@ -21,7 +21,7 @@ public class WikiDocumentChunksOrderItem : IModelValidator<WikiDocumentChunksOrd
     public int Order { get; set; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumentChunksOrderItem> validate)
+    public static void Validate(AbstractValidator<WikiDocumentChunksOrderItem> validate)
     {
         validate.RuleFor(x => x.ChunkId).GreaterThan(0).WithMessage("切片ID错误");
         validate.RuleFor(x => x.Order).GreaterThan(0).WithMessage("切片排序错误");

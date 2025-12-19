@@ -37,7 +37,7 @@ public class WikiFeishuConfig : IWikiPluginKey, IModelValidator<WikiFeishuConfig
     public string PluginKey => "feishu";
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiFeishuConfig> validate)
+    public static void Validate(AbstractValidator<WikiFeishuConfig> validate)
     {
         validate.RuleFor(x => x.AppId)
             .NotEmpty().WithMessage("不能为空");

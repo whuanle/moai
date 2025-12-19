@@ -16,15 +16,22 @@ namespace MoAI.Plugin.Plugins.MysqlPlugin;
 /// <summary>
 /// MySQL 插件，用于执行 SQL 查询并返回 JSON 格式的结果。
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "mysql_plugin",
     Name = "MySQL 数据库插件",
     Description = "执行 SQL 查询并返回 JSON 格式的结果",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ConfigType = typeof(MysqlPluginConfig))]
 [InjectOnTransient]
 public class MysqlPlugin : INativePluginRuntime
 {
     private MysqlPluginConfig _config = default!;
+
+    /// <inheritdoc/>
+    public static string GetParamsExampleValue()
+    {
+        return "SELECT * FROM your_table_name LIMIT 10;";
+    }
 
     /// <inheritdoc/>
     public async Task<string?> CheckConfigAsync(string config)
@@ -44,20 +51,6 @@ public class MysqlPlugin : INativePluginRuntime
         {
             return $"配置解析失败: {ex.Message}";
         }
-    }
-
-    /// <inheritdoc/>
-    public async Task<Type> GetConfigTypeAsync()
-    {
-        await Task.CompletedTask;
-        return typeof(MysqlPluginConfig);
-    }
-
-    /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
-    {
-        await Task.CompletedTask;
-        return "SELECT * FROM your_table_name LIMIT 10;";
     }
 
     /// <inheritdoc/>

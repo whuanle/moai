@@ -26,7 +26,7 @@ public class UpdateMcpServerPluginCommand : McpServerPluginConnectionOptions, IR
     public bool IsPublic { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateMcpServerPluginCommand> validate)
+    public static void Validate(AbstractValidator<UpdateMcpServerPluginCommand> validate)
     {
         validate.RuleFor(x => x.PluginId)
             .NotEmpty().WithMessage("插件不正确.")

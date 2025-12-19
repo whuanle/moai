@@ -20,7 +20,7 @@ public class CreatePluginClassifyCommand : IRequest<SimpleInt>, IModelValidator<
     public string? Description { get; init; } = string.Empty;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CreatePluginClassifyCommand> validate)
+    public static void Validate(AbstractValidator<CreatePluginClassifyCommand> validate)
     {
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("分类名称不能为空.")
             .MaximumLength(10).WithMessage("分类名称不能超过10个字符.");

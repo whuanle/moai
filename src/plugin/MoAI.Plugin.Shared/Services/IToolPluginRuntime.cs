@@ -11,7 +11,7 @@ public interface IToolPluginRuntime
     /// 获取参数示例值 json 字符串.
     /// </summary>
     /// <returns></returns>
-    Task<string> GetParamsExampleValue();
+    static abstract string GetParamsExampleValue();
 
     /// <summary>
     /// 使用参数运行测试.

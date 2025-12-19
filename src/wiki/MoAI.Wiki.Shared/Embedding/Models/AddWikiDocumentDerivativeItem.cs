@@ -25,7 +25,7 @@ public class AddWikiDocumentDerivativeItem : IModelValidator<AddWikiDocumentDeri
     public string DerivativeContent { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<AddWikiDocumentDerivativeItem> validate)
+    public static void Validate(AbstractValidator<AddWikiDocumentDerivativeItem> validate)
     {
         validate.RuleFor(x => x.ChunkId).GreaterThan(0);
         validate.RuleFor(x => x.DerivativeContent).NotEmpty();

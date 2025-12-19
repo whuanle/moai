@@ -15,15 +15,22 @@ namespace MoAI.Plugin.Plugins.PostgresPlugin;
 /// <summary>
 /// PostgreSQL 插件，用于执行 SQL 查询并返回 JSON 格式的结果。
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "postgres_plugin",
     Name = "PostgreSQL 数据库插件",
     Description = "执行 SQL 查询并返回 JSON 格式的结果",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ConfigType = typeof(PostgresPluginConfig))]
 [InjectOnTransient]
 public class PostgresPlugin : INativePluginRuntime
 {
     private PostgresPluginConfig _config = default!;
+
+    /// <inheritdoc/>
+    public static string GetParamsExampleValue()
+    {
+        return "SELECT t.*\r\n                 FROM public.\"your_table\" t\r\n                 LIMIT 501;";
+    }
 
     /// <inheritdoc/>
     public async Task<string?> CheckConfigAsync(string config)
@@ -43,20 +50,6 @@ public class PostgresPlugin : INativePluginRuntime
         {
             return $"配置解析失败: {ex.Message}";
         }
-    }
-
-    /// <inheritdoc/>
-    public async Task<Type> GetConfigTypeAsync()
-    {
-        await Task.CompletedTask;
-        return typeof(PostgresPluginConfig);
-    }
-
-    /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
-    {
-        await Task.CompletedTask;
-        return "SELECT t.*\r\n                 FROM public.\"your_table\" t\r\n                 LIMIT 501;";
     }
 
     /// <inheritdoc/>

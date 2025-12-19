@@ -22,7 +22,7 @@ public class UpdateAiAssistanChatConfigCommand : AIAssistantChatObject, IRequest
     public string AiAvatar { get; init; } = string.Empty;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateAiAssistanChatConfigCommand> validate)
+    public static void Validate(AbstractValidator<UpdateAiAssistanChatConfigCommand> validate)
     {
         validate.RuleFor(x => x.ChatId)
             .NotEmpty().WithMessage("对话id不正确.")

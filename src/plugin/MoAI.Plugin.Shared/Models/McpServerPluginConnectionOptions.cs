@@ -8,7 +8,7 @@ namespace MoAI.Plugin.Models;
 public class McpServerPluginConnectionOptions
 {
     /// <summary>
-    /// 插件名称，只能纯字母，用于给 AI 使用.
+    /// 插件名称,也就是 key，只能纯字母，用于给 AI 使用.
     /// </summary>
     public string Name { get; init; } = default!;
 

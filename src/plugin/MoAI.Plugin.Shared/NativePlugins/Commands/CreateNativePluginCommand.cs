@@ -45,8 +45,18 @@ public class CreateNativePluginCommand : IRequest<SimpleInt>, IModelValidator<Cr
     public string Config { get; init; } = string.Empty!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CreateNativePluginCommand> validate)
+    public static void Validate(AbstractValidator<CreateNativePluginCommand> validate)
     {
+        validate.RuleFor(x => x.Title)
+            .NotEmpty().WithMessage("插件标题长度在 2-30 之间.")
+            .Length(2, 30).WithMessage("插件标题长度在 2-30 之间.");
+
+        validate.RuleFor(x => x.TemplatePluginKey)
+            .NotEmpty().WithMessage("内置插件模板 key 不正确.");
+
+        validate.RuleFor(x => x.Config)
+            .NotEmpty().WithMessage("插件配置不能为空.");
+
         validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类id不正确.");
 
         validate.RuleFor(x => x.Name)

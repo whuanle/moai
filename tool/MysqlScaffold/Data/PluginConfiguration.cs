@@ -45,10 +45,6 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasDefaultValueSql("''")
             .HasComment("注释")
             .HasColumnName("description");
-        entity.Property(e => e.Headers)
-            .HasComment("头部")
-            .HasColumnType("text")
-            .HasColumnName("headers");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
@@ -56,32 +52,20 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
         entity.Property(e => e.IsPublic)
             .HasComment("公开访问")
             .HasColumnName("is_public");
-        entity.Property(e => e.OpenapiFileId)
-            .HasComment("文件id")
+        entity.Property(e => e.PluginId)
+            .HasComment("对应的实际插件的id，不同类型的插件表不一样")
             .HasColumnType("int(11)")
-            .HasColumnName("openapi_file_id");
-        entity.Property(e => e.OpenapiFileName)
-            .HasMaxLength(255)
-            .HasComment("文件名称")
-            .HasColumnName("openapi_file_name");
+            .HasColumnName("plugin_id");
         entity.Property(e => e.PluginName)
             .HasMaxLength(50)
             .HasComment("插件名称")
             .HasColumnName("plugin_name");
-        entity.Property(e => e.Queries)
-            .HasComment("query参数")
-            .HasColumnType("text")
-            .HasColumnName("queries");
-        entity.Property(e => e.Server)
-            .HasMaxLength(255)
-            .HasComment("服务器地址")
-            .HasColumnName("server");
         entity.Property(e => e.Title)
             .HasMaxLength(50)
             .HasComment("插件标题")
             .HasColumnName("title");
         entity.Property(e => e.Type)
-            .HasComment("system|mcp|openapi")
+            .HasComment("mcp|openapi|native|tool")
             .HasColumnType("int(11)")
             .HasColumnName("type");
         entity.Property(e => e.UpdateTime)

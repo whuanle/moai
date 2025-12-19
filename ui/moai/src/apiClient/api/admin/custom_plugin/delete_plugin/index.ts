@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Delete_pluginRequestBuilder extends BaseRequestBuilder<Delete_pluginRequestBuilder> {
     /**
      * 删除插件.
-     * @param body 删除插件.
+     * @param body 删除插件，不能删除工具类插件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Delete_pluginRequestBuilder extends BaseRequestBuilder<Delete_p
      delete(body: DeletePluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
      * 删除插件.
-     * @param body 删除插件.
+     * @param body 删除插件，不能删除工具类插件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

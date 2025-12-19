@@ -31,7 +31,7 @@ public class EmbeddingDocumentCommand : IRequest<EmptyCommandResponse>, IModelVa
     public int? ThreadCount { get; init; } = 5;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<EmbeddingDocumentCommand> validate)
+    public static void Validate(AbstractValidator<EmbeddingDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

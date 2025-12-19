@@ -10,8 +10,6 @@ import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from 
 // @ts-ignore
 import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
 // @ts-ignore
-import { AppRequestBuilderNavigationMetadata, type AppRequestBuilder } from './app/index.js';
-// @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
 import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
@@ -48,10 +46,6 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The aimodel property
      */
     get aimodel(): AimodelRequestBuilder;
-    /**
-     * The app property
-     */
-    get app(): AppRequestBuilder;
     /**
      * The common property
      */
@@ -100,9 +94,6 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     aimodel: {
         navigationMetadata: AimodelRequestBuilderNavigationMetadata,
-    },
-    app: {
-        navigationMetadata: AppRequestBuilderNavigationMetadata,
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,

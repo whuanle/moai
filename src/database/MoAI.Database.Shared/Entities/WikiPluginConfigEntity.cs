@@ -1,4 +1,6 @@
-﻿using MoAI.Database.Audits;
+﻿using System;
+using System.Collections.Generic;
+using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
 

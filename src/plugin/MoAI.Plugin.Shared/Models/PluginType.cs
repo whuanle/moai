@@ -8,26 +8,26 @@ namespace MoAI.Plugin.Models;
 public enum PluginType
 {
     /// <summary>
-    /// 内置插件.
-    /// </summary>
-    [JsonPropertyName("internal")]
-    Internal,
-
-    /// <summary>
-    /// MCP.
+    /// MCP，自定义插件.
     /// </summary>
     [JsonPropertyName("mcp")]
     MCP,
 
     /// <summary>
-    /// OpenAPI.
+    /// OpenAPI，自定义插件.
     /// </summary>
     [JsonPropertyName("openapi")]
     OpenApi,
 
     /// <summary>
-    /// 知识库
+    /// 原生插件.
     /// </summary>
-    [JsonPropertyName("wiki")]
-    Wiki
+    [JsonPropertyName("native")]
+    NativePlugin,
+
+    /// <summary>
+    /// 工具类.
+    /// </summary>
+    [JsonPropertyName("tool")]
+    ToolPlugin,
 }

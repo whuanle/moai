@@ -30,7 +30,7 @@ public class InviteWikiUserCommand : IRequest<EmptyCommandResponse>, IModelValid
     public IReadOnlyCollection<int> UserIds { get; init; } = Array.Empty<int>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<InviteWikiUserCommand> validate)
+    public static void Validate(AbstractValidator<InviteWikiUserCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

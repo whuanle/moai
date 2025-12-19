@@ -20,7 +20,7 @@ public class DeleteWikiDocumentCommand : IRequest<EmptyCommandResponse>, IModelV
     public int DocumentId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeleteWikiDocumentCommand> validate)
+    public static void Validate(AbstractValidator<DeleteWikiDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

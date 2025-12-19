@@ -28,7 +28,7 @@ public class AddWikiDocumentChunkDerivativeCommand : IRequest<EmptyCommandRespon
     public IReadOnlyCollection<AddWikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<AddWikiDocumentDerivativeItem>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<AddWikiDocumentChunkDerivativeCommand> validate)
+    public static void Validate(AbstractValidator<AddWikiDocumentChunkDerivativeCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0);
         validate.RuleFor(x => x.DocumentId).GreaterThan(0);

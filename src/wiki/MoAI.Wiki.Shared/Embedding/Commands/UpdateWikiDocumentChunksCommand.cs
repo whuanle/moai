@@ -26,7 +26,7 @@ public class UpdateWikiDocumentChunksCommand : IRequest<EmptyCommandResponse>, I
     public IReadOnlyCollection<WikiDocumenChunkItem> Chunks { get; init; } = Array.Empty<WikiDocumenChunkItem>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateWikiDocumentChunksCommand> validate)
+    public static void Validate(AbstractValidator<UpdateWikiDocumentChunksCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.DocumentId).GreaterThan(0).WithMessage("文档ID错误");

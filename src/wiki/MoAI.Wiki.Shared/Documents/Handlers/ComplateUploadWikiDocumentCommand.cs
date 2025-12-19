@@ -30,7 +30,7 @@ public class ComplateUploadWikiDocumentCommand : IRequest<EmptyCommandResponse>,
     public string FileName { get; set; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<ComplateUploadWikiDocumentCommand> validate)
+    public static void Validate(AbstractValidator<ComplateUploadWikiDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

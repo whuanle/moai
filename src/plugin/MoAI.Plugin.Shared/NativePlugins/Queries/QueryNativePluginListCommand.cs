@@ -12,17 +12,7 @@ public class QueryNativePluginListCommand : IRequest<QueryNativePluginListComman
     /// <summary>
     /// 名称搜索.
     /// </summary>
-    public string? Name { get; init; }
-
-    /// <summary>
-    /// 模板分类.
-    /// </summary>
-    public NativePluginClassify? TemplatePluginClassify { get; init; }
-
-    /// <summary>
-    /// 模板搜索.
-    /// </summary>
-    public string? TemplatePluginKey { get; init; }
+    public string? Keyword { get; init; }
 
     /// <summary>
     /// 自定义分类 id.
@@ -33,4 +23,10 @@ public class QueryNativePluginListCommand : IRequest<QueryNativePluginListComman
     /// 是否公开.
     /// </summary>
     public bool? IsPublic { get; init; } = default!;
+
+    /// <summary>
+    /// 模板分类.
+    /// </summary>
+    public NativePluginClassify? TemplatePluginClassify { get; init; }
+
 }

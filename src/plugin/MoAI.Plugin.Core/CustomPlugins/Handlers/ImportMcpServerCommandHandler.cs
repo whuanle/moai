@@ -48,10 +48,10 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
         catch (Exception ex)
         {
             _logger.LogInformation(ex, "Failed to connect to the MCP server,【{Url}】.", request.ServerUrl);
-            throw new BusinessException("访问 MCP 服务器失败") { StatusCode = 409 };
+            throw new BusinessException("访问 MCP 服务器失败 {Message}", ex.Message) { StatusCode = 409 };
         }
 
-        // 检查插件是否同名
+        // 检查插件有同名插件
         var exists = await _databaseContext.Plugins
             .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
 
@@ -60,28 +60,30 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
-        exists = await _databaseContext.PluginNatives
-            .AnyAsync(x => x.PluginName == request.Name, cancellationToken);
-        if (exists)
-        {
-            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
-        }
-
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        var pluginEntitiy = new PluginEntity()
+        var pluginCustomEntity = new PluginCustomEntity
         {
-            Description = request.Description,
             OpenapiFileName = string.Empty,
-            PluginName = request.Name,
             Server = request.ServerUrl.ToString(),
             OpenapiFileId = 0,
-            Title = request.Title,
             Type = (int)PluginType.MCP,
             Headers = TextToJsonExtensions.ToJsonString(request.Header),
             Queries = TextToJsonExtensions.ToJsonString(request.Query),
+        };
+
+        await _databaseContext.PluginCustoms.AddAsync(pluginCustomEntity, cancellationToken);
+        await _databaseContext.SaveChangesAsync();
+
+        var pluginEntitiy = new PluginEntity()
+        {
+            PluginName = request.Name,
+            Title = request.Title,
+            Type = (int)PluginType.MCP,
             IsPublic = request.IsPublic,
-            ClassifyId = request.ClassifyId
+            ClassifyId = request.ClassifyId,
+            PluginId = pluginCustomEntity.Id,
+            Description = request.Description
         };
 
         await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);
@@ -89,7 +91,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
 
         foreach (var item in pluginFunctionEntities)
         {
-            item.PluginId = pluginEntitiy.Id;
+            item.PluginCustomId = pluginEntitiy.Id;
         }
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);

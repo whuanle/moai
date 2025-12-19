@@ -24,9 +24,9 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.Config)
-            .HasMaxLength(1000)
             .HasDefaultValueSql("'{}'")
             .HasComment("配置")
+            .HasColumnType("json")
             .HasColumnName("config");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
@@ -41,9 +41,6 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.IsWorking)
-            .HasComment("插件正在工作")
-            .HasColumnName("is_working");
         entity.Property(e => e.PluginType)
             .HasMaxLength(10)
             .HasComment("插件类型")
@@ -68,6 +65,7 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasColumnName("wiki_id");
         entity.Property(e => e.WorkMessage)
             .HasMaxLength(1000)
+            .HasDefaultValueSql("''")
             .HasComment("运行信息")
             .HasColumnName("work_message");
         entity.Property(e => e.WorkState)

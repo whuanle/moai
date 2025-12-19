@@ -24,9 +24,9 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.Config)
-            .HasMaxLength(1000)
             .HasDefaultValueSql("'{}'")
             .HasComment("配置")
+            .HasColumnType("json")
             .HasColumnName("config");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
@@ -65,9 +65,9 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasColumnName("wiki_id");
         entity.Property(e => e.WorkMessage)
             .HasMaxLength(1000)
+            .HasDefaultValueSql("''")
             .HasComment("运行信息")
-            .HasColumnName("work_message")
-            .HasDefaultValue("''");
+            .HasColumnName("work_message");
         entity.Property(e => e.WorkState)
             .HasComment("状态")
             .HasColumnType("int(11)")

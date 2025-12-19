@@ -30,7 +30,7 @@ public class WikiDocumentAiTextPartionCommand : IRequest<EmptyCommandResponse>, 
     public string PromptTemplate { get; init; } = string.Empty;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumentAiTextPartionCommand> validate)
+    public static void Validate(AbstractValidator<WikiDocumentAiTextPartionCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库 ID 必须大于 0");
         validate.RuleFor(x => x.DocumentId).GreaterThan(0).WithMessage("文档 ID 必须大于 0");

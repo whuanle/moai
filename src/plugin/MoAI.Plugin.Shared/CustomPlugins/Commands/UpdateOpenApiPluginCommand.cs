@@ -65,7 +65,7 @@ public class UpdateOpenApiPluginCommand : IRequest<EmptyCommandResponse>, IModel
     public IReadOnlyCollection<KeyValueString> Query { get; init; } = Array.Empty<KeyValueString>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateOpenApiPluginCommand> validate)
+    public static void Validate(AbstractValidator<UpdateOpenApiPluginCommand> validate)
     {
         validate.RuleFor(x => x.PluginId)
             .NotEmpty().WithMessage("插件不正确.")

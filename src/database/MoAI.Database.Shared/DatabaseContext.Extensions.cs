@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database.Audits;
-using MoAI.Infra.Helpers;
 using MoAI.Infra.Services;
 using System.Linq.Expressions;
 

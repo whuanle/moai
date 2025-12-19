@@ -12,6 +12,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\ai\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
 		<ProjectReference Include="..\..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 	</ItemGroup>
 
 </Project>

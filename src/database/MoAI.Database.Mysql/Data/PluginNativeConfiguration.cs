@@ -19,21 +19,14 @@ public partial class PluginNativeConfiguration : IEntityTypeConfiguration<Plugin
 
         entity.ToTable("plugin_native", tb => tb.HasComment("内置插件"));
 
-        entity.HasIndex(e => e.PluginName, "plugin_plugin_name_index");
-
-        entity.HasIndex(e => e.Title, "plugin_title_index");
-
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
-        entity.Property(e => e.ClassifyId)
-            .HasComment("分类id")
-            .HasColumnType("int(11)")
-            .HasColumnName("classify_id");
         entity.Property(e => e.Config)
+            .HasDefaultValueSql("'{}'")
             .HasComment("配置参数")
-            .HasColumnType("text")
+            .HasColumnType("json")
             .HasColumnName("config");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
@@ -44,22 +37,10 @@ public partial class PluginNativeConfiguration : IEntityTypeConfiguration<Plugin
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
-        entity.Property(e => e.Description)
-            .HasMaxLength(255)
-            .HasDefaultValueSql("''")
-            .HasComment("注释")
-            .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.IsPublic)
-            .HasComment("公开访问")
-            .HasColumnName("is_public");
-        entity.Property(e => e.PluginName)
-            .HasMaxLength(50)
-            .HasComment("插件名称")
-            .HasColumnName("plugin_name");
         entity.Property(e => e.TemplatePluginClassify)
             .HasMaxLength(20)
             .HasComment("模板分类")
@@ -68,10 +49,6 @@ public partial class PluginNativeConfiguration : IEntityTypeConfiguration<Plugin
             .HasMaxLength(50)
             .HasComment("对应的内置插件key")
             .HasColumnName("template_plugin_key");
-        entity.Property(e => e.Title)
-            .HasMaxLength(50)
-            .HasComment("插件标题")
-            .HasColumnName("title");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("最后更新时间")

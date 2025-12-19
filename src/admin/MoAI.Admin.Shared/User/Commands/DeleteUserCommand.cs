@@ -17,7 +17,7 @@ public class DeleteUserCommand : IRequest<EmptyCommandResponse>, IModelValidator
     public IReadOnlyCollection<int> UserIds { get; init; } = Array.Empty<int>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeleteUserCommand> validate)
+    public static void Validate(AbstractValidator<DeleteUserCommand> validate)
     {
         validate.RuleFor(x => x.UserIds)
             .NotEmpty().WithMessage("用户ID不能为空")

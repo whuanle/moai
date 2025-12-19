@@ -5,7 +5,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Plugin.NativePlugins.Commands;
 
 /// <summary>
-/// 修改内置插件实例.
+/// 修改内置插件实例，也可以修改 tool，但是只能修改 ClassifyId，其它参数无法修改.
 /// </summary>
 public class UpdateNativePluginCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateNativePluginCommand>
 {
@@ -45,8 +45,17 @@ public class UpdateNativePluginCommand : IRequest<EmptyCommandResponse>, IModelV
     public string Config { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateNativePluginCommand> validate)
+    public static void Validate(AbstractValidator<UpdateNativePluginCommand> validate)
     {
+        validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类id不正确.");
+
+        validate.RuleFor(x => x.Title)
+            .NotEmpty().WithMessage("插件标题长度在 2-30 之间.")
+            .Length(2, 30).WithMessage("插件标题长度在 2-30 之间.");
+
+        validate.RuleFor(x => x.Config)
+            .NotEmpty().WithMessage("插件配置不能为空.");
+
         validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类id不正确.");
 
         validate.RuleFor(x => x.Name)

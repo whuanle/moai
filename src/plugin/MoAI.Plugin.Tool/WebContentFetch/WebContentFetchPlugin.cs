@@ -18,7 +18,7 @@ namespace MoAI.Plugin.Plugins.WebContentFetch;
 /// <summary>
 /// 网页内容抓取插件.
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "web_content_fetch",
     Name = "网页内容抓取",
     Description = "获取指定网页链接的内容",
@@ -28,9 +28,8 @@ namespace MoAI.Plugin.Plugins.WebContentFetch;
 public class WebContentFetchPlugin : IToolPluginRuntime
 {
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
         var example = new WebContentFetchParams
         {
             Url = "https://example.com" // 示例：目标网页链接

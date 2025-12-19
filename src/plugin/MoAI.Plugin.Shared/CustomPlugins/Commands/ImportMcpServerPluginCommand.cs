@@ -6,7 +6,7 @@ using MoAI.Plugin.Models;
 namespace MoAI.Plugin.CustomPlugins.Commands;
 
 /// <summary>
-/// 导入 mcp 服务.
+/// 导入 mcp 服务，导入时会访问 mcp 服务器，可能会导致导入比较慢.
 /// </summary>
 public class ImportMcpServerPluginCommand : McpServerPluginConnectionOptions, IRequest<SimpleInt>, IModelValidator<ImportMcpServerPluginCommand>
 {
@@ -21,7 +21,7 @@ public class ImportMcpServerPluginCommand : McpServerPluginConnectionOptions, IR
     public bool IsPublic { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<ImportMcpServerPluginCommand> validate)
+    public static void Validate(AbstractValidator<ImportMcpServerPluginCommand> validate)
     {
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("插件名称长度在 2-30 之间.")

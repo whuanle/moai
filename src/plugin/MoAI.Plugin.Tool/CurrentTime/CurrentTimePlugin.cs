@@ -13,7 +13,7 @@ namespace MoAI.Plugin.Plugins.CurrentTime;
 /// <summary>
 /// 获取当前时间插件.
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "current_time",
     Name = "获取当前时间",
     Description = "获取当前系统时间",
@@ -23,10 +23,8 @@ namespace MoAI.Plugin.Plugins.CurrentTime;
 public class CurrentTimePlugin : IToolPluginRuntime
 {
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
-
         // 此插件无需参数，返回空对象
         var example = new { };
 

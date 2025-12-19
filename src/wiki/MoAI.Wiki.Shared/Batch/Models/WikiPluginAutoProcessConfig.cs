@@ -47,7 +47,7 @@ public class WikiPluginAutoProcessConfig : IModelValidator<WikiPluginAutoProcess
     public int ThreadCount { get; init; } = 5;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiPluginAutoProcessConfig> validate)
+    public static void Validate(AbstractValidator<WikiPluginAutoProcessConfig> validate)
     {
         validate.When(x => x.Partion is not null, () =>
         {

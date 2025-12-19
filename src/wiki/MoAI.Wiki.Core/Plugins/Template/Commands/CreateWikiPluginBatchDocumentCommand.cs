@@ -44,7 +44,7 @@ public class CreateWikiPluginBatchDocumentCommand : IModelValidator<CreateWikiPl
     public int? ThreadCount { get; init; } = 5;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CreateWikiPluginBatchDocumentCommand> validate)
+    public static void Validate(AbstractValidator<CreateWikiPluginBatchDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

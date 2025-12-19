@@ -46,7 +46,7 @@ public class UpdateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     public Guid OAuthConnectionId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateOAuthConnectionCommand> validate)
+    public static void Validate(AbstractValidator<UpdateOAuthConnectionCommand> validate)
     {
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("不能为空.")
             .Length(2, 20).WithMessage("2 - 20 个字符")

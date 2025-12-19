@@ -16,7 +16,7 @@ public class AiOptimizePromptRequest : IModelValidator<AiOptimizePromptRequest>
     public string SourcePrompt { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<AiOptimizePromptRequest> validate)
+    public static void Validate(AbstractValidator<AiOptimizePromptRequest> validate)
     {
         validate.RuleFor(x => x.AiModelId).NotEmpty().WithMessage("模型id不正确");
 

@@ -25,7 +25,7 @@ public class UpdatePromptClassifyCommand : IRequest<EmptyCommandResponse>, IMode
     public string? Description { get; init; } = string.Empty;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdatePromptClassifyCommand> validate)
+    public static void Validate(AbstractValidator<UpdatePromptClassifyCommand> validate)
     {
         validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类ID不能为空");
         validate.RuleFor(x => x.Name)

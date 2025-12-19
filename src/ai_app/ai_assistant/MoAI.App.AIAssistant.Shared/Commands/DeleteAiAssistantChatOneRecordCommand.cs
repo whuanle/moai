@@ -21,7 +21,7 @@ public class DeleteAiAssistantChatOneRecordCommand : IRequest<EmptyCommandRespon
     /// </summary>
     public long RecordId { get; init; }
 
-    public void Validate(AbstractValidator<DeleteAiAssistantChatCommand> validate)
+    public static void Validate(AbstractValidator<DeleteAiAssistantChatCommand> validate)
     {
         validate.RuleFor(x => x.ChatId)
             .NotEmpty().WithMessage("对话id不正确.")

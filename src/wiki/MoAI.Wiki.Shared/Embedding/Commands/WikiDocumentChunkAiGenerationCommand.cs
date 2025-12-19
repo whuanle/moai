@@ -33,7 +33,7 @@ public class WikiDocumentChunkAiGenerationCommand : IRequest<WikiDocumentChunkAi
     public IReadOnlyCollection<KeyValue<long, string>> Chunks { get; init; } = Array.Empty<KeyValue<long, string>>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumentChunkAiGenerationCommand> validate)
+    public static void Validate(AbstractValidator<WikiDocumentChunkAiGenerationCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0);
         validate.RuleFor(x => x.Chunks).NotNull()

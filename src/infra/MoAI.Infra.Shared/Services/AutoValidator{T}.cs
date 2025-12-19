@@ -15,13 +15,13 @@ namespace MoAI.Infra;
 /// </summary>
 /// <typeparam name="T">类型.</typeparam>
 public class AutoValidator<T> : AbstractValidator<T>, IValidator<T>
-    where T : class, IModelValidator<T>, new()
+    where T : class, IModelValidator<T>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="AutoValidator{T}"/> class.
     /// </summary>
     public AutoValidator()
     {
-        new T().Validate(this);
+        T.Validate(this);
     }
 }

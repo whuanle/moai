@@ -5,7 +5,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 知识库文档关联任务，这里的任务都是成功的.
+/// 知识库文档关联任务.
 /// </summary>
 public partial class WikiPluginConfigDocumentStateEntity : IFullAudited
 {

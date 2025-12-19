@@ -10,7 +10,7 @@ namespace MoAI.Database.Entities;
 public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
 {
     /// <summary>
-    /// 元数据唯一ID（derivative_id）.
+    /// 元数据内容唯一ID（derivative_id）.
     /// </summary>
     public Guid Id { get; set; }
 

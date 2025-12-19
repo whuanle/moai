@@ -14,7 +14,7 @@ namespace MoAI.Plugin.Plugins.TextExtract;
 /// <summary>
 /// 文本提取插件.
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "text_extract",
     Name = "文本提取",
     Description =
@@ -54,9 +54,8 @@ public class TextExtractPlugin : IToolPluginRuntime
     }
 
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
         string example = "https://example.com/file.pdf";
         return System.Text.Json.JsonSerializer.Serialize(
             new TextExtractPluginParam

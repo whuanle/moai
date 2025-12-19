@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface Run_testRequestBuilder extends BaseRequestBuilder<Run_testRequestBuilder> {
     /**
      * 运行插件测试（调试）.
-     * @param body The request body
+     * @param body 使用参数测试插件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<RunTestNativePluginCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface Run_testRequestBuilder extends BaseRequestBuilder<Run_testReque
      post(body: RunTestNativePluginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<RunTestNativePluginCommandResponse | undefined>;
     /**
      * 运行插件测试（调试）.
-     * @param body The request body
+     * @param body 使用参数测试插件.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

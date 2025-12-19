@@ -17,7 +17,7 @@ public class QueryWikiCrawlerConfigCommand : IRequest<QueryWikiCrawlerConfigComm
     public int ConfigId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiCrawlerConfigCommand> validate)
+    public static void Validate(AbstractValidator<QueryWikiCrawlerConfigCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

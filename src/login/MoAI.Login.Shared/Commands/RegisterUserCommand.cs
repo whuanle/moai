@@ -35,7 +35,7 @@ public class RegisterUserCommand : IRequest<SimpleInt>, IModelValidator<Register
     public string Phone { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<RegisterUserCommand> validate)
+    public static void Validate(AbstractValidator<RegisterUserCommand> validate)
     {
         validate.RuleFor(x => x.UserName).NotEmpty().MinimumLength(5).MaximumLength(20).WithMessage("用户名 5-20 字符.");
         validate.RuleFor(x => x.Email).NotEmpty().EmailAddress().MinimumLength(5).MaximumLength(50).WithMessage("邮箱 5-50 字符.");

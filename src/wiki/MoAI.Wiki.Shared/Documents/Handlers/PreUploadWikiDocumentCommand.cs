@@ -35,7 +35,7 @@ public class PreUploadWikiDocumentCommand : IRequest<PreloadWikiDocumentResponse
     public string MD5 { get; set; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<PreUploadWikiDocumentCommand> validate)
+    public static void Validate(AbstractValidator<PreUploadWikiDocumentCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

@@ -25,7 +25,7 @@ public class DeleteWikiDocumentChunkCommand : IRequest<EmptyCommandResponse>, IM
     public long ChunkId { get; set; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeleteWikiDocumentChunkCommand> validate)
+    public static void Validate(AbstractValidator<DeleteWikiDocumentChunkCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.DocumentId).GreaterThan(0).WithMessage("文档ID错误");

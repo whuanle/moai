@@ -24,7 +24,7 @@ public class UpdateWikiDocumentFileNameCommand : IRequest<EmptyCommandResponse>,
     public string FileName { get; set; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateWikiDocumentFileNameCommand> validate)
+    public static void Validate(AbstractValidator<UpdateWikiDocumentFileNameCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).NotEmpty();
         validate.RuleFor(x => x.DocumentId).NotEmpty();

@@ -22,7 +22,7 @@ public class WikiDocumentTextPartitionPreviewCommand : DocumentTextPartionConfig
     public int DocumentId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumentTextPartitionPreviewCommand> validate)
+    public static void Validate(AbstractValidator<WikiDocumentTextPartitionPreviewCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库id必须大于0");
         validate.RuleFor(x => x.DocumentId).GreaterThan(0).WithMessage("文档id必须大于0");

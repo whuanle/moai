@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.CustomPlugins.Commands;
@@ -30,6 +31,15 @@ public class PreUploadOpenApiFilePluginCommandHandler : IRequestHandler<PreUploa
     /// <inheritdoc/>
     public async Task<PreUploadOpenApiFilePluginCommandResponse> Handle(PreUploadOpenApiFilePluginCommand request, CancellationToken cancellationToken)
     {
+        // 检查插件有同名插件
+        var exists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == request.PluginName, cancellationToken);
+
+        if (exists)
+        {
+            throw new BusinessException("插件名称已存在") { StatusCode = 409 };
+        }
+
         if (!FileStoreHelper.OpenApiFormats.Contains(Path.GetExtension(request.FileName).ToLower()))
         {
             throw new BusinessException("不支持的文件格式，请导入 .json/.yaml/.yml 文件") { StatusCode = 400 };

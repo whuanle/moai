@@ -25,7 +25,7 @@ public class CreateWikiCommand : IRequest<SimpleInt>, IModelValidator<CreateWiki
     public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CreateWikiCommand> validate)
+    public static void Validate(AbstractValidator<CreateWikiCommand> validate)
     {
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("知识库名称长度在 2-20 之间.")

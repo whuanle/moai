@@ -23,7 +23,7 @@ public class NativePluginDetail : AuditsInfo
     /// <summary>
     /// 参数.
     /// </summary>
-    public string Params { get; init; } = default!;
+    public string Config { get; init; } = default!;
 
     /// <summary>
     /// id.

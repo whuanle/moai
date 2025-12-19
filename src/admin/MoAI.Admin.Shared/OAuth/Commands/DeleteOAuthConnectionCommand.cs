@@ -17,7 +17,7 @@ public class DeleteOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     public Guid OAuthConnectionId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeleteOAuthConnectionCommand> validate)
+    public static void Validate(AbstractValidator<DeleteOAuthConnectionCommand> validate)
     {
         validate.RuleFor(x => x.OAuthConnectionId).NotEmpty().WithMessage("ID不能为空.");
     }

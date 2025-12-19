@@ -42,7 +42,7 @@ public class CreateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     public Uri WellKnown { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CreateOAuthConnectionCommand> validate)
+    public static void Validate(AbstractValidator<CreateOAuthConnectionCommand> validate)
     {
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("不能为空.")
             .Length(2, 20).WithMessage("2 - 20 个字符")

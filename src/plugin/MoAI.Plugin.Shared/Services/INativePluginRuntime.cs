@@ -8,12 +8,6 @@ namespace MoAI.Plugin.Plugins;
 public interface INativePluginRuntime : IToolPluginRuntime
 {
     /// <summary>
-    /// 获取配置模型类.
-    /// </summary>
-    /// <returns></returns>
-    Task<Type> GetConfigTypeAsync();
-
-    /// <summary>
     /// 检查字符串 json 配置，返回错误信息.
     /// </summary>
     /// <param name="config"></param>

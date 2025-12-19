@@ -16,7 +16,7 @@ namespace MoAI.Plugin.Tools.MarkdownToHtml;
 /// <summary>
 /// Markdown 转 html.
 /// </summary>
-[Attributes.NativePluginFieldConfigAttribute(
+[Attributes.NativePluginConfigAttribute(
     "markdown_to_html",
     Name = "markdown转html",
     Description = "将 markdown 转换为 html，消息内容格式为普通文本",
@@ -26,9 +26,8 @@ namespace MoAI.Plugin.Tools.MarkdownToHtml;
 public class MarkdownToHtmlPlugin : IToolPluginRuntime
 {
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
         string example =
             """
             ### 这是一个标题

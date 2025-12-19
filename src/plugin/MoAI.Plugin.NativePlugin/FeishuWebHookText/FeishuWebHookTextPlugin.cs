@@ -17,11 +17,12 @@ namespace MoAI.Plugin.Plugins.FeishuWebHookText;
 /// <summary>
 /// 飞书机器人 WebHook 插件.
 /// </summary>
-[NativePluginFieldConfig(
+[NativePluginConfig(
     "feishu_webhook_text",
     Name = "飞书机器人发送文本消息",
     Description = "使用飞书机器人对群聊或人发送消息，消息内容格式为普通文本",
-    Classify = NativePluginClassify.Communication)]
+    Classify = NativePluginClassify.Communication,
+    ConfigType = typeof(FeishuWebHookTextPluginConfig))]
 [InjectOnTransient]
 public class FeishuWebHookTextPlugin : INativePluginRuntime
 {
@@ -38,6 +39,12 @@ public class FeishuWebHookTextPlugin : INativePluginRuntime
     public FeishuWebHookTextPlugin(IFeishuWebHookClient client)
     {
         _client = client;
+    }
+
+    /// <inheritdoc/>
+    public static string GetParamsExampleValue()
+    {
+        return System.Text.Json.JsonSerializer.Serialize("这是一条来自飞书机器人的消息", JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
     }
 
     /// <inheritdoc/>
@@ -64,21 +71,6 @@ public class FeishuWebHookTextPlugin : INativePluginRuntime
         {
             return $"参数解析失败: {ex.Message}";
         }
-    }
-
-    /// <inheritdoc/>
-    public async Task<Type> GetConfigTypeAsync()
-    {
-        await Task.CompletedTask;
-
-        return typeof(FeishuWebHookTextPluginConfig);
-    }
-
-    /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
-    {
-        await Task.CompletedTask;
-        return System.Text.Json.JsonSerializer.Serialize("这是一条来自飞书机器人的消息", JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
     }
 
     /// <inheritdoc/>

@@ -3,6 +3,9 @@ using MoAI.Plugin.Models;
 
 namespace MoAI.Plugin.NativePlugins.Queries.Responses;
 
+/// <summary>
+/// QueryNativePluginListCommandResponse.
+/// </summary>
 public class QueryNativePluginListCommandResponse
 {
     /// <summary>

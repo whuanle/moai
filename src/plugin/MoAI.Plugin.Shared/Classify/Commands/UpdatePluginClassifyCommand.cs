@@ -28,7 +28,7 @@ public class UpdatePluginClassifyCommand : IRequest<EmptyCommandResponse>, IMode
     ///  验证模型.
     /// </summary>
     /// <param name="validate">验证器.</param>
-    public void Validate(FluentValidation.AbstractValidator<UpdatePluginClassifyCommand> validate)
+    public static void Validate(AbstractValidator<UpdatePluginClassifyCommand> validate)
     {
         validate.RuleFor(x => x.ClassifyId).NotEmpty().WithMessage("分类id不正确.");
 

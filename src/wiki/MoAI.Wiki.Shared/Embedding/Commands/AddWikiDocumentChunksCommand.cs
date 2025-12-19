@@ -36,7 +36,7 @@ public class AddWikiDocumentChunksCommand : IRequest<EmptyCommandResponse>, IMod
     public IReadOnlyCollection<WikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<WikiDocumentDerivativeItem>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<AddWikiDocumentChunksCommand> validate)
+    public static void Validate(AbstractValidator<AddWikiDocumentChunksCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.DocumentId).GreaterThan(0).WithMessage("文档ID错误");

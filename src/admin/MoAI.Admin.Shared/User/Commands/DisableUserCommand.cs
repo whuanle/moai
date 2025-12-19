@@ -21,7 +21,7 @@ public class DisableUserCommand : IRequest<EmptyCommandResponse>, IModelValidato
     public bool IsDisable { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DisableUserCommand> validate)
+    public static void Validate(AbstractValidator<DisableUserCommand> validate)
     {
         validate.RuleFor(x => x.UserIds)
             .NotEmpty().WithMessage("用户ID不能为空")

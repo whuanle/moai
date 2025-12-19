@@ -7,6 +7,7 @@ using MoAI.Plugin.CustomPlugins.Commands;
 using MoAI.Plugin.CustomPlugins.Commands.Responses;
 using MoAI.Plugin.CustomPlugins.Queries;
 using MoAI.Plugin.CustomPlugins.Queries.Responses;
+using MoAI.Plugin.Templates.Commands;
 
 namespace MoAI.Plugin.Controllers;
 
@@ -122,11 +123,11 @@ public partial class CustomPluginController : ControllerBase
     /// <summary>
     /// 查询插件简要信息列表，不支持查询内置插件.
     /// </summary>
-    /// <param name="req">请求体，见 <see cref="QueryPluginBaseListCommand"/>.</param>
+    /// <param name="req">请求体，见 <see cref="QueryCustomPluginBaseListCommand"/>.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryPluginBaseListCommandResponse"/>.</returns>
+    /// <returns>返回 <see cref="QueryCustomPluginBaseListCommandResponse"/>.</returns>
     [HttpPost("plugin_list")]
-    public async Task<QueryPluginBaseListCommandResponse> QueryPluginBaseList([FromBody] QueryPluginBaseListCommand req, CancellationToken ct = default)
+    public async Task<QueryCustomPluginBaseListCommandResponse> QueryPluginBaseList([FromBody] QueryCustomPluginBaseListCommand req, CancellationToken ct = default)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
@@ -144,11 +145,11 @@ public partial class CustomPluginController : ControllerBase
     /// <summary>
     /// 获取插件的详细信息.
     /// </summary>
-    /// <param name="req">请求体，见 <see cref="QueryPluginDetailCommand"/>.</param>
+    /// <param name="req">请求体，见 <see cref="QueryCustomPluginDetailCommand"/>.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryPluginDetailCommandResponse"/>.</returns>
+    /// <returns>返回 <see cref="QueryCustomPluginDetailCommandResponse"/>.</returns>
     [HttpPost("plugin_detail")]
-    public async Task<QueryPluginDetailCommandResponse> QueryPluginDetail([FromBody] QueryPluginDetailCommand req, CancellationToken ct = default)
+    public async Task<QueryCustomPluginDetailCommandResponse> QueryPluginDetail([FromBody] QueryCustomPluginDetailCommand req, CancellationToken ct = default)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {
@@ -166,11 +167,11 @@ public partial class CustomPluginController : ControllerBase
     /// <summary>
     /// 插件的函数列表.
     /// </summary>
-    /// <param name="req">请求体，见 <see cref="QueryPluginFunctionsListCommand"/>.</param>
+    /// <param name="req">请求体，见 <see cref="QueryCustomPluginFunctionsListCommand"/>.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryPluginFunctionsListCommandResponse"/>.</returns>
+    /// <returns>返回 <see cref="QueryCustomPluginFunctionsListCommandResponse"/>.</returns>
     [HttpPost("function_list")]
-    public async Task<QueryPluginFunctionsListCommandResponse> QueryPluginFunctionsList([FromBody] QueryPluginFunctionsListCommand req, CancellationToken ct = default)
+    public async Task<QueryCustomPluginFunctionsListCommandResponse> QueryPluginFunctionsList([FromBody] QueryCustomPluginFunctionsListCommand req, CancellationToken ct = default)
     {
         var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
         {

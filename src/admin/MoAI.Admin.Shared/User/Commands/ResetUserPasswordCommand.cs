@@ -16,7 +16,7 @@ public class ResetUserPasswordCommand : IRequest<SimpleString>, IModelValidator<
     public int UserId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<ResetUserPasswordCommand> validate)
+    public static void Validate(AbstractValidator<ResetUserPasswordCommand> validate)
     {
         validate.RuleFor(x => x.UserId)
             .GreaterThan(0).WithMessage("用户ID必须大于0")

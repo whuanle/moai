@@ -38,9 +38,9 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
         entity.Property(e => e.ExecutionSettings)
-            .HasMaxLength(2000)
             .HasDefaultValueSql("'[]'")
             .HasComment("对话影响参数")
+            .HasColumnType("json")
             .HasColumnName("execution_settings");
         entity.Property(e => e.InputTokens)
             .HasComment("输入token统计")
@@ -58,13 +58,13 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("输出token统计")
             .HasColumnType("int(11)")
             .HasColumnName("out_tokens");
-        entity.Property(e => e.PluginIds)
-            .HasMaxLength(1000)
+        entity.Property(e => e.PluginS)
             .HasDefaultValueSql("'[]'")
-            .HasComment("要使用的插件id")
-            .HasColumnName("plugin_ids");
+            .HasComment("要使用的插件")
+            .HasColumnType("json")
+            .HasColumnName("plugin_s");
         entity.Property(e => e.Prompt)
-            .HasMaxLength(2000)
+            .HasMaxLength(4000)
             .HasDefaultValueSql("''")
             .HasComment("提示词")
             .HasColumnName("prompt");
@@ -87,10 +87,11 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
-        entity.Property(e => e.WikiId)
+        entity.Property(e => e.WikiIds)
+            .HasDefaultValueSql("'0'")
             .HasComment("要使用的知识库id")
-            .HasColumnType("int(11)")
-            .HasColumnName("wiki_id");
+            .HasColumnType("json")
+            .HasColumnName("wiki_ids");
 
         OnConfigurePartial(entity);
     }

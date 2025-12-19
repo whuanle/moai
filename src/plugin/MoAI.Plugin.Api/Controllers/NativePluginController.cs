@@ -4,8 +4,10 @@ using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.NativePlugins.Commands;
+using MoAI.Plugin.NativePlugins.Models;
 using MoAI.Plugin.NativePlugins.Queries;
 using MoAI.Plugin.NativePlugins.Queries.Responses;
+using MoAI.Plugin.Templates.Commands;
 
 namespace MoAI.Plugin.Controllers;
 
@@ -48,11 +50,11 @@ public partial class NativePluginController : ControllerBase
     /// <summary>
     /// 删除内置插件.
     /// </summary>
-    /// <param name="req">请求体，见 <see cref="DeleteNativePluginCommand"/>.</param>
+    /// <param name="req">请求体，见 <see cref="DeletePluginCommand"/>.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
     [HttpDelete("delete")]
-    public async Task<EmptyCommandResponse> Delete([FromBody] DeleteNativePluginCommand req, CancellationToken ct = default)
+    public async Task<EmptyCommandResponse> Delete([FromBody] DeletePluginCommand req, CancellationToken ct = default)
     {
         await CheckIsAdminAsync(ct);
 
@@ -92,9 +94,9 @@ public partial class NativePluginController : ControllerBase
     /// </summary>
     /// <param name="req">请求体，见 <see cref="QueryNativePluginTemplateListCommand"/>.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryInternalTemplatePluginListCommandResponse"/>.</returns>
+    /// <returns>返回 <see cref="QueryNativePluginTemplateListCommandResponse"/>.</returns>
     [HttpPost("template_list")]
-    public async Task<QueryInternalTemplatePluginListCommandResponse> QueryTemplateList([FromBody] QueryNativePluginTemplateListCommand req, CancellationToken ct = default)
+    public async Task<QueryNativePluginTemplateListCommandResponse> QueryTemplateList([FromBody] QueryNativePluginTemplateListCommand req, CancellationToken ct = default)
     {
         await CheckIsAdminAsync(ct);
 

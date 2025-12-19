@@ -17,7 +17,7 @@ namespace MoAI.Plugin.Plugins.JavaScriptExecutor;
 /// <summary>
 /// JavaScript 执行插件.
 /// </summary>
-[Attributes.NativePluginFieldConfig(
+[Attributes.NativePluginConfig(
     "javascript_executor_nohave_paramter",
     Name = "JavaScript 执行器",
     Description = "执行指定的 JavaScript 代码，限制最大内存4MB、超时4s、最大语句1000行",
@@ -27,10 +27,8 @@ namespace MoAI.Plugin.Plugins.JavaScriptExecutor;
 public class JavaScriptExecutorPlugin : IToolPluginRuntime
 {
     /// <inheritdoc/>
-    public async Task<string> GetParamsExampleValue()
+    public static string GetParamsExampleValue()
     {
-        await Task.CompletedTask;
-
         var code = """
             // 函数必须以 run 命名，paramter 参数是字符串
             // 返回值可以是对象或字符串等类型

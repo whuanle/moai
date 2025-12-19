@@ -17,7 +17,7 @@ public class DeleteAiModelCommand : IRequest<EmptyCommandResponse>, IModelValida
     public int AiModelId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<DeleteAiModelCommand> validate)
+    public static void Validate(AbstractValidator<DeleteAiModelCommand> validate)
     {
         validate.RuleFor(x => x.AiModelId)
             .NotEmpty().WithMessage("模型id有误");

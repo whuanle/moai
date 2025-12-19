@@ -1,4 +1,5 @@
 #pragma warning disable CA1031 // 不捕获常规异常类型
+#pragma warning disable SA1118 // Parameter should not span multiple lines
 
 using Maomi;
 using Microsoft.SemanticKernel;
@@ -17,11 +18,12 @@ namespace MoAI.Plugin.Plugins.BoCha.WebSearch;
 /// <summary>
 /// BoCha 全网搜索插件
 /// </summary>
-[NativePluginFieldConfig(
+[NativePluginConfig(
     "bocha_web_search",
     Name = "BoCha 全网搜索",
     Description = "使用 BoCha API 进行全网搜索。",
-    Classify = NativePluginClassify.Search)]
+    Classify = NativePluginClassify.Search,
+    ConfigType = typeof(BoChaPluginConfig))]
 [InjectOnTransient]
 public partial class BoChaWebSearchPlugin : INativePluginRuntime
 {
@@ -35,6 +37,22 @@ public partial class BoChaWebSearchPlugin : INativePluginRuntime
     public BoChaWebSearchPlugin(IBoChaClient boChaClient)
     {
         _boChaClient = boChaClient;
+    }
+
+    /// <inheritdoc/>
+    public static string GetParamsExampleValue()
+    {
+        var example = new WebSearchRequest
+        {
+            Query = "如何学习 C#",
+            Freshness = "oneMonth",
+            Count = 5,
+            Summary = false,
+            Exclude = null!,
+            Include = null!
+        };
+
+        return JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
     }
 
     /// <inheritdoc/>
@@ -54,28 +72,6 @@ public partial class BoChaWebSearchPlugin : INativePluginRuntime
         {
             return Task.FromResult<string?>($"参数解析失败: {ex.Message}");
         }
-    }
-
-    /// <inheritdoc/>
-    public Task<Type> GetConfigTypeAsync()
-    {
-        return Task.FromResult(typeof(BoChaPluginConfig));
-    }
-
-    /// <inheritdoc/>
-    public Task<string> GetParamsExampleValue()
-    {
-        var example = new WebSearchRequest
-        {
-            Query = "如何学习 C#",
-            Freshness = "oneMonth",
-            Count = 5,
-            Summary = false,
-            Exclude = null!,
-            Include = null!
-        };
-
-        return Task.FromResult(JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping));
     }
 
     /// <inheritdoc/>

@@ -32,8 +32,8 @@ public class QueryNativePluginDetailCommandHandler : IRequestHandler<QueryNative
     /// <inheritdoc/>
     public async Task<NativePluginDetail> Handle(QueryNativePluginDetailCommand request, CancellationToken cancellationToken)
     {
-        var plugin = await _databaseContext.PluginNatives.Where(x => x.Id == request.PluginId)
-            .Select(x => new NativePluginDetail
+        var plugin = await _databaseContext.Plugins.Where(x => x.Id == request.PluginId)
+            .Join(_databaseContext.PluginNatives, a => a.PluginId, a => a.Id, (x, y) => new NativePluginDetail
             {
                 PluginId = x.Id,
                 PluginName = x.PluginName,
@@ -45,9 +45,9 @@ public class QueryNativePluginDetailCommandHandler : IRequestHandler<QueryNative
                 UpdateUserId = x.UpdateUserId,
                 IsPublic = x.IsPublic,
                 ClassifyId = x.ClassifyId,
-                Params = x.Config,
-                TemplatePluginClassify = x.TemplatePluginClassify.JsonToObject<NativePluginClassify>(),
-                TemplatePluginKey = x.TemplatePluginKey,
+                Config = y.Config,
+                TemplatePluginClassify = y.TemplatePluginClassify.JsonToObject<NativePluginClassify>(),
+                TemplatePluginKey = y.TemplatePluginKey,
             }).FirstOrDefaultAsync();
 
         if (plugin == null)

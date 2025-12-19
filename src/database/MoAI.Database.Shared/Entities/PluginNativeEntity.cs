@@ -25,34 +25,9 @@ public partial class PluginNativeEntity : IFullAudited
     public string TemplatePluginKey { get; set; } = default!;
 
     /// <summary>
-    /// 插件名称.
-    /// </summary>
-    public string PluginName { get; set; } = default!;
-
-    /// <summary>
-    /// 插件标题.
-    /// </summary>
-    public string Title { get; set; } = default!;
-
-    /// <summary>
-    /// 注释.
-    /// </summary>
-    public string Description { get; set; } = default!;
-
-    /// <summary>
     /// 配置参数.
     /// </summary>
     public string Config { get; set; } = default!;
-
-    /// <summary>
-    /// 分类id.
-    /// </summary>
-    public int ClassifyId { get; set; }
-
-    /// <summary>
-    /// 公开访问.
-    /// </summary>
-    public bool IsPublic { get; set; }
 
     /// <summary>
     /// 创建人.

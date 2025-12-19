@@ -29,7 +29,7 @@ public class WikiDocumenChunkItem : IModelValidator<WikiDocumenChunkItem>
     public IReadOnlyCollection<WikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<WikiDocumentDerivativeItem>();
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<WikiDocumenChunkItem> validate)
+    public static void Validate(AbstractValidator<WikiDocumenChunkItem> validate)
     {
         validate.RuleFor(x => x.ChunkId).GreaterThan(0).WithMessage("分块ID错误");
         validate.RuleFor(x => x.Text).NotEmpty().WithMessage("分块文本不能为空");

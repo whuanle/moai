@@ -25,7 +25,7 @@ public class CancalWikiDocumentTaskCommand : IRequest<EmptyCommandResponse>, IMo
     public Guid TaskId { get; set; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<CancalWikiDocumentTaskCommand> validate)
+    public static void Validate(AbstractValidator<CancalWikiDocumentTaskCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

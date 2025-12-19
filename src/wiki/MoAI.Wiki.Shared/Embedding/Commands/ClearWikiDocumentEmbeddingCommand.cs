@@ -20,7 +20,7 @@ public class ClearWikiDocumentEmbeddingCommand : IRequest<EmptyCommandResponse>,
     public int? DocumentId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<ClearWikiDocumentEmbeddingCommand> validate)
+    public static void Validate(AbstractValidator<ClearWikiDocumentEmbeddingCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

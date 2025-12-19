@@ -22,7 +22,7 @@ public class UpdateAiModelCommand : AiEndpoint, IRequest<EmptyCommandResponse>, 
     public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdateAiModelCommand> validate)
+    public static void Validate(AbstractValidator<UpdateAiModelCommand> validate)
     {
         validate.RuleFor(x => x.AiModelId)
             .NotEmpty().WithMessage("模型id有误");

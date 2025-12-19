@@ -15,7 +15,7 @@ public class RefreshTokenCommand : IRequest<RefreshTokenCommandResponse>, IModel
     public string RefreshToken { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<RefreshTokenCommand> validate)
+    public static void Validate(AbstractValidator<RefreshTokenCommand> validate)
     {
         validate.RuleFor(x => x.RefreshToken).NotEmpty();
     }

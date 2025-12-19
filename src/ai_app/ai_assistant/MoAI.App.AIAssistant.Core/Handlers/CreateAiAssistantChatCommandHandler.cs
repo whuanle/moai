@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using ClosedXML.Excel;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.AIAssistant.Commands.Responses;
 using MoAI.Database;
@@ -6,6 +7,7 @@ using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Services;
+using MoAI.Plugin.Models;
 
 namespace MoAIChat.Core.Handlers;
 
@@ -34,19 +36,49 @@ public class CreateAiAssistantChatCommandHandler : IRequestHandler<CreateAiAssis
     /// <inheritdoc/>
     public async Task<CreateAiAssistantChatCommandResponse> Handle(CreateAiAssistantChatCommand request, CancellationToken cancellationToken)
     {
-        // 检测用户是否有权访问知识库和插件
-        // 插件不做检查，实际用到时只使用用户有权使用的插件
-        if (request.WikiId > 0)
+        // 检测用户是否有权访问知识库
+        if (request.WikiIds.Count > 0)
         {
-            var existWiki = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId && (x.CreateUserId == request.UserId || x.IsPublic)).AnyAsync();
-            if (existWiki == false)
-            {
-                existWiki = await _databaseContext.WikiUsers.Where(x => x.WikiId == request.WikiId && x.UserId == request.UserId).AnyAsync();
+            var wikiIds = request.WikiIds.ToHashSet();
 
-                if (existWiki == false)
-                {
-                    throw new BusinessException("用户无权访问此知识库");
-                }
+            var notJoinWikiIds = await _databaseContext.Wikis
+                .Where(x => wikiIds.Contains(x.Id) && (!x.IsPublic && x.CreateUserId == request.ContextUserId && _databaseContext.WikiUsers.Where(a => a.WikiId == x.Id && a.UserId == request.ContextUserId).Any()))
+                .Select(x => x.Name)
+                .ToListAsync();
+
+            if (notJoinWikiIds.Count > 0)
+            {
+                throw new BusinessException("用户无权访问知识库 {0}", string.Join(",", notJoinWikiIds));
+            }
+        }
+
+        var customPluginIds = request.CustomPluginIds;
+
+        if (customPluginIds.Count > 0)
+        {
+            var notExistPlugins = await _databaseContext.PluginCustoms
+                .Where(x => customPluginIds.Contains(x.Id) && !x.IsPublic)
+                .Select(x => x.PluginName)
+                .ToListAsync();
+
+            if (notExistPlugins.Count > 0)
+            {
+                throw new BusinessException("用户无权访问插件 {0}", string.Join(",", notExistPlugins));
+            }
+        }
+
+        var nativePluginIds = request.NativePluginIds;
+
+        if (nativePluginIds.Count > 0)
+        {
+            var notExistPlugins = await _databaseContext.PluginNatives
+                .Where(x => nativePluginIds.Contains(x.Id) && !x.IsPublic)
+                .Select(x => x.PluginName)
+                .ToListAsync();
+
+            if (notExistPlugins.Count > 0)
+            {
+                throw new BusinessException("用户无权访问插件 {0}", string.Join(",", notExistPlugins));
             }
         }
 
@@ -55,8 +87,8 @@ public class CreateAiAssistantChatCommandHandler : IRequestHandler<CreateAiAssis
             Title = request.Title,
             ModelId = request.ModelId,
             Prompt = request.Prompt ?? string.Empty,
-            PluginIds = request.PluginIds.ToJsonString(),
-            WikiId = request.WikiId,
+            Plugins = request.NativePluginIds.ToJsonString(),
+            WikiIds = request.WikiIds,
             ExecutionSettings = request.ExecutionSettings.ToJsonString(),
         };
 

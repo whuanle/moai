@@ -50,7 +50,7 @@ public class SearchWikiDocumentTextCommand : IRequest<SearchWikiDocumentTextComm
     public bool IsAnswer { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<SearchWikiDocumentTextCommand> validate)
+    public static void Validate(AbstractValidator<SearchWikiDocumentTextCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.NativePlugins.Commands;
+using MoAI.Plugin.NativePlugins.Models;
 using MoAI.Plugin.Plugins;
 
 namespace MoAI.Plugin.Commands;
@@ -14,22 +15,25 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly DatabaseContext _databaseContext;
+    private readonly INativePluginFactory _nativePluginFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RunTestNativePluginCommandHandler"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="databaseContext"></param>
-    public RunTestNativePluginCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext)
+    /// <param name="nativePluginFactory"></param>
+    public RunTestNativePluginCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, INativePluginFactory nativePluginFactory)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
+        _nativePluginFactory = nativePluginFactory;
     }
 
     /// <inheritdoc/>
     public async Task<RunTestNativePluginCommandResponse> Handle(RunTestNativePluginCommand request, CancellationToken cancellationToken)
     {
-        var pluginInfo = NativePluginFactory.Plugins.FirstOrDefault(x => x.Key == request.TemplatePluginKey);
+        var pluginInfo = _nativePluginFactory.GetPluginByKey(request.TemplatePluginKey);
         if (pluginInfo == null)
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
@@ -41,7 +45,7 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
 
-        if (pluginInfo.IsTool)
+        if (pluginInfo.PluginType == Models.PluginType.ToolPlugin)
         {
             // 执行测试
             try
@@ -67,9 +71,11 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
         {
             var plugin = (service as INativePluginRuntime)!;
 
-            var entity = await _databaseContext.PluginNatives.FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);
+            var pluginEntity = await _databaseContext
+                .PluginNatives.Where(x => x.Id == _databaseContext.Plugins.First(a => a.Id == request.PluginId).PluginId)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            if (entity == null)
+            if (pluginEntity == null)
             {
                 throw new BusinessException("未找到插件实例") { StatusCode = 404 };
             }
@@ -77,7 +83,7 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
             // 执行测试
             try
             {
-                await plugin.ImportConfigAsync(entity.Config!);
+                await plugin.ImportConfigAsync(pluginEntity.Config!);
                 var result = await plugin!.TestAsync(request.Params);
                 return new RunTestNativePluginCommandResponse
                 {

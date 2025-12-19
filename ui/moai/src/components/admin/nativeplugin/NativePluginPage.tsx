@@ -42,7 +42,6 @@ import {
   NativePluginInfo,
   PluginClassifyItem,
   QueryNativePluginTemplateListCommand,
-  QueryInternalTemplatePluginListCommandResponse,
   QueryNativePluginTemplateParamsCommand,
   QueryNativePluginTemplateParamsCommandResponse,
   CreateNativePluginCommand,
@@ -50,12 +49,13 @@ import {
   QueryNativePluginDetailCommand,
   RunTestNativePluginCommand,
   RunTestNativePluginCommandResponse,
-  DeleteNativePluginCommand,
+  DeletePluginCommand,
   NativePluginClassify,
   NativePluginClassifyObject,
   NativePluginTemplateInfo,
   NativePluginConfigFieldTemplate,
   PluginConfigFieldTypeObject,
+  PluginTypeObject,
 } from "../../../apiClient/models";
 import {
   proxyRequestError,
@@ -165,7 +165,7 @@ export default function NativePluginPage() {
 
   // === 状态管理：分类筛选相关 ===
   const [leftClassifyType, setLeftClassifyType] = useState<"template" | "api">(
-    "template"
+    "api"
   );
   const [selectedLeftClassify, setSelectedLeftClassify] = useState<
     string | number | "all"
@@ -710,28 +710,13 @@ export default function NativePluginPage() {
   }, [fetchClassifyList]);
 
   /**
-   * 当筛选条件变化时，重新获取插件列表或模板列表
+   * 当筛选条件变化时，重新获取插件列表
    */
   useEffect(() => {
-    if (leftClassifyType === "template" && showTemplatesOnly) {
-      // 模板分类模式下，如果开启了"只看模板"，则获取模板列表
-      fetchTemplateListForDisplay();
-      // 如果还没有获取过模板分类数量，则获取一次
-      if (templateClassifyCount.length === 0) {
-        fetchTemplateClassifyCount();
-      }
-    } else {
-      // 否则获取插件列表
-      fetchPluginList();
-    }
+    fetchPluginList();
   }, [
     fetchPluginList,
-    fetchTemplateListForDisplay,
-    fetchTemplateClassifyCount,
-    leftClassifyType,
-    showTemplatesOnly,
     selectedLeftClassify,
-    templateClassifyCount.length,
   ]);
 
   // === 事件处理函数 ===
@@ -741,21 +726,11 @@ export default function NativePluginPage() {
   const handleRefresh = useCallback(async () => {
     // 先刷新全部插件列表（用于左侧分类数量统计）
     await fetchAllPluginList();
-    // 再刷新当前筛选的列表（插件或模板）
-    if (leftClassifyType === "template" && showTemplatesOnly) {
-      // 刷新模板列表和模板分类数量
-      await fetchTemplateClassifyCount();
-      fetchTemplateListForDisplay();
-    } else {
-      fetchPluginList();
-    }
+    // 再刷新当前筛选的插件列表
+    fetchPluginList();
   }, [
     fetchPluginList,
-    fetchTemplateListForDisplay,
     fetchAllPluginList,
-    fetchTemplateClassifyCount,
-    leftClassifyType,
-    showTemplatesOnly,
   ]);
 
   /**
@@ -1696,100 +1671,27 @@ export default function NativePluginPage() {
           <div style={STYLES.mainLayout}>
             {/* 左侧分类列表 */}
             <div style={STYLES.leftSidebar}>
-              {/* 分类类型切换按钮 */}
-              <div style={STYLES.classifyToggleContainer}>
-                <Button.Group style={{ width: "100%" }}>
-                  <Button
-                    type={
-                      leftClassifyType === "template" ? "primary" : "default"
-                    }
-                    size="small"
-                    onClick={() => {
-                      setLeftClassifyType("template");
-                      setSelectedLeftClassify("all");
-                      setShowTemplatesOnly(false);
-                    }}
-                    style={STYLES.classifyToggleButton}
-                  >
-                    模板分类
-                  </Button>
-                  <Button
-                    type={leftClassifyType === "api" ? "primary" : "default"}
-                    size="small"
-                    onClick={() => {
-                      setLeftClassifyType("api");
-                      setSelectedLeftClassify("all");
-                      setShowTemplatesOnly(false);
-                    }}
-                    style={STYLES.classifyToggleButton}
-                  >
-                    插件分类
-                  </Button>
-                </Button.Group>
-              </div>
-
               <List
                 size="small"
                 dataSource={
-                  (leftClassifyType === "template"
-                    ? [
-                        {
-                          key: "all" as const,
-                          name: "全部",
-                          icon: "📋",
-                          count: showTemplatesOnly
-                            ? templateClassifyCount.reduce(
-                                (sum, item) => sum + item.value,
-                                0
-                              )
-                            : allPluginList.length,
-                        },
-                        ...ClassifyList.map((item) => {
-                          let count = 0;
-                          if (showTemplatesOnly) {
-                            // 只看模板模式下，使用接口返回的分类数量
-                            const countItem = templateClassifyCount.find(
-                              (cv) =>
-                                cv.key &&
-                                cv.key.toLowerCase() === item.key.toLowerCase()
-                            );
-                            count = countItem ? countItem.value : 0;
-                          } else {
-                            // 插件模式下，使用插件列表计算数量
-                            const enumValue = keyToEnum(item.key);
-                            count = enumValue
-                              ? allPluginList.filter(
-                                  (plugin) =>
-                                    plugin.templatePluginClassify === enumValue
-                                ).length
-                              : 0;
-                          }
-                          return {
-                            key: item.key,
-                            name: item.name,
-                            icon: item.icon,
-                            count,
-                          };
-                        }),
-                      ]
-                    : [
-                        {
-                          key: "all" as const,
-                          name: "全部",
-                          icon: undefined,
-                          count: allPluginList.length,
-                        },
-                        ...classifyList
-                          .filter((item) => item.classifyId != null)
-                          .map((item) => ({
-                            key: item.classifyId!,
-                            name: item.name || "",
-                            icon: undefined,
-                            count: allPluginList.filter(
-                              (plugin) => plugin.classifyId === item.classifyId
-                            ).length,
-                          })),
-                      ]) as Array<{
+                  [
+                    {
+                      key: "all" as const,
+                      name: "全部",
+                      icon: undefined,
+                      count: allPluginList.length,
+                    },
+                    ...classifyList
+                      .filter((item) => item.classifyId != null)
+                      .map((item) => ({
+                        key: item.classifyId!,
+                        name: item.name || "",
+                        icon: undefined,
+                        count: allPluginList.filter(
+                          (plugin) => plugin.classifyId === item.classifyId
+                        ).length,
+                      })),
+                  ] as Array<{
                     key: string | number | "all";
                     name: string;
                     icon?: string;
@@ -1832,40 +1734,16 @@ export default function NativePluginPage() {
               <div style={STYLES.searchContainer}>
                 <Space>
                   <Input.Search
-                    placeholder={
-                      leftClassifyType === "template" && showTemplatesOnly
-                        ? "搜索模板名称"
-                        : "搜索插件名称"
-                    }
+                    placeholder="搜索插件名称"
                     allowClear
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                     onSearch={() => {
-                      // 搜索功能在模板模式下通过客户端过滤实现，不需要重新请求
-                      // 在插件模式下才需要重新请求
-                      if (
-                        leftClassifyType !== "template" ||
-                        !showTemplatesOnly
-                      ) {
-                        fetchPluginList();
-                      }
+                      fetchPluginList();
                     }}
                     enterButton
                     style={STYLES.searchInput}
                   />
-                  {/* 模板分类模式下显示"只看模板"开关 */}
-                  {leftClassifyType === "template" && (
-                    <Space>
-                      <Typography.Text>只看模板</Typography.Text>
-                      <Switch
-                        checked={showTemplatesOnly}
-                        onChange={(checked) => {
-                          setShowTemplatesOnly(checked);
-                          setSearchName(""); // 重置搜索
-                        }}
-                      />
-                    </Space>
-                  )}
                   <Button
                     icon={<ReloadOutlined />}
                     onClick={handleRefresh}
@@ -1878,16 +1756,8 @@ export default function NativePluginPage() {
 
               <Table
                 columns={columns}
-                dataSource={
-                  leftClassifyType === "template" && showTemplatesOnly
-                    ? filteredTemplateListForDisplay
-                    : pluginList
-                }
+                dataSource={pluginList}
                 rowKey={(record) => {
-                  // 如果是模板（没有 pluginId），使用 key；如果是插件，使用 pluginId
-                  if (!("pluginId" in record)) {
-                    return (record as NativePluginTemplateInfo).key || "";
-                  }
                   return (
                     (record as NativePluginInfo).pluginId?.toString() || ""
                   );
@@ -1898,11 +1768,7 @@ export default function NativePluginPage() {
                 locale={{
                   emptyText: (
                     <Empty
-                      description={
-                        leftClassifyType === "template" && showTemplatesOnly
-                          ? "暂无模板数据"
-                          : "暂无内置插件数据"
-                      }
+                      description="暂无内置插件数据"
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                   ),
@@ -2110,39 +1976,61 @@ export default function NativePluginPage() {
                 {selectedClassify ? (
                   <List
                     dataSource={currentTemplates}
-                    renderItem={(template: NativePluginTemplateInfo) => (
-                      <List.Item
-                        style={{
-                          ...STYLES.classifyItem,
-                          backgroundColor:
-                            selectedTemplate?.key === template.key
-                              ? STYLES.classifyItemSelected.backgroundColor
-                              : STYLES.classifyItemUnselected.backgroundColor,
-                        }}
-                        onClick={() => handleTemplateClick(template)}
-                      >
-                        <List.Item.Meta
-                          title={
-                            <Space direction="vertical" size={4}>
-                              <Typography.Text strong>
-                                {template.name}
-                              </Typography.Text>
-                              <Tag color="purple" style={{ margin: 0 }}>
-                                {template.key}
-                              </Tag>
-                            </Space>
-                          }
-                          description={
-                            <Typography.Text
-                              type="secondary"
-                              style={STYLES.secondaryText}
+                    renderItem={(template: NativePluginTemplateInfo) => {
+                      const isToolPlugin = template.pluginType === PluginTypeObject.ToolPlugin;
+                      return (
+                        <List.Item
+                          style={{
+                            ...STYLES.classifyItem,
+                            backgroundColor:
+                              selectedTemplate?.key === template.key
+                                ? STYLES.classifyItemSelected.backgroundColor
+                                : STYLES.classifyItemUnselected.backgroundColor,
+                            position: "relative",
+                            cursor: isToolPlugin ? "not-allowed" : "pointer",
+                            opacity: isToolPlugin ? 0.8 : 1,
+                          }}
+                          onClick={() => {
+                            if (!isToolPlugin) {
+                              handleTemplateClick(template);
+                            }
+                          }}
+                        >
+                          {isToolPlugin && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                zIndex: 10,
+                              }}
                             >
-                              {truncateText(template.description, 100)}
-                            </Typography.Text>
-                          }
-                        />
-                      </List.Item>
-                    )}
+                              <Tag color="orange">Tool</Tag>
+                            </div>
+                          )}
+                          <List.Item.Meta
+                            title={
+                              <Space direction="vertical" size={4}>
+                                <Typography.Text strong>
+                                  {template.name}
+                                </Typography.Text>
+                                <Tag color="purple" style={{ margin: 0 }}>
+                                  {template.key}
+                                </Tag>
+                              </Space>
+                            }
+                            description={
+                              <Typography.Text
+                                type="secondary"
+                                style={STYLES.secondaryText}
+                              >
+                                {truncateText(template.description, 100)}
+                              </Typography.Text>
+                            }
+                          />
+                        </List.Item>
+                      );
+                    }}
                     locale={{
                       emptyText: (
                         <Empty

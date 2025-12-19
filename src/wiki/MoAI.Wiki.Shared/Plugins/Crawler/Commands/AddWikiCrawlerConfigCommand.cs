@@ -21,7 +21,7 @@ public class AddWikiCrawlerConfigCommand : WikiCrawlerConfig, IRequest<SimpleInt
     public string Title { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<AddWikiCrawlerConfigCommand> validate)
+    public static void Validate(AbstractValidator<AddWikiCrawlerConfigCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

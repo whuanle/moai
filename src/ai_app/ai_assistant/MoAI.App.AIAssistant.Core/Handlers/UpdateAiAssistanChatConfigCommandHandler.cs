@@ -34,7 +34,7 @@ public class UpdateAiAssistanChatConfigCommandHandler : IRequestHandler<UpdateAi
 
         chatEntity.Title = request.Title;
         chatEntity.Avatar = request.AiAvatar;
-        chatEntity.WikiId = request.WikiId;
+        chatEntity.WikiIds = request.WikiId;
         chatEntity.Prompt = request.Prompt;
         chatEntity.ModelId = request.ModelId;
         chatEntity.PluginIds = request.PluginIds.ToJsonString();

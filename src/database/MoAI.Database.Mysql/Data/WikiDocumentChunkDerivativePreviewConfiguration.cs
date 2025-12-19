@@ -7,7 +7,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 切片元数据表（提问/提纲/摘要）.
+/// 切片元数据内容表（提问/提纲/摘要）.
 /// </summary>
 public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTypeConfiguration<WikiDocumentChunkDerivativePreviewEntity>
 {
@@ -17,7 +17,7 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("wiki_document_chunk_derivative_preview", tb => tb.HasComment("切片元数据表（提问/提纲/摘要）"));
+        entity.ToTable("wiki_document_chunk_derivative_preview", tb => tb.HasComment("切片元数据内容表（提问/提纲/摘要）"));
 
         entity.HasIndex(e => e.DerivativeType, "idx_deriv_type");
 
@@ -26,7 +26,7 @@ public partial class WikiDocumentChunkDerivativePreviewConfiguration : IEntityTy
         entity.HasIndex(e => new { e.ChunkId, e.Id }, "idx_slice_deriv");
 
         entity.Property(e => e.Id)
-            .HasComment("元数据唯一ID（derivative_id）")
+            .HasComment("衍生内容唯一ID（derivative_id）")
             .HasColumnType("bigint(20)")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)

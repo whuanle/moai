@@ -22,7 +22,7 @@ public class QueryWikiDocumentInfoCommand : IRequest<QueryWikiDocumentInfoComman
     public int DocumentId { get; init; } = default!;
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiDocumentInfoCommand> validate)
+    public static void Validate(AbstractValidator<QueryWikiDocumentInfoCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")

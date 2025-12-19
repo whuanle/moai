@@ -40,7 +40,7 @@ public class UpdatePromptCommand : IRequest<EmptyCommandResponse>, IModelValidat
     public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<UpdatePromptCommand> validate)
+    public static void Validate(AbstractValidator<UpdatePromptCommand> validate)
     {
         validate.RuleFor(x => x.PromptId).NotEmpty().WithMessage("提示词ID不能为空");
         validate.RuleFor(x => x.Name)

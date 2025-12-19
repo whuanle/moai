@@ -5,12 +5,12 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 切片元数据表（提问/提纲/摘要）.
+/// 切片元数据内容表（提问/提纲/摘要）.
 /// </summary>
 public partial class WikiDocumentChunkDerivativePreviewEntity : IFullAudited
 {
     /// <summary>
-    /// 元数据唯一ID（derivative_id）.
+    /// 衍生内容唯一ID（derivative_id）.
     /// </summary>
     public long Id { get; set; }
 

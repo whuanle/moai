@@ -27,7 +27,7 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
 
         entity.Property(e => e.Id)
             .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
-            .HasComment("元数据唯一ID（derivative_id）")
+            .HasComment("元数据内容唯一ID（derivative_id）")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)
             .HasComment("源id，关联自身")

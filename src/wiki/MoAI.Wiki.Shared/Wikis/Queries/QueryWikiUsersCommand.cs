@@ -15,7 +15,7 @@ public class QueryWikiUsersCommand : IRequest<QueryWikiUsersCommandResponse>, IM
     public int WikiId { get; init; }
 
     /// <inheritdoc/>
-    public void Validate(AbstractValidator<QueryWikiUsersCommand> validate)
+    public static void Validate(AbstractValidator<QueryWikiUsersCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)
             .NotEmpty().WithMessage("知识库id不正确")
