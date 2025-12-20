@@ -1,0 +1,17 @@
+---
+inclusion: always
+---
+当使用 try-catch 块处理异常时，请使用 ProxyRequest 处理普通异常和使用 proxyFormRequestError 处理表单提交异常。
+示例：
+```
+ catch (error) {
+      console.error('删除配置失败:', error);
+      proxyRequestError(error, messageApi, '删除配置失败');
+    }
+```
+```
+catch (error) {
+      console.error('保存配置失败:', error);
+      proxyFormRequestError(error, messageApi, form, '保存配置失败');
+    } 
+```

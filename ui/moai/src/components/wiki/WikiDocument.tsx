@@ -35,6 +35,7 @@ import {
   CheckOutlined,
   CloseOutlined,
   DownloadOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import { useParams, useNavigate } from "react-router";
@@ -47,6 +48,8 @@ import {
   UpdateWikiDocumentFileNameCommand,
   DownloadWikiDocumentCommand,
   BusinessValidationResult,
+  WikiBatchProcessDocumentCommand,
+  WikiPluginAutoProcessConfig,
 } from "../../apiClient/models";
 import { FileSizeHelper } from "../../helper/FileSizeHelper";
 import { FileTypeHelper } from "../../helper/FileTypeHelper";
@@ -56,6 +59,8 @@ import {
 } from "../../helper/DateTimeHelper";
 import { MoAIClient } from "../..//apiClient/moAIClient";
 import { GetFileMd5 } from "../../helper/Md5Helper";
+import { proxyRequestError } from "../../helper/RequestError";
+import StartTaskConfigModal from "./plugins/common/StartTaskConfigModal";
 
 const { Text, Title } = Typography;
 const { Search } = Input;
@@ -851,6 +856,12 @@ export default function WikiDocument() {
   const [editingDocumentId, setEditingDocumentId] = useState<number | null>(null);
   const [editingFileName, setEditingFileName] = useState<string>("");
 
+  // 多选和一键处理状态
+  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+  const [batchProcessModalVisible, setBatchProcessModalVisible] = useState(false);
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [messageApi, batchContextHolder] = message.useMessage();
+
   const {
     documents,
     loading,
@@ -978,6 +989,60 @@ export default function WikiDocument() {
     }
   }, [wikiId]);
 
+  // 打开一键处理配置模态窗口
+  const handleOpenBatchProcess = useCallback(() => {
+    if (selectedRowKeys.length === 0) {
+      messageApi.warning("请先选择要处理的文档");
+      return;
+    }
+    setBatchProcessModalVisible(true);
+  }, [selectedRowKeys, messageApi]);
+
+  // 执行一键处理
+  const handleBatchProcess = useCallback(async (
+    isAutoProcess: boolean,
+    autoProcessConfig: WikiPluginAutoProcessConfig | null
+  ) => {
+    if (selectedRowKeys.length === 0) {
+      messageApi.warning("请先选择要处理的文档");
+      return;
+    }
+
+    setBatchProcessing(true);
+    try {
+      const client = GetApiClient();
+      const requestBody: WikiBatchProcessDocumentCommand = {
+        wikiId,
+        documentIds: selectedRowKeys,
+        partion: autoProcessConfig?.partion || null,
+        aiPartion: autoProcessConfig?.aiPartion || null,
+        preprocessStrategyType: autoProcessConfig?.preprocessStrategyType || null,
+        preprocessStrategyAiModel: autoProcessConfig?.preprocessStrategyAiModel || null,
+        isEmbedding: autoProcessConfig?.isEmbedding || false,
+        isEmbedSourceText: autoProcessConfig?.isEmbedSourceText || false,
+        threadCount: autoProcessConfig?.threadCount || null,
+      };
+
+      await client.api.wiki.batch.create.post(requestBody);
+      messageApi.success(`已提交 ${selectedRowKeys.length} 个文档的处理任务`);
+      setBatchProcessModalVisible(false);
+      setSelectedRowKeys([]);
+    } catch (error) {
+      console.error("批量处理文档失败:", error);
+      proxyRequestError(error, messageApi, "批量处理文档失败");
+    } finally {
+      setBatchProcessing(false);
+    }
+  }, [wikiId, selectedRowKeys, messageApi]);
+
+  // 表格多选配置
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as number[]);
+    },
+  };
+
   const columns = getTableColumns(
     wikiId,
     navigate,
@@ -996,6 +1061,7 @@ export default function WikiDocument() {
     <>
       {listContextHolder}
       {uploadContextHolder}
+      {batchContextHolder}
       
       <Card>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -1024,6 +1090,15 @@ export default function WikiDocument() {
                 onClick={handleUploadClick}
               >
                 上传文档
+              </Button>
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                onClick={handleOpenBatchProcess}
+                disabled={selectedRowKeys.length === 0}
+                loading={batchProcessing}
+              >
+                一键处理 {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
               </Button>
             </Space>
           </Col>
@@ -1069,6 +1144,7 @@ export default function WikiDocument() {
           columns={columns}
           dataSource={documents}
           rowKey="documentId"
+          rowSelection={rowSelection}
           pagination={{
             ...pagination,
             showSizeChanger: true,
@@ -1095,6 +1171,7 @@ export default function WikiDocument() {
         open={isUploadModalVisible}
         onCancel={handleUploadModalCancel}
         width={600}
+        maskClosable={false}
         footer={[
           <Button key="cancel" onClick={handleUploadModalCancel}>
             取消
@@ -1127,6 +1204,14 @@ export default function WikiDocument() {
         <SelectedFilesList selectedFiles={selectedFiles} removeFile={removeFile} />
         <UploadProgress batchUploadStatus={batchUploadStatus} />
       </Modal>
+
+      {/* 一键处理配置模态窗口 */}
+      <StartTaskConfigModal
+        open={batchProcessModalVisible}
+        onCancel={() => setBatchProcessModalVisible(false)}
+        onConfirm={handleBatchProcess}
+        wikiId={wikiId}
+      />
     </>
   );
 }

@@ -54,7 +54,7 @@ public class StartWikiBatchhuMessageConsumer : IConsumer<StartWikiBatchhuMessage
         {
             _databaseContext.ChangeTracker.Clear();
 
-            var (isBreak, _) = await SetStateAsync(message.TaskId, WorkerState.Processing, "正在爬取页面");
+            var (isBreak, _) = await SetStateAsync(message.TaskId, WorkerState.Processing, "正在处理文档");
             if (isBreak)
             {
                 return;
@@ -127,20 +127,26 @@ public class StartWikiBatchhuMessageConsumer : IConsumer<StartWikiBatchhuMessage
                     }
                 }
 
-                await _mediator.Send(new AddWikiDocumentChunkDerivativeCommand
+                if (derivativeItems.Count > 0)
                 {
-                    WikiId = message.WikiId,
-                    DocumentId = documentId,
-                    Derivatives = derivativeItems
-                });
+                    await _mediator.Send(new AddWikiDocumentChunkDerivativeCommand
+                    {
+                        WikiId = message.WikiId,
+                        DocumentId = documentId,
+                        Derivatives = derivativeItems
+                    });
+                }
 
-                await _mediator.Send(new EmbeddingDocumentCommand
+                if (message.Command.IsEmbedding)
                 {
-                    WikiId = message.WikiId,
-                    DocumentId = documentId,
-                    IsEmbedSourceText = message.Command.IsEmbedSourceText,
-                    ThreadCount = message.Command.ThreadCount
-                });
+                    await _mediator.Send(new EmbeddingDocumentCommand
+                    {
+                        WikiId = message.WikiId,
+                        DocumentId = documentId,
+                        IsEmbedSourceText = message.Command.IsEmbedSourceText,
+                        ThreadCount = message.Command.ThreadCount
+                    });
+                }
             }
             catch (Exception ex)
             {
