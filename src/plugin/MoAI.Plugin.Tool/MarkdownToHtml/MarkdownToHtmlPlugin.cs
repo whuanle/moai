@@ -58,8 +58,7 @@ public class MarkdownToHtmlPlugin : IToolPluginRuntime
     {
         try
         {
-            var str = System.Text.Json.JsonSerializer.Deserialize<string>(@params);
-            var result = await InvokeAsync(str!);
+            var result = await InvokeAsync(@params);
             return System.Text.Json.JsonSerializer.Serialize(result, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
         }
         catch (Exception ex)

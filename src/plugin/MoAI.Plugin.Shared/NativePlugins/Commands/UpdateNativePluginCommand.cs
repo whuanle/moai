@@ -5,7 +5,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Plugin.NativePlugins.Commands;
 
 /// <summary>
-/// 修改内置插件实例，也可以修改 tool，但是只能修改 ClassifyId，其它参数无法修改.
+/// 修改内置插件实例，只能修改原生插件的，不能修改 tool 插件.
 /// </summary>
 public class UpdateNativePluginCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateNativePluginCommand>
 {

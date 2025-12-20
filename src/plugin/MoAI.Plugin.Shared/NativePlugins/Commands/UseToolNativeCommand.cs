@@ -17,9 +17,4 @@ public class UseToolNativeCommand : IRequest<EmptyCommandResponse>
     /// 分类 id.
     /// </summary>
     public int ClassifyId { get; init; }
-
-    /// <summary>
-    /// 是否公开.
-    /// </summary>
-    public bool IsPublic { get; init; } = default!;
 }

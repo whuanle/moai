@@ -34,8 +34,13 @@ public class QueryNativePluginTemplateParamsCommandHandler : IRequestHandler<Que
 
         return new QueryNativePluginTemplateParamsCommandResponse
         {
-            Items = pluginInfo.FieldTemplates,
-            ExampleValue = pluginInfo.ExampleValue
+            Description = pluginInfo.Description,
+            Classify = pluginInfo.Classify,
+            ExampleValue = pluginInfo.ExampleValue,
+            FieldTemplates = pluginInfo.FieldTemplates,
+            Key = pluginInfo.Key,
+            Name = pluginInfo.Name,
+            PluginType = pluginInfo.PluginType,
         };
     }
 }

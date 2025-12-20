@@ -1968,6 +1968,15 @@ export function createUserStateInfoFromDiscriminatorValue(parseNode: ParseNode |
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UseToolNativeCommand}
+ */
+// @ts-ignore
+export function createUseToolNativeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUseToolNativeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {WikiBatchProcessDocumenItem}
  */
 // @ts-ignore
@@ -3458,8 +3467,7 @@ export function deserializeIntoQueryNativePluginTemplateParamsCommand(queryNativ
 // @ts-ignore
 export function deserializeIntoQueryNativePluginTemplateParamsCommandResponse(queryNativePluginTemplateParamsCommandResponse: Partial<QueryNativePluginTemplateParamsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "exampleValue": n => { queryNativePluginTemplateParamsCommandResponse.exampleValue = n.getStringValue(); },
-        "items": n => { queryNativePluginTemplateParamsCommandResponse.items = n.getCollectionOfObjectValues<NativePluginConfigFieldTemplate>(createNativePluginConfigFieldTemplateFromDiscriminatorValue); },
+        ...deserializeIntoNativePluginTemplateInfo(queryNativePluginTemplateParamsCommandResponse),
     }
 }
 /**
@@ -4347,6 +4355,17 @@ export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInf
         "phone": n => { userStateInfo.phone = n.getStringValue(); },
         "userId": n => { userStateInfo.userId = n.getNumberValue(); },
         "userName": n => { userStateInfo.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUseToolNativeCommand(useToolNativeCommand: Partial<UseToolNativeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyId": n => { useToolNativeCommand.classifyId = n.getNumberValue(); },
+        "templatePluginKey": n => { useToolNativeCommand.templatePluginKey = n.getStringValue(); },
     }
 }
 /**
@@ -5749,15 +5768,7 @@ export interface QueryNativePluginTemplateParamsCommand extends Parsable {
 /**
  * 插件模板参数.
  */
-export interface QueryNativePluginTemplateParamsCommandResponse extends Parsable {
-    /**
-     * 示例值，json 字符串.
-     */
-    exampleValue?: string | null;
-    /**
-     * 插件配置的模板参数.
-     */
-    items?: NativePluginConfigFieldTemplate[] | null;
+export interface QueryNativePluginTemplateParamsCommandResponse extends NativePluginTemplateInfo, Parsable {
 }
 export interface QueryPluginClassifyListCommandResponse extends Parsable {
     /**
@@ -7601,8 +7612,7 @@ export function serializeQueryNativePluginTemplateParamsCommand(writer: Serializ
 // @ts-ignore
 export function serializeQueryNativePluginTemplateParamsCommandResponse(writer: SerializationWriter, queryNativePluginTemplateParamsCommandResponse: Partial<QueryNativePluginTemplateParamsCommandResponse> | undefined | null = {}) : void {
     if (queryNativePluginTemplateParamsCommandResponse) {
-        writer.writeStringValue("exampleValue", queryNativePluginTemplateParamsCommandResponse.exampleValue);
-        writer.writeCollectionOfObjectValues<NativePluginConfigFieldTemplate>("items", queryNativePluginTemplateParamsCommandResponse.items, serializeNativePluginConfigFieldTemplate);
+        serializeNativePluginTemplateInfo(writer, queryNativePluginTemplateParamsCommandResponse)
     }
 }
 /**
@@ -8497,6 +8507,17 @@ export function serializeUserStateInfo(writer: SerializationWriter, userStateInf
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUseToolNativeCommand(writer: SerializationWriter, useToolNativeCommand: Partial<UseToolNativeCommand> | undefined | null = {}) : void {
+    if (useToolNativeCommand) {
+        writer.writeNumberValue("classifyId", useToolNativeCommand.classifyId);
+        writer.writeStringValue("templatePluginKey", useToolNativeCommand.templatePluginKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeWikiBatchProcessDocumenItem(writer: SerializationWriter, wikiBatchProcessDocumenItem: Partial<WikiBatchProcessDocumenItem> | undefined | null = {}) : void {
     if (wikiBatchProcessDocumenItem) {
         serializeAuditsInfo(writer, wikiBatchProcessDocumenItem)
@@ -8927,7 +8948,7 @@ export interface UpdateMcpServerPluginCommand extends McpServerPluginConnectionO
     pluginId?: number | null;
 }
 /**
- * 修改内置插件实例，也可以修改 tool，但是只能修改 ClassifyId，其它参数无法修改.
+ * 修改内置插件实例，只能修改原生插件的，不能修改 tool 插件.
  */
 export interface UpdateNativePluginCommand extends Parsable {
     /**
@@ -9308,6 +9329,19 @@ export interface UserStateInfo extends Parsable {
      * 用户名.
      */
     userName?: string | null;
+}
+/**
+ * 使用这个工具插件，会添加到数据库.
+ */
+export interface UseToolNativeCommand extends Parsable {
+    /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
+     * 插件 key.
+     */
+    templatePluginKey?: string | null;
 }
 /**
  * 任务列表.

@@ -56,6 +56,7 @@ import {
   NativePluginConfigFieldTemplate,
   PluginConfigFieldTypeObject,
   PluginTypeObject,
+  UseToolNativeCommand,
 } from "../../../apiClient/models";
 import {
   proxyRequestError,
@@ -201,6 +202,7 @@ export default function NativePluginPage() {
   const [editTemplateParams, setEditTemplateParams] = useState<
     NativePluginConfigFieldTemplate[]
   >([]);
+  const [editingTemplateInfo, setEditingTemplateInfo] = useState<NativePluginTemplateInfo | null>(null);
 
   // === 状态管理：运行测试相关 ===
   const [runModalVisible, setRunModalVisible] = useState(false);
@@ -645,6 +647,8 @@ export default function NativePluginPage() {
    */
   const fetchPluginList = useCallback(async () => {
     setLoading(true);
+    // 先清空列表，避免显示旧数据
+    setPluginList([]);
     try {
       const client = GetApiClient();
       // 根据左侧选中的分类类型和值来设置筛选条件
@@ -671,7 +675,7 @@ export default function NativePluginPage() {
       }
 
       const requestData: QueryNativePluginListCommand = {
-        name: searchName || undefined,
+        keyword: searchName || undefined,
         classifyId: classifyId,
         templatePluginClassify: templatePluginClassify,
       };
@@ -685,10 +689,15 @@ export default function NativePluginPage() {
         if (selectedLeftClassify === "all" && !searchName) {
           setAllPluginList(response.items);
         }
+      } else {
+        // 如果没有返回数据，确保列表为空
+        setPluginList([]);
       }
     } catch (error) {
       console.log("Fetch internal plugin list error:", error);
       proxyRequestError(error, messageApi, "获取内置插件列表失败");
+      // 发生错误时也清空列表
+      setPluginList([]);
     } finally {
       setLoading(false);
     }
@@ -710,6 +719,70 @@ export default function NativePluginPage() {
   }, [fetchClassifyList]);
 
   /**
+   * 根据指定的分类值获取插件列表（用于点击分类时立即刷新）
+   */
+  const fetchPluginListWithClassify = useCallback(
+    async (classify: string | number | "all", classifyType: "template" | "api" = "api") => {
+      setLoading(true);
+      // 先清空列表，避免显示旧数据
+      setPluginList([]);
+      try {
+        const client = GetApiClient();
+        // 根据分类类型和值来设置筛选条件
+        let classifyId: number | undefined = undefined;
+        let templatePluginClassify: NativePluginClassify | undefined = undefined;
+
+        if (classify !== "all") {
+          if (classifyType === "api") {
+            // 使用 API 分类（classifyId）
+            classifyId =
+              typeof classify === "number"
+                ? classify
+                : undefined;
+          } else {
+            // 使用模板分类（templatePluginClassify）
+            const enumValue =
+              typeof classify === "string"
+                ? keyToEnum(classify)
+                : null;
+            if (enumValue) {
+              templatePluginClassify = enumValue;
+            }
+          }
+        }
+
+        const requestData: QueryNativePluginListCommand = {
+          keyword: searchName || undefined,
+          classifyId: classifyId,
+          templatePluginClassify: templatePluginClassify,
+        };
+        const response = await client.api.admin.native_plugin.list.post(
+          requestData
+        );
+
+        if (response?.items) {
+          setPluginList(response.items);
+          // 如果没有筛选条件（全部），同时更新 allPluginList
+          if (classify === "all" && !searchName) {
+            setAllPluginList(response.items);
+          }
+        } else {
+          // 如果没有返回数据，确保列表为空
+          setPluginList([]);
+        }
+      } catch (error) {
+        console.log("Fetch internal plugin list error:", error);
+        proxyRequestError(error, messageApi, "获取内置插件列表失败");
+        // 发生错误时也清空列表
+        setPluginList([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [messageApi, searchName, keyToEnum]
+  );
+
+  /**
    * 当筛选条件变化时，重新获取插件列表
    */
   useEffect(() => {
@@ -717,6 +790,7 @@ export default function NativePluginPage() {
   }, [
     fetchPluginList,
     selectedLeftClassify,
+    leftClassifyType,
   ]);
 
   // === 事件处理函数 ===
@@ -724,13 +798,22 @@ export default function NativePluginPage() {
    * 刷新列表
    */
   const handleRefresh = useCallback(async () => {
-    // 先刷新全部插件列表（用于左侧分类数量统计）
-    await fetchAllPluginList();
-    // 再刷新当前筛选的插件列表
-    fetchPluginList();
+    // 如果当前是"全部"分类且没有搜索关键词，fetchPluginList 会同时更新 allPluginList
+    // 否则需要单独刷新 allPluginList 用于左侧分类数量统计
+    if (selectedLeftClassify === "all" && !searchName) {
+      // 直接调用 fetchPluginList，它会同时更新 allPluginList
+      fetchPluginList();
+    } else {
+      // 先刷新全部插件列表（用于左侧分类数量统计）
+      await fetchAllPluginList();
+      // 再刷新当前筛选的插件列表，保留当前的查询参数
+      fetchPluginList();
+    }
   }, [
     fetchPluginList,
     fetchAllPluginList,
+    selectedLeftClassify,
+    searchName,
   ]);
 
   /**
@@ -745,78 +828,113 @@ export default function NativePluginPage() {
 
       try {
         const client = GetApiClient();
-        // 获取插件详情
-        const detailRequest: QueryNativePluginDetailCommand = {
-          pluginId: record.pluginId,
-        };
-        const detailResponse =
-          await client.api.admin.native_plugin.detail.post(
-            detailRequest
-          );
+        
+        // 先获取模板信息，判断是否是 ToolPlugin
+        let isToolPlugin = false;
+        let template: NativePluginTemplateInfo | null = null;
+        
+        if (record.templatePluginKey) {
+          const templateListRequest: QueryNativePluginTemplateListCommand = {};
+          const templateListResponse =
+            await client.api.admin.native_plugin.template_list.post(
+              templateListRequest
+            );
 
-        if (detailResponse) {
-          // 设置表单值
+          if (templateListResponse?.plugins) {
+            template = templateListResponse.plugins.find(
+              (t) => t.key === record.templatePluginKey
+            ) || null;
+            
+            if (template) {
+              setEditingTemplateInfo(template);
+              isToolPlugin = template.pluginType === PluginTypeObject.ToolPlugin;
+            }
+          }
+        }
+
+        if (isToolPlugin) {
+          // ToolPlugin 不需要请求 detail，直接使用 record 中的数据
           editForm.setFieldsValue({
-            name: detailResponse.pluginName,
-            title: detailResponse.title,
-            description: detailResponse.description,
-            classifyId: detailResponse.classifyId,
-            isPublic: detailResponse.isPublic ?? true,
+            classifyId: record.classifyId,
           });
+          setEditTemplateParams([]);
+          setEditLoading(false);
+          setEditParamsLoading(false);
+        } else {
+          // 普通插件需要请求 detail
+          const detailRequest: QueryNativePluginDetailCommand = {
+            pluginId: record.pluginId,
+          };
+          const detailResponse =
+            await client.api.admin.native_plugin.detail.post(
+              detailRequest
+            );
 
-          // 获取模板参数
-          if (detailResponse.templatePluginKey) {
-            const paramsRequest: QueryNativePluginTemplateParamsCommand = {
-              templatePluginKey: detailResponse.templatePluginKey,
-            };
-            const paramsResponse =
-              await client.api.admin.native_plugin.template_params.post(
-                paramsRequest
-              );
+          if (detailResponse) {
+            // 设置表单值
+            editForm.setFieldsValue({
+              name: detailResponse.pluginName,
+              title: detailResponse.title,
+              description: detailResponse.description,
+              classifyId: detailResponse.classifyId,
+              isPublic: detailResponse.isPublic ?? true,
+            });
 
-            if (paramsResponse?.items) {
-              setEditTemplateParams(paramsResponse.items);
+            // 获取模板参数
+            if (detailResponse.templatePluginKey) {
+              const paramsRequest: QueryNativePluginTemplateParamsCommand = {
+                templatePluginKey: detailResponse.templatePluginKey,
+              };
+              const paramsResponse =
+                await client.api.admin.native_plugin.template_params.post(
+                  paramsRequest
+                );
 
-              // 解析params JSON并设置表单值
-              if (detailResponse.params) {
-                try {
-                  const paramsObj = JSON.parse(detailResponse.params);
-                  const initialValues: Record<string, any> = {};
-                  paramsResponse.items.forEach((item) => {
-                    if (
-                      item.key &&
-                      paramsObj[item.key] !== undefined &&
-                      paramsObj[item.key] !== null
-                    ) {
-                      const fieldType = item.fieldType;
+              if (paramsResponse?.fieldTemplates) {
+                setEditTemplateParams(paramsResponse.fieldTemplates);
+
+                // 解析config JSON并设置表单值
+                if (detailResponse.config) {
+                  try {
+                    const paramsObj = JSON.parse(detailResponse.config);
+                    const initialValues: Record<string, any> = {};
+                    paramsResponse.fieldTemplates.forEach((item: NativePluginConfigFieldTemplate) => {
                       if (
-                        fieldType === PluginConfigFieldTypeObject.Number ||
-                        fieldType === PluginConfigFieldTypeObject.Integer
+                        item.key &&
+                        paramsObj[item.key] !== undefined &&
+                        paramsObj[item.key] !== null
                       ) {
-                        initialValues[item.key] = Number(paramsObj[item.key]);
-                      } else if (
-                        fieldType === PluginConfigFieldTypeObject.Boolean
-                      ) {
-                        const valueStr = String(paramsObj[item.key]);
-                        initialValues[item.key] =
-                          valueStr === "true" || valueStr === "1";
-                      } else {
-                        initialValues[item.key] = paramsObj[item.key];
+                        const fieldType = item.fieldType;
+                        if (
+                          fieldType === PluginConfigFieldTypeObject.Number ||
+                          fieldType === PluginConfigFieldTypeObject.Integer
+                        ) {
+                          initialValues[item.key] = Number(paramsObj[item.key]);
+                        } else if (
+                          fieldType === PluginConfigFieldTypeObject.Boolean
+                        ) {
+                          const valueStr = String(paramsObj[item.key]);
+                          initialValues[item.key] =
+                            valueStr === "true" || valueStr === "1";
+                        } else {
+                          initialValues[item.key] = paramsObj[item.key];
+                        }
                       }
-                    }
-                  });
-                  editForm.setFieldsValue(initialValues);
-                } catch (error) {
-                  console.log("Parse params error:", error);
+                    });
+                    editForm.setFieldsValue(initialValues);
+                  } catch (error) {
+                    console.log("Parse params error:", error);
+                  }
                 }
               }
             }
           }
+          setEditLoading(false);
+          setEditParamsLoading(false);
         }
       } catch (error) {
         console.log("Fetch plugin detail error:", error);
         proxyRequestError(error, messageApi, "获取插件详情失败");
-      } finally {
         setEditLoading(false);
         setEditParamsLoading(false);
       }
@@ -831,6 +949,7 @@ export default function NativePluginPage() {
     setEditDrawerVisible(false);
     setEditingPlugin(null);
     setEditTemplateParams([]);
+    setEditingTemplateInfo(null);
     editForm.resetFields();
   }, [editForm]);
 
@@ -847,38 +966,36 @@ export default function NativePluginPage() {
 
       try {
         const client = GetApiClient();
-        // 获取插件详情以获取模板key
-        const detailRequest: QueryNativePluginDetailCommand = {
-          pluginId: record.pluginId,
-        };
-        const detailResponse =
-          await client.api.admin.native_plugin.detail.post(
-            detailRequest
-          );
-
-        // 更新 runningPlugin 的描述信息
-        if (detailResponse) {
-          setRunningPlugin({
-            ...record,
-            description: detailResponse.description || record.description,
-          });
-        }
-
-        if (detailResponse?.templatePluginKey) {
-          // 获取模板参数示例值
+        
+        // 直接使用 record 中的 templatePluginKey 请求模板参数
+        if (record.templatePluginKey) {
           const paramsRequest: QueryNativePluginTemplateParamsCommand = {
-            templatePluginKey: detailResponse.templatePluginKey,
+            templatePluginKey: record.templatePluginKey,
           };
           const paramsResponse =
             await client.api.admin.native_plugin.template_params.post(
               paramsRequest
             );
 
+          // 更新 runningPlugin 的描述信息（从模板参数响应中获取）
+          if (paramsResponse) {
+            setRunningPlugin({
+              ...record,
+              description: paramsResponse.description || record.description,
+            });
+          }
+
           // 获取运行参数示例值
           const exampleValue = getJsonString(
             paramsResponse?.exampleValue || ""
           );
           setRunParamsValue(exampleValue);
+        } else {
+          // 如果没有 templatePluginKey，使用 record 中的描述
+          setRunningPlugin({
+            ...record,
+            description: record.description,
+          });
         }
       } catch (error) {
         console.log("Fetch run params error:", error);
@@ -1035,38 +1152,63 @@ export default function NativePluginPage() {
     }
 
     try {
-      const values = await editForm.validateFields();
+      // 判断是否是 ToolPlugin
+      const isToolPlugin = editingTemplateInfo?.pluginType === PluginTypeObject.ToolPlugin;
+      
+      // 根据插件类型验证不同的字段
+      let values: any;
+      if (isToolPlugin) {
+        // ToolPlugin 只需要验证 classifyId
+        values = await editForm.validateFields(["classifyId"]);
+      } else {
+        // 普通插件验证所有字段
+        values = await editForm.validateFields();
+      }
+      
       setEditLoading(true);
 
-      // 构建参数对象
-      const paramsObj: Record<string, any> = {};
-      editTemplateParams.forEach((param) => {
-        if (
-          param.key &&
-          values[param.key] !== undefined &&
-          values[param.key] !== null
-        ) {
-          paramsObj[param.key] = values[param.key];
-        }
-      });
-
       const client = GetApiClient();
-      const requestData: UpdateNativePluginCommand = {
-        pluginId: editingPlugin.pluginId || undefined,
-        name: values.name,
-        title: values.title,
-        description: values.description,
-        classifyId: values.classifyId,
-        isPublic: values.isPublic ?? true,
-        config:
-          Object.keys(paramsObj).length > 0
-            ? JSON.stringify(paramsObj)
-            : undefined,
-      };
 
-      await client.api.admin.native_plugin.update.post(requestData);
+      if (isToolPlugin) {
+        // ToolPlugin 使用 update_tool API
+        const requestData: UseToolNativeCommand = {
+          templatePluginKey: editingPlugin.templatePluginKey || undefined,
+          classifyId: values.classifyId,
+        };
 
-      messageApi.success("内置插件更新成功");
+        await client.api.admin.native_plugin.update_tool.post(requestData);
+        messageApi.success("工具插件更新成功");
+      } else {
+        // 普通插件使用 update API
+        // 构建参数对象
+        const paramsObj: Record<string, any> = {};
+        editTemplateParams.forEach((param) => {
+          if (
+            param.key &&
+            values[param.key] !== undefined &&
+            values[param.key] !== null
+          ) {
+            paramsObj[param.key] = values[param.key];
+          }
+        });
+
+        const requestData: UpdateNativePluginCommand = {
+          pluginId: editingPlugin.pluginId || undefined,
+          name: values.name,
+          title: values.title,
+          description: values.description,
+          classifyId: values.classifyId,
+          isPublic: values.isPublic ?? true,
+          config:
+            Object.keys(paramsObj).length > 0
+              ? JSON.stringify(paramsObj)
+              : undefined,
+        };
+
+        await client.api.admin.native_plugin.update.post(requestData);
+        messageApi.success("内置插件更新成功");
+      }
+
       handleCloseEditDrawer();
       // 先刷新全部插件列表（用于左侧分类数量统计）
       await fetchAllPluginList();
@@ -1080,6 +1222,7 @@ export default function NativePluginPage() {
     }
   }, [
     editingPlugin,
+    editingTemplateInfo,
     editForm,
     editTemplateParams,
     messageApi,
@@ -1093,7 +1236,7 @@ export default function NativePluginPage() {
     async (pluginId: number) => {
       try {
         const client = GetApiClient();
-        const requestData: DeleteNativePluginCommand = {
+        const requestData: DeletePluginCommand = {
           pluginId: pluginId,
         };
         await client.api.admin.native_plugin.deletePath.delete(requestData);
@@ -1324,8 +1467,8 @@ export default function NativePluginPage() {
 
           return (
             <Space size="small">
-              {/* 如果是模板且是 IsTool，显示运行按钮 */}
-              {isTemplate && template.isTool === true && (
+              {/* 如果是模板且是 ToolPlugin，显示运行按钮 */}
+              {isTemplate && template.pluginType === PluginTypeObject.ToolPlugin && (
                 <Tooltip title="运行测试">
                   <Button
                     type="link"
@@ -1491,7 +1634,7 @@ export default function NativePluginPage() {
           await client.api.admin.native_plugin.template_params.post(
             requestData
           );
-        if (response?.items) {
+        if (response?.fieldTemplates) {
           // 先清除所有旧参数的值（如果提供了旧参数keys）
           if (oldParamKeys && oldParamKeys.length > 0) {
             const fieldsToReset: Record<string, undefined> = {};
@@ -1502,11 +1645,11 @@ export default function NativePluginPage() {
           }
 
           // 设置新参数
-          setTemplateParams(response.items);
+          setTemplateParams(response.fieldTemplates);
 
           // 根据新参数的 exampleValue 设置默认值
           const initialValues: Record<string, any> = {};
-          response.items.forEach((param) => {
+          response.fieldTemplates.forEach((param: NativePluginConfigFieldTemplate) => {
             if (
               param.key &&
               param.exampleValue !== null &&
@@ -1709,7 +1852,15 @@ export default function NativePluginPage() {
                           ? STYLES.classifyItemSelected.backgroundColor
                           : STYLES.classifyItemUnselected.backgroundColor,
                       }}
-                      onClick={() => setSelectedLeftClassify(item.key)}
+                      onClick={() => {
+                        // 确保 leftClassifyType 是 "api"（左侧菜单都是 API 分类）
+                        if (leftClassifyType !== "api") {
+                          setLeftClassifyType("api");
+                        }
+                        setSelectedLeftClassify(item.key);
+                        // 直接使用新的分类值调用，确保立即刷新
+                        fetchPluginListWithClassify(item.key, "api");
+                      }}
                     >
                       <Space>
                         {"icon" in item && item.icon && (
@@ -1817,53 +1968,21 @@ export default function NativePluginPage() {
                       isPublic: true,
                     }}
                   >
-                    {/* 基础信息 */}
-                    <Form.Item
-                      name="name"
-                      label={
-                        <Space>
-                          <Typography.Text>插件名称</Typography.Text>
-                          <Typography.Text type="danger">*</Typography.Text>
-                        </Space>
-                      }
-                      help="只能包含字母，用于AI识别使用"
-                      rules={[
-                        { required: true, message: "请输入插件名称" },
-                        {
-                          pattern: /^[a-zA-Z_]+$/,
-                          message: "插件名称只能包含字母和下划线",
-                        },
-                        { max: 30, message: "插件名称不能超过30个字符" },
-                      ]}
-                    >
-                      <Input placeholder="请输入插件名称（仅限字母和下划线）" />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="title"
-                      label={
-                        <Space>
-                          <Typography.Text>插件标题</Typography.Text>
-                          <Typography.Text type="danger">*</Typography.Text>
-                        </Space>
-                      }
-                      help="插件标题，可中文，用于系统显示"
-                      rules={[{ required: true, message: "请输入插件标题" }]}
-                    >
-                      <Input placeholder="请输入插件标题" />
-                    </Form.Item>
-
-                    <Form.Item name="description" label="描述">
-                      <Input.TextArea rows={3} placeholder="请输入插件描述" />
-                    </Form.Item>
-
-                    <Row gutter={16}>
-                      <Col span={12}>
+                    {editingTemplateInfo?.pluginType === PluginTypeObject.ToolPlugin ? (
+                      // ToolPlugin 只显示分类选择器
+                      <>
+                        <Alert
+                          message="工具类插件"
+                          description="工具类插件只需要绑定分类，不需要其他配置。"
+                          type="info"
+                          showIcon
+                          style={{ marginBottom: 16 }}
+                        />
                         <Form.Item
                           name="classifyId"
                           label={
                             <Space>
-                              <Typography.Text>分类</Typography.Text>
+                              <Typography.Text>绑定分类</Typography.Text>
                               <Typography.Text type="danger">*</Typography.Text>
                             </Space>
                           }
@@ -1884,31 +2003,104 @@ export default function NativePluginPage() {
                             ))}
                           </Select>
                         </Form.Item>
-                      </Col>
-                      <Col span={12}>
+                      </>
+                    ) : (
+                      // 普通插件显示完整的编辑表单
+                      <>
+                        {/* 基础信息 */}
                         <Form.Item
-                          name="isPublic"
-                          label="是否公开"
-                          valuePropName="checked"
+                          name="name"
+                          label={
+                            <Space>
+                              <Typography.Text>插件名称</Typography.Text>
+                              <Typography.Text type="danger">*</Typography.Text>
+                            </Space>
+                          }
+                          help="只能包含字母，用于AI识别使用"
+                          rules={[
+                            { required: true, message: "请输入插件名称" },
+                            {
+                              pattern: /^[a-zA-Z_]+$/,
+                              message: "插件名称只能包含字母和下划线",
+                            },
+                            { max: 30, message: "插件名称不能超过30个字符" },
+                          ]}
                         >
-                          <Switch
-                            checkedChildren="公开"
-                            unCheckedChildren="私有"
-                          />
+                          <Input placeholder="请输入插件名称（仅限字母和下划线）" />
                         </Form.Item>
-                      </Col>
-                    </Row>
 
-                    <Divider>模板参数</Divider>
+                        <Form.Item
+                          name="title"
+                          label={
+                            <Space>
+                              <Typography.Text>插件标题</Typography.Text>
+                              <Typography.Text type="danger">*</Typography.Text>
+                            </Space>
+                          }
+                          help="插件标题，可中文，用于系统显示"
+                          rules={[{ required: true, message: "请输入插件标题" }]}
+                        >
+                          <Input placeholder="请输入插件标题" />
+                        </Form.Item>
 
-                    {editTemplateParams.map((param) =>
-                      renderParamFormItem(param, editForm)
-                    )}
-                    {editTemplateParams.length === 0 && !editParamsLoading && (
-                      <Empty
-                        description="该模板暂无配置参数"
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      />
+                        <Form.Item name="description" label="描述">
+                          <Input.TextArea rows={3} placeholder="请输入插件描述" />
+                        </Form.Item>
+
+                        <Row gutter={16}>
+                          <Col span={12}>
+                            <Form.Item
+                              name="classifyId"
+                              label={
+                                <Space>
+                                  <Typography.Text>分类</Typography.Text>
+                                  <Typography.Text type="danger">*</Typography.Text>
+                                </Space>
+                              }
+                              rules={[{ required: true, message: "请选择分类" }]}
+                            >
+                              <Select
+                                placeholder="请选择分类"
+                                allowClear
+                                style={{ width: "100%" }}
+                              >
+                                {classifyList.map((item) => (
+                                  <Select.Option
+                                    key={item.classifyId}
+                                    value={item.classifyId}
+                                  >
+                                    {item.name}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </Col>
+                          <Col span={12}>
+                            <Form.Item
+                              name="isPublic"
+                              label="是否公开"
+                              valuePropName="checked"
+                            >
+                              <Switch
+                                checkedChildren="公开"
+                                unCheckedChildren="私有"
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+
+                        <Divider>模板参数</Divider>
+
+                        {editTemplateParams.map((param) =>
+                          renderParamFormItem(param, editForm)
+                        )}
+                        {editTemplateParams.length === 0 && !editParamsLoading && (
+                          <Empty
+                            description="该模板暂无配置参数"
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          />
+                        )}
+                      </>
                     )}
                   </Form>
                 </Spin>
@@ -2060,7 +2252,7 @@ export default function NativePluginPage() {
                         </Space>
                       }
                       extra={
-                        selectedTemplate.isTool !== true && (
+                        selectedTemplate.pluginType !== PluginTypeObject.ToolPlugin && (
                           <Button
                             type="primary"
                             onClick={handleCreatePlugin}
@@ -2071,7 +2263,7 @@ export default function NativePluginPage() {
                         )
                       }
                     >
-                      {selectedTemplate.isTool === true && (
+                      {selectedTemplate.pluginType === PluginTypeObject.ToolPlugin && (
                         <Alert
                           message="该插件不需要配置"
                           description="该插件是工具类型，不需要配置，不能创建实例。"
@@ -2083,7 +2275,7 @@ export default function NativePluginPage() {
                       <Form
                         form={form}
                         layout="vertical"
-                        disabled={selectedTemplate.isTool === true}
+                        disabled={selectedTemplate.pluginType === PluginTypeObject.ToolPlugin}
                         initialValues={{
                           isPublic: true,
                         }}

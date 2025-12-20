@@ -132,13 +132,27 @@ public partial class NativePluginController : ControllerBase
     }
 
     /// <summary>
-    /// 更新内置插件.
+    /// 更新原生插件.
     /// </summary>
     /// <param name="req">请求体，见 <see cref="UpdateNativePluginCommand"/>.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
     [HttpPost("update")]
     public async Task<EmptyCommandResponse> Update([FromBody] UpdateNativePluginCommand req, CancellationToken ct = default)
+    {
+        await CheckIsAdminAsync(ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 更新工具类插件.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpPost("update_tool")]
+    public async Task<EmptyCommandResponse> Update([FromBody] UseToolNativeCommand req, CancellationToken ct = default)
     {
         await CheckIsAdminAsync(ct);
 

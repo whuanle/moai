@@ -6,7 +6,6 @@ using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Commands;
 using MoAI.Plugin.Models;
 using System.Transactions;
 
@@ -42,43 +41,66 @@ public class UseToolNativeCommandHandler : IRequestHandler<UseToolNativeCommand,
 
         if (pluginInfo.PluginType != PluginType.ToolPlugin)
         {
-            throw new BusinessException("不能创建非工具模板插件实例") { StatusCode = 409 };
-        }
-
-        // 数据库唯一
-        var existPlugin = await _databaseContext.PluginNatives
-            .AnyAsync(p => p.TemplatePluginKey == request.TemplatePluginKey, cancellationToken);
-
-        if (existPlugin)
-        {
-            throw new BusinessException("工具类插件只能有一个实例") { StatusCode = 409 };
+            throw new BusinessException("只有工具类插件可以执行此操作") { StatusCode = 409 };
         }
 
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        var pluginNativeEntity = new PluginNativeEntity
+        var toolPlugin = await _databaseContext.PluginNatives
+            .FirstOrDefaultAsync(p => p.TemplatePluginKey == request.TemplatePluginKey, cancellationToken);
+
+        if (toolPlugin == null)
         {
-            TemplatePluginClassify = pluginInfo.Classify.ToJsonString(),
-            TemplatePluginKey = request.TemplatePluginKey,
-            Config = "{}"
-        };
+            toolPlugin = new PluginNativeEntity
+            {
+                TemplatePluginClassify = pluginInfo.Classify.ToJsonString(),
+                TemplatePluginKey = request.TemplatePluginKey,
+                Config = "{}"
+            };
 
-        await _databaseContext.PluginNatives.AddAsync(pluginNativeEntity, cancellationToken);
-        await _databaseContext.SaveChangesAsync();
+            await _databaseContext.PluginNatives.AddAsync(toolPlugin, cancellationToken);
+            await _databaseContext.SaveChangesAsync();
 
-        var pluginEntitiy = new PluginEntity()
+            var pluginEntitiy = new PluginEntity()
+            {
+                PluginName = pluginInfo.Key,
+                Title = pluginInfo.Name,
+                Type = (int)PluginType.ToolPlugin,
+                IsPublic = true,
+                ClassifyId = request.ClassifyId,
+                PluginId = toolPlugin.Id,
+                Description = pluginInfo.Description
+            };
+
+            await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);
+            await _databaseContext.SaveChangesAsync();
+        }
+        else
         {
-            PluginName = pluginInfo.Key,
-            Title = pluginInfo.Name,
-            Type = (int)PluginType.ToolPlugin,
-            IsPublic = request.IsPublic,
-            ClassifyId = request.ClassifyId,
-            PluginId = pluginNativeEntity.Id,
-            Description = pluginInfo.Description
-        };
+            var pluginEntitiy = await _databaseContext.Plugins.FirstOrDefaultAsync(x => x.PluginId == toolPlugin.Id);
+            if (pluginEntitiy == null)
+            {
+                pluginEntitiy = new PluginEntity()
+                {
+                    PluginName = pluginInfo.Key,
+                    Title = pluginInfo.Name,
+                    Type = (int)PluginType.ToolPlugin,
+                    IsPublic = true,
+                    ClassifyId = request.ClassifyId,
+                    PluginId = toolPlugin.Id,
+                    Description = pluginInfo.Description
+                };
 
-        await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);
-        await _databaseContext.SaveChangesAsync();
+                await _databaseContext.Plugins.AddAsync(pluginEntitiy, cancellationToken);
+                await _databaseContext.SaveChangesAsync();
+            }
+            else
+            {
+                pluginEntitiy.ClassifyId = request.ClassifyId;
+                _databaseContext.Update(pluginEntitiy);
+                await _databaseContext.SaveChangesAsync();
+            }
+        }
 
         transactionScope.Complete();
 

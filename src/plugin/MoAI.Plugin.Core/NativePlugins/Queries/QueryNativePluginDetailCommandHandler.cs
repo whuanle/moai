@@ -17,16 +17,19 @@ public class QueryNativePluginDetailCommandHandler : IRequestHandler<QueryNative
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
+    private readonly INativePluginFactory _nativePluginFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryNativePluginDetailCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="mediator"></param>
-    public QueryNativePluginDetailCommandHandler(DatabaseContext databaseContext, IMediator mediator)
+    /// <param name="nativePluginFactory"></param>
+    public QueryNativePluginDetailCommandHandler(DatabaseContext databaseContext, IMediator mediator, INativePluginFactory nativePluginFactory)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
+        _nativePluginFactory = nativePluginFactory;
     }
 
     /// <inheritdoc/>

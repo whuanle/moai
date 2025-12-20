@@ -80,25 +80,50 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
                     TemplatePluginKey = y.TemplatePluginKey
                 }).ToListAsync();
 
-        pluginTemplates = pluginTemplates.ToArray();
-
-        // 从 pluginTemplates 合上去
-        foreach (var item in pluginTemplates)
+        if (request.ClassifyId == null || request.ClassifyId == 0)
         {
-            nativePlugins.Add(new NativePluginInfo
+            var filtterPluginTemplates = pluginTemplatesQuery.ToArray();
+
+            // 从 pluginTemplates 合上去
+            foreach (var item in filtterPluginTemplates)
             {
-                PluginId = 0,
-                Description = item.Description,
-                Title = item.Key,
-                TemplatePluginClassify = item.Classify,
-                TemplatePluginKey = item.Key,
-                CreateTime = DateTimeOffset.Now,
-                PluginName = item.Name,
-                ClassifyId = 0,
-                IsPublic = true,
-                UpdateUserId = 0,
-                CreateUserId = 0
-            });
+                var toolPlugin = nativePlugins.FirstOrDefault(x => x.TemplatePluginKey == item.Key);
+                if (toolPlugin == null)
+                {
+                    nativePlugins.Add(new NativePluginInfo
+                    {
+                        PluginId = 0,
+                        Description = item.Description,
+                        Title = item.Key,
+                        TemplatePluginClassify = item.Classify,
+                        TemplatePluginKey = item.Key,
+                        CreateTime = DateTimeOffset.Now,
+                        PluginName = item.Name,
+                        ClassifyId = 0,
+                        IsPublic = true,
+                        UpdateUserId = 0,
+                        CreateUserId = 0
+                    });
+                }
+                else
+                {
+                    nativePlugins.Remove(toolPlugin);
+                    nativePlugins.Add(new NativePluginInfo
+                    {
+                        PluginId = 0,
+                        Description = item.Description,
+                        Title = item.Key,
+                        TemplatePluginClassify = item.Classify,
+                        TemplatePluginKey = item.Key,
+                        CreateTime = DateTimeOffset.Now,
+                        PluginName = item.Name,
+                        ClassifyId = toolPlugin.ClassifyId,
+                        IsPublic = true,
+                        UpdateUserId = 0,
+                        CreateUserId = 0
+                    });
+                }
+            }
         }
 
         await _mediator.Send(new FillUserInfoCommand { Items = nativePlugins });

@@ -54,22 +54,24 @@ public class UpdateNativePluginCommandHandler : IRequestHandler<UpdateNativePlug
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
 
-        if (pluginInfo.PluginType == Models.PluginType.NativePlugin)
+        if (pluginInfo.PluginType != Models.PluginType.NativePlugin)
         {
-            var service = _serviceProvider.GetService(pluginInfo.Type);
-            if (service is null)
-            {
-                throw new BusinessException("未找到插件模板") { StatusCode = 404 };
-            }
+            throw new BusinessException("只支持修改原生插件");
+        }
 
-            var plugin = service as INativePluginRuntime;
+        var service = _serviceProvider.GetService(pluginInfo.Type);
+        if (service is null)
+        {
+            throw new BusinessException("未找到插件模板") { StatusCode = 404 };
+        }
 
-            var checkResult = await plugin!.CheckConfigAsync(request.Config!);
+        var plugin = service as INativePluginRuntime;
 
-            if (!string.IsNullOrEmpty(checkResult))
-            {
-                throw new BusinessException(checkResult) { StatusCode = 409 };
-            }
+        var checkResult = await plugin!.CheckConfigAsync(request.Config!);
+
+        if (!string.IsNullOrEmpty(checkResult))
+        {
+            throw new BusinessException(checkResult) { StatusCode = 409 };
         }
 
         // 不能跟内置工具插件重名
@@ -87,19 +89,15 @@ public class UpdateNativePluginCommandHandler : IRequestHandler<UpdateNativePlug
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
-        if (pluginInfo.PluginType == Models.PluginType.NativePlugin)
-        {
-            pluginEntity.PluginName = request.Name;
-            pluginEntity.Title = request.Title;
-            pluginEntity.Description = request.Description;
-            pluginEntity.IsPublic = request.IsPublic;
-
-            pluginNativeEntity.Config = request.Config;
-        }
-
+        pluginEntity.PluginName = request.Name;
+        pluginEntity.Title = request.Title;
+        pluginEntity.Description = request.Description;
+        pluginEntity.IsPublic = request.IsPublic;
+        pluginNativeEntity.Config = request.Config;
         pluginEntity.ClassifyId = request.ClassifyId;
 
         _databaseContext.Plugins.Update(pluginEntity);
+        _databaseContext.PluginNatives.Update(pluginNativeEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

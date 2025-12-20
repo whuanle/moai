@@ -16,6 +16,8 @@ import { Template_listRequestBuilderRequestsMetadata, type Template_listRequestB
 // @ts-ignore
 import { Template_paramsRequestBuilderRequestsMetadata, type Template_paramsRequestBuilder } from './template_params/index.js';
 // @ts-ignore
+import { type Update_toolRequestBuilder, Update_toolRequestBuilderRequestsMetadata } from './update_tool/index.js';
+// @ts-ignore
 import { type UpdateRequestBuilder, UpdateRequestBuilderRequestsMetadata } from './update/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -56,6 +58,10 @@ export interface Native_pluginRequestBuilder extends BaseRequestBuilder<Native_p
      * The update property
      */
     get update(): UpdateRequestBuilder;
+    /**
+     * The update_tool property
+     */
+    get update_tool(): Update_toolRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -88,6 +94,9 @@ export const Native_pluginRequestBuilderNavigationMetadata: Record<Exclude<keyof
     },
     update: {
         requestsMetadata: UpdateRequestBuilderRequestsMetadata,
+    },
+    update_tool: {
+        requestsMetadata: Update_toolRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

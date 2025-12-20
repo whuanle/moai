@@ -41,15 +41,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpDelete("delete_plugin")]
     public async Task<EmptyCommandResponse> DeletePlugin([FromBody] DeletePluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(new DeletePluginCommand { PluginId = req.PluginId }, ct);
     }
@@ -63,15 +55,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("import_mcp")]
     public async Task<SimpleInt> ImportMcp([FromBody] ImportMcpServerPluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -85,15 +69,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("import_openapi")]
     public async Task<SimpleInt> ImportOpenApi([FromBody] ImportOpenApiPluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -107,15 +83,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("pre_upload_openapi")]
     public async Task<PreUploadOpenApiFilePluginCommandResponse> PreUploadOpenApi([FromBody] PreUploadOpenApiFilePluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -129,15 +97,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("plugin_list")]
     public async Task<QueryCustomPluginBaseListCommandResponse> QueryPluginBaseList([FromBody] QueryCustomPluginBaseListCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -151,15 +111,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("plugin_detail")]
     public async Task<QueryCustomPluginDetailCommandResponse> QueryPluginDetail([FromBody] QueryCustomPluginDetailCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -173,15 +125,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("function_list")]
     public async Task<QueryCustomPluginFunctionsListCommandResponse> QueryPluginFunctionsList([FromBody] QueryCustomPluginFunctionsListCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -195,15 +139,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("refresh_mcp")]
     public async Task<EmptyCommandResponse> RefreshMcp([FromBody] RefreshMcpServerPluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(
             new RefreshMcpServerPluginCommand
@@ -222,15 +158,7 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("update_mcp")]
     public async Task<EmptyCommandResponse> UpdateMcp([FromBody] UpdateMcpServerPluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
-
-        if (!isAdmin.IsAdmin)
-        {
-            throw new BusinessException("没有操作权限.") { StatusCode = 403 };
-        }
+        await CheckIsAdminAsync(ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -244,16 +172,17 @@ public partial class CustomPluginController : ControllerBase
     [HttpPost("update_openapi")]
     public async Task<EmptyCommandResponse> UpdateOpenApi([FromBody] UpdateOpenApiPluginCommand req, CancellationToken ct = default)
     {
-        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand
-        {
-            ContextUserId = _userContext.UserId
-        });
+        await CheckIsAdminAsync(ct);
 
+        return await _mediator.Send(req, ct);
+    }
+
+    private async Task CheckIsAdminAsync(CancellationToken ct)
+    {
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { ContextUserId = _userContext.UserId }, ct);
         if (!isAdmin.IsAdmin)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }
-
-        return await _mediator.Send(req, ct);
     }
 }
