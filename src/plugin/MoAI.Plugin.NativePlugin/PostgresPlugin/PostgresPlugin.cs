@@ -22,6 +22,7 @@ namespace MoAI.Plugin.Plugins.PostgresPlugin;
     Classify = NativePluginClassify.Tool,
     ConfigType = typeof(PostgresPluginConfig))]
 [InjectOnTransient]
+[Description("执行 SQL 查询并返回 JSON 格式的结果")]
 public class PostgresPlugin : INativePluginRuntime
 {
     private PostgresPluginConfig _config = default!;

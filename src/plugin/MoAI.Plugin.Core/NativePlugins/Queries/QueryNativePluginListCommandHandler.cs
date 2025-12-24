@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -94,11 +95,11 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
                     {
                         PluginId = 0,
                         Description = item.Description,
-                        Title = item.Key,
+                        Title = item.Name,
                         TemplatePluginClassify = item.Classify,
                         TemplatePluginKey = item.Key,
                         CreateTime = DateTimeOffset.Now,
-                        PluginName = item.Name,
+                        PluginName = item.Key,
                         ClassifyId = 0,
                         IsPublic = true,
                         UpdateUserId = 0,

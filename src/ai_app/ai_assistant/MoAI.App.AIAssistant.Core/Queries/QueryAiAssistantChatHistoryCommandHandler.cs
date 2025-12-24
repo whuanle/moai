@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SemanticKernel.ChatCompletion;
+using MoAI.AI.Models;
 using MoAI.App.AIAssistant.Models;
 using MoAI.App.AIAssistant.Queries.Responses;
 using MoAI.Database;
@@ -51,14 +52,17 @@ public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryUs
                 UpdateTime = chatEntity.UpdateTime,
                 ModelId = chatEntity.ModelId,
                 Prompt = chatEntity.Prompt,
-                WikiId = chatEntity.WikiIds,
-                PluginIds = chatEntity.PluginIds.JsonToObject<IReadOnlyCollection<int>>()!,
+                WikiIds = chatEntity.WikiIds.JsonToObject<IReadOnlyCollection<int>>()!,
+                Plugins = chatEntity.Plugins.JsonToObject<IReadOnlyCollection<string>>()!,
                 ExecutionSettings = chatEntity.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>()!,
                 ChatHistory = Array.Empty<ChatContentItem>(),
                 Avatar = chatEntity.Avatar,
-                InputTokens = chatEntity.InputTokens,
-                OutTokens = chatEntity.OutTokens,
-                TotalTokens = chatEntity.TotalTokens
+                TokenUsage = new AI.Models.OpenAIChatCompletionsUsage
+                {
+                    PromptTokens = chatEntity.InputTokens,
+                    CompletionTokens = chatEntity.OutTokens,
+                    TotalTokens = chatEntity.TotalTokens
+                },
             };
         }
 
@@ -70,28 +74,12 @@ public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryUs
 
         foreach (var item in historyEntities)
         {
-            if (item.Role == AuthorRole.User.Label)
+            chatMessageContents.Add(new ChatContentItem
             {
-                chatMessageContents.Add(new ChatContentItem
-                {
-                    RecordId = item.Id,
-                    AuthorName = AuthorRole.User.Label,
-                    Content = item.Content,
-                });
-            }
-            else if (item.Role == AuthorRole.Assistant.Label)
-            {
-                chatMessageContents.Add(new ChatContentItem
-                {
-                    RecordId = item.Id,
-                    AuthorName = AuthorRole.Assistant.Label,
-                    Content = item.Content,
-                });
-            }
-            else
-            {
-                continue;
-            }
+                RecordId = item.Id,
+                AuthorName = item.Role,
+                Choices = item.Content.JsonToObject<IReadOnlyCollection<DefaultAiProcessingChoice>>()!.Select(x => x.ToAiProcessingChoice()).ToArray()
+            });
         }
 
         var response = new QueryAiAssistantChatHistoryCommandResponse
@@ -102,14 +90,17 @@ public class QueryAiAssistantChatHistoryCommandHandler : IRequestHandler<QueryUs
             UpdateTime = chatEntity.UpdateTime,
             ModelId = chatEntity.ModelId,
             Prompt = chatEntity.Prompt,
-            WikiId = chatEntity.WikiIds,
-            PluginIds = chatEntity.PluginIds.JsonToObject<IReadOnlyCollection<int>>()!,
+            WikiIds = chatEntity.WikiIds.JsonToObject<IReadOnlyCollection<int>>()!,
+            Plugins = chatEntity.Plugins.JsonToObject<IReadOnlyCollection<string>>()!,
             ExecutionSettings = chatEntity.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>()!,
             ChatHistory = chatMessageContents,
             Avatar = chatEntity.Avatar,
-            InputTokens = chatEntity.InputTokens,
-            OutTokens = chatEntity.OutTokens,
-            TotalTokens = chatEntity.TotalTokens
+            TokenUsage = new AI.Models.OpenAIChatCompletionsUsage
+            {
+                PromptTokens = chatEntity.InputTokens,
+                CompletionTokens = chatEntity.OutTokens,
+                TotalTokens = chatEntity.TotalTokens
+            },
         };
 
         return response;

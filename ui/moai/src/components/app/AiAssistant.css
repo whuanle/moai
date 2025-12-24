@@ -1,594 +1,476 @@
-/* AI Assistant 布局样式 */
+/* AI Assistant 三栏布局样式 */
+
 .ai-assistant-layout {
-  height: calc(100vh - var(--header-height, 64px)); /* 使用 CSS 变量，默认 64px */
-  background: #f5f5f5;
-  margin-top: 0; /* 确保没有额外的 margin */
+  height: 100vh;
+  width: 100vw;
+  background: transparent;
   display: flex;
-  flex-direction: row;
-  overflow: hidden; /* 防止整体滚动 */
 }
 
-.ai-assistant-sider {
-  background: #fff;
-  border-right: 1px solid #f0f0f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  height: 100%;
-  overflow: hidden;
-}
-
-.ai-assistant-content {
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  gap: 0;
-  min-height: 0;
-}
-
-/* 侧边栏卡片样式 */
-.sidebar-card {
-  height: 100%;
-  border: none;
-  box-shadow: none;
-}
-
-.sidebar-card .ant-card-body {
-  padding: 16px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 话题列表样式 */
-.topics-list {
+.ai-assistant-layout .ant-layout-content {
   flex: 1;
-  overflow: auto;
+  min-width: 0;
 }
 
-.topics-list .ant-list-item {
-  padding: 12px 16px;
+/* 左侧话题列表 */
+.ai-assistant-sider-left {
+  background: var(--ant-color-bg-container) !important;
+  border-right: 1px solid var(--ant-color-border);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.ai-assistant-sider-left .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topic-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--ant-color-border);
+}
+
+.topic-list-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.topic-item {
+  cursor: pointer;
   border-radius: 8px;
   margin-bottom: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  padding: 8px 12px !important;
+  transition: background-color 0.2s;
 }
 
-.topics-list .ant-list-item:hover {
-  background: #f5f5f5;
-  border-color: #d9d9d9;
+.topic-item:hover {
+  background-color: var(--ant-color-bg-text-hover);
 }
 
-.topics-list .ant-list-item.active {
-  background: #e6f7ff;
-  border-color: #1890ff;
+.topic-item-active {
+  background-color: var(--ant-color-primary-bg);
 }
 
-.topics-list .ant-list-item.active .topic-title {
-  color: #1890ff;
+.topic-item-active:hover {
+  background-color: var(--ant-color-primary-bg-hover);
+}
+
+.topic-icon {
+  font-size: 18px;
+  color: var(--ant-color-text-secondary);
 }
 
 .topic-title {
-  font-size: 14px;
-  line-height: 1.4;
-  margin-bottom: 4px;
+  max-width: 150px;
 }
 
 .topic-time {
-  color: #8c8c8c;
   font-size: 12px;
 }
 
-.delete-btn {
-  opacity: 0;
-  transition: opacity 0.2s ease;
+/* 返回按钮区域 */
+.back-button-area {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--ant-color-border);
 }
 
-.topics-list .ant-list-item:hover .delete-btn {
-  opacity: 1;
-}
-
-.active-avatar {
-  background: #1890ff;
-  color: #fff;
-}
-
-/* 上半部分：ChatList 容器样式 */
-.chat-list-container {
-  flex: 1;
-  border: none;
-  box-shadow: none;
+/* 中间对话内容区域 */
+.ai-assistant-content {
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 确保可以正确收缩 */
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-  overflow: hidden;
-}
-
-.chat-list-container .ant-card-body {
+  background: var(--ant-color-bg-layout);
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0; /* 确保可以正确收缩 */
   overflow: hidden;
+  height: 100vh;
 }
 
-/* 下半部分：ChatInputArea 容器样式 */
-.chat-input-container {
-  flex-shrink: 0;
-  border: none;
-  box-shadow: none;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
-  min-height: 280px;
-}
-
-.chat-input-container .ant-card-body {
-  padding: 0;
-  height: 100%;
+.chat-container {
   display: flex;
   flex-direction: column;
-}
-
-/* 头部卡片样式 */
-.header-card {
-  border-bottom: 1px solid #f0f0f0;
-  border-radius: 0;
-  flex-shrink: 0; /* 防止头部被压缩 */
-}
-
-.header-card .ant-card-body {
-  padding: 16px 24px;
-  min-height: 60px; /* 确保头部有足够的高度 */
-}
-
-/* ChatList 区域样式 */
-.chat-list-area {
-  flex: 1;
-  overflow: auto;
-  padding: 16px 24px;
-  background: #fafafa;
-  min-height: 0; /* 确保 flex 子元素可以正确收缩 */
-  border-radius: 0;
-}
-
-/* 聊天输入区域样式 */
-.lobe-chat-input-area {
-  padding: 12px 24px;
-  background: #fff;
-  flex: 1;
-  border-radius: 0;
-  min-height: 140px;
-  display: flex;
-  flex-direction: column;
-}
-
-.lobe-chat-input-area__input {
-  min-height: 100px;
-  flex: 1;
-}
-
-.lobe-chat-input-area__send {
-  margin-top: 4px;
-  flex-shrink: 0;
-}
-
-.lobe-chat-send-button {
-  margin-top: 4px;
-  flex-shrink: 0;
-}
-
-
-
-/* 空状态样式 */
-.empty-state {
-  text-align: center;
-  padding: 60px 0;
-}
-
-.empty-state-icon {
-  color: #d9d9d9;
-  margin-bottom: 16px;
-}
-
-.empty-state-title {
-  font-size: 18px;
-  color: #8c8c8c;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.empty-state-subtitle {
-  color: #bfbfbf;
-  font-size: 14px;
-  display: block;
-}
-
-/* 加载状态样式 */
-.loading-container {
-  text-align: center;
-  padding: 40px 0;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .ai-assistant-sider {
-    width: 100% !important;
-    max-width: 320px;
-  }
-  
-  .ai-assistant-layout {
-    flex-direction: column;
-    height: calc(100vh - var(--header-height, 64px)); /* 移动端也使用 CSS 变量 */
-  }
-  
-  .ai-assistant-content {
-    flex: 1;
-    gap: 0;
-  }
-  
-  .chat-list-container {
-    flex: 1;
-    min-height: 0;
-  }
-  
-  .chat-input-container {
-    flex-shrink: 0;
-  }
-}
-
-/* 滚动条样式 */
-.topics-list::-webkit-scrollbar,
-.chat-area::-webkit-scrollbar {
-  width: 6px;
-}
-
-.topics-list::-webkit-scrollbar-track,
-.chat-area::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.topics-list::-webkit-scrollbar-thumb,
-.chat-area::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.topics-list::-webkit-scrollbar-thumb:hover,
-.chat-area::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* 动画效果 */
-.topics-list .ant-list-item {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 工具提示样式 */
-.ant-tooltip {
-  z-index: 1000;
-}
-
-/* 徽章样式 */
-.ant-badge-dot {
-  background: #1890ff;
-  box-shadow: 0 0 0 2px #fff;
-}
-
-/* 按钮悬停效果 */
-.ant-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* 输入框焦点效果 */
-.ant-input:focus,
-.ant-input-focused {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
-/* 卡片悬停效果 */
-.ant-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* 列表项选中效果 */
-.ant-list-item-selected {
-  background: #e6f7ff;
-}
-
-/* 空状态图标动画 */
-.empty-state-icon {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* 助手设定抽屉样式 */
-.ant-drawer-header {
-  border-bottom: 1px solid #f0f0f0;
-  padding: 16px 24px;
-}
-
-.ant-drawer-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #262626;
-}
-
-.ant-drawer-body {
-  padding: 24px;
-}
-
-.ant-drawer-footer {
-  border-top: 1px solid #f0f0f0;
-  padding: 16px 24px;
-}
-
-/* 助手设定表单样式 */
-.assistant-prompt-section {
-  margin-bottom: 24px;
-}
-
-.assistant-prompt-section .ant-typography {
-  margin-bottom: 8px;
-}
-
-.assistant-prompt-section .ant-input {
-  border-radius: 8px;
-  border: 1px solid #d9d9d9;
-  transition: all 0.3s ease;
-}
-
-.assistant-prompt-section .ant-input:focus,
-.assistant-prompt-section .ant-input-focused {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
-/* 助手设定按钮样式 */
-.assistant-settings-btn {
-  transition: all 0.3s ease;
-}
-
-.assistant-settings-btn:hover {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
-}
-
-/* 抽屉内容区域样式 */
-.drawer-content {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.drawer-content .ant-space {
-  flex: 1;
-}
-
-/* 文本域样式优化 */
-.ant-input-textarea {
-  border-radius: 8px;
-}
-
-.ant-input-textarea .ant-input {
-  border-radius: 8px;
-  min-height: 140px;
-  resize: none;
-}
-
-/* 抽屉标题图标样式 */
-.drawer-title-icon {
-  color: #1890ff;
-  margin-right: 8px;
-}
-
-/* 右侧助手设定面板样式 */
-.assistant-settings-sider {
-  background: #fff;
-  border-left: 1px solid #f0f0f0;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.06);
   height: 100%;
   overflow: hidden;
 }
 
-.settings-card {
-  height: 100%;
-  border: none;
-  box-shadow: none;
-}
-
-.settings-card .ant-card-body {
+.chat-history-area {
+  flex: 1;
+  overflow-y: auto;
   padding: 16px;
+  min-height: 0;
+}
+
+.chat-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 100%;
+}
+
+.chat-messages {
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  gap: 16px;
 }
 
-/* 助手设定内容样式 */
-.settings-card .ant-space {
+.chat-message {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 85%;
+}
+
+/* 用户消息 - 右对齐 */
+.chat-message-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+  background: var(--ant-color-primary-bg);
+}
+
+.chat-message-user .message-body {
+  text-align: right;
+}
+
+.chat-message-user .message-header {
+  justify-content: flex-end;
+}
+
+/* AI 助手消息 - 左对齐 */
+.chat-message-assistant {
+  align-self: flex-start;
+  background: var(--ant-color-bg-container);
+  border: 1px solid var(--ant-color-border);
+}
+
+/* 系统消息 - 居中 */
+.chat-message-system {
+  align-self: center;
+  background: var(--ant-color-warning-bg);
+  max-width: 90%;
+}
+
+/* 工具消息 - 左对齐 */
+.chat-message-tool {
+  align-self: flex-start;
+  background: var(--ant-color-info-bg);
+  border: 1px dashed var(--ant-color-info-border);
+}
+
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.message-body {
   flex: 1;
+  min-width: 0;
 }
 
-.settings-card .ant-typography {
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.settings-card .ant-input-textarea {
-  border-radius: 8px;
-}
-
-.settings-card .ant-input-textarea .ant-input {
-  border-radius: 8px;
-  min-height: 140px;
-  resize: none;
-}
-
-/* 保存按钮样式 */
-.settings-card .ant-btn-primary {
-  margin-top: auto;
-  border-radius: 8px;
-  height: 40px;
-  font-weight: 500;
-}
-
-/* 响应式设计 - 右侧面板 */
-@media (max-width: 1200px) {
-  .assistant-settings-sider {
-    width: 300px !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .assistant-settings-sider {
-    width: 100% !important;
-    max-width: 350px;
-  }
-}
-
-/* Markdown 显示区域样式 */
-.prompt-markdown-container {
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  padding: 12px;
-  min-height: 120px;
-  max-height: 200px;
-  overflow: auto;
-  background-color: #fafafa;
-  transition: all 0.3s ease;
-}
-
-.prompt-markdown-container:hover {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-}
-
-.prompt-markdown-container .lobe-markdown {
+.message-role {
   font-size: 14px;
+}
+
+.message-tag {
+  font-size: 12px;
+}
+
+.message-content {
+  word-break: break-word;
+}
+
+.message-text {
+  white-space: pre-wrap;
   line-height: 1.6;
 }
 
-.prompt-markdown-container .lobe-markdown h1,
-.prompt-markdown-container .lobe-markdown h2,
-.prompt-markdown-container .lobe-markdown h3,
-.prompt-markdown-container .lobe-markdown h4,
-.prompt-markdown-container .lobe-markdown h5,
-.prompt-markdown-container .lobe-markdown h6 {
-  margin-top: 8px;
-  margin-bottom: 8px;
-  font-weight: 600;
+.message-markdown {
+  line-height: 1.6;
 }
 
-.prompt-markdown-container .lobe-markdown p {
-  margin-bottom: 8px;
+.message-markdown p {
+  margin: 0 0 8px 0;
 }
 
-.prompt-markdown-container .lobe-markdown code {
-  background-color: #f0f0f0;
-  padding: 2px 4px;
+.message-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.message-markdown pre {
+  background: var(--ant-color-bg-layout);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.message-markdown code {
+  background: var(--ant-color-bg-layout);
+  padding: 2px 6px;
   border-radius: 4px;
+  font-family: "Consolas", "Monaco", monospace;
   font-size: 13px;
 }
 
-.prompt-markdown-container .lobe-markdown pre {
-  background-color: #f6f8fa;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  padding: 12px;
-  overflow-x: auto;
+.message-markdown pre code {
+  background: transparent;
+  padding: 0;
 }
 
-/* 编辑模态窗口样式 */
-.prompt-edit-modal .ant-modal-body {
-  padding: 24px;
-  height: 70vh;
-  overflow: auto;
+.message-markdown ul,
+.message-markdown ol {
+  margin: 8px 0;
+  padding-left: 20px;
 }
 
-.prompt-edit-modal .ant-modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
+.message-markdown blockquote {
+  border-left: 3px solid var(--ant-color-border);
+  margin: 8px 0;
+  padding-left: 12px;
+  color: var(--ant-color-text-secondary);
 }
 
-.prompt-preview-container {
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
+/* 输入框区域 */
+.chat-input-area {
   padding: 16px;
-  background-color: #fafafa;
-  height: 60vh;
-  overflow: auto;
-  margin-top: 16px;
+  background: var(--ant-color-bg-container);
+  border-top: 1px solid var(--ant-color-border);
 }
 
-/* CodeEditor 样式优化 */
-.prompt-edit-modal .lobe-code-editor {
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
+.chat-input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+  resize: none;
+}
+
+.chat-send-button {
+  flex-shrink: 0;
+}
+
+.chat-input-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+/* 右侧配置面板 */
+.ai-assistant-sider-right {
+  background: var(--ant-color-bg-container) !important;
+  border-left: 1px solid var(--ant-color-border);
+  height: 100vh;
   overflow: hidden;
-  background-color: #f5f5f5;
 }
 
-.prompt-edit-modal .lobe-code-editor .monaco-editor {
+.ai-assistant-sider-right .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.config-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+/* 助手配置面板样式 */
+.assistant-config-panel {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.config-panel-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--ant-color-border);
+}
+
+.config-panel-header .ant-typography {
+  margin: 0;
+}
+
+.assistant-config-panel .ant-collapse {
+  background: transparent;
+}
+
+.assistant-config-panel .ant-collapse-item {
+  border-bottom: 1px solid var(--ant-color-border);
+}
+
+.assistant-config-panel .ant-collapse-header {
+  padding: 12px 16px !important;
+}
+
+.assistant-config-panel .ant-collapse-content-box {
+  padding: 0 16px 16px !important;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.config-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.config-hint {
+  font-size: 12px;
+}
+
+.token-stats {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--ant-color-bg-layout);
   border-radius: 8px;
-  background-color: #f5f5f5;
 }
 
-.prompt-edit-modal .lobe-code-editor .monaco-editor .monaco-editor-background {
-  background-color: #f5f5f5;
+.token-stats .ant-typography {
+  margin-bottom: 8px;
 }
 
-.prompt-edit-modal .lobe-code-editor .monaco-editor .monaco-editor-margin {
-  background-color: #f0f0f0;
+.token-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
 }
 
-/* 编辑状态切换按钮样式 */
-.prompt-edit-modal .ant-modal-footer .ant-btn {
-  margin-left: 8px;
+
+/* 插件调用样式 */
+.plugin-calls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.prompt-edit-modal .ant-modal-footer .ant-btn:first-child {
-  margin-left: 0;
+.plugin-call-collapse {
+  background: var(--ant-color-bg-layout);
+  border-radius: 6px;
 }
 
-/* 响应式设计 - 编辑模态窗口 */
-@media (max-width: 768px) {
-  .prompt-edit-modal .ant-modal {
-    width: 95vw !important;
-    max-width: none;
-  }
-  
-  .prompt-edit-modal .ant-modal-body {
-    height: 60vh;
-  }
-  
-  .prompt-preview-container {
-    height: 50vh;
-  }
-} 
+.plugin-call-collapse .ant-collapse-header {
+  padding: 8px 12px !important;
+  font-size: 13px;
+}
+
+.plugin-call-collapse .ant-collapse-content-box {
+  padding: 12px !important;
+}
+
+.plugin-call-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plugin-name {
+  font-weight: 500;
+}
+
+.plugin-key-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: var(--ant-color-bg-container);
+  border: 1px solid var(--ant-color-border);
+  border-radius: 4px;
+  color: var(--ant-color-text-secondary);
+  font-family: "Consolas", "Monaco", monospace;
+}
+
+.plugin-call-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plugin-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plugin-params-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--ant-color-bg-container);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.plugin-param-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--ant-color-border);
+}
+
+.plugin-param-row:last-child {
+  border-bottom: none;
+}
+
+.plugin-param-key {
+  font-weight: 500;
+  color: var(--ant-color-primary);
+  min-width: 100px;
+  flex-shrink: 0;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 12px;
+}
+
+.plugin-param-value {
+  flex: 1;
+  word-break: break-all;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.plugin-code-block {
+  background: var(--ant-color-bg-container);
+  padding: 8px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 12px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.plugin-message {
+  padding: 8px 12px;
+  background: var(--ant-color-warning-bg);
+  border-radius: 6px;
+  color: var(--ant-color-warning-text);
+}

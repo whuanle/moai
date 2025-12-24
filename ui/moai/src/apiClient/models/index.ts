@@ -98,6 +98,20 @@ export interface AddWikiFeishuConfigCommand extends Parsable, WikiFeishuConfig {
      */
     wikiId?: number | null;
 }
+export interface AiAssistantChatTopic extends Parsable {
+    /**
+     * The chatId property
+     */
+    chatId?: Guid | null;
+    /**
+     * The createTime property
+     */
+    createTime?: string | null;
+    /**
+     * The title property
+     */
+    title?: string | null;
+}
 /**
  * AI 模型.
  */
@@ -216,6 +230,88 @@ export interface AiOptimizePromptRequest extends Parsable {
      */
     sourcePrompt?: string | null;
 }
+/**
+ * 流式对话内容.
+ */
+export interface AiProcessingChatItem extends ApiError, Parsable {
+    /**
+     * 执行信息.
+     */
+    choices?: AiProcessingChoice[] | null;
+    /**
+     * 可以为 null，如果整个聊天对话完成，那么 finish_reason = stop."/>
+     */
+    finishReason?: string | null;
+    /**
+     * 当前对话 id.
+     */
+    id?: Guid | null;
+    /**
+     * 完成请求的使用统计信息，没有完成之前，这里是的值是空的.
+     */
+    usage?: OpenAIChatCompletionsUsage | null;
+}
+export type AiProcessingChatStreamState = (typeof AiProcessingChatStreamStateObject)[keyof typeof AiProcessingChatStreamStateObject];
+export type AiProcessingChatStreamType = (typeof AiProcessingChatStreamTypeObject)[keyof typeof AiProcessingChatStreamTypeObject];
+/**
+ * 执行信息.
+ */
+export interface AiProcessingChoice extends Parsable {
+    /**
+     * 插件调用.
+     */
+    pluginCall?: AiProcessingPluginCall | null;
+    /**
+     * 流状态.
+     */
+    streamState?: AiProcessingChatStreamState | null;
+    /**
+     * 流类型.
+     */
+    streamType?: AiProcessingChatStreamType | null;
+    /**
+     * 文本执行结果.
+     */
+    textCall?: AiProcessingTextCall | null;
+}
+/**
+ * 插件调用.
+ */
+export interface AiProcessingPluginCall extends Parsable {
+    /**
+     * 信息，如果报错，会有错误信息.
+     */
+    message?: string | null;
+    /**
+     * 执行插件的参数.
+     */
+    params?: KeyValueString[] | null;
+    /**
+     * 插件 key.
+     */
+    pluginKey?: string | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 插件类型.
+     */
+    pluginType?: PluginType | null;
+    /**
+     * 执行插件的结果.
+     */
+    result?: string | null;
+}
+/**
+ * 文本调用.
+ */
+export interface AiProcessingTextCall extends Parsable {
+    /**
+     * 文本.
+     */
+    content?: string | null;
+}
 export type AiProvider = (typeof AiProviderObject)[keyof typeof AiProviderObject];
 /**
  * 数据子项.
@@ -305,6 +401,23 @@ export interface CancalWikiDocumentTaskCommand extends Parsable {
      * 知识库id.
      */
     wikiId?: number | null;
+}
+/**
+ * 对话项.
+ */
+export interface ChatContentItem extends Parsable {
+    /**
+     * 角色名称，system、assistant、user、tool.
+     */
+    authorName?: string | null;
+    /**
+     * 对话内容.
+     */
+    choices?: AiProcessingChoice[] | null;
+    /**
+     * 记录 id，可用于单独删除某个记录.
+     */
+    recordId?: string | null;
 }
 /**
  * 清空知识库文档向量.
@@ -408,6 +521,61 @@ export function createAddWikiFeishuConfigCommandFromDiscriminatorValue(parseNode
     return deserializeIntoAddWikiFeishuConfigCommand;
 }
 /**
+ * 创建新的对话.
+ */
+export interface CreateAiAssistantChatCommand extends Parsable {
+    /**
+     * 头像图标.
+     */
+    avatar?: string | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 配置，字典适配不同的 AI 模型.
+     */
+    executionSettings?: KeyValueString[] | null;
+    /**
+     * 要使用的 AI 模型.
+     */
+    modelId?: number | null;
+    /**
+     * 要使用的插件列表，填插件的 Key，Tool 类插件的 Key 就是其对应的模板 Key.
+     */
+    plugins?: string[] | null;
+    /**
+     * 提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.
+     */
+    prompt?: string | null;
+    /**
+     * 话题名称.
+     */
+    title?: string | null;
+    /**
+     * 要使用的知识库列表，可使用已加入的或公开的知识库.
+     */
+    wikiIds?: number[] | null;
+}
+/**
+ * 对话 id.
+ */
+export interface CreateAiAssistantChatCommandResponse extends Parsable {
+    /**
+     * 每个聊天对话都有唯一 id.
+     */
+    chatId?: Guid | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiAssistantChatTopic}
+ */
+// @ts-ignore
+export function createAiAssistantChatTopicFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiAssistantChatTopic;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AiEndpoint}
@@ -442,6 +610,42 @@ export function createAiNotKeyEndpointFromDiscriminatorValue(parseNode: ParseNod
 // @ts-ignore
 export function createAiOptimizePromptRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAiOptimizePromptRequest;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiProcessingChatItem}
+ */
+// @ts-ignore
+export function createAiProcessingChatItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiProcessingChatItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiProcessingChoice}
+ */
+// @ts-ignore
+export function createAiProcessingChoiceFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiProcessingChoice;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiProcessingPluginCall}
+ */
+// @ts-ignore
+export function createAiProcessingPluginCallFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiProcessingPluginCall;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiProcessingTextCall}
+ */
+// @ts-ignore
+export function createAiProcessingTextCallFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiProcessingTextCall;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -491,6 +695,15 @@ export function createCancalWikiDocumentTaskCommandFromDiscriminatorValue(parseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ChatContentItem}
+ */
+// @ts-ignore
+export function createChatContentItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoChatContentItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {ClearWikiDocumentEmbeddingCommand}
  */
 // @ts-ignore
@@ -514,6 +727,24 @@ export function createComplateFileUploadCommandFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createComplateUploadWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoComplateUploadWikiDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateAiAssistantChatCommand}
+ */
+// @ts-ignore
+export function createCreateAiAssistantChatCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateAiAssistantChatCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateAiAssistantChatCommandResponse}
+ */
+// @ts-ignore
+export function createCreateAiAssistantChatCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateAiAssistantChatCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -559,6 +790,24 @@ export function createCreatePromptCommandFromDiscriminatorValue(parseNode: Parse
 // @ts-ignore
 export function createCreateWikiCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateWikiCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DeleteAiAssistantChatCommand}
+ */
+// @ts-ignore
+export function createDeleteAiAssistantChatCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDeleteAiAssistantChatCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DeleteAiAssistantChatOneRecordCommand}
+ */
+// @ts-ignore
+export function createDeleteAiAssistantChatOneRecordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDeleteAiAssistantChatOneRecordCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -949,6 +1198,15 @@ export function createOAuthRegisterCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {OpenAIChatCompletionsUsage}
+ */
+// @ts-ignore
+export function createOpenAIChatCompletionsUsageFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoOpenAIChatCompletionsUsage;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PagedParamter}
  */
 // @ts-ignore
@@ -1025,6 +1283,15 @@ export function createPluginFunctionItemFromDiscriminatorValue(parseNode: ParseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginSimpleInfo}
+ */
+// @ts-ignore
+export function createPluginSimpleInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginSimpleInfo;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreloadWikiDocumentResponse}
  */
 // @ts-ignore
@@ -1057,6 +1324,15 @@ export function createPreUploadOpenApiFilePluginCommandResponseFromDiscriminator
 // @ts-ignore
 export function createPreUploadWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPreUploadWikiDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ProcessingAiAssistantChatCommand}
+ */
+// @ts-ignore
+export function createProcessingAiAssistantChatCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoProcessingAiAssistantChatCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1109,6 +1385,24 @@ export function createPromptItemFromDiscriminatorValue(parseNode: ParseNode | un
 // @ts-ignore
 export function createPublicModelInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPublicModelInfo;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAiAssistantChatHistoryCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAiAssistantChatHistoryCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAiAssistantChatHistoryCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAiAssistantChatTopicListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAiAssistantChatTopicListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAiAssistantChatTopicListCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1343,6 +1637,15 @@ export function createQueryPromptListCommandFromDiscriminatorValue(parseNode: Pa
 // @ts-ignore
 export function createQueryPromptListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryPromptListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPublicPluginListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPublicPluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPublicPluginListCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1815,6 +2118,15 @@ export function createUnbindUserAccountCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAiAssistanChatConfigCommand}
+ */
+// @ts-ignore
+export function createUpdateAiAssistanChatConfigCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAiAssistanChatConfigCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateAiModelCommand}
  */
 // @ts-ignore
@@ -2154,6 +2466,28 @@ export function createWikiPluginAutoProcessConfigFromDiscriminatorValue(parseNod
     return deserializeIntoWikiPluginAutoProcessConfig;
 }
 /**
+ * 删除对话记录.
+ */
+export interface DeleteAiAssistantChatCommand extends Parsable {
+    /**
+     * 对话 id.
+     */
+    chatId?: Guid | null;
+}
+/**
+ * 删除对话中的一条记录.
+ */
+export interface DeleteAiAssistantChatOneRecordCommand extends Parsable {
+    /**
+     * 对话 id.
+     */
+    chatId?: Guid | null;
+    /**
+     * 记录id.
+     */
+    recordId?: string | null;
+}
+/**
  * 删除或取消批处理文档.
  */
 export interface DeleteBatchProcessDocumentCommand extends Parsable {
@@ -2353,6 +2687,18 @@ export function deserializeIntoAddWikiFeishuConfigCommand(addWikiFeishuConfigCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAiAssistantChatTopic(aiAssistantChatTopic: Partial<AiAssistantChatTopic> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chatId": n => { aiAssistantChatTopic.chatId = n.getGuidValue(); },
+        "createTime": n => { aiAssistantChatTopic.createTime = n.getStringValue(); },
+        "title": n => { aiAssistantChatTopic.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAiEndpoint(aiEndpoint: Partial<AiEndpoint> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "abilities": n => { aiEndpoint.abilities = n.getObjectValue<ModelAbilities>(createModelAbilitiesFromDiscriminatorValue); },
@@ -2408,6 +2754,57 @@ export function deserializeIntoAiOptimizePromptRequest(aiOptimizePromptRequest: 
     return {
         "aiModelId": n => { aiOptimizePromptRequest.aiModelId = n.getNumberValue(); },
         "sourcePrompt": n => { aiOptimizePromptRequest.sourcePrompt = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAiProcessingChatItem(aiProcessingChatItem: Partial<AiProcessingChatItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "choices": n => { aiProcessingChatItem.choices = n.getCollectionOfObjectValues<AiProcessingChoice>(createAiProcessingChoiceFromDiscriminatorValue); },
+        "finish_reason": n => { aiProcessingChatItem.finishReason = n.getStringValue(); },
+        "id": n => { aiProcessingChatItem.id = n.getGuidValue(); },
+        "usage": n => { aiProcessingChatItem.usage = n.getObjectValue<OpenAIChatCompletionsUsage>(createOpenAIChatCompletionsUsageFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAiProcessingChoice(aiProcessingChoice: Partial<AiProcessingChoice> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginCall": n => { aiProcessingChoice.pluginCall = n.getObjectValue<AiProcessingPluginCall>(createAiProcessingPluginCallFromDiscriminatorValue); },
+        "streamState": n => { aiProcessingChoice.streamState = n.getEnumValue<AiProcessingChatStreamState>(AiProcessingChatStreamStateObject); },
+        "streamType": n => { aiProcessingChoice.streamType = n.getEnumValue<AiProcessingChatStreamType>(AiProcessingChatStreamTypeObject); },
+        "textCall": n => { aiProcessingChoice.textCall = n.getObjectValue<AiProcessingTextCall>(createAiProcessingTextCallFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAiProcessingPluginCall(aiProcessingPluginCall: Partial<AiProcessingPluginCall> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "message": n => { aiProcessingPluginCall.message = n.getStringValue(); },
+        "params": n => { aiProcessingPluginCall.params = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "pluginKey": n => { aiProcessingPluginCall.pluginKey = n.getStringValue(); },
+        "pluginName": n => { aiProcessingPluginCall.pluginName = n.getStringValue(); },
+        "pluginType": n => { aiProcessingPluginCall.pluginType = n.getEnumValue<PluginType>(PluginTypeObject); },
+        "result": n => { aiProcessingPluginCall.result = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAiProcessingTextCall(aiProcessingTextCall: Partial<AiProcessingTextCall> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { aiProcessingTextCall.content = n.getStringValue(); },
     }
 }
 /**
@@ -2476,6 +2873,18 @@ export function deserializeIntoCancalWikiDocumentTaskCommand(cancalWikiDocumentT
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoChatContentItem(chatContentItem: Partial<ChatContentItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "authorName": n => { chatContentItem.authorName = n.getStringValue(); },
+        "choices": n => { chatContentItem.choices = n.getCollectionOfObjectValues<AiProcessingChoice>(createAiProcessingChoiceFromDiscriminatorValue); },
+        "recordId": n => { chatContentItem.recordId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoClearWikiDocumentEmbeddingCommand(clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "documentId": n => { clearWikiDocumentEmbeddingCommand.documentId = n.getNumberValue(); },
@@ -2504,6 +2913,33 @@ export function deserializeIntoComplateUploadWikiDocumentCommand(complateUploadW
         "fileName": n => { complateUploadWikiDocumentCommand.fileName = n.getStringValue(); },
         "isSuccess": n => { complateUploadWikiDocumentCommand.isSuccess = n.getBooleanValue(); },
         "wikiId": n => { complateUploadWikiDocumentCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateAiAssistantChatCommand(createAiAssistantChatCommand: Partial<CreateAiAssistantChatCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { createAiAssistantChatCommand.avatar = n.getStringValue(); },
+        "contextUserId": n => { createAiAssistantChatCommand.contextUserId = n.getNumberValue(); },
+        "executionSettings": n => { createAiAssistantChatCommand.executionSettings = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "modelId": n => { createAiAssistantChatCommand.modelId = n.getNumberValue(); },
+        "plugins": n => { createAiAssistantChatCommand.plugins = n.getCollectionOfPrimitiveValues<string>(); },
+        "prompt": n => { createAiAssistantChatCommand.prompt = n.getStringValue(); },
+        "title": n => { createAiAssistantChatCommand.title = n.getStringValue(); },
+        "wikiIds": n => { createAiAssistantChatCommand.wikiIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateAiAssistantChatCommandResponse(createAiAssistantChatCommandResponse: Partial<CreateAiAssistantChatCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chatId": n => { createAiAssistantChatCommandResponse.chatId = n.getGuidValue(); },
     }
 }
 /**
@@ -2572,6 +3008,27 @@ export function deserializeIntoCreateWikiCommand(createWikiCommand: Partial<Crea
         "description": n => { createWikiCommand.description = n.getStringValue(); },
         "isPublic": n => { createWikiCommand.isPublic = n.getBooleanValue(); },
         "name": n => { createWikiCommand.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDeleteAiAssistantChatCommand(deleteAiAssistantChatCommand: Partial<DeleteAiAssistantChatCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chatId": n => { deleteAiAssistantChatCommand.chatId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDeleteAiAssistantChatOneRecordCommand(deleteAiAssistantChatOneRecordCommand: Partial<DeleteAiAssistantChatOneRecordCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chatId": n => { deleteAiAssistantChatOneRecordCommand.chatId = n.getGuidValue(); },
+        "recordId": n => { deleteAiAssistantChatOneRecordCommand.recordId = n.getStringValue(); },
     }
 }
 /**
@@ -3021,6 +3478,18 @@ export function deserializeIntoOAuthRegisterCommand(oAuthRegisterCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoOpenAIChatCompletionsUsage(openAIChatCompletionsUsage: Partial<OpenAIChatCompletionsUsage> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "completion_tokens": n => { openAIChatCompletionsUsage.completionTokens = n.getNumberValue(); },
+        "prompt_tokens": n => { openAIChatCompletionsUsage.promptTokens = n.getNumberValue(); },
+        "total_tokens": n => { openAIChatCompletionsUsage.totalTokens = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPagedParamter(pagedParamter: Partial<PagedParamter> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pageNo": n => { pagedParamter.pageNo = n.getNumberValue(); },
@@ -3115,6 +3584,19 @@ export function deserializeIntoPluginFunctionItem(pluginFunctionItem: Partial<Pl
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPluginSimpleInfo(pluginSimpleInfo: Partial<PluginSimpleInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyId": n => { pluginSimpleInfo.classifyId = n.getNumberValue(); },
+        "description": n => { pluginSimpleInfo.description = n.getStringValue(); },
+        "pluginName": n => { pluginSimpleInfo.pluginName = n.getStringValue(); },
+        "title": n => { pluginSimpleInfo.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPreloadWikiDocumentResponse(preloadWikiDocumentResponse: Partial<PreloadWikiDocumentResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "expiration": n => { preloadWikiDocumentResponse.expiration = n.getStringValue(); },
@@ -3169,6 +3651,18 @@ export function deserializeIntoPreUploadWikiDocumentCommand(preUploadWikiDocumen
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoProcessingAiAssistantChatCommand(processingAiAssistantChatCommand: Partial<ProcessingAiAssistantChatCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chatId": n => { processingAiAssistantChatCommand.chatId = n.getGuidValue(); },
+        "content": n => { processingAiAssistantChatCommand.content = n.getStringValue(); },
+        "contextUserId": n => { processingAiAssistantChatCommand.contextUserId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPromptClassifyItem(promptClassifyItem: Partial<PromptClassifyItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "classifyId": n => { promptClassifyItem.classifyId = n.getNumberValue(); },
@@ -3207,6 +3701,37 @@ export function deserializeIntoPublicModelInfo(publicModelInfo: Partial<PublicMo
         "name": n => { publicModelInfo.name = n.getStringValue(); },
         "textOutput": n => { publicModelInfo.textOutput = n.getNumberValue(); },
         "title": n => { publicModelInfo.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAiAssistantChatHistoryCommandResponse(queryAiAssistantChatHistoryCommandResponse: Partial<QueryAiAssistantChatHistoryCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { queryAiAssistantChatHistoryCommandResponse.avatar = n.getStringValue(); },
+        "chatHistory": n => { queryAiAssistantChatHistoryCommandResponse.chatHistory = n.getCollectionOfObjectValues<ChatContentItem>(createChatContentItemFromDiscriminatorValue); },
+        "chatId": n => { queryAiAssistantChatHistoryCommandResponse.chatId = n.getGuidValue(); },
+        "createTime": n => { queryAiAssistantChatHistoryCommandResponse.createTime = n.getStringValue(); },
+        "executionSettings": n => { queryAiAssistantChatHistoryCommandResponse.executionSettings = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "modelId": n => { queryAiAssistantChatHistoryCommandResponse.modelId = n.getNumberValue(); },
+        "plugins": n => { queryAiAssistantChatHistoryCommandResponse.plugins = n.getCollectionOfPrimitiveValues<string>(); },
+        "prompt": n => { queryAiAssistantChatHistoryCommandResponse.prompt = n.getStringValue(); },
+        "title": n => { queryAiAssistantChatHistoryCommandResponse.title = n.getStringValue(); },
+        "tokenUsage": n => { queryAiAssistantChatHistoryCommandResponse.tokenUsage = n.getObjectValue<OpenAIChatCompletionsUsage>(createOpenAIChatCompletionsUsageFromDiscriminatorValue); },
+        "updateTime": n => { queryAiAssistantChatHistoryCommandResponse.updateTime = n.getStringValue(); },
+        "wikiIds": n => { queryAiAssistantChatHistoryCommandResponse.wikiIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAiAssistantChatTopicListCommandResponse(queryAiAssistantChatTopicListCommandResponse: Partial<QueryAiAssistantChatTopicListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAiAssistantChatTopicListCommandResponse.items = n.getCollectionOfObjectValues<AiAssistantChatTopic>(createAiAssistantChatTopicFromDiscriminatorValue); },
     }
 }
 /**
@@ -3502,6 +4027,16 @@ export function deserializeIntoQueryPromptListCommand(queryPromptListCommand: Pa
 export function deserializeIntoQueryPromptListCommandResponse(queryPromptListCommandResponse: Partial<QueryPromptListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryPromptListCommandResponse.items = n.getCollectionOfObjectValues<PromptItem>(createPromptItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPublicPluginListCommandResponse(queryPublicPluginListCommandResponse: Partial<QueryPublicPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPublicPluginListCommandResponse.items = n.getCollectionOfObjectValues<PluginSimpleInfo>(createPluginSimpleInfoFromDiscriminatorValue); },
     }
 }
 /**
@@ -4115,6 +4650,24 @@ export function deserializeIntoUnbindUserAccountCommand(unbindUserAccountCommand
     return {
         "bindId": n => { unbindUserAccountCommand.bindId = n.getNumberValue(); },
         "userId": n => { unbindUserAccountCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateAiAssistanChatConfigCommand(updateAiAssistanChatConfigCommand: Partial<UpdateAiAssistanChatConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { updateAiAssistanChatConfigCommand.avatar = n.getStringValue(); },
+        "chatId": n => { updateAiAssistanChatConfigCommand.chatId = n.getGuidValue(); },
+        "contextUserId": n => { updateAiAssistanChatConfigCommand.contextUserId = n.getNumberValue(); },
+        "executionSettings": n => { updateAiAssistanChatConfigCommand.executionSettings = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
+        "modelId": n => { updateAiAssistanChatConfigCommand.modelId = n.getNumberValue(); },
+        "plugins": n => { updateAiAssistanChatConfigCommand.plugins = n.getCollectionOfPrimitiveValues<string>(); },
+        "prompt": n => { updateAiAssistanChatConfigCommand.prompt = n.getStringValue(); },
+        "title": n => { updateAiAssistanChatConfigCommand.title = n.getStringValue(); },
+        "wikiIds": n => { updateAiAssistanChatConfigCommand.wikiIds = n.getCollectionOfPrimitiveValues<number>(); },
     }
 }
 /**
@@ -5141,6 +5694,20 @@ export interface OAuthRegisterCommand extends Parsable {
      */
     tempOAuthBindId?: Guid | null;
 }
+export interface OpenAIChatCompletionsUsage extends Parsable {
+    /**
+     * The completion_tokens property
+     */
+    completionTokens?: number | null;
+    /**
+     * The prompt_tokens property
+     */
+    promptTokens?: number | null;
+    /**
+     * The total_tokens property
+     */
+    totalTokens?: number | null;
+}
 /**
  * 分页参数.
  */
@@ -5290,6 +5857,27 @@ export interface PluginFunctionItem extends Parsable {
      */
     summary?: string | null;
 }
+/**
+ * 插件简要信息.
+ */
+export interface PluginSimpleInfo extends Parsable {
+    /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
+     * 注释.
+     */
+    description?: string | null;
+    /**
+     * 插件名称，即 key.
+     */
+    pluginName?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+}
 export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
 export interface PreloadWikiDocumentResponse extends Parsable {
     /**
@@ -5381,6 +5969,23 @@ export interface PreUploadWikiDocumentCommand extends Parsable {
      */
     wikiId?: number | null;
 }
+/**
+ * 进行对话，对话时，History 每次做增量传递.
+ */
+export interface ProcessingAiAssistantChatCommand extends Parsable {
+    /**
+     * 对话 id，id 为空时自动新建.
+     */
+    chatId?: Guid | null;
+    /**
+     * 用户的提问.
+     */
+    content?: string | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+}
 export interface PromptClassifyItem extends Parsable {
     /**
      * Id.
@@ -5461,6 +6066,68 @@ export interface PublicModelInfo extends Parsable {
      * 对用户显示名称.
      */
     title?: string | null;
+}
+/**
+ * 对话记录结果.
+ */
+export interface QueryAiAssistantChatHistoryCommandResponse extends Parsable {
+    /**
+     * 头像图标.
+     */
+    avatar?: string | null;
+    /**
+     * 历史对话或者上下文信息.
+     */
+    chatHistory?: ChatContentItem[] | null;
+    /**
+     * id.
+     */
+    chatId?: Guid | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 配置，字典适配不同的 AI 模型.
+     */
+    executionSettings?: KeyValueString[] | null;
+    /**
+     * 要使用的 AI 模型.
+     */
+    modelId?: number | null;
+    /**
+     * 要使用的插件列表，填插件的 Key，Tool 类插件的 Key 就是其对应的模板 Key.
+     */
+    plugins?: string[] | null;
+    /**
+     * 提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.
+     */
+    prompt?: string | null;
+    /**
+     * 话题名称.
+     */
+    title?: string | null;
+    /**
+     * 消耗的 token 统计.
+     */
+    tokenUsage?: OpenAIChatCompletionsUsage | null;
+    /**
+     * 最后更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 要使用的知识库列表，可使用已加入的或公开的知识库.
+     */
+    wikiIds?: number[] | null;
+}
+/**
+ * 话题列表.
+ */
+export interface QueryAiAssistantChatTopicListCommandResponse extends Parsable {
+    /**
+     * The items property
+     */
+    items?: AiAssistantChatTopic[] | null;
 }
 /**
  * 查询模型列表.
@@ -5805,6 +6472,12 @@ export interface QueryPromptListCommandResponse extends Parsable {
      * 列表.
      */
     items?: PromptItem[] | null;
+}
+export interface QueryPublicPluginListCommandResponse extends Parsable {
+    /**
+     * 子项.
+     */
+    items?: PluginSimpleInfo[] | null;
 }
 /**
  * 服务器信息.
@@ -6390,9 +7063,12 @@ export interface SearchWikiDocumentTextCommandResponse extends Parsable {
      */
     searchResult?: SearchWikiDocumentTextItem[] | null;
 }
+/**
+ * 搜索结果项.
+ */
 export interface SearchWikiDocumentTextItem extends Parsable {
     /**
-     * 此 id 不是切割预览中的文本 id.
+     * 无用.
      */
     chunkId?: Guid | null;
     /**
@@ -6498,6 +7174,18 @@ export function serializeAddWikiFeishuConfigCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAiAssistantChatTopic(writer: SerializationWriter, aiAssistantChatTopic: Partial<AiAssistantChatTopic> | undefined | null = {}) : void {
+    if (aiAssistantChatTopic) {
+        writer.writeGuidValue("chatId", aiAssistantChatTopic.chatId);
+        writer.writeStringValue("createTime", aiAssistantChatTopic.createTime);
+        writer.writeStringValue("title", aiAssistantChatTopic.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAiEndpoint(writer: SerializationWriter, aiEndpoint: Partial<AiEndpoint> | undefined | null = {}) : void {
     if (aiEndpoint) {
         writer.writeObjectValue<ModelAbilities>("abilities", aiEndpoint.abilities, serializeModelAbilities);
@@ -6553,6 +7241,57 @@ export function serializeAiOptimizePromptRequest(writer: SerializationWriter, ai
     if (aiOptimizePromptRequest) {
         writer.writeNumberValue("aiModelId", aiOptimizePromptRequest.aiModelId);
         writer.writeStringValue("sourcePrompt", aiOptimizePromptRequest.sourcePrompt);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAiProcessingChatItem(writer: SerializationWriter, aiProcessingChatItem: Partial<AiProcessingChatItem> | undefined | null = {}) : void {
+    if (aiProcessingChatItem) {
+        writer.writeCollectionOfObjectValues<AiProcessingChoice>("choices", aiProcessingChatItem.choices, serializeAiProcessingChoice);
+        writer.writeStringValue("finish_reason", aiProcessingChatItem.finishReason);
+        writer.writeGuidValue("id", aiProcessingChatItem.id);
+        writer.writeObjectValue<OpenAIChatCompletionsUsage>("usage", aiProcessingChatItem.usage, serializeOpenAIChatCompletionsUsage);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAiProcessingChoice(writer: SerializationWriter, aiProcessingChoice: Partial<AiProcessingChoice> | undefined | null = {}) : void {
+    if (aiProcessingChoice) {
+        writer.writeObjectValue<AiProcessingPluginCall>("pluginCall", aiProcessingChoice.pluginCall, serializeAiProcessingPluginCall);
+        writer.writeEnumValue<AiProcessingChatStreamState>("streamState", aiProcessingChoice.streamState);
+        writer.writeEnumValue<AiProcessingChatStreamType>("streamType", aiProcessingChoice.streamType);
+        writer.writeObjectValue<AiProcessingTextCall>("textCall", aiProcessingChoice.textCall, serializeAiProcessingTextCall);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAiProcessingPluginCall(writer: SerializationWriter, aiProcessingPluginCall: Partial<AiProcessingPluginCall> | undefined | null = {}) : void {
+    if (aiProcessingPluginCall) {
+        writer.writeStringValue("message", aiProcessingPluginCall.message);
+        writer.writeCollectionOfObjectValues<KeyValueString>("params", aiProcessingPluginCall.params, serializeKeyValueString);
+        writer.writeStringValue("pluginKey", aiProcessingPluginCall.pluginKey);
+        writer.writeStringValue("pluginName", aiProcessingPluginCall.pluginName);
+        writer.writeEnumValue<PluginType>("pluginType", aiProcessingPluginCall.pluginType);
+        writer.writeStringValue("result", aiProcessingPluginCall.result);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAiProcessingTextCall(writer: SerializationWriter, aiProcessingTextCall: Partial<AiProcessingTextCall> | undefined | null = {}) : void {
+    if (aiProcessingTextCall) {
+        writer.writeStringValue("content", aiProcessingTextCall.content);
     }
 }
 /**
@@ -6621,6 +7360,18 @@ export function serializeCancalWikiDocumentTaskCommand(writer: SerializationWrit
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeChatContentItem(writer: SerializationWriter, chatContentItem: Partial<ChatContentItem> | undefined | null = {}) : void {
+    if (chatContentItem) {
+        writer.writeStringValue("authorName", chatContentItem.authorName);
+        writer.writeCollectionOfObjectValues<AiProcessingChoice>("choices", chatContentItem.choices, serializeAiProcessingChoice);
+        writer.writeStringValue("recordId", chatContentItem.recordId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeClearWikiDocumentEmbeddingCommand(writer: SerializationWriter, clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined | null = {}) : void {
     if (clearWikiDocumentEmbeddingCommand) {
         writer.writeNumberValue("documentId", clearWikiDocumentEmbeddingCommand.documentId);
@@ -6649,6 +7400,33 @@ export function serializeComplateUploadWikiDocumentCommand(writer: Serialization
         writer.writeStringValue("fileName", complateUploadWikiDocumentCommand.fileName);
         writer.writeBooleanValue("isSuccess", complateUploadWikiDocumentCommand.isSuccess);
         writer.writeNumberValue("wikiId", complateUploadWikiDocumentCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateAiAssistantChatCommand(writer: SerializationWriter, createAiAssistantChatCommand: Partial<CreateAiAssistantChatCommand> | undefined | null = {}) : void {
+    if (createAiAssistantChatCommand) {
+        writer.writeStringValue("avatar", createAiAssistantChatCommand.avatar);
+        writer.writeNumberValue("contextUserId", createAiAssistantChatCommand.contextUserId);
+        writer.writeCollectionOfObjectValues<KeyValueString>("executionSettings", createAiAssistantChatCommand.executionSettings, serializeKeyValueString);
+        writer.writeNumberValue("modelId", createAiAssistantChatCommand.modelId);
+        writer.writeCollectionOfPrimitiveValues<string>("plugins", createAiAssistantChatCommand.plugins);
+        writer.writeStringValue("prompt", createAiAssistantChatCommand.prompt);
+        writer.writeStringValue("title", createAiAssistantChatCommand.title);
+        writer.writeCollectionOfPrimitiveValues<number>("wikiIds", createAiAssistantChatCommand.wikiIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateAiAssistantChatCommandResponse(writer: SerializationWriter, createAiAssistantChatCommandResponse: Partial<CreateAiAssistantChatCommandResponse> | undefined | null = {}) : void {
+    if (createAiAssistantChatCommandResponse) {
+        writer.writeGuidValue("chatId", createAiAssistantChatCommandResponse.chatId);
     }
 }
 /**
@@ -6717,6 +7495,27 @@ export function serializeCreateWikiCommand(writer: SerializationWriter, createWi
         writer.writeStringValue("description", createWikiCommand.description);
         writer.writeBooleanValue("isPublic", createWikiCommand.isPublic);
         writer.writeStringValue("name", createWikiCommand.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeDeleteAiAssistantChatCommand(writer: SerializationWriter, deleteAiAssistantChatCommand: Partial<DeleteAiAssistantChatCommand> | undefined | null = {}) : void {
+    if (deleteAiAssistantChatCommand) {
+        writer.writeGuidValue("chatId", deleteAiAssistantChatCommand.chatId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeDeleteAiAssistantChatOneRecordCommand(writer: SerializationWriter, deleteAiAssistantChatOneRecordCommand: Partial<DeleteAiAssistantChatOneRecordCommand> | undefined | null = {}) : void {
+    if (deleteAiAssistantChatOneRecordCommand) {
+        writer.writeGuidValue("chatId", deleteAiAssistantChatOneRecordCommand.chatId);
+        writer.writeStringValue("recordId", deleteAiAssistantChatOneRecordCommand.recordId);
     }
 }
 /**
@@ -7166,6 +7965,18 @@ export function serializeOAuthRegisterCommand(writer: SerializationWriter, oAuth
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeOpenAIChatCompletionsUsage(writer: SerializationWriter, openAIChatCompletionsUsage: Partial<OpenAIChatCompletionsUsage> | undefined | null = {}) : void {
+    if (openAIChatCompletionsUsage) {
+        writer.writeNumberValue("completion_tokens", openAIChatCompletionsUsage.completionTokens);
+        writer.writeNumberValue("prompt_tokens", openAIChatCompletionsUsage.promptTokens);
+        writer.writeNumberValue("total_tokens", openAIChatCompletionsUsage.totalTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePagedParamter(writer: SerializationWriter, pagedParamter: Partial<PagedParamter> | undefined | null = {}) : void {
     if (pagedParamter) {
         writer.writeNumberValue("pageNo", pagedParamter.pageNo);
@@ -7260,6 +8071,19 @@ export function serializePluginFunctionItem(writer: SerializationWriter, pluginF
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePluginSimpleInfo(writer: SerializationWriter, pluginSimpleInfo: Partial<PluginSimpleInfo> | undefined | null = {}) : void {
+    if (pluginSimpleInfo) {
+        writer.writeNumberValue("classifyId", pluginSimpleInfo.classifyId);
+        writer.writeStringValue("description", pluginSimpleInfo.description);
+        writer.writeStringValue("pluginName", pluginSimpleInfo.pluginName);
+        writer.writeStringValue("title", pluginSimpleInfo.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePreloadWikiDocumentResponse(writer: SerializationWriter, preloadWikiDocumentResponse: Partial<PreloadWikiDocumentResponse> | undefined | null = {}) : void {
     if (preloadWikiDocumentResponse) {
         writer.writeStringValue("expiration", preloadWikiDocumentResponse.expiration);
@@ -7314,6 +8138,18 @@ export function serializePreUploadWikiDocumentCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeProcessingAiAssistantChatCommand(writer: SerializationWriter, processingAiAssistantChatCommand: Partial<ProcessingAiAssistantChatCommand> | undefined | null = {}) : void {
+    if (processingAiAssistantChatCommand) {
+        writer.writeGuidValue("chatId", processingAiAssistantChatCommand.chatId);
+        writer.writeStringValue("content", processingAiAssistantChatCommand.content);
+        writer.writeNumberValue("contextUserId", processingAiAssistantChatCommand.contextUserId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePromptClassifyItem(writer: SerializationWriter, promptClassifyItem: Partial<PromptClassifyItem> | undefined | null = {}) : void {
     if (promptClassifyItem) {
         writer.writeNumberValue("classifyId", promptClassifyItem.classifyId);
@@ -7352,6 +8188,37 @@ export function serializePublicModelInfo(writer: SerializationWriter, publicMode
         writer.writeStringValue("name", publicModelInfo.name);
         writer.writeNumberValue("textOutput", publicModelInfo.textOutput);
         writer.writeStringValue("title", publicModelInfo.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAiAssistantChatHistoryCommandResponse(writer: SerializationWriter, queryAiAssistantChatHistoryCommandResponse: Partial<QueryAiAssistantChatHistoryCommandResponse> | undefined | null = {}) : void {
+    if (queryAiAssistantChatHistoryCommandResponse) {
+        writer.writeStringValue("avatar", queryAiAssistantChatHistoryCommandResponse.avatar);
+        writer.writeCollectionOfObjectValues<ChatContentItem>("chatHistory", queryAiAssistantChatHistoryCommandResponse.chatHistory, serializeChatContentItem);
+        writer.writeGuidValue("chatId", queryAiAssistantChatHistoryCommandResponse.chatId);
+        writer.writeStringValue("createTime", queryAiAssistantChatHistoryCommandResponse.createTime);
+        writer.writeCollectionOfObjectValues<KeyValueString>("executionSettings", queryAiAssistantChatHistoryCommandResponse.executionSettings, serializeKeyValueString);
+        writer.writeNumberValue("modelId", queryAiAssistantChatHistoryCommandResponse.modelId);
+        writer.writeCollectionOfPrimitiveValues<string>("plugins", queryAiAssistantChatHistoryCommandResponse.plugins);
+        writer.writeStringValue("prompt", queryAiAssistantChatHistoryCommandResponse.prompt);
+        writer.writeStringValue("title", queryAiAssistantChatHistoryCommandResponse.title);
+        writer.writeObjectValue<OpenAIChatCompletionsUsage>("tokenUsage", queryAiAssistantChatHistoryCommandResponse.tokenUsage, serializeOpenAIChatCompletionsUsage);
+        writer.writeStringValue("updateTime", queryAiAssistantChatHistoryCommandResponse.updateTime);
+        writer.writeCollectionOfPrimitiveValues<number>("wikiIds", queryAiAssistantChatHistoryCommandResponse.wikiIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAiAssistantChatTopicListCommandResponse(writer: SerializationWriter, queryAiAssistantChatTopicListCommandResponse: Partial<QueryAiAssistantChatTopicListCommandResponse> | undefined | null = {}) : void {
+    if (queryAiAssistantChatTopicListCommandResponse) {
+        writer.writeCollectionOfObjectValues<AiAssistantChatTopic>("items", queryAiAssistantChatTopicListCommandResponse.items, serializeAiAssistantChatTopic);
     }
 }
 /**
@@ -7647,6 +8514,16 @@ export function serializeQueryPromptListCommand(writer: SerializationWriter, que
 export function serializeQueryPromptListCommandResponse(writer: SerializationWriter, queryPromptListCommandResponse: Partial<QueryPromptListCommandResponse> | undefined | null = {}) : void {
     if (queryPromptListCommandResponse) {
         writer.writeCollectionOfObjectValues<PromptItem>("items", queryPromptListCommandResponse.items, serializePromptItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPublicPluginListCommandResponse(writer: SerializationWriter, queryPublicPluginListCommandResponse: Partial<QueryPublicPluginListCommandResponse> | undefined | null = {}) : void {
+    if (queryPublicPluginListCommandResponse) {
+        writer.writeCollectionOfObjectValues<PluginSimpleInfo>("items", queryPublicPluginListCommandResponse.items, serializePluginSimpleInfo);
     }
 }
 /**
@@ -8260,6 +9137,24 @@ export function serializeUnbindUserAccountCommand(writer: SerializationWriter, u
     if (unbindUserAccountCommand) {
         writer.writeNumberValue("bindId", unbindUserAccountCommand.bindId);
         writer.writeNumberValue("userId", unbindUserAccountCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateAiAssistanChatConfigCommand(writer: SerializationWriter, updateAiAssistanChatConfigCommand: Partial<UpdateAiAssistanChatConfigCommand> | undefined | null = {}) : void {
+    if (updateAiAssistanChatConfigCommand) {
+        writer.writeStringValue("avatar", updateAiAssistanChatConfigCommand.avatar);
+        writer.writeGuidValue("chatId", updateAiAssistanChatConfigCommand.chatId);
+        writer.writeNumberValue("contextUserId", updateAiAssistanChatConfigCommand.contextUserId);
+        writer.writeCollectionOfObjectValues<KeyValueString>("executionSettings", updateAiAssistanChatConfigCommand.executionSettings, serializeKeyValueString);
+        writer.writeNumberValue("modelId", updateAiAssistanChatConfigCommand.modelId);
+        writer.writeCollectionOfPrimitiveValues<string>("plugins", updateAiAssistanChatConfigCommand.plugins);
+        writer.writeStringValue("prompt", updateAiAssistanChatConfigCommand.prompt);
+        writer.writeStringValue("title", updateAiAssistanChatConfigCommand.title);
+        writer.writeCollectionOfPrimitiveValues<number>("wikiIds", updateAiAssistanChatConfigCommand.wikiIds);
     }
 }
 /**
@@ -8916,6 +9811,47 @@ export interface UnbindUserAccountCommand extends Parsable {
      * 用户 id.
      */
     userId?: number | null;
+}
+/**
+ * 更新 AI 对话参数.
+ */
+export interface UpdateAiAssistanChatConfigCommand extends Parsable {
+    /**
+     * 头像图标.
+     */
+    avatar?: string | null;
+    /**
+     * 对话 id.
+     */
+    chatId?: Guid | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 配置，字典适配不同的 AI 模型.
+     */
+    executionSettings?: KeyValueString[] | null;
+    /**
+     * 要使用的 AI 模型.
+     */
+    modelId?: number | null;
+    /**
+     * 要使用的插件列表，填插件的 Key，Tool 类插件的 Key 就是其对应的模板 Key.
+     */
+    plugins?: string[] | null;
+    /**
+     * 提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.
+     */
+    prompt?: string | null;
+    /**
+     * 话题名称.
+     */
+    title?: string | null;
+    /**
+     * 要使用的知识库列表，可使用已加入的或公开的知识库.
+     */
+    wikiIds?: number[] | null;
 }
 /**
  * 修改 AI 模型.
@@ -9843,6 +10779,24 @@ export const AiModelTypeObject = {
     Text2music: "text2music",
 } as const;
 /**
+ * 对话内容状态.
+ */
+export const AiProcessingChatStreamStateObject = {
+    None: "none",
+    Start: "start",
+    Processing: "processing",
+    End: "end",
+    ErrorEscaped: "error",
+} as const;
+/**
+ * 对话内容类型.
+ */
+export const AiProcessingChatStreamTypeObject = {
+    None: "none",
+    Text: "text",
+    Plugin: "plugin",
+} as const;
+/**
  * Ai 接口类型，不区分厂家.
  */
 export const AiProviderObject = {
@@ -9914,6 +10868,7 @@ export const PluginTypeObject = {
     OpenApi: "openApi",
     NativePlugin: "nativePlugin",
     ToolPlugin: "toolPlugin",
+    WikiPlugin: "wikiPlugin",
 } as const;
 /**
  * 文档段落预处理策略类型

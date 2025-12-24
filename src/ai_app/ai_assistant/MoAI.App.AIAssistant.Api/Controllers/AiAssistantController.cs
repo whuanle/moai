@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Commands.Responses;
 using MoAI.App.AIAssistant.Handlers;
-using MoAI.App.AIAssistant.Models;
 using MoAI.App.AIAssistant.Queries;
 using MoAI.App.AIAssistant.Queries.Responses;
 using MoAI.Infra.Exceptions;
@@ -33,35 +32,54 @@ public partial class AiAssistantController : ControllerBase
         _userContext = userContext;
     }
 
-    /// <summary>
-    /// 发起新的聊天，检查用户是否有知识库、插件等权限，如果检查通过，返回聊天 id。
-    /// </summary>
-    /// <param name="req">聊天对象，包含模型、提示、插件、标题等信息。</param>
-    /// <param name="ct">取消令牌。</param>
-    /// <returns>返回 <see cref="CreateAiAssistantChatCommandResponse"/>，包含新建聊天的 Id 等信息。</returns>
-    [HttpPost("create_chat")]
-    public async Task<CreateAiAssistantChatCommandResponse> CreateChat([FromBody] AIAssistantChatObject req, CancellationToken ct = default)
+    [HttpGet("a1")]
+    public async Task<object> A1()
     {
-        var command = new CreateAiAssistantChatCommand
+        var response = await CreateChat(new CreateAiAssistantChatCommand
         {
-            ExecutionSettings = req.ExecutionSettings,
-            ModelId = req.ModelId,
-            PluginIds = req.PluginIds,
-            Prompt = req.Prompt,
-            Title = req.Title,
-            UserId = _userContext.UserId,
-            WikiId = req.WikiId
-        };
+            Avatar = "😂",
+            ContextUserId = _userContext.UserId,
+            ExecutionSettings = Array.Empty<KeyValueString>(),
+            ModelId = 4,
+            Plugins = new List<string> { "bocha_web_search", "feishu_webhook_text" },
+            Prompt = "You are a helpful assistant.",
+            Title = "测试",
+            WikiIds = new List<int> { 6 }
+        });
 
-        return await _mediator.Send(command, ct);
+        return response;
+    }
+
+    [HttpGet("a2")]
+    [Produces("text/event-stream")]
+    public async Task A2(Guid id, string query)
+    {
+        await Completions(new ProcessingAiAssistantChatCommand
+        {
+            ChatId = id,
+            Content = query,
+            ContextUserId = _userContext.UserId
+        });
     }
 
     /// <summary>
-    /// 删除对话。
+    /// 发起新的聊天，检查用户是否有知识库、插件等权限，如果检查通过，返回聊天 id
     /// </summary>
-    /// <param name="req">包含要删除的 ChatId 的命令对象。</param>
-    /// <param name="ct">取消令牌。</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>。</returns>
+    /// <param name="req">聊天对象，包含模型、提示、插件、标题等信息</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回 <see cref="CreateAiAssistantChatCommandResponse"/>，包含新建聊天的 Id 等信息</returns>
+    [HttpPost("create_chat")]
+    public async Task<CreateAiAssistantChatCommandResponse> CreateChat([FromBody] CreateAiAssistantChatCommand req, CancellationToken ct = default)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 删除对话
+    /// </summary>
+    /// <param name="req">包含要删除的 ChatId 的命令对象</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/></returns>
     [HttpDelete("delete_chat")]
     public async Task<EmptyCommandResponse> DeleteChat([FromBody] DeleteAiAssistantChatCommand req, CancellationToken ct = default)
     {
@@ -86,11 +104,11 @@ public partial class AiAssistantController : ControllerBase
     }
 
     /// <summary>
-    /// 删除对话中的一条记录。
+    /// 删除对话中的一条记录
     /// </summary>
-    /// <param name="req">包含 ChatId 与 RecordId 的命令对象。</param>
-    /// <param name="ct">取消令牌。</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>。</returns>
+    /// <param name="req">包含 ChatId 与 RecordId 的命令对象</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/></returns>
     [HttpDelete("delete_chat_record")]
     public async Task<EmptyCommandResponse> DeleteChatRecord([FromBody] DeleteAiAssistantChatOneRecordCommand req, CancellationToken ct = default)
     {
@@ -116,11 +134,11 @@ public partial class AiAssistantController : ControllerBase
     }
 
     /// <summary>
-    /// 获取话题详细内容。
+    /// 获取话题详细内容，即对话历史记录
     /// </summary>
-    /// <param name="req">包含 ChatId 的查询命令对象（来自查询字符串）。</param>
-    /// <param name="ct">取消令牌。</param>
-    /// <returns>返回 <see cref="QueryAiAssistantChatHistoryCommandResponse"/>，包含话题历史记录明细。</returns>
+    /// <param name="req">包含 ChatId 的查询命令对象（来自查询字符串）</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回 <see cref="QueryAiAssistantChatHistoryCommandResponse"/>，包含话题历史记录明细</returns>
     [HttpGet("chat_history")]
     public async Task<QueryAiAssistantChatHistoryCommandResponse> QueryChatHistory([FromQuery] QueryUserViewAiAssistantChatHistoryCommand req, CancellationToken ct = default)
     {
@@ -145,10 +163,10 @@ public partial class AiAssistantController : ControllerBase
     }
 
     /// <summary>
-    /// 获取用户所有话题记录。
+    /// 获取用户所有话题记录
     /// </summary>
-    /// <param name="ct">取消令牌。</param>
-    /// <returns>返回 <see cref="QueryAiAssistantChatTopicListCommandResponse"/>，包含用户所有话题列表。</returns>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回 <see cref="QueryAiAssistantChatTopicListCommandResponse"/>，包含用户所有话题列表</returns>
     [HttpGet("topic_list")]
     public async Task<QueryAiAssistantChatTopicListCommandResponse> QueryTopicList(CancellationToken ct = default)
     {
@@ -160,11 +178,11 @@ public partial class AiAssistantController : ControllerBase
     }
 
     /// <summary>
-    /// 更新聊天参数。
+    /// 更新聊天参数
     /// </summary>
-    /// <param name="req">包含 ChatId 与要更新的配置的命令对象。</param>
-    /// <param name="ct">取消令牌。</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>。</returns>
+    /// <param name="req">包含 ChatId 与要更新的配置的命令对象</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/></returns>
     [HttpPost("update_chat")]
     public async Task<EmptyCommandResponse> UpdateChatConfig([FromBody] UpdateAiAssistanChatConfigCommand req, CancellationToken ct = default)
     {

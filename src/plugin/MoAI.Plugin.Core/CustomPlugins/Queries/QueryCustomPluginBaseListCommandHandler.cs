@@ -1,9 +1,9 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.CustomPlugins.Queries.Responses;
-using MoAI.Plugin.Models;
 using MoAI.User.Queries;
 
 namespace MoAI.Plugin.CustomPlugins.Queries;

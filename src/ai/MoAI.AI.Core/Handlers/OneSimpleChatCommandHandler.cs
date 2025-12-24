@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using MoAI.AI.ChatCompletion;
 using MoAI.AI.Commands;
-using MoAI.AI.MemoryDb;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.AI.Handlers;

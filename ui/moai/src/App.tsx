@@ -244,7 +244,7 @@ function App() {
           {
             key: "application.assistant",
             icon: <RobotOutlined />,
-            label: <Link to="/app/application/assistant">AI助手</Link>,
+            label: <a href="/chat">AI助手</a>,
           },
         ],
       },

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Classify.Queries;
 using MoAI.Plugin.Classify.Queries.Responses;
+using MoAI.Plugin.Public.Queries;
 
 namespace MoAI.Plugin.Controllers;
 
@@ -33,8 +34,19 @@ public class PublicController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryPluginClassifyListCommandResponse"/>，包含分类列表数据.</returns>
     [HttpGet("classify_list")]
-    public async Task<QueryPluginClassifyListCommandResponse> QueryList(CancellationToken ct = default)
+    public async Task<QueryPluginClassifyListCommandResponse> ClassifyList(CancellationToken ct = default)
     {
         return await _mediator.Send(new QueryPluginClassifyListCommand(), ct);
+    }
+
+    /// <summary>
+    /// 获取所有公开使用的插件.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginClassifyListCommandResponse"/>，包含分类列表数据.</returns>
+    [HttpGet("plugin_list")]
+    public async Task<QueryPublicPluginListCommandResponse> PluginList(CancellationToken ct = default)
+    {
+        return await _mediator.Send(new QueryPublicPluginListCommand(), ct);
     }
 }

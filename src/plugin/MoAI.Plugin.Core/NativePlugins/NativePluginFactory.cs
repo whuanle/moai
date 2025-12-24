@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CA1810 // 以内联方式初始化引用类型的静态字段
 
 using Maomi;
+using MoAI.AI.Models;
 using MoAI.Plugin.Attributes;
-using MoAI.Plugin.Models;
 using MoAI.Plugin.NativePlugins.Queries.Responses;
 using MoAI.Plugin.Plugins;
 using MoAI.Plugin.Plugins.BoCha.AiSearch;

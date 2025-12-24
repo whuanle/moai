@@ -67,7 +67,6 @@ public class CustomAuthorizaMiddleware : IMiddleware
             }
         }
 
-        // todo: 判断用户状态.
         await next(context);
     }
 }

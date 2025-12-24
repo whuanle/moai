@@ -1,4 +1,5 @@
-﻿using MoAI.App.AIAssistant.Models;
+﻿using MoAI.AI.Models;
+using MoAI.App.AIAssistant.Models;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.AIAssistant.Queries.Responses;
@@ -12,6 +13,11 @@ public class QueryAiAssistantChatHistoryCommandResponse
     /// id.
     /// </summary>
     public Guid ChatId { get; init; }
+
+    /// <summary>
+    /// 头像图标.
+    /// </summary>
+    public string Avatar { get; init; } = string.Empty;
 
     /// <summary>
     /// 话题名称.
@@ -29,14 +35,14 @@ public class QueryAiAssistantChatHistoryCommandResponse
     public int ModelId { get; init; }
 
     /// <summary>
-    /// 要使用的知识库，如果用户不在知识库用户内，则必须是公开的.
+    /// 要使用的知识库列表，可使用已加入的或公开的知识库.
     /// </summary>
-    public int WikiId { get; init; }
+    public IReadOnlyCollection<int> WikiIds { get; init; } = Array.Empty<int>();
 
     /// <summary>
-    /// 要使用的插件 id 列表，用户必须有权使用这些插件.
+    /// 要使用的插件列表，填插件的 Key，Tool 类插件的 Key 就是其对应的模板 Key.
     /// </summary>
-    public IReadOnlyCollection<int> PluginIds { get; init; } = Array.Empty<int>();
+    public IReadOnlyCollection<string> Plugins { get; init; } = Array.Empty<string>();
 
     /// <summary>
     /// 配置，字典适配不同的 AI 模型.
@@ -44,37 +50,22 @@ public class QueryAiAssistantChatHistoryCommandResponse
     public IReadOnlyCollection<KeyValueString> ExecutionSettings { get; init; } = Array.Empty<KeyValueString>();
 
     /// <summary>
-    /// AI 的头像.
+    /// 消耗的 token 统计.
     /// </summary>
-    public string Avatar { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 输入token统计.
-    /// </summary>
-    public int InputTokens { get; set; }
-
-    /// <summary>
-    /// 输出token统计.
-    /// </summary>
-    public int OutTokens { get; set; }
-
-    /// <summary>
-    /// 使用的 token 总数.
-    /// </summary>
-    public int TotalTokens { get; set; }
+    public OpenAIChatCompletionsUsage TokenUsage { get; init; } = default!;
 
     /// <summary>
     /// 创建时间.
     /// </summary>
-    public DateTimeOffset CreateTime { get; set; }
+    public DateTimeOffset CreateTime { get; init; }
 
     /// <summary>
     /// 最后更新时间.
     /// </summary>
-    public DateTimeOffset UpdateTime { get; set; }
+    public DateTimeOffset UpdateTime { get; init; }
 
     /// <summary>
-    /// 历史对话或者上下文信息，创建对话时，如果有提示词，则第一个对话就是提示词.
+    /// 历史对话或者上下文信息.
     /// </summary>
     public virtual IReadOnlyCollection<ChatContentItem> ChatHistory { get; init; } = Array.Empty<ChatContentItem>();
 }

@@ -1,6 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using MoAI.AI.MemoryDb;
+using MoAI.AI.ChatCompletion;
 using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra;

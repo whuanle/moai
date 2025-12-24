@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MoAI.Plugin.Models;
+namespace MoAI.AI.Models;
 
 /// <summary>
 /// 插件类型.
@@ -30,4 +30,10 @@ public enum PluginType
     /// </summary>
     [JsonPropertyName("tool")]
     ToolPlugin,
+
+    /// <summary>
+    /// 工具类.
+    /// </summary>
+    [JsonPropertyName("wiki")]
+    WikiPlugin
 }

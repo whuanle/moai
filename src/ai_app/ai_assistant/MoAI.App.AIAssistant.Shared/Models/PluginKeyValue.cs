@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
+using MoAI.AI.Models;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Models;
 
 namespace MoAI.App.AIAssistant.Models;
 

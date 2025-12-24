@@ -1,10 +1,12 @@
-﻿using Microsoft.KernelMemory;
+﻿namespace MoAI.Wiki.Wikis.Queries.Response;
 
-namespace MoAI.Wiki.Wikis.Queries.Response;
+/// <summary>
+/// 搜索结果项.
+/// </summary>
 public class SearchWikiDocumentTextItem
 {
     /// <summary>
-    /// 此 id 不是切割预览中的文本 id.
+    /// 无用.
     /// </summary>
     public Guid ChunkId { get; init; }
 

@@ -5,7 +5,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
-using MoAI.AI.MemoryDb;
+using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.Database;
@@ -200,7 +200,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
                     {
                         { "document_id", documentIndex },
                         { "chunk_id", item.ChunkId.ToString() },
-                        { "embedding_id", item.Id.ToString("N") },
+                        { "embedding_id", item.Id.ToString() },
                         { "file_id", documenEntity.ObjectKey },
                         { "file_type", documenEntity.FileType },
                     },

@@ -3,7 +3,7 @@ using Microsoft.KernelMemory.MemoryStorage;
 using Microsoft.SemanticKernel;
 using MoAI.AI.Models;
 
-namespace MoAI.AI.MemoryDb;
+namespace MoAI.AI.ChatCompletion;
 
 /// <summary>
 /// Ai 客户端构建器.

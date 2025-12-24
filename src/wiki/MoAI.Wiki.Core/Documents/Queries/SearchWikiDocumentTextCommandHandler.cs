@@ -1,8 +1,8 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.KernelMemory;
+using MoAI.AI.ChatCompletion;
 using MoAI.AI.Commands;
-using MoAI.AI.MemoryDb;
 using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.Database;
@@ -102,26 +102,27 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
             };
         }
 
-        // 获取关联的文本块
-        var embeddingIds = results.Select(x => x.Item1.Id)
+        // 获取关联的文本片段 id
+        var allEmbddingIds = results.Select(x => x.Item1.Id)
             .Distinct()
             .Select(x => Guid.Parse(x!)).ToArray();
 
-        var embeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
-            .Where(x => embeddingIds.Contains(x.Id))
+        // 只是元数据的，不包括源内容块
+        var allEmbeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
+            .Where(x => allEmbddingIds.Contains(x.Id) && x.ChunkId != default)
             .ToListAsync();
 
-        var chunkEmbeddingIds = embeddings.Where(x => x.ChunkId != default).Select(x => x.ChunkId).Distinct().ToArray();
-        var chunkEmbeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
-            .Where(x => chunkEmbeddingIds.Contains(x.Id))
+        var chunkIds = allEmbeddings.Where(x => x.ChunkId != default).Select(x => x.ChunkId).Distinct().ToArray();
+        var sourceChunkEmbeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
+            .Where(x => x.ChunkId == default && (chunkIds.Contains(x.Id) || allEmbddingIds.Contains(x.Id)))
             .ToArrayAsync();
 
-        if (chunkEmbeddings.Length > 0)
+        if (sourceChunkEmbeddings.Length > 0)
         {
-            embeddings.AddRange(chunkEmbeddings);
+            allEmbeddings.AddRange(sourceChunkEmbeddings);
         }
 
-        var documentIds = embeddings.Select(x => x.DocumentId).ToArray();
+        var documentIds = allEmbeddings.Select(x => x.DocumentId).ToArray();
         var documents = await _databaseContext.WikiDocuments.Where(x => documentIds.Contains(x.Id))
             .Select(x => new
             {
@@ -134,7 +135,7 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
 
         foreach (var item in results)
         {
-            var embedding = embeddings.FirstOrDefault(x => x.Id == Guid.Parse(item.Item1.Id));
+            var embedding = allEmbeddings.FirstOrDefault(x => x.Id == Guid.Parse(item.Item1.Id));
             if (embedding == null)
             {
                 continue;
@@ -143,7 +144,7 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
             WikiDocumentChunkEmbeddingEntity? chunkEmbedding = null!;
             if (embedding.ChunkId != default)
             {
-                chunkEmbedding = embeddings.FirstOrDefault(x => x.Id == embedding.ChunkId);
+                chunkEmbedding = allEmbeddings.FirstOrDefault(x => x.Id == embedding.ChunkId);
             }
 
             if (chunkEmbedding == null)
@@ -155,7 +156,7 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
 
             var record = new SearchWikiDocumentTextItem
             {
-                ChunkId = embedding.ChunkId,
+                ChunkId = embedding.Id,
                 Text = embedding.DerivativeContent,
                 ChunkText = chunkEmbedding.DerivativeContent,
                 RecordRelevance = item.Item2,

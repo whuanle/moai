@@ -37,7 +37,7 @@ public partial class AppAssistantChatEntity : IFullAudited
     /// <summary>
     /// 要使用的插件.
     /// </summary>
-    public string PluginS { get; set; } = default!;
+    public string Plugins { get; set; } = default!;
 
     /// <summary>
     /// 对话影响参数.

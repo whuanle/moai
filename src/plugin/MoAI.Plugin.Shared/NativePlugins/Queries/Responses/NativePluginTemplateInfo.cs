@@ -1,4 +1,5 @@
-﻿using MoAI.Plugin.Models;
+﻿using MoAI.AI.Models;
+using MoAI.Plugin.Models;
 using MoAI.Plugin.Plugins;
 using System.Text.Json.Serialization;
 

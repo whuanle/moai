@@ -1,4 +1,4 @@
-﻿using MoAI.Plugin.Models;
+﻿using MoAI.AI.Models;
 
 namespace MoAI.AiModel.Models;
 

@@ -24,6 +24,7 @@ namespace MoAI.Plugin.Plugins.FeishuWebHookText;
     Classify = NativePluginClassify.Communication,
     ConfigType = typeof(FeishuWebHookTextPluginConfig))]
 [InjectOnTransient]
+[Description("使用飞书机器人对群聊或人发送消息，消息内容格式为普通文本")]
 public class FeishuWebHookTextPlugin : INativePluginRuntime
 {
     private static readonly FeishuWebHookTextPluginConfigValidation Validation = new FeishuWebHookTextPluginConfigValidation();

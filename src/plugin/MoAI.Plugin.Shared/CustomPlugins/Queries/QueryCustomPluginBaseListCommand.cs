@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
+using MoAI.AI.Models;
 using MoAI.Infra.Models;
 using MoAI.Plugin.CustomPlugins.Queries.Responses;
 using MoAI.Plugin.Models;

@@ -22,7 +22,7 @@ namespace MoAI.Plugin.JavaScriptExecutor;
     Description = "执行指定的 JavaScript 代码，限制最大内存4MB、超时4s、最大语句1000行",
     Classify = NativePluginClassify.Tool,
     ConfigType = typeof(JavaScriptExecutorConfig))]
-[Description("执行指定的 JavaScript 代码")]
+[Description("执行指定的 JavaScript 代码，限制最大内存4MB、超时4s、最大语句1000行")]
 [InjectOnTransient]
 public class JavaScriptExecutorPlugin : INativePluginRuntime
 {
@@ -47,7 +47,7 @@ public class JavaScriptExecutorPlugin : INativePluginRuntime
     /// <returns>执行结果的 JSON 字符串</returns>
     [KernelFunction("invoke")]
     [Description("执行指定的 JavaScript 代码")]
-    public async Task<string> InvokeAsync([Description("JavaScript 代码的参数,json 字符串对象")] string paramter)
+    public async Task<string> InvokeAsync([Description("JavaScript 代码的参数,json 字符串对象，示例：'{\"id\":1,name:\"test\"}'")] string paramter)
     {
         try
         {

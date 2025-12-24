@@ -7,6 +7,7 @@ using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Services;
+using MoAI.Plugin;
 using MoAI.Plugin.Models;
 
 namespace MoAIChat.Core.Handlers;
@@ -52,34 +53,14 @@ public class CreateAiAssistantChatCommandHandler : IRequestHandler<CreateAiAssis
             }
         }
 
-        var customPluginIds = request.CustomPluginIds;
+        var notExistPlugins = await _databaseContext.Plugins
+            .Where(x => request.Plugins.Contains(x.PluginName) && !x.IsPublic)
+            .Select(x => x.PluginName)
+            .ToListAsync();
 
-        if (customPluginIds.Count > 0)
+        if (notExistPlugins.Count > 0)
         {
-            var notExistPlugins = await _databaseContext.PluginCustoms
-                .Where(x => customPluginIds.Contains(x.Id) && !x.IsPublic)
-                .Select(x => x.PluginName)
-                .ToListAsync();
-
-            if (notExistPlugins.Count > 0)
-            {
-                throw new BusinessException("用户无权访问插件 {0}", string.Join(",", notExistPlugins));
-            }
-        }
-
-        var nativePluginIds = request.NativePluginIds;
-
-        if (nativePluginIds.Count > 0)
-        {
-            var notExistPlugins = await _databaseContext.PluginNatives
-                .Where(x => nativePluginIds.Contains(x.Id) && !x.IsPublic)
-                .Select(x => x.PluginName)
-                .ToListAsync();
-
-            if (notExistPlugins.Count > 0)
-            {
-                throw new BusinessException("用户无权访问插件 {0}", string.Join(",", notExistPlugins));
-            }
+            throw new BusinessException("用户无权访问插件 {0}", string.Join(",", notExistPlugins));
         }
 
         var chatEntity = new AppAssistantChatEntity
@@ -87,8 +68,9 @@ public class CreateAiAssistantChatCommandHandler : IRequestHandler<CreateAiAssis
             Title = request.Title,
             ModelId = request.ModelId,
             Prompt = request.Prompt ?? string.Empty,
-            Plugins = request.NativePluginIds.ToJsonString(),
-            WikiIds = request.WikiIds,
+            Avatar = request.Avatar ?? string.Empty,
+            WikiIds = request.WikiIds.ToJsonString(),
+            Plugins = request.Plugins.ToJsonString(),
             ExecutionSettings = request.ExecutionSettings.ToJsonString(),
         };
 

@@ -4,6 +4,8 @@
 // @ts-ignore
 import { Classify_listRequestBuilderRequestsMetadata, type Classify_listRequestBuilder } from './classify_list/index.js';
 // @ts-ignore
+import { Plugin_listRequestBuilderRequestsMetadata, type Plugin_listRequestBuilder } from './plugin_list/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -14,6 +16,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The classify_list property
      */
     get classify_list(): Classify_listRequestBuilder;
+    /**
+     * The plugin_list property
+     */
+    get plugin_list(): Plugin_listRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -25,6 +31,9 @@ export const PluginRequestBuilderUriTemplate = "{+baseurl}/api/plugin";
 export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof PluginRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     classify_list: {
         requestsMetadata: Classify_listRequestBuilderRequestsMetadata,
+    },
+    plugin_list: {
+        requestsMetadata: Plugin_listRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

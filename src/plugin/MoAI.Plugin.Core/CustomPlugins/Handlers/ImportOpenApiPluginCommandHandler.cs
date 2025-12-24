@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Readers;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Helper;
@@ -9,7 +10,6 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.CustomPlugins.Commands;
-using MoAI.Plugin.Models;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Queries;
 using MoAI.Storage.Queries.Response;

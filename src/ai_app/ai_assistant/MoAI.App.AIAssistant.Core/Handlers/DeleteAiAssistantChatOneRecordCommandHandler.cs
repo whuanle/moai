@@ -5,6 +5,9 @@ using MoAI.Infra.Models;
 
 namespace MoAI.App.AIAssistant.Handlers;
 
+/// <summary>
+/// DeleteAiAssistantChatOneRecordCommand.
+/// </summary>
 public class DeleteAiAssistantChatOneRecordCommandHandler : IRequestHandler<DeleteAiAssistantChatOneRecordCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;

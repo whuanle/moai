@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Helper;

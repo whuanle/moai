@@ -2,7 +2,7 @@
 using Microsoft.KernelMemory.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using MoAI.AI.MemoryDb;
+using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
 using MoAI.Infra.Exceptions;
 

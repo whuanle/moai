@@ -11,11 +11,6 @@ namespace MoAI.App.AIAssistant.Models;
 public class AIAssistantChatObject : IModelValidator<AIAssistantChatObject>
 {
     /// <summary>
-    /// 话题名称.
-    /// </summary>
-    public string Title { get; init; } = string.Empty;
-
-    /// <summary>
     /// 提示词，第一次对话时带上，如果后续不需要修改则不需要再次传递.
     /// </summary>
     public string? Prompt { get; init; } = string.Empty;
@@ -43,10 +38,6 @@ public class AIAssistantChatObject : IModelValidator<AIAssistantChatObject>
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<AIAssistantChatObject> validate)
     {
-        validate.RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("对话标题不能为空.")
-            .MaximumLength(100).WithMessage("对话标题长度不能超过100个字符.");
-
         validate.RuleFor(x => x.Prompt)
             .MaximumLength(2000).WithMessage("提示词长度不能超过2000个字符.");
 

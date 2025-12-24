@@ -1,9 +1,9 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Models;
 using MoAI.Plugin.NativePlugins.Commands;
 using MoAI.Plugin.Plugins;
 
@@ -54,7 +54,7 @@ public class UpdateNativePluginCommandHandler : IRequestHandler<UpdateNativePlug
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
 
-        if (pluginInfo.PluginType != Models.PluginType.NativePlugin)
+        if (pluginInfo.PluginType != PluginType.NativePlugin)
         {
             throw new BusinessException("只支持修改原生插件");
         }

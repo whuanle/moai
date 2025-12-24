@@ -15,7 +15,7 @@ using Microsoft.KernelMemory.MemoryDb.SQLServer;
 using Microsoft.KernelMemory.MemoryStorage;
 using Microsoft.KernelMemory.Postgres;
 using Microsoft.SemanticKernel;
-using MoAI.AI.MemoryDb;
+using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;

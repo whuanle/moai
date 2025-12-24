@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.KernelMemory.DataFormats;
 using MoAI.AI.Models;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.Infra.Extensions;
@@ -15,38 +16,24 @@ namespace MoAI.App.AIAssistant.Controllers;
 public partial class AiAssistantController : ControllerBase
 {
     /// <summary>
-    /// 对话.
+    /// 进行流式对话.
     /// </summary>
     /// <param name="command">对话参数.</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpPost("completions")]
-    public async Task Completions([FromBody] ProcessingAiAssistantChatCommand command, CancellationToken cancellationToken)
+    [Produces("text/event-stream")]
+    [ProducesDefaultResponseType(typeof(AiProcessingChatItem))]
+    public async Task Completions([FromBody] ProcessingAiAssistantChatCommand command, CancellationToken cancellationToken = default)
     {
         Response.ContentType = "text/event-stream";
 
-        var req = new ProcessingAiAssistantChatCommand
-        {
-            ChatId = command.ChatId,
-            Content = command.Content,
-            UserId = _userContext.UserId,
-        };
+        command.SetUserId(_userContext.UserId);
 
-        await foreach (var item in _mediator.CreateStream(req, cancellationToken))
+        await foreach (var item in _mediator.CreateStream(command, cancellationToken))
         {
-            if (item is OpenAIChatCompletionsChunk chunk)
-            {
-                await HttpContext.Response.WriteAsync(
-                    "data: " + chunk.ToJsonString() + "\n\n", Encoding.UTF8);
-            }
-            else if (item is OpenAIChatCompletionsObject chatObject)
-            {
-                await HttpContext.Response.WriteAsync(
-                    "data: " + chatObject.ToJsonString() + "\n\n", Encoding.UTF8);
-            }
-            else
-            {
-            }
+            await HttpContext.Response.WriteAsync(
+                "data: " + item.ToJsonString() + "\n\n", Encoding.UTF8);
 
             await Response.Body.FlushAsync();
         }

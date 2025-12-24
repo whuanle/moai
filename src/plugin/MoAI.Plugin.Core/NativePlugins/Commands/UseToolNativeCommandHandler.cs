@@ -1,12 +1,12 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Models;
 using System.Transactions;
 
 namespace MoAI.Plugin.NativePlugins.Commands;

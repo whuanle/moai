@@ -23,6 +23,7 @@ namespace MoAI.Plugin.Plugins.MysqlPlugin;
     Classify = NativePluginClassify.Tool,
     ConfigType = typeof(MysqlPluginConfig))]
 [InjectOnTransient]
+[Description("执行 SQL 查询并返回 JSON 格式的结果")]
 public class MysqlPlugin : INativePluginRuntime
 {
     private MysqlPluginConfig _config = default!;
@@ -57,7 +58,7 @@ public class MysqlPlugin : INativePluginRuntime
     public async Task ImportConfigAsync(string config)
     {
         await Task.CompletedTask;
-        _config = JsonSerializer.Deserialize<MysqlPluginConfig>(config)!;
+        _config = JsonSerializer.Deserialize<MysqlPluginConfig>(config, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
     }
 
     /// <summary>

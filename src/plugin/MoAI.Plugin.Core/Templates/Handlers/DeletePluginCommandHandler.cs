@@ -1,10 +1,10 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Plugin.Models;
 using MoAI.Plugin.Templates.Commands;
 using MoAI.Storage.Commands;
 using System.Transactions;

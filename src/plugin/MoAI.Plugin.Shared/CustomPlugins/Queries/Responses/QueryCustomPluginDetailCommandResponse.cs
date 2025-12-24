@@ -1,4 +1,5 @@
-﻿using MoAI.Infra.Models;
+﻿using MoAI.AI.Models;
+using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 
 namespace MoAI.Plugin.CustomPlugins.Queries.Responses;

@@ -21,10 +21,12 @@ namespace MoAI.Plugin.Plugins.BoCha.WebSearch;
 [NativePluginConfig(
     "bocha_web_search",
     Name = "BoCha 全网搜索",
-    Description = "使用 BoCha API 进行全网搜索。",
+    Description = "使用 BoCha API 进行全网搜索",
     Classify = NativePluginClassify.Search,
     ConfigType = typeof(BoChaPluginConfig))]
 [InjectOnTransient]
+[Description("使用 BoCha API 进行全网搜索")]
+
 public partial class BoChaWebSearchPlugin : INativePluginRuntime
 {
     private readonly IBoChaClient _boChaClient;

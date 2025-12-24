@@ -25,6 +25,7 @@ namespace MoAI.Plugin.Plugins.BoCha.SemanticRerank;
     Classify = NativePluginClassify.Search,
     ConfigType = typeof(BoChaPluginConfig))]
 [InjectOnTransient]
+[Description("使用 BoCha API 对文档进行语义排序，返回 query 跟 documents 每个文本的相关度")]
 public partial class BoChaSemanticRerankPlugin : INativePluginRuntime
 {
     private readonly IBoChaClient _boChaClient;

@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.NativePlugins.Commands;
@@ -45,7 +46,7 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
 
-        if (pluginInfo.PluginType == Models.PluginType.ToolPlugin)
+        if (pluginInfo.PluginType == PluginType.ToolPlugin)
         {
             // 执行测试
             try

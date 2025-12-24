@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using MoAI.Wiki.Models;
+using System.Text.Json.Serialization;
 
 namespace MoAI.AI.Models;
 
