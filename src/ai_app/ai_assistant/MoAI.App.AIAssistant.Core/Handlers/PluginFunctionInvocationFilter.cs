@@ -49,10 +49,11 @@ internal class PluginFunctionInvocationFilter : IFunctionInvocationFilter
                 StreamState = AiProcessingChatStreamState.Processing,
                 PluginCall = new DefaultAiProcessingPluginCall
                 {
+                    ToolCallId = Guid.CreateVersion7().ToString("N"),
                     PluginKey = pluginName,
                     PluginName = _processingAiAssistantChatContext.PluginKeyNames.FirstOrDefault(x => x.Key == pluginName).Value ?? string.Empty,
+                    FunctionName = context.Function.Name,
                     PluginType = pluginType,
-                    Message = string.Empty,
                     Params = Array.Empty<KeyValueString>(),
                     Result = string.Empty
                 }
@@ -66,7 +67,7 @@ internal class PluginFunctionInvocationFilter : IFunctionInvocationFilter
 
         try
         {
-            choice.PluginCall!.Params = context.Arguments.Select(x=>new KeyValueString
+            choice.PluginCall!.Params = context.Arguments.Select(x => new KeyValueString
             {
                 Key = x.Key,
                 Value = x.Value.ToJsonString()
@@ -80,7 +81,7 @@ internal class PluginFunctionInvocationFilter : IFunctionInvocationFilter
         catch (Exception ex)
         {
             choice.StreamState = AiProcessingChatStreamState.Error;
-            choice.PluginCall!.Message = ex.Message;
+            choice.PluginCall!.Result = ex.Message;
             throw;
         }
     }

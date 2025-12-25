@@ -2,7 +2,6 @@
 #pragma warning disable SKEXP0040 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
 
-using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,12 +14,10 @@ using MoAI.AI.Models;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Plugin;
-using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -74,6 +71,12 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
         {
             throw new BusinessException("对话不存在或无权访问") { StatusCode = 404 };
         }
+
+        // 补全对话上下文
+        var history = await _databaseContext.AppAssistantChatHistories
+            .Where(x => x.ChatId == request.ChatId)
+            .OrderBy(x => x.CreateTime)
+            .ToListAsync(cancellationToken);
 
         string completionId = $"chatcmpl-" + Guid.CreateVersion7().ToString("N");
 
@@ -145,47 +148,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
 
         var plugins = await GetPluginsAsync(chatContext, pluginKeys, wikiId);
 
-        ChatHistory chatMessages = new();
-
-        // 添加提示词.
-        if (!string.IsNullOrEmpty(chatObjectEntity.Prompt))
-        {
-            chatMessages.AddSystemMessage(chatObjectEntity.Prompt);
-        }
-
-        // 补全对话上下文
-        var history = await _databaseContext.AppAssistantChatHistories
-            .Where(x => x.ChatId == request.ChatId)
-            .OrderBy(x => x.CreateTime)
-            .ToListAsync(cancellationToken);
-
-        foreach (var item in history)
-        {
-            if (item.Role == AuthorRole.User.Label)
-            {
-                chatMessages.AddAssistantMessage(item.Content);
-            }
-            else if (item.Role == AuthorRole.Assistant.Label)
-            {
-                chatMessages.AddAssistantMessage(item.Content);
-            }
-            else if (item.Role == AuthorRole.System.Label)
-            {
-                chatMessages.AddSystemMessage(item.Content);
-            }
-            else if (item.Role == AuthorRole.Tool.Label)
-            {
-                //chatMessages.Add(new ChatMessageContent
-                //{
-                //    MimeType
-                //});
-            }
-            else
-            {
-                // 其他角色不处理
-                continue;
-            }
-        }
+        ChatHistory chatMessages = GeneraiChatMessage(history, chatObjectEntity.Prompt);
 
         chatMessages.AddUserMessage(request.Content);
 
@@ -260,8 +223,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
                 };
             }
 
-            // 返回的是文本，处理逻辑比较简单.
-            // todo: 也有可能包括图片
+            // 包括了各种类型的对象
             var contentUpdate = streamingChatCompletionUpdate.ContentUpdate;
             if (contentUpdate != null && contentUpdate.Count > 0)
             {
@@ -373,12 +335,11 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
                         StreamState = AiProcessingChatStreamState.Start,
                         PluginCall = new DefaultAiProcessingPluginCall
                         {
-                            // todo: 将 functionName 改成插件 key
+                            ToolCallId = item.ToolCallId,
                             PluginKey = pluginKey,
                             PluginName = chatContext.PluginKeyNames.FirstOrDefault(x => x.Key == pluginKey).Value ?? string.Empty,
+                            FunctionName = item.FunctionName,
                             PluginType = pluginType,
-                            Message = string.Empty,
-                            Params = Array.Empty<KeyValueString>(),
                             Result = string.Empty
                         }
                     };
@@ -445,6 +406,8 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             TotalTokens = useages.Sum(x => x.TotalTokenCount)
         };
 
+        // 要考虑中途取消了
+
         // 生成汇总
         yield return new AiProcessingChatItem
         {
@@ -491,6 +454,114 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
 
         //await _databaseContext.AiModelUseageLogs.AddAsync(log);
         //await _databaseContext.SaveChangesAsync();
+    }
+
+    private static ChatHistory GeneraiChatMessage(List<AppAssistantChatHistoryEntity> history, string? prompt)
+    {
+        ChatHistory chatMessages = new();
+
+        // 添加提示词.
+        if (!string.IsNullOrEmpty(prompt))
+        {
+            chatMessages.AddSystemMessage(prompt);
+        }
+
+        // todo: 后期优化
+        foreach (var item in history)
+        {
+            var contents = item.Content.JsonToObject<IReadOnlyCollection<DefaultAiProcessingChoice>>();
+
+            if (item.Role == AuthorRole.User.Label)
+            {
+                foreach (var content in contents)
+                {
+                    if (content.TextCall == null)
+                    {
+                        continue;
+                    }
+
+                    // 后期考虑图片
+                    chatMessages.AddAssistantMessage(content: content.TextCall.Content);
+                }
+            }
+            else if (item.Role == AuthorRole.Assistant.Label)
+            {
+                foreach (var content in contents)
+                {
+                    if (content.StreamType == AiProcessingChatStreamType.Text && content.TextCall != null)
+                    {
+                        chatMessages.AddAssistantMessage(content.TextCall.Content);
+                    }
+
+                    // todo： 要考虑失败的插件调用
+                    else if (content.StreamType == AiProcessingChatStreamType.Plugin && content.PluginCall != null)
+                    {
+                        //var arguments = new KernelArguments();
+
+                        //foreach (var argument in content.PluginCall.Params)
+                        //{
+                        //    arguments.Add(argument.Key, argument.Value);
+                        //}
+
+                        //var funcCallContent = new FunctionCallContent(
+                        //    functionName: content.PluginCall.FunctionName,
+                        //    pluginName: content.PluginCall.PluginName,
+                        //    id: content.PluginCall.ToolCallId,
+                        //    arguments: arguments)
+                        //{
+                        //};
+
+                        //var funcResultContent = new FunctionResultContent(
+                        //    functionName: content.PluginCall.FunctionName,
+                        //    pluginName: content.PluginCall.PluginName,
+                        //    callId: content.PluginCall.ToolCallId,
+                        //    result: content.PluginCall.Result);
+
+                        //ChatMessageContent chatMessageContent = new()
+                        //{
+                        //    Role = AuthorRole.Tool,
+                        //    AuthorName = AuthorRole.Tool.Label,
+                        //    Items = new ChatMessageContentItemCollection
+                        //    {
+                        //        funcCallContent,
+                        //        funcResultContent
+                        //    }
+                        //};
+
+                        //chatMessages.Add(chatMessageContent);
+                        chatMessages.Add(new ChatMessageContent
+                        {
+                            Role = AuthorRole.System,
+                            AuthorName = AuthorRole.System.Label,
+                            Content = $"""
+                            插件名称：{content.PluginCall.PluginName}
+                            调用函数：{content.PluginCall.FunctionName}
+                            参数：{string.Join(',', content.PluginCall.Params.Select(x => $"{x.Key}={x.Value}"))}
+                            结果：{content.PluginCall.Result}
+                            """
+                        });
+                    }
+                }
+            }
+            else if (item.Role == AuthorRole.System.Label)
+            {
+                chatMessages.AddSystemMessage(item.Content);
+            }
+            else if (item.Role == AuthorRole.Tool.Label)
+            {
+                //chatMessages.Add(new ChatMessageContent
+                //{
+                //    MimeType
+                //});
+            }
+            else
+            {
+                // 其他角色不处理
+                continue;
+            }
+        }
+
+        return chatMessages;
     }
 
     // 结束上一个块

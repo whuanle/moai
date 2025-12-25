@@ -1,4 +1,5 @@
 ﻿using MoAI.Infra.Models;
+using System.Text.Json.Serialization;
 
 namespace MoAI.AI.Models;
 
@@ -7,6 +8,11 @@ namespace MoAI.AI.Models;
 /// </summary>
 public class DefaultAiProcessingPluginCall : AiProcessingPluginCall
 {
+    /// <summary>
+    /// id.
+    /// </summary>
+    public string ToolCallId { get; set; } = string.Empty;
+
     /// <summary>
     /// 插件类型.
     /// </summary>
@@ -23,9 +29,9 @@ public class DefaultAiProcessingPluginCall : AiProcessingPluginCall
     public string PluginName { get; set; } = string.Empty;
 
     /// <summary>
-    /// 信息，如果报错，会有错误信息.
+    /// 被调用的函数名称.
     /// </summary>
-    public string? Message { get; set; }
+    public string FunctionName { get; set; } = string.Empty;
 
     /// <summary>
     /// 执行插件的参数.

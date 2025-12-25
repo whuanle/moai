@@ -96,6 +96,20 @@
   overflow: hidden;
 }
 
+.chat-header {
+  padding: 12px 16px;
+  background: var(--ant-color-bg-container);
+  border-bottom: 1px solid var(--ant-color-border);
+  flex-shrink: 0;
+}
+
+.chat-title {
+  margin: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chat-history-area {
   flex: 1;
   overflow-y: auto;
@@ -356,11 +370,34 @@
   margin-bottom: 8px;
 }
 
+.token-stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.token-stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: var(--ant-color-bg-container);
+  border-radius: 6px;
+}
+
 .token-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 4px 0;
+}
+
+.config-panel-footer {
+  padding: 16px;
+  border-top: 1px solid var(--ant-color-border);
+  margin-top: 16px;
 }
 
 
@@ -473,4 +510,57 @@
   background: var(--ant-color-warning-bg);
   border-radius: 6px;
   color: var(--ant-color-warning-text);
+}
+
+/* 流式消息样式 */
+.chat-message-streaming {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.streaming-indicator {
+  color: var(--ant-color-primary);
+}
+
+.typing-cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  color: var(--ant-color-primary);
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.message-thinking {
+  color: var(--ant-color-text-secondary);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* 新建对话表单样式 */
+.create-chat-form {
+  padding: 8px 0;
+}
+
+.create-chat-form .form-item {
+  display: flex;
+  flex-direction: column;
 }

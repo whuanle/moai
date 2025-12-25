@@ -12,6 +12,8 @@ import {
   Input,
   Avatar,
   Collapse,
+  Modal,
+  Select,
 } from "antd";
 import {
   PlusOutlined,
@@ -22,22 +24,25 @@ import {
   UserOutlined,
   RobotOutlined,
   ToolOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
 import { GetApiClient } from "../ServiceClient";
 import { proxyRequestError } from "../../helper/RequestError";
+import { EnvOptions } from "../../Env";
 import type {
   AiAssistantChatTopic,
   ChatContentItem,
   AiProcessingPluginCall,
-  KeyValueString,
   QueryAiAssistantChatHistoryCommandResponse,
+  PublicModelInfo,
 } from "../../apiClient/models";
+import { AiModelTypeObject } from "../../apiClient/models";
 import AssistantConfigPanel, { AssistantConfig } from "./AssistantConfigPanel";
 import "./AiAssistant.css";
 
 const { Sider, Content } = Layout;
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 // 从 ChatContentItem 中提取文本消息内容（不包含插件调用）
@@ -172,8 +177,15 @@ const AiAssistant: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [sending, setSending] = useState(false);
 
+  // 流式消息状态
+  const [streamingContent, setStreamingContent] = useState<string>("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // 助手配置状态
   const [assistantConfig, setAssistantConfig] = useState<AssistantConfig>({
+    title: "",
+    systemPrompt: "你是智能助手",
     temperature: 1,
     topP: 1,
     presencePenalty: 0,
@@ -188,6 +200,14 @@ const AiAssistant: React.FC = () => {
     input: 0,
     output: 0,
   });
+
+  // 新建对话模态窗口状态
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createModalLoading, setCreateModalLoading] = useState(false);
+  const [models, setModels] = useState<PublicModelInfo[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<number | undefined>();
+  const [newChatTitle, setNewChatTitle] = useState("新对话");
 
   // 滚动到底部
   const scrollToBottom = useCallback(() => {
@@ -212,6 +232,25 @@ const AiAssistant: React.FC = () => {
       proxyRequestError(error, messageApi, "加载话题列表失败");
     } finally {
       setTopicsLoading(false);
+    }
+  }, [messageApi]);
+
+  // 加载模型列表
+  const loadModels = useCallback(async () => {
+    setModelsLoading(true);
+    try {
+      const client = GetApiClient();
+      const response = await client.api.aimodel.modellist.post({
+        aiModelType: AiModelTypeObject.Chat,
+      });
+      if (response?.aiModels) {
+        setModels(response.aiModels);
+      }
+    } catch (error) {
+      console.error("加载模型列表失败:", error);
+      proxyRequestError(error, messageApi, "加载模型列表失败");
+    } finally {
+      setModelsLoading(false);
     }
   }, [messageApi]);
 
@@ -244,7 +283,8 @@ const AiAssistant: React.FC = () => {
           setAssistantConfig((prev) => ({
             ...prev,
             modelId: response.modelId || prev.modelId,
-            systemPrompt: response.prompt || prev.systemPrompt,
+            title: response.title || prev.title,
+            systemPrompt: response.prompt || "你是智能助手",
             temperature: getSettingValue("temperature", prev.temperature),
             topP: getSettingValue("top_p", prev.topP),
             presencePenalty: getSettingValue("presence_penalty", prev.presencePenalty),
@@ -277,12 +317,29 @@ const AiAssistant: React.FC = () => {
     [messageApi, scrollToBottom]
   );
 
+  // 打开新建对话模态窗口
+  const handleOpenCreateModal = () => {
+    setNewChatTitle("新对话");
+    setSelectedModelId(undefined);
+    setCreateModalOpen(true);
+    if (models.length === 0) {
+      loadModels();
+    }
+  };
+
   // 创建新话题
   const handleCreateTopic = async () => {
+    if (!selectedModelId) {
+      messageApi.warning("请选择AI模型");
+      return;
+    }
+
+    setCreateModalLoading(true);
     try {
       const client = GetApiClient();
       const response = await client.api.app.assistant.create_chat.post({
-        title: "新对话",
+        title: newChatTitle || "新对话",
+        modelId: selectedModelId,
       });
       if (response?.chatId) {
         await loadTopics();
@@ -291,11 +348,16 @@ const AiAssistant: React.FC = () => {
         navigate(`/chat/${newChatId}`);
         setChatHistory([]);
         setTokenStats({ total: 0, input: 0, output: 0 });
+        setCreateModalOpen(false);
         messageApi.success("创建新对话成功");
+        // 加载新对话的配置
+        await loadChatHistory(newChatId);
       }
     } catch (error) {
       console.error("创建新对话失败:", error);
       proxyRequestError(error, messageApi, "创建新对话失败");
+    } finally {
+      setCreateModalLoading(false);
     }
   };
 
@@ -309,6 +371,17 @@ const AiAssistant: React.FC = () => {
         setCurrentChatId(null);
         setChatHistory([]);
         setTokenStats({ total: 0, input: 0, output: 0 });
+        // 重置助手配置
+        setAssistantConfig({
+          title: "",
+          systemPrompt: "你是智能助手",
+          temperature: 1,
+          topP: 1,
+          presencePenalty: 0,
+          frequencyPenalty: 0,
+          selectedWikiIds: [],
+          selectedPluginIds: [],
+        });
         navigate("/chat");
       }
       messageApi.success("删除对话成功");
@@ -326,7 +399,7 @@ const AiAssistant: React.FC = () => {
     loadChatHistory(chatId);
   };
 
-  // 发送消息（待实现完整功能）
+  // 发送消息 - 流式对话
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !currentChatId || sending) return;
     
@@ -335,15 +408,135 @@ const AiAssistant: React.FC = () => {
       return;
     }
 
+    const userMessage = inputValue.trim();
+    setInputValue("");
     setSending(true);
+    setIsStreaming(true);
+    setStreamingContent("");
+
+    // 先添加用户消息到聊天历史
+    const userChatItem: ChatContentItem = {
+      authorName: "user",
+      choices: [{ textCall: { content: userMessage } }],
+    };
+    setChatHistory((prev) => [...prev, userChatItem]);
+    setTimeout(scrollToBottom, 50);
+
+    // 创建 AbortController 用于取消请求
+    abortControllerRef.current = new AbortController();
+
     try {
-      // TODO: 调用发送消息 API
-      messageApi.info("发送消息功能待实现");
-      setInputValue("");
+      const token = localStorage.getItem("userinfo.accessToken");
+      const response = await fetch(`${EnvOptions.ServerUrl}/api/app/assistant/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          chatId: currentChatId,
+          content: userMessage,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法获取响应流");
+      }
+
+      const decoder = new TextDecoder();
+      let accumulatedContent = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        // 处理 SSE 格式的数据
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // 保留未完成的行
+
+        for (const line of lines) {
+          if (line.startsWith("data:")) {
+            const jsonStr = line.slice(5).trim();
+            if (jsonStr === "[DONE]") {
+              continue;
+            }
+            
+            try {
+              const data = JSON.parse(jsonStr);
+              
+              // 处理流式内容
+              if (data.choices && data.choices.length > 0) {
+                for (const choice of data.choices) {
+                  if (choice.textCall?.content) {
+                    accumulatedContent += choice.textCall.content;
+                    setStreamingContent(accumulatedContent);
+                    scrollToBottom();
+                  }
+                }
+              }
+              
+              // 检查是否完成
+              if (data.finish_reason === "stop" || data.finishReason === "stop") {
+                // 流式完成，刷新对话历史
+                setIsStreaming(false);
+                setStreamingContent("");
+                await loadChatHistory(currentChatId);
+                
+                // 更新 Token 统计
+                if (data.usage) {
+                  setTokenStats({
+                    total: (data.usage.prompt_tokens || data.usage.promptTokens || 0) + 
+                           (data.usage.completion_tokens || data.usage.completionTokens || 0),
+                    input: data.usage.prompt_tokens || data.usage.promptTokens || 0,
+                    output: data.usage.completion_tokens || data.usage.completionTokens || 0,
+                  });
+                }
+              }
+            } catch (parseError) {
+              // 忽略解析错误，可能是不完整的 JSON
+              console.debug("Parse error:", parseError, "for line:", jsonStr);
+            }
+          }
+        }
+      }
+
+      // 如果流结束但没有收到 stop 信号，也刷新历史
+      if (isStreaming) {
+        setIsStreaming(false);
+        setStreamingContent("");
+        await loadChatHistory(currentChatId);
+      }
+
     } catch (error) {
-      console.error("发送消息失败:", error);
-      proxyRequestError(error, messageApi, "发送消息失败");
+      if ((error as Error).name === "AbortError") {
+        console.log("请求已取消");
+      } else {
+        console.error("发送消息失败:", error);
+        proxyRequestError(error, messageApi, "发送消息失败");
+      }
+      setIsStreaming(false);
+      setStreamingContent("");
     } finally {
+      setSending(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  // 取消流式请求
+  const handleCancelStream = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsStreaming(false);
+      setStreamingContent("");
       setSending(false);
     }
   };
@@ -398,8 +591,11 @@ const AiAssistant: React.FC = () => {
     if (urlChatId && urlChatId !== currentChatId) {
       setCurrentChatId(urlChatId);
       loadChatHistory(urlChatId);
+    } else if (!urlChatId && currentChatId) {
+      // URL 中没有 chatId，说明是删除后跳转或直接访问 /chat
+      // 不需要做任何操作，状态已在 handleDeleteTopic 中处理
     }
-  }, [urlChatId, currentChatId, loadChatHistory]);
+  }, [urlChatId]); // 移除 currentChatId 和 loadChatHistory 依赖，避免删除后重复请求
 
   return (
     <Layout className="ai-assistant-layout">
@@ -421,7 +617,7 @@ const AiAssistant: React.FC = () => {
             type="primary"
             icon={<PlusOutlined />}
             size="small"
-            onClick={handleCreateTopic}
+            onClick={handleOpenCreateModal}
           >
             新对话
           </Button>
@@ -485,10 +681,19 @@ const AiAssistant: React.FC = () => {
       {/* 中间：对话内容区域 */}
       <Content className="ai-assistant-content">
         <div className="chat-container">
+          {/* 对话标题头部 */}
+          {currentChatId && (
+            <div className="chat-header">
+              <Title level={4} className="chat-title">
+                {assistantConfig.title || "未命名对话"}
+              </Title>
+            </div>
+          )}
+          
           {/* 聊天历史区域 */}
           <div className="chat-history-area" ref={chatContainerRef}>
             <Spin spinning={historyLoading}>
-              {chatHistory.length === 0 ? (
+              {chatHistory.length === 0 && !isStreaming ? (
                 <div className="chat-empty">
                   <Empty description="选择或创建一个对话开始聊天" />
                 </div>
@@ -547,6 +752,39 @@ const AiAssistant: React.FC = () => {
                       </div>
                     );
                   })}
+                  
+                  {/* 流式消息显示 */}
+                  {isStreaming && (
+                    <div className="chat-message chat-message-assistant chat-message-streaming">
+                      <div className="message-avatar">
+                        {getRoleAvatar("assistant")}
+                      </div>
+                      <div className="message-body">
+                        <div className="message-header">
+                          <Text strong className="message-role">
+                            {getRoleDisplayName("assistant")}
+                          </Text>
+                          <Text type="secondary" className="message-tag streaming-indicator">
+                            <LoadingOutlined /> 正在输入...
+                          </Text>
+                        </div>
+                        <div className="message-content">
+                          {streamingContent ? (
+                            <div className="message-markdown">
+                              <ReactMarkdown>
+                                {streamingContent}
+                              </ReactMarkdown>
+                              <span className="typing-cursor">|</span>
+                            </div>
+                          ) : (
+                            <div className="message-thinking">
+                              <LoadingOutlined /> 思考中...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </Spin>
@@ -570,16 +808,26 @@ const AiAssistant: React.FC = () => {
                 autoSize={{ minRows: 1, maxRows: 6 }}
                 className="chat-input"
               />
-              <Button
-                type="primary"
-                icon={<SendOutlined />}
-                onClick={handleSendMessage}
-                loading={sending}
-                disabled={!currentChatId || !inputValue.trim() || !assistantConfig.modelId}
-                className="chat-send-button"
-              >
-                发送
-              </Button>
+              {isStreaming ? (
+                <Button
+                  danger
+                  onClick={handleCancelStream}
+                  className="chat-send-button"
+                >
+                  停止
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={handleSendMessage}
+                  loading={sending}
+                  disabled={!currentChatId || !inputValue.trim() || !assistantConfig.modelId}
+                  className="chat-send-button"
+                >
+                  发送
+                </Button>
+              )}
             </div>
             {currentChatId && !assistantConfig.modelId && (
               <Text type="warning" className="chat-input-hint">
@@ -590,14 +838,59 @@ const AiAssistant: React.FC = () => {
         </div>
       </Content>
 
-      {/* 右侧：配置面板 */}
-      <Sider width={320} className="ai-assistant-sider-right">
-        <AssistantConfigPanel
-          config={assistantConfig}
-          onConfigChange={setAssistantConfig}
-          tokenStats={tokenStats}
-        />
-      </Sider>
+      {/* 右侧：配置面板 - 仅在选择话题后显示 */}
+      {currentChatId && (
+        <Sider width={320} className="ai-assistant-sider-right">
+          <AssistantConfigPanel
+            config={assistantConfig}
+            onConfigChange={setAssistantConfig}
+            chatId={currentChatId}
+            tokenStats={tokenStats}
+          />
+        </Sider>
+      )}
+
+      {/* 新建对话模态窗口 */}
+      <Modal
+        title="新建对话"
+        open={createModalOpen}
+        onCancel={() => setCreateModalOpen(false)}
+        maskClosable={false}
+        onOk={handleCreateTopic}
+        confirmLoading={createModalLoading}
+        okText="创建"
+        cancelText="取消"
+        okButtonProps={{ disabled: !selectedModelId }}
+      >
+        <div className="create-chat-form">
+          <div className="form-item">
+            <Text strong>对话标题</Text>
+            <Input
+              placeholder="输入对话标题"
+              value={newChatTitle}
+              onChange={(e) => setNewChatTitle(e.target.value)}
+              style={{ marginTop: 8 }}
+            />
+          </div>
+          <div className="form-item" style={{ marginTop: 16 }}>
+            <Text strong>
+              选择模型 <span style={{ color: "red" }}>*</span>
+            </Text>
+            <Spin spinning={modelsLoading}>
+              <Select
+                placeholder="请选择AI模型"
+                style={{ width: "100%", marginTop: 8 }}
+                value={selectedModelId}
+                onChange={(value) => setSelectedModelId(value)}
+                options={models.map((m) => ({
+                  label: m.title || m.name,
+                  value: m.id,
+                }))}
+              />
+            </Spin>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

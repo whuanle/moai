@@ -25,11 +25,6 @@ public interface AiProcessingPluginCall
     public string PluginName { get; }
 
     /// <summary>
-    /// 信息，如果报错，会有错误信息.
-    /// </summary>
-    public string? Message { get; }
-
-    /// <summary>
     /// 执行插件的参数.
     /// </summary>
     public IReadOnlyCollection<KeyValueString> Params { get; }

@@ -1,0 +1,206 @@
+/* 提示词选择器样式 */
+
+.prompt-selector-container {
+  display: flex;
+  gap: 16px;
+  height: 600px;
+}
+
+.prompt-selector-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.prompt-search {
+  margin-bottom: 12px;
+}
+
+.prompt-class-tabs {
+  margin-bottom: 12px;
+}
+
+.prompt-class-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.prompt-list-container {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.prompt-list-item {
+  cursor: pointer;
+  padding: 8px 12px !important;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  transition: background-color 0.2s;
+}
+
+.prompt-list-item:hover {
+  background-color: var(--ant-color-bg-text-hover);
+}
+
+.prompt-list-item-active {
+  background-color: var(--ant-color-primary-bg);
+}
+
+.prompt-list-item-active:hover {
+  background-color: var(--ant-color-primary-bg-hover);
+}
+
+.prompt-item-icon {
+  font-size: 20px;
+  color: var(--ant-color-primary);
+}
+
+.prompt-item-title {
+  max-width: 200px;
+}
+
+.prompt-item-desc {
+  font-size: 12px;
+  max-width: 200px;
+}
+
+/* 右侧预览区域 */
+.prompt-selector-right {
+  width: 450px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.prompt-preview-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ant-color-border);
+  background: var(--ant-color-bg-layout);
+}
+
+.prompt-preview-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.prompt-preview-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prompt-preview-title {
+  font-size: 16px;
+}
+
+.prompt-preview-desc {
+  padding: 8px 12px;
+  background: var(--ant-color-bg-layout);
+  border-radius: 6px;
+}
+
+.prompt-preview-body {
+  flex: 1;
+}
+
+.prompt-content-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--ant-color-bg-layout);
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0 !important;
+}
+
+/* Markdown 预览样式 */
+.prompt-content-markdown {
+  background: var(--ant-color-bg-layout);
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.prompt-content-markdown p {
+  margin: 0 0 8px 0;
+}
+
+.prompt-content-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.prompt-content-markdown pre {
+  background: var(--ant-color-bg-container);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.prompt-content-markdown code {
+  background: var(--ant-color-bg-container);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 13px;
+}
+
+.prompt-content-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prompt-content-markdown ul,
+.prompt-content-markdown ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.prompt-content-markdown blockquote {
+  border-left: 3px solid var(--ant-color-border);
+  margin: 8px 0;
+  padding-left: 12px;
+  color: var(--ant-color-text-secondary);
+}
+
+.prompt-content-markdown h1,
+.prompt-content-markdown h2,
+.prompt-content-markdown h3,
+.prompt-content-markdown h4,
+.prompt-content-markdown h5,
+.prompt-content-markdown h6 {
+  margin: 12px 0 8px 0;
+  font-weight: 600;
+}
+
+.prompt-content-markdown h1 { font-size: 1.4em; }
+.prompt-content-markdown h2 { font-size: 1.3em; }
+.prompt-content-markdown h3 { font-size: 1.2em; }
+.prompt-content-markdown h4 { font-size: 1.1em; }
+
+.prompt-content-markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.prompt-content-markdown th,
+.prompt-content-markdown td {
+  border: 1px solid var(--ant-color-border);
+  padding: 8px;
+  text-align: left;
+}
+
+.prompt-content-markdown th {
+  background: var(--ant-color-bg-container);
+  font-weight: 600;
+}
