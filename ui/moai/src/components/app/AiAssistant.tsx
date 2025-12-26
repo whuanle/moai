@@ -26,6 +26,7 @@ import {
   ToolOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
+import { EmojiPicker } from "@lobehub/ui";
 import ReactMarkdown from "react-markdown";
 import { GetApiClient } from "../ServiceClient";
 import { proxyRequestError } from "../../helper/RequestError";
@@ -185,6 +186,7 @@ const AiAssistant: React.FC = () => {
   // 助手配置状态
   const [assistantConfig, setAssistantConfig] = useState<AssistantConfig>({
     title: "",
+    avatar: "🤖",
     systemPrompt: "你是智能助手",
     temperature: 1,
     topP: 1,
@@ -284,6 +286,7 @@ const AiAssistant: React.FC = () => {
             ...prev,
             modelId: response.modelId || prev.modelId,
             title: response.title || prev.title,
+            avatar: response.avatar || prev.avatar || "🤖",
             systemPrompt: response.prompt || "你是智能助手",
             temperature: getSettingValue("temperature", prev.temperature),
             topP: getSettingValue("top_p", prev.topP),
@@ -374,6 +377,7 @@ const AiAssistant: React.FC = () => {
         // 重置助手配置
         setAssistantConfig({
           title: "",
+          avatar: "🤖",
           systemPrompt: "你是智能助手",
           temperature: 1,
           topP: 1,
@@ -541,6 +545,41 @@ const AiAssistant: React.FC = () => {
     }
   };
 
+  // 处理头像选择
+  const handleAvatarChange = async (emoji: string) => {
+    const newConfig = { ...assistantConfig, avatar: emoji };
+    setAssistantConfig(newConfig);
+    
+    // 自动保存头像到服务器（带上完整配置）
+    if (currentChatId) {
+      try {
+        const client = GetApiClient();
+        
+        // 构建 executionSettings
+        const executionSettings = [
+          { key: "temperature", value: String(newConfig.temperature) },
+          { key: "top_p", value: String(newConfig.topP) },
+          { key: "presence_penalty", value: String(newConfig.presencePenalty) },
+          { key: "frequency_penalty", value: String(newConfig.frequencyPenalty) },
+        ];
+
+        await client.api.app.assistant.update_chat.post({
+          chatId: currentChatId,
+          modelId: newConfig.modelId,
+          title: newConfig.title,
+          avatar: emoji,
+          prompt: newConfig.systemPrompt,
+          executionSettings: executionSettings,
+          wikiIds: newConfig.selectedWikiIds,
+          plugins: newConfig.selectedPluginIds,
+        });
+      } catch (error) {
+        console.error("保存头像失败:", error);
+        proxyRequestError(error, messageApi, "保存头像失败");
+      }
+    }
+  };
+
   // 处理按键事件
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -555,6 +594,10 @@ const AiAssistant: React.FC = () => {
       case "user":
         return <Avatar icon={<UserOutlined />} style={{ backgroundColor: "#1890ff" }} />;
       case "assistant":
+        // 使用配置的 avatar，如果为空则使用默认图标
+        if (assistantConfig.avatar) {
+          return <Avatar style={{ backgroundColor: "#52c41a", fontSize: 20 }}>{assistantConfig.avatar}</Avatar>;
+        }
         return <Avatar icon={<RobotOutlined />} style={{ backgroundColor: "#52c41a" }} />;
       case "tool":
         return <Avatar icon={<ToolOutlined />} style={{ backgroundColor: "#faad14" }} />;
@@ -684,6 +727,11 @@ const AiAssistant: React.FC = () => {
           {/* 对话标题头部 */}
           {currentChatId && (
             <div className="chat-header">
+              <EmojiPicker
+                value={assistantConfig.avatar || "🤖"}
+                onChange={handleAvatarChange}
+                size={32}
+              />
               <Title level={4} className="chat-title">
                 {assistantConfig.title || "未命名对话"}
               </Title>

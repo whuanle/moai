@@ -39,6 +39,7 @@ const { TextArea } = Input;
 export interface AssistantConfig {
   modelId?: number;
   title?: string;
+  avatar?: string;
   systemPrompt?: string;
   temperature: number;
   topP: number;
@@ -204,6 +205,7 @@ const AssistantConfigPanel: React.FC<AssistantConfigPanelProps> = ({
         chatId: chatId,
         modelId: config.modelId,
         title: config.title,
+        avatar: config.avatar,
         prompt: config.systemPrompt,
         executionSettings: executionSettings,
         wikiIds: config.selectedWikiIds,
