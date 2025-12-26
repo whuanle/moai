@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using DocumentFormat.OpenXml.Office2010.Word;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.ChatCompletion;
 using MoAI.Database;
@@ -41,27 +42,37 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteWikiDocumentCommand request, CancellationToken cancellationToken)
     {
-        // 删除数据库记录，附属表不需要删除
-        var document = await _databaseContext.WikiDocuments
-            .Where(x => x.WikiId == request.WikiId && x.Id == request.DocumentId)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (document == null)
+        var documentIds = request.DocumentIds.ToHashSet();
+        if (documentIds.Count == 0)
         {
-            throw new BusinessException("文档不存在") { StatusCode = 404 };
+            throw new BusinessException("未指定要删除的文档") { StatusCode = 400 };
         }
 
-        _databaseContext.WikiDocuments.Remove(document);
+        // 删除数据库记录，附属表不需要删除
+        var documents = await _databaseContext.WikiDocuments
+            .Where(x => x.WikiId == request.WikiId && documentIds.Contains(x.Id))
+            .ToArrayAsync(cancellationToken);
+
+        if (documents.Length == 0)
+        {
+            throw new BusinessException("未指定要删除的文档") { StatusCode = 404 };
+        }
+
+        _databaseContext.WikiDocuments.RemoveRange(documents);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
+        foreach (var item in documents)
         {
-            WikiId = request.WikiId,
-            DocumentId = request.DocumentId
-        });
+            await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
+            {
+                WikiId = request.WikiId,
+                DocumentId = item.Id,
+                IsAutoDeleteIndex = true
+            });
 
-        // 删除 oss 文件
-        await _mediator.Send(new DeleteFileCommand { FileIds = new[] { document.FileId } });
+            // 删除 oss 文件
+            await _mediator.Send(new DeleteFileCommand { FileIds = new[] { item.FileId } });
+        }
 
         var documentCount = await _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).CountAsync();
         if (documentCount == 0)

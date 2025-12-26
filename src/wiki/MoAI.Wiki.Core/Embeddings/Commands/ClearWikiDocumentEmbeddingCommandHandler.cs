@@ -85,7 +85,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
 
         var documentEmbeddingCount = await _databaseContext.WikiDocumentChunkEmbeddings.Where(x => x.WikiId == request.WikiId).CountAsync();
 
-        if (documentEmbeddingCount == 0)
+        if (request.IsAutoDeleteIndex && documentEmbeddingCount == 0)
         {
             await memoryClient.DeleteIndexAsync(index: request.WikiId.ToString());
             await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));

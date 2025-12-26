@@ -32,36 +32,6 @@ public partial class AiAssistantController : ControllerBase
         _userContext = userContext;
     }
 
-    [HttpGet("a1")]
-    public async Task<object> A1()
-    {
-        var response = await CreateChat(new CreateAiAssistantChatCommand
-        {
-            Avatar = "😂",
-            ContextUserId = _userContext.UserId,
-            ExecutionSettings = Array.Empty<KeyValueString>(),
-            ModelId = 4,
-            Plugins = new List<string> { "bocha_web_search", "feishu_webhook_text" },
-            Prompt = "You are a helpful assistant.",
-            Title = "测试",
-            WikiIds = new List<int> { 6 }
-        });
-
-        return response;
-    }
-
-    [HttpGet("a2")]
-    [Produces("text/event-stream")]
-    public async Task A2(Guid id, string query)
-    {
-        await Completions(new ProcessingAiAssistantChatCommand
-        {
-            ChatId = id,
-            Content = query,
-            ContextUserId = _userContext.UserId
-        });
-    }
-
     /// <summary>
     /// 发起新的聊天，检查用户是否有知识库、插件等权限，如果检查通过，返回聊天 id
     /// </summary>

@@ -22,15 +22,22 @@ using MoAI.Infra.Exceptions;
 using OpenAI;
 using StackExchange.Redis;
 using System.ClientModel;
+using System.Collections.Concurrent;
 
 namespace MoAI.AI;
 
+/// <summary>
+/// AiClientBuilder.
+/// </summary>
 [InjectOnScoped]
 public class AiClientBuilder : IDisposable, IAiClientBuilder
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly SystemOptions _systemOptions;
     private readonly ILoggerFactory _loggerFactory;
+
+    private readonly ConcurrentDictionary<AiEndpoint, ITextEmbeddingGenerator> _textEmbeddingGenerators = new();
+    private readonly ConcurrentDictionary<ITextEmbeddingGenerator, ConcurrentBag<IMemoryDb>> _memoryDBs = new();
 
     private readonly List<IDisposable> _disposables = new();
     private bool disposedValue;
@@ -111,10 +118,20 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
     /// <inheritdoc/>
     public ITextEmbeddingGenerator CreateTextEmbeddingGenerator(AiEndpoint endpoint, int embeddingDimensions)
     {
+        var cache = _textEmbeddingGenerators.FirstOrDefault(x =>
+        x.Key.Provider == endpoint.Provider &&
+        x.Key.Name == endpoint.Name &&
+        x.Key.Endpoint == endpoint.Endpoint);
+
+        if (cache.Value != null)
+        {
+            return cache.Value;
+        }
+
         var provider = endpoint.Provider;
         if (provider == AiProvider.Azure)
         {
-            return new AzureOpenAITextEmbeddingGenerator(new AzureOpenAIConfig
+            var obj = new AzureOpenAITextEmbeddingGenerator(new AzureOpenAIConfig
             {
                 Endpoint = endpoint.Endpoint,
                 APIKey = endpoint.Key,
@@ -125,11 +142,14 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
                 EmbeddingDimensions = embeddingDimensions
             });
+
+            _textEmbeddingGenerators[endpoint] = obj;
+            return obj;
         }
 
         if (provider == AiProvider.OpenAI)
         {
-            return new OpenAITextEmbeddingGenerator(new OpenAIConfig
+            var obj = new OpenAITextEmbeddingGenerator(new OpenAIConfig
             {
                 EmbeddingModel = endpoint.Name,
                 Endpoint = endpoint.Endpoint,
@@ -138,11 +158,14 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
                 EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
                 EmbeddingDimensions = embeddingDimensions
             });
+
+            _textEmbeddingGenerators[endpoint] = obj;
+            return obj;
         }
 
         if (provider == AiProvider.Custom)
         {
-            return new AzureOpenAITextEmbeddingGenerator(new AzureOpenAIConfig
+            var obj = new AzureOpenAITextEmbeddingGenerator(new AzureOpenAIConfig
             {
                 Endpoint = endpoint.Endpoint,
                 APIKey = endpoint.Key,
@@ -153,6 +176,9 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
                 EmbeddingDimensions = embeddingDimensions
             });
+
+            _textEmbeddingGenerators[endpoint] = obj;
+            return obj;
         }
 
         throw new BusinessException("不支持该模型接口");
@@ -168,8 +194,20 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
     /// <inheritdoc/>
     public IMemoryDb CreateMemoryDb(ITextEmbeddingGenerator textEmbeddingGenerator, MemoryDbType memoryDbType)
     {
+        if (!_memoryDBs.TryGetValue(textEmbeddingGenerator, out var values))
+        {
+            values = new ConcurrentBag<IMemoryDb>();
+            _memoryDBs[textEmbeddingGenerator] = values;
+        }
+
         if (memoryDbType == MemoryDbType.ElasticSearch)
         {
+            var value = values.FirstOrDefault(x => x is ElasticsearchMemory);
+            if (value != null)
+            {
+                return value;
+            }
+
             var esOptions = new ElasticsearchConfig
             {
                 Endpoint = _systemOptions.Wiki.ConnectionString,
@@ -178,33 +216,57 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
                 UserName = _systemOptions.Wiki.UserName!,
             };
 
-            return new ElasticsearchMemory(esOptions, textEmbeddingGenerator, client: null, _loggerFactory);
+            var memory = new ElasticsearchMemory(esOptions, textEmbeddingGenerator, client: null, _loggerFactory);
+            values.Add(memory);
+            return memory;
         }
 
         if (memoryDbType == MemoryDbType.Qdrant)
         {
+            var value = values.FirstOrDefault(x => x is QdrantMemory);
+            if (value != null)
+            {
+                return value;
+            }
+
             var qOptions = new QdrantConfig
             {
                 Endpoint = _systemOptions.Wiki.ConnectionString,
                 APIKey = _systemOptions.Wiki.Password!,
             };
 
-            return new QdrantMemory(qOptions, textEmbeddingGenerator, _loggerFactory);
+            var memory = new QdrantMemory(qOptions, textEmbeddingGenerator, _loggerFactory);
+            values.Add(memory);
+            return memory;
         }
 
         if (memoryDbType == MemoryDbType.Postgres)
         {
+            var value = values.FirstOrDefault(x => x is PostgresMemory);
+            if (value != null)
+            {
+                return value;
+            }
+
             var pgOptions = new PostgresConfig
             {
                 ConnectionString = _systemOptions.Wiki.ConnectionString,
                 TableNamePrefix = "wiki_",
             };
 
-            return new PostgresMemory(pgOptions, textEmbeddingGenerator, _loggerFactory);
+            var memory = new PostgresMemory(pgOptions, textEmbeddingGenerator, _loggerFactory);
+            values.Add(memory);
+            return memory;
         }
 
         if (memoryDbType == MemoryDbType.Redis)
         {
+            var value = values.FirstOrDefault(x => x is RedisMemory);
+            if (value != null)
+            {
+                return value;
+            }
+
             var redisOptions = new RedisConfig
             {
                 ConnectionString = _systemOptions.Wiki.ConnectionString
@@ -213,17 +275,27 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
             var connectionMultiplexer = ConnectionMultiplexer.Connect(_systemOptions.Wiki.ConnectionString);
             _disposables.Add(connectionMultiplexer);
 
-            return new RedisMemory(redisOptions, connectionMultiplexer, textEmbeddingGenerator, _loggerFactory.CreateLogger<RedisMemory>());
+            var memory = new RedisMemory(redisOptions, connectionMultiplexer, textEmbeddingGenerator, _loggerFactory.CreateLogger<RedisMemory>());
+            values.Add(memory);
+            return memory;
         }
 
         if (memoryDbType == MemoryDbType.SQLServer)
         {
+            var value = values.FirstOrDefault(x => x is SqlServerMemory);
+            if (value != null)
+            {
+                return value;
+            }
+
             var sqlOptions = new SqlServerConfig
             {
                 ConnectionString = _systemOptions.Wiki.ConnectionString,
             };
 
-            return new SqlServerMemory(sqlOptions, textEmbeddingGenerator, queryProvider: null, _loggerFactory);
+            var memory = new SqlServerMemory(sqlOptions, textEmbeddingGenerator, queryProvider: null, _loggerFactory);
+            values.Add(memory);
+            return memory;
         }
 
         throw new BusinessException("不支持该存储类型");

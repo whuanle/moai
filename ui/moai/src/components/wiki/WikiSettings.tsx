@@ -136,7 +136,7 @@ export default function WikiSettings() {
     try {
       setClearingVectors(true);
       
-      await apiClient.api.wiki.document.clear_document.post({
+      await apiClient.api.wiki.document.clear_embeddingt.post({
         wikiId: parseInt(id!),
       });
 

@@ -261,15 +261,16 @@ const useDocumentList = (wikiId: number) => {
     }
   }, [wikiId, messageApi, filterMode, selectedFormats]);
 
-  const deleteDocument = useCallback(async (documentId: number) => {
+  const deleteDocument = useCallback(async (documentIds: number | number[]) => {
     try {
       const client = GetApiClient();
+      const ids = Array.isArray(documentIds) ? documentIds : [documentIds];
       const deleteCommand: DeleteWikiDocumentCommand = {
         wikiId,
-        documentId,
+        documentIds: ids,
       };
       await client.api.wiki.document.delete_document.post(deleteCommand);
-      messageApi.success("删除成功");
+      messageApi.success(ids.length > 1 ? `成功删除 ${ids.length} 个文档` : "删除成功");
       fetchDocuments(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
       const errorMessage = getErrorMessage(error, "删除失败");
@@ -595,7 +596,7 @@ const UploadPrivateFile = async (
 const getTableColumns = (
   wikiId: number,
   navigate: any,
-  deleteDocument: (id: number) => void,
+  deleteDocument: (id: number | number[]) => void,
   updateDocumentFileName: (documentId: number, fileName: string) => Promise<void>,
   editingDocumentId: number | null,
   editingFileName: string,
@@ -1035,6 +1036,17 @@ export default function WikiDocument() {
     }
   }, [wikiId, selectedRowKeys, messageApi]);
 
+  // 批量删除文档
+  const handleBatchDelete = useCallback(async () => {
+    if (selectedRowKeys.length === 0) {
+      messageApi.warning("请先选择要删除的文档");
+      return;
+    }
+
+    await deleteDocument(selectedRowKeys);
+    setSelectedRowKeys([]);
+  }, [selectedRowKeys, deleteDocument, messageApi]);
+
   // 表格多选配置
   const rowSelection = {
     selectedRowKeys,
@@ -1100,6 +1112,22 @@ export default function WikiDocument() {
               >
                 一键处理 {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
               </Button>
+              <Popconfirm
+                title="批量删除文档"
+                description={`确定要删除选中的 ${selectedRowKeys.length} 个文档吗？删除后无法恢复。`}
+                okText="确认删除"
+                cancelText="取消"
+                onConfirm={handleBatchDelete}
+                disabled={selectedRowKeys.length === 0}
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={selectedRowKeys.length === 0}
+                >
+                  批量删除 {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
+                </Button>
+              </Popconfirm>
             </Space>
           </Col>
         </Row>

@@ -137,14 +137,6 @@ const PluginCallDisplay: React.FC<{ pluginCall: AiProcessingPluginCall }> = ({ p
               )}
             </div>
           )}
-          
-          {/* 错误信息 */}
-          {pluginCall.message && (
-            <div className="plugin-detail-section">
-              <Text type="warning" strong>信息</Text>
-              <div className="plugin-message">{pluginCall.message}</div>
-            </div>
-          )}
         </div>
       ),
     },

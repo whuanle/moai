@@ -96,7 +96,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
         {
             PluginName = request.Name,
             Title = request.Title,
-            Type = (int)PluginType.MCP,
+            Type = (int)PluginType.OpenApi,
             IsPublic = request.IsPublic,
             ClassifyId = request.ClassifyId,
             PluginId = pluginCustomEntity.Id,

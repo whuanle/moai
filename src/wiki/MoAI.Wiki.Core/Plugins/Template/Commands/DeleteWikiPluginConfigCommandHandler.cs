@@ -61,16 +61,13 @@ public class DeleteWikiPluginConfigCommandHandler : IRequestHandler<DeleteWikiPl
                 .Where(x => x.WikiId == request.WikiId && x.ConfigId == request.ConfigId)
                 .Select(x => x.WikiDocumentId).ToArrayAsync();
 
-            foreach (var item in documents)
-            {
-                await _mediator.Send(
-                    new DeleteWikiDocumentCommand
+            await _mediator.Send(
+                new DeleteWikiDocumentCommand
                 {
                     WikiId = request.WikiId,
-                    DocumentId = item
+                    DocumentIds = documents
                 },
-                    cancellationToken);
-            }
+                cancellationToken);
         }
 
         // 删除 wiki_plugin_config_document_state、wiki_plugin_config_document、wiki_plugin_config

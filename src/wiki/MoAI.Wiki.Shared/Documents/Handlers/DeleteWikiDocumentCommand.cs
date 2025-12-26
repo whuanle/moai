@@ -17,7 +17,7 @@ public class DeleteWikiDocumentCommand : IRequest<EmptyCommandResponse>, IModelV
     /// <summary>
     /// 文档 id.
     /// </summary>
-    public int DocumentId { get; init; }
+    public IReadOnlyCollection<int> DocumentIds { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<DeleteWikiDocumentCommand> validate)
@@ -26,8 +26,8 @@ public class DeleteWikiDocumentCommand : IRequest<EmptyCommandResponse>, IModelV
             .NotEmpty().WithMessage("知识库id不正确")
             .GreaterThan(0).WithMessage("知识库id不正确");
 
-        validate.RuleFor(x => x.DocumentId)
+        validate.RuleFor(x => x.DocumentIds)
             .NotEmpty().WithMessage("文档id不正确")
-            .GreaterThan(0).WithMessage("文档id不正确");
+            .Must(x => x.All(id => id > 0)).WithMessage("文档id不正确");
     }
 }

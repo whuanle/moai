@@ -279,10 +279,6 @@ export interface AiProcessingChoice extends Parsable {
  */
 export interface AiProcessingPluginCall extends Parsable {
     /**
-     * 信息，如果报错，会有错误信息.
-     */
-    message?: string | null;
-    /**
      * 执行插件的参数.
      */
     params?: KeyValueString[] | null;
@@ -427,6 +423,10 @@ export interface ClearWikiDocumentEmbeddingCommand extends Parsable {
      * 不填写时清空整个知识库的文档向量.
      */
     documentId?: number | null;
+    /**
+     * 是否删除索引.
+     */
+    isAutoDeleteIndex?: boolean | null;
     /**
      * 知识库 id.
      */
@@ -2586,7 +2586,7 @@ export interface DeleteWikiDocumentCommand extends Parsable {
     /**
      * 文档 id.
      */
-    documentId?: number | null;
+    documentIds?: number[] | null;
     /**
      * 知识库 id.
      */
@@ -2789,7 +2789,6 @@ export function deserializeIntoAiProcessingChoice(aiProcessingChoice: Partial<Ai
 // @ts-ignore
 export function deserializeIntoAiProcessingPluginCall(aiProcessingPluginCall: Partial<AiProcessingPluginCall> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "message": n => { aiProcessingPluginCall.message = n.getStringValue(); },
         "params": n => { aiProcessingPluginCall.params = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "pluginKey": n => { aiProcessingPluginCall.pluginKey = n.getStringValue(); },
         "pluginName": n => { aiProcessingPluginCall.pluginName = n.getStringValue(); },
@@ -2888,6 +2887,7 @@ export function deserializeIntoChatContentItem(chatContentItem: Partial<ChatCont
 export function deserializeIntoClearWikiDocumentEmbeddingCommand(clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "documentId": n => { clearWikiDocumentEmbeddingCommand.documentId = n.getNumberValue(); },
+        "isAutoDeleteIndex": n => { clearWikiDocumentEmbeddingCommand.isAutoDeleteIndex = n.getBooleanValue(); },
         "wikiId": n => { clearWikiDocumentEmbeddingCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -3123,7 +3123,7 @@ export function deserializeIntoDeleteWikiDocumentChunkCommand(deleteWikiDocument
 // @ts-ignore
 export function deserializeIntoDeleteWikiDocumentCommand(deleteWikiDocumentCommand: Partial<DeleteWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "documentId": n => { deleteWikiDocumentCommand.documentId = n.getNumberValue(); },
+        "documentIds": n => { deleteWikiDocumentCommand.documentIds = n.getCollectionOfPrimitiveValues<number>(); },
         "wikiId": n => { deleteWikiDocumentCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -7276,7 +7276,6 @@ export function serializeAiProcessingChoice(writer: SerializationWriter, aiProce
 // @ts-ignore
 export function serializeAiProcessingPluginCall(writer: SerializationWriter, aiProcessingPluginCall: Partial<AiProcessingPluginCall> | undefined | null = {}) : void {
     if (aiProcessingPluginCall) {
-        writer.writeStringValue("message", aiProcessingPluginCall.message);
         writer.writeCollectionOfObjectValues<KeyValueString>("params", aiProcessingPluginCall.params, serializeKeyValueString);
         writer.writeStringValue("pluginKey", aiProcessingPluginCall.pluginKey);
         writer.writeStringValue("pluginName", aiProcessingPluginCall.pluginName);
@@ -7375,6 +7374,7 @@ export function serializeChatContentItem(writer: SerializationWriter, chatConten
 export function serializeClearWikiDocumentEmbeddingCommand(writer: SerializationWriter, clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined | null = {}) : void {
     if (clearWikiDocumentEmbeddingCommand) {
         writer.writeNumberValue("documentId", clearWikiDocumentEmbeddingCommand.documentId);
+        writer.writeBooleanValue("isAutoDeleteIndex", clearWikiDocumentEmbeddingCommand.isAutoDeleteIndex);
         writer.writeNumberValue("wikiId", clearWikiDocumentEmbeddingCommand.wikiId);
     }
 }
@@ -7610,7 +7610,7 @@ export function serializeDeleteWikiDocumentChunkCommand(writer: SerializationWri
 // @ts-ignore
 export function serializeDeleteWikiDocumentCommand(writer: SerializationWriter, deleteWikiDocumentCommand: Partial<DeleteWikiDocumentCommand> | undefined | null = {}) : void {
     if (deleteWikiDocumentCommand) {
-        writer.writeNumberValue("documentId", deleteWikiDocumentCommand.documentId);
+        writer.writeCollectionOfPrimitiveValues<number>("documentIds", deleteWikiDocumentCommand.documentIds);
         writer.writeNumberValue("wikiId", deleteWikiDocumentCommand.wikiId);
     }
 }

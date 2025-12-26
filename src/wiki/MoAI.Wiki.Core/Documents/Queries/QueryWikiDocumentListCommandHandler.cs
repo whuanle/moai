@@ -49,7 +49,11 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
 
         var totalCount = await query.CountAsync();
 
-        var result = await query.Join(_databaseContext.Files.Where(x => x.IsUploaded), a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
+        var result = await query
+            .OrderByDescending(x => x.CreateTime)
+            .Skip(request.Skip)
+            .Take(request.Take)
+            .Join(_databaseContext.Files.Where(x => x.IsUploaded), a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
         {
             DocumentId = a.Id,
             FileName = a.FileName,
@@ -60,7 +64,7 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
             UpdateTime = a.UpdateTime,
             UpdateUserId = a.UpdateUserId,
             Embedding = a.IsEmbedding
-        }).OrderBy(x => x.FileName).Take(request.Take).Skip(request.Skip).ToArrayAsync();
+        }).ToArrayAsync();
 
         await _mediator.Send(new FillUserInfoCommand
         {

@@ -19,6 +19,11 @@ public class ClearWikiDocumentEmbeddingCommand : IRequest<EmptyCommandResponse>,
     /// </summary>
     public int? DocumentId { get; init; }
 
+    /// <summary>
+    /// 是否删除索引.
+    /// </summary>
+    public bool IsAutoDeleteIndex { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<ClearWikiDocumentEmbeddingCommand> validate)
     {

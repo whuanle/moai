@@ -36,18 +36,18 @@ import { GetApiClient } from "../ServiceClient";
 import {
   ImportMcpServerPluginCommand,
   KeyValueString,
-  QueryPluginBaseListCommand,
-  QueryPluginBaseListCommandResponse,
+  QueryCustomPluginBaseListCommand,
+  QueryCustomPluginBaseListCommandResponse,
   PluginBaseInfoItem,
   PluginTypeObject,
   UpdateMcpServerPluginCommand,
   UpdateOpenApiPluginCommand,
   DeletePluginCommand,
-  QueryPluginDetailCommand,
-  QueryPluginDetailCommandResponse,
+  QueryCustomPluginDetailCommand,
+  QueryCustomPluginDetailCommandResponse,
   PreUploadOpenApiFilePluginCommandResponse,
-  QueryPluginFunctionsListCommand,
-  QueryPluginFunctionsListCommandResponse,
+  QueryCustomPluginFunctionsListCommand,
+  QueryCustomPluginFunctionsListCommandResponse,
   PluginFunctionItem,
 } from "../../apiClient/models";
 import {
@@ -90,7 +90,7 @@ const useFileUpload = () => {
     ): Promise<PreUploadOpenApiFilePluginCommandResponse> => {
       const md5 = await GetFileMd5(file);
       console.log("文件MD5:", md5);
-      const preUploadResponse = await client.api.admin.plugin.pre_upload_openapi.post(
+      const preUploadResponse = await client.api.admin.custom_plugin.pre_upload_openapi.post(
         {
           contentType: FileTypeHelper.getFileType(file),
           fileName: file.name,
@@ -233,8 +233,8 @@ export default function PluginList() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const requestData: QueryPluginBaseListCommand = {};
-      const response = await client.api.admin.plugin.plugin_list.post(requestData);
+      const requestData: QueryCustomPluginBaseListCommand = {};
+      const response = await client.api.admin.custom_plugin.plugin_list.post(requestData);
 
       if (response?.items) {
         setPluginList(response.items);
@@ -266,11 +266,11 @@ export default function PluginList() {
 
       try {
         const client = GetApiClient();
-        const requestData: QueryPluginDetailCommand = {
+        const requestData: QueryCustomPluginDetailCommand = {
           pluginId: record.pluginId,
         };
 
-        const response = await client.api.admin.plugin.plugin_detail.post(
+        const response = await client.api.admin.custom_plugin.plugin_detail.post(
           requestData
         );
 
@@ -360,7 +360,7 @@ export default function PluginList() {
       try {
         const client = GetApiClient();
         const requestData: DeletePluginCommand = { pluginId };
-        await client.api.admin.plugin.delete_plugin.delete(requestData);
+        await client.api.admin.custom_plugin.delete_plugin.delete(requestData);
 
         messageApi.success("插件删除成功");
         fetchPluginList();
@@ -381,11 +381,11 @@ export default function PluginList() {
 
       try {
         const client = GetApiClient();
-        const requestData: QueryPluginFunctionsListCommand = {
+        const requestData: QueryCustomPluginFunctionsListCommand = {
           pluginId: record.pluginId,
         };
 
-        const response = await client.api.admin.plugin.function_list.post(
+        const response = await client.api.admin.custom_plugin.function_list.post(
           requestData
         );
 
@@ -561,7 +561,7 @@ export default function PluginList() {
 
       setSubmitLoading(true);
       const client = GetApiClient();
-      const response = await client.api.admin.plugin.import_mcp.post(requestData);
+      const response = await client.api.admin.custom_plugin.import_mcp.post(requestData);
 
       if (response?.value) {
         messageApi.success("MCP插件导入成功");
@@ -578,6 +578,11 @@ export default function PluginList() {
   }, [form, processKeyValueArray, messageApi, fetchPluginList]);
 
   const handleEditSubmit = useCallback(async () => {
+    if (!editingPlugin?.pluginId) {
+      messageApi.error("插件信息不完整，请重新选择");
+      return;
+    }
+    
     try {
       const values = await editForm.validateFields();
 
@@ -585,7 +590,7 @@ export default function PluginList() {
       const queryArray = processKeyValueArray(values.query);
 
       const requestData: UpdateMcpServerPluginCommand = {
-        pluginId: editingPlugin?.pluginId,
+        pluginId: editingPlugin.pluginId,
         name: values.name,
         title: values.title,
         description: values.description,
@@ -596,7 +601,7 @@ export default function PluginList() {
 
       setEditLoading(true);
       const client = GetApiClient();
-      await client.api.admin.plugin.update_mcp.post(requestData);
+      await client.api.admin.custom_plugin.update_mcp.post(requestData);
 
       messageApi.success("插件更新成功");
       setEditModalVisible(false);
@@ -618,6 +623,11 @@ export default function PluginList() {
   ]);
 
   const handleEditOpenApiSubmit = useCallback(async () => {
+    if (!editingPlugin?.pluginId) {
+      messageApi.error("插件信息不完整，请重新选择");
+      return;
+    }
+    
     try {
       const values = await editOpenApiForm.validateFields();
       setEditOpenApiLoading(true);
@@ -648,7 +658,7 @@ export default function PluginList() {
       const queryArray = processKeyValueArray(values.query);
 
       const requestData: UpdateOpenApiPluginCommand = {
-        pluginId: editingPlugin?.pluginId,
+        pluginId: editingPlugin.pluginId,
         name: values.name,
         title: values.title,
         serverUrl: values.serverUrl,
@@ -659,7 +669,7 @@ export default function PluginList() {
         fileName: fileName,
       };
 
-      await client.api.admin.plugin.update_openapi.post(requestData);
+      await client.api.admin.custom_plugin.update_openapi.post(requestData);
 
       setEditOpenApiUploadStatus({ uploading: false, progress: 100 });
       messageApi.success("OpenAPI 插件更新成功");
@@ -720,7 +730,7 @@ export default function PluginList() {
         fileName: openApiSelectedFile.name,
       };
 
-      await client.api.admin.plugin.import_openapi.post(importBody);
+      await client.api.admin.custom_plugin.import_openapi.post(importBody);
 
       setOpenApiUploadStatus({ uploading: false, progress: 100 });
       messageApi.success("OpenAPI 插件导入成功");
