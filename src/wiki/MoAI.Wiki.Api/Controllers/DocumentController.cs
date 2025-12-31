@@ -7,6 +7,7 @@ using MoAI.Wiki.DocumentManager.Queries;
 using MoAI.Wiki.Documents.Handlers;
 using MoAI.Wiki.Documents.Models;
 using MoAI.Wiki.Documents.Queries;
+using MoAI.Wiki.Plugins.OpenApi;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 
@@ -82,9 +83,23 @@ public partial class DocumentController : ControllerBase
     /// </summary>
     /// <param name="req">预上传文档的命令对象.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="PreloadWikiDocumentResponse"/> 包含预上传结果.</returns>
+    /// <returns>返回 <see cref="PreUploadWikiDocumentCommandResponse"/> 包含预上传结果.</returns>
     [HttpPost("preupload_document")]
-    public async Task<PreloadWikiDocumentResponse> PreUploadWikiDocument([FromBody] PreUploadWikiDocumentCommand req, CancellationToken ct = default)
+    public async Task<PreUploadWikiDocumentCommandResponse> PreUploadWikiDocument([FromBody] PreUploadWikiDocumentCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 上传 api 接口文件生成知识库文档.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpPost("import_api")]
+    public async Task<EmptyCommandResponse> ImportOpenApiToWiki([FromBody] ImportOpenApiToWikiCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 

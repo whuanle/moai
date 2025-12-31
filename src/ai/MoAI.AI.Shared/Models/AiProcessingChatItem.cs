@@ -15,7 +15,7 @@ public class AiProcessingChatItem
     public Guid Id { get; }
 
     /// <summary>
-    /// 可以为 null，如果整个聊天对话完成，那么 finish_reason = stop."/>
+    /// 可以为 null，如果整个聊天对话完成 是 stop，错误是 error."/>
     /// </summary>
     [JsonPropertyName("finish_reason")]
     public string? FinishReason { get; init; }

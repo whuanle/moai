@@ -17,6 +17,8 @@ import {
   UserOutlined,
   SearchOutlined,
   ThunderboltOutlined,
+  ImportOutlined,
+  ApiOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import "./Wiki.css";
@@ -85,6 +87,8 @@ export default function WikiLayout() {
       navigate(`/app/wiki/${id}/plugin/crawler`);
     } else if (key === "feishu") {
       navigate(`/app/wiki/${id}/plugin/feishu`);
+    } else if (key === "openapi") {
+      navigate(`/app/wiki/${id}/plugin/openapi`);
     } else if (key === "batch") {
       navigate(`/app/wiki/${id}/batch`);
     } else {
@@ -100,6 +104,8 @@ export default function WikiLayout() {
       return "crawle";
     } else if (path.includes("/plugin/feishu")) {
       return "feishu";
+    } else if (path.includes("/plugin/openapi")) {
+      return "openapi";
     } else if (path.includes("/search")) {
       return "search";
     } else if (path.includes("/user")) {
@@ -112,24 +118,49 @@ export default function WikiLayout() {
     return "detail";
   };
 
+  const getDefaultOpenKeys = () => {
+    const path = location.pathname;
+    // 如果当前路径在外部导入子菜单中，则展开该菜单
+    if (path.includes("/plugin/feishu") || path.includes("/batch") || path.includes("/plugin/openapi")) {
+      return ["external-import"];
+    }
+    return [];
+  };
+
   const menuItems = [
     {
       key: "document",
       icon: <FileTextOutlined />,
       label: "文档列表",
-    }, {
+    },
+    {
       key: "crawle",
       icon: <FileTextOutlined />,
       label: "爬虫",
-    }, {
-      key: "feishu",
-      icon: <FileTextOutlined />,
-      label: "飞书知识库",
-    }, {
-      key: "batch",
-      icon: <ThunderboltOutlined />,
-      label: "批处理任务",
-    }, {
+    },
+    {
+      key: "external-import",
+      icon: <ImportOutlined />,
+      label: "外部导入",
+      children: [
+        {
+          key: "feishu",
+          icon: <FileTextOutlined />,
+          label: "飞书知识库",
+        },
+        {
+          key: "batch",
+          icon: <ThunderboltOutlined />,
+          label: "批处理任务",
+        },
+        {
+          key: "openapi",
+          icon: <ApiOutlined />,
+          label: "OpenAPI",
+        },
+      ],
+    },
+    {
       key: "search",
       icon: <SearchOutlined />,
       label: "召回测试",
@@ -188,6 +219,7 @@ export default function WikiLayout() {
           <Menu
             mode="inline"
             selectedKeys={[getSelectedKey()]}
+            defaultOpenKeys={getDefaultOpenKeys()}
             items={menuItems}
             onClick={handleMenuClick}
             style={{ borderRight: 'none' }}

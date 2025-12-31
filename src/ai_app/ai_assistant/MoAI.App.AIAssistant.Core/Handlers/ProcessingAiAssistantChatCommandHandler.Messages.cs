@@ -2,21 +2,15 @@
 #pragma warning disable SKEXP0040 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable CA1031 // 不捕获常规异常类型
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Plugins.OpenApi;
 using MoAI.AI.Models;
+using MoAI.App.AIAssistant.Commands;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
-using MoAI.Infra.Models;
-using MoAI.Plugin.Plugins;
-using MoAI.Storage.Queries;
-using MoAI.Wiki.WikiPlugin;
-using ModelContextProtocol.Client;
-using System.Threading;
+using MoAI.Storage.Commands;
+using MoAI.Storage.Helpers;
 
 namespace MoAI.App.AIAssistant.Handlers;
 
@@ -25,44 +19,64 @@ namespace MoAI.App.AIAssistant.Handlers;
 /// </summary>
 public partial class ProcessingAiAssistantChatCommandHandler
 {
-    // 结束上一个块
-    private static async IAsyncEnumerable<AiProcessingChatItem> EndChoiceAsync(AiProcessingChatStreamType exclude, DefaultAiProcessingChoice choice)
+    private async Task<IReadOnlyCollection<DefaultAiProcessingChoice>> GenerateQuestion(ProcessingAiAssistantChatCommand request, ChatHistory chatMessages)
     {
-        await Task.CompletedTask;
+        ChatMessageContentItemCollection contents = new();
+        List<DefaultAiProcessingChoice> choices = new();
 
-        if (choice.IsPush)
+        if (!string.IsNullOrEmpty(request.Content))
         {
-            yield break;
-        }
-
-        if (choice.StreamState == AiProcessingChatStreamState.Error || choice.StreamState == AiProcessingChatStreamState.End)
-        {
-            choice.IsPush = true;
-            yield return new AiProcessingChatItem
+            contents.Add(new TextContent(request.Content));
+            choices.Add(new DefaultAiProcessingChoice
             {
-                Choices = new List<AiProcessingChoice>
+                StreamType = AiProcessingChatStreamType.Text,
+                StreamState = AiProcessingChatStreamState.End,
+                TextCall = new DefaultAiProcessingTextCall
                 {
-                    choice.ToAiProcessingChoice()
+                    Content = request.Content
                 }
-            };
-
-            yield break;
+            });
         }
 
-        // 终结
-        if (choice.StreamType != exclude)
+        if (!string.IsNullOrEmpty(request.FileKey))
         {
-            choice.StreamState = AiProcessingChatStreamState.End;
-            choice.IsPush = true;
+            var ossObjectKey = $"chat/{request.ChatId}/{request.FileKey}";
+            var mimeType = FileStoreHelper.GetMimeType(request.FileKey);
 
-            yield return new AiProcessingChatItem
+            var streamResult = await _mediator.Send(new ReadFileStreamCommand { ObjectKey = ossObjectKey });
+            using var stream = streamResult.FileStream;
+            var memory = await stream.ToReadOnlyMemoryAsync();
+
+            // 判断是不是图片
+            if (FileStoreHelper.ImageExtensions.Any(x => request.FileKey.EndsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
-                Choices = new List<AiProcessingChoice>
+                // 图片
+                contents.Add(new ImageContent(memory, mimeType));
+            }
+            else
+            {
+                //                 contents.Add(new ImageContent(memory, mimeType));
+            }
+
+            choices.Add(new DefaultAiProcessingChoice
+            {
+                StreamType = AiProcessingChatStreamType.File,
+                StreamState = AiProcessingChatStreamState.End,
+                FileCall = new DefaultAiProcessingFileCall
                 {
-                    choice.ToAiProcessingChoice()
+                    FileKey = request.FileKey
                 }
-            };
+            });
         }
+
+        if (contents.Count == 0)
+        {
+            throw new BusinessException("请输入提问");
+        }
+
+        chatMessages.AddUserMessage(contents);
+
+        return choices;
     }
 
     // 还原对话历史记录
@@ -91,7 +105,7 @@ public partial class ProcessingAiAssistantChatCommandHandler
                     }
 
                     // 后期考虑图片
-                    chatMessages.AddAssistantMessage(content: content.TextCall.Content);
+                    chatMessages.AddUserMessage(content: content.TextCall.Content);
                 }
             }
             else if (item.Role == AuthorRole.Assistant.Label)

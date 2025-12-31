@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using MoAI.Infra.Models;
 using MoAI.Storage.Commands.Models;
 
 namespace MoAI.Storage.Commands;

@@ -81,6 +81,7 @@ import CrawlerDetailPage from "./components/wiki/plugins/crawler/CrawlerDetailPa
 import FeishuListPage from "./components/wiki/plugins/feishu/FeishuListPage";
 import FeishuDetailPage from "./components/wiki/plugins/feishu/FeishuDetailPage";
 import BatchListPage from "./components/wiki/BatchListPage";
+import OpenApiListPage from "./components/wiki/plugins/openapi/OpenApiListPage";
 
 const { Sider, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -411,6 +412,7 @@ function App() {
                     <Route path="plugin/crawler" element={<CrawlerListPage />} />
                     <Route path="plugin/feishu/:configId" element={<FeishuDetailPage />} />
                     <Route path="plugin/feishu" element={<FeishuListPage />} />
+                    <Route path="plugin/openapi" element={<OpenApiListPage />} />
                     <Route path="batch" element={<BatchListPage />} />
                   </Route>
                 </Route>

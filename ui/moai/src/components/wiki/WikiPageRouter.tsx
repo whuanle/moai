@@ -9,6 +9,7 @@ import WikiListPage from "./WikiListPage";
 import BatchListPage from "./BatchListPage";
 import { CrawlerPageRouters } from "./plugins/crawler/CrawlerPageRouter";
 import { FeishuPageRouters } from "./plugins/feishu/FeishuPageRouter";
+import { OpenApiPageRouters } from "./plugins/openapi/OpenApiPageRouter";
 
 export const WikiPageRouters: RouteObject[] = [
   {
@@ -23,11 +24,12 @@ export const WikiPageRouters: RouteObject[] = [
         Component: WikiLayout,
         children: [
           {
-            path: "list",
+            path: "document",
             Component: WikiDocument,
           },
           ...CrawlerPageRouters,
           ...FeishuPageRouters,
+          ...OpenApiPageRouters,
           {
             path: "settings",
             Component: WikiSettings,

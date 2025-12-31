@@ -4,6 +4,7 @@ using MoAI.AI.Models;
 using MoAI.AiModel.Models;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 

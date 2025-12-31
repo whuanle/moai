@@ -28,6 +28,8 @@ import { Embedding_documentRequestBuilderRequestsMetadata, type Embedding_docume
 // @ts-ignore
 import { Get_chunksRequestBuilderRequestsMetadata, type Get_chunksRequestBuilder } from './get_chunks/index.js';
 // @ts-ignore
+import { Import_apiRequestBuilderRequestsMetadata, type Import_apiRequestBuilder } from './import_api/index.js';
+// @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
 import { Preupload_documentRequestBuilderRequestsMetadata, type Preupload_documentRequestBuilder } from './preupload_document/index.js';
@@ -102,6 +104,10 @@ export interface DocumentRequestBuilder extends BaseRequestBuilder<DocumentReque
      * The get_chunks property
      */
     get get_chunks(): Get_chunksRequestBuilder;
+    /**
+     * The import_api property
+     */
+    get import_api(): Import_apiRequestBuilder;
     /**
      * The list property
      */
@@ -181,6 +187,9 @@ export const DocumentRequestBuilderNavigationMetadata: Record<Exclude<keyof Docu
     },
     get_chunks: {
         requestsMetadata: Get_chunksRequestBuilderRequestsMetadata,
+    },
+    import_api: {
+        requestsMetadata: Import_apiRequestBuilderRequestsMetadata,
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,

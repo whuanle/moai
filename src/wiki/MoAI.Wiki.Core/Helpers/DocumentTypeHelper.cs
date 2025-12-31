@@ -2,7 +2,7 @@
 
 namespace MoAI.Wiki.Helpers;
 
-public static class DocumentTypeHelper
+internal static class DocumentTypeHelper
 {
     private static readonly MimeTypesDetection _mimeTypesDetection = new MimeTypesDetection();
 

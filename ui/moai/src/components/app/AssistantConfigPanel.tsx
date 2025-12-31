@@ -29,6 +29,7 @@ import type {
   PluginClassifyItem,
   PromptItem,
   KeyValueString,
+  ModelAbilities,
 } from "../../apiClient/models";
 import { AiModelTypeObject } from "../../apiClient/models";
 import PromptSelector from "../common/PromptSelector";
@@ -58,6 +59,7 @@ interface AssistantConfigPanelProps {
     input: number;
     output: number;
   };
+  modelAbilities?: ModelAbilities | null;
 }
 
 const AssistantConfigPanel: React.FC<AssistantConfigPanelProps> = ({
@@ -65,6 +67,7 @@ const AssistantConfigPanel: React.FC<AssistantConfigPanelProps> = ({
   onConfigChange,
   chatId,
   tokenStats = { total: 0, input: 0, output: 0 },
+  modelAbilities,
 }) => {
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -397,29 +400,35 @@ const AssistantConfigPanel: React.FC<AssistantConfigPanelProps> = ({
       label: (
         <Space>
           <BookOutlined />
-          <span>知识库选择</span>
+          <span>知识库</span>
         </Space>
       ),
       children: (
         <div className="config-section">
-          <Text type="secondary">选择知识库来增强AI助手的回答能力</Text>
-          <Spin spinning={wikisLoading}>
-            {wikis.length === 0 ? (
-              <Empty description="未选择知识库" />
-            ) : (
-              <Select
-                mode="multiple"
-                placeholder="选择知识库"
-                style={{ width: "100%" }}
-                value={config.selectedWikiIds}
-                onChange={(value) => updateConfig({ selectedWikiIds: value })}
-                options={wikis.map((w) => ({
-                  label: w.name,
-                  value: w.wikiId,
-                }))}
-              />
-            )}
-          </Spin>
+          {modelAbilities?.functionCall ? (
+            <>
+              <Text type="secondary">选择知识库来增强AI助手的回答能力</Text>
+              <Spin spinning={wikisLoading}>
+                {wikis.length === 0 ? (
+                  <Empty description="暂无知识库" />
+                ) : (
+                  <Select
+                    mode="multiple"
+                    placeholder="选择知识库"
+                    style={{ width: "100%" }}
+                    value={config.selectedWikiIds}
+                    onChange={(value) => updateConfig({ selectedWikiIds: value })}
+                    options={wikis.map((w) => ({
+                      label: w.name,
+                      value: w.wikiId,
+                    }))}
+                  />
+                )}
+              </Spin>
+            </>
+          ) : (
+            <Empty description="当前模型不支持知识库检索" />
+          )}
         </div>
       ),
     },
@@ -428,52 +437,58 @@ const AssistantConfigPanel: React.FC<AssistantConfigPanelProps> = ({
       label: (
         <Space>
           <ApiOutlined />
-          <span>插件添加</span>
+          <span>插件</span>
         </Space>
       ),
       children: (
         <div className="config-section">
-          <Text type="secondary">
-            选择插件来增强AI助手的功能，最多可选择3个插件
-          </Text>
-          <Spin spinning={pluginsLoading || pluginClassesLoading}>
-            <div className="config-item">
-              <Text>插件分类</Text>
-              <Select
-                placeholder="全部分类"
-                style={{ width: "100%" }}
-                allowClear
-                value={selectedPluginClassId}
-                onChange={(value) => setSelectedPluginClassId(value ?? null)}
-                options={[
-                  { label: "全部", value: null },
-                  ...pluginClasses.map((c) => ({
-                    label: c.name,
-                    value: c.classifyId,
-                  })),
-                ]}
-              />
-            </div>
-            <div className="config-item">
-              <Text>选择插件</Text>
-              {filteredPlugins.length === 0 ? (
-                <Empty description="暂无插件" />
-              ) : (
-                <Select
-                  mode="multiple"
-                  placeholder="选择插件"
-                  style={{ width: "100%" }}
-                  maxCount={3}
-                  value={config.selectedPluginIds}
-                  onChange={(value) => updateConfig({ selectedPluginIds: value })}
-                  options={filteredPlugins.map((p) => ({
-                    label: p.title || p.pluginName,
-                    value: p.pluginName,
-                  }))}
-                />
-              )}
-            </div>
-          </Spin>
+          {modelAbilities?.functionCall ? (
+            <>
+              <Text type="secondary">
+                选择插件来增强AI助手的功能，最多可选择3个插件
+              </Text>
+              <Spin spinning={pluginsLoading || pluginClassesLoading}>
+                <div className="config-item">
+                  <Text>插件分类</Text>
+                  <Select
+                    placeholder="全部分类"
+                    style={{ width: "100%" }}
+                    allowClear
+                    value={selectedPluginClassId}
+                    onChange={(value) => setSelectedPluginClassId(value ?? null)}
+                    options={[
+                      { label: "全部", value: null },
+                      ...pluginClasses.map((c) => ({
+                        label: c.name,
+                        value: c.classifyId,
+                      })),
+                    ]}
+                  />
+                </div>
+                <div className="config-item">
+                  <Text>选择插件</Text>
+                  {filteredPlugins.length === 0 ? (
+                    <Empty description="暂无插件" />
+                  ) : (
+                    <Select
+                      mode="multiple"
+                      placeholder="选择插件"
+                      style={{ width: "100%" }}
+                      maxCount={3}
+                      value={config.selectedPluginIds}
+                      onChange={(value) => updateConfig({ selectedPluginIds: value })}
+                      options={filteredPlugins.map((p) => ({
+                        label: p.title || p.pluginName,
+                        value: p.pluginName,
+                      }))}
+                    />
+                  )}
+                </div>
+              </Spin>
+            </>
+          ) : (
+            <Empty description="当前模型不支持插件调用" />
+          )}
         </div>
       ),
     },

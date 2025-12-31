@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageVersion Include="AngleSharp" Version="1.4.1-beta.502" />
     <PackageVersion Include="AngleSharp.Js" Version="1.0.0-beta.45" />
+    <PackageVersion Include="Anthropic" Version="12.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.2.1" />
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.1.2" />
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
@@ -33,16 +34,16 @@
     <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.SQLServer" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.SemanticKernelPlugin" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.24" />
-    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="2.0.0-preview.31" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Abstractions" Version="1.60.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.54.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.54.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.54.0-alpha" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.HuggingFace" Version="1.54.0-preview" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.MistralAI" Version="1.54.0-alpha" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.54.0-alpha" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.54.0" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Plugins.OpenApi" Version="1.60.0" />
+    <!--<PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="2.0.0-preview.31" />-->
+    <PackageVersion Include="Microsoft.SemanticKernel.Abstractions" Version="1.68.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.68.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.68.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.68.0-alpha" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.HuggingFace" Version="1.68.0-preview" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.MistralAI" Version="1.68.0-alpha" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.68.0-alpha" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.68.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Plugins.OpenApi" Version="1.68.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageVersion Include="ModelContextProtocol" Version="0.3.0-preview.2" />
     <PackageVersion Include="ModelContextProtocol-SemanticKernel" Version="0.3.0-preview-01" />
@@ -66,6 +67,7 @@
     <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="1.5.0" />
     <PackageVersion Include="SmartFormat.NET" Version="3.6.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.31" />
+    <PackageVersion Include="System.Linq.Async" Version="7.0.0" />
     <PackageVersion Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="11.0.0" />

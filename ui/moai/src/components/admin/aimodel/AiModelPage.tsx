@@ -78,6 +78,9 @@ const getProviderTypeFromProviderId = (providerId: string): string => {
   
   // 根据提供商的接口兼容性来映射
   const providerMap: Record<string, string> = {
+    // OpenAI 使用自己的接口
+    openai: "openai",
+    
     // Anthropic 使用自己的接口
     anthropic: "anthropic",
     
@@ -91,12 +94,6 @@ const getProviderTypeFromProviderId = (providerId: string): string => {
     // HuggingFace 使用自己的接口
     huggingface: "huggingface",
     
-    // Mistral 使用自己的接口
-    mistral: "mistral",
-    
-    // Moonshot 使用自己的接口
-    moonshot: "moonshot",
-    
     // Ollama 使用自己的接口
     ollama: "ollama",
     ollamacloud: "ollama",
@@ -108,7 +105,7 @@ const getProviderTypeFromProviderId = (providerId: string): string => {
   }
   
   // 默认使用 OpenAI 接口类型
-  // 包括: deepseek, openai, groq, lmstudio, cloudflare, 等等
+  // 包括: deepseek, groq, lmstudio, cloudflare, 等等
   return "openai";
 };
 
@@ -120,8 +117,6 @@ const getProviderDisplayName = (provider: string): string => {
     azure: "Azure",
     google: "Google",
     huggingface: "HuggingFace",
-    mistral: "Mistral",
-    moonshot: "Moonshot",
     ollama: "Ollama",
     custom: "自定义",
   };
@@ -852,9 +847,6 @@ export default function AiModelPage() {
                     <Option value="anthropic">Anthropic</Option>
                     <Option value="azure">Azure</Option>
                     <Option value="google">Google</Option>
-                    <Option value="huggingface">HuggingFace</Option>
-                    <Option value="mistral">Mistral</Option>
-                    <Option value="moonshot">Moonshot</Option>
                     <Option value="ollama">Ollama</Option>
                   </Select>
                 </Form.Item>
@@ -1046,15 +1038,11 @@ export default function AiModelPage() {
                   rules={[{ required: true, message: "请选择服务商接口类型" }]}
                 >
                   <Select placeholder="请选择服务商接口类型">
-                    <Option value="custom">自定义</Option>
+                    <Option value="openai">OpenAI</Option>
                     <Option value="anthropic">Anthropic</Option>
                     <Option value="azure">Azure</Option>
                     <Option value="google">Google</Option>
-                    <Option value="huggingface">HuggingFace</Option>
-                    <Option value="mistral">Mistral</Option>
-                    <Option value="moonshot">Moonshot</Option>
                     <Option value="ollama">Ollama</Option>
-                    <Option value="openai">OpenAI</Option>
                   </Select>
                 </Form.Item>
               </Col>

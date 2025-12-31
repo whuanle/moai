@@ -41,7 +41,7 @@ public enum AiProvider
     /// </summary>
     [JsonPropertyName("huggingface")]
     [EnumMember(Value = "huggingface")]
-    HuggingFace,
+    Huggingface,
 
     /// <summary>
     /// Mistral.
@@ -49,13 +49,6 @@ public enum AiProvider
     [JsonPropertyName("mistral")]
     [EnumMember(Value = "mistral")]
     Mistral,
-
-    /// <summary>
-    /// Moonshot.
-    /// </summary>
-    [JsonPropertyName("moonshot")]
-    [EnumMember(Value = "moonshot")]
-    Moonshot,
 
     /// <summary>
     /// Ollama.
@@ -67,7 +60,7 @@ public enum AiProvider
     /// <summary>
     /// OpenAI.
     /// </summary>
-    [JsonPropertyName("openai")]
+    [JsonPropertyName(name: "openai")]
     [EnumMember(Value = "openai")]
-    OpenAI
+    Openai
 }

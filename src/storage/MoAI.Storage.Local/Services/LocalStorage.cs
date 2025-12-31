@@ -2,6 +2,7 @@
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Store.Services;
+using System.IO;
 using System.Net;
 
 namespace MoAI.Storage.Services;
@@ -41,9 +42,23 @@ public class LocalStorage : IStorage
     {
         await Task.CompletedTask;
         var sourceFilePath = Path.Combine(_systemOptions.Storage.LocalPath, objectKey);
-        if (!File.Exists(sourceFilePath))
+        var sourceFileInfo = new FileInfo(sourceFilePath);
+
+        if (!sourceFileInfo.Exists)
         {
             throw new FileNotFoundException($"文件 {objectKey} 不存在.");
+        }
+
+        var targetFileInfo = new FileInfo(filePath);
+
+        if (targetFileInfo.Exists)
+        {
+            if (sourceFileInfo.Length == targetFileInfo.Length)
+            {
+                return;
+            }
+
+            targetFileInfo.Delete();
         }
 
         File.Copy(sourceFilePath, filePath, true);
@@ -123,10 +138,11 @@ public class LocalStorage : IStorage
         foreach (var objectKey in objectKeys)
         {
             var objectPath = WebUtility.UrlEncode(objectKey.Key);
+            var objectName = WebUtility.UrlEncode(objectKey.Value);
 
             var expiry = DateTimeOffset.Now.Add(expiryDuration).ToUnixTimeMilliseconds();
-            var token = HashHelper.ComputeSha256Hash($"{expiry}|{objectKey.Key}|{objectKey.Value}");
-            results[objectKey.Key] = new Uri(new Uri(_systemOptions.Server), relativeUri: $"/api/download/{objectKey.Value}?key={objectPath}&expiry={expiry}&token={token}");
+            var token = HashHelper.ComputeSha256Hash($"{expiry}|{objectKey.Key}|{objectName}");
+            results[objectKey.Key] = new Uri(new Uri(_systemOptions.Server), relativeUri: $"/api/download/{objectName}?key={objectPath}&expiry={expiry}&token={token}");
         }
 
         return results;

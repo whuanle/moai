@@ -1,6 +1,6 @@
 ﻿namespace MoAI.Wiki.Documents.Models;
 
-public class PreloadWikiDocumentResponse
+public class PreUploadWikiDocumentCommandResponse
 {
     /// <summary>
     /// 文件已存在,如果文件已存在则直接使用 FileId，无需再次上传.

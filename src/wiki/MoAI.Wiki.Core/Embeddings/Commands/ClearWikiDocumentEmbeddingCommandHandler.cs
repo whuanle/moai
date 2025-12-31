@@ -92,6 +92,13 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             await _databaseContext.SaveChangesAsync();
         }
 
+        var wikiEntity = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).FirstOrDefaultAsync();
+
+        if (wikiEntity == null)
+        {
+            throw new BusinessException("知识库不存在") { StatusCode = 500 };
+        }
+
         return EmptyCommandResponse.Default;
     }
 }

@@ -1,8 +1,10 @@
 ﻿#pragma warning disable KMEXP01 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable KMEXP03 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 #pragma warning disable SKEXP0070 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
+#pragma warning disable SKEXP0010 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 
 using Maomi;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.AI;
@@ -15,6 +17,7 @@ using Microsoft.KernelMemory.MemoryDb.SQLServer;
 using Microsoft.KernelMemory.MemoryStorage;
 using Microsoft.KernelMemory.Postgres;
 using Microsoft.SemanticKernel;
+using MoAI.AI.Anthropic;
 using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
 using MoAI.Infra;
@@ -22,6 +25,7 @@ using MoAI.Infra.Exceptions;
 using OpenAI;
 using StackExchange.Redis;
 using System.ClientModel;
+using System.ClientModel.Primitives;
 using System.Collections.Concurrent;
 
 namespace MoAI.AI;
@@ -38,6 +42,7 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
     private readonly ConcurrentDictionary<AiEndpoint, ITextEmbeddingGenerator> _textEmbeddingGenerators = new();
     private readonly ConcurrentDictionary<ITextEmbeddingGenerator, ConcurrentBag<IMemoryDb>> _memoryDBs = new();
+    private readonly IHttpClientFactory _httpClientFactory;
 
     private readonly List<IDisposable> _disposables = new();
     private bool disposedValue;
@@ -48,17 +53,27 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
     /// <param name="serviceProvider"></param>
     /// <param name="systemOptions"></param>
     /// <param name="loggerFactory"></param>
-    public AiClientBuilder(IServiceProvider serviceProvider, SystemOptions systemOptions, ILoggerFactory loggerFactory)
+    /// <param name="httpClientFactory"></param>
+    public AiClientBuilder(IServiceProvider serviceProvider, SystemOptions systemOptions, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory)
     {
         _serviceProvider = serviceProvider;
         _systemOptions = systemOptions;
         _loggerFactory = loggerFactory;
+        _httpClientFactory = httpClientFactory;
     }
 
     /// <inheritdoc/>
     public IKernelBuilder Configure(IKernelBuilder kernelBuilder, AiEndpoint endpoint)
     {
         var provider = endpoint.Provider;
+
+        if (_systemOptions.Debug)
+        {
+            kernelBuilder.Services.AddLogging(configure =>
+            {
+                configure.Services.AddSingleton(_loggerFactory);
+            });
+        }
 
         if (provider == AiProvider.Azure)
         {
@@ -72,44 +87,70 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
         if (provider == AiProvider.Custom)
         {
-            var openAIClientCredential = new ApiKeyCredential(endpoint.Key);
+            var url = endpoint.Endpoint;
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
+
+            var openAIClientCredential = new ApiKeyCredential("sk-fbe37ba0d2e546479c09353dc7386034");
             var openAIClientOption = new OpenAIClientOptions
             {
                 Endpoint = new Uri(endpoint.Endpoint),
+                Transport = new HttpClientPipelineTransport(httpClient)
             };
 
             var openapiClient = new OpenAIClient(openAIClientCredential, openAIClientOption);
-            return kernelBuilder
-                .AddOpenAIChatCompletion(endpoint.Name, openapiClient, serviceId: "MoAI");
+            return kernelBuilder.AddOpenAIChatCompletion(endpoint.Name, openapiClient, serviceId: "MoAI");
         }
 
         if (provider == AiProvider.Google)
         {
-            return kernelBuilder.AddGoogleAIGeminiChatCompletion(modelId: endpoint.Name, apiKey: endpoint.Key, serviceId: "MoAI");
+            var httpClient = _httpClientFactory.CreateClient("GoogleAIGemini");
+            httpClient.DefaultRequestHeaders.Add("X-MoAI-Endpoint", endpoint.Endpoint);
+            httpClient.DefaultRequestHeaders.Add("x-goog-api-key", endpoint.Key);
+            return kernelBuilder.AddGoogleAIGeminiChatCompletion(modelId: endpoint.Name, apiKey: endpoint.Key, serviceId: "MoAI", httpClient: httpClient);
         }
 
-        if (provider == AiProvider.HuggingFace)
+        if (provider == AiProvider.Anthropic)
         {
-            return kernelBuilder.AddHuggingFaceChatCompletion(model: endpoint.Name, endpoint: new Uri(endpoint.Endpoint), apiKey: endpoint.Key, serviceId: "MoAI");
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
+
+            return kernelBuilder.AddAnthropicChatCompletion(endpoint, httpClient, serviceId: "MoAI");
+        }
+
+        if (provider == AiProvider.Huggingface)
+        {
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
+
+            return kernelBuilder.AddHuggingFaceChatCompletion(model: endpoint.Name, endpoint: new Uri(endpoint.Endpoint), apiKey: endpoint.Key, httpClient: httpClient, serviceId: "MoAI");
         }
 
         if (provider == AiProvider.Mistral)
         {
-            return kernelBuilder.AddMistralChatCompletion(modelId: endpoint.Name, endpoint.Key, new Uri(endpoint.Endpoint), "MoAI");
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
+
+            return kernelBuilder.AddMistralChatCompletion(modelId: endpoint.Name, endpoint.Key, new Uri(endpoint.Endpoint), "MoAI", httpClient);
         }
 
         if (provider == AiProvider.Ollama)
         {
-            return kernelBuilder.AddOllamaChatCompletion(modelId: endpoint.Name, new Uri(endpoint.Endpoint), "MoAI");
+            var httpClient = _httpClientFactory.CreateClient("ai_stream");
+            httpClient.BaseAddress = new Uri(endpoint.Endpoint);
+            return kernelBuilder.AddOllamaChatCompletion(modelId: endpoint.Name, serviceId: "MoAI", httpClient: httpClient);
         }
 
-        if (provider == AiProvider.OpenAI)
+        if (provider == AiProvider.Openai)
         {
-            return kernelBuilder.AddOpenAIChatCompletion(
-                apiKey: endpoint.Key,
-                endpoint: new Uri(endpoint.Endpoint),
-                modelId: endpoint.Name,
-                serviceId: "MoAI");
+            var url = endpoint.Endpoint;
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
+
+            var openAIClientCredential = new ApiKeyCredential("sk-fbe37ba0d2e546479c09353dc7386034");
+            var openAIClientOption = new OpenAIClientOptions
+            {
+                Endpoint = new Uri(endpoint.Endpoint),
+                Transport = new HttpClientPipelineTransport(httpClient)
+            };
+
+            var openapiClient = new OpenAIClient(openAIClientCredential, openAIClientOption);
+            return kernelBuilder.AddOpenAIChatCompletion(endpoint.Name, openapiClient, serviceId: "MoAI");
         }
 
         throw new BusinessException("不支持该模型接口");
@@ -131,33 +172,43 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
         var provider = endpoint.Provider;
         if (provider == AiProvider.Azure)
         {
-            var obj = new AzureOpenAITextEmbeddingGenerator(new AzureOpenAIConfig
-            {
-                Endpoint = endpoint.Endpoint,
-                APIKey = endpoint.Key,
-                APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
-                Deployment = endpoint.DeploymentName,
-                Auth = AzureOpenAIConfig.AuthTypes.APIKey,
-                MaxTokenTotal = endpoint.ContextWindowTokens,
+            var url = endpoint.Endpoint;
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
 
-                EmbeddingDimensions = embeddingDimensions
-            });
+            var obj = new AzureOpenAITextEmbeddingGenerator(
+                new AzureOpenAIConfig
+                {
+                    Endpoint = endpoint.Endpoint,
+                    APIKey = endpoint.Key,
+                    APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
+                    Deployment = endpoint.DeploymentName,
+                    Auth = AzureOpenAIConfig.AuthTypes.APIKey,
+                    MaxTokenTotal = endpoint.ContextWindowTokens,
+                    EmbeddingDimensions = embeddingDimensions
+                },
+                httpClient: httpClient,
+                loggerFactory: _loggerFactory);
 
             _textEmbeddingGenerators[endpoint] = obj;
             return obj;
         }
 
-        if (provider == AiProvider.OpenAI)
+        if (provider == AiProvider.Openai)
         {
-            var obj = new OpenAITextEmbeddingGenerator(new OpenAIConfig
-            {
-                EmbeddingModel = endpoint.Name,
-                Endpoint = endpoint.Endpoint,
-                APIKey = endpoint.Key,
+            var url = endpoint.Endpoint;
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
 
-                EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
-                EmbeddingDimensions = embeddingDimensions
-            });
+            var obj = new OpenAITextEmbeddingGenerator(
+                new OpenAIConfig
+                {
+                    EmbeddingModel = endpoint.Name,
+                    Endpoint = endpoint.Endpoint,
+                    APIKey = endpoint.Key,
+                    EmbeddingModelMaxTokenTotal = endpoint.TextOutput,
+                    EmbeddingDimensions = embeddingDimensions
+                },
+                httpClient: httpClient,
+                loggerFactory: _loggerFactory);
 
             _textEmbeddingGenerators[endpoint] = obj;
             return obj;
@@ -165,17 +216,22 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
 
         if (provider == AiProvider.Custom)
         {
-            var obj = new AzureOpenAITextEmbeddingGenerator(new AzureOpenAIConfig
-            {
-                Endpoint = endpoint.Endpoint,
-                APIKey = endpoint.Key,
-                APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
-                Deployment = endpoint.DeploymentName,
-                Auth = AzureOpenAIConfig.AuthTypes.APIKey,
-                MaxTokenTotal = endpoint.ContextWindowTokens,
+            var url = endpoint.Endpoint;
+            var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
 
-                EmbeddingDimensions = embeddingDimensions
-            });
+            var obj = new AzureOpenAITextEmbeddingGenerator(
+                new AzureOpenAIConfig
+                {
+                    Endpoint = endpoint.Endpoint,
+                    APIKey = endpoint.Key,
+                    APIType = AzureOpenAIConfig.APITypes.EmbeddingGeneration,
+                    Deployment = endpoint.DeploymentName,
+                    Auth = AzureOpenAIConfig.AuthTypes.APIKey,
+                    MaxTokenTotal = endpoint.ContextWindowTokens,
+                    EmbeddingDimensions = embeddingDimensions
+                },
+                httpClient: httpClient,
+                loggerFactory: _loggerFactory);
 
             _textEmbeddingGenerators[endpoint] = obj;
             return obj;

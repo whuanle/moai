@@ -162,10 +162,10 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
         foreach (var item in embeddingEntities)
         {
-            if (item.IsEmbedding == false)
-            {
-                continue;
-            }
+            //if (item.IsEmbedding == false)
+            //{
+            //    continue;
+            //}
 
             embeddingTasks.Add(ProcessEmbeddingAsync(item));
         }

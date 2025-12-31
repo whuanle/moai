@@ -4,8 +4,9 @@
 		<OutputType>Library</OutputType>
 		<RootNamespace>MoAI.AI</RootNamespace>
 	</PropertyGroup>
-
+	
 	<ItemGroup>
+		<PackageReference Include="Anthropic" />
 		<PackageReference Include="Microsoft.SemanticKernel" />
 		<PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" />
 		<PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" />

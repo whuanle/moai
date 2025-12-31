@@ -17,7 +17,12 @@ public class ProcessingAiAssistantChatCommand : IStreamRequest<AiProcessingChatI
     /// <summary>
     /// 用户的提问.
     /// </summary>
-    public string Content { get; init; } = string.Empty;
+    public string? Content { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 图片 key，需要先调用接口上传图片.
+    /// </summary>
+    public string? FileKey { get; init; }
 
     /// <inheritdoc/>
     public int ContextUserId { get; init; }

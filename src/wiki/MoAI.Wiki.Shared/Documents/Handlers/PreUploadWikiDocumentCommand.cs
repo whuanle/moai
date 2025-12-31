@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Documents.Handlers;
 /// <summary>
 /// 预上传知识库文件.
 /// </summary>
-public class PreUploadWikiDocumentCommand : IRequest<PreloadWikiDocumentResponse>, IModelValidator<PreUploadWikiDocumentCommand>
+public class PreUploadWikiDocumentCommand : IRequest<PreUploadWikiDocumentCommandResponse>, IModelValidator<PreUploadWikiDocumentCommand>
 {
     /// <summary>
     ///  知识库 id.

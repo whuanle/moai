@@ -20,10 +20,12 @@ public class WorkflowAiQuestionNodeAction
         var mediator = serviceProvider.GetRequiredService<IMediator>();
         await foreach (var item in mediator.CreateStream(new ChatCompletionsCommand { }))
         {
-            if (item is IOpenAIChatCompletionsObject chatCompletion)
+            if (item is OpenAIChatCompletionsObject chatCompletion)
             {
-                return chatCompletion.Choices.FirstOrDefault()?.Message.Content ?? string.Empty;
+                return chatCompletion.Choices.FirstOrDefault()?.Message.Content?.ToString() ?? string.Empty;
             }
         }
+
+        return string.Empty;
     }
 }

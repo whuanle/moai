@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.AiModel.Commands;
+using MoAI.AiModel.Models;
 using MoAI.AiModel.Queries;
 using MoAI.AiModel.Queries.Respones;
 using MoAI.Common.Queries;
@@ -38,6 +39,18 @@ public partial class AiModelController : ControllerBase
     /// <returns>返回 <see cref="QueryUserViewAiModelListCommandResponse"/>，包含公开模型列表.</returns>
     [HttpPost("modellist")]
     public async Task<QueryUserViewAiModelListCommandResponse> QueryPublicModelList([FromBody] QueryUserViewAiModelListCommand req, CancellationToken ct = default)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询模型的属性.
+    /// </summary>
+    /// <param name="req">请求体，见 <see cref="QueryUserViewAiModelListCommand"/>.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryUserViewAiModelListCommandResponse"/>，包含公开模型列表.</returns>
+    [HttpPost("model")]
+    public async Task<PublicModelInfo> QueryPublicModelList([FromBody] QueryAiModelPublicModelInfoCommand req, CancellationToken ct = default)
     {
         return await _mediator.Send(req, ct);
     }

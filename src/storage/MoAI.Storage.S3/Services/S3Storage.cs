@@ -129,6 +129,18 @@ public class S3Storage : IStorage, IDisposable
         };
 
         using var response = await _s3Client.GetObjectAsync(request);
+        var targetFileInfo = new FileInfo(filePath);
+
+        if (targetFileInfo.Exists)
+        {
+            if (response.ContentLength == targetFileInfo.Length)
+            {
+                return;
+            }
+
+            targetFileInfo.Delete();
+        }
+
         await response.WriteResponseStreamToFileAsync(filePath, true, CancellationToken.None);
     }
 

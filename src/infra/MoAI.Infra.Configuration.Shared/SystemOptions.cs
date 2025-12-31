@@ -8,6 +8,11 @@ namespace MoAI.Infra;
 public class SystemOptions
 {
     /// <summary>
+    /// 开启调试输出.
+    /// </summary>
+    public bool Debug { get; init; }
+
+    /// <summary>
     /// 系统名称.
     /// </summary>
     public string Name { get; init; } = "MoAI";

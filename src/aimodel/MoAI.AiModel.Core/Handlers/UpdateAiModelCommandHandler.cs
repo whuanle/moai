@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.AiModel.Commands;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -51,6 +52,7 @@ public class UpdateAiModelCommandHandler : IRequestHandler<UpdateAiModelCommand,
         }
 
         aiModel.Name = request.Name;
+        aiModel.AiProvider = request.Provider.ToJsonString();
         aiModel.DeploymentName = request.DeploymentName;
         aiModel.Title = request.Title;
         aiModel.ContextWindowTokens = request.ContextWindowTokens;

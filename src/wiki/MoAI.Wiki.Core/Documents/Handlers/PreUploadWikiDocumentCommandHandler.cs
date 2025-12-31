@@ -13,7 +13,7 @@ namespace MoAI.Wiki.Documents.Handlers;
 /// <summary>
 /// 预上传知识库文件.
 /// </summary>
-public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWikiDocumentCommand, PreloadWikiDocumentResponse>
+public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWikiDocumentCommand, PreUploadWikiDocumentCommandResponse>
 {
     private readonly IMediator _mediator;
     private readonly DatabaseContext _databaseContext;
@@ -30,9 +30,9 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
     }
 
     /// <inheritdoc/>
-    public async Task<PreloadWikiDocumentResponse> Handle(PreUploadWikiDocumentCommand request, CancellationToken cancellationToken)
+    public async Task<PreUploadWikiDocumentCommandResponse> Handle(PreUploadWikiDocumentCommand request, CancellationToken cancellationToken)
     {
-        if (!DocumentTypeHelper.IsSupportedDocumentType(request.FileName, out var mimeType)) 
+        if (!DocumentTypeHelper.IsSupportedDocumentType(request.FileName, out var mimeType))
         {
             throw new BusinessException("不支持该文件格式") { StatusCode = 400 };
         }
@@ -67,7 +67,7 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
             }
         }
 
-        return new PreloadWikiDocumentResponse
+        return new PreUploadWikiDocumentCommandResponse
         {
             FileId = result.FileId,
             IsExist = result.IsExist,

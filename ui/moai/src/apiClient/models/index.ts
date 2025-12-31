@@ -239,7 +239,7 @@ export interface AiProcessingChatItem extends ApiError, Parsable {
      */
     choices?: AiProcessingChoice[] | null;
     /**
-     * 可以为 null，如果整个聊天对话完成，那么 finish_reason = stop."/>
+     * 可以为 null，如果整个聊天对话完成 是 stop，错误是 error."/>
      */
     finishReason?: string | null;
     /**
@@ -258,6 +258,10 @@ export type AiProcessingChatStreamType = (typeof AiProcessingChatStreamTypeObjec
  */
 export interface AiProcessingChoice extends Parsable {
     /**
+     * 文件.
+     */
+    fileCall?: AiProcessingFileCall | null;
+    /**
      * 插件调用.
      */
     pluginCall?: AiProcessingPluginCall | null;
@@ -273,6 +277,23 @@ export interface AiProcessingChoice extends Parsable {
      * 文本执行结果.
      */
     textCall?: AiProcessingTextCall | null;
+}
+/**
+ * 文件调用.
+ */
+export interface AiProcessingFileCall extends Parsable {
+    /**
+     * base 64.
+     */
+    base64?: string | null;
+    /**
+     * 文本 key.
+     */
+    fileKey?: string | null;
+    /**
+     * 文件地址.
+     */
+    fileUrl?: string | null;
 }
 /**
  * 插件调用.
@@ -444,6 +465,33 @@ export interface ComplateFileUploadCommand extends Parsable {
      * 上传成功或失败.
      */
     isSuccess?: boolean | null;
+}
+/**
+ * 结束上传文件.
+ */
+export interface ComplateUploadChatFileDocumentCommand extends Parsable {
+    /**
+     * 知识库 id.            
+     */
+    chatId?: Guid | null;
+    /**
+     * 文件key.
+     */
+    fileId?: number | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 上传成功或失败.
+     */
+    isSuccess?: boolean | null;
+}
+export interface ComplateUploadChatFileDocumentCommandResponse extends Parsable {
+    /**
+     * 文件下载或图片预览地址，有效期 3 小时.
+     */
+    viewUrl?: string | null;
 }
 /**
  * 结束上传文件.
@@ -632,6 +680,15 @@ export function createAiProcessingChoiceFromDiscriminatorValue(parseNode: ParseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiProcessingFileCall}
+ */
+// @ts-ignore
+export function createAiProcessingFileCallFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiProcessingFileCall;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AiProcessingPluginCall}
  */
 // @ts-ignore
@@ -718,6 +775,24 @@ export function createClearWikiDocumentEmbeddingCommandFromDiscriminatorValue(pa
 // @ts-ignore
 export function createComplateFileUploadCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoComplateFileUploadCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ComplateUploadChatFileDocumentCommand}
+ */
+// @ts-ignore
+export function createComplateUploadChatFileDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoComplateUploadChatFileDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ComplateUploadChatFileDocumentCommandResponse}
+ */
+// @ts-ignore
+export function createComplateUploadChatFileDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoComplateUploadChatFileDocumentCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -961,6 +1036,15 @@ export function createImportMcpServerPluginCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createImportOpenApiPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoImportOpenApiPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportOpenApiToWikiCommand}
+ */
+// @ts-ignore
+export function createImportOpenApiToWikiCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportOpenApiToWikiCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1292,11 +1376,20 @@ export function createPluginSimpleInfoFromDiscriminatorValue(parseNode: ParseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {PreloadWikiDocumentResponse}
+ * @returns {PreUploadChatFileDocumentCommand}
  */
 // @ts-ignore
-export function createPreloadWikiDocumentResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoPreloadWikiDocumentResponse;
+export function createPreUploadChatFileDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadChatFileDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadChatFileDocumentCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadChatFileDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadChatFileDocumentCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1324,6 +1417,15 @@ export function createPreUploadOpenApiFilePluginCommandResponseFromDiscriminator
 // @ts-ignore
 export function createPreUploadWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPreUploadWikiDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadWikiDocumentCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadWikiDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadWikiDocumentCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1439,6 +1541,15 @@ export function createQueryAiModelProviderCountFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createQueryAiModelProviderListResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAiModelProviderListResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAiModelPublicModelInfoCommand}
+ */
+// @ts-ignore
+export function createQueryAiModelPublicModelInfoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAiModelPublicModelInfoCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2776,10 +2887,23 @@ export function deserializeIntoAiProcessingChatItem(aiProcessingChatItem: Partia
 // @ts-ignore
 export function deserializeIntoAiProcessingChoice(aiProcessingChoice: Partial<AiProcessingChoice> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "fileCall": n => { aiProcessingChoice.fileCall = n.getObjectValue<AiProcessingFileCall>(createAiProcessingFileCallFromDiscriminatorValue); },
         "pluginCall": n => { aiProcessingChoice.pluginCall = n.getObjectValue<AiProcessingPluginCall>(createAiProcessingPluginCallFromDiscriminatorValue); },
         "streamState": n => { aiProcessingChoice.streamState = n.getEnumValue<AiProcessingChatStreamState>(AiProcessingChatStreamStateObject); },
         "streamType": n => { aiProcessingChoice.streamType = n.getEnumValue<AiProcessingChatStreamType>(AiProcessingChatStreamTypeObject); },
         "textCall": n => { aiProcessingChoice.textCall = n.getObjectValue<AiProcessingTextCall>(createAiProcessingTextCallFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAiProcessingFileCall(aiProcessingFileCall: Partial<AiProcessingFileCall> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "base64": n => { aiProcessingFileCall.base64 = n.getStringValue(); },
+        "fileKey": n => { aiProcessingFileCall.fileKey = n.getStringValue(); },
+        "fileUrl": n => { aiProcessingFileCall.fileUrl = n.getStringValue(); },
     }
 }
 /**
@@ -2900,6 +3024,29 @@ export function deserializeIntoComplateFileUploadCommand(complateFileUploadComma
     return {
         "fileId": n => { complateFileUploadCommand.fileId = n.getNumberValue(); },
         "isSuccess": n => { complateFileUploadCommand.isSuccess = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoComplateUploadChatFileDocumentCommand(complateUploadChatFileDocumentCommand: Partial<ComplateUploadChatFileDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chatId": n => { complateUploadChatFileDocumentCommand.chatId = n.getGuidValue(); },
+        "fileId": n => { complateUploadChatFileDocumentCommand.fileId = n.getNumberValue(); },
+        "fileName": n => { complateUploadChatFileDocumentCommand.fileName = n.getStringValue(); },
+        "isSuccess": n => { complateUploadChatFileDocumentCommand.isSuccess = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoComplateUploadChatFileDocumentCommandResponse(complateUploadChatFileDocumentCommandResponse: Partial<ComplateUploadChatFileDocumentCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "viewUrl": n => { complateUploadChatFileDocumentCommandResponse.viewUrl = n.getStringValue(); },
     }
 }
 /**
@@ -3221,6 +3368,18 @@ export function deserializeIntoImportOpenApiPluginCommand(importOpenApiPluginCom
         "isPublic": n => { importOpenApiPluginCommand.isPublic = n.getBooleanValue(); },
         "name": n => { importOpenApiPluginCommand.name = n.getStringValue(); },
         "title": n => { importOpenApiPluginCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoImportOpenApiToWikiCommand(importOpenApiToWikiCommand: Partial<ImportOpenApiToWikiCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { importOpenApiToWikiCommand.fileId = n.getNumberValue(); },
+        "openApiSpecUrl": n => { importOpenApiToWikiCommand.openApiSpecUrl = n.getStringValue(); },
+        "wikiId": n => { importOpenApiToWikiCommand.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -3597,12 +3756,27 @@ export function deserializeIntoPluginSimpleInfo(pluginSimpleInfo: Partial<Plugin
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoPreloadWikiDocumentResponse(preloadWikiDocumentResponse: Partial<PreloadWikiDocumentResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoPreUploadChatFileDocumentCommand(preUploadChatFileDocumentCommand: Partial<PreUploadChatFileDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "expiration": n => { preloadWikiDocumentResponse.expiration = n.getStringValue(); },
-        "fileId": n => { preloadWikiDocumentResponse.fileId = n.getNumberValue(); },
-        "isExist": n => { preloadWikiDocumentResponse.isExist = n.getBooleanValue(); },
-        "uploadUrl": n => { preloadWikiDocumentResponse.uploadUrl = n.getStringValue(); },
+        "chatId": n => { preUploadChatFileDocumentCommand.chatId = n.getGuidValue(); },
+        "contentType": n => { preUploadChatFileDocumentCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadChatFileDocumentCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadChatFileDocumentCommand.fileSize = n.getNumberValue(); },
+        "mD5": n => { preUploadChatFileDocumentCommand.mD5 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadChatFileDocumentCommandResponse(preUploadChatFileDocumentCommandResponse: Partial<PreUploadChatFileDocumentCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadChatFileDocumentCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadChatFileDocumentCommandResponse.fileId = n.getNumberValue(); },
+        "isExist": n => { preUploadChatFileDocumentCommandResponse.isExist = n.getBooleanValue(); },
+        "objectKey": n => { preUploadChatFileDocumentCommandResponse.objectKey = n.getStringValue(); },
+        "uploadUrl": n => { preUploadChatFileDocumentCommandResponse.uploadUrl = n.getStringValue(); },
     }
 }
 /**
@@ -3651,11 +3825,25 @@ export function deserializeIntoPreUploadWikiDocumentCommand(preUploadWikiDocumen
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPreUploadWikiDocumentCommandResponse(preUploadWikiDocumentCommandResponse: Partial<PreUploadWikiDocumentCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadWikiDocumentCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadWikiDocumentCommandResponse.fileId = n.getNumberValue(); },
+        "isExist": n => { preUploadWikiDocumentCommandResponse.isExist = n.getBooleanValue(); },
+        "uploadUrl": n => { preUploadWikiDocumentCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoProcessingAiAssistantChatCommand(processingAiAssistantChatCommand: Partial<ProcessingAiAssistantChatCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "chatId": n => { processingAiAssistantChatCommand.chatId = n.getGuidValue(); },
         "content": n => { processingAiAssistantChatCommand.content = n.getStringValue(); },
         "contextUserId": n => { processingAiAssistantChatCommand.contextUserId = n.getNumberValue(); },
+        "fileKey": n => { processingAiAssistantChatCommand.fileKey = n.getStringValue(); },
     }
 }
 /**
@@ -3776,6 +3964,16 @@ export function deserializeIntoQueryAiModelProviderListResponse(queryAiModelProv
     return {
         "providers": n => { queryAiModelProviderListResponse.providers = n.getCollectionOfObjectValues<QueryAiModelProviderCount>(createQueryAiModelProviderCountFromDiscriminatorValue); },
         "types": n => { queryAiModelProviderListResponse.types = n.getCollectionOfObjectValues<QueryAiModelTypeCount>(createQueryAiModelTypeCountFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAiModelPublicModelInfoCommand(queryAiModelPublicModelInfoCommand: Partial<QueryAiModelPublicModelInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { queryAiModelPublicModelInfoCommand.aiModelId = n.getNumberValue(); },
     }
 }
 /**
@@ -5301,6 +5499,23 @@ export interface ImportOpenApiPluginCommand extends Parsable {
     title?: string | null;
 }
 /**
+ * 将 OpenApi 导入知识库.
+ */
+export interface ImportOpenApiToWikiCommand extends Parsable {
+    /**
+     * 直接上传，上传后会有 FileId.
+     */
+    fileId?: number | null;
+    /**
+     * json 文件地址.
+     */
+    openApiSpecUrl?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: number | null;
+}
+/**
  * 邀请或移除知识库协作成员，可以管理知识库文档等.
  */
 export interface InviteWikiUserCommand extends Parsable {
@@ -5879,7 +6094,36 @@ export interface PluginSimpleInfo extends Parsable {
     title?: string | null;
 }
 export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
-export interface PreloadWikiDocumentResponse extends Parsable {
+export type PreprocessStrategyType = (typeof PreprocessStrategyTypeObject)[keyof typeof PreprocessStrategyTypeObject];
+/**
+ * 预上传对话文件.
+ */
+export interface PreUploadChatFileDocumentCommand extends Parsable {
+    /**
+     * 知识库 id.            
+     */
+    chatId?: Guid | null;
+    /**
+     * 文件类型.
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小.
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 MD5.
+     */
+    mD5?: string | null;
+}
+/**
+ * 上传文件结果.
+ */
+export interface PreUploadChatFileDocumentCommandResponse extends Parsable {
     /**
      * 签名过期时间，当 IsExist = true 时字段为空.
      */
@@ -5893,11 +6137,14 @@ export interface PreloadWikiDocumentResponse extends Parsable {
      */
     isExist?: boolean | null;
     /**
+     * 文件ID.
+     */
+    objectKey?: string | null;
+    /**
      * 预签名上传地址，当 IsExist = true 时字段为空.
      */
     uploadUrl?: string | null;
 }
-export type PreprocessStrategyType = (typeof PreprocessStrategyTypeObject)[keyof typeof PreprocessStrategyTypeObject];
 /**
  * 预上传 openapi 文件，支持 json、yaml.
  */
@@ -5969,6 +6216,24 @@ export interface PreUploadWikiDocumentCommand extends Parsable {
      */
     wikiId?: number | null;
 }
+export interface PreUploadWikiDocumentCommandResponse extends Parsable {
+    /**
+     * 签名过期时间，当 IsExist = true 时字段为空.
+     */
+    expiration?: string | null;
+    /**
+     * 文件ID.
+     */
+    fileId?: number | null;
+    /**
+     * 文件已存在,如果文件已存在则直接使用 FileId，无需再次上传.
+     */
+    isExist?: boolean | null;
+    /**
+     * 预签名上传地址，当 IsExist = true 时字段为空.
+     */
+    uploadUrl?: string | null;
+}
 /**
  * 进行对话，对话时，History 每次做增量传递.
  */
@@ -5985,6 +6250,10 @@ export interface ProcessingAiAssistantChatCommand extends Parsable {
      * 通过上下文自动配置id，前端不需要传递.
      */
     contextUserId?: number | null;
+    /**
+     * 图片 key，需要先调用接口上传图片.
+     */
+    fileKey?: string | null;
 }
 export interface PromptClassifyItem extends Parsable {
     /**
@@ -6180,6 +6449,15 @@ export interface QueryAiModelProviderListResponse extends Parsable {
      * AI 模型数量.
      */
     types?: QueryAiModelTypeCount[] | null;
+}
+/**
+ * 查询用户可见的 AI 模型.
+ */
+export interface QueryAiModelPublicModelInfoCommand extends Parsable {
+    /**
+     * 模型id.
+     */
+    aiModelId?: number | null;
 }
 /**
  * AI 模型数量.
@@ -7263,10 +7541,23 @@ export function serializeAiProcessingChatItem(writer: SerializationWriter, aiPro
 // @ts-ignore
 export function serializeAiProcessingChoice(writer: SerializationWriter, aiProcessingChoice: Partial<AiProcessingChoice> | undefined | null = {}) : void {
     if (aiProcessingChoice) {
+        writer.writeObjectValue<AiProcessingFileCall>("fileCall", aiProcessingChoice.fileCall, serializeAiProcessingFileCall);
         writer.writeObjectValue<AiProcessingPluginCall>("pluginCall", aiProcessingChoice.pluginCall, serializeAiProcessingPluginCall);
         writer.writeEnumValue<AiProcessingChatStreamState>("streamState", aiProcessingChoice.streamState);
         writer.writeEnumValue<AiProcessingChatStreamType>("streamType", aiProcessingChoice.streamType);
         writer.writeObjectValue<AiProcessingTextCall>("textCall", aiProcessingChoice.textCall, serializeAiProcessingTextCall);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAiProcessingFileCall(writer: SerializationWriter, aiProcessingFileCall: Partial<AiProcessingFileCall> | undefined | null = {}) : void {
+    if (aiProcessingFileCall) {
+        writer.writeStringValue("base64", aiProcessingFileCall.base64);
+        writer.writeStringValue("fileKey", aiProcessingFileCall.fileKey);
+        writer.writeStringValue("fileUrl", aiProcessingFileCall.fileUrl);
     }
 }
 /**
@@ -7387,6 +7678,29 @@ export function serializeComplateFileUploadCommand(writer: SerializationWriter, 
     if (complateFileUploadCommand) {
         writer.writeNumberValue("fileId", complateFileUploadCommand.fileId);
         writer.writeBooleanValue("isSuccess", complateFileUploadCommand.isSuccess);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeComplateUploadChatFileDocumentCommand(writer: SerializationWriter, complateUploadChatFileDocumentCommand: Partial<ComplateUploadChatFileDocumentCommand> | undefined | null = {}) : void {
+    if (complateUploadChatFileDocumentCommand) {
+        writer.writeGuidValue("chatId", complateUploadChatFileDocumentCommand.chatId);
+        writer.writeNumberValue("fileId", complateUploadChatFileDocumentCommand.fileId);
+        writer.writeStringValue("fileName", complateUploadChatFileDocumentCommand.fileName);
+        writer.writeBooleanValue("isSuccess", complateUploadChatFileDocumentCommand.isSuccess);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeComplateUploadChatFileDocumentCommandResponse(writer: SerializationWriter, complateUploadChatFileDocumentCommandResponse: Partial<ComplateUploadChatFileDocumentCommandResponse> | undefined | null = {}) : void {
+    if (complateUploadChatFileDocumentCommandResponse) {
+        writer.writeStringValue("viewUrl", complateUploadChatFileDocumentCommandResponse.viewUrl);
     }
 }
 /**
@@ -7708,6 +8022,18 @@ export function serializeImportOpenApiPluginCommand(writer: SerializationWriter,
         writer.writeBooleanValue("isPublic", importOpenApiPluginCommand.isPublic);
         writer.writeStringValue("name", importOpenApiPluginCommand.name);
         writer.writeStringValue("title", importOpenApiPluginCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeImportOpenApiToWikiCommand(writer: SerializationWriter, importOpenApiToWikiCommand: Partial<ImportOpenApiToWikiCommand> | undefined | null = {}) : void {
+    if (importOpenApiToWikiCommand) {
+        writer.writeNumberValue("fileId", importOpenApiToWikiCommand.fileId);
+        writer.writeStringValue("openApiSpecUrl", importOpenApiToWikiCommand.openApiSpecUrl);
+        writer.writeNumberValue("wikiId", importOpenApiToWikiCommand.wikiId);
     }
 }
 /**
@@ -8084,12 +8410,27 @@ export function serializePluginSimpleInfo(writer: SerializationWriter, pluginSim
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializePreloadWikiDocumentResponse(writer: SerializationWriter, preloadWikiDocumentResponse: Partial<PreloadWikiDocumentResponse> | undefined | null = {}) : void {
-    if (preloadWikiDocumentResponse) {
-        writer.writeStringValue("expiration", preloadWikiDocumentResponse.expiration);
-        writer.writeNumberValue("fileId", preloadWikiDocumentResponse.fileId);
-        writer.writeBooleanValue("isExist", preloadWikiDocumentResponse.isExist);
-        writer.writeStringValue("uploadUrl", preloadWikiDocumentResponse.uploadUrl);
+export function serializePreUploadChatFileDocumentCommand(writer: SerializationWriter, preUploadChatFileDocumentCommand: Partial<PreUploadChatFileDocumentCommand> | undefined | null = {}) : void {
+    if (preUploadChatFileDocumentCommand) {
+        writer.writeGuidValue("chatId", preUploadChatFileDocumentCommand.chatId);
+        writer.writeStringValue("contentType", preUploadChatFileDocumentCommand.contentType);
+        writer.writeStringValue("fileName", preUploadChatFileDocumentCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadChatFileDocumentCommand.fileSize);
+        writer.writeStringValue("mD5", preUploadChatFileDocumentCommand.mD5);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadChatFileDocumentCommandResponse(writer: SerializationWriter, preUploadChatFileDocumentCommandResponse: Partial<PreUploadChatFileDocumentCommandResponse> | undefined | null = {}) : void {
+    if (preUploadChatFileDocumentCommandResponse) {
+        writer.writeStringValue("expiration", preUploadChatFileDocumentCommandResponse.expiration);
+        writer.writeNumberValue("fileId", preUploadChatFileDocumentCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadChatFileDocumentCommandResponse.isExist);
+        writer.writeStringValue("objectKey", preUploadChatFileDocumentCommandResponse.objectKey);
+        writer.writeStringValue("uploadUrl", preUploadChatFileDocumentCommandResponse.uploadUrl);
     }
 }
 /**
@@ -8138,11 +8479,25 @@ export function serializePreUploadWikiDocumentCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePreUploadWikiDocumentCommandResponse(writer: SerializationWriter, preUploadWikiDocumentCommandResponse: Partial<PreUploadWikiDocumentCommandResponse> | undefined | null = {}) : void {
+    if (preUploadWikiDocumentCommandResponse) {
+        writer.writeStringValue("expiration", preUploadWikiDocumentCommandResponse.expiration);
+        writer.writeNumberValue("fileId", preUploadWikiDocumentCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadWikiDocumentCommandResponse.isExist);
+        writer.writeStringValue("uploadUrl", preUploadWikiDocumentCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeProcessingAiAssistantChatCommand(writer: SerializationWriter, processingAiAssistantChatCommand: Partial<ProcessingAiAssistantChatCommand> | undefined | null = {}) : void {
     if (processingAiAssistantChatCommand) {
         writer.writeGuidValue("chatId", processingAiAssistantChatCommand.chatId);
         writer.writeStringValue("content", processingAiAssistantChatCommand.content);
         writer.writeNumberValue("contextUserId", processingAiAssistantChatCommand.contextUserId);
+        writer.writeStringValue("fileKey", processingAiAssistantChatCommand.fileKey);
     }
 }
 /**
@@ -8263,6 +8618,16 @@ export function serializeQueryAiModelProviderListResponse(writer: SerializationW
     if (queryAiModelProviderListResponse) {
         writer.writeCollectionOfObjectValues<QueryAiModelProviderCount>("providers", queryAiModelProviderListResponse.providers, serializeQueryAiModelProviderCount);
         writer.writeCollectionOfObjectValues<QueryAiModelTypeCount>("types", queryAiModelProviderListResponse.types, serializeQueryAiModelTypeCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAiModelPublicModelInfoCommand(writer: SerializationWriter, queryAiModelPublicModelInfoCommand: Partial<QueryAiModelPublicModelInfoCommand> | undefined | null = {}) : void {
+    if (queryAiModelPublicModelInfoCommand) {
+        writer.writeNumberValue("aiModelId", queryAiModelPublicModelInfoCommand.aiModelId);
     }
 }
 /**
@@ -10795,6 +11160,7 @@ export const AiProcessingChatStreamTypeObject = {
     None: "none",
     Text: "text",
     Plugin: "plugin",
+    File: "file",
 } as const;
 /**
  * Ai 接口类型，不区分厂家.
@@ -10806,7 +11172,6 @@ export const AiProviderObject = {
     Google: "google",
     Huggingface: "huggingface",
     Mistral: "mistral",
-    Moonshot: "moonshot",
     Ollama: "ollama",
     Openai: "openai",
 } as const;

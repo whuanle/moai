@@ -14,6 +14,7 @@ import {
   Collapse,
   Modal,
   Select,
+  Image,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,20 +26,23 @@ import {
   RobotOutlined,
   ToolOutlined,
   LoadingOutlined,
+  PictureOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
-import { EmojiPicker } from "@lobehub/ui";
-import ReactMarkdown from "react-markdown";
+import { EmojiPicker, Markdown } from "@lobehub/ui";
 import { GetApiClient } from "../ServiceClient";
 import { proxyRequestError } from "../../helper/RequestError";
 import { EnvOptions } from "../../Env";
+import { GetFileMd5 } from "../../helper/Md5Helper";
 import type {
   AiAssistantChatTopic,
   ChatContentItem,
   AiProcessingPluginCall,
+  AiProcessingFileCall,
   QueryAiAssistantChatHistoryCommandResponse,
   PublicModelInfo,
 } from "../../apiClient/models";
-import { AiModelTypeObject } from "../../apiClient/models";
+import { AiModelTypeObject, AiProcessingChatStreamTypeObject } from "../../apiClient/models";
 import AssistantConfigPanel, { AssistantConfig } from "./AssistantConfigPanel";
 import "./AiAssistant.css";
 
@@ -80,6 +84,23 @@ const extractPluginCalls = (item: ChatContentItem): AiProcessingPluginCall[] => 
 const hasPluginCall = (item: ChatContentItem): boolean => {
   if (!item.choices) return false;
   return item.choices.some((choice) => choice.pluginCall != null);
+};
+
+// 从 ChatContentItem 中提取文件调用
+const extractFileCalls = (item: ChatContentItem): AiProcessingFileCall[] => {
+  const choices = item.choices;
+  if (!choices || choices.length === 0) return [];
+  
+  return choices
+    .filter((choice) => choice.streamType === AiProcessingChatStreamTypeObject.File && choice.fileCall != null)
+    .map((choice) => choice.fileCall!);
+};
+
+// 判断 URL 是否为图片
+const isImageUrl = (url: string): boolean => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+  const lowerUrl = url.toLowerCase();
+  return imageExtensions.some(ext => lowerUrl.includes(ext));
 };
 
 // 尝试解析 JSON 字符串
@@ -195,6 +216,24 @@ const AiAssistant: React.FC = () => {
     output: 0,
   });
 
+  // 当前模型功能信息
+  const [currentModelInfo, setCurrentModelInfo] = useState<PublicModelInfo | null>(null);
+
+  // 图片上传状态
+  const [pendingImage, setPendingImage] = useState<{
+    file: File;
+    preview: string;
+  } | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 消息附件映射（用于显示图片缩略图和文件链接）
+  const [messageAttachments, setMessageAttachments] = useState<Map<number, {
+    url: string;
+    fileName: string;
+    isImage: boolean;
+  }>>(new Map());
+
   // 新建对话模态窗口状态
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createModalLoading, setCreateModalLoading] = useState(false);
@@ -217,7 +256,7 @@ const AiAssistant: React.FC = () => {
       const client = GetApiClient();
       const response = await client.api.app.assistant.topic_list.get();
       if (response?.items) {
-        setTopics(response.items.filter((t) => t.chatId));
+        setTopics(response.items.filter((t: AiAssistantChatTopic) => t.chatId));
       } else {
         setTopics([]);
       }
@@ -247,6 +286,146 @@ const AiAssistant: React.FC = () => {
       setModelsLoading(false);
     }
   }, [messageApi]);
+
+  // 加载当前模型的功能信息
+  const loadModelInfo = useCallback(async (modelId: number) => {
+    try {
+      const client = GetApiClient();
+      const response = await client.api.aimodel.model.post({
+        aiModelId: modelId,
+      });
+      if (response) {
+        setCurrentModelInfo(response);
+      }
+    } catch (error) {
+      console.error("加载模型信息失败:", error);
+      // 不显示错误提示，静默失败
+    }
+  }, []);
+
+  // 选择图片（只缓存到本地，不上传）
+  const selectImage = useCallback((file: File) => {
+    if (!currentChatId) {
+      messageApi.warning("请先选择或创建一个对话");
+      return;
+    }
+
+    // 检查文件类型
+    if (!file.type.startsWith("image/")) {
+      messageApi.error("请选择图片文件");
+      return;
+    }
+
+    // 检查文件大小（限制 10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      messageApi.error("图片大小不能超过 10MB");
+      return;
+    }
+
+    // 清除之前的预览
+    if (pendingImage?.preview) {
+      URL.revokeObjectURL(pendingImage.preview);
+    }
+
+    // 创建预览 URL 并缓存
+    const preview = URL.createObjectURL(file);
+    setPendingImage({ file, preview });
+  }, [currentChatId, messageApi, pendingImage]);
+
+  // 上传图片到服务器（发送消息时调用）
+  // 返回 { fileKey, viewUrl, isImage }
+  const uploadFileToServer = useCallback(async (file: File, chatId: string): Promise<{ fileKey: string | null; viewUrl: string | null; isImage: boolean }> => {
+    try {
+      const client = GetApiClient();
+      const md5 = await GetFileMd5(file);
+      const isImage = file.type.startsWith("image/");
+
+      // 1. 预上传获取上传地址
+      const preUploadResponse = await client.api.app.assistant.preupload_document.post({
+        chatId: chatId,
+        fileName: file.name,
+        fileSize: file.size,
+        contentType: file.type,
+        mD5: md5,
+      });
+
+      if (!preUploadResponse) {
+        throw new Error("预上传失败");
+      }
+
+      const fileKey = preUploadResponse.objectKey;
+      let viewUrl: string | null = null;
+
+      // 2. 如果文件不存在，上传到预签名地址
+      if (!preUploadResponse.isExist && preUploadResponse.uploadUrl) {
+        const token = localStorage.getItem("userinfo.accessToken");
+        const uploadResponse = await fetch(preUploadResponse.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+            "x-amz-meta-max-file-size": file.size.toString(),
+            "Authorization": token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (uploadResponse.status !== 200) {
+          console.error("上传文件失败:", uploadResponse);
+          throw new Error("上传文件失败");
+        }
+      }
+
+      // 3. 完成上传，获取 viewUrl（无论文件是否已存在都需要调用）
+      const completeResponse = await client.api.app.assistant.complete_upload_document.post({
+        chatId: chatId,
+        fileId: preUploadResponse.fileId,
+        fileName: file.name,
+        isSuccess: true,
+      });
+      
+      viewUrl = completeResponse?.viewUrl || null;
+
+      return { fileKey: fileKey || null, viewUrl, isImage };
+    } catch (error) {
+      console.error("上传文件失败:", error);
+      throw error;
+    }
+  }, []);
+
+  // 处理文件选择
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      selectImage(file);
+    }
+    // 清空 input 以便重复选择同一文件
+    e.target.value = "";
+  }, [selectImage]);
+
+  // 处理粘贴事件
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          selectImage(file);
+          break;
+        }
+      }
+    }
+  }, [selectImage]);
+
+  // 移除待上传的图片
+  const handleRemoveImage = useCallback(() => {
+    if (pendingImage?.preview) {
+      URL.revokeObjectURL(pendingImage.preview);
+    }
+    setPendingImage(null);
+  }, [pendingImage]);
 
   // 加载对话历史并更新配置
   const loadChatHistory = useCallback(
@@ -295,6 +474,11 @@ const AiAssistant: React.FC = () => {
               input: response.tokenUsage.promptTokens || 0,
               output: response.tokenUsage.completionTokens || 0,
             });
+          }
+
+          // 加载当前模型的功能信息
+          if (response.modelId) {
+            loadModelInfo(response.modelId);
           }
 
           // 滚动到底部
@@ -405,10 +589,32 @@ const AiAssistant: React.FC = () => {
     }
 
     const userMessage = inputValue.trim();
+    const imageToUpload = pendingImage;
+    
     setInputValue("");
     setSending(true);
     setIsStreaming(true);
     setStreamingContent("");
+    setImageUploading(!!imageToUpload);
+    
+    // 清除待上传的图片预览（但保留文件引用用于上传）
+    setPendingImage(null);
+
+    // 计算新消息的索引
+    const newMessageIndex = chatHistory.length;
+
+    // 如果有图片，先设置本地预览
+    if (imageToUpload) {
+      setMessageAttachments((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(newMessageIndex, {
+          url: imageToUpload.preview, // 先用本地预览
+          fileName: imageToUpload.file.name,
+          isImage: imageToUpload.file.type.startsWith("image/"),
+        });
+        return newMap;
+      });
+    }
 
     // 先添加用户消息到聊天历史
     const userChatItem: ChatContentItem = {
@@ -422,17 +628,64 @@ const AiAssistant: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
+      // 如果有文件，先上传文件
+      let fileKey: string | null = null;
+      if (imageToUpload) {
+        try {
+          const uploadResult = await uploadFileToServer(imageToUpload.file, currentChatId);
+          fileKey = uploadResult.fileKey;
+          
+          // 上传完成后，更新为服务器 URL
+          if (uploadResult.viewUrl) {
+            setMessageAttachments((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(newMessageIndex, {
+                url: uploadResult.viewUrl!,
+                fileName: imageToUpload.file.name,
+                isImage: uploadResult.isImage,
+              });
+              return newMap;
+            });
+          }
+          
+          // 释放本地预览 URL
+          URL.revokeObjectURL(imageToUpload.preview);
+        } catch (uploadError) {
+          console.error("上传文件失败:", uploadError);
+          proxyRequestError(uploadError, messageApi, "上传文件失败");
+          // 移除附件映射
+          setMessageAttachments((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(newMessageIndex);
+            return newMap;
+          });
+          URL.revokeObjectURL(imageToUpload.preview);
+          setSending(false);
+          setIsStreaming(false);
+          setImageUploading(false);
+          return;
+        }
+      }
+      setImageUploading(false);
+      
       const token = localStorage.getItem("userinfo.accessToken");
+      
+      // 构建请求体
+      const requestBody: { chatId: string; content: string; fileKey?: string } = {
+        chatId: currentChatId,
+        content: userMessage,
+      };
+      if (fileKey) {
+        requestBody.fileKey = fileKey;
+      }
+      
       const response = await fetch(`${EnvOptions.ServerUrl}/api/app/assistant/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": token ? `Bearer ${token}` : "",
         },
-        body: JSON.stringify({
-          chatId: currentChatId,
-          content: userMessage,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
       });
 
@@ -448,6 +701,7 @@ const AiAssistant: React.FC = () => {
       const decoder = new TextDecoder();
       let accumulatedContent = "";
       let buffer = "";
+      let messageAdded = false; // 本地变量跟踪消息是否已添加
 
       while (true) {
         const { done, value } = await reader.read();
@@ -482,20 +736,54 @@ const AiAssistant: React.FC = () => {
               
               // 检查是否完成
               if (data.finish_reason === "stop" || data.finishReason === "stop") {
-                // 流式完成，刷新对话历史
+                // 流式完成，将累积的内容添加到聊天历史
                 setIsStreaming(false);
+                
+                // 将流式内容作为助手消息添加到历史
+                if (accumulatedContent && !messageAdded) {
+                  const assistantMessage: ChatContentItem = {
+                    authorName: "assistant",
+                    choices: [{ textCall: { content: accumulatedContent } }],
+                  };
+                  setChatHistory((prev) => [...prev, assistantMessage]);
+                  messageAdded = true;
+                }
                 setStreamingContent("");
-                await loadChatHistory(currentChatId);
                 
                 // 更新 Token 统计
                 if (data.usage) {
-                  setTokenStats({
-                    total: (data.usage.prompt_tokens || data.usage.promptTokens || 0) + 
+                  setTokenStats((prev) => ({
+                    total: prev.total + (data.usage.prompt_tokens || data.usage.promptTokens || 0) + 
                            (data.usage.completion_tokens || data.usage.completionTokens || 0),
-                    input: data.usage.prompt_tokens || data.usage.promptTokens || 0,
-                    output: data.usage.completion_tokens || data.usage.completionTokens || 0,
-                  });
+                    input: prev.input + (data.usage.prompt_tokens || data.usage.promptTokens || 0),
+                    output: prev.output + (data.usage.completion_tokens || data.usage.completionTokens || 0),
+                  }));
                 }
+              }
+              
+              // 检查是否出错
+              if (data.finish_reason === "error" || data.finishReason === "error") {
+                setIsStreaming(false);
+                setStreamingContent("");
+                messageAdded = true; // 错误时也标记为已处理，避免重复添加
+                
+                // 从 choices 中提取错误信息
+                let errorMessage = "AI 处理出错";
+                if (data.choices && data.choices.length > 0) {
+                  for (const choice of data.choices) {
+                    if (choice.textCall?.content) {
+                      errorMessage = choice.textCall.content;
+                      break;
+                    }
+                    if (choice.error) {
+                      errorMessage = choice.error.message || choice.error;
+                      break;
+                    }
+                  }
+                }
+                
+                messageApi.error(errorMessage);
+                // 错误时不再请求历史，保持当前状态
               }
             } catch (parseError) {
               // 忽略解析错误，可能是不完整的 JSON
@@ -505,11 +793,15 @@ const AiAssistant: React.FC = () => {
         }
       }
 
-      // 如果流结束但没有收到 stop 信号，也刷新历史
-      if (isStreaming) {
+      // 如果流结束但没有收到 stop 信号，也将内容添加到历史
+      if (!messageAdded && accumulatedContent) {
         setIsStreaming(false);
+        const assistantMessage: ChatContentItem = {
+          authorName: "assistant",
+          choices: [{ textCall: { content: accumulatedContent } }],
+        };
+        setChatHistory((prev) => [...prev, assistantMessage]);
         setStreamingContent("");
-        await loadChatHistory(currentChatId);
       }
 
     } catch (error) {
@@ -742,10 +1034,11 @@ const AiAssistant: React.FC = () => {
                   {chatHistory.map((item, index) => {
                     const textContent = extractTextContent(item);
                     const pluginCalls = extractPluginCalls(item);
+                    const fileCalls = extractFileCalls(item);
                     const isPluginCall = hasPluginCall(item);
                     
                     // 跳过完全空的消息
-                    if (!textContent && pluginCalls.length === 0) return null;
+                    if (!textContent && pluginCalls.length === 0 && fileCalls.length === 0) return null;
                     
                     return (
                       <div
@@ -777,15 +1070,74 @@ const AiAssistant: React.FC = () => {
                             )}
                             {/* 显示文本内容 */}
                             {textContent && (
-                              item.authorName === "user" ? (
-                                <div className="message-text">{textContent}</div>
-                              ) : (
-                                <div className="message-markdown">
-                                  <ReactMarkdown>
-                                    {textContent}
-                                  </ReactMarkdown>
-                                </div>
-                              )
+                              <div className="message-markdown">
+                                <Markdown
+                                  fullFeaturedCodeBlock
+                                >
+                                  {textContent}
+                                </Markdown>
+                              </div>
+                            )}
+                            {/* 显示文件调用（来自历史记录） */}
+                            {fileCalls.length > 0 && (
+                              <div className="message-files">
+                                {fileCalls.map((fileCall, idx) => {
+                                  const fileUrl = fileCall.fileUrl;
+                                  if (!fileUrl) return null;
+                                  const isImage = isImageUrl(fileUrl);
+                                  return (
+                                    <div key={idx} className="message-attachment">
+                                      {isImage ? (
+                                        <Image
+                                          src={fileUrl}
+                                          alt="图片"
+                                          width={120}
+                                          height={120}
+                                          style={{ objectFit: "cover", borderRadius: 8, cursor: "pointer" }}
+                                          preview={{
+                                            maskClassName: "image-preview-mask",
+                                          }}
+                                        />
+                                      ) : (
+                                        <a
+                                          href={fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="file-attachment-link"
+                                        >
+                                          📎 下载文件
+                                        </a>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {/* 显示本次上传的附件（图片缩略图或文件链接） */}
+                            {messageAttachments.get(index) && (
+                              <div className="message-attachment">
+                                {messageAttachments.get(index)!.isImage ? (
+                                  <Image
+                                    src={messageAttachments.get(index)!.url}
+                                    alt={messageAttachments.get(index)!.fileName}
+                                    width={120}
+                                    height={120}
+                                    style={{ objectFit: "cover", borderRadius: 8, cursor: "pointer" }}
+                                    preview={{
+                                      maskClassName: "image-preview-mask",
+                                    }}
+                                  />
+                                ) : (
+                                  <a
+                                    href={messageAttachments.get(index)!.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="file-attachment-link"
+                                  >
+                                    📎 {messageAttachments.get(index)!.fileName}
+                                  </a>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -811,9 +1163,11 @@ const AiAssistant: React.FC = () => {
                         <div className="message-content">
                           {streamingContent ? (
                             <div className="message-markdown">
-                              <ReactMarkdown>
+                              <Markdown
+                                fullFeaturedCodeBlock
+                              >
                                 {streamingContent}
-                              </ReactMarkdown>
+                              </Markdown>
                               <span className="typing-cursor">|</span>
                             </div>
                           ) : (
@@ -833,14 +1187,51 @@ const AiAssistant: React.FC = () => {
           {/* 输入框区域 */}
           <div className="chat-input-area">
             <div className="chat-input-wrapper">
+              {/* 图片上传按钮 */}
+              {currentModelInfo?.abilities?.vision && (
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    style={{ display: "none" }}
+                    aria-label="上传图片"
+                  />
+                  <Button
+                    type="text"
+                    icon={imageUploading ? <LoadingOutlined /> : <PictureOutlined />}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!currentChatId || sending || imageUploading}
+                    className="chat-image-button"
+                    title="上传图片"
+                  />
+                </>
+              )}
+              {/* 图片预览缩略图 */}
+              {pendingImage && (
+                <div className="input-image-preview">
+                  <img src={pendingImage.preview} alt="预览" />
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CloseCircleOutlined />}
+                    className="input-image-remove-btn"
+                    onClick={handleRemoveImage}
+                  />
+                </div>
+              )}
               <TextArea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={currentModelInfo?.abilities?.vision ? handlePaste : undefined}
                 placeholder={
                   currentChatId
                     ? assistantConfig.modelId
-                      ? "输入消息，按 Enter 发送，Shift+Enter 换行..."
+                      ? currentModelInfo?.abilities?.vision
+                        ? "输入消息，按 Enter 发送，可粘贴图片..."
+                        : "输入消息，按 Enter 发送，Shift+Enter 换行..."
                       : "请先在右侧选择AI模型"
                     : "请先选择或创建一个对话"
                 }
@@ -886,6 +1277,7 @@ const AiAssistant: React.FC = () => {
             onConfigChange={setAssistantConfig}
             chatId={currentChatId}
             tokenStats={tokenStats}
+            modelAbilities={currentModelInfo?.abilities}
           />
         </Sider>
       )}

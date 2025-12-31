@@ -34,6 +34,11 @@ public class DefaultAiProcessingChoice
     public DefaultAiProcessingTextCall? TextCall { get; set; }
 
     /// <summary>
+    /// 文件.
+    /// </summary>
+    public DefaultAiProcessingFileCall? FileCall { get; set; }
+
+    /// <summary>
     /// 转换 AiProcessingChoice.
     /// </summary>
     /// <returns></returns>
@@ -44,7 +49,8 @@ public class DefaultAiProcessingChoice
             StreamType = StreamType,
             StreamState = StreamState,
             PluginCall = PluginCall,
-            TextCall = TextCall
+            TextCall = TextCall,
+            FileCall = FileCall
         };
     }
 }

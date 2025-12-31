@@ -14,7 +14,7 @@ namespace MoAI.App.AIAssistant.Handlers;
 /// <summary>
 /// 处理函数调用.
 /// </summary>
-internal class PluginFunctionInvocationFilter : IFunctionInvocationFilter
+public class PluginFunctionInvocationFilter : IFunctionInvocationFilter
 {
     private static readonly MethodInfo GetValueMethodInfo = typeof(PluginFunctionInvocationFilter).GetMethod(nameof(GetJsonValue), BindingFlags.Static | BindingFlags.NonPublic)!;
 

@@ -27,4 +27,9 @@ public class AiProcessingChoice
     /// 文本执行结果.
     /// </summary>
     public AiProcessingTextCall? TextCall { get; init; }
+
+    /// <summary>
+    /// 文件.
+    /// </summary>
+    public AiProcessingFileCall? FileCall { get; set; }
 }

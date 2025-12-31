@@ -4,6 +4,8 @@
 // @ts-ignore
 import { Chat_historyRequestBuilderRequestsMetadata, type Chat_historyRequestBuilder } from './chat_history/index.js';
 // @ts-ignore
+import { Complete_upload_documentRequestBuilderRequestsMetadata, type Complete_upload_documentRequestBuilder } from './complete_upload_document/index.js';
+// @ts-ignore
 import { CompletionsRequestBuilderRequestsMetadata, type CompletionsRequestBuilder } from './completions/index.js';
 // @ts-ignore
 import { Create_chatRequestBuilderRequestsMetadata, type Create_chatRequestBuilder } from './create_chat/index.js';
@@ -11,6 +13,8 @@ import { Create_chatRequestBuilderRequestsMetadata, type Create_chatRequestBuild
 import { Delete_chat_recordRequestBuilderRequestsMetadata, type Delete_chat_recordRequestBuilder } from './delete_chat_record/index.js';
 // @ts-ignore
 import { Delete_chatRequestBuilderRequestsMetadata, type Delete_chatRequestBuilder } from './delete_chat/index.js';
+// @ts-ignore
+import { Preupload_documentRequestBuilderRequestsMetadata, type Preupload_documentRequestBuilder } from './preupload_document/index.js';
 // @ts-ignore
 import { Topic_listRequestBuilderRequestsMetadata, type Topic_listRequestBuilder } from './topic_list/index.js';
 // @ts-ignore
@@ -27,6 +31,10 @@ export interface AssistantRequestBuilder extends BaseRequestBuilder<AssistantReq
      */
     get chat_history(): Chat_historyRequestBuilder;
     /**
+     * The complete_upload_document property
+     */
+    get complete_upload_document(): Complete_upload_documentRequestBuilder;
+    /**
      * The completions property
      */
     get completions(): CompletionsRequestBuilder;
@@ -42,6 +50,10 @@ export interface AssistantRequestBuilder extends BaseRequestBuilder<AssistantReq
      * The delete_chat_record property
      */
     get delete_chat_record(): Delete_chat_recordRequestBuilder;
+    /**
+     * The preupload_document property
+     */
+    get preupload_document(): Preupload_documentRequestBuilder;
     /**
      * The topic_list property
      */
@@ -62,6 +74,9 @@ export const AssistantRequestBuilderNavigationMetadata: Record<Exclude<keyof Ass
     chat_history: {
         requestsMetadata: Chat_historyRequestBuilderRequestsMetadata,
     },
+    complete_upload_document: {
+        requestsMetadata: Complete_upload_documentRequestBuilderRequestsMetadata,
+    },
     completions: {
         requestsMetadata: CompletionsRequestBuilderRequestsMetadata,
     },
@@ -73,6 +88,9 @@ export const AssistantRequestBuilderNavigationMetadata: Record<Exclude<keyof Ass
     },
     delete_chat_record: {
         requestsMetadata: Delete_chat_recordRequestBuilderRequestsMetadata,
+    },
+    preupload_document: {
+        requestsMetadata: Preupload_documentRequestBuilderRequestsMetadata,
     },
     topic_list: {
         requestsMetadata: Topic_listRequestBuilderRequestsMetadata,

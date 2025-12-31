@@ -1,12 +1,15 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using MoAI.App.AIAssistant.Commands;
+using MoAI.App.AIAssistant.Commands.File;
 using MoAI.App.AIAssistant.Commands.Responses;
 using MoAI.App.AIAssistant.Handlers;
 using MoAI.App.AIAssistant.Queries;
 using MoAI.App.AIAssistant.Queries.Responses;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Wiki.Documents.Handlers;
 using MoAIChat.Core.Handlers;
 
 namespace MoAI.App.AIAssistant.Controllers;
@@ -20,16 +23,19 @@ public partial class AiAssistantController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
+    private readonly ILogger<AiAssistantController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiAssistantController"/> class.
     /// </summary>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public AiAssistantController(IMediator mediator, UserContext userContext)
+    /// <param name="logger"></param>
+    public AiAssistantController(IMediator mediator, UserContext userContext, ILogger<AiAssistantController> logger)
     {
         _mediator = mediator;
         _userContext = userContext;
+        _logger = logger;
     }
 
     /// <summary>
@@ -155,6 +161,54 @@ public partial class AiAssistantController : ControllerBase
     /// <returns>返回 <see cref="EmptyCommandResponse"/></returns>
     [HttpPost("update_chat")]
     public async Task<EmptyCommandResponse> UpdateChatConfig([FromBody] UpdateAiAssistanChatConfigCommand req, CancellationToken ct = default)
+    {
+        var creatorId = await _mediator.Send(
+            new QueryAiAssistantCreatorCommand
+            {
+                ChatId = req.ChatId
+            },
+            ct);
+
+        if (creatorId != _userContext.UserId)
+        {
+            throw new BusinessException("未找到对话") { StatusCode = 404 };
+        }
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 预上传文档.
+    /// </summary>
+    /// <param name="req">预上传文档的命令对象.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="PreUploadChatFileDocumentCommandResponse"/> 包含预上传结果.</returns>
+    [HttpPost("preupload_document")]
+    public async Task<PreUploadChatFileDocumentCommandResponse> PreUploadWikiDocument([FromBody] PreUploadChatFileDocumentCommand req, CancellationToken ct = default)
+    {
+        var creatorId = await _mediator.Send(
+            new QueryAiAssistantCreatorCommand
+            {
+                ChatId = req.ChatId
+            },
+            ct);
+
+        if (creatorId != _userContext.UserId)
+        {
+            throw new BusinessException("未找到对话") { StatusCode = 404 };
+        }
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 完成上传知识库文档上传.
+    /// </summary>
+    /// <param name="req">完成上传的命令对象.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/> 表示操作结果.</returns>
+    [HttpPost("complete_upload_document")]
+    public async Task<ComplateUploadChatFileDocumentCommandResponse> ComplateUploadWikiDocument([FromBody] ComplateUploadChatFileDocumentCommand req, CancellationToken ct = default)
     {
         var creatorId = await _mediator.Send(
             new QueryAiAssistantCreatorCommand

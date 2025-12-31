@@ -138,6 +138,7 @@ export default function WikiSettings() {
       
       await apiClient.api.wiki.document.clear_embeddingt.post({
         wikiId: parseInt(id!),
+        isAutoDeleteIndex: true
       });
 
       messageApi.success("知识库向量已清空");

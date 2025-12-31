@@ -37,9 +37,10 @@ public class DownloadFileCommandHandler : IRequestHandler<DownloadFileCommand, D
             throw new BusinessException("未找到文件");
         }
 
-        var fileName = fileRecord.FileMd5 + fileRecord.FileExtension;
         var tempFilePath = System.IO.Path.GetTempPath();
-        var tempFileFullPath = System.IO.Path.Combine(tempFilePath, fileName);
+
+        var objectKey = fileRecord.ObjectKey.TrimStart('/', '\\');
+        var tempFileFullPath = System.IO.Path.Combine(tempFilePath, objectKey);
 
         var response = new DownloadFileCommandResponse
         {
@@ -60,6 +61,11 @@ public class DownloadFileCommandHandler : IRequestHandler<DownloadFileCommand, D
             }
 
             fileInfo.Delete();
+        }
+
+        if (fileInfo.Directory != null && !fileInfo.Directory.Exists)
+        {
+            fileInfo.Directory.Create();
         }
 
         await _storage.DownloadAsync(fileRecord.ObjectKey, tempFileFullPath);

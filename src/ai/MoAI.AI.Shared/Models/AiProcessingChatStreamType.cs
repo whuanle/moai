@@ -23,5 +23,35 @@ public enum AiProcessingChatStreamType
     /// 插件调用，不区分知识库.
     /// </summary>
     [JsonPropertyName("plugin")]
-    Plugin
+    Plugin,
+
+    ///// <summary>
+    ///// 图片.
+    ///// </summary>
+    //[JsonPropertyName("image")]
+    //Image,
+
+    ///// <summary>
+    ///// 视频.
+    ///// </summary>
+    //[JsonPropertyName("vedio")]
+    //Vedio,
+
+    ///// <summary>
+    ///// 音频.
+    ///// </summary>
+    //[JsonPropertyName("audio")]
+    //Audio,
+
+    ///// <summary>
+    ///// 其它类型的文档.
+    ///// </summary>
+    //[JsonPropertyName("doc")]
+    //Doc,
+
+    /// <summary>
+    /// 其它类型的文档.
+    /// </summary>
+    [JsonPropertyName("file")]
+    File
 }

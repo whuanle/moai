@@ -92,7 +92,10 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
             filter.Add("document_id", documentIndex);
         }
 
-        var results = await memoryDb.GetSimilarListAsync(index: wikiIndex, query, new[] { filter }, request.MinRelevance, request.Limit, true).ToArrayAsync();
+        // 为避免 CS0121 二义性，显式传递 CancellationToken：
+        var results = await memoryDb
+            .GetSimilarListAsync(index: wikiIndex, query, new[] { filter }, request.MinRelevance, request.Limit, true, cancellationToken)
+            .ToArrayAsync(cancellationToken);
 
         if (results.Length == 0)
         {

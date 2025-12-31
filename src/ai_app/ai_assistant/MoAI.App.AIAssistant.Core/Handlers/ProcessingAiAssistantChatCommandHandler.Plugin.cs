@@ -150,7 +150,7 @@ public partial class ProcessingAiAssistantChatCommandHandler
             });
 
             OpenApiDocumentParser parser = new();
-            using FileStream stream = File.OpenRead(filePath.FilePath);
+            using FileStream stream = System.IO.File.OpenRead(filePath.FilePath);
             RestApiSpecification specification = await parser.ParseAsync(stream);
 
             // todo: 支持接口筛选 var operations = specification.Operations.Where(x => pluginEntities.Any(p => p.Path == x.Path)).ToArray();
