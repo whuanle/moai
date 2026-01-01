@@ -27,7 +27,7 @@ public partial class AiModelUseageLogConfiguration : IEntityTypeConfiguration<Ai
             .HasColumnName("id");
         entity.Property(e => e.Channel)
             .HasMaxLength(30)
-            .HasDefaultValueSql("'0'")
+            .HasDefaultValueSql("'-'")
             .HasComment("渠道")
             .HasColumnName("channel");
         entity.Property(e => e.CompletionTokens)

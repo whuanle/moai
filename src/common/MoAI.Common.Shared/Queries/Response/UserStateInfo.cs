@@ -31,6 +31,11 @@ public class UserStateInfo
     public string Phone { get; set; } = default!;
 
     /// <summary>
+    /// 头像地址.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
+
+    /// <summary>
     /// 禁用.
     /// </summary>
     public bool IsDisable { get; set; }

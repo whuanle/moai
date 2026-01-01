@@ -11,23 +11,20 @@ namespace MoAI.Common.Queries;
 public class QueryUserViewUserInfoCommandHandler : IRequestHandler<QueryUserViewUserInfoCommand, UserStateInfo>
 {
     private readonly IMediator _mediator;
-    private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryUserViewUserInfoCommandHandler"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    /// <param name="userContext"></param>
-    public QueryUserViewUserInfoCommandHandler(IMediator mediator, UserContext userContext)
+    public QueryUserViewUserInfoCommandHandler(IMediator mediator)
     {
         _mediator = mediator;
-        _userContext = userContext;
     }
 
     /// <inheritdoc/>
     public async Task<UserStateInfo> Handle(QueryUserViewUserInfoCommand request, CancellationToken cancellationToken)
     {
-        var queryResult = await _mediator.Send(new QueryUserStateCommand { UserId = _userContext.UserId });
+        var queryResult = await _mediator.Send(new QueryUserStateCommand { UserId = request.ContextUserId });
         return queryResult;
     }
 }

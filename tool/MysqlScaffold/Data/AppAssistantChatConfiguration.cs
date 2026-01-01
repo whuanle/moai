@@ -58,11 +58,11 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("输出token统计")
             .HasColumnType("int(11)")
             .HasColumnName("out_tokens");
-        entity.Property(e => e.PluginS)
+        entity.Property(e => e.Plugins)
             .HasDefaultValueSql("'[]'")
             .HasComment("要使用的插件")
-            .HasColumnType("json")
-            .HasColumnName("plugin_s");
+            .HasColumnName("plugins")
+            .UseCollation("utf8mb4_bin");
         entity.Property(e => e.Prompt)
             .HasMaxLength(4000)
             .HasDefaultValueSql("''")

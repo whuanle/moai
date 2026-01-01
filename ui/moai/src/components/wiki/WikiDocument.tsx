@@ -44,12 +44,12 @@ import {
   QueryWikiDocumentListItem,
   ComplateUploadWikiDocumentCommand,
   DeleteWikiDocumentCommand,
-  PreloadWikiDocumentCommandResponse,
   UpdateWikiDocumentFileNameCommand,
   DownloadWikiDocumentCommand,
   BusinessValidationResult,
   WikiBatchProcessDocumentCommand,
   WikiPluginAutoProcessConfig,
+  PreUploadWikiDocumentCommandResponse,
 } from "../../apiClient/models";
 import { FileSizeHelper } from "../../helper/FileSizeHelper";
 import { FileTypeHelper } from "../../helper/FileTypeHelper";
@@ -540,7 +540,7 @@ const UploadPrivateFile = async (
   client: MoAIClient,
   file: File,
   wikiId: number
-): Promise<PreloadWikiDocumentCommandResponse> => {
+): Promise<PreUploadWikiDocumentCommandResponse> => {
   const md5 = await GetFileMd5(file);
   const preUploadResponse = await client.api.wiki.document.preupload_document.post({
     wikiId,

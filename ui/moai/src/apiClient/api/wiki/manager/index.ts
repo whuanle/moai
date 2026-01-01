@@ -4,8 +4,6 @@
 // @ts-ignore
 import { Delete_wikiRequestBuilderRequestsMetadata, type Delete_wikiRequestBuilder } from './delete_wiki/index.js';
 // @ts-ignore
-import { Invite_wiki_userRequestBuilderRequestsMetadata, type Invite_wiki_userRequestBuilder } from './invite_wiki_user/index.js';
-// @ts-ignore
 import { type Update_wiki_configRequestBuilder, Update_wiki_configRequestBuilderRequestsMetadata } from './update_wiki_config/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -18,10 +16,6 @@ export interface ManagerRequestBuilder extends BaseRequestBuilder<ManagerRequest
      * The delete_wiki property
      */
     get delete_wiki(): Delete_wikiRequestBuilder;
-    /**
-     * The invite_wiki_user property
-     */
-    get invite_wiki_user(): Invite_wiki_userRequestBuilder;
     /**
      * The update_wiki_config property
      */
@@ -37,9 +31,6 @@ export const ManagerRequestBuilderUriTemplate = "{+baseurl}/api/wiki/manager";
 export const ManagerRequestBuilderNavigationMetadata: Record<Exclude<keyof ManagerRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     delete_wiki: {
         requestsMetadata: Delete_wikiRequestBuilderRequestsMetadata,
-    },
-    invite_wiki_user: {
-        requestsMetadata: Invite_wiki_userRequestBuilderRequestsMetadata,
     },
     update_wiki_config: {
         requestsMetadata: Update_wiki_configRequestBuilderRequestsMetadata,

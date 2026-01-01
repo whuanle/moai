@@ -91,7 +91,6 @@ public partial class PromptController : ControllerBase
     [HttpPost("prompt_list")]
     public async Task<QueryPromptListCommandResponse> QueryPrompList([FromBody] QueryPromptListCommand req, CancellationToken ct = default)
     {
-        req.SetProperty(x => x.ContextUserId, _userContext.UserId);
         return await _mediator.Send(req, ct);
     }
 

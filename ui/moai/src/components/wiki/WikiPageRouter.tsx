@@ -4,7 +4,6 @@ import WikiDocument from "./WikiDocument";
 import WikiLayout from "./WikiLayout";
 import DocumentEmbedding from "./DocumentEmbedding";
 import WikiSearch from "./WikiSearch";
-import WikiUser from "./WikiUser";
 import WikiListPage from "./WikiListPage";
 import BatchListPage from "./BatchListPage";
 import { CrawlerPageRouters } from "./plugins/crawler/CrawlerPageRouter";
@@ -41,10 +40,6 @@ export const WikiPageRouters: RouteObject[] = [
           {
             path: "search",
             Component: WikiSearch,
-          },
-          {
-            path: "user",
-            Component: WikiUser,
           },
           {
             path: "batch",

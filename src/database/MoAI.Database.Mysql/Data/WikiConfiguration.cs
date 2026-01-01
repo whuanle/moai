@@ -23,6 +23,11 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("id")
             .HasColumnType("int(11)")
             .HasColumnName("id");
+        entity.Property(e => e.Avatar)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''")
+            .HasComment("团队头像")
+            .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("创建时间")
@@ -58,6 +63,10 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasMaxLength(20)
             .HasComment("知识库名称")
             .HasColumnName("name");
+        entity.Property(e => e.TeamId)
+            .HasComment("团队id，不填则是个人知识库")
+            .HasColumnType("int(11)")
+            .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("最后更新时间")

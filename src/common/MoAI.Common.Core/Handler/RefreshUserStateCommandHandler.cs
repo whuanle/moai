@@ -50,6 +50,8 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
             return userCache;
         }
 
+        var avatars = await _mediator.Send(new QueryFileDownloadUrlCommand { ExpiryDuration = TimeSpan.FromHours(2), ObjectKeys = new[] { new KeyValueString { Key = user.AvatarPath, Value = user.AvatarPath } } }, cancellationToken);
+
         userCache = new UserStateInfo
         {
             UserId = user.Id,
@@ -60,6 +62,7 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
             IsDisable = user.IsDisable,
             IsAdmin = user.IsAdmin,
             IsDeleted = user.IsDeleted > 0,
+            Avatar = avatars.Urls.FirstOrDefault().Value?.ToString() ?? string.Empty
         };
 
         var key = $"userstate:{request.UserId}";

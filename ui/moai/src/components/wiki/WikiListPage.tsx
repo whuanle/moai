@@ -4,14 +4,13 @@ import {
   Typography,
   Button,
   Space,
-  Input,
   Tag,
   Empty,
   Spin,
   message,
   Modal,
   Form,
-  Switch,
+  Input,
   Row,
   Col,
   Popconfirm,
@@ -27,12 +26,11 @@ import {
   ReloadOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
+import { Avatar } from "antd";
 import { GetApiClient } from "../ServiceClient";
-import { 
+import type { 
   DeleteWikiCommand, 
   QueryWikiBaseListCommand,
-  WikiQueryType,
-  WikiQueryTypeObject 
 } from "../../apiClient/models";
 import { useNavigate } from "react-router";
 import { proxyFormRequestError } from "../../helper/RequestError";
@@ -47,15 +45,15 @@ interface WikiItem {
   isPublic: boolean;
   createUserName?: string;
   createTime?: string;
-  isUser?: boolean;
   documentCount?: number;
   createUserId?: number;
+  teamId?: number;
+  avatar?: string;
 }
 
 interface CreateWikiFormData {
   name: string;
   description: string;
-  isPublic: boolean;
 }
 
 // 工具函数
@@ -99,37 +97,22 @@ const useCurrentUser = () => {
   return { currentUserId, fetchCurrentUser };
 };
 
-// 筛选类型
-type FilterType = 'none' | 'own' | 'public' | 'user';
-
-// 将筛选类型转换为 WikiQueryType
-const getQueryType = (filter: FilterType): WikiQueryType | undefined => {
-  switch (filter) {
-    case 'own':
-      return WikiQueryTypeObject.Own;
-    case 'public':
-      return WikiQueryTypeObject.Public;
-    case 'user':
-      return WikiQueryTypeObject.User;
-    case 'none':
-    default:
-      return WikiQueryTypeObject.None;
-  }
-};
+// 筛选类型: all=全部私有, own=我创建的
+type FilterType = 'all' | 'own';
 
 // 自定义Hook - Wiki列表管理
 const useWikiList = () => {
   const [wikiList, setWikiList] = useState<WikiItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
-  const [filterType, setFilterType] = useState<FilterType>('none');
+  const [filterType, setFilterType] = useState<FilterType>('all');
 
-  const fetchWikiList = useCallback(async (filter: FilterType = 'none') => {
+  const fetchWikiList = useCallback(async (filter: FilterType = 'all') => {
     try {
       setLoading(true);
       const client = GetApiClient();
       const command: QueryWikiBaseListCommand = {
-        queryType: getQueryType(filter),
+        isOwn: filter === 'own' ? true : undefined,
       };
       const response = await client.api.wiki.query_wiki_list.post(command);
 
@@ -142,9 +125,10 @@ const useWikiList = () => {
             isPublic: item.isPublic || false,
             createUserName: item.createUserName || undefined,
             createTime: item.createTime || undefined,
-            isUser: item.isUser || false,
             documentCount: item.documentCount || 0,
             createUserId: item.createUserId || undefined,
+            teamId: item.teamId || undefined,
+            avatar: item.avatar || undefined,
           })
         );
         setWikiList(wikiItems);
@@ -198,7 +182,6 @@ const useCreateWikiForm = (onSuccess: () => void) => {
       await client.api.wiki.create.post({
         name: values.name,
         description: values.description,
-        isPublic: values.isPublic,
       });
       messageApi.success("创建成功");
       setModalOpen(false);
@@ -294,13 +277,22 @@ const WikiCard: React.FC<WikiCardProps> = ({ item, currentUserId, onDelete, onCl
           </div>
         )}
         <Card.Meta
+          avatar={
+            <Avatar 
+              size={48} 
+              src={item.avatar} 
+              icon={<BookOutlined />}
+            />
+          }
           title={
             <Space align="center" style={{ width: "100%" }}>
               <Text strong style={{ fontSize: "16px", flex: 1 }}>
                 {item.title}
               </Text>
-              {item.isUser && (
-                <Tag color="orange">成员</Tag>
+              {item.teamId ? (
+                <Tag color="orange">团队</Tag>
+              ) : (
+                <Tag color="blue">私有</Tag>
               )}
             </Space>
           }
@@ -315,11 +307,6 @@ const WikiCard: React.FC<WikiCardProps> = ({ item, currentUserId, onDelete, onCl
               </Paragraph>
               
               <Space size="small" wrap>
-                {item.isPublic ? (
-                  <Tag color="green">公开</Tag>
-                ) : (
-                  <Tag color="blue">私有</Tag>
-                )}
                 <Tag color="purple" icon={<FileTextOutlined />}>
                   {item.documentCount || 0} 文档
                 </Tag>
@@ -359,7 +346,7 @@ interface CreateWikiModalProps {
 
 const CreateWikiModal: React.FC<CreateWikiModalProps> = ({ open, onCancel, onSubmit, form }) => (
   <Modal
-    title="新建知识库"
+    title="新建私有知识库"
     open={open}
     onCancel={onCancel}
     onOk={() => form.submit()}
@@ -383,9 +370,6 @@ const CreateWikiModal: React.FC<CreateWikiModalProps> = ({ open, onCancel, onSub
       </Form.Item>
       <Form.Item label="描述" name="description">
         <Input.TextArea placeholder="请输入描述" maxLength={200} rows={3} />
-      </Form.Item>
-      <Form.Item label="是否公开" name="isPublic" valuePropName="checked" initialValue={false}>
-        <Switch checkedChildren="公开" unCheckedChildren="私有" />
       </Form.Item>
     </Form>
   </Modal>
@@ -415,7 +399,7 @@ export default function WikiListPage() {
 
   useEffect(() => {
     fetchCurrentUser();
-    fetchWikiList('none');
+    fetchWikiList('all');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -428,14 +412,6 @@ export default function WikiListPage() {
   };
 
   const handleCardClick = (id: number) => {
-    const wikiItem = wikiList.find(item => item.id === id);
-    if (!wikiItem) return;
-    
-    if (!wikiItem.isUser && currentUserId !== wikiItem.createUserId) {
-      message.error("您不是该知识库成员");
-      return;
-    }
-    
     navigate(`/app/wiki/${id}`);
   };
 
@@ -481,10 +457,8 @@ export default function WikiListPage() {
                 value={filterType} 
                 onChange={(e) => handleFilterChange(e.target.value)}
               >
-                <Radio.Button value="none">全部</Radio.Button>
+                <Radio.Button value="all">全部</Radio.Button>
                 <Radio.Button value="own">我创建的</Radio.Button>
-                <Radio.Button value="user">我参与的</Radio.Button>
-                <Radio.Button value="public">公开的</Radio.Button>
               </Radio.Group>
             </Space>
           </Space>

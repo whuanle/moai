@@ -22,6 +22,8 @@ import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } fro
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
+import { TeamRequestBuilderNavigationMetadata, type TeamRequestBuilder } from './team/index.js';
+// @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
 // @ts-ignore
 import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata } from './wiki/index.js';
@@ -73,6 +75,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get storage(): StorageRequestBuilder;
     /**
+     * The team property
+     */
+    get team(): TeamRequestBuilder;
+    /**
      * The user property
      */
     get user(): UserRequestBuilder;
@@ -118,6 +124,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,
+    },
+    team: {
+        navigationMetadata: TeamRequestBuilderNavigationMetadata,
     },
     user: {
         navigationMetadata: UserRequestBuilderNavigationMetadata,

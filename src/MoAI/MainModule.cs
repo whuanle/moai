@@ -12,6 +12,7 @@ using MoAI.Login;
 using MoAI.Modules;
 using MoAI.Plugin;
 using MoAI.Storage;
+using MoAI.Team;
 using MoAI.User;
 using MoAI.Wiki;
 using MoAIPrompt.Core;
@@ -34,6 +35,7 @@ namespace MoAI;
 [InjectModule<PromptCoreModule>]
 [InjectModule<AppAiAssistantCoreModule>]
 [InjectModule<AiCoreModule>]
+[InjectModule<TeamCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

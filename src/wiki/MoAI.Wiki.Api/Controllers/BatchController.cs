@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Team.Models;
 using MoAI.Wiki.Batch.Commands;
 using MoAI.Wiki.Batch.Queries;
 using MoAI.Wiki.Wikis.Queries;
@@ -71,13 +72,14 @@ public class BatchController : ControllerBase
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryUserIsWikiUserCommand
+            new QueryWikiCreatorCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = wikiId
             },
             ct);
-        if (!userIsWikiUser.IsWikiUser)
+
+        if (userIsWikiUser.TeamRole == TeamRole.None)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }

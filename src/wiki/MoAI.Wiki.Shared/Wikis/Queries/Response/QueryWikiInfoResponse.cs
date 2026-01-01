@@ -1,12 +1,13 @@
-﻿using MoAI.AiModel.Models;
-using MoAI.Infra.Models;
+﻿using MoAI.Infra.Models;
+using MoAI.Storage.Queries;
+using MoAI.Team.Models;
 
 namespace MoAI.Wiki.Wikis.Queries.Response;
 
 /// <summary>
 /// 知识库信息.
 /// </summary>
-public class QueryWikiInfoResponse : AuditsInfo
+public class QueryWikiInfoResponse : AuditsInfo, IAvatarPath
 {
     /// <summary>
     /// 知识库 id.
@@ -31,12 +32,23 @@ public class QueryWikiInfoResponse : AuditsInfo
     /// <summary>
     /// 是否该知识库成员.
     /// </summary>
-    public bool IsUser { get; init; }
+    public TeamRole Role { get; set; }
+
+    /// <summary>
+    /// 团队 id.
+    /// </summary>
+    public int TeamId { get; init; }
 
     /// <summary>
     /// 文档数量.
     /// </summary>
     public int DocumentCount { get; init; }
+
+    /// <inheritdoc/>
+    public string Avatar { get; set; } = default!;
+
+    /// <inheritdoc/>
+    public string AvatarKey { get; set; } = default!;
 
     /// <summary>
     /// 指定进行文档向量化的模型.

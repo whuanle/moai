@@ -1,0 +1,39 @@
+.wiki-settings-form {
+  max-width: 800px;
+}
+
+.wiki-avatar-upload-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.wiki-avatar-upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.wiki-avatar-upload-overlay .anticon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.wiki-avatar-upload-overlay span {
+  font-size: 12px;
+}
+
+.wiki-avatar-upload-wrapper:hover .wiki-avatar-upload-overlay {
+  opacity: 1;
+}

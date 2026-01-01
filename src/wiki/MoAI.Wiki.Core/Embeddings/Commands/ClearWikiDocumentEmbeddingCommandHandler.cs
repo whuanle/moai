@@ -47,7 +47,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
 
         if (aiModel == null)
         {
-            throw new BusinessException("知识库未配置嵌入模型") { StatusCode = 400 };
+            return EmptyCommandResponse.Default;
         }
 
         // 清空向量

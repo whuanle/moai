@@ -7,7 +7,7 @@ namespace MoAI.Wiki.Wikis.Commands;
 /// <summary>
 /// 创建知识库.
 /// </summary>
-public class CreateWikiCommand : IRequest<SimpleInt>, IModelValidator<CreateWikiCommand>
+public class CreateWikiCommand : IRequest<SimpleInt>, IModelValidator<CreateWikiCommand>, IUserIdContext
 {
     /// <summary>
     /// 团队名称.
@@ -20,9 +20,12 @@ public class CreateWikiCommand : IRequest<SimpleInt>, IModelValidator<CreateWiki
     public string Description { get; init; } = default!;
 
     /// <summary>
-    /// 是否是系统知识库，创建后不允许修改此属性.
+    /// 创建团队知识库，会归类在团队下面，不填则是个人知识库，知识库创建后无法修改此属性.
     /// </summary>
-    public bool IsPublic { get; init; }
+    public int? TeamId { get; init; }
+
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateWikiCommand> validate)

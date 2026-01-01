@@ -1,8 +1,13 @@
-﻿using MediatR;
+﻿using Azure;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
 using MoAI.Login.Commands;
+using MoAI.Storage.Queries;
+using MoAI.Team.Models;
+using MoAI.Team.Queries;
 using MoAI.User.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 
@@ -31,51 +36,63 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
     public async Task<IReadOnlyCollection<QueryWikiInfoResponse>> Handle(QueryWikiBaseListCommand request, CancellationToken cancellationToken)
     {
         /*
-         三种情况：
-         1，自己创建的
-         2，是知识库成员
+         1，私有知识库
+         2，团队知识库
          3，无关，但是公开的知识库
          */
 
         var query = _databaseContext.Wikis.AsQueryable();
 
-        if (request.QueryType == WikiQueryType.Own)
+        if (request.IsOwn == true)
         {
-            query = query.Where(x => x.CreateUserId == request.ContextUserId);
+            query = query.Where(x => x.TeamId == 0 && x.CreateUserId == request.ContextUserId);
         }
-        else if (request.QueryType == WikiQueryType.User)
+        else if (request.TeamId != 0 && request.TeamId > 0)
         {
-            query = query.Where(x => _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId && a.WikiId == x.Id));
-        }
-        else if (request.QueryType == WikiQueryType.Public)
-        {
-            query = query.Where(x => x.IsPublic);
+            // 判断是否团队成员
+            var existInTeam = await _mediator.Send(new QueryUserTeamRoleCommand { ContextUserId = request.ContextUserId, TeamId = request.TeamId.Value }, cancellationToken);
+            if (existInTeam.Role == Team.Models.TeamRole.None)
+            {
+                throw new BusinessException("非知识库成员");
+            }
+
+            query = query.Where(x => x.TeamId == request.TeamId);
         }
         else
         {
-            query = query.Where(x => x.CreateUserId == request.ContextUserId || _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId && a.WikiId == x.Id) || x.IsPublic);
+            query = query.Where(x => x.IsPublic || (x.TeamId == 0 && x.CreateUserId == request.ContextUserId) || _databaseContext.TeamUsers.Where(a => a.UserId == request.ContextUserId && x.TeamId == a.TeamId).Any());
         }
 
         // 列表查询不返回所有字段.
-        var response = await query
-            .OrderBy(x => x.Name)
-            .Select(x => new QueryWikiInfoResponse
+        var wikis = await query
+        .OrderBy(x => x.Name)
+        .Select(x => new QueryWikiInfoResponse
+        {
+            WikiId = x.Id,
+            Name = x.Name,
+            Description = x.Description,
+            IsPublic = x.IsPublic,
+            CreateUserId = x.CreateUserId,
+            UpdateUserId = x.UpdateUserId,
+            CreateTime = x.CreateTime,
+            UpdateTime = x.UpdateTime,
+            TeamId = x.TeamId,
+            AvatarKey = x.Avatar,
+            DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()
+        })
+        .ToListAsync(cancellationToken);
+
+        foreach (var item in wikis)
+        {
+            if (item.TeamId == 0)
             {
-                WikiId = x.Id,
-                Name = x.Name,
-                Description = x.Description,
-                IsPublic = x.IsPublic,
-                CreateUserId = x.CreateUserId,
-                UpdateUserId = x.UpdateUserId,
-                CreateTime = x.CreateTime,
-                UpdateTime = x.UpdateTime,
-                IsUser = x.CreateUserId == request.ContextUserId || _databaseContext.WikiUsers.Any(a => a.UserId == request.ContextUserId),
-                DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()
-            })
-            .ToListAsync(cancellationToken);
+                item.Role = item.CreateUserId == request.ContextUserId ? TeamRole.Owner : TeamRole.None;
+            }
+        }
 
-        await _mediator.Send(new FillUserInfoCommand { Items = response });
+        await _mediator.Send(new QueryAvatarUrlCommand { Items = wikis });
+        await _mediator.Send(new FillUserInfoCommand { Items = wikis });
 
-        return response;
+        return wikis;
     }
 }

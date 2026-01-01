@@ -15,7 +15,7 @@ namespace MoAI.Storage.Controllers;
 /// 兼容 S3 接口的文件上传接口.
 /// </summary>
 [Route("/api/storage")]
-[Authorize]
+[AllowAnonymous]
 public class UploadController : ControllerBase
 {
     private readonly IMediator _mediator;

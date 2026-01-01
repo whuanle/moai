@@ -27,19 +27,31 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
     /// <inheritdoc/>
     public async Task<SimpleInt> Handle(CreateWikiCommand request, CancellationToken cancellationToken)
     {
-        var exist = await _databaseContext.Wikis.AnyAsync(x => x.Name == request.Name, cancellationToken);
-        if (exist)
+        // 只需要判断个人或团队下的知识库不能同名即可
+        if (request.TeamId != null && request.TeamId > 0)
         {
-            throw new BusinessException("系统已存在同名知识库") { StatusCode = 409 };
+            var existInTeam = await _databaseContext.Wikis.AnyAsync(x => x.Name == request.Name && x.TeamId == request.TeamId, cancellationToken);
+            if (existInTeam)
+            {
+                throw new BusinessException("团队已存在同名知识库") { StatusCode = 409 };
+            }
+        }
+        else
+        {
+            var existInTeam = await _databaseContext.Wikis.AnyAsync(x => x.CreateUserId == request.ContextUserId && x.Name == request.Name, cancellationToken);
+            if (existInTeam)
+            {
+                throw new BusinessException("已存在个人同名知识库") { StatusCode = 409 };
+            }
         }
 
         var wikiEntity = new WikiEntity
         {
             Name = request.Name,
             Description = request.Description,
+            TeamId = request.TeamId ?? 0,
             EmbeddingModelId = default,
-            EmbeddingDimensions = 1024,
-            IsPublic = request.IsPublic,
+            IsPublic = false,
             IsLock = false
         };
 

@@ -860,6 +860,24 @@ export function createCreatePromptCommandFromDiscriminatorValue(parseNode: Parse
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateTeamCommand}
+ */
+// @ts-ignore
+export function createCreateTeamCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateTeamCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateTeamCommandResponse}
+ */
+// @ts-ignore
+export function createCreateTeamCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateTeamCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateWikiCommand}
  */
 // @ts-ignore
@@ -1049,11 +1067,11 @@ export function createImportOpenApiToWikiCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {InviteWikiUserCommand}
+ * @returns {InviteTeamMemberCommand}
  */
 // @ts-ignore
-export function createInviteWikiUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoInviteWikiUserCommand;
+export function createInviteTeamMemberCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoInviteTeamMemberCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1099,6 +1117,15 @@ export function createKeyValueOfStringAndStringFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createKeyValueStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoKeyValueString;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {LeaveTeamCommand}
+ */
+// @ts-ignore
+export function createLeaveTeamCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoLeaveTeamCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1390,6 +1417,24 @@ export function createPreUploadChatFileDocumentCommandFromDiscriminatorValue(par
 // @ts-ignore
 export function createPreUploadChatFileDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPreUploadChatFileDocumentCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadImageCommand}
+ */
+// @ts-ignore
+export function createPreUploadImageCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadImageCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadImageCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadImageCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadImageCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1770,6 +1815,78 @@ export function createQueryServerInfoCommandResponseFromDiscriminatorValue(parse
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamInfoCommand}
+ */
+// @ts-ignore
+export function createQueryTeamInfoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamInfoCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamInfoCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamInfoCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamInfoCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamListCommand}
+ */
+// @ts-ignore
+export function createQueryTeamListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamListQueryResponseItem}
+ */
+// @ts-ignore
+export function createQueryTeamListQueryResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamListQueryResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamMemberListCommand}
+ */
+// @ts-ignore
+export function createQueryTeamMemberListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamMemberListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamMemberListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamMemberListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamMemberListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamMemberListQueryResponseItem}
+ */
+// @ts-ignore
+export function createQueryTeamMemberListQueryResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamMemberListQueryResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryUserBindAccountCommandResponse}
  */
 // @ts-ignore
@@ -1802,6 +1919,24 @@ export function createQueryUserListCommandFromDiscriminatorValue(parseNode: Pars
 // @ts-ignore
 export function createQueryUserListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryUserListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryUserTeamRoleCommand}
+ */
+// @ts-ignore
+export function createQueryUserTeamRoleCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserTeamRoleCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryUserTeamRoleQueryResponse}
+ */
+// @ts-ignore
+export function createQueryUserTeamRoleQueryResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserTeamRoleQueryResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2013,33 +2148,6 @@ export function createQueryWikiInfoResponseFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiUsersCommand}
- */
-// @ts-ignore
-export function createQueryWikiUsersCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiUsersCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiUsersCommandResponse}
- */
-// @ts-ignore
-export function createQueryWikiUsersCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiUsersCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryWikiUsersCommandResponseItem}
- */
-// @ts-ignore
-export function createQueryWikiUsersCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryWikiUsersCommandResponseItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshMcpServerPluginCommand}
  */
 // @ts-ignore
@@ -2072,6 +2180,15 @@ export function createRefreshTokenCommandResponseFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createRegisterUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoRegisterUserCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {RemoveTeamMemberCommand}
+ */
+// @ts-ignore
+export function createRemoveTeamMemberCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoRemoveTeamMemberCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2209,6 +2326,36 @@ export function createStartWikiFeishuPluginTaskCommandFromDiscriminatorValue(par
     return deserializeIntoStartWikiFeishuPluginTaskCommand;
 }
 /**
+ * 创建团队命令.
+ */
+export interface CreateTeamCommand extends Parsable {
+    /**
+     * 团队头像 ObjectKey.
+     */
+    avatar?: string | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 团队描述.
+     */
+    description?: string | null;
+    /**
+     * 团队名称.
+     */
+    name?: string | null;
+}
+/**
+ * 创建团队响应.
+ */
+export interface CreateTeamCommandResponse extends Parsable {
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TextTokenUsage}
@@ -2216,6 +2363,15 @@ export function createStartWikiFeishuPluginTaskCommandFromDiscriminatorValue(par
 // @ts-ignore
 export function createTextTokenUsageFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoTextTokenUsage;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TransferTeamOwnerCommand}
+ */
+// @ts-ignore
+export function createTransferTeamOwnerCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTransferTeamOwnerCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2297,6 +2453,24 @@ export function createUpdatePluginClassifyCommandFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createUpdatePromptCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdatePromptCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateTeamCommand}
+ */
+// @ts-ignore
+export function createUpdateTeamCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateTeamCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateTeamMemberRoleCommand}
+ */
+// @ts-ignore
+export function createUpdateTeamMemberRoleCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateTeamMemberRoleCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2420,17 +2594,21 @@ export function createWikiBatchProcessDocumentCommandFromDiscriminatorValue(pars
  */
 export interface CreateWikiCommand extends Parsable {
     /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
      * 团队描述.
      */
     description?: string | null;
     /**
-     * 是否是系统知识库，创建后不允许修改此属性.
-     */
-    isPublic?: boolean | null;
-    /**
      * 团队名称.
      */
     name?: string | null;
+    /**
+     * 创建团队知识库，会归类在团队下面，不填则是个人知识库，知识库创建后无法修改此属性.
+     */
+    teamId?: number | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3150,11 +3328,35 @@ export function deserializeIntoCreatePromptCommand(createPromptCommand: Partial<
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateTeamCommand(createTeamCommand: Partial<CreateTeamCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { createTeamCommand.avatar = n.getStringValue(); },
+        "contextUserId": n => { createTeamCommand.contextUserId = n.getNumberValue(); },
+        "description": n => { createTeamCommand.description = n.getStringValue(); },
+        "name": n => { createTeamCommand.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateTeamCommandResponse(createTeamCommandResponse: Partial<CreateTeamCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "teamId": n => { createTeamCommandResponse.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateWikiCommand(createWikiCommand: Partial<CreateWikiCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "contextUserId": n => { createWikiCommand.contextUserId = n.getNumberValue(); },
         "description": n => { createWikiCommand.description = n.getStringValue(); },
-        "isPublic": n => { createWikiCommand.isPublic = n.getBooleanValue(); },
         "name": n => { createWikiCommand.name = n.getStringValue(); },
+        "teamId": n => { createWikiCommand.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -3387,12 +3589,11 @@ export function deserializeIntoImportOpenApiToWikiCommand(importOpenApiToWikiCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoInviteWikiUserCommand(inviteWikiUserCommand: Partial<InviteWikiUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoInviteTeamMemberCommand(inviteTeamMemberCommand: Partial<InviteTeamMemberCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "isInvite": n => { inviteWikiUserCommand.isInvite = n.getBooleanValue(); },
-        "userIds": n => { inviteWikiUserCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
-        "userNames": n => { inviteWikiUserCommand.userNames = n.getCollectionOfPrimitiveValues<string>(); },
-        "wikiId": n => { inviteWikiUserCommand.wikiId = n.getNumberValue(); },
+        "teamId": n => { inviteTeamMemberCommand.teamId = n.getNumberValue(); },
+        "userIds": n => { inviteTeamMemberCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
+        "userNames": n => { inviteTeamMemberCommand.userNames = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
 /**
@@ -3447,6 +3648,17 @@ export function deserializeIntoKeyValueOfStringAndString(keyValueOfStringAndStri
 export function deserializeIntoKeyValueString(keyValueString: Partial<KeyValueString> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoKeyValueOfStringAndString(keyValueString),
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoLeaveTeamCommand(leaveTeamCommand: Partial<LeaveTeamCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { leaveTeamCommand.contextUserId = n.getNumberValue(); },
+        "teamId": n => { leaveTeamCommand.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -3777,6 +3989,33 @@ export function deserializeIntoPreUploadChatFileDocumentCommandResponse(preUploa
         "isExist": n => { preUploadChatFileDocumentCommandResponse.isExist = n.getBooleanValue(); },
         "objectKey": n => { preUploadChatFileDocumentCommandResponse.objectKey = n.getStringValue(); },
         "uploadUrl": n => { preUploadChatFileDocumentCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadImageCommand(preUploadImageCommand: Partial<PreUploadImageCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadImageCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadImageCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadImageCommand.fileSize = n.getNumberValue(); },
+        "mD5": n => { preUploadImageCommand.mD5 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadImageCommandResponse(preUploadImageCommandResponse: Partial<PreUploadImageCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadImageCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadImageCommandResponse.fileId = n.getNumberValue(); },
+        "isExist": n => { preUploadImageCommandResponse.isExist = n.getBooleanValue(); },
+        "objectKey": n => { preUploadImageCommandResponse.objectKey = n.getStringValue(); },
+        "uploadUrl": n => { preUploadImageCommandResponse.uploadUrl = n.getStringValue(); },
     }
 }
 /**
@@ -4256,6 +4495,110 @@ export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryTeamInfoCommand(queryTeamInfoCommand: Partial<QueryTeamInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { queryTeamInfoCommand.contextUserId = n.getNumberValue(); },
+        "teamId": n => { queryTeamInfoCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamInfoCommandResponse(queryTeamInfoCommandResponse: Partial<QueryTeamInfoCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { queryTeamInfoCommandResponse.avatar = n.getStringValue(); },
+        "avatarKey": n => { queryTeamInfoCommandResponse.avatarKey = n.getStringValue(); },
+        "createTime": n => { queryTeamInfoCommandResponse.createTime = n.getStringValue(); },
+        "createUserId": n => { queryTeamInfoCommandResponse.createUserId = n.getNumberValue(); },
+        "description": n => { queryTeamInfoCommandResponse.description = n.getStringValue(); },
+        "id": n => { queryTeamInfoCommandResponse.id = n.getNumberValue(); },
+        "memberCount": n => { queryTeamInfoCommandResponse.memberCount = n.getNumberValue(); },
+        "myRole": n => { queryTeamInfoCommandResponse.myRole = n.getEnumValue<TeamRole>(TeamRoleObject); },
+        "name": n => { queryTeamInfoCommandResponse.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamListCommand(queryTeamListCommand: Partial<QueryTeamListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { queryTeamListCommand.contextUserId = n.getNumberValue(); },
+        "isOwn": n => { queryTeamListCommand.isOwn = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamListCommandResponse(queryTeamListCommandResponse: Partial<QueryTeamListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamListCommandResponse.items = n.getCollectionOfObjectValues<QueryTeamListQueryResponseItem>(createQueryTeamListQueryResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamListQueryResponseItem(queryTeamListQueryResponseItem: Partial<QueryTeamListQueryResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { queryTeamListQueryResponseItem.avatar = n.getStringValue(); },
+        "avatarKey": n => { queryTeamListQueryResponseItem.avatarKey = n.getStringValue(); },
+        "createTime": n => { queryTeamListQueryResponseItem.createTime = n.getStringValue(); },
+        "createUserId": n => { queryTeamListQueryResponseItem.createUserId = n.getNumberValue(); },
+        "description": n => { queryTeamListQueryResponseItem.description = n.getStringValue(); },
+        "id": n => { queryTeamListQueryResponseItem.id = n.getNumberValue(); },
+        "memberCount": n => { queryTeamListQueryResponseItem.memberCount = n.getNumberValue(); },
+        "name": n => { queryTeamListQueryResponseItem.name = n.getStringValue(); },
+        "role": n => { queryTeamListQueryResponseItem.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamMemberListCommand(queryTeamMemberListCommand: Partial<QueryTeamMemberListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { queryTeamMemberListCommand.contextUserId = n.getNumberValue(); },
+        "teamId": n => { queryTeamMemberListCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamMemberListCommandResponse(queryTeamMemberListCommandResponse: Partial<QueryTeamMemberListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamMemberListCommandResponse.items = n.getCollectionOfObjectValues<QueryTeamMemberListQueryResponseItem>(createQueryTeamMemberListQueryResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamMemberListQueryResponseItem(queryTeamMemberListQueryResponseItem: Partial<QueryTeamMemberListQueryResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { queryTeamMemberListQueryResponseItem.avatar = n.getStringValue(); },
+        "avatarKey": n => { queryTeamMemberListQueryResponseItem.avatarKey = n.getStringValue(); },
+        "joinTime": n => { queryTeamMemberListQueryResponseItem.joinTime = n.getStringValue(); },
+        "role": n => { queryTeamMemberListQueryResponseItem.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
+        "userId": n => { queryTeamMemberListQueryResponseItem.userId = n.getNumberValue(); },
+        "userName": n => { queryTeamMemberListQueryResponseItem.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryUserBindAccountCommandResponse(queryUserBindAccountCommandResponse: Partial<QueryUserBindAccountCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryUserBindAccountCommandResponse.items = n.getCollectionOfObjectValues<QueryUserBindAccountCommandResponseItem>(createQueryUserBindAccountCommandResponseItemFromDiscriminatorValue); },
@@ -4303,6 +4646,27 @@ export function deserializeIntoQueryUserListCommandResponse(queryUserListCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryUserTeamRoleCommand(queryUserTeamRoleCommand: Partial<QueryUserTeamRoleCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { queryUserTeamRoleCommand.contextUserId = n.getNumberValue(); },
+        "teamId": n => { queryUserTeamRoleCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryUserTeamRoleQueryResponse(queryUserTeamRoleQueryResponse: Partial<QueryUserTeamRoleQueryResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "role": n => { queryUserTeamRoleQueryResponse.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryUserViewAiModelListCommand(queryUserViewAiModelListCommand: Partial<QueryUserViewAiModelListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "aiModelType": n => { queryUserViewAiModelListCommand.aiModelType = n.getEnumValue<AiModelType>(AiModelTypeObject); },
@@ -4326,7 +4690,8 @@ export function deserializeIntoQueryUserViewAiModelListCommandResponse(queryUser
 export function deserializeIntoQueryWikiBaseListCommand(queryWikiBaseListCommand: Partial<QueryWikiBaseListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "contextUserId": n => { queryWikiBaseListCommand.contextUserId = n.getNumberValue(); },
-        "queryType": n => { queryWikiBaseListCommand.queryType = n.getEnumValue<WikiQueryType>(WikiQueryTypeObject); },
+        "isOwn": n => { queryWikiBaseListCommand.isOwn = n.getBooleanValue(); },
+        "teamId": n => { queryWikiBaseListCommand.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -4402,6 +4767,7 @@ export function deserializeIntoQueryWikiCrawlerPluginConfigListCommandResponse(q
 // @ts-ignore
 export function deserializeIntoQueryWikiDetailInfoCommand(queryWikiDetailInfoCommand: Partial<QueryWikiDetailInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "contextUserId": n => { queryWikiDetailInfoCommand.contextUserId = n.getNumberValue(); },
         "wikiId": n => { queryWikiDetailInfoCommand.wikiId = n.getNumberValue(); },
     }
 }
@@ -4556,49 +4922,18 @@ export function deserializeIntoQueryWikiFeishuPluginConfigListCommandResponse(qu
 export function deserializeIntoQueryWikiInfoResponse(queryWikiInfoResponse: Partial<QueryWikiInfoResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryWikiInfoResponse),
+        "avatar": n => { queryWikiInfoResponse.avatar = n.getStringValue(); },
+        "avatarKey": n => { queryWikiInfoResponse.avatarKey = n.getStringValue(); },
         "description": n => { queryWikiInfoResponse.description = n.getStringValue(); },
         "documentCount": n => { queryWikiInfoResponse.documentCount = n.getNumberValue(); },
         "embeddingDimensions": n => { queryWikiInfoResponse.embeddingDimensions = n.getNumberValue(); },
         "embeddingModelId": n => { queryWikiInfoResponse.embeddingModelId = n.getNumberValue(); },
         "isLock": n => { queryWikiInfoResponse.isLock = n.getBooleanValue(); },
         "isPublic": n => { queryWikiInfoResponse.isPublic = n.getBooleanValue(); },
-        "isUser": n => { queryWikiInfoResponse.isUser = n.getBooleanValue(); },
         "name": n => { queryWikiInfoResponse.name = n.getStringValue(); },
+        "role": n => { queryWikiInfoResponse.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
+        "teamId": n => { queryWikiInfoResponse.teamId = n.getNumberValue(); },
         "wikiId": n => { queryWikiInfoResponse.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryWikiUsersCommand(queryWikiUsersCommand: Partial<QueryWikiUsersCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "wikiId": n => { queryWikiUsersCommand.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryWikiUsersCommandResponse(queryWikiUsersCommandResponse: Partial<QueryWikiUsersCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "users": n => { queryWikiUsersCommandResponse.users = n.getCollectionOfObjectValues<QueryWikiUsersCommandResponseItem>(createQueryWikiUsersCommandResponseItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryWikiUsersCommandResponseItem(queryWikiUsersCommandResponseItem: Partial<QueryWikiUsersCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoAuditsInfo(queryWikiUsersCommandResponseItem),
-        "email": n => { queryWikiUsersCommandResponseItem.email = n.getStringValue(); },
-        "id": n => { queryWikiUsersCommandResponseItem.id = n.getNumberValue(); },
-        "nickName": n => { queryWikiUsersCommandResponseItem.nickName = n.getStringValue(); },
-        "userName": n => { queryWikiUsersCommandResponseItem.userName = n.getStringValue(); },
     }
 }
 /**
@@ -4655,6 +4990,17 @@ export function deserializeIntoRegisterUserCommand(registerUserCommand: Partial<
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoRemoveTeamMemberCommand(removeTeamMemberCommand: Partial<RemoveTeamMemberCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "teamId": n => { removeTeamMemberCommand.teamId = n.getNumberValue(); },
+        "userIds": n => { removeTeamMemberCommand.userIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoResetUserPasswordCommand(resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "userId": n => { resetUserPasswordCommand.userId = n.getNumberValue(); },
@@ -4691,6 +5037,7 @@ export function deserializeIntoRunTestNativePluginCommandResponse(runTestNativeP
 export function deserializeIntoSearchWikiDocumentTextCommand(searchWikiDocumentTextCommand: Partial<SearchWikiDocumentTextCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "aiModelId": n => { searchWikiDocumentTextCommand.aiModelId = n.getNumberValue(); },
+        "contextUserId": n => { searchWikiDocumentTextCommand.contextUserId = n.getNumberValue(); },
         "documentId": n => { searchWikiDocumentTextCommand.documentId = n.getNumberValue(); },
         "isAnswer": n => { searchWikiDocumentTextCommand.isAnswer = n.getBooleanValue(); },
         "isOptimizeQuery": n => { searchWikiDocumentTextCommand.isOptimizeQuery = n.getBooleanValue(); },
@@ -4844,6 +5191,17 @@ export function deserializeIntoTextTokenUsage(textTokenUsage: Partial<TextTokenU
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoTransferTeamOwnerCommand(transferTeamOwnerCommand: Partial<TransferTeamOwnerCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "newOwnerUserId": n => { transferTeamOwnerCommand.newOwnerUserId = n.getNumberValue(); },
+        "teamId": n => { transferTeamOwnerCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUnbindUserAccountCommand(unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "bindId": n => { unbindUserAccountCommand.bindId = n.getNumberValue(); },
@@ -4977,8 +5335,34 @@ export function deserializeIntoUpdatePromptCommand(updatePromptCommand: Partial<
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateTeamCommand(updateTeamCommand: Partial<UpdateTeamCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { updateTeamCommand.avatar = n.getStringValue(); },
+        "description": n => { updateTeamCommand.description = n.getStringValue(); },
+        "name": n => { updateTeamCommand.name = n.getStringValue(); },
+        "teamId": n => { updateTeamCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateTeamMemberRoleCommand(updateTeamMemberRoleCommand: Partial<UpdateTeamMemberRoleCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "role": n => { updateTeamMemberRoleCommand.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
+        "teamId": n => { updateTeamMemberRoleCommand.teamId = n.getNumberValue(); },
+        "userId": n => { updateTeamMemberRoleCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateUserInfoCommand(updateUserInfoCommand: Partial<UpdateUserInfoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { updateUserInfoCommand.avatarPath = n.getStringValue(); },
         "email": n => { updateUserInfoCommand.email = n.getStringValue(); },
         "nickName": n => { updateUserInfoCommand.nickName = n.getStringValue(); },
         "phone": n => { updateUserInfoCommand.phone = n.getStringValue(); },
@@ -5004,6 +5388,7 @@ export function deserializeIntoUpdateUserPasswordCommand(updateUserPasswordComma
 // @ts-ignore
 export function deserializeIntoUpdateWikiConfigCommand(updateWikiConfigCommand: Partial<UpdateWikiConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatar": n => { updateWikiConfigCommand.avatar = n.getStringValue(); },
         "description": n => { updateWikiConfigCommand.description = n.getStringValue(); },
         "embeddingDimensions": n => { updateWikiConfigCommand.embeddingDimensions = n.getNumberValue(); },
         "embeddingModelId": n => { updateWikiConfigCommand.embeddingModelId = n.getNumberValue(); },
@@ -5098,6 +5483,7 @@ export function deserializeIntoUserItem(userItem: Partial<UserItem> | undefined 
 // @ts-ignore
 export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatar": n => { userStateInfo.avatar = n.getStringValue(); },
         "email": n => { userStateInfo.email = n.getStringValue(); },
         "isAdmin": n => { userStateInfo.isAdmin = n.getBooleanValue(); },
         "isDeleted": n => { userStateInfo.isDeleted = n.getBooleanValue(); },
@@ -5225,6 +5611,7 @@ export function deserializeIntoWikiDocumenChunkItem(wikiDocumenChunkItem: Partia
 export function deserializeIntoWikiDocumentAiTextPartionCommand(wikiDocumentAiTextPartionCommand: Partial<WikiDocumentAiTextPartionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "aiModelId": n => { wikiDocumentAiTextPartionCommand.aiModelId = n.getNumberValue(); },
+        "contextUserId": n => { wikiDocumentAiTextPartionCommand.contextUserId = n.getNumberValue(); },
         "documentId": n => { wikiDocumentAiTextPartionCommand.documentId = n.getNumberValue(); },
         "promptTemplate": n => { wikiDocumentAiTextPartionCommand.promptTemplate = n.getStringValue(); },
         "wikiId": n => { wikiDocumentAiTextPartionCommand.wikiId = n.getNumberValue(); },
@@ -5516,25 +5903,21 @@ export interface ImportOpenApiToWikiCommand extends Parsable {
     wikiId?: number | null;
 }
 /**
- * 邀请或移除知识库协作成员，可以管理知识库文档等.
+ * 邀请成员加入团队命令.
  */
-export interface InviteWikiUserCommand extends Parsable {
+export interface InviteTeamMemberCommand extends Parsable {
     /**
-     * 如果是则邀请，否则是移除.
+     * 团队ID.
      */
-    isInvite?: boolean | null;
+    teamId?: number | null;
     /**
-     * 用户id.
+     * 用户ID列表.
      */
     userIds?: number[] | null;
     /**
-     * 用户名称.
+     * 用户名称列表.
      */
     userNames?: string[] | null;
-    /**
-     * 知识库 id.
-     */
-    wikiId?: number | null;
 }
 /**
  * kv.
@@ -5592,6 +5975,19 @@ export interface KeyValueOfStringAndString extends Parsable {
  * KeyValueString.
  */
 export interface KeyValueString extends KeyValueOfStringAndString, Parsable {
+}
+/**
+ * 退出团队命令.
+ */
+export interface LeaveTeamCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
 }
 /**
  * 登录.
@@ -6142,6 +6538,52 @@ export interface PreUploadChatFileDocumentCommandResponse extends Parsable {
     objectKey?: string | null;
     /**
      * 预签名上传地址，当 IsExist = true 时字段为空.
+     */
+    uploadUrl?: string | null;
+}
+/**
+ * 图片预上传命令，生成预签名上传地址.
+ */
+export interface PreUploadImageCommand extends Parsable {
+    /**
+     * 文件类型 (MIME Type).
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小 (字节).
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 MD5.
+     */
+    mD5?: string | null;
+}
+/**
+ * 图片预上传响应.
+ */
+export interface PreUploadImageCommandResponse extends Parsable {
+    /**
+     * 签名过期时间，当 IsExist = true 时为空.
+     */
+    expiration?: string | null;
+    /**
+     * 文件ID.
+     */
+    fileId?: number | null;
+    /**
+     * 文件是否已存在，如果已存在则无需再次上传.
+     */
+    isExist?: boolean | null;
+    /**
+     * 文件 ObjectKey.
+     */
+    objectKey?: string | null;
+    /**
+     * 预签名上传地址，当 IsExist = true 时为空.
      */
     uploadUrl?: string | null;
 }
@@ -6782,6 +7224,174 @@ export interface QueryServerInfoCommandResponse extends Parsable {
      */
     serviceUrl?: string | null;
 }
+/**
+ * 查询单个团队信息.
+ */
+export interface QueryTeamInfoCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+}
+/**
+ * 团队信息响应.
+ */
+export interface QueryTeamInfoCommandResponse extends Parsable {
+    /**
+     * 头像 url.
+     */
+    avatar?: string | null;
+    /**
+     * 头像 ObjectKey.
+     */
+    avatarKey?: string | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 创建人ID.
+     */
+    createUserId?: number | null;
+    /**
+     * 团队描述.
+     */
+    description?: string | null;
+    /**
+     * 团队ID.
+     */
+    id?: number | null;
+    /**
+     * 成员数量.
+     */
+    memberCount?: number | null;
+    /**
+     * 当前用户在团队的角色.
+     */
+    myRole?: TeamRole | null;
+    /**
+     * 团队名称.
+     */
+    name?: string | null;
+}
+/**
+ * 查询团队列表.
+ */
+export interface QueryTeamListCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 我创建的.
+     */
+    isOwn?: boolean | null;
+}
+/**
+ * 查询团队列表响应.
+ */
+export interface QueryTeamListCommandResponse extends Parsable {
+    /**
+     * 团队列表.
+     */
+    items?: QueryTeamListQueryResponseItem[] | null;
+}
+/**
+ * 团队列表项.
+ */
+export interface QueryTeamListQueryResponseItem extends Parsable {
+    /**
+     * 头像 url.
+     */
+    avatar?: string | null;
+    /**
+     * 头像 ObjectKey.
+     */
+    avatarKey?: string | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 创建人ID.
+     */
+    createUserId?: number | null;
+    /**
+     * 团队描述.
+     */
+    description?: string | null;
+    /**
+     * 团队ID.
+     */
+    id?: number | null;
+    /**
+     * 成员数量.
+     */
+    memberCount?: number | null;
+    /**
+     * 团队名称.
+     */
+    name?: string | null;
+    /**
+     * 当前用户在团队的角色.
+     */
+    role?: TeamRole | null;
+}
+/**
+ * 查询团队成员列表.
+ */
+export interface QueryTeamMemberListCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+}
+/**
+ * 团队成员列表响应.
+ */
+export interface QueryTeamMemberListCommandResponse extends Parsable {
+    /**
+     * 成员列表.
+     */
+    items?: QueryTeamMemberListQueryResponseItem[] | null;
+}
+/**
+ * 团队成员列表项.
+ */
+export interface QueryTeamMemberListQueryResponseItem extends Parsable {
+    /**
+     * 头像 url.
+     */
+    avatar?: string | null;
+    /**
+     * 头像 ObjectKey.
+     */
+    avatarKey?: string | null;
+    /**
+     * 加入时间.
+     */
+    joinTime?: string | null;
+    /**
+     * 在团队的角色.
+     */
+    role?: TeamRole | null;
+    /**
+     * 用户ID.
+     */
+    userId?: number | null;
+    /**
+     * 用户名.
+     */
+    userName?: string | null;
+}
 export interface QueryUserBindAccountCommandResponse extends Parsable {
     /**
      * The items property
@@ -6833,6 +7443,28 @@ export interface QueryUserListCommand extends PagedParamter, Parsable {
 export interface QueryUserListCommandResponse extends PagedResultOfUserItem, Parsable {
 }
 /**
+ * 查询用户在团队的角色.
+ */
+export interface QueryUserTeamRoleCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+}
+/**
+ * 查询用户在团队角色的响应.
+ */
+export interface QueryUserTeamRoleQueryResponse extends Parsable {
+    /**
+     * 用户在团队的角色.
+     */
+    role?: TeamRole | null;
+}
+/**
  * 查询用户可见的 AI 模型列表.
  */
 export interface QueryUserViewAiModelListCommand extends Parsable {
@@ -6856,9 +7488,13 @@ export interface QueryWikiBaseListCommand extends Parsable {
      */
     contextUserId?: number | null;
     /**
-     * 查询类型.
+     * 只查询私有知识库.
      */
-    queryType?: WikiQueryType | null;
+    isOwn?: boolean | null;
+    /**
+     * 限制查询某个团队下的知识库.
+     */
+    teamId?: number | null;
 }
 /**
  * 查询知识库批处理任务.
@@ -6935,6 +7571,10 @@ export interface QueryWikiCrawlerPluginConfigListCommandResponse extends Parsabl
  * 获取知识库详细信息.
  */
 export interface QueryWikiDetailInfoCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
     /**
      * 知识库 id.
      */
@@ -7113,6 +7753,14 @@ export interface QueryWikiFeishuPluginConfigListCommandResponse extends Parsable
  */
 export interface QueryWikiInfoResponse extends AuditsInfo, Parsable {
     /**
+     * 头像 url.
+     */
+    avatar?: string | null;
+    /**
+     * 头像 ObjectKey.
+     */
+    avatarKey?: string | null;
+    /**
      * 知识库描述.
      */
     description?: string | null;
@@ -7137,50 +7785,21 @@ export interface QueryWikiInfoResponse extends AuditsInfo, Parsable {
      */
     isPublic?: boolean | null;
     /**
-     * 是否该知识库成员.
-     */
-    isUser?: boolean | null;
-    /**
      * 知识库名称.
      */
     name?: string | null;
     /**
+     * 是否该知识库成员.
+     */
+    role?: TeamRole | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: number | null;
+    /**
      * 知识库 id.
      */
     wikiId?: number | null;
-}
-/**
- * 查询知识库协作成员.
- */
-export interface QueryWikiUsersCommand extends Parsable {
-    /**
-     * 查询知识库协作的成员列表.
-     */
-    wikiId?: number | null;
-}
-export interface QueryWikiUsersCommandResponse extends Parsable {
-    /**
-     * The users property
-     */
-    users?: QueryWikiUsersCommandResponseItem[] | null;
-}
-export interface QueryWikiUsersCommandResponseItem extends AuditsInfo, Parsable {
-    /**
-     * 邮箱.
-     */
-    email?: string | null;
-    /**
-     * 用户ID.
-     */
-    id?: number | null;
-    /**
-     * 昵称.
-     */
-    nickName?: string | null;
-    /**
-     * 用户名.
-     */
-    userName?: string | null;
 }
 /**
  * 刷新 MCP 服务器的工具列表，也就是重新从 mcp 服务器拉取这个服务的 tool 列表.
@@ -7255,6 +7874,19 @@ export interface RegisterUserCommand extends Parsable {
     userName?: string | null;
 }
 /**
+ * 移除团队成员命令.
+ */
+export interface RemoveTeamMemberCommand extends Parsable {
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+    /**
+     * 要移除的用户ID列表.
+     */
+    userIds?: number[] | null;
+}
+/**
  * 重置用户密码.
  */
 export interface ResetUserPasswordCommand extends Parsable {
@@ -7298,6 +7930,10 @@ export interface SearchWikiDocumentTextCommand extends Parsable {
      * 要使用的 ai 模型，如果 IsOptimizeQuery 或 IsAnswer = true，必须设置.
      */
     aiModelId?: number | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
     /**
      * 文档id，不设置时搜索整个知识库.
      */
@@ -7804,11 +8440,35 @@ export function serializeCreatePromptCommand(writer: SerializationWriter, create
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateTeamCommand(writer: SerializationWriter, createTeamCommand: Partial<CreateTeamCommand> | undefined | null = {}) : void {
+    if (createTeamCommand) {
+        writer.writeStringValue("avatar", createTeamCommand.avatar);
+        writer.writeNumberValue("contextUserId", createTeamCommand.contextUserId);
+        writer.writeStringValue("description", createTeamCommand.description);
+        writer.writeStringValue("name", createTeamCommand.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateTeamCommandResponse(writer: SerializationWriter, createTeamCommandResponse: Partial<CreateTeamCommandResponse> | undefined | null = {}) : void {
+    if (createTeamCommandResponse) {
+        writer.writeNumberValue("teamId", createTeamCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateWikiCommand(writer: SerializationWriter, createWikiCommand: Partial<CreateWikiCommand> | undefined | null = {}) : void {
     if (createWikiCommand) {
+        writer.writeNumberValue("contextUserId", createWikiCommand.contextUserId);
         writer.writeStringValue("description", createWikiCommand.description);
-        writer.writeBooleanValue("isPublic", createWikiCommand.isPublic);
         writer.writeStringValue("name", createWikiCommand.name);
+        writer.writeNumberValue("teamId", createWikiCommand.teamId);
     }
 }
 /**
@@ -8041,12 +8701,11 @@ export function serializeImportOpenApiToWikiCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeInviteWikiUserCommand(writer: SerializationWriter, inviteWikiUserCommand: Partial<InviteWikiUserCommand> | undefined | null = {}) : void {
-    if (inviteWikiUserCommand) {
-        writer.writeBooleanValue("isInvite", inviteWikiUserCommand.isInvite);
-        writer.writeCollectionOfPrimitiveValues<number>("userIds", inviteWikiUserCommand.userIds);
-        writer.writeCollectionOfPrimitiveValues<string>("userNames", inviteWikiUserCommand.userNames);
-        writer.writeNumberValue("wikiId", inviteWikiUserCommand.wikiId);
+export function serializeInviteTeamMemberCommand(writer: SerializationWriter, inviteTeamMemberCommand: Partial<InviteTeamMemberCommand> | undefined | null = {}) : void {
+    if (inviteTeamMemberCommand) {
+        writer.writeNumberValue("teamId", inviteTeamMemberCommand.teamId);
+        writer.writeCollectionOfPrimitiveValues<number>("userIds", inviteTeamMemberCommand.userIds);
+        writer.writeCollectionOfPrimitiveValues<string>("userNames", inviteTeamMemberCommand.userNames);
     }
 }
 /**
@@ -8101,6 +8760,17 @@ export function serializeKeyValueOfStringAndString(writer: SerializationWriter, 
 export function serializeKeyValueString(writer: SerializationWriter, keyValueString: Partial<KeyValueString> | undefined | null = {}) : void {
     if (keyValueString) {
         serializeKeyValueOfStringAndString(writer, keyValueString)
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeLeaveTeamCommand(writer: SerializationWriter, leaveTeamCommand: Partial<LeaveTeamCommand> | undefined | null = {}) : void {
+    if (leaveTeamCommand) {
+        writer.writeNumberValue("contextUserId", leaveTeamCommand.contextUserId);
+        writer.writeNumberValue("teamId", leaveTeamCommand.teamId);
     }
 }
 /**
@@ -8431,6 +9101,33 @@ export function serializePreUploadChatFileDocumentCommandResponse(writer: Serial
         writer.writeBooleanValue("isExist", preUploadChatFileDocumentCommandResponse.isExist);
         writer.writeStringValue("objectKey", preUploadChatFileDocumentCommandResponse.objectKey);
         writer.writeStringValue("uploadUrl", preUploadChatFileDocumentCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadImageCommand(writer: SerializationWriter, preUploadImageCommand: Partial<PreUploadImageCommand> | undefined | null = {}) : void {
+    if (preUploadImageCommand) {
+        writer.writeStringValue("contentType", preUploadImageCommand.contentType);
+        writer.writeStringValue("fileName", preUploadImageCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadImageCommand.fileSize);
+        writer.writeStringValue("mD5", preUploadImageCommand.mD5);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadImageCommandResponse(writer: SerializationWriter, preUploadImageCommandResponse: Partial<PreUploadImageCommandResponse> | undefined | null = {}) : void {
+    if (preUploadImageCommandResponse) {
+        writer.writeStringValue("expiration", preUploadImageCommandResponse.expiration);
+        writer.writeNumberValue("fileId", preUploadImageCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadImageCommandResponse.isExist);
+        writer.writeStringValue("objectKey", preUploadImageCommandResponse.objectKey);
+        writer.writeStringValue("uploadUrl", preUploadImageCommandResponse.uploadUrl);
     }
 }
 /**
@@ -8910,6 +9607,110 @@ export function serializeQueryServerInfoCommandResponse(writer: SerializationWri
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryTeamInfoCommand(writer: SerializationWriter, queryTeamInfoCommand: Partial<QueryTeamInfoCommand> | undefined | null = {}) : void {
+    if (queryTeamInfoCommand) {
+        writer.writeNumberValue("contextUserId", queryTeamInfoCommand.contextUserId);
+        writer.writeNumberValue("teamId", queryTeamInfoCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamInfoCommandResponse(writer: SerializationWriter, queryTeamInfoCommandResponse: Partial<QueryTeamInfoCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamInfoCommandResponse) {
+        writer.writeStringValue("avatar", queryTeamInfoCommandResponse.avatar);
+        writer.writeStringValue("avatarKey", queryTeamInfoCommandResponse.avatarKey);
+        writer.writeStringValue("createTime", queryTeamInfoCommandResponse.createTime);
+        writer.writeNumberValue("createUserId", queryTeamInfoCommandResponse.createUserId);
+        writer.writeStringValue("description", queryTeamInfoCommandResponse.description);
+        writer.writeNumberValue("id", queryTeamInfoCommandResponse.id);
+        writer.writeNumberValue("memberCount", queryTeamInfoCommandResponse.memberCount);
+        writer.writeEnumValue<TeamRole>("myRole", queryTeamInfoCommandResponse.myRole);
+        writer.writeStringValue("name", queryTeamInfoCommandResponse.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamListCommand(writer: SerializationWriter, queryTeamListCommand: Partial<QueryTeamListCommand> | undefined | null = {}) : void {
+    if (queryTeamListCommand) {
+        writer.writeNumberValue("contextUserId", queryTeamListCommand.contextUserId);
+        writer.writeBooleanValue("isOwn", queryTeamListCommand.isOwn);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamListCommandResponse(writer: SerializationWriter, queryTeamListCommandResponse: Partial<QueryTeamListCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryTeamListQueryResponseItem>("items", queryTeamListCommandResponse.items, serializeQueryTeamListQueryResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamListQueryResponseItem(writer: SerializationWriter, queryTeamListQueryResponseItem: Partial<QueryTeamListQueryResponseItem> | undefined | null = {}) : void {
+    if (queryTeamListQueryResponseItem) {
+        writer.writeStringValue("avatar", queryTeamListQueryResponseItem.avatar);
+        writer.writeStringValue("avatarKey", queryTeamListQueryResponseItem.avatarKey);
+        writer.writeStringValue("createTime", queryTeamListQueryResponseItem.createTime);
+        writer.writeNumberValue("createUserId", queryTeamListQueryResponseItem.createUserId);
+        writer.writeStringValue("description", queryTeamListQueryResponseItem.description);
+        writer.writeNumberValue("id", queryTeamListQueryResponseItem.id);
+        writer.writeNumberValue("memberCount", queryTeamListQueryResponseItem.memberCount);
+        writer.writeStringValue("name", queryTeamListQueryResponseItem.name);
+        writer.writeEnumValue<TeamRole>("role", queryTeamListQueryResponseItem.role);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamMemberListCommand(writer: SerializationWriter, queryTeamMemberListCommand: Partial<QueryTeamMemberListCommand> | undefined | null = {}) : void {
+    if (queryTeamMemberListCommand) {
+        writer.writeNumberValue("contextUserId", queryTeamMemberListCommand.contextUserId);
+        writer.writeNumberValue("teamId", queryTeamMemberListCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamMemberListCommandResponse(writer: SerializationWriter, queryTeamMemberListCommandResponse: Partial<QueryTeamMemberListCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamMemberListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryTeamMemberListQueryResponseItem>("items", queryTeamMemberListCommandResponse.items, serializeQueryTeamMemberListQueryResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamMemberListQueryResponseItem(writer: SerializationWriter, queryTeamMemberListQueryResponseItem: Partial<QueryTeamMemberListQueryResponseItem> | undefined | null = {}) : void {
+    if (queryTeamMemberListQueryResponseItem) {
+        writer.writeStringValue("avatar", queryTeamMemberListQueryResponseItem.avatar);
+        writer.writeStringValue("avatarKey", queryTeamMemberListQueryResponseItem.avatarKey);
+        writer.writeStringValue("joinTime", queryTeamMemberListQueryResponseItem.joinTime);
+        writer.writeEnumValue<TeamRole>("role", queryTeamMemberListQueryResponseItem.role);
+        writer.writeNumberValue("userId", queryTeamMemberListQueryResponseItem.userId);
+        writer.writeStringValue("userName", queryTeamMemberListQueryResponseItem.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryUserBindAccountCommandResponse(writer: SerializationWriter, queryUserBindAccountCommandResponse: Partial<QueryUserBindAccountCommandResponse> | undefined | null = {}) : void {
     if (queryUserBindAccountCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryUserBindAccountCommandResponseItem>("items", queryUserBindAccountCommandResponse.items, serializeQueryUserBindAccountCommandResponseItem);
@@ -8957,6 +9758,27 @@ export function serializeQueryUserListCommandResponse(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryUserTeamRoleCommand(writer: SerializationWriter, queryUserTeamRoleCommand: Partial<QueryUserTeamRoleCommand> | undefined | null = {}) : void {
+    if (queryUserTeamRoleCommand) {
+        writer.writeNumberValue("contextUserId", queryUserTeamRoleCommand.contextUserId);
+        writer.writeNumberValue("teamId", queryUserTeamRoleCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryUserTeamRoleQueryResponse(writer: SerializationWriter, queryUserTeamRoleQueryResponse: Partial<QueryUserTeamRoleQueryResponse> | undefined | null = {}) : void {
+    if (queryUserTeamRoleQueryResponse) {
+        writer.writeEnumValue<TeamRole>("role", queryUserTeamRoleQueryResponse.role);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryUserViewAiModelListCommand(writer: SerializationWriter, queryUserViewAiModelListCommand: Partial<QueryUserViewAiModelListCommand> | undefined | null = {}) : void {
     if (queryUserViewAiModelListCommand) {
         writer.writeEnumValue<AiModelType>("aiModelType", queryUserViewAiModelListCommand.aiModelType);
@@ -8980,7 +9802,8 @@ export function serializeQueryUserViewAiModelListCommandResponse(writer: Seriali
 export function serializeQueryWikiBaseListCommand(writer: SerializationWriter, queryWikiBaseListCommand: Partial<QueryWikiBaseListCommand> | undefined | null = {}) : void {
     if (queryWikiBaseListCommand) {
         writer.writeNumberValue("contextUserId", queryWikiBaseListCommand.contextUserId);
-        writer.writeEnumValue<WikiQueryType>("queryType", queryWikiBaseListCommand.queryType);
+        writer.writeBooleanValue("isOwn", queryWikiBaseListCommand.isOwn);
+        writer.writeNumberValue("teamId", queryWikiBaseListCommand.teamId);
     }
 }
 /**
@@ -9056,6 +9879,7 @@ export function serializeQueryWikiCrawlerPluginConfigListCommandResponse(writer:
 // @ts-ignore
 export function serializeQueryWikiDetailInfoCommand(writer: SerializationWriter, queryWikiDetailInfoCommand: Partial<QueryWikiDetailInfoCommand> | undefined | null = {}) : void {
     if (queryWikiDetailInfoCommand) {
+        writer.writeNumberValue("contextUserId", queryWikiDetailInfoCommand.contextUserId);
         writer.writeNumberValue("wikiId", queryWikiDetailInfoCommand.wikiId);
     }
 }
@@ -9210,49 +10034,18 @@ export function serializeQueryWikiFeishuPluginConfigListCommandResponse(writer: 
 export function serializeQueryWikiInfoResponse(writer: SerializationWriter, queryWikiInfoResponse: Partial<QueryWikiInfoResponse> | undefined | null = {}) : void {
     if (queryWikiInfoResponse) {
         serializeAuditsInfo(writer, queryWikiInfoResponse)
+        writer.writeStringValue("avatar", queryWikiInfoResponse.avatar);
+        writer.writeStringValue("avatarKey", queryWikiInfoResponse.avatarKey);
         writer.writeStringValue("description", queryWikiInfoResponse.description);
         writer.writeNumberValue("documentCount", queryWikiInfoResponse.documentCount);
         writer.writeNumberValue("embeddingDimensions", queryWikiInfoResponse.embeddingDimensions);
         writer.writeNumberValue("embeddingModelId", queryWikiInfoResponse.embeddingModelId);
         writer.writeBooleanValue("isLock", queryWikiInfoResponse.isLock);
         writer.writeBooleanValue("isPublic", queryWikiInfoResponse.isPublic);
-        writer.writeBooleanValue("isUser", queryWikiInfoResponse.isUser);
         writer.writeStringValue("name", queryWikiInfoResponse.name);
+        writer.writeEnumValue<TeamRole>("role", queryWikiInfoResponse.role);
+        writer.writeNumberValue("teamId", queryWikiInfoResponse.teamId);
         writer.writeNumberValue("wikiId", queryWikiInfoResponse.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryWikiUsersCommand(writer: SerializationWriter, queryWikiUsersCommand: Partial<QueryWikiUsersCommand> | undefined | null = {}) : void {
-    if (queryWikiUsersCommand) {
-        writer.writeNumberValue("wikiId", queryWikiUsersCommand.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryWikiUsersCommandResponse(writer: SerializationWriter, queryWikiUsersCommandResponse: Partial<QueryWikiUsersCommandResponse> | undefined | null = {}) : void {
-    if (queryWikiUsersCommandResponse) {
-        writer.writeCollectionOfObjectValues<QueryWikiUsersCommandResponseItem>("users", queryWikiUsersCommandResponse.users, serializeQueryWikiUsersCommandResponseItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryWikiUsersCommandResponseItem(writer: SerializationWriter, queryWikiUsersCommandResponseItem: Partial<QueryWikiUsersCommandResponseItem> | undefined | null = {}) : void {
-    if (queryWikiUsersCommandResponseItem) {
-        serializeAuditsInfo(writer, queryWikiUsersCommandResponseItem)
-        writer.writeStringValue("email", queryWikiUsersCommandResponseItem.email);
-        writer.writeNumberValue("id", queryWikiUsersCommandResponseItem.id);
-        writer.writeStringValue("nickName", queryWikiUsersCommandResponseItem.nickName);
-        writer.writeStringValue("userName", queryWikiUsersCommandResponseItem.userName);
     }
 }
 /**
@@ -9309,6 +10102,17 @@ export function serializeRegisterUserCommand(writer: SerializationWriter, regist
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeRemoveTeamMemberCommand(writer: SerializationWriter, removeTeamMemberCommand: Partial<RemoveTeamMemberCommand> | undefined | null = {}) : void {
+    if (removeTeamMemberCommand) {
+        writer.writeNumberValue("teamId", removeTeamMemberCommand.teamId);
+        writer.writeCollectionOfPrimitiveValues<number>("userIds", removeTeamMemberCommand.userIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeResetUserPasswordCommand(writer: SerializationWriter, resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined | null = {}) : void {
     if (resetUserPasswordCommand) {
         writer.writeNumberValue("userId", resetUserPasswordCommand.userId);
@@ -9345,6 +10149,7 @@ export function serializeRunTestNativePluginCommandResponse(writer: Serializatio
 export function serializeSearchWikiDocumentTextCommand(writer: SerializationWriter, searchWikiDocumentTextCommand: Partial<SearchWikiDocumentTextCommand> | undefined | null = {}) : void {
     if (searchWikiDocumentTextCommand) {
         writer.writeNumberValue("aiModelId", searchWikiDocumentTextCommand.aiModelId);
+        writer.writeNumberValue("contextUserId", searchWikiDocumentTextCommand.contextUserId);
         writer.writeNumberValue("documentId", searchWikiDocumentTextCommand.documentId);
         writer.writeBooleanValue("isAnswer", searchWikiDocumentTextCommand.isAnswer);
         writer.writeBooleanValue("isOptimizeQuery", searchWikiDocumentTextCommand.isOptimizeQuery);
@@ -9498,6 +10303,17 @@ export function serializeTextTokenUsage(writer: SerializationWriter, textTokenUs
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTransferTeamOwnerCommand(writer: SerializationWriter, transferTeamOwnerCommand: Partial<TransferTeamOwnerCommand> | undefined | null = {}) : void {
+    if (transferTeamOwnerCommand) {
+        writer.writeNumberValue("newOwnerUserId", transferTeamOwnerCommand.newOwnerUserId);
+        writer.writeNumberValue("teamId", transferTeamOwnerCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUnbindUserAccountCommand(writer: SerializationWriter, unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined | null = {}) : void {
     if (unbindUserAccountCommand) {
         writer.writeNumberValue("bindId", unbindUserAccountCommand.bindId);
@@ -9631,8 +10447,34 @@ export function serializeUpdatePromptCommand(writer: SerializationWriter, update
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateTeamCommand(writer: SerializationWriter, updateTeamCommand: Partial<UpdateTeamCommand> | undefined | null = {}) : void {
+    if (updateTeamCommand) {
+        writer.writeStringValue("avatar", updateTeamCommand.avatar);
+        writer.writeStringValue("description", updateTeamCommand.description);
+        writer.writeStringValue("name", updateTeamCommand.name);
+        writer.writeNumberValue("teamId", updateTeamCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateTeamMemberRoleCommand(writer: SerializationWriter, updateTeamMemberRoleCommand: Partial<UpdateTeamMemberRoleCommand> | undefined | null = {}) : void {
+    if (updateTeamMemberRoleCommand) {
+        writer.writeEnumValue<TeamRole>("role", updateTeamMemberRoleCommand.role);
+        writer.writeNumberValue("teamId", updateTeamMemberRoleCommand.teamId);
+        writer.writeNumberValue("userId", updateTeamMemberRoleCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateUserInfoCommand(writer: SerializationWriter, updateUserInfoCommand: Partial<UpdateUserInfoCommand> | undefined | null = {}) : void {
     if (updateUserInfoCommand) {
+        writer.writeStringValue("avatarPath", updateUserInfoCommand.avatarPath);
         writer.writeStringValue("email", updateUserInfoCommand.email);
         writer.writeStringValue("nickName", updateUserInfoCommand.nickName);
         writer.writeStringValue("phone", updateUserInfoCommand.phone);
@@ -9658,6 +10500,7 @@ export function serializeUpdateUserPasswordCommand(writer: SerializationWriter, 
 // @ts-ignore
 export function serializeUpdateWikiConfigCommand(writer: SerializationWriter, updateWikiConfigCommand: Partial<UpdateWikiConfigCommand> | undefined | null = {}) : void {
     if (updateWikiConfigCommand) {
+        writer.writeStringValue("avatar", updateWikiConfigCommand.avatar);
         writer.writeStringValue("description", updateWikiConfigCommand.description);
         writer.writeNumberValue("embeddingDimensions", updateWikiConfigCommand.embeddingDimensions);
         writer.writeNumberValue("embeddingModelId", updateWikiConfigCommand.embeddingModelId);
@@ -9752,6 +10595,7 @@ export function serializeUserItem(writer: SerializationWriter, userItem: Partial
 // @ts-ignore
 export function serializeUserStateInfo(writer: SerializationWriter, userStateInfo: Partial<UserStateInfo> | undefined | null = {}) : void {
     if (userStateInfo) {
+        writer.writeStringValue("avatar", userStateInfo.avatar);
         writer.writeStringValue("email", userStateInfo.email);
         writer.writeBooleanValue("isAdmin", userStateInfo.isAdmin);
         writer.writeBooleanValue("isDeleted", userStateInfo.isDeleted);
@@ -9880,6 +10724,7 @@ export function serializeWikiDocumenChunkItem(writer: SerializationWriter, wikiD
 export function serializeWikiDocumentAiTextPartionCommand(writer: SerializationWriter, wikiDocumentAiTextPartionCommand: Partial<WikiDocumentAiTextPartionCommand> | undefined | null = {}) : void {
     if (wikiDocumentAiTextPartionCommand) {
         writer.writeNumberValue("aiModelId", wikiDocumentAiTextPartionCommand.aiModelId);
+        writer.writeNumberValue("contextUserId", wikiDocumentAiTextPartionCommand.contextUserId);
         writer.writeNumberValue("documentId", wikiDocumentAiTextPartionCommand.documentId);
         writer.writeStringValue("promptTemplate", wikiDocumentAiTextPartionCommand.promptTemplate);
         writer.writeNumberValue("wikiId", wikiDocumentAiTextPartionCommand.wikiId);
@@ -10147,6 +10992,7 @@ export interface StartWikiFeishuPluginTaskCommand extends Parsable {
      */
     wikiId?: number | null;
 }
+export type TeamRole = (typeof TeamRoleObject)[keyof typeof TeamRoleObject];
 /**
  * Token 使用量.
  */
@@ -10163,6 +11009,19 @@ export interface TextTokenUsage extends Parsable {
      * The total number of combined input (prompt) and output (completion) tokens used by a chat completion operation.
      */
     totalTokens?: number | null;
+}
+/**
+ * 转让团队所有者命令.
+ */
+export interface TransferTeamOwnerCommand extends Parsable {
+    /**
+     * 新所有者用户ID.
+     */
+    newOwnerUserId?: number | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
 }
 /**
  * 解绑第三方账号.
@@ -10410,9 +11269,51 @@ export interface UpdatePromptCommand extends Parsable {
     promptId?: number | null;
 }
 /**
+ * 编辑团队信息命令.
+ */
+export interface UpdateTeamCommand extends Parsable {
+    /**
+     * 团队头像 ObjectKey.
+     */
+    avatar?: string | null;
+    /**
+     * 团队描述.
+     */
+    description?: string | null;
+    /**
+     * 团队名称.
+     */
+    name?: string | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+}
+/**
+ * 修改成员在团队的角色命令.
+ */
+export interface UpdateTeamMemberRoleCommand extends Parsable {
+    /**
+     * 新角色.
+     */
+    role?: TeamRole | null;
+    /**
+     * 团队ID.
+     */
+    teamId?: number | null;
+    /**
+     * 用户ID.
+     */
+    userId?: number | null;
+}
+/**
  * 修改用户信息.
  */
 export interface UpdateUserInfoCommand extends Parsable {
+    /**
+     * 头像.
+     */
+    avatarPath?: string | null;
     /**
      * 邮箱.
      */
@@ -10452,6 +11353,10 @@ export interface UpdateUserPasswordCommand extends Parsable {
  */
 export interface UpdateWikiConfigCommand extends Parsable {
     /**
+     * 头像 objectKey.
+     */
+    avatar?: string | null;
+    /**
      * 知识库描述.
      */
     description?: string | null;
@@ -10464,7 +11369,7 @@ export interface UpdateWikiConfigCommand extends Parsable {
      */
     embeddingModelId?: number | null;
     /**
-     * 算法公开.
+     * 公开，私有知识库不能公开.
      */
     isPublic?: boolean | null;
     /**
@@ -10598,6 +11503,10 @@ export interface UserItem extends AuditsInfo, Parsable {
  * UserStateInfo.
  */
 export interface UserStateInfo extends Parsable {
+    /**
+     * 头像地址.
+     */
+    avatar?: string | null;
     /**
      * 邮箱.
      */
@@ -10850,6 +11759,10 @@ export interface WikiDocumentAiTextPartionCommand extends Parsable {
      * Ai 模型.
      */
     aiModelId?: number | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: number | null;
     /**
      * 知识库 id.
      */
@@ -11128,7 +12041,6 @@ export interface WikiPluginAutoProcessConfig extends Parsable {
      */
     threadCount?: number | null;
 }
-export type WikiQueryType = (typeof WikiQueryTypeObject)[keyof typeof WikiQueryTypeObject];
 export type WorkerState = (typeof WorkerStateObject)[keyof typeof WorkerStateObject];
 /**
  * AI 模型大分类.
@@ -11252,13 +12164,13 @@ export const PromptFilterConditionObject = {
     OtherShare: "otherShare",
 } as const;
 /**
- * 知识库查询类型.
+ * 团队角色枚举.
  */
-export const WikiQueryTypeObject = {
+export const TeamRoleObject = {
     None: "none",
-    Own: "own",
-    User: "user",
-    Public: "public",
+    Collaborator: "collaborator",
+    Admin: "admin",
+    Owner: "owner",
 } as const;
 /**
  * 任务通用状态.

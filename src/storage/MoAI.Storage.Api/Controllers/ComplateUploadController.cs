@@ -27,6 +27,8 @@ public class ComplateUploadController : ControllerBase
     /// 完成上传回调.
     /// POST {ApiPrefix.Prefix}/complate_url
     /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
     /// <returns>.</returns>
     [HttpPost("complate_url")]
     public async Task<EmptyCommandResponse> Post([FromBody] ComplateFileUploadCommand req, CancellationToken ct)

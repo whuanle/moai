@@ -166,11 +166,6 @@ export default function WikiLayout() {
       label: "召回测试",
     },
     {
-      key: "user",
-      icon: <UserOutlined />,
-      label: "成员",
-    },
-    {
       key: "settings",
       icon: <SettingOutlined />,
       label: "设置",

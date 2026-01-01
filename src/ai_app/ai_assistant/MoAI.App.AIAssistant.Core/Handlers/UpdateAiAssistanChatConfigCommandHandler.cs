@@ -45,14 +45,13 @@ public class UpdateAiAssistanChatConfigCommandHandler : IRequestHandler<UpdateAi
         {
             var wikiIds = request.WikiIds.ToHashSet();
 
-            var notJoinWikiIds = await _databaseContext.Wikis
-                .Where(x => wikiIds.Contains(x.Id) && (!x.IsPublic && x.CreateUserId == request.ContextUserId && _databaseContext.WikiUsers.Where(a => a.WikiId == x.Id && a.UserId == request.ContextUserId).Any()))
-                .Select(x => x.Name)
-                .ToListAsync();
+            var joinWikiIds = await _databaseContext.Wikis
+                .Where(x => wikiIds.Contains(x.Id) && (x.IsPublic || (x.TeamId == 0 && x.CreateUserId != request.ContextUserId) || _databaseContext.TeamUsers.Where(a => x.TeamId == a.TeamId && a.UserId == request.ContextUserId).Any()))
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
 
-            if (notJoinWikiIds.Count > 0)
+            if (joinWikiIds.Count != wikiIds.Count)
             {
-                throw new BusinessException("用户无权访问知识库 {0}", string.Join(",", notJoinWikiIds));
+                throw new BusinessException("用户无权访问知识库 {0}", string.Join(",", joinWikiIds.Where(x => !wikiIds.Contains(x.Key))));
             }
         }
 

@@ -13,7 +13,12 @@ public class QueryWikiBaseListCommand : IUserIdContext, IRequest<IReadOnlyCollec
     public int ContextUserId { get; init; }
 
     /// <summary>
-    /// 查询类型.
+    /// 限制查询某个团队下的知识库.
     /// </summary>
-    public WikiQueryType QueryType { get; init; }
+    public int? TeamId { get; init; }
+
+    /// <summary>
+    /// 只查询私有知识库.
+    /// </summary>
+    public bool? IsOwn { get; init; }
 }

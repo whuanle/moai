@@ -46,20 +46,6 @@ public partial class WikiManagerController : ControllerBase
     }
 
     /// <summary>
-    /// 邀请或移除知识库成员.
-    /// </summary>
-    /// <param name="req">邀请或移除知识库成员的命令对象.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/> 表示操作结果.</returns>
-    [HttpPost("invite_wiki_user")]
-    public async Task<EmptyCommandResponse> InviteWikiUser([FromBody] InviteWikiUserCommand req, CancellationToken ct = default)
-    {
-        await CheckIsCreatorAsync(req.WikiId, ct);
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
     /// 更新知识库配置.
     /// </summary>
     /// <param name="req">更新知识库配置的命令对象, 包含 WikiId 与配置内容.</param>
@@ -75,16 +61,21 @@ public partial class WikiManagerController : ControllerBase
 
     private async Task CheckIsCreatorAsync(int wikiId, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand { WikiId = wikiId }, ct);
+        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand { WikiId = wikiId, ContextUserId = _userContext.UserId }, ct);
 
-        if (!isCreator.WikiIsExist)
+        if (!isCreator.IsExist)
         {
             throw new BusinessException("未找到知识库.") { StatusCode = 404 };
         }
 
-        if (isCreator.CreatorId != _userContext.UserId)
+        if (isCreator.IsTeam == false && isCreator.CreatorId != _userContext.UserId)
         {
-            throw new BusinessException("知识库创建人才能操作.") { StatusCode = 404 };
+            throw new BusinessException("知识库创建人才能操作.") { StatusCode = 409 };
+        }
+
+        if (isCreator.IsTeam == true && isCreator.TeamRole < Team.Models.TeamRole.Admin)
+        {
+            throw new BusinessException("团队管理员才能操作.") { StatusCode = 409 };
         }
     }
 }

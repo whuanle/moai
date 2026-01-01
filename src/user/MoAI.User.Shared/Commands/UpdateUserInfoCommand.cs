@@ -32,4 +32,9 @@ public class UpdateUserInfoCommand : IRequest<EmptyCommandResponse>
     /// 手机号.
     /// </summary>
     public string Phone { get; set; } = default!;
+
+    /// <summary>
+    /// 头像.
+    /// </summary>
+    public string AvatarPath { get; set; } = default!;
 }

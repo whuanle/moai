@@ -1,0 +1,79 @@
+/* AppHeader.css */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-right: 32px;
+}
+
+.logo-container img {
+  object-fit: contain;
+}
+
+.logo-text {
+  margin-left: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.main-menu {
+  flex: 1;
+  border-bottom: none;
+  background: transparent;
+  line-height: 54px;
+}
+
+.main-menu .ant-menu-item,
+.main-menu .ant-menu-submenu-title {
+  padding: 0 16px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.user-dropdown:hover {
+  background-color: #f5f5f5;
+}
+
+.user-name {
+  margin: 0 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.dropdown-icon {
+  font-size: 12px;
+  color: #666;
+}

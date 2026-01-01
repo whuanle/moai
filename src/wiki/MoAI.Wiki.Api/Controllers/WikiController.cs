@@ -41,6 +41,7 @@ public partial class WikiController : ControllerBase
     [HttpPost("create")]
     public async Task<SimpleInt> Create([FromBody] CreateWikiCommand req, CancellationToken ct = default)
     {
+        req.SetUserId(_userContext.UserId);
         return await _mediator.Send(req, ct);
     }
 
@@ -67,39 +68,19 @@ public partial class WikiController : ControllerBase
     public async Task<QueryWikiInfoResponse> QueryWikiInfo([FromBody] QueryWikiDetailInfoCommand req, CancellationToken ct = default)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryUserIsWikiUserCommand
-        {
-            ContextUserId = _userContext.UserId,
-            WikiId = req.WikiId
-        },
-            ct);
-
-        if (userIsWikiUser.IsWikiUser == true)
-        {
-            return await _mediator.Send(req, ct);
-        }
-
-        throw new BusinessException("未找到知识库.") { StatusCode = 404 };
-    }
-
-    /// <summary>
-    /// 获取知识库协作者列表.
-    /// </summary>
-    /// <param name="req">查询知识库协作者的命令对象, 包含 WikiId.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryWikiUsersCommandResponse"/> 包含协作者列表与元信息.</returns>
-    [HttpPost("query_wiki_users")]
-    public async Task<QueryWikiUsersCommandResponse> QueryWikiUsers([FromBody] QueryWikiUsersCommand req, CancellationToken ct = default)
-    {
-        var userIsWikiUser = await _mediator.Send(
-            new QueryUserIsWikiUserCommand
+            new QueryWikiCreatorCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = req.WikiId
             },
             ct);
 
-        if (userIsWikiUser.IsWikiUser == true)
+        if (userIsWikiUser.IsExist == false)
+        {
+            throw new BusinessException("未找到知识库.") { StatusCode = 404 };
+        }
+
+        if (userIsWikiUser.TeamRole > Team.Models.TeamRole.None)
         {
             return await _mediator.Send(req, ct);
         }

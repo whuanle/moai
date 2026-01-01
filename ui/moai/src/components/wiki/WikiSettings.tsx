@@ -11,10 +11,29 @@ import {
   Space,
   Tooltip,
   App,
+  Upload,
+  Avatar,
 } from "antd";
+import type { UploadProps } from "antd";
+import {
+  BookOutlined,
+  CameraOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import { useParams } from "react-router";
 import type { PublicModelInfo } from "../../apiClient/models";
+import { proxyRequestError } from "../../helper/RequestError";
+import { GetFileMd5 } from "../../helper/Md5Helper";
+import "./WikiSettings.css";
+
+// 原始知识库信息类型
+interface OriginalWikiInfo {
+  name: string;
+  description: string;
+  isPublic: boolean;
+  avatarKey?: string;
+}
 
 export default function WikiSettings() {
   const [form] = Form.useForm();
@@ -25,6 +44,9 @@ export default function WikiSettings() {
   const [embeddingModels, setEmbeddingModels] = useState<PublicModelInfo[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [isLock, setIsLock] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [originalWikiInfo, setOriginalWikiInfo] = useState<OriginalWikiInfo | null>(null);
   const { id } = useParams();
   const apiClient = GetApiClient();
 
@@ -66,12 +88,21 @@ export default function WikiSettings() {
 
       if (response) {
         setIsLock(response.isLock || false);
+        setAvatarUrl(response.avatar || undefined);
+        // 保存原始知识库信息
+        setOriginalWikiInfo({
+          name: response.name || "",
+          description: response.description || "",
+          isPublic: response.isPublic || false,
+          avatarKey: response.avatarKey || undefined,
+        });
         form.setFieldsValue({
           name: response.name,
           description: response.description,
           isPublic: response.isPublic,
           embeddingDimensions: response.embeddingDimensions,
           embeddingModelId: response.embeddingModelId === 0 ? undefined : response.embeddingModelId,
+          avatarKey: response.avatarKey,
         });
       }
     } catch (error) {
@@ -80,6 +111,88 @@ export default function WikiSettings() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!id || !originalWikiInfo) return;
+    setAvatarUploading(true);
+    try {
+      const client = GetApiClient();
+
+      // 1. 计算文件 MD5
+      const md5 = await GetFileMd5(file);
+
+      // 2. 获取预上传地址
+      const preUploadResponse = await client.api.storage.image.pre_upload.post({
+        fileName: file.name,
+        fileSize: file.size,
+        contentType: file.type,
+        mD5: md5,
+      });
+
+      if (!preUploadResponse) {
+        throw new Error("获取上传地址失败");
+      }
+
+      const avatarPath = preUploadResponse.objectKey!;
+
+      // 3. 如果文件不存在，需要上传
+      if (!preUploadResponse.isExist) {
+        const uploadResponse = await fetch(preUploadResponse.uploadUrl!, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("上传文件失败");
+        }
+
+        // 完成上传回调
+        await client.api.storage.complate_url.post({
+          fileId: preUploadResponse.fileId,
+          isSuccess: true,
+        });
+      }
+
+      // 4. 使用原始知识库信息调用更新接口
+      await client.api.wiki.manager.update_wiki_config.post({
+        wikiId: parseInt(id),
+        name: originalWikiInfo.name,
+        description: originalWikiInfo.description,
+        isPublic: originalWikiInfo.isPublic,
+        avatar: avatarPath,
+      });
+
+      // 更新表单中的 avatarKey
+      form.setFieldValue("avatarKey", avatarPath);
+      messageApi.success("头像更新成功");
+      await fetchWikiInfo();
+    } catch (error) {
+      console.error("上传头像失败:", error);
+      proxyRequestError(error, messageApi, "上传头像失败");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const beforeUpload: UploadProps["beforeUpload"] = (file) => {
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+      messageApi.error("只能上传图片文件");
+      return false;
+    }
+
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      messageApi.error("图片大小不能超过 5MB");
+      return false;
+    }
+
+    handleAvatarUpload(file);
+    return false;
   };
 
   const handleSubmit = async (values: any) => {
@@ -95,6 +208,7 @@ export default function WikiSettings() {
         name: values.name,
         description: values.description,
         isPublic: values.isPublic,
+        avatar: values.avatarKey,
       };
 
       // 如果未锁定，才传递文档处理配置
@@ -110,7 +224,7 @@ export default function WikiSettings() {
       await fetchWikiInfo();
     } catch (error) {
       console.error("Failed to update wiki config:", error);
-      messageApi.error("保存失败");
+      proxyRequestError(error, messageApi, "保存失败");
     } finally {
       setLoading(false);
     }
@@ -135,7 +249,7 @@ export default function WikiSettings() {
 
     try {
       setClearingVectors(true);
-      
+
       await apiClient.api.wiki.document.clear_embeddingt.post({
         wikiId: parseInt(id!),
         isAutoDeleteIndex: true
@@ -155,10 +269,33 @@ export default function WikiSettings() {
   return (
     <>
       {contextHolder}
-      <div style={{ maxWidth: '800px' }}>
-        <Card title="知识库设置">
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            <Form.Item
+      <Card title="知识库设置" className="wiki-settings-form">
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form.Item name="avatarKey" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item label="知识库头像">
+            <Upload
+              showUploadList={false}
+              beforeUpload={beforeUpload}
+              accept="image/*"
+              disabled={avatarUploading}
+            >
+              <div className="wiki-avatar-upload-wrapper">
+                <Avatar
+                  size={80}
+                  src={avatarUrl}
+                  icon={avatarUploading ? <LoadingOutlined /> : <BookOutlined />}
+                />
+                <div className="wiki-avatar-upload-overlay">
+                  {avatarUploading ? <LoadingOutlined /> : <CameraOutlined />}
+                  <span>{avatarUploading ? "上传中..." : "更换头像"}</span>
+                </div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
               name="name"
               label="知识库名称"
               rules={[{ required: true, message: "请输入知识库名称" }]}
@@ -171,8 +308,8 @@ export default function WikiSettings() {
               label="知识库描述"
               rules={[{ required: true, message: "请输入知识库描述" }]}
             >
-              <Input.TextArea 
-                placeholder="请输入知识库描述" 
+              <Input.TextArea
+                placeholder="请输入知识库描述"
                 rows={4}
               />
             </Form.Item>
@@ -220,8 +357,8 @@ export default function WikiSettings() {
                   ? "知识库已生成数据，禁止修改，如必须修改可点击："
                   : "第一次向量化文档后自动锁定"}
                 <Tooltip title="强制清空该文档的所有向量">
-                  <Button 
-                    type="default" 
+                  <Button
+                    type="default"
                     danger
                     loading={clearingVectors}
                     onClick={handleClearVectors}
@@ -243,7 +380,6 @@ export default function WikiSettings() {
             </Form.Item>
           </Form>
         </Card>
-      </div>
     </>
   );
 }

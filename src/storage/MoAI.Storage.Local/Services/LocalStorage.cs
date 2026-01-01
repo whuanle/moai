@@ -155,7 +155,7 @@ public class LocalStorage : IStorage
         var objectPath = WebUtility.UrlEncode(objectKey);
         var expiry = DateTimeOffset.Now.Add(expiryDuration).ToUnixTimeMilliseconds();
         var token = HashHelper.ComputeSha256Hash($"{expiry}|{objectKey}|{fileName}");
-        return new Uri(new Uri(_systemOptions.Server), relativeUri: $"/download/{fileName}?key={objectPath}&expiry={expiry}&token={token}");
+        return new Uri(new Uri(_systemOptions.Server), relativeUri: $"/api/download/{fileName}?key={objectPath}&expiry={expiry}&token={token}");
     }
 
     /// <inheritdoc/>

@@ -1,0 +1,23 @@
+.user-layout {
+  min-height: calc(100vh - 56px);
+  background: #f5f5f5;
+}
+
+.user-layout-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px;
+}
+
+.user-menu {
+  border-bottom: none;
+  background: transparent;
+}
+
+.user-menu .ant-menu-item {
+  padding: 0 20px;
+}
+
+.user-layout-content {
+  padding: 16px 24px;
+}

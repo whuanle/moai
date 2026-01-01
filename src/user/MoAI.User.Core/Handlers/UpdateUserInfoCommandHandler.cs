@@ -55,6 +55,7 @@ public class UpdateUserInfoCommandHandler : IRequestHandler<UpdateUserInfoComman
         user.Email = request.Email;
         user.NickName = request.NickName;
         user.Phone = request.Phone;
+        user.AvatarPath = request.AvatarPath;
 
         _databaseContext.Users.Update(user);
         await _databaseContext.SaveChangesAsync(cancellationToken);

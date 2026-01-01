@@ -15,7 +15,9 @@ import {
   Statistic,
   Tag,
   Alert,
+  Upload,
 } from 'antd';
+import type { UploadProps } from 'antd';
 import {
   UserOutlined,
   SaveOutlined,
@@ -25,13 +27,16 @@ import {
   PhoneOutlined,
   CrownOutlined,
   SafetyOutlined,
-  InfoCircleOutlined,
+  CameraOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { GetApiClient } from '../ServiceClient';
 import { GetUserDetailInfo, GetServiceInfo } from '../../InitService';
 import { proxyRequestError } from '../../helper/RequestError';
 import { RsaHelper } from '../../helper/RsaHalper';
+import { GetFileMd5 } from '../../helper/Md5Helper';
 import useAppStore from '../../stateshare/store';
+import './UserSetting.css';
 
 const { Text, Paragraph } = Typography;
 
@@ -42,9 +47,9 @@ export default function UserSetting() {
   const [passwordEditing, setPasswordEditing] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [userInfoLoading, setUserInfoLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [messageApi, contextHolder] = message.useMessage();
-  const serverInfo = useAppStore.getState().getServerInfo();
   const userInfo = useAppStore((state) => state.userDetailInfo);
 
   useEffect(() => {
@@ -64,21 +69,112 @@ export default function UserSetting() {
         });
       }
     } catch (error) {
-      messageApi.error('获取用户信息失败');
+      console.error('获取用户信息失败:', error);
+      proxyRequestError(error, messageApi, '获取用户信息失败');
     }
   };
 
+  // 上传头像
+  const handleAvatarUpload = async (file: File) => {
+    setAvatarUploading(true);
+    try {
+      const client = GetApiClient();
+      
+      // 1. 计算文件 MD5
+      const md5 = await GetFileMd5(file);
+      
+      // 2. 获取预上传地址
+      const preUploadResponse = await client.api.storage.image.pre_upload.post({
+        fileName: file.name,
+        fileSize: file.size,
+        contentType: file.type,
+        mD5: md5,
+      });
+
+      if (!preUploadResponse) {
+        throw new Error('获取上传地址失败');
+      }
+
+      // 3. 如果文件已存在，直接使用
+      if (preUploadResponse.isExist) {
+        // 文件已存在，直接更新用户头像
+        await updateUserAvatar(preUploadResponse.objectKey!);
+        messageApi.success('头像更新成功');
+        return;
+      }
+
+      // 4. 上传文件到预签名地址
+      const uploadResponse = await fetch(preUploadResponse.uploadUrl!, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('上传文件失败');
+      }
+
+      // 5. 完成上传回调
+      await client.api.storage.complate_url.post({
+        fileId: preUploadResponse.fileId,
+        isSuccess: true,
+      });
+
+      // 6. 更新用户头像
+      await updateUserAvatar(preUploadResponse.objectKey!);
+      messageApi.success('头像上传成功');
+    } catch (error) {
+      console.error('上传头像失败:', error);
+      proxyRequestError(error, messageApi, '上传头像失败');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  // 更新用户头像
+  const updateUserAvatar = async (avatarPath: string) => {
+    const client = GetApiClient();
+    await client.api.user.account.update_user.post({
+      userName: userInfo?.userName,
+      nickName: userInfo?.nickName,
+      email: userInfo?.email,
+      phone: userInfo?.phone,
+      userId: userInfo?.userId || 0,
+      avatarPath: avatarPath,
+    });
+    
+    // 刷新用户信息
+    await fetchUserInfo();
+  };
+
+  // 上传前校验
+  const beforeUpload: UploadProps['beforeUpload'] = (file) => {
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      messageApi.error('只能上传图片文件');
+      return false;
+    }
+    
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      messageApi.error('图片大小不能超过 5MB');
+      return false;
+    }
+    
+    handleAvatarUpload(file);
+    return false; // 阻止默认上传行为
+  };
+
   const handleSave = async (values: any) => {
-    // 检查用户名或邮箱是否发生变化
     const userNameChanged = values.userName !== userInfo?.userName;
     const emailChanged = values.email !== userInfo?.email;
     
     if (userNameChanged || emailChanged) {
-      // 显示提示信息
       messageApi.info('正在保存用户名或邮箱的修改...');
     }
     
-    // 直接保存
     await performSave(values);
   };
 
@@ -94,12 +190,12 @@ export default function UserSetting() {
         userId: userInfo?.userId || 0,
       });
       
-      // 更新后刷新用户信息
       await fetchUserInfo();
       
       messageApi.success('保存成功');
       setEditing(false);
     } catch (error) {
+      console.error('保存失败:', error);
       proxyRequestError(error, messageApi, '保存失败');
     } finally {
       setUserInfoLoading(false);
@@ -112,18 +208,15 @@ export default function UserSetting() {
     
     let score = 0;
     
-    // 长度检查
     if (password.length >= 6) score += 20;
     if (password.length >= 8) score += 10;
     if (password.length >= 12) score += 10;
     
-    // 字符类型检查
     if (/[a-z]/.test(password)) score += 15;
     if (/[A-Z]/.test(password)) score += 15;
     if (/[0-9]/.test(password)) score += 15;
     if (/[^a-zA-Z0-9]/.test(password)) score += 15;
     
-    // 复杂度检查
     if (password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
       score += 10;
     }
@@ -150,17 +243,22 @@ export default function UserSetting() {
       setPasswordEditing(false);
       setPasswordStrength(0);
     } catch (error) {
+      console.error('密码修改失败:', error);
       proxyRequestError(error, messageApi, '密码修改失败');
     } finally {
       setPasswordLoading(false);
     }
   };
 
+  // 获取用户显示名称
+  const getUserDisplayName = () => {
+    return userInfo?.nickName || userInfo?.userName || '用户';
+  };
 
   return (
     <>
       {contextHolder}
-      <div style={{ padding: '24px' }}>
+      <div className="user-setting-container">
         <Row gutter={[24, 24]}>
           {/* 用户信息卡片 */}
           <Col xs={24} lg={16}>
@@ -227,14 +325,13 @@ export default function UserSetting() {
                   onFinish={handleSave}
                   size="large"
                 >
-                  {/* 提示信息区域 */}
                   {editing && (
                     <Alert
                       message="编辑提示"
                       description="修改用户名或邮箱后，将会影响登录，请确保信息准确无误。"
                       type="info"
                       showIcon
-                      style={{ marginBottom: 16 }}
+                      className="edit-alert"
                     />
                   )}
                   <Row gutter={[16, 16]}>
@@ -315,7 +412,7 @@ export default function UserSetting() {
             </Card>
           </Col>
 
-          {/* 用户信息卡片 */}
+          {/* 用户头像卡片 */}
           <Col xs={24} lg={8}>
             <Card
               title={
@@ -324,17 +421,30 @@ export default function UserSetting() {
                   <span>用户信息</span>
                 </Space>
               }
-              bodyStyle={{ textAlign: 'center' }}
             >
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <Avatar
-                  size={120}
-                  icon={<UserOutlined />}
-                  style={{ 
-                    border: '4px solid #f0f0f0',
-                    backgroundColor: '#1890ff'
-                  }}
-                />
+              <Space direction="vertical" size="large" className="user-info-card-content">
+                <Upload
+                  name="avatar"
+                  showUploadList={false}
+                  beforeUpload={beforeUpload}
+                  accept="image/*"
+                  disabled={avatarUploading}
+                >
+                  <div className="avatar-upload-wrapper">
+                    <Avatar
+                      size={120}
+                      src={userInfo?.avatar}
+                      icon={avatarUploading ? <LoadingOutlined /> : <UserOutlined />}
+                      className="user-avatar"
+                    >
+                      {!userInfo?.avatar && getUserDisplayName().charAt(0).toUpperCase()}
+                    </Avatar>
+                    <div className="avatar-upload-overlay">
+                      {avatarUploading ? <LoadingOutlined /> : <CameraOutlined />}
+                      <span>{avatarUploading ? '上传中...' : '更换头像'}</span>
+                    </div>
+                  </div>
+                </Upload>
                 
                 <Descriptions column={1} size="small">
                   <Descriptions.Item label="用户名">
@@ -479,7 +589,7 @@ export default function UserSetting() {
                 </Col>
 
                 <Col xs={24} md={12}>
-                <Card
+                  <Card
                     type="inner"
                     title={
                       <Space>
@@ -488,7 +598,7 @@ export default function UserSetting() {
                       </Space>
                     }
                   >
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Space direction="vertical" size="middle" className="security-tips">
                       <Alert
                         message="密码安全建议"
                         description="建议使用包含字母、数字和特殊字符的强密码"
@@ -525,7 +635,7 @@ export default function UserSetting() {
                         />
                       )}
                       
-                      <Paragraph type="secondary" style={{ margin: 0 }}>
+                      <Paragraph type="secondary" className="security-list">
                         <ul>
                           <li>定期更换密码</li>
                           <li>不要在多个网站使用相同密码</li>

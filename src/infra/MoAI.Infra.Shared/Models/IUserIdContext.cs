@@ -1,7 +1,7 @@
 ﻿namespace MoAI.Infra.Models;
 
 /// <summary>
-/// 用户 id 上下文.
+/// 用户 id 上下文，在 ASP.NET Core 请求管道中被自动赋值.
 /// </summary>
 public interface IUserIdContext
 {

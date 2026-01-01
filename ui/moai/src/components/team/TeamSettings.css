@@ -1,0 +1,39 @@
+.team-settings-form {
+  max-width: 600px;
+}
+
+.team-avatar-upload-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.team-avatar-upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.team-avatar-upload-overlay .anticon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.team-avatar-upload-overlay span {
+  font-size: 12px;
+}
+
+.team-avatar-upload-wrapper:hover .team-avatar-upload-overlay {
+  opacity: 1;
+}

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Team.Models;
 using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Crawler.Queries;
 using MoAI.Wiki.Plugins.Feishu.Commands;
@@ -124,14 +125,14 @@ public class FeishuController : ControllerBase
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryUserIsWikiUserCommand
+            new QueryWikiCreatorCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = wikiId
             },
             ct);
 
-        if (!userIsWikiUser.IsWikiUser)
+        if (userIsWikiUser.TeamRole == TeamRole.None)
         {
             throw new BusinessException("没有操作权限.") { StatusCode = 403 };
         }

@@ -126,6 +126,16 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<SettingEntity> Settings { get; set; }
 
     /// <summary>
+    /// 团队.
+    /// </summary>
+    public virtual DbSet<TeamEntity> Teams { get; set; }
+
+    /// <summary>
+    /// 团队成员.
+    /// </summary>
+    public virtual DbSet<TeamUserEntity> TeamUsers { get; set; }
+
+    /// <summary>
     /// 用户.
     /// </summary>
     public virtual DbSet<UserEntity> Users { get; set; }
@@ -174,11 +184,6 @@ public partial class DatabaseContext : DbContext
     /// 知识库文档关联任务.
     /// </summary>
     public virtual DbSet<WikiPluginConfigDocumentStateEntity> WikiPluginConfigDocumentStates { get; set; }
-
-    /// <summary>
-    /// 知识库成员.
-    /// </summary>
-    public virtual DbSet<WikiUserEntity> WikiUsers { get; set; }
 
     /// <summary>
     /// 工作任务.

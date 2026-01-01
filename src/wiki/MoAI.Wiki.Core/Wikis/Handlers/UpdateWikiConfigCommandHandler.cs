@@ -15,17 +15,14 @@ namespace MoAI.Wiki.Wikis.Handlers;
 public class UpdateWikiConfigCommandHandler : IRequestHandler<UpdateWikiConfigCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IMediator _mediator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateWikiConfigCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    /// <param name="mediator"></param>
-    public UpdateWikiConfigCommandHandler(DatabaseContext databaseContext, IMediator mediator)
+    public UpdateWikiConfigCommandHandler(DatabaseContext databaseContext)
     {
         _databaseContext = databaseContext;
-        _mediator = mediator;
     }
 
     /// <inheritdoc/>
@@ -65,9 +62,19 @@ public class UpdateWikiConfigCommandHandler : IRequestHandler<UpdateWikiConfigCo
             wikiEntity.EmbeddingModelId = request.EmbeddingModelId;
         }
 
-        wikiEntity.IsPublic = request.IsPublic;
+        // 私有知识库不能改成公开知识库
+        if (wikiEntity.TeamId != 0)
+        {
+            wikiEntity.IsPublic = request.IsPublic;
+        }
+
         wikiEntity.Name = request.Name;
         wikiEntity.Description = request.Description;
+
+        if (!string.IsNullOrEmpty(request.Avatar))
+        {
+            wikiEntity.Avatar = request.Avatar;
+        }
 
         _databaseContext.Wikis.Update(wikiEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);

@@ -71,7 +71,8 @@ public class CommonController : ControllerBase
     [HttpGet("userinfo")]
     public Task<UserStateInfo> QueryUserInfo(CancellationToken ct)
     {
-        return _mediator.Send(new QueryUserViewUserInfoCommand(), ct);
+        var cmd = new QueryUserViewUserInfoCommand() { ContextUserId = _userContext.UserId };
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>

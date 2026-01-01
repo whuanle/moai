@@ -61,8 +61,8 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
         entity.Property(e => e.Plugins)
             .HasDefaultValueSql("'[]'")
             .HasComment("要使用的插件")
-            .HasColumnType("json")
-            .HasColumnName("plugins");
+            .HasColumnName("plugins")
+            .UseCollation("utf8mb4_bin");
         entity.Property(e => e.Prompt)
             .HasMaxLength(4000)
             .HasDefaultValueSql("''")

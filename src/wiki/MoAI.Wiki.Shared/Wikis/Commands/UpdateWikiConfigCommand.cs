@@ -26,7 +26,12 @@ public class UpdateWikiConfigCommand : IRequest<EmptyCommandResponse>, IModelVal
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 算法公开.
+    /// 头像 objectKey.
+    /// </summary>
+    public string Avatar { get; init; } = default!;
+
+    /// <summary>
+    /// 公开，私有知识库不能公开.
     /// </summary>
     public bool IsPublic { get; init; }
 

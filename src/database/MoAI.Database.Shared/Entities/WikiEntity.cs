@@ -45,6 +45,16 @@ public partial class WikiEntity : IFullAudited
     public int EmbeddingDimensions { get; set; }
 
     /// <summary>
+    /// 团队头像.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
+
+    /// <summary>
+    /// 团队id，不填则是个人知识库.
+    /// </summary>
+    public int TeamId { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

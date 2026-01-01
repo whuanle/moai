@@ -15,6 +15,7 @@
 	  <ProjectReference Include="..\..\ai\MoAI.AI.Kit\MoAI.AI.Kit.csproj" />
 	  <ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+	  <ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 	</ItemGroup>
 
 </Project>

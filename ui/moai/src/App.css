@@ -1,100 +1,23 @@
 /* App.css */
 
-.layout {
+.app-layout {
   min-height: 100vh;
   min-width: 100vw;
+  background: #f5f5f5;
 }
 
-.header {
-  padding: 0 24px;
-  display: flex;
-  height: 60px;
-  align-items: center;
-  background: none;
-  border-bottom: 1px solid #f0f2f5;
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  height: 60px;
-  justify-content: center;
-}
-
-.logo-container img {
-  object-fit: contain;
-}
-
-.logo-container p {
+.app-content {
+  padding: 0;
   margin: 0;
-  margin-left: 10px;
-  color: #333;
-  font-weight: bold;
-  line-height: 60px;
+  min-height: calc(100vh - 56px);
+  background: #f5f5f5;
 }
 
-.logo {
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.menu-horizontal {
-  margin-left: auto;
-}
-
-.sider {
-  background: #fff;
-}
-
-.menu-inline {
-  height: 100%;
-  border-right: 0;
-}
-
-.content {
-  padding: 16px;
-  margin: 0;
-  min-height: 280px;
+/* 页面内容区域通用样式 */
+.page-container {
+  padding: 24px;
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.footer {
-  text-align: center;
-  background: #f0f2f5;
-}
-
-/* 自定义菜单选中样式 */
-.menu-inline .ant-menu-item-selected {
-  background-color: #e6f7ff !important;
-  font-weight: 500;
-}
-
-.menu-inline .ant-menu-item:hover {
-  background-color: #f5f5f5 !important;
-}
-
-/* 子菜单选中样式 */
-.menu-inline .ant-menu-submenu-selected > .ant-menu-submenu-title {
-  color: #1890ff !important;
-}
-
-.menu-inline .ant-menu-submenu-active > .ant-menu-submenu-title {
-  color: #1890ff !important;
-}
-
-/* 侧边栏折叠按钮样式 */
-.sider .ant-layout-sider-trigger {
-  background: #fff !important;
-  color: #001529 !important;
-  border-top: 1px solid #f0f2f5;
-}
-
-.sider .ant-layout-sider-trigger:hover {
-  background: #f5f5f5 !important;
+  margin: 16px;
+  min-height: calc(100vh - 88px);
 }

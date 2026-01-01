@@ -1,6 +1,9 @@
-﻿using MediatR;
+﻿using LinqKit;
+using MediatR;
 using MoAI.Infra;
 using MoAI.Infra.Helpers;
+using MoAI.Infra.Models;
+using MoAI.Storage.Queries;
 using MoAI.Storage.Queries.Response;
 using MoAI.Storage.Services;
 using System.Net;

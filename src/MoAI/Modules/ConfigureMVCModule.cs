@@ -43,6 +43,7 @@ public class ConfigureMVCModule : IModule
         var mvcBuilder = context.Services.AddControllers(o =>
         {
             o.Filters.Add<MaomiExceptionFilter>();
+            o.Filters.Add<AutoAssignUserIdFilter>();
             o.Conventions.Add(new ApiApplicationModelConvention("/api"));
         }).AddJsonOptions(options =>
         {

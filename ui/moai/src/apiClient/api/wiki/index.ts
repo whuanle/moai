@@ -16,8 +16,6 @@ import { Query_wiki_infoRequestBuilderRequestsMetadata, type Query_wiki_infoRequ
 // @ts-ignore
 import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequestBuilder } from './query_wiki_list/index.js';
 // @ts-ignore
-import { Query_wiki_usersRequestBuilderRequestsMetadata, type Query_wiki_usersRequestBuilder } from './query_wiki_users/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -52,10 +50,6 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The query_wiki_list property
      */
     get query_wiki_list(): Query_wiki_listRequestBuilder;
-    /**
-     * The query_wiki_users property
-     */
-    get query_wiki_users(): Query_wiki_usersRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -85,9 +79,6 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     query_wiki_list: {
         requestsMetadata: Query_wiki_listRequestBuilderRequestsMetadata,
-    },
-    query_wiki_users: {
-        requestsMetadata: Query_wiki_usersRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

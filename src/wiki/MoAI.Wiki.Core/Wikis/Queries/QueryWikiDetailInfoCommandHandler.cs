@@ -4,12 +4,13 @@ using MoAI.AiModel.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
+using MoAI.Storage.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Wikis.Queries;
 
 /// <summary>
-/// 查询知识库简单信息.
+/// 查询知识库详细信息.
 /// </summary>
 public class QueryWikiDetailInfoCommandHandler : IRequestHandler<QueryWikiDetailInfoCommand, QueryWikiInfoResponse>
 {
@@ -44,15 +45,33 @@ public class QueryWikiDetailInfoCommandHandler : IRequestHandler<QueryWikiDetail
                 CreateUserId = x.CreateUserId,
                 UpdateUserId = x.UpdateUserId,
                 IsLock = x.IsLock,
-
-                // 能够查看详细信息，说明是成员.
-                IsUser = true,
+                AvatarKey = x.Avatar,
+                TeamId = x.TeamId,
+                Role = Team.Models.TeamRole.Owner,
                 DocumentCount = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).Count()
             }).FirstOrDefaultAsync();
 
         if (wiki == null)
         {
             throw new BusinessException("知识库不存在") { StatusCode = 404 };
+        }
+
+        await _mediator.Send(new QueryAvatarUrlCommand
+        {
+            Items = new[] { wiki }
+        });
+
+        if (wiki.TeamId != 0)
+        {
+            var teamRole = await _mediator.Send(
+                new Team.Queries.QueryUserTeamRoleCommand
+                {
+                    TeamId = wiki.TeamId,
+                    ContextUserId = request.ContextUserId
+                },
+                cancellationToken);
+
+            wiki.Role = teamRole.Role;
         }
 
         return wiki;

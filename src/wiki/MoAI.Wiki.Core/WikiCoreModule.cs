@@ -1,10 +1,4 @@
 ﻿using Maomi;
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using MoAI.Infra.Models;
-using MoAI.Wiki.Plugins.Crawler.Models;
-using MoAI.Wiki.Plugins.Feishu.Models;
-using MoAI.Wiki.Plugins.Template.Commands;
 
 namespace MoAI.Wiki;
 
