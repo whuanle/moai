@@ -106,7 +106,10 @@ public class WikiDocumentAiTextPartionCommandHandler : IRequestHandler<WikiDocum
         {
             Endpoint = aiEndpoint,
             Question = text,
-            Prompt = promptTemplate
+            Prompt = promptTemplate,
+            AiModelId = aiModel.Id,
+            ContextUserId = request.ContextUserId,
+            Channel = "wiki_text_partition"
         });
 
         var partitionItems = ParsePartitionItems(aiResponse.Content);

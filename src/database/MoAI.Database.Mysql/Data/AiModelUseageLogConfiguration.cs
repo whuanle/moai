@@ -26,7 +26,7 @@ public partial class AiModelUseageLogConfiguration : IEntityTypeConfiguration<Ai
             .HasColumnType("int(11)")
             .HasColumnName("id");
         entity.Property(e => e.Channel)
-            .HasMaxLength(10)
+            .HasMaxLength(30)
             .HasDefaultValueSql("'0'")
             .HasComment("渠道")
             .HasColumnName("channel");

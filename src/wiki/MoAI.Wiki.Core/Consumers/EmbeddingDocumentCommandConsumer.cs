@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
 using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
+using MoAI.AiModel.Events;
 using MoAI.AiModel.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -32,6 +33,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
     private readonly IServiceProvider _serviceProvider;
     private readonly IAiClientBuilder _aiClientBuilder;
     private readonly ILogger<EmbeddingDocumentCommandConsumer> _logger;
+    private readonly IMessagePublisher _messagePublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmbeddingDocumentCommandConsumer"/> class.
@@ -42,7 +44,8 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
     /// <param name="serviceProvider"></param>
     /// <param name="logger"></param>
     /// <param name="aiClientBuilder"></param>
-    public EmbeddingDocumentCommandConsumer(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider, ILogger<EmbeddingDocumentCommandConsumer> logger, IAiClientBuilder aiClientBuilder)
+    /// <param name="messagePublisher"></param>
+    public EmbeddingDocumentCommandConsumer(DatabaseContext databaseContext, SystemOptions systemOptions, IMediator mediator, IServiceProvider serviceProvider, ILogger<EmbeddingDocumentCommandConsumer> logger, IAiClientBuilder aiClientBuilder, IMessagePublisher messagePublisher)
     {
         _databaseContext = databaseContext;
         _systemOptions = systemOptions;
@@ -50,6 +53,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
         _serviceProvider = serviceProvider;
         _logger = logger;
         _aiClientBuilder = aiClientBuilder;
+        _messagePublisher = messagePublisher;
     }
 
     /// <inheritdoc/>
@@ -181,6 +185,20 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
             try
             {
                 var embedding = await textEmbeddingGenerator.GenerateEmbeddingAsync(item.DerivativeContent);
+                var useage = textEmbeddingGenerator.CountTokens(item.DerivativeContent);
+
+                await _messagePublisher.AutoPublishAsync(
+                    new AiModelUseageMessage
+                    {
+                        AiModelId = wikiConfig.EmbeddingModelId,
+                        Channel = "embedding",
+                        ContextUserId = workerTask.CreateUserId,
+                        Usage = new OpenAIChatCompletionsUsage
+                        {
+                            TotalTokens = useage,
+                            PromptTokens = useage,
+                        }
+                    });
 
                 var record = new Microsoft.KernelMemory.MemoryStorage.MemoryRecord()
                 {

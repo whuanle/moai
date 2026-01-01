@@ -11,7 +11,6 @@ using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Wiki.Wikis.Queries.Response;
-using System.Collections.Generic;
 
 namespace MoAI.Wiki.Documents.Queries;
 
@@ -71,6 +70,9 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
                 Endpoint = chatAiEndpoint!,
                 Question = request.Query,
                 Prompt = "请将用户的问题优化为适合在知识库中搜索的简洁关键词，去除多余的描述和礼貌用语，确保关键词准确反映用户的查询意图。",
+                AiModelId = request.AiModelId,
+                ContextUserId = request.ContextUserId,
+                Channel = "wiki_search_optimize"
             };
 
             var optimizeResponse = await _mediator.Send(optimizeCommand, cancellationToken);
@@ -186,6 +188,9 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
 事实：
 {string.Join("\n", searches.Select(x => x.ChunkText).Distinct())}
 """,
+                AiModelId = request.AiModelId,
+                ContextUserId = request.ContextUserId,
+                Channel = "wiki_search_answer"
             };
 
             var optimizeResponse = await _mediator.Send(optimizeCommand, cancellationToken);

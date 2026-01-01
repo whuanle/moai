@@ -1,0 +1,28 @@
+﻿using MoAI.AI.Models;
+using MoAI.Infra.Models;
+
+namespace MoAI.AiModel.Events;
+
+/// <summary>
+/// 模型使用情况.
+/// </summary>
+public class AiModelUseageMessage : IUserIdContext
+{
+    /// <summary>
+    /// Ai 模型.
+    /// </summary>
+    public int AiModelId { get; init; }
+
+    /// <summary>
+    /// 使用量.
+    /// </summary>
+    public OpenAIChatCompletionsUsage Usage { get; init; } = default!;
+
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; }
+
+    /// <summary>
+    /// 消耗渠道
+    /// </summary>
+    public string Channel { get; init; } = default!;
+}

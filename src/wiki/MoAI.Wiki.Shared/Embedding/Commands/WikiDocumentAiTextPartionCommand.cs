@@ -7,7 +7,7 @@ namespace MoAI.Wiki.DocumentEmbedding.Commands;
 /// <summary>
 /// 使用 AI 智能切割
 /// </summary>
-public class WikiDocumentAiTextPartionCommand : IRequest<EmptyCommandResponse>, IModelValidator<WikiDocumentAiTextPartionCommand>
+public class WikiDocumentAiTextPartionCommand : IRequest<EmptyCommandResponse>, IModelValidator<WikiDocumentAiTextPartionCommand>, IUserIdContext
 {
     /// <summary>
     /// 知识库id.
@@ -28,6 +28,9 @@ public class WikiDocumentAiTextPartionCommand : IRequest<EmptyCommandResponse>, 
     /// 提示词模板.
     /// </summary>
     public string PromptTemplate { get; init; } = string.Empty;
+
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<WikiDocumentAiTextPartionCommand> validate)

@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Queries.Response;
 
 namespace MoAI.Wiki.Documents.Queries;
@@ -7,7 +8,7 @@ namespace MoAI.Wiki.Documents.Queries;
 /// <summary>
 /// 搜索知识库文档分片.
 /// </summary>
-public class SearchWikiDocumentTextCommand : IRequest<SearchWikiDocumentTextCommandResponse>, IModelValidator<SearchWikiDocumentTextCommand>
+public class SearchWikiDocumentTextCommand : IRequest<SearchWikiDocumentTextCommandResponse>, IModelValidator<SearchWikiDocumentTextCommand>, IUserIdContext
 {
     /// <summary>
     ///  知识库 id.
@@ -48,6 +49,9 @@ public class SearchWikiDocumentTextCommand : IRequest<SearchWikiDocumentTextComm
     /// 是否需要 ai 回答.
     /// </summary>
     public bool IsAnswer { get; init; }
+
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<SearchWikiDocumentTextCommand> validate)

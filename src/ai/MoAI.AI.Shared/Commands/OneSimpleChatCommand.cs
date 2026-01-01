@@ -6,7 +6,7 @@ namespace MoAI.AI.Commands;
 /// <summary>
 /// 一次简单的提问.
 /// </summary>
-public class OneSimpleChatCommand : IRequest<OneSimpleChatCommandResponse>
+public class OneSimpleChatCommand : IRequest<OneSimpleChatCommandResponse>, IAiUsage
 {
     /// <summary>
     /// 对话 AI 信息.
@@ -22,4 +22,13 @@ public class OneSimpleChatCommand : IRequest<OneSimpleChatCommandResponse>
     /// 问题.
     /// </summary>
     public string Question { get; init; } = default!;
+
+    /// <inheritdoc/>
+    public int AiModelId { get; init; }
+
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; } = default!;
+
+    /// <inheritdoc/>
+    public string Channel { get; init; } = default!;
 }

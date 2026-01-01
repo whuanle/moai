@@ -3,6 +3,7 @@
 #pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
 #pragma warning disable CA1031 // 不捕获常规异常类型
 
+using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using MoAI.AI.ChatCompletion;
 using MoAI.AI.Commands;
 using MoAI.AI.Models;
+using MoAI.AiModel.Events;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -40,6 +42,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
     private readonly INativePluginFactory _nativePluginFactory;
     private readonly IAiClientBuilder _aiClientBuilder;
     private readonly ILogger<ProcessingAiAssistantChatCommandHandler> _logger;
+    private readonly IMessagePublisher _messagePublisher;
 
     private readonly List<IDisposable> _disposables = new();
     private readonly List<IAsyncDisposable> _asyncDisposables = new();
@@ -54,7 +57,8 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
     /// <param name="httpClientFactory"></param>
     /// <param name="nativePluginFactory"></param>
     /// <param name="aiClientBuilder"></param>
-    public ProcessingAiAssistantChatCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, IMediator mediator, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory, INativePluginFactory nativePluginFactory, IAiClientBuilder aiClientBuilder)
+    /// <param name="messagePublisher"></param>
+    public ProcessingAiAssistantChatCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, IMediator mediator, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory, INativePluginFactory nativePluginFactory, IAiClientBuilder aiClientBuilder, IMessagePublisher messagePublisher)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
@@ -64,6 +68,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
         _nativePluginFactory = nativePluginFactory;
         _aiClientBuilder = aiClientBuilder;
         _logger = loggerFactory.CreateLogger<ProcessingAiAssistantChatCommandHandler>();
+        _messagePublisher = messagePublisher;
     }
 
     /// <inheritdoc/>
@@ -123,7 +128,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
         var pluginKeys = chatObjectEntity.Plugins.JsonToObject<IReadOnlyCollection<string>>()!;
         var wikiId = chatObjectEntity.WikiIds.JsonToObject<IReadOnlyCollection<int>>()!;
 
-        List<OpenAI.Chat.ChatTokenUsage> useages = new List<OpenAI.Chat.ChatTokenUsage>();
+        List<OpenAIChatCompletionsUsage> useages = new List<OpenAIChatCompletionsUsage>();
         ProcessingAiAssistantChatContext chatContext = new()
         {
             ChatId = chatObjectEntity.Id,
@@ -206,6 +211,10 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
                 }
 
                 lastChunk = unifyStream.Current;
+                if (lastChunk.Usage != null)
+                {
+                    useages.Add(lastChunk.Usage);
+                }
             }
             catch (Exception ex)
             {
@@ -251,7 +260,22 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             }
         }
 
-        var usage = lastChunk.Usage;
+        var usage = new OpenAIChatCompletionsUsage
+        {
+            PromptTokens = useages.Sum(x => x.PromptTokens),
+            CompletionTokens = useages.Sum(x => x.CompletionTokens),
+            TotalTokens = useages.Sum(x => x.TotalTokens)
+        };
+
+        await _messagePublisher.AutoPublishAsync(
+            new AiModelUseageMessage
+            {
+                AiModelId = chatObjectEntity.ModelId,
+                Channel = "chat",
+                ContextUserId = request.ContextUserId,
+                Usage = usage
+            });
+
         chatObjectEntity.OutTokens += usage?.CompletionTokens ?? 0;
         chatObjectEntity.InputTokens += usage?.PromptTokens ?? 0;
         chatObjectEntity.TotalTokens += usage?.TotalTokens ?? 0;

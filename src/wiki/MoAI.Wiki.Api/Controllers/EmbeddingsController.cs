@@ -131,7 +131,7 @@ public class EmbeddingsController : ControllerBase
     public async Task<EmptyCommandResponse> AiPreviewPartitionDocument([FromBody] WikiDocumentAiTextPartionCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
-
+        req.SetUserId(_userContext.UserId);
         return await _mediator.Send(req, ct);
     }
 
@@ -229,6 +229,7 @@ public class EmbeddingsController : ControllerBase
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 
+        req.SetUserId(_userContext.UserId);
         return await _mediator.Send(req, ct);
     }
 

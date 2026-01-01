@@ -65,7 +65,10 @@ public class QueryAiOptimizePromptCommandHandler : IRequestHandler<AiOptimizePro
         {
             Endpoint = aiEndpoint,
             Question = request.SourcePrompt,
-            Prompt = Prompt
+            Prompt = Prompt,
+            AiModelId = request.AiModelId,
+            ContextUserId = request.UserId,
+            Channel = "prompt_optimize"
         });
 
         return new QueryAiOptimizePromptCommandResponse
