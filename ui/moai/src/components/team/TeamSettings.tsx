@@ -5,7 +5,6 @@ import {
   Input,
   Button,
   message,
-  Space,
   Upload,
   Avatar,
   Typography,
@@ -27,6 +26,13 @@ import "./TeamSettings.css";
 
 const { Text } = Typography;
 
+// 原始团队信息类型
+interface OriginalTeamInfo {
+  name: string;
+  description?: string;
+  avatarKey?: string;
+}
+
 interface OutletContextType {
   teamInfo: QueryTeamListQueryResponseItem | null;
   myRole: TeamRole;
@@ -38,6 +44,8 @@ export default function TeamSettings() {
   const { teamInfo, myRole, refreshTeamInfo } = useOutletContext<OutletContextType>();
   const [loading, setLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
+  const [originalTeamInfo, setOriginalTeamInfo] = useState<OriginalTeamInfo | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
   const [form] = Form.useForm();
 
@@ -46,15 +54,22 @@ export default function TeamSettings() {
 
   useEffect(() => {
     if (teamInfo) {
+      setAvatarUrl(teamInfo.avatar || undefined);
+      setOriginalTeamInfo({
+        name: teamInfo.name || "",
+        description: teamInfo.description || undefined,
+        avatarKey: teamInfo.avatarKey || undefined,
+      });
       form.setFieldsValue({
         name: teamInfo.name,
         description: teamInfo.description,
+        avatarKey: teamInfo.avatarKey,
       });
     }
   }, [teamInfo, form]);
 
   const handleAvatarUpload = async (file: File) => {
-    if (!id) return;
+    if (!id || !originalTeamInfo) return;
     setAvatarUploading(true);
     try {
       const client = GetApiClient();
@@ -74,7 +89,7 @@ export default function TeamSettings() {
         throw new Error('获取上传地址失败');
       }
 
-      let avatarPath = preUploadResponse.objectKey!;
+      const avatarPath = preUploadResponse.objectKey!;
 
       // 3. 如果文件不存在，需要上传
       if (!preUploadResponse.isExist) {
@@ -98,14 +113,16 @@ export default function TeamSettings() {
         });
       }
 
-      // 4. 更新团队头像
+      // 4. 使用原始团队信息调用更新接口
       await client.api.team.update.post({
         teamId: parseInt(id),
-        name: teamInfo?.name,
-        description: teamInfo?.description,
+        name: originalTeamInfo.name,
+        description: originalTeamInfo.description,
         avatar: avatarPath,
       });
 
+      // 更新表单中的 avatarKey
+      form.setFieldValue("avatarKey", avatarPath);
       messageApi.success('头像更新成功');
       refreshTeamInfo();
     } catch (error) {
@@ -133,7 +150,7 @@ export default function TeamSettings() {
     return false;
   };
 
-  const handleSubmit = async (values: { name: string; description?: string }) => {
+  const handleSubmit = async (values: { name: string; description?: string; avatarKey?: string }) => {
     if (!id) return;
 
     try {
@@ -142,6 +159,7 @@ export default function TeamSettings() {
         teamId: parseInt(id),
         name: values.name,
         description: values.description,
+        avatar: values.avatarKey,
       });
 
       messageApi.success("保存成功");
@@ -171,6 +189,9 @@ export default function TeamSettings() {
           onFinish={handleSubmit}
           className="team-settings-form"
         >
+          <Form.Item name="avatarKey" hidden>
+            <Input />
+          </Form.Item>
           <Form.Item label="团队头像">
             <Upload
               showUploadList={false}
@@ -181,9 +202,8 @@ export default function TeamSettings() {
               <div className="team-avatar-upload-wrapper">
                 <Avatar
                   size={80}
-                  src={teamInfo?.avatarUrl}
+                  src={avatarUrl}
                   icon={avatarUploading ? <LoadingOutlined /> : <TeamOutlined />}
-                  className="team-avatar"
                 />
                 <div className="team-avatar-upload-overlay">
                   {avatarUploading ? <LoadingOutlined /> : <CameraOutlined />}
