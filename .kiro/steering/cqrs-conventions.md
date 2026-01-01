@@ -22,10 +22,10 @@ MoAI.{Domain}.Shared/
 ├── Commands/                  # Command 定义
 │   └── {Action}{Entity}Command.cs
 ├── Queries/                   # Query 定义
-│   ├── {Query}{Entity}Query.cs
+│   ├── {Query}{Entity}Command.cs
 │   └── Responses/             # Query 响应模型
-│       ├── {Query}{Entity}QueryResponse.cs
-│       └── {Query}{Entity}QueryResponseItem.cs
+│       ├── {Query}{Entity}CommandResponse.cs
+│       └── {Query}{Entity}CommandResponseItem.cs
 ├── Models/                    # 共享模型、DTO
 ├── Services/                  # 服务接口定义
 ├── {Domain}SharedModule.cs    # 模块注册
@@ -39,7 +39,7 @@ MoAI.{Domain}.Core/
 ├── Handlers/                  # Command Handler 实现
 │   └── {Action}{Entity}CommandHandler.cs
 ├── Queries/                   # Query Handler 实现
-│   └── {Query}{Entity}QueryHandler.cs
+│   └── {Query}{Entity}CommandHandler.cs
 ├── Services/                  # 服务实现
 ├── {Domain}CoreModule.cs      # 模块注册
 └── MoAI.{Domain}.Core.csproj
