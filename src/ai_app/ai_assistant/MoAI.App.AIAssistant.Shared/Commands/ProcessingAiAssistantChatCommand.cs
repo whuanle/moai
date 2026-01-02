@@ -26,4 +26,7 @@ public class ProcessingAiAssistantChatCommand : IStreamRequest<AiProcessingChatI
 
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

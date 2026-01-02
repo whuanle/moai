@@ -238,6 +238,9 @@ public class QueryPromptListCommand : IUserIdContext, IRequest<QueryPromptListCo
 {
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }
 ```
 

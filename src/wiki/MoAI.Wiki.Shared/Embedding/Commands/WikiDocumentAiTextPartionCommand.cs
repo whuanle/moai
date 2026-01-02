@@ -33,6 +33,9 @@ public class WikiDocumentAiTextPartionCommand : IRequest<EmptyCommandResponse>, 
     public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<WikiDocumentAiTextPartionCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库 ID 必须大于 0");

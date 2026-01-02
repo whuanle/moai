@@ -49,7 +49,7 @@ public partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("团队名称")
-            .HasColumnName("team");
+            .HasColumnName("name");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

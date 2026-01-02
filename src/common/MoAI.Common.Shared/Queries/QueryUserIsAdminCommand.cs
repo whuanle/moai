@@ -11,4 +11,7 @@ public class QueryUserIsAdminCommand : IUserIdContext, IRequest<QueryUserIsAdmin
 {
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

@@ -18,6 +18,9 @@ public class QueryUserTeamRoleCommand : IRequest<QueryUserTeamRoleQueryResponse>
     public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryUserTeamRoleCommand> validate)
     {
         validate.RuleFor(x => x.TeamId)

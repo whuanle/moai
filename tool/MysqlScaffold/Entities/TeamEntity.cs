@@ -17,7 +17,7 @@ public partial class TeamEntity : IFullAudited
     /// <summary>
     /// 团队名称.
     /// </summary>
-    public string Team1 { get; set; } = default!;
+    public string Name { get; set; } = default!;
 
     /// <summary>
     /// 团队描述.

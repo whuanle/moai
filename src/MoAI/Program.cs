@@ -5,12 +5,18 @@ using Scalar.AspNetCore;
 using System.Text.Json;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.UseMoAI();
 builder.WebHost.ConfigureKestrel((options) =>
 {
     options.Limits.MaxRequestBodySize = 1024 * 1024 * 1024; // 1GB
-});
 
-builder.UseMoAI();
+    // 内部
+    options.ListenAnyIP(builder.Configuration.GetValue<int>("MoAI:Port"));
+
+    // 外部应用、系统接口可以使用
+    options.ListenAnyIP(builder.Configuration.GetValue<int>("MoAI:Port") + 1);
+});
 
 WebApplication app = builder.Build();
 

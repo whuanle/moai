@@ -42,7 +42,8 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("知识库描述")
             .HasColumnName("description");
         entity.Property(e => e.EmbeddingDimensions)
-            .HasComment("知识库向量维度，创建后不能修改")
+            .HasDefaultValueSql("'1024'")
+            .HasComment("知识库向量维度")
             .HasColumnType("int(11)")
             .HasColumnName("embedding_dimensions");
         entity.Property(e => e.EmbeddingModelId)

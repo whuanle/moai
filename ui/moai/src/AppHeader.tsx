@@ -37,6 +37,10 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
   const getSelectedKey = (): string => {
     const path = location.pathname;
     
+    // 全能AI菜单
+    if (path.startsWith("/chat")) {
+      return "ai";
+    }
     // 管理菜单
     if (path.startsWith("/app/admin/oauth") || path.startsWith("/app/admin/usermanager")) {
       return "admin";
@@ -76,6 +80,9 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
     const key = e.key;
     
     switch (key) {
+      case "ai":
+        navigate("/chat");
+        break;
       case "application":
         navigate("/app/application");
         break;
@@ -153,6 +160,11 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
   // 构建主菜单项
   const getMainMenuItems = (): MenuProps["items"] => {
     const baseItems: MenuProps["items"] = [
+      {
+        key: "ai",
+        icon: <RobotOutlined />,
+        label: "全能AI",
+      },
       {
         key: "application",
         icon: <AppstoreOutlined />,

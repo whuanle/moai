@@ -1,5 +1,6 @@
 ﻿using Maomi;
 using Microsoft.AspNetCore.Mvc.Filters;
+using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -36,6 +37,7 @@ public class AutoAssignUserIdFilter : IAsyncActionFilter
             if (argument is IUserIdContext userIdContext)
             {
                 userIdContext.SetUserId(userContext.UserId);
+                userIdContext.SetProperty(a => a.ContextUserType, userContext.UserType);
             }
         }
 

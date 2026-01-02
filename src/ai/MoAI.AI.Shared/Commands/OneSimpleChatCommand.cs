@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using MoAI.AI.Models;
+using MoAI.Infra.Models;
 
 namespace MoAI.AI.Commands;
 
@@ -27,7 +28,10 @@ public class OneSimpleChatCommand : IRequest<OneSimpleChatCommandResponse>, IAiU
     public int AiModelId { get; init; }
 
     /// <inheritdoc/>
-    public int ContextUserId { get; init; } = default!;
+    public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 
     /// <inheritdoc/>
     public string Channel { get; init; } = default!;

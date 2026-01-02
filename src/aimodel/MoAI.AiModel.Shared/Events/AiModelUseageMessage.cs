@@ -21,6 +21,9 @@ public class AiModelUseageMessage : IUserIdContext
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
 
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 消耗渠道
     /// </summary>

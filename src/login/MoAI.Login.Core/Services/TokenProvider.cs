@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using System.Security.Claims;
@@ -40,6 +41,7 @@ public class TokenProvider : ITokenProvider
             new Claim(JwtRegisteredClaimNames.Nickname, userContext.NickName),
             new Claim(JwtRegisteredClaimNames.Email, userContext.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Typ, userContext.UserType.ToJsonString()),
             new Claim("token_type", "access_token")
         };
 
@@ -154,7 +156,8 @@ public class TokenProvider : ITokenProvider
             UserName = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Name)?.Value!,
             NickName = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Nickname)?.Value!,
             Email = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value!,
-            IsAuthenticated = true
+            IsAuthenticated = true,
+            UserType = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Typ)?.Value.JsonToObject<UserType>() ?? UserType.None,
         };
 
         return (userContext, claims.ToDictionary(x => x.Type, x => x));

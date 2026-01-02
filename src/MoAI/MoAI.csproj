@@ -27,6 +27,7 @@
 		<ProjectReference Include="..\aimodel\MoAI.AiModel.Core\MoAI.AiModel.Core.csproj" />
 		<ProjectReference Include="..\ai\MoAI.AI.Core\MoAI.AI.Core.csproj" />
 		<ProjectReference Include="..\ai_app\ai_assistant\MoAI.App.AIAssistant.Core\MoAI.App.AIAssistant.Core.csproj" />
+		<ProjectReference Include="..\app\MoAI.App.Core\MoAI.App.Core.csproj" />
 		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
 		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
 		<ProjectReference Include="..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />

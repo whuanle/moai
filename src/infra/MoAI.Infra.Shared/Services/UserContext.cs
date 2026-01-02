@@ -11,6 +11,11 @@ public abstract class UserContext
     public virtual bool IsAuthenticated { get; init; }
 
     /// <summary>
+    /// 用户类型.
+    /// </summary>
+    public virtual UserType UserType { get; init; }
+
+    /// <summary>
     /// 用户ID.
     /// </summary>
     public virtual int UserId { get; init; }

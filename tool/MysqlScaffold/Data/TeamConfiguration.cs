@@ -46,10 +46,10 @@ public partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.Team1)
+        entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("团队名称")
-            .HasColumnName("team");
+            .HasColumnName("name");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

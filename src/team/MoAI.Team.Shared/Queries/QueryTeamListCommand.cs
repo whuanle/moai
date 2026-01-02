@@ -16,4 +16,7 @@ public class QueryTeamListCommand : IRequest<QueryTeamListCommandResponse>, IUse
 
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

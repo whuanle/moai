@@ -44,6 +44,8 @@ import TeamSettings from "./components/team/TeamSettings";
 import ApplicationPage from "./components/application/ApplicationPage";
 import UserLayout from "./components/user/UserLayout";
 import TeamWikiWrapper from "./components/team/TeamWikiWrapper";
+import TeamApps from "./components/team/TeamApps";
+import TeamIntegration from "./components/team/TeamIntegration";
 
 const { Content } = Layout;
 
@@ -127,6 +129,8 @@ function App() {
               <Route path=":id" element={<TeamLayout />}>
                 <Route index element={<TeamWikiWrapper />} />
                 <Route path="wiki" element={<TeamWikiWrapper />} />
+                <Route path="apps" element={<TeamApps />} />
+                <Route path="integration" element={<TeamIntegration />} />
                 <Route path="members" element={<TeamMembers />} />
                 <Route path="settings" element={<TeamSettings />} />
               </Route>

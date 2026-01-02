@@ -12,6 +12,9 @@ public class QueryWikiBaseListCommand : IUserIdContext, IRequest<IReadOnlyCollec
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
 
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 限制查询某个团队下的知识库.
     /// </summary>

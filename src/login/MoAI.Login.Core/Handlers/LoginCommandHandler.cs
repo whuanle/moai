@@ -113,7 +113,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
             UserId = user.Id,
             UserName = user.UserName,
             NickName = user.NickName,
-            Email = user.Email
+            Email = user.Email,
+            UserType = Infra.Models.UserType.Normal
         };
 
         var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);

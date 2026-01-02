@@ -12,6 +12,9 @@ public class QueryTeamInfoCommand : IUserIdContext, IRequest<QueryTeamInfoComman
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
 
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 团队ID.
     /// </summary>

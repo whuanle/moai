@@ -4,6 +4,10 @@
 // @ts-ignore
 import { AssistantRequestBuilderNavigationMetadata, type AssistantRequestBuilder } from './assistant/index.js';
 // @ts-ignore
+import { ExternalRequestBuilderNavigationMetadata, ExternalRequestBuilderRequestsMetadata, type ExternalRequestBuilder } from './external/index.js';
+// @ts-ignore
+import { ManageRequestBuilderNavigationMetadata, type ManageRequestBuilder } from './manage/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -14,6 +18,14 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The assistant property
      */
     get assistant(): AssistantRequestBuilder;
+    /**
+     * The external property
+     */
+    get external(): ExternalRequestBuilder;
+    /**
+     * The manage property
+     */
+    get manage(): ManageRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -25,6 +37,13 @@ export const AppRequestBuilderUriTemplate = "{+baseurl}/api/app";
 export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     assistant: {
         navigationMetadata: AssistantRequestBuilderNavigationMetadata,
+    },
+    external: {
+        requestsMetadata: ExternalRequestBuilderRequestsMetadata,
+        navigationMetadata: ExternalRequestBuilderNavigationMetadata,
+    },
+    manage: {
+        navigationMetadata: ManageRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

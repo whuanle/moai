@@ -19,6 +19,9 @@ public class UpdateAiAssistanChatConfigCommand : IUserIdContext, IRequest<EmptyC
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
 
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 头像图标.
     /// </summary>

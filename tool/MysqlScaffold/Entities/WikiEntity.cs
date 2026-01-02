@@ -40,7 +40,7 @@ public partial class WikiEntity : IFullAudited
     public int EmbeddingModelId { get; set; }
 
     /// <summary>
-    /// 知识库向量维度，创建后不能修改.
+    /// 知识库向量维度.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
 

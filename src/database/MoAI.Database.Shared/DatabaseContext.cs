@@ -63,6 +63,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelUseageLogEntity> AiModelUseageLogs { get; set; }
 
     /// <summary>
+    /// 应用.
+    /// </summary>
+    public virtual DbSet<AppEntity> Apps { get; set; }
+
+    /// <summary>
     /// ai助手表.
     /// </summary>
     public virtual DbSet<AppAssistantChatEntity> AppAssistantChats { get; set; }
@@ -73,9 +78,29 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppAssistantChatHistoryEntity> AppAssistantChatHistories { get; set; }
 
     /// <summary>
+    /// 普通应用.
+    /// </summary>
+    public virtual DbSet<AppCommonEntity> AppCommons { get; set; }
+
+    /// <summary>
+    /// 普通应用对话表.
+    /// </summary>
+    public virtual DbSet<AppCommonChatEntity> AppCommonChats { get; set; }
+
+    /// <summary>
+    /// 对话历史，不保存实际历史记录.
+    /// </summary>
+    public virtual DbSet<AppCommonChatHistoryEntity> AppCommonChatHistories { get; set; }
+
+    /// <summary>
     /// 分类.
     /// </summary>
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }
+
+    /// <summary>
+    /// 系统接入.
+    /// </summary>
+    public virtual DbSet<ExternalAppEntity> ExternalApps { get; set; }
 
     /// <summary>
     /// 文件列表.

@@ -18,6 +18,9 @@ public class LeaveTeamCommand : IRequest<EmptyCommandResponse>, IModelValidator<
     public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<LeaveTeamCommand> validate)
     {
         validate.RuleFor(x => x.TeamId)

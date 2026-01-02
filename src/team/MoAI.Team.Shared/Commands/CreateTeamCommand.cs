@@ -28,6 +28,9 @@ public class CreateTeamCommand : IRequest<CreateTeamCommandResponse>, IModelVali
     public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateTeamCommand> validate)
     {
         validate.RuleFor(x => x.Name)

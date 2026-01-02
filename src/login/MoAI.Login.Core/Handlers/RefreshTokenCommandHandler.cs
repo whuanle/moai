@@ -93,7 +93,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             RefreshToken = refreshToken,
             UserId = user.Id,
             UserName = user.UserName,
-            ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds()
+            ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds(),
         };
 
         _logger.LogInformation("User refresh token.{@Message}", new { user.Id, user.UserName, user.NickName });

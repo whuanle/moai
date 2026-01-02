@@ -28,6 +28,9 @@ public class CreateWikiCommand : IRequest<SimpleInt>, IModelValidator<CreateWiki
     public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateWikiCommand> validate)
     {
         validate.RuleFor(x => x.Name)

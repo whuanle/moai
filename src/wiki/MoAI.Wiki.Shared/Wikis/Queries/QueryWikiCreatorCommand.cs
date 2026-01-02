@@ -15,5 +15,8 @@ public class QueryWikiCreatorCommand : IRequest<QueryWikiCreatorCommandResponse>
     public int WikiId { get; init; } = default!;
 
     /// <inheritdoc/>
-    public int ContextUserId { get; init; } = default!;
+    public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

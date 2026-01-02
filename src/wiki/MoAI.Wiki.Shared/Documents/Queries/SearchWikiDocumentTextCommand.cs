@@ -54,6 +54,9 @@ public class SearchWikiDocumentTextCommand : IRequest<SearchWikiDocumentTextComm
     public int ContextUserId { get; init; }
 
     /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<SearchWikiDocumentTextCommand> validate)
     {
         validate.RuleFor(x => x.WikiId)

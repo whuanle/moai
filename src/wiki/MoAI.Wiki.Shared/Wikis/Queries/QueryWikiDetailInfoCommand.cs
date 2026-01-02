@@ -16,4 +16,7 @@ public class QueryWikiDetailInfoCommand : IRequest<QueryWikiInfoResponse>, IUser
 
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

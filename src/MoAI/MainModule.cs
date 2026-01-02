@@ -3,6 +3,7 @@ using Maomi.I18n;
 using MoAI.Admin;
 using MoAI.AI;
 using MoAI.AiModel.Core;
+using MoAI.App;
 using MoAI.App.AIAssistant;
 using MoAI.Common;
 using MoAI.Database;
@@ -36,6 +37,7 @@ namespace MoAI;
 [InjectModule<AppAiAssistantCoreModule>]
 [InjectModule<AiCoreModule>]
 [InjectModule<TeamCoreModule>]
+[InjectModule<AppCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

@@ -26,4 +26,7 @@ public class QueryPromptListCommand : PagedParamter, IUserIdContext, IRequest<Qu
 
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

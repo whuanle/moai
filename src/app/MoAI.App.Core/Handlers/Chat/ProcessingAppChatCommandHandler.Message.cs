@@ -1,0 +1,260 @@
+#pragma warning disable SKEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
+#pragma warning disable SKEXP0040 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
+#pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
+#pragma warning disable CA1031 // 不捕获常规异常类型
+
+using Maomi.MQ;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+using MoAI.AI.ChatCompletion;
+using MoAI.AI.Commands;
+using MoAI.AI.Models;
+using MoAI.AiModel.Events;
+using MoAI.App.Commands.Chat;
+using MoAI.Database;
+using MoAI.Database.Entities;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
+using MoAI.Infra.Models;
+using MoAI.Plugin;
+using MoAI.Storage.Commands;
+using MoAI.Storage.Helpers;
+using System.Runtime.CompilerServices;
+
+namespace MoAI.App.Handlers;
+
+/// <summary>
+/// <inheritdoc cref="ProcessingAppChatCommand"/>
+/// </summary>
+public partial class ProcessingAppChatCommandHandler
+{
+    private async Task<IReadOnlyCollection<DefaultAiProcessingChoice>> GenerateQuestion(ProcessingAppChatCommand request, ChatHistory chatMessages)
+    {
+        ChatMessageContentItemCollection contents = new();
+        List<DefaultAiProcessingChoice> choices = new();
+
+        if (!string.IsNullOrEmpty(request.Content))
+        {
+            contents.Add(new TextContent(request.Content));
+            choices.Add(new DefaultAiProcessingChoice
+            {
+                StreamType = AiProcessingChatStreamType.Text,
+                StreamState = AiProcessingChatStreamState.End,
+                TextCall = new DefaultAiProcessingTextCall
+                {
+                    Content = request.Content
+                }
+            });
+        }
+
+        if (!string.IsNullOrEmpty(request.FileKey))
+        {
+            var ossObjectKey = $"chat/{request.ChatId}/{request.FileKey}";
+            var mimeType = FileStoreHelper.GetMimeType(request.FileKey);
+
+            var streamResult = await _mediator.Send(new ReadFileStreamCommand { ObjectKey = ossObjectKey });
+            using var stream = streamResult.FileStream;
+            var memory = await stream.ToReadOnlyMemoryAsync();
+
+            // 判断是不是图片
+            if (FileStoreHelper.ImageExtensions.Any(x => request.FileKey.EndsWith(x, StringComparison.OrdinalIgnoreCase)))
+            {
+                // 图片
+                contents.Add(new ImageContent(memory, mimeType));
+            }
+            else
+            {
+                //                 contents.Add(new ImageContent(memory, mimeType));
+            }
+
+            choices.Add(new DefaultAiProcessingChoice
+            {
+                StreamType = AiProcessingChatStreamType.File,
+                StreamState = AiProcessingChatStreamState.End,
+                FileCall = new DefaultAiProcessingFileCall
+                {
+                    FileKey = request.FileKey
+                }
+            });
+        }
+
+        if (contents.Count == 0)
+        {
+            throw new BusinessException("请输入提问");
+        }
+
+        chatMessages.AddUserMessage(contents);
+
+        return choices;
+    }
+
+    // 还原对话历史记录
+    private static ChatHistory RestoreChatHistory(List<AppCommonChatHistoryEntity> history, string? prompt)
+    {
+        ChatHistory chatMessages = new();
+
+        // 添加提示词.
+        if (!string.IsNullOrEmpty(prompt))
+        {
+            chatMessages.AddSystemMessage(prompt);
+        }
+
+        // todo: 后期优化
+        foreach (var item in history)
+        {
+            var contents = item.Content.JsonToObject<IReadOnlyCollection<DefaultAiProcessingChoice>>();
+
+            if (item.Role == AuthorRole.User.Label)
+            {
+                foreach (var content in contents)
+                {
+                    if (content.TextCall == null)
+                    {
+                        continue;
+                    }
+
+                    // 后期考虑图片
+                    chatMessages.AddUserMessage(content: content.TextCall.Content);
+                }
+            }
+            else if (item.Role == AuthorRole.Assistant.Label)
+            {
+                foreach (var content in contents)
+                {
+                    if (content.StreamType == AiProcessingChatStreamType.Text && content.TextCall != null)
+                    {
+                        chatMessages.AddAssistantMessage(content.TextCall.Content);
+                    }
+
+                    // todo： 要考虑失败的插件调用
+                    else if (content.StreamType == AiProcessingChatStreamType.Plugin && content.PluginCall != null)
+                    {
+                        var arguments = new KernelArguments();
+
+                        foreach (var argument in content.PluginCall.Params)
+                        {
+                            arguments.Add(argument.Key, argument.Value);
+                        }
+
+                        var funcCallContent = new FunctionCallContent(
+                            functionName: content.PluginCall.FunctionName,
+                            pluginName: content.PluginCall.PluginName,
+                            id: content.PluginCall.ToolCallId,
+                            arguments: arguments)
+                        {
+                        };
+
+                        chatMessages.Add(new ChatMessageContent
+                        {
+                            Role = AuthorRole.Assistant,
+                            Items = new ChatMessageContentItemCollection
+                            {
+                                new FunctionCallContent(
+                                    functionName: content.PluginCall.FunctionName,
+                                    pluginName: content.PluginCall.PluginName,
+                                    id: content.PluginCall.ToolCallId,
+                                    arguments: arguments)
+                            }
+                        });
+
+                        chatMessages.Add(new()
+                        {
+                            Role = AuthorRole.Tool,
+                            Items = new ChatMessageContentItemCollection
+                            {
+                                new FunctionResultContent(
+                                    functionName: content.PluginCall.FunctionName,
+                                    pluginName: content.PluginCall.PluginName,
+                                    callId: content.PluginCall.ToolCallId,
+                                    result: content.PluginCall.Result)
+                            }
+                        });
+
+                        //chatMessages.Add(new ChatMessageContent
+                        //{
+                        //    Role = AuthorRole.System,
+                        //    AuthorName = AuthorRole.System.Label,
+                        //    Content = $"""
+                        //    插件名称：{content.PluginCall.PluginName}
+                        //    调用函数：{content.PluginCall.FunctionName}
+                        //    参数：{string.Join(',', content.PluginCall.Params.Select(x => $"{x.Key}={x.Value}"))}
+                        //    结果：{content.PluginCall.Result}
+                        //    """
+                        //});
+                    }
+                }
+            }
+            else if (item.Role == AuthorRole.System.Label)
+            {
+                chatMessages.AddSystemMessage(item.Content);
+            }
+            else if (item.Role == AuthorRole.Tool.Label)
+            {
+                foreach (var content in contents)
+                {
+                    if (content.StreamType == AiProcessingChatStreamType.Text && content.TextCall != null)
+                    {
+                        chatMessages.AddAssistantMessage(content.TextCall.Content);
+                    }
+
+                    // todo： 要考虑失败的插件调用
+                    else if (content.StreamType == AiProcessingChatStreamType.Plugin && content.PluginCall != null)
+                    {
+                        var arguments = new KernelArguments();
+
+                        foreach (var argument in content.PluginCall.Params)
+                        {
+                            arguments.Add(argument.Key, argument.Value);
+                        }
+
+                        var funcCallContent = new FunctionCallContent(
+                            functionName: content.PluginCall.FunctionName,
+                            pluginName: content.PluginCall.PluginName,
+                            id: content.PluginCall.ToolCallId,
+                            arguments: arguments)
+                        {
+                        };
+
+                        chatMessages.Add(new ChatMessageContent
+                        {
+                            Role = AuthorRole.Assistant,
+                            Items = new ChatMessageContentItemCollection
+                            {
+                                new FunctionCallContent(
+                                    functionName: content.PluginCall.FunctionName,
+                                    pluginName: content.PluginCall.PluginName,
+                                    id: content.PluginCall.ToolCallId,
+                                    arguments: arguments)
+                            }
+                        });
+
+                        chatMessages.Add(new()
+                        {
+                            Role = AuthorRole.Tool,
+                            Items = new ChatMessageContentItemCollection
+                            {
+                                new FunctionResultContent(
+                                    functionName: content.PluginCall.FunctionName,
+                                    pluginName: content.PluginCall.PluginName,
+                                    callId: content.PluginCall.ToolCallId,
+                                    result: content.PluginCall.Result)
+                            }
+                        });
+                    }
+                }
+            }
+            else
+            {
+                // 其他角色不处理
+                continue;
+            }
+        }
+
+        return chatMessages;
+    }
+}

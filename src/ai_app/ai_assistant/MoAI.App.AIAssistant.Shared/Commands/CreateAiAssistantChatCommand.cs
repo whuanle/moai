@@ -15,6 +15,9 @@ public class CreateAiAssistantChatCommand : IUserIdContext, IRequest<CreateAiAss
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
 
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 头像图标.
     /// </summary>

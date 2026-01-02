@@ -11,4 +11,7 @@ public class QueryUserViewUserInfoCommand : IRequest<UserStateInfo>, IUserIdCont
 {
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

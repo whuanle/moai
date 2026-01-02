@@ -18,6 +18,11 @@ public class SystemOptions
     public string Name { get; init; } = "MoAI";
 
     /// <summary>
+    /// 监听端口.
+    /// </summary>
+    public int Port { get; init; }
+
+    /// <summary>
     /// 服务访问地址.
     /// </summary>
     public string Server { get; init; } = string.Empty;

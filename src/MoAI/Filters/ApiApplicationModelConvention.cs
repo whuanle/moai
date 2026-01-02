@@ -1,12 +1,5 @@
-﻿using FluentValidation;
-using Maomi;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.AspNetCore.Mvc.Routing;
-using MoAI.Infra;
-using MoAI.Storage;
-using System.Text.Json;
 
 namespace MoAI.Filters;
 
