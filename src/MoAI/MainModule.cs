@@ -7,6 +7,7 @@ using MoAI.App;
 using MoAI.App.AIAssistant;
 using MoAI.Common;
 using MoAI.Database;
+using MoAI.External;
 using MoAI.Filters;
 using MoAI.Infra;
 using MoAI.Login;
@@ -38,6 +39,7 @@ namespace MoAI;
 [InjectModule<AiCoreModule>]
 [InjectModule<TeamCoreModule>]
 [InjectModule<AppCoreModule>]
+[InjectModule<ExternalCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

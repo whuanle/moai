@@ -46,6 +46,7 @@ import UserLayout from "./components/user/UserLayout";
 import TeamWikiWrapper from "./components/team/TeamWikiWrapper";
 import TeamApps from "./components/team/TeamApps";
 import TeamIntegration from "./components/team/TeamIntegration";
+import McpConfigPage from "./components/wiki/McpConfigPage";
 
 const { Content } = Layout;
 
@@ -118,6 +119,7 @@ function App() {
                 <Route path="plugin/feishu/:configId" element={<FeishuDetailPage />} />
                 <Route path="plugin/feishu" element={<FeishuListPage />} />
                 <Route path="plugin/openapi" element={<OpenApiListPage />} />
+                <Route path="plugin/mcp" element={<McpConfigPage />} />
                 <Route path="batch" element={<BatchListPage />} />
               </Route>
             </Route>

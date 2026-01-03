@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.External</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />
+		<ProjectReference Include="..\MoAI.External.Api\MoAI.External.Api.csproj" />
+	</ItemGroup>
+
+</Project>

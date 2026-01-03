@@ -25,12 +25,6 @@ public class ConfigureLoggerModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        ConfigureHttpLogging(context);
-    }
-
-    // 配置 http 请求日志.
-    private static void ConfigureHttpLogging(ServiceContext context)
-    {
         // todo: 忽略 swagger
         context.Services.AddHttpLogging(logging =>
         {

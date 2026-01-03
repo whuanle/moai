@@ -34,4 +34,9 @@ public abstract class UserContext
     /// 用户邮箱.
     /// </summary>
     public virtual string Email { get; init; } = default!;
+
+    /// <summary>
+    /// 附加属性.
+    /// </summary>
+    public virtual IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
 }

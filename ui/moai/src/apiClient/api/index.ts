@@ -16,6 +16,8 @@ import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } fro
 // @ts-ignore
 import { DownloadRequestBuilderNavigationMetadata, type DownloadRequestBuilder } from './download/index.js';
 // @ts-ignore
+import { ExternalRequestBuilderNavigationMetadata, type ExternalRequestBuilder } from './external/index.js';
+// @ts-ignore
 import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
 // @ts-ignore
 import { PromptRequestBuilderNavigationMetadata, type PromptRequestBuilder } from './prompt/index.js';
@@ -62,6 +64,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The download property
      */
     get download(): DownloadRequestBuilder;
+    /**
+     * The external property
+     */
+    get external(): ExternalRequestBuilder;
     /**
      * The plugin property
      */
@@ -115,6 +121,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     download: {
         navigationMetadata: DownloadRequestBuilderNavigationMetadata,
+    },
+    external: {
+        navigationMetadata: ExternalRequestBuilderNavigationMetadata,
     },
     plugin: {
         navigationMetadata: PluginRequestBuilderNavigationMetadata,

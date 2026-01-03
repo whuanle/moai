@@ -9,13 +9,21 @@
 		<PackageReference Include="FastEndpoints.Swagger" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
 		<PackageReference Include="Maomi.I18n.AspNetCore" />
+		<PackageReference Include="Maomi.MQ.Instrumentation" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 		<PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Condition=" '$(Configuration)' == 'Debug1' ">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
+		<PackageReference Include="OpenTelemetry.Api" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" />
 		<PackageReference Include="Scalar.AspNetCore" />
 		<PackageReference Include="Serilog.AspNetCore" />
 		<PackageReference Include="Serilog.Formatting.Compact" />
@@ -29,6 +37,7 @@
 		<ProjectReference Include="..\ai_app\ai_assistant\MoAI.App.AIAssistant.Core\MoAI.App.AIAssistant.Core.csproj" />
 		<ProjectReference Include="..\app\MoAI.App.Core\MoAI.App.Core.csproj" />
 		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
+		<ProjectReference Include="..\external\MoAI.External.Core\MoAI.External.Core.csproj" />
 		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
 		<ProjectReference Include="..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />
 		<ProjectReference Include="..\common\MoAI.Common.Core\MoAI.Common.Core.csproj" />

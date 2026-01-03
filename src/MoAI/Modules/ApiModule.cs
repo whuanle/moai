@@ -10,6 +10,7 @@ namespace MoAI.Modules;
 [InjectModule<ConfigureMVCModule>]
 [InjectModule<FastEndpointModule>]
 [InjectModule<ConfigureMediatRModule>]
+[InjectModule<ConfigureOpenTelemetryModule>]
 public class ApiModule : IModule
 {
     /// <inheritdoc/>

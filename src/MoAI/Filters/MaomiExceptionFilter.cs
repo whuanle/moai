@@ -76,9 +76,19 @@ public class MaomiExceptionFilter : IAsyncExceptionFilter
 
     private static void HandleBusinessException(ExceptionContext context, BusinessException businessException)
     {
+        // todo: i18n
         var message = string.Empty;
+        var messageDetail = string.Empty;
 
         message = businessException.Message;
+        if (businessException.Argments?.Count > 0)
+        {
+            message = string.Format(message, businessException.Argments.ToArray());
+        }
+
+#if DEBUG
+        messageDetail = businessException.ToString();
+#endif
 
         var response = new BusinessValidationResult()
         {

@@ -1,12 +1,6 @@
-﻿using FluentValidation;
-using Maomi;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
+﻿using Microsoft.AspNetCore.Diagnostics;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 namespace MoAI.Filters;
 
@@ -71,6 +65,8 @@ public class MaomiExceptionHandler : IExceptionHandler
 
     private static void HandleBusinessException(HttpContext httpContext, BusinessException businessException, CancellationToken cancellationToken)
     {
+        // todo: i18n
+
         var message = string.Empty;
         var messageDetail = string.Empty;
 

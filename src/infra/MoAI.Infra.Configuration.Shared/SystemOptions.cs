@@ -1,4 +1,5 @@
-﻿using MoAI.Infra.Models;
+﻿using Microsoft.AspNetCore.Mvc.Formatters;
+using MoAI.Infra.Models;
 
 namespace MoAI.Infra;
 
@@ -66,6 +67,11 @@ public class SystemOptions
     /// 最大上传文件大小，单位为字节，默认 100MB.
     /// </summary>
     public int MaxUploadFileSize { get; init; } = 1024 * 1024 * 100;
+
+    /// <summary>
+    /// 可观察性.
+    /// </summary>
+    public OpenTelemetryOptions OTLP { get; init; } = new();
 }
 
 public class SystemOptionStorage
@@ -104,4 +110,11 @@ public class SystemOptionStorage
     /// key.
     /// </summary>
     public string AccessKeySecret { get; init; } = string.Empty;
+}
+
+public class OpenTelemetryOptions
+{
+    public string Trace { get; init; } = string.Empty;
+    public string Metrics { get; init; } = string.Empty;
+    public int Protocol { get; init; }
 }

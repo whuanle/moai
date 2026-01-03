@@ -5,6 +5,7 @@ using MoAI.Infra.DingTalk;
 using MoAI.Infra.Doc2x;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.OAuth;
+using MoAI.Infra.Paddleocr;
 using MoAI.Infra.Put;
 using MoAI.Infra.WeixinWork;
 using Refit;
@@ -81,6 +82,10 @@ public class InfraExternalHttpModule : IModule
 
         context.Services.AddRefitClient<IPutClient>(settings)
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
-            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddRefitClient<IPaddleocrClient>(settings)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
     }
 }

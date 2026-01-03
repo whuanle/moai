@@ -228,12 +228,12 @@ export default function AiModelPage() {
       all: "全部",
       chat: "聊天",
       embedding: "嵌入",
-      image: "图像",
-      tts: "语音合成",
-      stts: "语音转文字",
-      realtime: "实时",
-      text2video: "文本转视频",
-      text2music: "文本转音乐",
+      // image: "图像",
+      // tts: "语音合成",
+      // stts: "语音转文字",
+      // realtime: "实时",
+      // text2video: "文本转视频",
+      // text2music: "文本转音乐",
     };
     return names[type] || type;
   };
@@ -533,18 +533,18 @@ export default function AiModelPage() {
         return "blue";
       case "embedding":
         return "green";
-      case "image":
-        return "purple";
-      case "tts":
-        return "orange";
-      case "stts":
-        return "cyan";
-      case "realtime":
-        return "magenta";
-      case "text2video":
-        return "volcano";
-      case "text2music":
-        return "geekblue";
+      // case "image":
+      //   return "purple";
+      // case "tts":
+      //   return "orange";
+      // case "stts":
+      //   return "cyan";
+      // case "realtime":
+      //   return "magenta";
+      // case "text2video":
+      //   return "volcano";
+      // case "text2music":
+      //   return "geekblue";
       default:
         return "default";
     }

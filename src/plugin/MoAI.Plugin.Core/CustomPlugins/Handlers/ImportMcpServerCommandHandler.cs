@@ -49,7 +49,7 @@ public class ImportMcpServerCommandHandler : IRequestHandler<ImportMcpServerPlug
         catch (Exception ex)
         {
             _logger.LogInformation(ex, "Failed to connect to the MCP server,【{Url}】.", request.ServerUrl);
-            throw new BusinessException("访问 MCP 服务器失败 {Message}", ex.Message) { StatusCode = 409 };
+            throw new BusinessException("访问 MCP 服务器失败 {0}", ex.Message) { StatusCode = 409 };
         }
 
         // 检查插件有同名插件

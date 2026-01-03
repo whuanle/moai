@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
@@ -21,6 +21,11 @@
 		<ProjectReference Include="..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 		<ProjectReference Include="..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.App.Api\MoAI.App.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="External\Handlers\" />
+	  <Folder Include="External\Queries\" />
 	</ItemGroup>
 
 </Project>

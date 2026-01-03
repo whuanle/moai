@@ -19,6 +19,7 @@ import {
   ThunderboltOutlined,
   ImportOutlined,
   ApiOutlined,
+  CloudServerOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import "./Wiki.css";
@@ -89,6 +90,8 @@ export default function WikiLayout() {
       navigate(`/app/wiki/${id}/plugin/feishu`);
     } else if (key === "openapi") {
       navigate(`/app/wiki/${id}/plugin/openapi`);
+    } else if (key === "mcp") {
+      navigate(`/app/wiki/${id}/plugin/mcp`);
     } else if (key === "batch") {
       navigate(`/app/wiki/${id}/batch`);
     } else {
@@ -106,6 +109,8 @@ export default function WikiLayout() {
       return "feishu";
     } else if (path.includes("/plugin/openapi")) {
       return "openapi";
+    } else if (path.includes("/plugin/mcp")) {
+      return "mcp";
     } else if (path.includes("/search")) {
       return "search";
     } else if (path.includes("/user")) {
@@ -121,7 +126,7 @@ export default function WikiLayout() {
   const getDefaultOpenKeys = () => {
     const path = location.pathname;
     // 如果当前路径在外部导入子菜单中，则展开该菜单
-    if (path.includes("/plugin/feishu") || path.includes("/batch") || path.includes("/plugin/openapi")) {
+    if (path.includes("/plugin/feishu") || path.includes("/batch") || path.includes("/plugin/openapi") || path.includes("/plugin/mcp")) {
       return ["external-import"];
     }
     return [];
@@ -157,6 +162,11 @@ export default function WikiLayout() {
           key: "openapi",
           icon: <ApiOutlined />,
           label: "OpenAPI",
+        },
+        {
+          key: "mcp",
+          icon: <CloudServerOutlined />,
+          label: "MCP 配置",
         },
       ],
     },

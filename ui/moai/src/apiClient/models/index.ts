@@ -1181,6 +1181,15 @@ export function createDisableUserCommandFromDiscriminatorValue(parseNode: ParseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DisableWikiMcpCommand}
+ */
+// @ts-ignore
+export function createDisableWikiMcpCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDisableWikiMcpCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {DocumentTextPartionConfig}
  */
 // @ts-ignore
@@ -1213,6 +1222,15 @@ export function createEmbeddingDocumentCommandFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoEmptyCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {EnableWikiMcpCommand}
+ */
+// @ts-ignore
+export function createEnableWikiMcpCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoEnableWikiMcpCommand;
 }
 /**
  * 创建系统接入.
@@ -1255,6 +1273,60 @@ export interface CreateExternalAppCommandResponse extends Parsable {
      * 应用密钥.
      */
     key?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalAppLoginCommand}
+ */
+// @ts-ignore
+export function createExternalAppLoginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalAppLoginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalAppLoginCommandResponse}
+ */
+// @ts-ignore
+export function createExternalAppLoginCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalAppLoginCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalRefreshTokenCommand}
+ */
+// @ts-ignore
+export function createExternalRefreshTokenCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalRefreshTokenCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalRefreshTokenCommandResponse}
+ */
+// @ts-ignore
+export function createExternalRefreshTokenCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalRefreshTokenCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalUserLoginCommand}
+ */
+// @ts-ignore
+export function createExternalUserLoginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalUserLoginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalUserLoginCommandResponse}
+ */
+// @ts-ignore
+export function createExternalUserLoginCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalUserLoginCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2448,6 +2520,15 @@ export function createQueryWikiInfoResponseFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiMcpConfigCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiMcpConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiMcpConfigCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshMcpServerPluginCommand}
  */
 // @ts-ignore
@@ -2516,6 +2597,15 @@ export function createResetExternalAppKeyCommandResponseFromDiscriminatorValue(p
 // @ts-ignore
 export function createResetUserPasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoResetUserPasswordCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ResetWikiMcpKeyCommand}
+ */
+// @ts-ignore
+export function createResetWikiMcpKeyCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoResetWikiMcpKeyCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4028,6 +4118,16 @@ export function deserializeIntoDisableUserCommand(disableUserCommand: Partial<Di
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoDisableWikiMcpCommand(disableWikiMcpCommand: Partial<DisableWikiMcpCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "wikiId": n => { disableWikiMcpCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoDocumentTextPartionConfig(documentTextPartionConfig: Partial<DocumentTextPartionConfig> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "chunkHeader": n => { documentTextPartionConfig.chunkHeader = n.getStringValue(); },
@@ -4066,6 +4166,94 @@ export function deserializeIntoEmbeddingDocumentCommand(embeddingDocumentCommand
 // @ts-ignore
 export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partial<EmptyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoEnableWikiMcpCommand(enableWikiMcpCommand: Partial<EnableWikiMcpCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "wikiId": n => { enableWikiMcpCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalAppLoginCommand(externalAppLoginCommand: Partial<ExternalAppLoginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { externalAppLoginCommand.appId = n.getGuidValue(); },
+        "key": n => { externalAppLoginCommand.key = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalAppLoginCommandResponse(externalAppLoginCommandResponse: Partial<ExternalAppLoginCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessToken": n => { externalAppLoginCommandResponse.accessToken = n.getStringValue(); },
+        "appId": n => { externalAppLoginCommandResponse.appId = n.getGuidValue(); },
+        "appName": n => { externalAppLoginCommandResponse.appName = n.getStringValue(); },
+        "expiresIn": n => { externalAppLoginCommandResponse.expiresIn = n.getStringValue(); },
+        "refreshToken": n => { externalAppLoginCommandResponse.refreshToken = n.getStringValue(); },
+        "teamId": n => { externalAppLoginCommandResponse.teamId = n.getNumberValue(); },
+        "tokenType": n => { externalAppLoginCommandResponse.tokenType = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalRefreshTokenCommand(externalRefreshTokenCommand: Partial<ExternalRefreshTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "refreshToken": n => { externalRefreshTokenCommand.refreshToken = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalRefreshTokenCommandResponse(externalRefreshTokenCommandResponse: Partial<ExternalRefreshTokenCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessToken": n => { externalRefreshTokenCommandResponse.accessToken = n.getStringValue(); },
+        "expiresIn": n => { externalRefreshTokenCommandResponse.expiresIn = n.getStringValue(); },
+        "refreshToken": n => { externalRefreshTokenCommandResponse.refreshToken = n.getStringValue(); },
+        "tokenType": n => { externalRefreshTokenCommandResponse.tokenType = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalUserLoginCommand(externalUserLoginCommand: Partial<ExternalUserLoginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "email": n => { externalUserLoginCommand.email = n.getStringValue(); },
+        "externalUserId": n => { externalUserLoginCommand.externalUserId = n.getStringValue(); },
+        "nickName": n => { externalUserLoginCommand.nickName = n.getStringValue(); },
+        "userName": n => { externalUserLoginCommand.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalUserLoginCommandResponse(externalUserLoginCommandResponse: Partial<ExternalUserLoginCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessToken": n => { externalUserLoginCommandResponse.accessToken = n.getStringValue(); },
+        "expiresIn": n => { externalUserLoginCommandResponse.expiresIn = n.getStringValue(); },
+        "externalUserId": n => { externalUserLoginCommandResponse.externalUserId = n.getStringValue(); },
+        "refreshToken": n => { externalUserLoginCommandResponse.refreshToken = n.getStringValue(); },
+        "tokenType": n => { externalUserLoginCommandResponse.tokenType = n.getStringValue(); },
+        "userName": n => { externalUserLoginCommandResponse.userName = n.getStringValue(); },
     }
 }
 /**
@@ -5614,6 +5802,21 @@ export function deserializeIntoQueryWikiInfoResponse(queryWikiInfoResponse: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiMcpConfigCommandResponse(queryWikiMcpConfigCommandResponse: Partial<QueryWikiMcpConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "configId": n => { queryWikiMcpConfigCommandResponse.configId = n.getNumberValue(); },
+        "createTime": n => { queryWikiMcpConfigCommandResponse.createTime = n.getStringValue(); },
+        "enabled": n => { queryWikiMcpConfigCommandResponse.enabled = n.getBooleanValue(); },
+        "key": n => { queryWikiMcpConfigCommandResponse.key = n.getStringValue(); },
+        "mcpUrl": n => { queryWikiMcpConfigCommandResponse.mcpUrl = n.getStringValue(); },
+        "wikiId": n => { queryWikiMcpConfigCommandResponse.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshMcpServerPluginCommand(refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pluginId": n => { refreshMcpServerPluginCommand.pluginId = n.getNumberValue(); },
@@ -5699,6 +5902,16 @@ export function deserializeIntoResetExternalAppKeyCommandResponse(resetExternalA
 export function deserializeIntoResetUserPasswordCommand(resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "userId": n => { resetUserPasswordCommand.userId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoResetWikiMcpKeyCommand(resetWikiMcpKeyCommand: Partial<ResetWikiMcpKeyCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "wikiId": n => { resetWikiMcpKeyCommand.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -6562,6 +6775,15 @@ export interface DisableUserCommand extends Parsable {
      */
     userIds?: number[] | null;
 }
+/**
+ * 关闭知识库 MCP 功能.
+ */
+export interface DisableWikiMcpCommand extends Parsable {
+    /**
+     * 知识库 Id.
+     */
+    wikiId?: number | null;
+}
 export interface DocumentTextPartionConfig extends Parsable {
     /**
      * 可选，在每个分块前添加的标题.
@@ -6614,6 +6836,141 @@ export interface EmbeddingDocumentCommand extends Parsable {
  * 空数据.
  */
 export interface EmptyCommandResponse extends Parsable {
+}
+/**
+ * 开启知识库 MCP 功能.
+ */
+export interface EnableWikiMcpCommand extends Parsable {
+    /**
+     * 知识库 Id.
+     */
+    wikiId?: number | null;
+}
+/**
+ * 外部应用登录，通过 AppId 和 Key 验证身份后颁发 Token.
+ */
+export interface ExternalAppLoginCommand extends Parsable {
+    /**
+     * 应用ID.
+     */
+    appId?: Guid | null;
+    /**
+     * 应用密钥.
+     */
+    key?: string | null;
+}
+/**
+ * 外部应用登录响应.
+ */
+export interface ExternalAppLoginCommandResponse extends Parsable {
+    /**
+     * 访问令牌.
+     */
+    accessToken?: string | null;
+    /**
+     * 应用ID.
+     */
+    appId?: Guid | null;
+    /**
+     * 应用名称.
+     */
+    appName?: string | null;
+    /**
+     * 过期时间（毫秒时间戳）.
+     */
+    expiresIn?: string | null;
+    /**
+     * 刷新令牌.
+     */
+    refreshToken?: string | null;
+    /**
+     * 所属团队ID.
+     */
+    teamId?: number | null;
+    /**
+     * 令牌类型.
+     */
+    tokenType?: string | null;
+}
+/**
+ * 外部接入刷新 Token.
+ */
+export interface ExternalRefreshTokenCommand extends Parsable {
+    /**
+     * 刷新令牌.
+     */
+    refreshToken?: string | null;
+}
+/**
+ * 外部接入刷新 Token 响应.
+ */
+export interface ExternalRefreshTokenCommandResponse extends Parsable {
+    /**
+     * 访问令牌.
+     */
+    accessToken?: string | null;
+    /**
+     * 过期时间（毫秒时间戳）.
+     */
+    expiresIn?: string | null;
+    /**
+     * 刷新令牌.
+     */
+    refreshToken?: string | null;
+    /**
+     * 令牌类型.
+     */
+    tokenType?: string | null;
+}
+/**
+ * 外部用户登录，为外部用户颁发 Token.
+ */
+export interface ExternalUserLoginCommand extends Parsable {
+    /**
+     * 外部用户邮箱.
+     */
+    email?: string | null;
+    /**
+     * 外部用户ID（由外部系统提供）.
+     */
+    externalUserId?: string | null;
+    /**
+     * 外部用户昵称.
+     */
+    nickName?: string | null;
+    /**
+     * 外部用户名.
+     */
+    userName?: string | null;
+}
+/**
+ * 外部用户登录响应.
+ */
+export interface ExternalUserLoginCommandResponse extends Parsable {
+    /**
+     * 访问令牌.
+     */
+    accessToken?: string | null;
+    /**
+     * 过期时间（毫秒时间戳）.
+     */
+    expiresIn?: string | null;
+    /**
+     * 外部用户ID.
+     */
+    externalUserId?: string | null;
+    /**
+     * 刷新令牌.
+     */
+    refreshToken?: string | null;
+    /**
+     * 令牌类型.
+     */
+    tokenType?: string | null;
+    /**
+     * 用户名.
+     */
+    userName?: string | null;
 }
 /**
  * 导入 mcp 服务，导入时会访问 mcp 服务器，可能会导致导入比较慢.
@@ -8895,6 +9252,35 @@ export interface QueryWikiInfoResponse extends AuditsInfo, Parsable {
     wikiId?: number | null;
 }
 /**
+ * 查询知识库 MCP 配置响应.
+ */
+export interface QueryWikiMcpConfigCommandResponse extends Parsable {
+    /**
+     * 配置 Id.
+     */
+    configId?: number | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 是否已启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * MCP 访问密钥.
+     */
+    key?: string | null;
+    /**
+     * MCP 服务地址.
+     */
+    mcpUrl?: string | null;
+    /**
+     * 知识库 Id.
+     */
+    wikiId?: number | null;
+}
+/**
  * 刷新 MCP 服务器的工具列表，也就是重新从 mcp 服务器拉取这个服务的 tool 列表.
  */
 export interface RefreshMcpServerPluginCommand extends Parsable {
@@ -9013,6 +9399,15 @@ export interface ResetUserPasswordCommand extends Parsable {
      * 用户 id.
      */
     userId?: number | null;
+}
+/**
+ * 重置知识库 MCP 密钥.
+ */
+export interface ResetWikiMcpKeyCommand extends Parsable {
+    /**
+     * 知识库 Id.
+     */
+    wikiId?: number | null;
 }
 /**
  * 使用参数测试插件.
@@ -9850,6 +10245,16 @@ export function serializeDisableUserCommand(writer: SerializationWriter, disable
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeDisableWikiMcpCommand(writer: SerializationWriter, disableWikiMcpCommand: Partial<DisableWikiMcpCommand> | undefined | null = {}) : void {
+    if (disableWikiMcpCommand) {
+        writer.writeNumberValue("wikiId", disableWikiMcpCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeDocumentTextPartionConfig(writer: SerializationWriter, documentTextPartionConfig: Partial<DocumentTextPartionConfig> | undefined | null = {}) : void {
     if (documentTextPartionConfig) {
         writer.writeStringValue("chunkHeader", documentTextPartionConfig.chunkHeader);
@@ -9888,6 +10293,94 @@ export function serializeEmbeddingDocumentCommand(writer: SerializationWriter, e
 // @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeEnableWikiMcpCommand(writer: SerializationWriter, enableWikiMcpCommand: Partial<EnableWikiMcpCommand> | undefined | null = {}) : void {
+    if (enableWikiMcpCommand) {
+        writer.writeNumberValue("wikiId", enableWikiMcpCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalAppLoginCommand(writer: SerializationWriter, externalAppLoginCommand: Partial<ExternalAppLoginCommand> | undefined | null = {}) : void {
+    if (externalAppLoginCommand) {
+        writer.writeGuidValue("appId", externalAppLoginCommand.appId);
+        writer.writeStringValue("key", externalAppLoginCommand.key);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalAppLoginCommandResponse(writer: SerializationWriter, externalAppLoginCommandResponse: Partial<ExternalAppLoginCommandResponse> | undefined | null = {}) : void {
+    if (externalAppLoginCommandResponse) {
+        writer.writeStringValue("accessToken", externalAppLoginCommandResponse.accessToken);
+        writer.writeGuidValue("appId", externalAppLoginCommandResponse.appId);
+        writer.writeStringValue("appName", externalAppLoginCommandResponse.appName);
+        writer.writeStringValue("expiresIn", externalAppLoginCommandResponse.expiresIn);
+        writer.writeStringValue("refreshToken", externalAppLoginCommandResponse.refreshToken);
+        writer.writeNumberValue("teamId", externalAppLoginCommandResponse.teamId);
+        writer.writeStringValue("tokenType", externalAppLoginCommandResponse.tokenType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalRefreshTokenCommand(writer: SerializationWriter, externalRefreshTokenCommand: Partial<ExternalRefreshTokenCommand> | undefined | null = {}) : void {
+    if (externalRefreshTokenCommand) {
+        writer.writeStringValue("refreshToken", externalRefreshTokenCommand.refreshToken);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalRefreshTokenCommandResponse(writer: SerializationWriter, externalRefreshTokenCommandResponse: Partial<ExternalRefreshTokenCommandResponse> | undefined | null = {}) : void {
+    if (externalRefreshTokenCommandResponse) {
+        writer.writeStringValue("accessToken", externalRefreshTokenCommandResponse.accessToken);
+        writer.writeStringValue("expiresIn", externalRefreshTokenCommandResponse.expiresIn);
+        writer.writeStringValue("refreshToken", externalRefreshTokenCommandResponse.refreshToken);
+        writer.writeStringValue("tokenType", externalRefreshTokenCommandResponse.tokenType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalUserLoginCommand(writer: SerializationWriter, externalUserLoginCommand: Partial<ExternalUserLoginCommand> | undefined | null = {}) : void {
+    if (externalUserLoginCommand) {
+        writer.writeStringValue("email", externalUserLoginCommand.email);
+        writer.writeStringValue("externalUserId", externalUserLoginCommand.externalUserId);
+        writer.writeStringValue("nickName", externalUserLoginCommand.nickName);
+        writer.writeStringValue("userName", externalUserLoginCommand.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalUserLoginCommandResponse(writer: SerializationWriter, externalUserLoginCommandResponse: Partial<ExternalUserLoginCommandResponse> | undefined | null = {}) : void {
+    if (externalUserLoginCommandResponse) {
+        writer.writeStringValue("accessToken", externalUserLoginCommandResponse.accessToken);
+        writer.writeStringValue("expiresIn", externalUserLoginCommandResponse.expiresIn);
+        writer.writeStringValue("externalUserId", externalUserLoginCommandResponse.externalUserId);
+        writer.writeStringValue("refreshToken", externalUserLoginCommandResponse.refreshToken);
+        writer.writeStringValue("tokenType", externalUserLoginCommandResponse.tokenType);
+        writer.writeStringValue("userName", externalUserLoginCommandResponse.userName);
     }
 }
 /**
@@ -11436,6 +11929,21 @@ export function serializeQueryWikiInfoResponse(writer: SerializationWriter, quer
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiMcpConfigCommandResponse(writer: SerializationWriter, queryWikiMcpConfigCommandResponse: Partial<QueryWikiMcpConfigCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiMcpConfigCommandResponse) {
+        writer.writeNumberValue("configId", queryWikiMcpConfigCommandResponse.configId);
+        writer.writeStringValue("createTime", queryWikiMcpConfigCommandResponse.createTime);
+        writer.writeBooleanValue("enabled", queryWikiMcpConfigCommandResponse.enabled);
+        writer.writeStringValue("key", queryWikiMcpConfigCommandResponse.key);
+        writer.writeStringValue("mcpUrl", queryWikiMcpConfigCommandResponse.mcpUrl);
+        writer.writeNumberValue("wikiId", queryWikiMcpConfigCommandResponse.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshMcpServerPluginCommand(writer: SerializationWriter, refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined | null = {}) : void {
     if (refreshMcpServerPluginCommand) {
         writer.writeNumberValue("pluginId", refreshMcpServerPluginCommand.pluginId);
@@ -11521,6 +12029,16 @@ export function serializeResetExternalAppKeyCommandResponse(writer: Serializatio
 export function serializeResetUserPasswordCommand(writer: SerializationWriter, resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined | null = {}) : void {
     if (resetUserPasswordCommand) {
         writer.writeNumberValue("userId", resetUserPasswordCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeResetWikiMcpKeyCommand(writer: SerializationWriter, resetWikiMcpKeyCommand: Partial<ResetWikiMcpKeyCommand> | undefined | null = {}) : void {
+    if (resetWikiMcpKeyCommand) {
+        writer.writeNumberValue("wikiId", resetWikiMcpKeyCommand.wikiId);
     }
 }
 /**
@@ -13700,12 +14218,6 @@ export type WorkerState = (typeof WorkerStateObject)[keyof typeof WorkerStateObj
 export const AiModelTypeObject = {
     Chat: "chat",
     Embedding: "embedding",
-    Image: "image",
-    Tts: "tts",
-    Stts: "stts",
-    Realtime: "realtime",
-    Text2video: "text2video",
-    Text2music: "text2music",
 } as const;
 /**
  * 对话内容状态.

@@ -45,6 +45,12 @@ public class TokenProvider : ITokenProvider
             new Claim("token_type", "access_token")
         };
 
+        // 附加属性
+        foreach (var item in userContext.Properties)
+        {
+            claims.Add(new Claim(item.Key, item.Value));
+        }
+
         var rsaKey = new RsaSecurityKey(_rsaProvider.GetPrivateRsa());
 
         // 生成 Access Token
@@ -158,6 +164,14 @@ public class TokenProvider : ITokenProvider
             Email = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value!,
             IsAuthenticated = true,
             UserType = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Typ)?.Value.JsonToObject<UserType>() ?? UserType.None,
+            Properties = claims
+                .Where(c => c.Type != JwtRegisteredClaimNames.Sub &&
+                            c.Type != JwtRegisteredClaimNames.Name &&
+                            c.Type != JwtRegisteredClaimNames.Nickname &&
+                            c.Type != JwtRegisteredClaimNames.Email &&
+                            c.Type != JwtRegisteredClaimNames.Jti &&
+                            c.Type != JwtRegisteredClaimNames.Typ)
+                .ToDictionary(c => c.Type, c => c.Value)
         };
 
         return (userContext, claims.ToDictionary(x => x.Type, x => x));

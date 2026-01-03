@@ -8,6 +8,8 @@ import { Delete_configRequestBuilderRequestsMetadata, type Delete_configRequestB
 // @ts-ignore
 import { FeishuRequestBuilderNavigationMetadata, type FeishuRequestBuilder } from './feishu/index.js';
 // @ts-ignore
+import { McpRequestBuilderNavigationMetadata, type McpRequestBuilder } from './mcp/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -26,6 +28,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The feishu property
      */
     get feishu(): FeishuRequestBuilder;
+    /**
+     * The mcp property
+     */
+    get mcp(): McpRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -43,6 +49,9 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     feishu: {
         navigationMetadata: FeishuRequestBuilderNavigationMetadata,
+    },
+    mcp: {
+        navigationMetadata: McpRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */
