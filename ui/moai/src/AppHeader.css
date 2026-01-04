@@ -1,79 +1,202 @@
-/* AppHeader.css */
+/* AppHeader.css - 顶部导航栏样式 */
 
+/* ============================================
+   顶部导航栏
+   ============================================ */
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  height: 56px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 0 var(--spacing-lg);
+  height: var(--header-height);
+  background: var(--color-bg-container);
+  border-bottom: 1px solid var(--color-border-secondary);
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.95);
 }
 
+/* 暗色主题适配 */
+:global(.dark) .app-header,
+[data-theme="dark"] .app-header {
+  background: rgba(20, 20, 20, 0.95);
+  border-bottom-color: var(--color-border-secondary);
+}
+
+/* ============================================
+   左侧区域 - Logo + 导航
+   ============================================ */
 .header-left {
   display: flex;
   align-items: center;
   flex: 1;
+  height: 100%;
 }
 
+/* Logo 容器 */
 .logo-container {
   display: flex;
   align-items: center;
   cursor: pointer;
-  margin-right: 32px;
+  margin-right: var(--spacing-xl);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.logo-container:hover {
+  background-color: var(--color-bg-spotlight);
 }
 
 .logo-container img {
   object-fit: contain;
+  border-radius: var(--radius-sm);
 }
 
 .logo-text {
-  margin-left: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  margin-left: var(--spacing-sm);
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #722ed1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
 }
 
+/* ============================================
+   主导航菜单
+   ============================================ */
 .main-menu {
   flex: 1;
-  border-bottom: none;
-  background: transparent;
-  line-height: 54px;
+  border-bottom: none !important;
+  background: transparent !important;
+  line-height: calc(var(--header-height) - 2px);
+  height: 100%;
 }
 
 .main-menu .ant-menu-item,
 .main-menu .ant-menu-submenu-title {
-  padding: 0 16px;
+  padding: 0 var(--spacing-md) !important;
+  margin: 0 var(--spacing-xs) !important;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
 }
 
+.main-menu .ant-menu-item:hover,
+.main-menu .ant-menu-submenu-title:hover {
+  color: var(--color-primary) !important;
+  background-color: var(--color-primary-bg) !important;
+}
+
+.main-menu .ant-menu-item-selected {
+  color: var(--color-primary) !important;
+  background-color: var(--color-primary-bg) !important;
+  font-weight: 600;
+}
+
+.main-menu .ant-menu-item-selected::after,
+.main-menu .ant-menu-submenu-selected::after {
+  border-bottom-color: var(--color-primary) !important;
+  border-bottom-width: 2px !important;
+}
+
+/* 子菜单样式 */
+.main-menu .ant-menu-submenu-popup .ant-menu {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xs);
+}
+
+.main-menu .ant-menu-submenu-popup .ant-menu-item {
+  border-radius: var(--radius-sm);
+  margin: var(--spacing-xs) 0 !important;
+}
+
+/* ============================================
+   右侧区域 - 用户信息
+   ============================================ */
 .header-right {
   display: flex;
   align-items: center;
+  gap: var(--spacing-md);
 }
 
+/* 用户下拉菜单触发器 */
 .user-dropdown {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
 }
 
 .user-dropdown:hover {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-spotlight);
+  border-color: var(--color-border);
+}
+
+.user-dropdown .ant-avatar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .user-name {
-  margin: 0 8px;
-  color: #333;
+  margin: 0 var(--spacing-sm);
+  color: var(--color-text-primary);
   font-size: 14px;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dropdown-icon {
-  font-size: 12px;
-  color: #666;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast);
+}
+
+.user-dropdown:hover .dropdown-icon {
+  transform: translateY(1px);
+}
+
+/* ============================================
+   响应式适配
+   ============================================ */
+@media (max-width: 992px) {
+  .logo-text {
+    display: none;
+  }
+  
+  .logo-container {
+    margin-right: var(--spacing-md);
+  }
+  
+  .main-menu .ant-menu-item,
+  .main-menu .ant-menu-submenu-title {
+    padding: 0 var(--spacing-sm) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .user-name {
+    display: none;
+  }
+  
+  .user-dropdown {
+    padding: var(--spacing-xs);
+  }
 }

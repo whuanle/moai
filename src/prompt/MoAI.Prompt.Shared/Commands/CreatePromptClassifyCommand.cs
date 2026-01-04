@@ -17,7 +17,7 @@ public class CreatePromptClassifyCommand : IRequest<SimpleInt>, IModelValidator<
     /// <summary>
     /// 分类描述.
     /// </summary>
-    public string? Description { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreatePromptClassifyCommand> validate)
@@ -25,5 +25,9 @@ public class CreatePromptClassifyCommand : IRequest<SimpleInt>, IModelValidator<
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("名称不能为空")
             .MaximumLength(50).WithMessage("名称不能超过50个字符");
+
+        validate.RuleFor(x => x.Description)
+            .NotEmpty()
+            .MaximumLength(255).WithMessage("描述不能超过255个字符");
     }
 }

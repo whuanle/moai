@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router";
+import { useNavigate, Routes, Route, Navigate } from "react-router";
 import { Layout, message } from "antd";
 import "./App.css";
 import {
@@ -12,13 +12,13 @@ import useAppStore from "./stateshare/store";
 import AppHeader from "./AppHeader";
 
 // 页面组件导入
-import Dashboard from "./components/dashboard/Dashboard";
 import OAuthPage from "./components/admin/oauth/OAuthPage";
 import UserManagerPage from "./components/admin/usermanager/UserManagerPage";
 import UserSetting from "./components/user/UserSetting";
 import BindOAuth from "./components/user/BindOAuth";
 import AiModelPage from "./components/admin/aimodel/AiModelPage";
 import PromptClassPage from "./components/admin/promptclass/PromptClassPage";
+import PromptClassEditPage from "./components/prompt/PromptClassPage";
 import PromptListPage from "./components/prompt/PromptListPage";
 import PromptCreatePage from "./components/prompt/PromptCreatePage";
 import PromptEditPage from "./components/prompt/PromptEditPage";
@@ -47,6 +47,7 @@ import TeamWikiWrapper from "./components/team/TeamWikiWrapper";
 import TeamApps from "./components/team/TeamApps";
 import TeamIntegration from "./components/team/TeamIntegration";
 import McpConfigPage from "./components/wiki/McpConfigPage";
+import PromptViewPage from "./components/prompt/PromptViewPage";
 
 const { Content } = Layout;
 
@@ -142,8 +143,10 @@ function App() {
             <Route path="prompt">
               <Route index element={<Navigate to="list" replace />} />
               <Route path="list" element={<PromptListPage />} />
+              <Route path="class" element={<PromptClassEditPage />} />
               <Route path="create" element={<PromptCreatePage />} />
               <Route path=":promptId/edit" element={<PromptEditPage />} />
+              <Route path=":promptId/view" element={<PromptViewPage />} />
             </Route>
             
             {/* 管理员功能 */}

@@ -3,7 +3,10 @@ using MediatR;
 
 namespace MoAI.Prompt.Models;
 
-public class AiOptimizePromptRequest : IModelValidator<AiOptimizePromptRequest>
+/// <summary>
+/// 使用 AI 优化提示词.
+/// </summary>
+public class AiOptimizePromptCommand : IModelValidator<AiOptimizePromptCommand>
 {
     /// <summary>
     /// AI 模型 id.
@@ -11,12 +14,12 @@ public class AiOptimizePromptRequest : IModelValidator<AiOptimizePromptRequest>
     public int AiModelId { get; init; }
 
     /// <summary>
-    /// 用户原本的提示词
+    /// 用户原本的提示词.
     /// </summary>
-    public string SourcePrompt { get; init; }
+    public string SourcePrompt { get; init; } = string.Empty;
 
     /// <inheritdoc/>
-    public static void Validate(AbstractValidator<AiOptimizePromptRequest> validate)
+    public static void Validate(AbstractValidator<AiOptimizePromptCommand> validate)
     {
         validate.RuleFor(x => x.AiModelId).NotEmpty().WithMessage("模型id不正确");
 

@@ -6,6 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\aimodel\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.Prompt.Api\MoAI.Prompt.Api.csproj" />
 	</ItemGroup>

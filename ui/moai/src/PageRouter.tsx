@@ -9,6 +9,7 @@ import { UserPageRouters } from "./components/user/UserPageRouter";
 import { WikiPageRouters } from "./components/wiki/WikiPageRouter";
 import { PluginPageRouters } from "./components/plugin/PluginPageRouter";
 import { TeamPageRouters } from "./components/team/TeamPageRouter";
+import { PromptPageRouters } from "./components/prompt/PromptPageRouter";
 import AiAssistant from "./components/app/AiAssistant";
 
 // 在此集合所有页面的路由，每个子模块的路由从模块下的 PageRouter 导出
@@ -28,6 +29,7 @@ export const PageRouterProvider = createBrowserRouter([
       ...WikiPageRouters,
       ...PluginPageRouters,
       ...TeamPageRouters,
+      ...PromptPageRouters,
     ],
   },
   // AI 助手独立页面（不带菜单）

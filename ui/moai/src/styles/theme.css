@@ -1,0 +1,539 @@
+/* ============================================
+   MoAI 主题设计系统
+   ============================================
+   设计理念：大气、优雅、专业
+   - 使用柔和的渐变背景营造层次感
+   - 精致的阴影和圆角提升质感
+   - 统一的间距和色彩系统
+   ============================================ */
+
+/* ============================================
+   CSS 变量 - 设计令牌
+   ============================================ */
+:root {
+  /* 主色调 */
+  --color-primary: #1677ff;
+  --color-primary-hover: #4096ff;
+  --color-primary-active: #0958d9;
+  --color-primary-bg: rgba(22, 119, 255, 0.06);
+  --color-primary-border: rgba(22, 119, 255, 0.2);
+
+  /* 中性色 */
+  --color-text-primary: #1f1f1f;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-text-quaternary: #bfbfbf;
+
+  /* 背景色 */
+  --color-bg-layout: #f0f2f5;
+  --color-bg-container: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --color-bg-spotlight: #fafafa;
+
+  /* 边框色 */
+  --color-border: #e8e8e8;
+  --color-border-secondary: #f0f0f0;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03),
+               0 1px 6px -1px rgba(0, 0, 0, 0.02),
+               0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 3px 6px -4px rgba(0, 0, 0, 0.12),
+               0 6px 16px 0 rgba(0, 0, 0, 0.08),
+               0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 6px 16px -8px rgba(0, 0, 0, 0.08),
+               0 9px 28px 0 rgba(0, 0, 0, 0.05),
+               0 12px 48px 16px rgba(0, 0, 0, 0.03);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* 布局尺寸 */
+  --header-height: 60px;
+  --content-max-width: 1600px;
+  --sidebar-width: 240px;
+
+  /* 过渡动画 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.35s ease;
+}
+
+/* ============================================
+   全局基础样式
+   ============================================ */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+               'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+               'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-size: 14px;
+  line-height: 1.5714;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-layout);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   布局容器样式
+   ============================================ */
+
+/* 主布局 */
+.moai-layout {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
+}
+
+/* 内容区域 */
+.moai-content {
+  min-height: calc(100vh - var(--header-height));
+  padding: var(--spacing-lg);
+  background: transparent;
+}
+
+/* 页面容器 - 用于包裹页面内容 */
+.moai-page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 页面容器 - 全宽版本 */
+.moai-page-full {
+  padding: var(--spacing-lg);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  min-height: calc(100vh - var(--header-height) - var(--spacing-lg) * 2);
+}
+
+/* 页面容器 - 无背景版本 */
+.moai-page-transparent {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+/* ============================================
+   卡片样式
+   ============================================ */
+.moai-card {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-secondary);
+  transition: box-shadow var(--transition-normal),
+              transform var(--transition-normal);
+}
+
+.moai-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.moai-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   页面标题区域
+   ============================================ */
+.moai-page-header {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.moai-page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.moai-page-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ============================================
+   工具栏样式
+   ============================================ */
+.moai-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.moai-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.moai-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* ============================================
+   列表样式
+   ============================================ */
+.moai-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.moai-list-item {
+  padding: var(--spacing-md);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-secondary);
+  transition: all var(--transition-normal);
+}
+
+.moai-list-item:hover {
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   网格布局
+   ============================================ */
+.moai-grid {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.moai-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.moai-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.moai-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.moai-grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 1200px) {
+  .moai-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .moai-grid-3,
+  .moai-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .moai-grid-2,
+  .moai-grid-3,
+  .moai-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .moai-content {
+    padding: var(--spacing-md);
+  }
+}
+
+/* ============================================
+   空状态样式
+   ============================================ */
+.moai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xxl);
+  color: var(--color-text-tertiary);
+}
+
+.moai-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.moai-empty-text {
+  font-size: 14px;
+}
+
+/* ============================================
+   加载状态样式
+   ============================================ */
+.moai-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* ============================================
+   滚动条美化
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-quaternary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* ============================================
+   Ant Design 组件覆盖
+   ============================================ */
+
+/* 表格优化 */
+.ant-table {
+  border-radius: var(--radius-md);
+}
+
+.ant-table-thead > tr > th {
+  background: var(--color-bg-spotlight) !important;
+  font-weight: 600;
+}
+
+/* ============================================
+   按钮样式优化 - 大气优雅设计
+   ============================================ */
+.ant-btn {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 500 !important;
+  transition: all var(--transition-fast) !important;
+  box-shadow: none;
+}
+
+/* 主要按钮 - 渐变蓝色 */
+.ant-btn-primary:not(:disabled) {
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.25) !important;
+  color: #fff !important;
+}
+
+.ant-btn-primary:not(:disabled):hover,
+.ant-btn-primary:not(:disabled):focus {
+  background: linear-gradient(135deg, #4096ff 0%, #69b1ff 100%) !important;
+  box-shadow: 0 4px 14px rgba(22, 119, 255, 0.4) !important;
+  transform: translateY(-1px);
+  color: #fff !important;
+}
+
+.ant-btn-primary:not(:disabled):active {
+  background: linear-gradient(135deg, #0958d9 0%, #1677ff 100%) !important;
+  transform: translateY(0);
+  color: #fff !important;
+}
+
+/* 默认按钮 - 柔和边框 */
+.ant-btn-default:not(:disabled) {
+  border-color: #d9d9d9 !important;
+  color: #595959 !important;
+  background: #fff !important;
+}
+
+.ant-btn-default:not(:disabled):hover,
+.ant-btn-default:not(:disabled):focus {
+  color: #1677ff !important;
+  border-color: #1677ff !important;
+  background: rgba(22, 119, 255, 0.04) !important;
+}
+
+.ant-btn-default:not(:disabled):active {
+  color: #0958d9 !important;
+  border-color: #0958d9 !important;
+}
+
+/* 虚线按钮 */
+.ant-btn-dashed:not(:disabled) {
+  border-color: #d9d9d9 !important;
+  color: #595959 !important;
+  background: #fff !important;
+}
+
+.ant-btn-dashed:not(:disabled):hover,
+.ant-btn-dashed:not(:disabled):focus {
+  color: #1677ff !important;
+  border-color: #1677ff !important;
+  background: rgba(22, 119, 255, 0.04) !important;
+}
+
+/* 文本按钮 */
+.ant-btn-text:not(:disabled) {
+  color: #595959 !important;
+}
+
+.ant-btn-text:not(:disabled):hover,
+.ant-btn-text:not(:disabled):focus {
+  color: #1677ff !important;
+  background: rgba(22, 119, 255, 0.06) !important;
+}
+
+/* 链接按钮 */
+.ant-btn-link:not(:disabled) {
+  color: #1677ff !important;
+}
+
+.ant-btn-link:not(:disabled):hover,
+.ant-btn-link:not(:disabled):focus {
+  color: #4096ff !important;
+}
+
+/* 危险按钮 - 主要 */
+.ant-btn-dangerous.ant-btn-primary:not(:disabled) {
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.25) !important;
+  color: #fff !important;
+}
+
+.ant-btn-dangerous.ant-btn-primary:not(:disabled):hover,
+.ant-btn-dangerous.ant-btn-primary:not(:disabled):focus {
+  background: linear-gradient(135deg, #ff7875 0%, #ffa39e 100%) !important;
+  box-shadow: 0 4px 14px rgba(255, 77, 79, 0.4) !important;
+  color: #fff !important;
+}
+
+/* 危险按钮 - 默认 */
+.ant-btn-dangerous.ant-btn-default:not(:disabled) {
+  color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  background: #fff !important;
+}
+
+.ant-btn-dangerous.ant-btn-default:not(:disabled):hover,
+.ant-btn-dangerous.ant-btn-default:not(:disabled):focus {
+  color: #ff7875 !important;
+  border-color: #ff7875 !important;
+  background: rgba(255, 77, 79, 0.04) !important;
+}
+
+/* 按钮尺寸微调 */
+.ant-btn-lg {
+  height: 40px !important;
+  padding: 0 24px !important;
+  font-size: 15px !important;
+}
+
+.ant-btn-sm {
+  height: 28px !important;
+  padding: 0 12px !important;
+  font-size: 13px !important;
+}
+
+/* 图标按钮 */
+.ant-btn-icon-only {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ant-btn-icon-only.ant-btn-lg {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.ant-btn-icon-only.ant-btn-sm {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* 禁用状态 */
+.ant-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 输入框优化 */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-select-selector {
+  border-radius: var(--radius-sm) !important;
+}
+
+/* 卡片优化 */
+.ant-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 模态框优化 */
+.ant-modal-content {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* 标签页优化 */
+.ant-tabs-nav::before {
+  border-bottom-color: var(--color-border-secondary) !important;
+}
+
+/* ============================================
+   暗色主题适配
+   ============================================ */
+[data-theme="dark"],
+.dark {
+  --color-text-primary: rgba(255, 255, 255, 0.88);
+  --color-text-secondary: rgba(255, 255, 255, 0.65);
+  --color-text-tertiary: rgba(255, 255, 255, 0.45);
+  --color-text-quaternary: rgba(255, 255, 255, 0.25);
+  
+  --color-bg-layout: #000000;
+  --color-bg-container: #141414;
+  --color-bg-elevated: #1f1f1f;
+  --color-bg-spotlight: #1f1f1f;
+  
+  --color-border: #303030;
+  --color-border-secondary: #252525;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2),
+               0 1px 6px -1px rgba(0, 0, 0, 0.15),
+               0 2px 4px 0 rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 3px 6px -4px rgba(0, 0, 0, 0.4),
+               0 6px 16px 0 rgba(0, 0, 0, 0.3),
+               0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}

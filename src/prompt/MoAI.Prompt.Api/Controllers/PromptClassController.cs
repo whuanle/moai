@@ -1,12 +1,10 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
-using MoAI.Prompt.Queries;
-using MoAI.Prompt.Queries.Responses;
-using MoAIPrompt.Api;
 
 namespace MoAI.Prompt.Controllers;
 
@@ -39,7 +37,7 @@ public class PromptClassController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>创建结果, 返回 <see cref="SimpleInt"/>.</returns>
     [HttpPost("create_class")]
-    public async Task<SimpleInt> CreateAsync(CreatePromptClassifyCommand req, CancellationToken ct = default)
+    public async Task<SimpleInt> CreateAsync([FromBody] CreatePromptClassifyCommand req, CancellationToken ct = default)
     {
         await CheckIsAdminAsync(ct);
 
@@ -53,7 +51,7 @@ public class PromptClassController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>删除结果, 返回 <see cref="EmptyCommandResponse"/>.</returns>
     [HttpDelete("delete_class")]
-    public async Task<EmptyCommandResponse> DeleteAsync(DeletePromptCommand req, CancellationToken ct = default)
+    public async Task<EmptyCommandResponse> DeleteAsync([FromBody] DeletePromptClassifyCommand req, CancellationToken ct = default)
     {
         await CheckIsAdminAsync(ct);
 
@@ -67,7 +65,7 @@ public class PromptClassController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>更新结果, 返回 <see cref="EmptyCommandResponse"/>.</returns>
     [HttpPost("update_class")]
-    public async Task<EmptyCommandResponse> UpdateAsync(UpdatePromptClassifyCommand req, CancellationToken ct = default)
+    public async Task<EmptyCommandResponse> UpdateAsync([FromBody] UpdatePromptClassifyCommand req, CancellationToken ct = default)
     {
         await CheckIsAdminAsync(ct);
 

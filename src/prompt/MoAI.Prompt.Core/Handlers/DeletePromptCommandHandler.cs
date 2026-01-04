@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Prompt.Commands;
 
@@ -26,11 +27,18 @@ public class DeletePromptCommandHandler : IRequestHandler<DeletePromptCommand, E
     public async Task<EmptyCommandResponse> Handle(DeletePromptCommand request, CancellationToken cancellationToken)
     {
         var promptEntity = await _databaseContext.Prompts.FirstOrDefaultAsync(x => x.Id == request.PromptId);
-        if (promptEntity != null)
+        if (promptEntity == null)
         {
-            _databaseContext.Prompts.Remove(promptEntity);
-            await _databaseContext.SaveChangesAsync(cancellationToken);
+            throw new BusinessException("未找到提示词") { StatusCode = 404 };
         }
+
+        if (promptEntity.CreateUserId != request.ContextUserId)
+        {
+            throw new BusinessException("未找到提示词") { StatusCode = 404 };
+        }
+
+        _databaseContext.Prompts.Remove(promptEntity);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

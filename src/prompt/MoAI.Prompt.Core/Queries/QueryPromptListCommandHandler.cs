@@ -32,25 +32,13 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
     {
         var query = _databaseContext.Prompts.AsQueryable();
 
-        if (request.Condition == PromptFilterCondition.Own)
+        if (request.IsOwn == true)
         {
             query = query.Where(x => x.CreateUserId == request.ContextUserId);
         }
-        else if (request.Condition == PromptFilterCondition.OwnPublic)
-        {
-            query = query.Where(x => x.CreateUserId == request.ContextUserId && x.IsPublic);
-        }
-        else if (request.Condition == PromptFilterCondition.OwnPrivate)
-        {
-            query = query.Where(x => x.CreateUserId == request.ContextUserId && x.IsPublic == false);
-        }
-        else if (request.Condition == PromptFilterCondition.OtherShare)
-        {
-            query = query.Where(x => x.CreateUserId != request.ContextUserId && x.IsPublic == true);
-        }
         else
         {
-            query = query.Where(x => x.CreateUserId == request.ContextUserId || (x.CreateUserId != request.ContextUserId && x.IsPublic == true));
+            query = query.Where(x => x.CreateUserId == request.ContextUserId || x.IsPublic == true);
         }
 
         if (request.ClassId != null)
@@ -64,6 +52,9 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
         }
 
         var prompts = await query
+            .DynamicOrder(request.OrderByFields)
+            .Skip(request.Skip)
+            .Take(request.Take)
             .Select(x => new PromptItem
             {
                 Id = x.Id,
@@ -77,9 +68,6 @@ public class QueryPromptListCommandHandler : IRequestHandler<QueryPromptListComm
                 Content = string.Empty,
                 PromptClassId = x.CreateUserId
             })
-            .OrderByDescending(x => x.Name)
-            .Skip(request.Skip)
-            .Take(request.Take)
             .ToArrayAsync(cancellationToken);
 
         await _mediator.Send(new FillUserInfoCommand

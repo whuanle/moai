@@ -35,7 +35,7 @@ public class UpdatePromptCommand : IRequest<EmptyCommandResponse>, IModelValidat
     public string Content { get; init; } = default!;
 
     /// <summary>
-    /// 是否公开.
+    /// 是否公开，只有管理员才能创建公开的提示词.
     /// </summary>
     public bool IsPublic { get; init; }
 

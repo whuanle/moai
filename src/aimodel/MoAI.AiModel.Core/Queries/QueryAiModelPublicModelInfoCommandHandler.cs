@@ -25,6 +25,7 @@ public class QueryAiModelPublicModelInfoCommandHandler : IRequestHandler<QueryAi
     {
         _dbContext = dbContext;
     }
+
     /// <inheritdoc/>
     public async Task<PublicModelInfo> Handle(QueryAiModelPublicModelInfoCommand request, CancellationToken cancellationToken)
     {

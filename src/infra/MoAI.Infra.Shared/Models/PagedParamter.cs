@@ -5,7 +5,7 @@ namespace MoAI.Infra.Models;
 /// <summary>
 /// 分页参数.
 /// </summary>
-public class PagedParamter
+public class PagedParamter : IPagedParamter
 {
     private int _pageNo = 1;
 

@@ -43,11 +43,15 @@ export interface UserInfoModel {
   userName?: string | null;
 }
 
+// 主题类型
+export type ThemeMode = 'light' | 'dark';
+
 interface AppState {
   currentTeam: any
   serverInfo: ServerInfoModel | null
   userInfo: UserInfoModel | null
   userDetailInfo: UserStateInfo | null
+  themeMode: ThemeMode
   
   // Server info actions
   setServerInfo: (serverInfo: ServerInfoModel) => void
@@ -63,13 +67,29 @@ interface AppState {
   setUserDetailInfo: (userDetailInfo: UserStateInfo) => void
   getUserDetailInfo: () => UserStateInfo | null
   clearUserDetailInfo: () => void
+  
+  // Theme actions
+  setThemeMode: (mode: ThemeMode) => void
+  toggleTheme: () => void
 }
+
+// 获取初始主题
+const getInitialTheme = (): ThemeMode => {
+  const saved = localStorage.getItem('theme.mode');
+  if (saved === 'light' || saved === 'dark') return saved;
+  // 跟随系统偏好
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+};
 
 const useAppStore = create<AppState>((set, get) => ({
   currentTeam: null,
   serverInfo: null,
   userInfo: null,
   userDetailInfo: null,
+  themeMode: getInitialTheme(),
   
   // Server info actions
   setServerInfo: (serverInfo: ServerInfoModel) => {
@@ -181,6 +201,18 @@ const useAppStore = create<AppState>((set, get) => ({
     set({ userDetailInfo: null });
   },
   
+  // Theme actions
+  setThemeMode: (mode: ThemeMode) => {
+    localStorage.setItem('theme.mode', mode);
+    set({ themeMode: mode });
+  },
+  
+  toggleTheme: () => {
+    const current = get().themeMode;
+    const newMode = current === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme.mode', newMode);
+    set({ themeMode: newMode });
+  },
 
 }))
 

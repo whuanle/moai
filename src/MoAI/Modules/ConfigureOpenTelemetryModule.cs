@@ -13,17 +13,15 @@ namespace MoAI.Modules;
 /// </summary>
 public class ConfigureOpenTelemetryModule : IModule
 {
-    private readonly IConfiguration _configuration;
     private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfigureOpenTelemetryModule"/> class.
     /// </summary>
-    /// <param name="configuration"></param>
-    public ConfigureOpenTelemetryModule(IConfiguration configuration)
+    /// <param name="systemOptions"></param>
+    public ConfigureOpenTelemetryModule(SystemOptions systemOptions)
     {
-        _configuration = configuration;
-        _systemOptions = configuration.Get<SystemOptions>()!;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>

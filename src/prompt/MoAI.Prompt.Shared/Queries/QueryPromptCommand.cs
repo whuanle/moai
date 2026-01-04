@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using MoAI.Infra.Models;
 using MoAIPrompt.Models;
 
 namespace MoAIPrompt.Queries;
@@ -6,15 +7,16 @@ namespace MoAIPrompt.Queries;
 /// <summary>
 /// 获取提示词.
 /// </summary>
-public class QueryPromptCommand : IRequest<PromptItem>
+public class QueryPromptCommand : IRequest<PromptItem>, IUserIdContext
 {
     /// <summary>
     /// 提示词 id.
     /// </summary>
     public int PromptId { get; init; }
 
-    /// <summary>
-    /// 用户 id.
-    /// </summary>
-    public int UserId { get; init; }
+    /// <inheritdoc/>
+    public int ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
 }

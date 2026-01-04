@@ -1,0 +1,125 @@
+/* PromptEditPage 样式 */
+@import '../../styles/theme.css';
+
+.prompt-edit-page {
+  height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 页面头部 */
+.prompt-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+  flex-shrink: 0;
+}
+
+.prompt-edit-header-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.prompt-edit-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* 表单容器 */
+.prompt-edit-form-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-lg);
+  overflow: hidden;
+}
+
+/* 表单基础信息区域 */
+.prompt-edit-form-info {
+  flex-shrink: 0;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* 编辑器区域 */
+.prompt-edit-editor-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.prompt-edit-editor-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.prompt-edit-editor-label::before {
+  content: '*';
+  color: #ff4d4f;
+  margin-right: 4px;
+}
+
+/* Vditor 编辑器容器 */
+.prompt-edit-vditor {
+  flex: 1;
+  min-height: 400px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Vditor 编辑器宽度优化 */
+.prompt-edit-vditor .vditor-ir .vditor-reset,
+.prompt-edit-vditor .vditor-wysiwyg .vditor-reset,
+.prompt-edit-vditor .vditor-sv .vditor-reset {
+  max-width: calc(100% - 80px) !important;
+  padding: var(--spacing-md) var(--spacing-xl) !important;
+  margin: 0 auto !important;
+}
+
+/* 工具栏宽度 */
+.prompt-edit-vditor .vditor-toolbar {
+  max-width: 100% !important;
+}
+
+/* Vditor 全屏模式 - 确保覆盖页面头部和侧边栏 */
+.vditor--fullscreen {
+  z-index: 1100 !important;
+}
+
+/* 响应式适配 */
+@media (max-width: 992px) {
+  .prompt-edit-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .prompt-edit-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .prompt-edit-ai-toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .prompt-edit-form-container {
+    padding: var(--spacing-md);
+  }
+
+  .prompt-edit-header-actions {
+    flex-wrap: wrap;
+  }
+}

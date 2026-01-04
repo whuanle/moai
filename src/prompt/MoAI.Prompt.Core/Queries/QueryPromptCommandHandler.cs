@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.User.Queries;
 using MoAIPrompt.Models;
 using MoAIPrompt.Queries;
 
@@ -30,7 +31,7 @@ public class QueryPromptCommandHandler : IRequestHandler<QueryPromptCommand, Pro
     public async Task<PromptItem> Handle(QueryPromptCommand request, CancellationToken cancellationToken)
     {
         var prompt = await _databaseContext.Prompts
-            .Where(x => x.Id == request.PromptId && (x.IsPublic || x.CreateUserId == request.UserId))
+            .Where(x => x.Id == request.PromptId && (x.IsPublic || x.CreateUserId == request.ContextUserId))
             .Select(x => new PromptItem
             {
                 Id = x.Id,
@@ -42,7 +43,7 @@ public class QueryPromptCommandHandler : IRequestHandler<QueryPromptCommand, Pro
                 UpdateUserId = x.UpdateUserId,
                 Content = x.Content,
                 IsPublic = x.IsPublic,
-                PromptClassId = x.PromptClassId
+                PromptClassId = x.PromptClassId,
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -51,6 +52,7 @@ public class QueryPromptCommandHandler : IRequestHandler<QueryPromptCommand, Pro
             throw new BusinessException("提示词不存在") { StatusCode = 404 };
         }
 
+        await _mediator.Send(new FillUserInfoCommand { Items = new[] { prompt } });
         return prompt;
     }
 }

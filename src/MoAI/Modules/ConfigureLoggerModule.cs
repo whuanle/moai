@@ -9,19 +9,6 @@ namespace MoAI.Modules;
 /// </summary>
 public class ConfigureLoggerModule : IModule
 {
-    private readonly IConfiguration _configuration;
-    private readonly SystemOptions _systemOptions;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ConfigureLoggerModule"/> class.
-    /// </summary>
-    /// <param name="configuration"></param>
-    public ConfigureLoggerModule(IConfiguration configuration)
-    {
-        _configuration = configuration;
-        _systemOptions = configuration.Get<SystemOptions>()!;
-    }
-
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {

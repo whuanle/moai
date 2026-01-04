@@ -742,12 +742,12 @@ export default function AiModelPage() {
                     placeholder="请选择模型类型"
                     onChange={handleModelTypeChange}
                   >
-                    <Option value="chat">聊天</Option>
-                    <Option value="embedding">嵌入</Option>
-                    <Option value="image">图像</Option>
+                    <Option value="chat">文本生成(对话)</Option>
+                    <Option value="embedding">嵌入(向量化)</Option>
+                    <Option value="image">图像生成</Option>
                     <Option value="tts">语音合成</Option>
                     <Option value="stts">语音转文字</Option>
-                    <Option value="realtime">实时</Option>
+                    {/* <Option value="realtime">实时</Option> */}
                     <Option value="text2video">文本转视频</Option>
                     <Option value="text2music">文本转音乐</Option>
                   </Select>

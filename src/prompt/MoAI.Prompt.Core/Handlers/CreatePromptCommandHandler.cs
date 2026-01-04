@@ -31,7 +31,7 @@ public class CreatePromptCommandHandler : IRequestHandler<CreatePromptCommand, S
             Description = request.Description,
             Content = request.Content,
             PromptClassId = request.PromptClassId,
-            IsPublic = request.IsPublic
+            IsPublic = false
         };
 
         await _databaseContext.Prompts.AddAsync(prompt, cancellationToken);

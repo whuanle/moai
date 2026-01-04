@@ -27,9 +27,4 @@ public class CreatePromptCommand : IRequest<SimpleInt>
     /// 助手设定,支持 markdown.
     /// </summary>
     public string Content { get; init; } = default!;
-
-    /// <summary>
-    /// 是否公开.
-    /// </summary>
-    public bool IsPublic { get; init; }
 }

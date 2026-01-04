@@ -1,0 +1,49 @@
+/* SortPopover.css */
+
+.sort-popover-content {
+  min-width: 160px;
+}
+
+.sort-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.sort-item:hover {
+  background: rgba(22, 119, 255, 0.06);
+}
+
+.sort-item.active {
+  background: rgba(22, 119, 255, 0.1);
+}
+
+.sort-item-label {
+  font-size: 14px;
+  color: #333;
+}
+
+.sort-item.active .sort-item-label {
+  color: #1677ff;
+  font-weight: 500;
+}
+
+.sort-icon {
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.sort-icon.active {
+  color: #1677ff;
+}
+
+.sort-icon.inactive {
+  color: #bfbfbf;
+}

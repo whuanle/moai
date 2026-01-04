@@ -1,424 +1,203 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Card, Input, Select, Button, Table, Tag, Space, message, Spin, Popconfirm, Modal, Typography } from 'antd';
-import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import Vditor from 'vditor';
-import 'vditor/dist/index.css';
+import { Input, Button, Tag, message, Spin, Popconfirm, Pagination, Empty, Checkbox } from 'antd';
+import { PlusOutlined, EditOutlined, EyeOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { GetApiClient } from '../ServiceClient';
+import { proxyRequestError } from '../../helper/RequestError';
+import useAppStore from '../../stateshare/store';
+import SortPopover, { SortState } from '../common/SortPopover';
 import { 
   QueryPromptListCommand, 
   QueryPromptListCommandResponse, 
   PromptItem, 
   PromptClassifyItem,
   QueryePromptClassCommandResponse,
-  PromptFilterCondition,
-  PromptFilterConditionObject,
-  DeletePromptCommand
+  DeletePromptCommand,
+  KeyValueBool
 } from '../../apiClient/models';
 import './PromptListPage.css';
 
-const { Title, Text } = Typography;
-
-const { Search } = Input;
-const { Option } = Select;
+// 排序字段配置
+const SORT_FIELDS = [
+  { key: 'name', label: '名称' },
+  { key: 'createTime', label: '创建时间' },
+];
 
 export default function PromptListPage() {
   const navigate = useNavigate();
+  const userDetailInfo = useAppStore((state) => state.userDetailInfo);
+  const isAdmin = userDetailInfo?.isAdmin === true;
+  const currentUserId = userDetailInfo?.userId;
+  
   const [loading, setLoading] = useState(false);
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [categories, setCategories] = useState<PromptClassifyItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [searchText, setSearchText] = useState('');
-  const [filterCondition, setFilterCondition] = useState<PromptFilterCondition>('none');
+  const [onlyMine, setOnlyMine] = useState(true);
   const [messageApi, contextHolder] = message.useMessage();
   
-  // 查看详情相关状态
-  const [modalVisible, setModalVisible] = useState(false);
-  const [viewingPrompt, setViewingPrompt] = useState<PromptItem | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [vditorInstance, setVditorInstance] = useState<Vditor | null>(null);
-  const vditorId = useRef(`vditor-preview-${Math.random().toString(36).substr(2, 9)}`);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+  const [sortState, setSortState] = useState<SortState>({ name: null, createTime: null });
 
-  // 筛选条件选项
-  const filterOptions = [
-    { value: 'none', label: '全部' },
-    { value: 'own', label: '我创建的' },
-    { value: 'ownPublic', label: '我共享的' },
-    { value: 'ownPrivate', label: '个人私密' },
-    { value: 'otherShare', label: '他人共享的' },
-  ];
 
-  // 获取分类列表
   const fetchCategories = async () => {
     try {
       const client = GetApiClient();
       const response: QueryePromptClassCommandResponse | undefined = await client.api.prompt.class_list.get();
-      if (response?.items) {
-        setCategories(response.items);
-      }
+      if (response?.items) setCategories(response.items);
     } catch (error) {
       console.error('获取分类列表失败:', error);
-      messageApi.error('获取分类列表失败');
+      proxyRequestError(error, messageApi, '获取分类列表失败');
     }
   };
 
-  // 获取提示词列表
   const fetchPrompts = async () => {
     setLoading(true);
     try {
       const client = GetApiClient();
+      
+      // 构建排序字段
+      const orderByFields: KeyValueBool[] = [];
+      if (sortState.name) {
+        orderByFields.push({ key: 'Name', value: sortState.name === 'desc' });
+      }
+      if (sortState.createTime) {
+        orderByFields.push({ key: 'CreateTime', value: sortState.createTime === 'desc' });
+      }
+      
       const requestBody: QueryPromptListCommand = {
-        classId: selectedCategory,
-        condition: filterCondition === 'none' ? undefined : filterCondition,
+        classId: selectedCategory ?? undefined,
         search: searchText || undefined,
+        isOwn: onlyMine ? true : undefined,
+        orderByFields: orderByFields.length > 0 ? orderByFields : undefined,
         pageNo: 1,
-        pageSize: 100,
+        pageSize: 500,
       };
-
       const response: QueryPromptListCommandResponse | undefined = await client.api.prompt.prompt_list.post(requestBody);
       if (response?.items) {
         setPrompts(response.items);
+        setCurrentPage(1);
       }
     } catch (error) {
       console.error('获取提示词列表失败:', error);
-      messageApi.error('获取提示词列表失败');
+      proxyRequestError(error, messageApi, '获取提示词列表失败');
     } finally {
       setLoading(false);
     }
   };
 
-  // 页面初始化
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  // 由于后端已处理排序，前端直接使用返回数据
+  const sortedPrompts = prompts;
 
-  // 当筛选条件改变时重新获取数据
-  useEffect(() => {
-    fetchPrompts();
-  }, [selectedCategory, searchText, filterCondition]);
+  const paginatedPrompts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedPrompts.slice(start, start + pageSize);
+  }, [sortedPrompts, currentPage, pageSize]);
 
-  // 处理搜索
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-  };
+  useEffect(() => { fetchCategories(); fetchPrompts(); }, []);
 
-  // 处理分类筛选
-  const handleCategoryChange = (value: number | undefined) => {
-    setSelectedCategory(value);
-  };
 
-  // 处理筛选条件改变
-  const handleFilterChange = (value: PromptFilterCondition) => {
-    setFilterCondition(value);
-  };
-
-  // 处理删除提示词
   const handleDelete = async (record: PromptItem) => {
     try {
       const client = GetApiClient();
-      const requestBody: DeletePromptCommand = {
-        promptId: record.id
-      };
-      
+      const requestBody: DeletePromptCommand = { promptId: record.id };
       await client.api.prompt.delete_prompt.delete(requestBody);
       messageApi.success('删除成功');
-      // 重新获取列表
       fetchPrompts();
     } catch (error) {
       console.error('删除提示词失败:', error);
-      messageApi.error('删除失败');
+      proxyRequestError(error, messageApi, '删除提示词失败');
     }
   };
 
-  // 处理查看提示词详情
-  const handleView = async (record: PromptItem) => {
-    setModalVisible(true);
-    setViewingPrompt(null);
-    setLoadingDetail(true);
-
-    try {
-      const client = GetApiClient();
-      const res: PromptItem | undefined = await client.api.prompt.prompt_content.get({
-        queryParameters: {
-          promptId: record.id || 0
-        }
-      });
-
-      if (res) {
-        setViewingPrompt(res);
-        // 等待 vditor 初始化后再设置内容
-        setTimeout(() => {
-          if (vditorInstance && res.content) {
-            vditorInstance.setValue(res.content);
-          }
-        }, 100);
-      } else {
-        messageApi.error('获取提示词详情失败');
-        setModalVisible(false);
-      }
-    } catch (error) {
-      console.error('获取提示词详情失败:', error);
-      messageApi.error('获取提示词详情失败');
-      setModalVisible(false);
-    } finally {
-      setLoadingDetail(false);
-    }
+  const handleView = (record: PromptItem) => {
+    navigate(`/app/prompt/${record.id}/view`);
   };
 
-  // 关闭查看窗口
-  const handleCloseModal = () => {
-    if (vditorInstance) {
-      vditorInstance.destroy();
-      setVditorInstance(null);
-    }
-    setModalVisible(false);
-    setViewingPrompt(null);
-  };
+  const getCategoryName = (classId: number) => categories.find(c => c.classifyId === classId)?.name || '未分类';
+  const isOwner = (prompt: PromptItem) => prompt.createUserId === currentUserId;
 
-  // 初始化 vditor 预览实例
-  useEffect(() => {
-    if (!modalVisible) return;
 
-    const timer = setTimeout(() => {
-      const container = document.getElementById(vditorId.current);
-      if (!container) return;
-
-      // 如果已存在实例，先销毁
-      if (vditorInstance) {
-        vditorInstance.destroy();
-        setVditorInstance(null);
-      }
-
-      try {
-        const vditor = new Vditor(vditorId.current, {
-          placeholder: '加载中...',
-          height: 600,
-          mode: 'ir',
-          toolbar: ['preview'],
-          preview: {
-            delay: 0,
-            mode: 'both',
-            maxWidth: 800
-          },
-          theme: 'classic',
-          icon: 'material',
-          cache: {
-            enable: false
-          },
-          counter: {
-            enable: false
-          },
-          after: () => {
-            setVditorInstance(vditor);
-            // 设置内容并自动切换到预览模式
-            if (viewingPrompt?.content) {
-              vditor.setValue(viewingPrompt.content);
-              // 自动点击预览按钮切换到预览模式
-              setTimeout(() => {
-                const previewBtn = document.querySelector(`#${vditorId.current} .vditor-toolbar__item[data-type="preview"]`) as HTMLElement;
-                if (previewBtn) {
-                  previewBtn.click();
-                }
-              }, 200);
-            }
-          },
-        });
-      } catch (error) {
-        console.error('Vditor initialization error:', error);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [modalVisible]);
-
-  // 当查看的提示词变化时，更新 vditor 内容
-  useEffect(() => {
-    if (modalVisible && vditorInstance && viewingPrompt?.content) {
-      vditorInstance.setValue(viewingPrompt.content);
-      // 切换到预览模式
-      setTimeout(() => {
-        const previewBtn = document.querySelector(`#${vditorId.current} .vditor-toolbar__item[data-type="preview"]`) as HTMLElement;
-        if (previewBtn && !previewBtn.classList.contains('vditor-toolbar__item--current')) {
-          previewBtn.click();
-        }
-      }, 100);
-    }
-  }, [viewingPrompt, modalVisible, vditorInstance]);
-
-  // 清理 vditor 实例
-  useEffect(() => {
-    return () => {
-      if (vditorInstance) {
-        vditorInstance.destroy();
-        setVditorInstance(null);
-      }
-    };
-  }, []);
-
-  // 表格列定义
-  const columns = [
-    {
-      title: '名称',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string) => <strong>{text}</strong>,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-    },
-    {
-      title: '分类',
-      dataIndex: 'promptClassId',
-      key: 'promptClassId',
-      render: (classId: number) => {
-        const category = categories.find(c => c.classifyId === classId);
-        return category ? <Tag color="blue">{category.name}</Tag> : '-';
-      },
-    },
-    {
-      title: '状态',
-      dataIndex: 'isPublic',
-      key: 'isPublic',
-      render: (isPublic: boolean) => (
-        <Tag color={isPublic ? 'green' : 'orange'}>
-          {isPublic ? '公开' : '私有'}
-        </Tag>
-      ),
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      render: (time: string) => new Date(time).toLocaleString(),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: PromptItem) => (
-        <Space size="middle">
-          <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>
-          <Button type="link" size="small" onClick={() => navigate(`/app/prompt/${record.id}/edit`)}>编辑</Button>
-          <Popconfirm
-            title="确认删除"
-            description="确定要删除这个提示词吗？"
-            onConfirm={() => handleDelete(record)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
+  const renderPromptCard = (prompt: PromptItem) => {
+    const owned = isOwner(prompt);
+    return (
+      <div key={prompt.id} className="prompt-card">
+        {owned && (
+          <Popconfirm title="确认删除" description="确定要删除这个提示词吗？" onConfirm={() => handleDelete(prompt)} okText="确定" cancelText="取消">
+            <Button danger type='text' size="small" icon={<DeleteOutlined />} className="prompt-card-delete" />
           </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+        )}
+        <div className="prompt-card-body" onClick={() => handleView(prompt)}>
+          <div className="prompt-card-title">{prompt.name}</div>
+          <div className="prompt-card-desc">{prompt.description || '暂无描述'}</div>
+          <div className="prompt-card-meta">
+            <Tag color="blue">{getCategoryName(prompt.promptClassId || 0)}</Tag>
+            <Tag color={prompt.isPublic ? 'green' : 'orange'}>{prompt.isPublic ? '公开' : '私有'}</Tag>
+            <span className="prompt-card-time">{prompt.createTime ? new Date(prompt.createTime).toLocaleDateString() : ''}</span>
+          </div>
+        </div>
+        <div className="prompt-card-footer">
+          <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleView(prompt)}>查看</Button>
+          {owned && <Button type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/app/prompt/${prompt.id}/edit`)}>编辑</Button>}
+        </div>
+      </div>
+    );
+  };
+
 
   return (
-    <div className="prompt-list-page">
+    <div className="page-container">
       {contextHolder}
       
-      {/* 头部筛选区域 */}
-      <Card>
-        <Space wrap size="middle">
-          {/* 分类筛选 */}
-          <Select
-            placeholder="选择分类"
-            allowClear
-            value={selectedCategory}
-            onChange={handleCategoryChange}
-          >
-            {categories.map(category => (
-              <Option key={category.classifyId} value={category.classifyId}>
-                {category.name}
-              </Option>
-            ))}
-          </Select>
+      {/* 分类标签栏 */}
+      <div className="prompt-category-bar">
+        <div className="category-tags">
+          <Tag className={`category-tag ${selectedCategory === null ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>全部</Tag>
+          {categories.map(category => (
+            <Tag key={category.classifyId} className={`category-tag ${selectedCategory === category.classifyId ? 'active' : ''}`} onClick={() => setSelectedCategory(category.classifyId ?? null)}>
+              {category.name}
+            </Tag>
+          ))}
+          {isAdmin && (
+            <Tag className="category-tag category-tag-edit" onClick={() => navigate('/app/prompt/class')}>
+              <EditOutlined /> 编辑分类
+            </Tag>
+          )}
+        </div>
+      </div>
 
-          {/* 搜索框 */}
-          <Search
-            placeholder="搜索提示词名称"
-            onSearch={handleSearch}
-            enterButton={<SearchOutlined />}
-          />
+      {/* 筛选工具栏 - 左对齐 */}
+      <div className="prompt-toolbar">
+        <Input
+          placeholder="搜索提示词"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          allowClear
+          className="prompt-search-input"
+        />
+        <Checkbox checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)}>只看我的</Checkbox>
+        <Button icon={<SearchOutlined />} onClick={fetchPrompts} loading={loading}>查找</Button>
+        <SortPopover fields={SORT_FIELDS} value={sortState} onChange={setSortState} />
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/app/prompt/create')}>新增提示词</Button>
+      </div>
 
-          {/* 筛选条件下拉框 */}
-          <Select
-            placeholder="筛选条件"
-            value={filterCondition}
-            onChange={handleFilterChange}
-          >
-            {filterOptions.map(option => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
-            ))}
-          </Select>
 
-          {/* 新增按钮 */}
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/app/prompt/create')}>
-            新增提示词
-          </Button>
-          
-          {/* 刷新按钮 */}
-          <Button icon={<ReloadOutlined />} onClick={fetchPrompts} loading={loading}>
-            刷新
-          </Button>
-        </Space>
-      </Card>
-
-      {/* 提示词列表 */}
-      <Card>
-        <Spin spinning={loading}>
-          <Table
-            columns={columns}
-            dataSource={prompts}
-            rowKey="id"
-            pagination={{
-              total: prompts.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条记录`,
-            }}
-          />
-        </Spin>
-      </Card>
-
-      {/* 查看详情 Modal */}
-      <Modal
-        title={
-          viewingPrompt ? (
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-              <Title level={4} style={{ margin: 0 }}>{viewingPrompt.name}</Title>
-              {viewingPrompt.description && (
-                <Text type="secondary" style={{ fontSize: 14 }}>{viewingPrompt.description}</Text>
-              )}
-            </Space>
-          ) : (
-            '提示词详情'
-          )
-        }
-        open={modalVisible}
-        onCancel={handleCloseModal}
-        footer={[
-          <Button key="close" onClick={handleCloseModal}>
-            关闭
-          </Button>
-        ]}
-        width={1200}
-        destroyOnClose
-      >
-        <Spin spinning={loadingDetail}>
-          <div
-            id={vditorId.current}
-            className="vditor"
-          />
-        </Spin>
-      </Modal>
+      {/* 提示词卡片列表 */}
+      <Spin spinning={loading}>
+        {paginatedPrompts.length > 0 ? (
+          <>
+            <div className="prompt-card-grid">{paginatedPrompts.map(renderPromptCard)}</div>
+            <div className="prompt-pagination">
+              <Pagination current={currentPage} pageSize={pageSize} total={sortedPrompts.length} onChange={setCurrentPage} showSizeChanger={false} showQuickJumper showTotal={(total) => `共 ${total} 条记录`} />
+            </div>
+          </>
+        ) : (
+          <Empty description="暂无提示词" />
+        )}
+      </Spin>
     </div>
   );
 }

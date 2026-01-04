@@ -14,9 +14,8 @@ import {
   DownOutlined,
   LogoutOutlined,
   FolderOutlined,
-  DatabaseOutlined,
-  LinkOutlined,
   CloudServerOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 import useAppStore from "./stateshare/store";
 import "./AppHeader.css";
