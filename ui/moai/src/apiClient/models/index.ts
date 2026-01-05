@@ -5215,6 +5215,7 @@ export function deserializeIntoNativePluginInfo(nativePluginInfo: Partial<Native
         "isPublic": n => { nativePluginInfo.isPublic = n.getBooleanValue(); },
         "pluginId": n => { nativePluginInfo.pluginId = n.getNumberValue(); },
         "pluginName": n => { nativePluginInfo.pluginName = n.getStringValue(); },
+        "pluginType": n => { nativePluginInfo.pluginType = n.getEnumValue<PluginType>(PluginTypeObject); },
         "templatePluginClassify": n => { nativePluginInfo.templatePluginClassify = n.getEnumValue<NativePluginClassify>(NativePluginClassifyObject); },
         "templatePluginKey": n => { nativePluginInfo.templatePluginKey = n.getStringValue(); },
         "title": n => { nativePluginInfo.title = n.getStringValue(); },
@@ -8445,6 +8446,10 @@ export interface NativePluginInfo extends AuditsInfo, Parsable {
      * 插件名称.
      */
     pluginName?: string | null;
+    /**
+     * 插件类型.
+     */
+    pluginType?: PluginType | null;
     /**
      * 模板分类.
      */
@@ -12199,6 +12204,7 @@ export function serializeNativePluginInfo(writer: SerializationWriter, nativePlu
         writer.writeBooleanValue("isPublic", nativePluginInfo.isPublic);
         writer.writeNumberValue("pluginId", nativePluginInfo.pluginId);
         writer.writeStringValue("pluginName", nativePluginInfo.pluginName);
+        writer.writeEnumValue<PluginType>("pluginType", nativePluginInfo.pluginType);
         writer.writeEnumValue<NativePluginClassify>("templatePluginClassify", nativePluginInfo.templatePluginClassify);
         writer.writeStringValue("templatePluginKey", nativePluginInfo.templatePluginKey);
         writer.writeStringValue("title", nativePluginInfo.title);

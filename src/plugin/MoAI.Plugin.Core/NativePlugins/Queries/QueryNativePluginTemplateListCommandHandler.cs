@@ -2,6 +2,7 @@
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Models;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Plugin.NativePlugins.Queries;
@@ -36,11 +37,11 @@ public class QueryNativePluginTemplateListCommandHandler : IRequestHandler<Query
 
         if (request.Classify != null)
         {
-            plugins = pluginTemplates.Where(x => x.Classify == request.Classify).ToArray();
+            plugins = pluginTemplates.Where(x => x.PluginType != PluginType.ToolPlugin && x.Classify == request.Classify).ToArray();
         }
         else
         {
-            plugins = pluginTemplates.ToArray();
+            plugins = pluginTemplates.Where(x => x.PluginType != PluginType.ToolPlugin).ToArray();
         }
 
         return new QueryNativePluginTemplateListCommandResponse

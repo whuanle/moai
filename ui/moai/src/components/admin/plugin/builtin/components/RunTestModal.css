@@ -1,0 +1,146 @@
+/* ============================================
+   运行测试模态框样式
+   ============================================ */
+
+/* 模态框标题 */
+.run-modal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.run-modal-title-icon {
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.run-modal-title-tag {
+  margin-left: var(--spacing-xs);
+}
+
+/* 模态框内容 */
+.run-modal-content {
+  padding: var(--spacing-sm) 0;
+}
+
+/* 插件描述 */
+.run-modal-alert {
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--radius-md);
+}
+
+.run-modal-description {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+/* 区块样式 */
+.run-modal-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.run-modal-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.run-modal-section-hint {
+  font-size: 12px;
+}
+
+/* 分割线 */
+.run-modal-divider {
+  margin: var(--spacing-lg) 0;
+}
+
+/* 输入参数文本框 */
+.run-params-textarea {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  border-radius: var(--radius-md) !important;
+  background: #fafbfc !important;
+  border-color: var(--color-border) !important;
+  transition: all var(--transition-normal) !important;
+}
+
+.run-params-textarea:hover {
+  border-color: var(--color-primary-border) !important;
+}
+
+.run-params-textarea:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1) !important;
+  background: #fff !important;
+}
+
+/* 结果图标 */
+.run-result-icon-success {
+  color: #52c41a;
+  font-size: 16px;
+}
+
+.run-result-icon-error {
+  color: #ff4d4f;
+  font-size: 16px;
+}
+
+/* 结果文本框 */
+.run-result-textarea {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  border-radius: var(--radius-md) !important;
+  transition: all var(--transition-normal) !important;
+}
+
+.run-result-success {
+  background: linear-gradient(180deg, #f6ffed 0%, #fcfff8 100%) !important;
+  border-color: #b7eb8f !important;
+}
+
+.run-result-error {
+  background: linear-gradient(180deg, #fff2f0 0%, #fffbfa 100%) !important;
+  border-color: #ffccc7 !important;
+}
+
+/* 模态框底部 */
+.run-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+/* 全屏模态框 */
+.run-test-modal-fullscreen .ant-modal-content {
+  border-radius: var(--radius-lg);
+}
+
+.run-test-modal-fullscreen .run-result-textarea {
+  min-height: 500px;
+}
+
+/* 模态框整体样式 */
+.run-test-modal .ant-modal-content {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.run-test-modal .ant-modal-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+}
+
+.run-test-modal .ant-modal-body {
+  padding: var(--spacing-lg);
+}
+
+.run-test-modal .ant-modal-footer {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: #fafbfc;
+}

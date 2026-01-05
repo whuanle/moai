@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using MoAI.AI.Models;
 using MoAI.Infra.Models;
 
 namespace MoAI.Plugin.Models;
@@ -17,6 +18,11 @@ public class NativePluginInfo : AuditsInfo
     /// 模板分类.
     /// </summary>
     public NativePluginClassify TemplatePluginClassify { get; init; }
+
+    /// <summary>
+    /// 插件类型.
+    /// </summary>
+    public PluginType PluginType { get; init; }
 
     /// <summary>
     /// 模板 key.

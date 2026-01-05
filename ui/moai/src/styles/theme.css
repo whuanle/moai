@@ -399,15 +399,25 @@ body {
   background: rgba(22, 119, 255, 0.04) !important;
 }
 
-/* 文本按钮 */
-.ant-btn-text:not(:disabled) {
-  color: #595959 !important;
+/* 文本按钮 - 默认样式，允许内联样式覆盖 */
+.ant-btn-text:not(:disabled):not(.ant-btn-dangerous):not([style*="color"]) {
+  color: #595959;
 }
 
-.ant-btn-text:not(:disabled):hover,
-.ant-btn-text:not(:disabled):focus {
-  color: #1677ff !important;
-  background: rgba(22, 119, 255, 0.06) !important;
+.ant-btn-text:not(:disabled):not(.ant-btn-dangerous):hover,
+.ant-btn-text:not(:disabled):not(.ant-btn-dangerous):focus {
+  background: rgba(22, 119, 255, 0.06);
+}
+
+/* 危险文本按钮 */
+.ant-btn-text.ant-btn-dangerous:not(:disabled) {
+  color: #ff4d4f !important;
+}
+
+.ant-btn-text.ant-btn-dangerous:not(:disabled):hover,
+.ant-btn-text.ant-btn-dangerous:not(:disabled):focus {
+  color: #ff7875 !important;
+  background: rgba(255, 77, 79, 0.06) !important;
 }
 
 /* 链接按钮 */

@@ -48,6 +48,7 @@ import McpConfigPage from "./components/wiki/McpConfigPage";
 import PromptViewPage from "./components/prompt/PromptViewPage";
 import PluginClassPage from "./components/admin/plugin/classify/PluginClassPage";
 import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage";
+import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage";
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
 
 const { Content } = Layout;
@@ -155,6 +156,7 @@ function App() {
               <Route index element={<Navigate to="builtin" replace />} />
               <Route path="custom" element={<PluginCustomPage />} />
               <Route path="builtin" element={<NativePluginPage />} />
+              <Route path="builtin/create" element={<CreatePluginPage />} />
               <Route path="classify" element={<PluginClassPage />} />
             </Route>
             
