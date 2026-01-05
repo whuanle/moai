@@ -1,8 +1,5 @@
-using FastEndpoints;
 using MoAI;
-using MoAI.Infra.Models;
 using Scalar.AspNetCore;
-using System.Text.Json;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -51,11 +48,7 @@ app.Use(async (HttpContext context, RequestDelegate next) =>
     }
 });
 
-#pragma warning restore CA1031
-
 #endif
-
-app.UseDefaultExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -63,26 +56,6 @@ app.UseAuthorization();
 app.UseMoAI();
 
 app.UseHttpLogging();
-
-app.UseFastEndpoints((Action<Config>?)(c =>
-{
-    c.Endpoints.ShortNames = true;
-
-    c.Endpoints.RoutePrefix = "api";
-    c.Errors.ProducesMetadataType = typeof(BusinessValidationResult);
-
-    // 拦截一些验证异常等
-    c.Errors.ResponseBuilder = (failures, ctx, statusCode) =>
-    {
-        return (object)new MoAI.Infra.Models.BusinessValidationResult(failures, statusCode)
-        {
-            Detail = failures.FirstOrDefault()?.ErrorMessage ?? "请求参数错误",
-            RequestId = ctx.TraceIdentifier,
-        };
-    };
-    c.Serializer.Options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-    c.Serializer.Options.Converters.Add(new System.Text.Json.LongStringConverter());
-}));
 
 app.MapControllers();
 

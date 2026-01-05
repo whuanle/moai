@@ -5,7 +5,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 插件.
+/// 自定义插件.
 /// </summary>
 public partial class PluginCustomEntity : IFullAudited
 {

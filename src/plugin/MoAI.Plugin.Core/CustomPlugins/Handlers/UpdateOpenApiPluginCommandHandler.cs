@@ -68,7 +68,12 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
             throw new BusinessException("插件名称已被使用") { StatusCode = 409 };
         }
 
-        pluginEntity.IsPublic = request.IsPublic;
+        // 非团队插件时，才允许修改公开状态
+        if (pluginEntity.TeamId == 0)
+        {
+            pluginEntity.IsPublic = request.IsPublic;
+        }
+
         pluginEntity.Description = request.Description;
         pluginEntity.Title = request.Name;
         pluginEntity.PluginName = request.Name;

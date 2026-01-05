@@ -35,10 +35,6 @@ public partial class AppCommonChatConfiguration : IEntityTypeConfiguration<AppCo
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
-        entity.Property(e => e.UserType)
-            .HasComment("输入token统计")
-            .HasColumnType("int(11)")
-            .HasColumnName("user_type");
         entity.Property(e => e.InputTokens)
             .HasComment("输入token统计")
             .HasColumnType("int(11)")
@@ -74,6 +70,10 @@ public partial class AppCommonChatConfiguration : IEntityTypeConfiguration<AppCo
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.UserType)
+            .HasComment("用户类型")
+            .HasColumnType("int(11)")
+            .HasColumnName("user_type");
 
         OnConfigurePartial(entity);
     }

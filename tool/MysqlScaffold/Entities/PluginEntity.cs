@@ -15,6 +15,11 @@ public partial class PluginEntity : IFullAudited
     public int Id { get; set; }
 
     /// <summary>
+    /// 某个团队创建的自定义插件.
+    /// </summary>
+    public int TeamId { get; set; }
+
+    /// <summary>
     /// 对应的实际插件的id，不同类型的插件表不一样.
     /// </summary>
     public int PluginId { get; set; }

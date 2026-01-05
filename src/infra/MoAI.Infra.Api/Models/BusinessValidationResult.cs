@@ -1,5 +1,4 @@
-﻿using FluentValidation.Results;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace MoAI.Infra.Models;
 
@@ -38,21 +37,5 @@ public class BusinessValidationResult
     /// </summary>
     public BusinessValidationResult()
     {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="BusinessValidationResult"/> class.
-    /// </summary>
-    /// <param name="failures"></param>
-    /// <param name="statusCode"></param>
-    public BusinessValidationResult(IReadOnlyList<ValidationFailure> failures, int statusCode = 400)
-    {
-        // Microsoft.AspNetCore.Mvc.ValidationProblemDetails
-        Code = statusCode;
-        Errors = failures.GroupBy(f => f.PropertyName).Select(e => new BusinessExceptionError
-        {
-            Name = e.Key,
-            Errors = e.Select(m => m.ErrorMessage).ToArray()
-        }).ToArray();
     }
 }

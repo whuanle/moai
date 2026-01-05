@@ -31,7 +31,7 @@ public class QueryAiOptimizePromptCommandHandler : IRequestHandler<AiOptimizePro
     /// <inheritdoc/>
     public async Task<QueryAiOptimizePromptCommandResponse> Handle(AiOptimizePromptCommand request, CancellationToken cancellationToken)
     {
-        var aiEndpoint = await _mediator.Send(new QueryAiModelToAiEndpointCommand { AiModelId = request.AiModelId, IsPublic = true });
+        var aiEndpoint = await _mediator.Send(new QueryPublicAiModelToAiEndpointCommand { AiModelId = request.AiModelId });
 
         var result = await _mediator.Send(new OneSimpleChatCommand
         {

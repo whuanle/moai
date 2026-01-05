@@ -25,8 +25,8 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasColumnName("id");
         entity.Property(e => e.Avatar)
             .HasMaxLength(10)
-            .HasDefaultValueSql("''")
-            .HasComment("AI头像")
+            .HasDefaultValueSql("'?'")
+            .HasComment("头像")
             .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")

@@ -45,7 +45,7 @@ public class QueryAiModelListCommandHandler : IRequestHandler<QueryAiModelListCo
             query = query.Where(x => x.AiModelType == request.AiModelType.ToJsonString());
         }
 
-        var list = await query
+        var list = await query.DynamicOrder(request.OrderByFields)
                 .Select(x => new AiModelItem
                 {
                     Id = x.Id,

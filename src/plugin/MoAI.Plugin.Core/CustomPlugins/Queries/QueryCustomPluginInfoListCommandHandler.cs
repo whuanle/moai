@@ -28,7 +28,7 @@ public class QueryCustomPluginInfoListCommandHandler : IRequestHandler<QueryCust
     /// <inheritdoc/>
     public async Task<QueryCustomPluginInfoListCommandResponse> Handle(QueryCustomPluginInfoListCommand request, CancellationToken cancellationToken)
     {
-        var query = _dbContext.Plugins.AsQueryable();
+        var query = _dbContext.Plugins.Where(x => x.TeamId == 0).AsQueryable();
         if (!string.IsNullOrEmpty(request.Name))
         {
             query = query.Where(x => x.PluginName.Contains(request.Name));

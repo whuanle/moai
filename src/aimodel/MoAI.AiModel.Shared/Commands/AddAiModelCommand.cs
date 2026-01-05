@@ -16,6 +16,7 @@ public class AddAiModelCommand : AiEndpoint, IRequest<SimpleInt>, IModelValidato
     /// </summary>
     public bool IsPublic { get; init; }
 
+    /// <inheritdoc/>
     public static void Validate(AbstractValidator<AddAiModelCommand> validate)
     {
         validate.RuleFor(x => x.Title)

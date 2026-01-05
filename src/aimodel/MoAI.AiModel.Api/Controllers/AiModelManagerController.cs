@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.AiModel.Commands;
 using MoAI.AiModel.Queries;
 using MoAI.AiModel.Queries.Respones;
@@ -14,6 +15,7 @@ namespace MoAI.AiModel.Controllers;
 /// </summary>
 [ApiController]
 [Route("/admin/aimodel")]
+[EndpointGroupName("aimodel")]
 public partial class AiModelManagerController : ControllerBase
 {
     private readonly IMediator _mediator;

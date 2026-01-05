@@ -244,8 +244,42 @@ public class QueryPromptListCommand : IUserIdContext, IRequest<QueryPromptListCo
 }
 ```
 
+默认命令或查询模型用不到用户信息，请不要继承 IUserIdContext.
+
 
 程序会在 ASP.NET Core 做模型绑定后，自动注入用户信息。
+
+## 审计属性
+审计输入由框架自动注入，不需要自己在插入或更新实体时手动传递。
+实体的以下审计属性会自动赋值，不需要在 Handler 里面手动设置。
+
+```
+    /// <summary>
+    /// 创建人.
+    /// </summary>
+    public int CreateUserId { get; set; }
+
+    /// <summary>
+    /// 创建时间.
+    /// </summary>
+    public DateTimeOffset CreateTime { get; set; }
+
+    /// <summary>
+    /// 更新人.
+    /// </summary>
+    public int UpdateUserId { get; set; }
+
+    /// <summary>
+    /// 更新时间.
+    /// </summary>
+    public DateTimeOffset UpdateTime { get; set; }
+
+    /// <summary>
+    /// 软删除.
+    /// </summary>
+    public long IsDeleted { get; set; }
+```
+
 
 ## 模块注册
 

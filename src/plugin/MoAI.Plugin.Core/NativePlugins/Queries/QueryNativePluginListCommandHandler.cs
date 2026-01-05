@@ -57,6 +57,8 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
             query = query.Where(x => x.IsPublic == request.IsPublic.Value);
         }
 
+        query = query.DynamicOrder(request.OrderByFields);
+
         var nativePluginsQuery = _databaseContext.PluginNatives.AsQueryable();
         if (request.TemplatePluginClassify != null)
         {

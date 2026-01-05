@@ -1,0 +1,48 @@
+@import "../../../styles/theme.css";
+
+.model-authorization-page {
+  padding: var(--spacing-lg);
+  background: var(--color-bg-layout);
+  min-height: calc(100vh - var(--header-height));
+}
+
+.authorization-tabs-container {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.authorization-tabs {
+  padding: 0 var(--spacing-lg);
+}
+
+.authorization-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+  padding-top: var(--spacing-md);
+}
+
+.authorization-tabs .ant-tabs-content {
+  padding: var(--spacing-lg);
+}
+
+.authorization-table {
+  margin-top: var(--spacing-md);
+}
+
+.authorization-table .ant-table {
+  background: transparent;
+}
+
+.authorization-table .ant-table-thead > tr > th {
+  background: var(--color-bg-layout);
+  font-weight: 600;
+}
+
+.authorization-table .ant-table-tbody > tr:hover > td {
+  background: rgba(22, 119, 255, 0.05);
+}
+
+.modal-description {
+  margin-bottom: var(--spacing-md);
+}

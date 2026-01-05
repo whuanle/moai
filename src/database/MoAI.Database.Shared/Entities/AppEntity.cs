@@ -18,7 +18,6 @@ public partial class AppEntity : IFullAudited
     /// 应用名称.
     /// </summary>
     public string Name { get; set; } = default!;
-    public string Avatar { get; set; } = default!;
 
     /// <summary>
     /// 描述.
@@ -49,6 +48,11 @@ public partial class AppEntity : IFullAudited
     /// 应用类型，普通应用=0,流程编排=1.
     /// </summary>
     public int AppType { get; set; }
+
+    /// <summary>
+    /// 头像 objectKey.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
 
     /// <summary>
     /// 创建人.

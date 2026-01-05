@@ -4,13 +4,13 @@
 // @ts-ignore
 import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
 // @ts-ignore
-import { ClassifyRequestBuilderNavigationMetadata, type ClassifyRequestBuilder } from './classify/index.js';
-// @ts-ignore
 import { Custom_pluginRequestBuilderNavigationMetadata, type Custom_pluginRequestBuilder } from './custom_plugin/index.js';
 // @ts-ignore
 import { Native_pluginRequestBuilderNavigationMetadata, type Native_pluginRequestBuilder } from './native_plugin/index.js';
 // @ts-ignore
 import { OauthRequestBuilderNavigationMetadata, type OauthRequestBuilder } from './oauth/index.js';
+// @ts-ignore
+import { PluginclassifyRequestBuilderNavigationMetadata, type PluginclassifyRequestBuilder } from './pluginclassify/index.js';
 // @ts-ignore
 import { PromptclassifyRequestBuilderNavigationMetadata, type PromptclassifyRequestBuilder } from './promptclassify/index.js';
 // @ts-ignore
@@ -27,10 +27,6 @@ export interface AdminRequestBuilder extends BaseRequestBuilder<AdminRequestBuil
      */
     get aimodel(): AimodelRequestBuilder;
     /**
-     * The classify property
-     */
-    get classify(): ClassifyRequestBuilder;
-    /**
      * The custom_plugin property
      */
     get custom_plugin(): Custom_pluginRequestBuilder;
@@ -42,6 +38,10 @@ export interface AdminRequestBuilder extends BaseRequestBuilder<AdminRequestBuil
      * The oauth property
      */
     get oauth(): OauthRequestBuilder;
+    /**
+     * The pluginclassify property
+     */
+    get pluginclassify(): PluginclassifyRequestBuilder;
     /**
      * The promptclassify property
      */
@@ -62,9 +62,6 @@ export const AdminRequestBuilderNavigationMetadata: Record<Exclude<keyof AdminRe
     aimodel: {
         navigationMetadata: AimodelRequestBuilderNavigationMetadata,
     },
-    classify: {
-        navigationMetadata: ClassifyRequestBuilderNavigationMetadata,
-    },
     custom_plugin: {
         navigationMetadata: Custom_pluginRequestBuilderNavigationMetadata,
     },
@@ -73,6 +70,9 @@ export const AdminRequestBuilderNavigationMetadata: Record<Exclude<keyof AdminRe
     },
     oauth: {
         navigationMetadata: OauthRequestBuilderNavigationMetadata,
+    },
+    pluginclassify: {
+        navigationMetadata: PluginclassifyRequestBuilderNavigationMetadata,
     },
     promptclassify: {
         navigationMetadata: PromptclassifyRequestBuilderNavigationMetadata,

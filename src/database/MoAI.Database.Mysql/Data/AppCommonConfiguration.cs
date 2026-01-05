@@ -26,6 +26,11 @@ public partial class AppCommonConfiguration : IEntityTypeConfiguration<AppCommon
         entity.Property(e => e.AppId)
             .HasComment("所属应用id")
             .HasColumnName("app_id");
+        entity.Property(e => e.Avatar)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''")
+            .HasComment("AI头像,存 objectKey")
+            .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")

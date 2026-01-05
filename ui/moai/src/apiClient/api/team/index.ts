@@ -16,6 +16,8 @@ import { MemberRequestBuilderNavigationMetadata, type MemberRequestBuilder } fro
 // @ts-ignore
 import { MembersRequestBuilderRequestsMetadata, type MembersRequestBuilder } from './members/index.js';
 // @ts-ignore
+import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
+// @ts-ignore
 import { RoleRequestBuilderRequestsMetadata, type RoleRequestBuilder } from './role/index.js';
 // @ts-ignore
 import { TransferRequestBuilderRequestsMetadata, type TransferRequestBuilder } from './transfer/index.js';
@@ -57,6 +59,10 @@ export interface TeamRequestBuilder extends BaseRequestBuilder<TeamRequestBuilde
      */
     get members(): MembersRequestBuilder;
     /**
+     * The plugin property
+     */
+    get plugin(): PluginRequestBuilder;
+    /**
      * The role property
      */
     get role(): RoleRequestBuilder;
@@ -97,6 +103,9 @@ export const TeamRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamRequ
     },
     members: {
         requestsMetadata: MembersRequestBuilderRequestsMetadata,
+    },
+    plugin: {
+        navigationMetadata: PluginRequestBuilderNavigationMetadata,
     },
     role: {
         requestsMetadata: RoleRequestBuilderRequestsMetadata,

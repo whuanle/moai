@@ -22,7 +22,7 @@ public class UpdatePluginClassifyCommand : IRequest<EmptyCommandResponse>, IMode
     /// <summary>
     /// 分类描述.
     /// </summary>
-    public string? Description { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 
     /// <summary>
     ///  验证模型.
@@ -35,6 +35,8 @@ public class UpdatePluginClassifyCommand : IRequest<EmptyCommandResponse>, IMode
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("分类名称不能为空.")
             .MaximumLength(10).WithMessage("分类名称不能超过10个字符.");
 
-        validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("分类描述不能超过255个字符.");
+        validate.RuleFor(x => x.Description)
+            .NotEmpty().WithMessage("分类描述不能为空.")
+            .MaximumLength(255).WithMessage("分类描述不能超过255个字符.");
     }
 }

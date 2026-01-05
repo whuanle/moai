@@ -38,7 +38,7 @@ public class CreatePluginClassifyCommandHandler : IRequestHandler<CreatePluginCl
         {
             Type = "plugin",
             Name = request.Name,
-            Description = request.Description ?? string.Empty
+            Description = request.Description
         });
 
         await _databaseContext.SaveChangesAsync(cancellationToken);

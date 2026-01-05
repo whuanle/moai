@@ -6,15 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="FastEndpoints" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Exceptions\" />
 	</ItemGroup>
 
 </Project>

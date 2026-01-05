@@ -1,4 +1,6 @@
-﻿using MoAI.Database.Audits;
+﻿using System;
+using System.Collections.Generic;
+using MoAI.Database.Audits;
 
 namespace MoAI.Database.Entities;
 
@@ -28,11 +30,6 @@ public partial class AppCommonChatEntity : IFullAudited
     public string Title { get; set; } = default!;
 
     /// <summary>
-    /// 用户类型.
-    /// </summary>
-    public int UserType { get; set; } = default!;
-
-    /// <summary>
     /// 输入token统计.
     /// </summary>
     public int InputTokens { get; set; }
@@ -46,6 +43,11 @@ public partial class AppCommonChatEntity : IFullAudited
     /// 使用的 token 总数.
     /// </summary>
     public int TotalTokens { get; set; }
+
+    /// <summary>
+    /// 用户类型.
+    /// </summary>
+    public int UserType { get; set; }
 
     /// <summary>
     /// 创建人.

@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Admin.OAuth.Queries.Responses;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
@@ -14,6 +15,7 @@ namespace MoAI.Admin.Controllers;
 /// </summary>
 [ApiController]
 [Microsoft.AspNetCore.Mvc.Route("/admin/oauth")]
+[EndpointGroupName("admin")]
 public class OAuthController : ControllerBase
 {
     private readonly IMediator _mediator;

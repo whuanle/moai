@@ -70,6 +70,10 @@ public partial class AppCommonChatConfiguration : IEntityTypeConfiguration<AppCo
             .HasComment("更新人")
             .HasColumnType("int(11)")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.UserType)
+            .HasComment("用户类型")
+            .HasColumnType("int(11)")
+            .HasColumnName("user_type");
 
         OnConfigurePartial(entity);
     }

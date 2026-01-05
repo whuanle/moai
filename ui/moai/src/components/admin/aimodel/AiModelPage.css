@@ -1,0 +1,250 @@
+/* ============================================
+   AI 模型管理页面样式
+   ============================================ */
+
+.ai-model-page {
+  background: transparent;
+}
+
+/* 标签页容器 */
+.ai-model-tabs-container {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  min-height: 500px;
+}
+
+/* 标签页样式优化 */
+.ai-model-tabs .ant-tabs-nav {
+  margin-bottom: var(--spacing-lg);
+}
+
+.ai-model-tabs .ant-tabs-tab {
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.ai-model-tabs .ant-tabs-tab:hover {
+  color: var(--color-primary);
+}
+
+.ai-model-tabs .ant-tabs-tab-active {
+  font-weight: 600;
+}
+
+.ai-model-tabs .ant-tabs-tab .ant-tag {
+  margin-left: 8px;
+  border-radius: 10px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 工具栏链接样式 */
+.provider-link {
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.provider-link:hover {
+  color: var(--color-primary);
+}
+
+/* 表格样式优化 */
+.ai-model-table .ant-table {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ai-model-table .ant-table-thead > tr > th {
+  background: var(--color-bg-spotlight);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-border-secondary);
+}
+
+.ai-model-table .ant-table-tbody > tr {
+  transition: background-color var(--transition-fast);
+}
+
+.ai-model-table .ant-table-tbody > tr:hover {
+  background: var(--color-bg-spotlight);
+}
+
+.ai-model-table .model-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.ai-model-table .model-endpoint {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-spotlight);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* 模态框样式优化 */
+.ai-model-modal .ant-modal-header {
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.ai-model-modal .ant-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.ai-model-modal .ant-modal-body {
+  padding: var(--spacing-lg);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.ai-model-modal .ant-form-item-label > label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.ai-model-modal .ant-form-item-extra {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-top: 4px;
+}
+
+/* 表单分组标题 */
+.form-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: var(--spacing-lg) 0 var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.form-section-title:first-child {
+  margin-top: 0;
+}
+
+/* 能力开关组 */
+.ability-switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-spotlight);
+  border-radius: var(--radius-md);
+}
+
+.ability-switch-item {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.ability-switch-label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* 提供商列表模态框 */
+.provider-list-modal .ant-modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.provider-list-description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-spotlight);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+.provider-card {
+  margin-bottom: var(--spacing-md);
+  transition: all var(--transition-normal);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.provider-card:hover {
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.provider-card .ant-card-body {
+  padding: var(--spacing-md);
+}
+
+.provider-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.provider-description {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* 空状态 */
+.ai-model-empty {
+  padding: var(--spacing-xxl);
+  text-align: center;
+}
+
+.ai-model-empty-icon {
+  font-size: 64px;
+  color: var(--color-text-quaternary);
+  margin-bottom: var(--spacing-md);
+}
+
+.ai-model-empty-text {
+  font-size: 15px;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .ai-model-page {
+    padding: var(--spacing-md);
+  }
+
+  .ai-model-tabs-container {
+    padding: var(--spacing-md);
+  }
+
+  /* 标签页工具栏在移动端垂直排列 */
+  .ai-model-tabs .ant-tabs-extra-content {
+    margin-top: var(--spacing-sm);
+  }
+
+  .ability-switches {
+    flex-direction: column;
+  }
+
+  .ability-switch-item {
+    min-width: 100%;
+  }
+}

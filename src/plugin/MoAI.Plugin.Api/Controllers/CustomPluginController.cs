@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -7,6 +8,7 @@ using MoAI.Plugin.CustomPlugins.Commands;
 using MoAI.Plugin.CustomPlugins.Commands.Responses;
 using MoAI.Plugin.CustomPlugins.Queries;
 using MoAI.Plugin.CustomPlugins.Queries.Responses;
+using MoAI.Plugin.TeamPlugins.Queries;
 using MoAI.Plugin.Templates.Commands;
 
 namespace MoAI.Plugin.Controllers;
@@ -16,6 +18,7 @@ namespace MoAI.Plugin.Controllers;
 /// </summary>
 [ApiController]
 [Route("/admin/custom_plugin")]
+[EndpointGroupName("plugin")]
 public partial class CustomPluginController : ControllerBase
 {
     private readonly IMediator _mediator;

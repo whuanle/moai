@@ -20,6 +20,11 @@ public partial class AppAssistantChatEntity : IFullAudited
     public string Title { get; set; } = default!;
 
     /// <summary>
+    /// 头像.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
+
+    /// <summary>
     /// 提示词.
     /// </summary>
     public string Prompt { get; set; } = default!;
@@ -43,11 +48,6 @@ public partial class AppAssistantChatEntity : IFullAudited
     /// 对话影响参数.
     /// </summary>
     public string ExecutionSettings { get; set; } = default!;
-
-    /// <summary>
-    /// AI头像.
-    /// </summary>
-    public string Avatar { get; set; } = default!;
 
     /// <summary>
     /// 输入token统计.

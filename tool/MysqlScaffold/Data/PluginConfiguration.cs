@@ -60,6 +60,10 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasMaxLength(50)
             .HasComment("插件名称")
             .HasColumnName("plugin_name");
+        entity.Property(e => e.TeamId)
+            .HasComment("某个团队创建的自定义插件")
+            .HasColumnType("int(11)")
+            .HasColumnName("team_id");
         entity.Property(e => e.Title)
             .HasMaxLength(50)
             .HasComment("插件标题")

@@ -45,6 +45,11 @@ public partial class AppCommonChatEntity : IFullAudited
     public int TotalTokens { get; set; }
 
     /// <summary>
+    /// 用户类型.
+    /// </summary>
+    public int UserType { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

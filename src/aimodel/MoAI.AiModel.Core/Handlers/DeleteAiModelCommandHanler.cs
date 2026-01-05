@@ -35,6 +35,8 @@ public class DeleteAiModelCommandHanler : IRequestHandler<DeleteAiModelCommand, 
 
         _databaseContext.AiModels.Remove(aiModel);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        await _databaseContext.SoftDeleteAsync(_databaseContext.AiModelAuthorizations.Where(x => x.AiModelId == request.AiModelId));
         return EmptyCommandResponse.Default;
     }
 }

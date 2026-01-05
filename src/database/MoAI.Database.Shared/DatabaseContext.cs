@@ -43,6 +43,11 @@ public partial class DatabaseContext : DbContext
     }
 
     /// <summary>
+    /// 授权模型给哪些团队使用.
+    /// </summary>
+    public virtual DbSet<AiModelAuthorizationEntity> AiModelAuthorizations { get; set; }
+
+    /// <summary>
     /// ai模型.
     /// </summary>
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
@@ -61,6 +66,11 @@ public partial class DatabaseContext : DbContext
     /// 模型使用日志,记录每次请求使用记录.
     /// </summary>
     public virtual DbSet<AiModelUseageLogEntity> AiModelUseageLogs { get; set; }
+
+    /// <summary>
+    /// 授权私有插件给哪些团队使用.
+    /// </summary>
+    public virtual DbSet<PluginAuthorizationEntity> PluginAuthorizations { get; set; }
 
     /// <summary>
     /// 应用.
@@ -103,6 +113,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<ExternalAppEntity> ExternalApps { get; set; }
 
     /// <summary>
+    /// 外部系统的用户.
+    /// </summary>
+    public virtual DbSet<ExternalUserEntity> ExternalUsers { get; set; }
+
+    /// <summary>
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }
@@ -118,7 +133,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginEntity> Plugins { get; set; }
 
     /// <summary>
-    /// 插件.
+    /// 自定义插件.
     /// </summary>
     public virtual DbSet<PluginCustomEntity> PluginCustoms { get; set; }
 
@@ -221,7 +236,6 @@ public partial class DatabaseContext : DbContext
     /// 工作任务.
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
-
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

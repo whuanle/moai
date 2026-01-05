@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Classify.Queries;
 using MoAI.Plugin.Classify.Queries.Responses;
@@ -12,6 +13,7 @@ namespace MoAI.Plugin.Controllers;
 /// </summary>
 [ApiController]
 [Route("/plugin")]
+[EndpointGroupName("plugin")]
 public class PublicController : ControllerBase
 {
     private readonly IMediator _mediator;

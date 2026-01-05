@@ -27,6 +27,11 @@ public partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("应用类型，普通应用=0,流程编排=1")
             .HasColumnType("int(11)")
             .HasColumnName("app_type");
+        entity.Property(e => e.Avatar)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''")
+            .HasComment("头像 objectKey")
+            .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")

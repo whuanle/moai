@@ -17,14 +17,12 @@ import UserManagerPage from "./components/admin/usermanager/UserManagerPage";
 import UserSetting from "./components/user/UserSetting";
 import BindOAuth from "./components/user/BindOAuth";
 import AiModelPage from "./components/admin/aimodel/AiModelPage";
-import PromptClassPage from "./components/admin/promptclass/PromptClassPage";
+import ModelAuthorizationPage from "./components/admin/aimodel/ModelAuthorizationPage";
 import PromptClassEditPage from "./components/prompt/PromptClassPage";
 import PromptListPage from "./components/prompt/PromptListPage";
 import PromptCreatePage from "./components/prompt/PromptCreatePage";
 import PromptEditPage from "./components/prompt/PromptEditPage";
-import PluginClassPage from "./components/admin/pluginClass/PluginClassPage";
-import PluginManagerPage from "./components/admin/plugin/PluginManagerPage";
-import NativePluginPage from "./components/admin/nativeplugin/NativePluginPage";
+import PluginLayout from "./components/admin/plugin/PluginLayout";
 import WikiListPage from "./components/wiki/WikiListPage";
 import WikiLayout from "./components/wiki/WikiLayout";
 import WikiSettings from "./components/wiki/WikiSettings";
@@ -48,6 +46,9 @@ import TeamApps from "./components/team/TeamApps";
 import TeamIntegration from "./components/team/TeamIntegration";
 import McpConfigPage from "./components/wiki/McpConfigPage";
 import PromptViewPage from "./components/prompt/PromptViewPage";
+import PluginClassPage from "./components/admin/plugin/classify/PluginClassPage";
+import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage";
+import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
 
 const { Content } = Layout;
 
@@ -149,16 +150,21 @@ function App() {
               <Route path=":promptId/view" element={<PromptViewPage />} />
             </Route>
             
+            {/* 插件 */}
+            <Route path="plugin" element={<PluginLayout />}>
+              <Route index element={<Navigate to="builtin" replace />} />
+              <Route path="custom" element={<PluginCustomPage />} />
+              <Route path="builtin" element={<NativePluginPage />} />
+              <Route path="classify" element={<PluginClassPage />} />
+            </Route>
+            
             {/* 管理员功能 */}
             <Route path="admin">
               <Route index element={<Navigate to="oauth" replace />} />
               <Route path="oauth" element={<OAuthPage />} />
               <Route path="usermanager" element={<UserManagerPage />} />
               <Route path="aimodel" element={<AiModelPage />} />
-              <Route path="promptclass" element={<PromptClassPage />} />
-              <Route path="pluginclass" element={<PluginClassPage />} />
-              <Route path="plugin" element={<PluginManagerPage />} />
-              <Route path="internalplugin" element={<NativePluginPage />} />
+              <Route path="modelauthorization" element={<ModelAuthorizationPage />} />
             </Route>
             
             {/* 用户设置 */}

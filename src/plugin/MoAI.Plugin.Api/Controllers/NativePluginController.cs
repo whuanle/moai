@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -16,6 +17,7 @@ namespace MoAI.Plugin.Controllers;
 /// </summary>
 [ApiController]
 [Route("/admin/native_plugin")]
+[EndpointGroupName("plugin")]
 public partial class NativePluginController : ControllerBase
 {
     private readonly IMediator _mediator;

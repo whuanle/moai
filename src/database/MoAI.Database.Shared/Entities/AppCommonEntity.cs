@@ -50,6 +50,11 @@ public partial class AppCommonEntity : IFullAudited
     public string ExecutionSettings { get; set; } = default!;
 
     /// <summary>
+    /// AI头像,存 objectKey.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
+
+    /// <summary>
     /// 是否开启授权验证.
     /// </summary>
     public bool IsAuth { get; set; }

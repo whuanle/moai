@@ -13,6 +13,7 @@ namespace MoAI.Prompt.Controllers;
 /// </summary>
 [Route("/admin/promptclassify")]
 [ApiController]
+[EndpointGroupName("prompt")]
 public class PromptClassController : ControllerBase
 {
     private readonly IMediator _mediator;

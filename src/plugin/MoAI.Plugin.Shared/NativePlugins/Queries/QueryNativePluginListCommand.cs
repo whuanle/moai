@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using MoAI.Infra.Models;
 using MoAI.Plugin.Models;
 using MoAI.Plugin.NativePlugins.Queries.Responses;
 
@@ -7,7 +8,7 @@ namespace MoAI.Plugin.NativePlugins.Queries;
 /// <summary>
 /// 查询内置插件实例列表.
 /// </summary>
-public class QueryNativePluginListCommand : IRequest<QueryNativePluginListCommandResponse>
+public class QueryNativePluginListCommand : IRequest<QueryNativePluginListCommandResponse>, IDynamicOrderable
 {
     /// <summary>
     /// 名称搜索.
@@ -29,4 +30,8 @@ public class QueryNativePluginListCommand : IRequest<QueryNativePluginListComman
     /// </summary>
     public NativePluginClassify? TemplatePluginClassify { get; init; }
 
+    /// <summary>
+    /// 可以使用 TemplatePluginKey、PluginName、Title 字段做排序.
+    /// </summary>
+    public IReadOnlyCollection<KeyValueBool> OrderByFields { get; init; } = Array.Empty<KeyValueBool>();
 }

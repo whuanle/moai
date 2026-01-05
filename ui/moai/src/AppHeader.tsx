@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Layout, Menu, Avatar, Dropdown, message } from "antd";
 import type { MenuProps } from "antd";
@@ -13,8 +12,6 @@ import {
   UserOutlined,
   DownOutlined,
   LogoutOutlined,
-  FolderOutlined,
-  CloudServerOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
 import useAppStore from "./stateshare/store";
@@ -45,13 +42,14 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
       return "admin";
     }
     // 模型菜单
+    if (path.startsWith("/app/admin/modelauthorization")) {
+      return "model.authorization";
+    }
     if (path.startsWith("/app/admin/aimodel")) {
-      return "model";
+      return "model.list";
     }
     // 插件菜单
-    if (path.startsWith("/app/admin/pluginclass") || 
-        path.startsWith("/app/admin/plugin") || 
-        path.startsWith("/app/admin/internalplugin")) {
+    if (path.startsWith("/app/plugin")) {
       return "plugin";
     }
     // 团队菜单
@@ -94,19 +92,16 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
       case "prompt":
         navigate("/app/prompt/list");
         break;
-      // 插件子菜单
-      case "plugin.class":
-        navigate("/app/admin/pluginclass");
+      // 插件菜单 - 默认进入内置插件
+      case "plugin":
+        navigate("/app/plugin/builtin");
         break;
-      case "plugin.custom":
-        navigate("/app/admin/plugin");
-        break;
-      case "plugin.builtin":
-        navigate("/app/admin/internalplugin");
-        break;
-      // 模型菜单
-      case "model":
+      // 模型子菜单
+      case "model.list":
         navigate("/app/admin/aimodel");
+        break;
+      case "model.authorization":
+        navigate("/app/admin/modelauthorization");
         break;
       // 管理子菜单
       case "admin.oauth":
@@ -193,28 +188,11 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
           key: "plugin",
           icon: <ApiOutlined />,
           label: "插件",
-          children: [
-            {
-              key: "plugin.class",
-              icon: <FolderOutlined />,
-              label: "分类",
-            },
-            {
-              key: "plugin.custom",
-              icon: <ApiOutlined />,
-              label: "自定义插件",
-            },
-            {
-              key: "plugin.builtin",
-              icon: <CloudServerOutlined />,
-              label: "内置插件",
-            },
-          ],
         },
         {
-          key: "model",
+          key: "model.list",
           icon: <RobotOutlined />,
-          label: "模型",
+          label: "模型"
         },
         {
           key: "admin",

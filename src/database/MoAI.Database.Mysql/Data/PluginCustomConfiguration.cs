@@ -7,7 +7,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 插件.
+/// 自定义插件.
 /// </summary>
 public partial class PluginCustomConfiguration : IEntityTypeConfiguration<PluginCustomEntity>
 {
@@ -17,7 +17,7 @@ public partial class PluginCustomConfiguration : IEntityTypeConfiguration<Plugin
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-        entity.ToTable("plugin_custom", tb => tb.HasComment("插件"));
+        entity.ToTable("plugin_custom", tb => tb.HasComment("自定义插件"));
 
         entity.Property(e => e.Id)
             .HasComment("id")

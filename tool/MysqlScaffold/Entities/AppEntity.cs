@@ -50,6 +50,11 @@ public partial class AppEntity : IFullAudited
     public int AppType { get; set; }
 
     /// <summary>
+    /// 头像 objectKey.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

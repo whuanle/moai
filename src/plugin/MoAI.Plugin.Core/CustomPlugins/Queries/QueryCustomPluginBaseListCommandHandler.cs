@@ -30,7 +30,7 @@ public class QueryCustomPluginBaseListCommandHandler : IRequestHandler<QueryCust
     /// <inheritdoc/>
     public async Task<QueryCustomPluginBaseListCommandResponse> Handle(QueryCustomPluginBaseListCommand request, CancellationToken cancellationToken)
     {
-        var query = _dbContext.Plugins.AsQueryable();
+        var query = _dbContext.Plugins.Where(x => x.TeamId == 0).AsQueryable();
 
         if (!string.IsNullOrEmpty(request.Name))
         {

@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Plugin.Classify.Commands;
 
@@ -26,11 +27,13 @@ public class DeletePluginClassifyCommandHandler : IRequestHandler<DeletePluginCl
     public async Task<EmptyCommandResponse> Handle(DeletePluginClassifyCommand request, CancellationToken cancellationToken)
     {
         var classifyEntity = await _databaseContext.Classifies.FirstOrDefaultAsync(x => x.Id == request.ClassifyId && x.Type == "plugin", cancellationToken);
-        if (classifyEntity != null)
+        if (classifyEntity == null)
         {
-            _databaseContext.Classifies.Remove(classifyEntity);
-            await _databaseContext.SaveChangesAsync(cancellationToken);
+            throw new BusinessException("分类不存在");
         }
+
+        _databaseContext.Classifies.Remove(classifyEntity);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

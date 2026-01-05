@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import {
   Card,
   Table,
@@ -18,8 +19,16 @@ import {
   Row,
   Col,
   Popconfirm,
+  Divider,
 } from "antd";
-import { QuestionCircleOutlined, ReloadOutlined } from "@ant-design/icons";
+import {
+  QuestionCircleOutlined,
+  ReloadOutlined,
+  PlusOutlined,
+  InfoCircleOutlined,
+  SafetyOutlined,
+} from "@ant-design/icons";
+import "./AiModelPage.css";
 import { GetApiClient } from "../../ServiceClient";
 import {
   QueryAiModelProviderListResponse,
@@ -32,6 +41,7 @@ import {
   ModelAbilities,
   QueryAiModelListCommand,
   AiModelTypeObject,
+  KeyValueBool,
 } from "../../../apiClient/models";
 import { RsaHelper } from "../../../helper/RsaHalper";
 import { LOBE_DEFAULT_MODEL_LIST } from "../../../lobechat/packages/model-bank/aiModels";
@@ -75,35 +85,35 @@ const generateUniqueModelName = (baseName: string, models: AiModelItem[]) => {
 // 根据提供商ID映射到接口类型
 const getProviderTypeFromProviderId = (providerId: string): string => {
   if (!providerId) return "openai";
-  
+
   // 根据提供商的接口兼容性来映射
   const providerMap: Record<string, string> = {
     // OpenAI 使用自己的接口
     openai: "openai",
-    
+
     // Anthropic 使用自己的接口
     anthropic: "anthropic",
-    
+
     // Google 使用自己的接口
     google: "google",
-    
+
     // Azure 使用自己的接口
     azure: "azure",
     azureai: "azure",
-    
+
     // HuggingFace 使用自己的接口
     huggingface: "huggingface",
-    
+
     // Ollama 使用自己的接口
     ollama: "ollama",
     ollamacloud: "ollama",
   };
-  
+
   // 如果提供商的接口类型已经确定，直接返回
   if (providerMap[providerId]) {
     return providerMap[providerId];
   }
-  
+
   // 默认使用 OpenAI 接口类型
   // 包括: deepseek, groq, lmstudio, cloudflare, 等等
   return "openai";
@@ -207,6 +217,7 @@ const getProviderDescription = (provider: string): string => {
 };
 
 export default function AiModelPage() {
+  const navigate = useNavigate();
   const [modelTypeCounts, setModelTypeCounts] = useState<ModelTypeCount[]>([]);
   const [models, setModels] = useState<AiModelItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -222,18 +233,21 @@ export default function AiModelPage() {
   const [modelTypeKey, setModelTypeKey] = useState<string>("chat");
   const [messageApi, contextHolder] = message.useMessage();
 
+  // 排序状态：{ field: 'name', order: 'ascend' | 'descend' | null }
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null);
+
   // 获取模型类型的中文名称
   const getModelTypeName = (type: AiModelType | "all"): string => {
     const names: Record<AiModelType | "all", string> = {
       all: "全部",
       chat: "聊天",
       embedding: "嵌入",
-      // image: "图像",
-      // tts: "语音合成",
-      // stts: "语音转文字",
-      // realtime: "实时",
-      // text2video: "文本转视频",
-      // text2music: "文本转音乐",
+      image: "图像",
+      tts: "语音合成",
+      stts: "语音转文字",
+      text2video: "文本转视频",
+      text2music: "文本转音乐",
     };
     return names[type] || type;
   };
@@ -257,7 +271,7 @@ export default function AiModelPage() {
         // 如果有返回的providers数据，这里暂时使用总数
         // 实际应该根据providerlist返回的数据来计算
         const totalCount = response.providers.reduce(
-          (sum: number, provider) => sum + (provider.count || 0),
+          (sum: number, provider: any) => sum + (provider.count || 0),
           0
         );
         typeCounts[0].count = totalCount;
@@ -275,10 +289,18 @@ export default function AiModelPage() {
     setLoading(true);
     try {
       const client = GetApiClient();
+
+      // 构建排序字段
+      const orderByFields = sortField && sortOrder ? [{
+        key: sortField,
+        value: sortOrder === 'ascend' // true 为升序，false 为降序
+      }] : undefined;
+
       const requestBody: QueryAiModelListCommand = {
         aiModelType: undefined,
         isPublic: undefined,
         provider: undefined,
+        orderByFields: orderByFields,
       };
 
       const response = await client.api.admin.aimodel.modellist.post(
@@ -295,7 +317,7 @@ export default function AiModelPage() {
           ...modelTypes.map((type) => ({
             type,
             count: (response.aiModels || []).filter(
-              (m) => m.aiModelType === type
+              (m: AiModelItem) => m.aiModelType === type
             ).length,
           })),
         ];
@@ -395,7 +417,7 @@ export default function AiModelPage() {
     if (selectedModel) {
       // 生成唯一的模型名称（基于 id）
       const uniqueName = generateUniqueModelName(selectedModel.id, models);
-      
+
       // 根据模型的 providerId 自动确定提供商的接口类型
       const providerId = (selectedModel as any).providerId;
       const providerType = getProviderTypeFromProviderId(providerId);
@@ -526,6 +548,38 @@ export default function AiModelPage() {
     return models.filter((model) => model.aiModelType === activeTab);
   };
 
+  // 处理表格排序变化
+  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    if (sorter.field) {
+      // 如果点击同一列，切换排序顺序：升序 -> 降序 -> 取消
+      if (sortField === sorter.field) {
+        if (sortOrder === 'ascend') {
+          setSortOrder('descend');
+        } else if (sortOrder === 'descend') {
+          setSortField(null);
+          setSortOrder(null);
+        } else {
+          setSortOrder('ascend');
+        }
+      } else {
+        // 点击新列，设置为升序
+        setSortField(sorter.field);
+        setSortOrder('ascend');
+      }
+    } else {
+      // 取消排序
+      setSortField(null);
+      setSortOrder(null);
+    }
+  };
+
+  // 当排序状态改变时，重新获取数据
+  useEffect(() => {
+    if (models.length > 0 || sortField !== null) {
+      fetchModels();
+    }
+  }, [sortField, sortOrder]);
+
   // 获取模型类型标签颜色
   const getModelTypeColor = (type: AiModelType | null) => {
     switch (type) {
@@ -533,18 +587,16 @@ export default function AiModelPage() {
         return "blue";
       case "embedding":
         return "green";
-      // case "image":
-      //   return "purple";
-      // case "tts":
-      //   return "orange";
-      // case "stts":
-      //   return "cyan";
-      // case "realtime":
-      //   return "magenta";
-      // case "text2video":
-      //   return "volcano";
-      // case "text2music":
-      //   return "geekblue";
+      case "image":
+        return "purple";
+      case "tts":
+        return "orange";
+      case "stts":
+        return "cyan";
+      case "text2video":
+        return "volcano";
+      case "text2music":
+        return "geekblue";
       default:
         return "default";
     }
@@ -571,47 +623,64 @@ export default function AiModelPage() {
       title: "模型名称",
       dataIndex: "name",
       key: "name",
-      render: (text: string) => <Text strong>{text}</Text>,
+      width: 180,
+      sorter: true,
+      sortOrder: sortField === 'name' ? sortOrder : null,
+      render: (text: string) => <span className="model-name">{text}</span>,
     },
     {
       title: "显示名称",
       dataIndex: "title",
       key: "title",
+      width: 150,
+      sorter: true,
+      sortOrder: sortField === 'title' ? sortOrder : null,
     },
     {
       title: "模型类型",
       dataIndex: "aiModelType",
       key: "aiModelType",
+      width: 120,
+      sorter: true,
+      sortOrder: sortField === 'aiModelType' ? sortOrder : null,
       render: (type: AiModelType) => (
         <Tag color={getModelTypeColor(type)}>{getModelTypeName(type)}</Tag>
       ),
     },
     {
-      title: "服务商接口类型",
+      title: "服务商接口",
       dataIndex: "provider",
       key: "provider",
+      width: 120,
+      sorter: true,
+      sortOrder: sortField === 'provider' ? sortOrder : null,
       render: (provider: string) => getProviderDisplayName(provider),
     },
     {
       title: "上下文窗口",
       dataIndex: "contextWindowTokens",
       key: "contextWindowTokens",
+      width: 120,
+      align: "right" as const,
       render: (value: number) => (value ? `${value.toLocaleString()}` : "-"),
     },
     {
       title: "输出限制",
       dataIndex: "textOutput",
       key: "textOutput",
+      width: 100,
+      align: "right" as const,
       render: (value: number) => (value ? `${value.toLocaleString()}` : "-"),
     },
     {
       title: "模型能力",
       dataIndex: "abilities",
       key: "abilities",
+      width: 200,
       render: (abilities: any) => (
-        <Space wrap>
+        <Space wrap size="small">
           {getAbilityTags(abilities).map((tag, index) => (
-            <Tag key={index} color={tag.color}>
+            <Tag key={index} color={tag.color} style={{ margin: 0 }}>
               {tag.text}
             </Tag>
           ))}
@@ -619,28 +688,22 @@ export default function AiModelPage() {
       ),
     },
     {
-      title: "部署名称",
-      dataIndex: "deploymentName",
-      key: "deploymentName",
-    },
-    {
       title: "端点",
       dataIndex: "endpoint",
       key: "endpoint",
+      width: 200,
+      ellipsis: true,
       render: (text: string) => (
-        <Text code style={{ fontSize: "12px" }}>
-          {text
-            ? text.length > 30
-              ? `${text.substring(0, 30)}...`
-              : text
-            : "-"}
-        </Text>
+        <span className="model-endpoint" title={text}>
+          {text || "-"}
+        </span>
       ),
     },
     {
       title: "操作",
       key: "action",
       width: 150,
+      fixed: "right" as const,
       render: (_: any, record: AiModelItem) => (
         <Space size="small">
           <Button
@@ -648,10 +711,11 @@ export default function AiModelPage() {
             size="small"
             onClick={() => handleEditClick(record)}
           >
-            修改
+            编辑
           </Button>
           <Popconfirm
             title="确定要删除这个模型吗？"
+            description="删除后将无法恢复"
             onConfirm={() => handleDeleteClick(record)}
             okText="确定"
             cancelText="取消"
@@ -679,45 +743,63 @@ export default function AiModelPage() {
       </span>
     ),
     children: (
-      <Table
-        dataSource={getFilteredModels()}
-        columns={modelColumns}
-        rowKey={(record) => record.id?.toString() || record.name || ""}
-        pagination={{ pageSize: 20 }}
-        scroll={{ x: 1400 }}
-        loading={loading}
-      />
+      <div className="ai-model-table">
+        <Table
+          dataSource={getFilteredModels()}
+          columns={modelColumns}
+          rowKey={(record) => record.id?.toString() || record.name || ""}
+          pagination={false}
+          scroll={{ x: 1400 }}
+          loading={loading}
+          onChange={handleTableChange}
+        />
+      </div>
     ),
   }));
 
   return (
     <>
       {contextHolder}
-      <div style={{ paddingLeft: "24px", paddingRight: "24px" }}>
-        <Title level={2}>系统 AI 模型管理</Title>
-
-        <div style={{ marginBottom: "16px", textAlign: "right" }}>
-          <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => fetchModels()}
-              loading={loading}
-            >
-              刷新
-            </Button>
-            <Button type="primary" onClick={() => handleAddClick()}>
-              新增模型
-            </Button>
-            <span
-              style={{ color: "#999", cursor: "pointer" }}
-              onClick={() => setProviderListVisible(true)}
-            >
-              支持服务商 <QuestionCircleOutlined />
-            </span>
-          </Space>
+      <div className="ai-model-page">
+        {/* 标签页容器 - 工具栏集成在标签页右侧 */}
+        <div className="ai-model-tabs-container">
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+            className="ai-model-tabs"
+            tabBarExtraContent={
+              <Space size="middle">
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => fetchModels()}
+                  loading={loading}
+                >
+                  刷新
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => handleAddClick()}
+                >
+                  新增模型
+                </Button>
+                <Button
+                  icon={<SafetyOutlined />}
+                  onClick={() => navigate("/app/admin/modelauthorization")}
+                >
+                  模型授权
+                </Button>
+                <span
+                  className="provider-link"
+                  onClick={() => setProviderListVisible(true)}
+                >
+                  <InfoCircleOutlined /> 支持的服务商
+                </span>
+              </Space>
+            }
+          />
         </div>
-
-        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
         {/* 新增模型模态窗口 */}
         <Modal
@@ -728,6 +810,7 @@ export default function AiModelPage() {
           width={800}
           maskClosable={false}
           keyboard={false}
+          className="ai-model-modal"
         >
           <Form form={form} layout="vertical" onFinish={handleAddSubmit}>
             {/* 第一行：模型类型和快速配置 */}
@@ -747,7 +830,6 @@ export default function AiModelPage() {
                     <Option value="image">图像生成</Option>
                     <Option value="tts">语音合成</Option>
                     <Option value="stts">语音转文字</Option>
-                    {/* <Option value="realtime">实时</Option> */}
                     <Option value="text2video">文本转视频</Option>
                     <Option value="text2music">文本转音乐</Option>
                   </Select>
@@ -952,38 +1034,54 @@ export default function AiModelPage() {
               </Col>
             </Row>
 
-            <Form.Item label="模型能力">
-              <Row gutter={16}>
-                <Col span={6}>
-                  <Form.Item name="vision" valuePropName="checked">
-                    <Switch checkedChildren="视觉" unCheckedChildren="视觉" />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="functionCall" valuePropName="checked">
-                    <Switch
-                      checkedChildren="函数调用"
-                      unCheckedChildren="函数调用"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="files" valuePropName="checked">
-                    <Switch
-                      checkedChildren="文件上传"
-                      unCheckedChildren="文件上传"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="imageOutput" valuePropName="checked">
-                    <Switch
-                      checkedChildren="图像输出"
-                      unCheckedChildren="图像输出"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+            {/* 模型能力 - 仅 chat 类型显示 */}
+            <Form.Item
+              noStyle
+              shouldUpdate={(prevValues, currentValues) =>
+                prevValues.aiModelType !== currentValues.aiModelType
+              }
+            >
+              {({ getFieldValue }) => {
+                const modelType = getFieldValue("aiModelType");
+                if (modelType === "chat") {
+                  return (
+                    <Form.Item label="模型能力">
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item name="vision" valuePropName="checked">
+                            <Switch checkedChildren="视觉" unCheckedChildren="视觉" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="functionCall" valuePropName="checked">
+                            <Switch
+                              checkedChildren="函数调用"
+                              unCheckedChildren="函数调用"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="files" valuePropName="checked">
+                            <Switch
+                              checkedChildren="文件上传"
+                              unCheckedChildren="文件上传"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="imageOutput" valuePropName="checked">
+                            <Switch
+                              checkedChildren="图像输出"
+                              unCheckedChildren="图像输出"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form.Item>
+                  );
+                }
+                return null;
+              }}
             </Form.Item>
 
             <Form.Item style={{ marginTop: "24px", textAlign: "right" }}>
@@ -1006,6 +1104,7 @@ export default function AiModelPage() {
           width={800}
           maskClosable={false}
           keyboard={false}
+          className="ai-model-modal"
         >
           <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
             <Form.Item name="aiModelId" hidden>
@@ -1173,38 +1272,54 @@ export default function AiModelPage() {
               </Col>
             </Row>
 
-            <Form.Item label="模型能力">
-              <Row gutter={16}>
-                <Col span={6}>
-                  <Form.Item name="vision" valuePropName="checked">
-                    <Switch checkedChildren="视觉" unCheckedChildren="视觉" />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="functionCall" valuePropName="checked">
-                    <Switch
-                      checkedChildren="函数调用"
-                      unCheckedChildren="函数调用"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="files" valuePropName="checked">
-                    <Switch
-                      checkedChildren="文件上传"
-                      unCheckedChildren="文件上传"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="imageOutput" valuePropName="checked">
-                    <Switch
-                      checkedChildren="图像输出"
-                      unCheckedChildren="图像输出"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+            {/* 模型能力 - 仅 chat 类型显示 */}
+            <Form.Item
+              noStyle
+              shouldUpdate={(prevValues, currentValues) =>
+                prevValues.aiModelType !== currentValues.aiModelType
+              }
+            >
+              {({ getFieldValue }) => {
+                const modelType = getFieldValue("aiModelType");
+                if (modelType === "chat") {
+                  return (
+                    <Form.Item label="模型能力">
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item name="vision" valuePropName="checked">
+                            <Switch checkedChildren="视觉" unCheckedChildren="视觉" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="functionCall" valuePropName="checked">
+                            <Switch
+                              checkedChildren="函数调用"
+                              unCheckedChildren="函数调用"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="files" valuePropName="checked">
+                            <Switch
+                              checkedChildren="文件上传"
+                              unCheckedChildren="文件上传"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="imageOutput" valuePropName="checked">
+                            <Switch
+                              checkedChildren="图像输出"
+                              unCheckedChildren="图像输出"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form.Item>
+                  );
+                }
+                return null;
+              }}
             </Form.Item>
 
             <Form.Item style={{ marginTop: "24px", textAlign: "right" }}>
@@ -1224,27 +1339,26 @@ export default function AiModelPage() {
           open={providerListVisible}
           onCancel={() => setProviderListVisible(false)}
           footer={null}
-          width={600}
+          width={700}
+          maskClosable={false}
+          className="ai-model-modal provider-list-modal"
         >
-          <div style={{ marginTop: "16px" }}>
-            <p style={{ color: "#666", marginBottom: "16px" }}>
-              本系统支持以下提供商，其接口格式根据模型的供应商自动选择：
-            </p>
-            <Space direction="vertical" style={{ width: "100%" }} size="middle">
-              {getAllProviders().map((provider) => (
-                <Card key={provider.value} size="small" hoverable>
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <div>
-                      <strong>{provider.label}</strong>
-                    </div>
-                    <div style={{ color: "#999", fontSize: "13px" }}>
-                      {provider.description}
-                    </div>
-                  </Space>
-                </Card>
-              ))}
-            </Space>
+          <div className="provider-list-description">
+            本系统支持以下提供商的接口格式，可根据实际使用的服务商选择对应的接口类型
           </div>
+          <Space direction="vertical" style={{ width: "100%" }} size="middle">
+            {getAllProviders().map((provider) => (
+              <Card
+                key={provider.value}
+                size="small"
+                hoverable
+                className="provider-card"
+              >
+                <div className="provider-name">{provider.label}</div>
+                <div className="provider-description">{provider.description}</div>
+              </Card>
+            ))}
+          </Space>
         </Modal>
       </div>
     </>

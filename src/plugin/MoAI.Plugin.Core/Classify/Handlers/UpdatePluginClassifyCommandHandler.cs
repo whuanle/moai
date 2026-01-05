@@ -45,7 +45,7 @@ public class UpdatePluginClassifyCommandHandler : IRequestHandler<UpdatePluginCl
         }
 
         classify.Name = request.Name;
-        classify.Description = request.Description ?? string.Empty;
+        classify.Description = request.Description;
 
         _databaseContext.Update(classify);
         await _databaseContext.SaveChangesAsync(cancellationToken);

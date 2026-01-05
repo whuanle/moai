@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Admin.User.Commands;
 using MoAI.Admin.User.Queries;
 using MoAI.Admin.User.Queries.Responses;
@@ -15,6 +16,7 @@ namespace MoAI.Admin.Controllers;
 /// </summary>
 [ApiController]
 [Microsoft.AspNetCore.Mvc.Route("/admin/user")]
+[EndpointGroupName("admin")]
 public class UserController : ControllerBase
 {
     private readonly IMediator _mediator;
