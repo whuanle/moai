@@ -101,5 +101,6 @@
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
     <PackageVersion Include="MimeKit" Version="4.12.0" />
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
+    <PackageVersion Include="AlibabaCloud.SDK.Bailian20231229" Version="2.2.0" />
   </ItemGroup>
 </Project>

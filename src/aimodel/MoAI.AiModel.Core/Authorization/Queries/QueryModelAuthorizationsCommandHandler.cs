@@ -4,6 +4,7 @@ using MoAI.AI.Models;
 using MoAI.AiModel.Authorization.Queries.Responses;
 using MoAI.Database;
 using MoAI.Infra.Extensions;
+using MoAI.Infra.Models;
 
 namespace MoAI.AiModel.Authorization.Queries;
 
@@ -57,6 +58,7 @@ public class QueryModelAuthorizationsCommandHandler : IRequestHandler<QueryModel
                 })
             .ToListAsync(cancellationToken);
 
+
         var result = models.Select(model => new ModelAuthorizationItem
         {
             ModelId = model.Id,
@@ -70,7 +72,7 @@ public class QueryModelAuthorizationsCommandHandler : IRequestHandler<QueryModel
                 {
                     TeamId = x.TeamId,
                     TeamName = x.TeamName,
-                    AuthorizationId = x.Id
+                    AuthorizationId = x.Id,
                 })
                 .ToList()
         }).ToList();

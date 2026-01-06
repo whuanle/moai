@@ -31,6 +31,7 @@ import {
   UpdateModelAuthorizationsCommand,
   BatchAuthorizeModelsToTeamCommand,
   BatchRevokeModelsFromTeamCommand,
+  QueryAllTeamSimpleListCommandResponseItem,
 } from "../../../apiClient/models";
 import type { TransferProps } from "antd";
 import { proxyRequestError } from "../../../helper/RequestError";
@@ -48,6 +49,7 @@ export default function ModelAuthorizationPage() {
   const [activeTab, setActiveTab] = useState<string>("model");
   const [modelAuthorizations, setModelAuthorizations] = useState<ModelAuthorizationItem[]>([]);
   const [teamAuthorizations, setTeamAuthorizations] = useState<TeamAuthorizationItem[]>([]);
+  const [allTeams, setAllTeams] = useState<QueryAllTeamSimpleListCommandResponseItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"model" | "team">("model");
@@ -76,17 +78,33 @@ export default function ModelAuthorizationPage() {
     }
   };
 
-  // 获取团队授权列表
+  // 获取团队授权列表（聚合团队信息）
   const fetchTeamAuthorizations = async () => {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const requestBody: QueryTeamAuthorizationsCommand = {};
-      const response = await client.api.aimodel.authorization.teams.post(requestBody);
+      // 并行获取团队授权和所有团队信息
+      const [authResponse, teamsResponse] = await Promise.all([
+        client.api.aimodel.authorization.teams.post({} as QueryTeamAuthorizationsCommand),
+        client.api.team.all.simple.post(),
+      ]);
 
-      if (response?.teams) {
-        setTeamAuthorizations(response.teams);
-      }
+      const teams = teamsResponse?.items || [];
+      setAllTeams(teams);
+
+      // 创建团队 ID 到团队信息的映射
+      const teamMap = new Map(teams.map(t => [t.id, t]));
+
+      // 聚合数据：将团队所有人信息添加到授权数据中
+      const enrichedAuthorizations = (authResponse?.teams || []).map(auth => {
+        const teamInfo = teamMap.get(auth.teamId);
+        return {
+          ...auth,
+          ownerName: teamInfo?.ownerName || "-",
+        };
+      });
+
+      setTeamAuthorizations(enrichedAuthorizations as TeamAuthorizationItem[]);
     } catch (error) {
       console.error("获取团队授权列表失败:", error);
       proxyRequestError(error, messageApi, "获取团队授权列表失败");
@@ -332,6 +350,13 @@ export default function ModelAuthorizationPage() {
       dataIndex: "teamName",
       key: "teamName",
       width: 200,
+    },
+    {
+      title: "团队所有人",
+      dataIndex: "ownerName",
+      key: "ownerName",
+      width: 150,
+      render: (name: string) => <Text type="secondary">{name || "-"}</Text>,
     },
     {
       title: "已授权模型",

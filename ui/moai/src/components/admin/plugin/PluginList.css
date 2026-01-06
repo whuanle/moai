@@ -1,0 +1,14 @@
+/* ============================================
+   自定义插件管理页面样式
+   ============================================ */
+
+.custom-plugin-content {
+  padding: var(--spacing-lg);
+}
+
+.custom-plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}

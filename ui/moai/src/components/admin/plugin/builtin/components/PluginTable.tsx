@@ -180,7 +180,7 @@ export default function PluginTable({
       {
         title: "操作",
         key: "action",
-        width: 200,
+        width: 230,
         fixed: "right" as const,
         render: (
           _: any,

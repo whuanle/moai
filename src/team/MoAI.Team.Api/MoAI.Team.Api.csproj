@@ -6,6 +6,7 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
+		<ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
 		<ProjectReference Include="..\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 	</ItemGroup>

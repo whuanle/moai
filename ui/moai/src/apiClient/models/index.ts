@@ -2246,6 +2246,24 @@ export function createQueryAllOAuthPrividerDetailCommandResponseFromDiscriminato
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAllTeamSimpleListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAllTeamSimpleListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAllTeamSimpleListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAllTeamSimpleListCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryAllTeamSimpleListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAllTeamSimpleListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAppChatHistoryCommandResponse}
  */
 // @ts-ignore
@@ -5768,6 +5786,30 @@ export function deserializeIntoQueryAllOAuthPrividerCommandResponseItem(queryAll
 export function deserializeIntoQueryAllOAuthPrividerDetailCommandResponse(queryAllOAuthPrividerDetailCommandResponse: Partial<QueryAllOAuthPrividerDetailCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAllOAuthPrividerDetailCommandResponse.items = n.getCollectionOfObjectValues<OAuthPrividerDetailItem>(createOAuthPrividerDetailItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAllTeamSimpleListCommandResponse(queryAllTeamSimpleListCommandResponse: Partial<QueryAllTeamSimpleListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAllTeamSimpleListCommandResponse.items = n.getCollectionOfObjectValues<QueryAllTeamSimpleListCommandResponseItem>(createQueryAllTeamSimpleListCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAllTeamSimpleListCommandResponseItem(queryAllTeamSimpleListCommandResponseItem: Partial<QueryAllTeamSimpleListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryAllTeamSimpleListCommandResponseItem.description = n.getStringValue(); },
+        "id": n => { queryAllTeamSimpleListCommandResponseItem.id = n.getNumberValue(); },
+        "name": n => { queryAllTeamSimpleListCommandResponseItem.name = n.getStringValue(); },
+        "ownerId": n => { queryAllTeamSimpleListCommandResponseItem.ownerId = n.getNumberValue(); },
+        "ownerName": n => { queryAllTeamSimpleListCommandResponseItem.ownerName = n.getStringValue(); },
     }
 }
 /**
@@ -9324,6 +9366,40 @@ export interface QueryAllOAuthPrividerDetailCommandResponse extends Parsable {
     items?: OAuthPrividerDetailItem[] | null;
 }
 /**
+ * 查询所有团队简单信息列表响应.
+ */
+export interface QueryAllTeamSimpleListCommandResponse extends Parsable {
+    /**
+     * 团队列表.
+     */
+    items?: QueryAllTeamSimpleListCommandResponseItem[] | null;
+}
+/**
+ * 团队简单信息项.
+ */
+export interface QueryAllTeamSimpleListCommandResponseItem extends Parsable {
+    /**
+     * 团队描述.
+     */
+    description?: string | null;
+    /**
+     * 团队ID.
+     */
+    id?: number | null;
+    /**
+     * 团队名称.
+     */
+    name?: string | null;
+    /**
+     * 所有者ID.
+     */
+    ownerId?: number | null;
+    /**
+     * 所有者名称.
+     */
+    ownerName?: string | null;
+}
+/**
  * 对话历史记录响应.
  */
 export interface QueryAppChatHistoryCommandResponse extends Parsable {
@@ -12757,6 +12833,30 @@ export function serializeQueryAllOAuthPrividerCommandResponseItem(writer: Serial
 export function serializeQueryAllOAuthPrividerDetailCommandResponse(writer: SerializationWriter, queryAllOAuthPrividerDetailCommandResponse: Partial<QueryAllOAuthPrividerDetailCommandResponse> | undefined | null = {}) : void {
     if (queryAllOAuthPrividerDetailCommandResponse) {
         writer.writeCollectionOfObjectValues<OAuthPrividerDetailItem>("items", queryAllOAuthPrividerDetailCommandResponse.items, serializeOAuthPrividerDetailItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAllTeamSimpleListCommandResponse(writer: SerializationWriter, queryAllTeamSimpleListCommandResponse: Partial<QueryAllTeamSimpleListCommandResponse> | undefined | null = {}) : void {
+    if (queryAllTeamSimpleListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryAllTeamSimpleListCommandResponseItem>("items", queryAllTeamSimpleListCommandResponse.items, serializeQueryAllTeamSimpleListCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAllTeamSimpleListCommandResponseItem(writer: SerializationWriter, queryAllTeamSimpleListCommandResponseItem: Partial<QueryAllTeamSimpleListCommandResponseItem> | undefined | null = {}) : void {
+    if (queryAllTeamSimpleListCommandResponseItem) {
+        writer.writeStringValue("description", queryAllTeamSimpleListCommandResponseItem.description);
+        writer.writeNumberValue("id", queryAllTeamSimpleListCommandResponseItem.id);
+        writer.writeStringValue("name", queryAllTeamSimpleListCommandResponseItem.name);
+        writer.writeNumberValue("ownerId", queryAllTeamSimpleListCommandResponseItem.ownerId);
+        writer.writeStringValue("ownerName", queryAllTeamSimpleListCommandResponseItem.ownerName);
     }
 }
 /**

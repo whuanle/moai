@@ -1,0 +1,89 @@
+/* ============================================
+   插件分类管理页面样式
+   ============================================ */
+
+.plugin-classify-page {
+  padding: var(--spacing-lg);
+  background: var(--color-bg-container);
+  min-height: calc(100vh - var(--header-height) - 140px);
+}
+
+.plugin-classify-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.plugin-classify-title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.plugin-classify-title .ant-typography {
+  margin: 0 !important;
+}
+
+.plugin-classify-table {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.plugin-classify-table .ant-table {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.plugin-classify-table .ant-table-thead > tr > th {
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 100%) !important;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  padding: 14px 16px;
+}
+
+.plugin-classify-table .ant-table-tbody > tr > td {
+  padding: 14px 16px;
+}
+
+.plugin-classify-table .ant-table-tbody > tr:hover > td {
+  background: rgba(22, 119, 255, 0.02);
+}
+
+/* 分类ID样式 */
+.classify-id {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-spotlight);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* 表单样式 */
+.classify-form {
+  margin-top: var(--spacing-md);
+}
+
+.classify-form-actions {
+  margin-top: var(--spacing-lg);
+  margin-bottom: 0;
+  text-align: right;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .plugin-classify-page {
+    padding: var(--spacing-md);
+  }
+
+  .plugin-classify-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+}

@@ -1,0 +1,35 @@
+/* ============================================
+   插件模块布局样式
+   ============================================ */
+
+.plugin-layout-page {
+  padding: 2px 10px var(--spacing-xl);
+  min-height: calc(100vh - var(--header-height) - 48px);
+  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
+}
+
+.plugin-layout-card {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: none;
+  background: var(--color-bg-container);
+  overflow: hidden;
+  min-height: calc(100vh - var(--header-height) - 80px);
+}
+
+.plugin-layout-card > .ant-card-body {
+  padding: 0;
+}
+
+.plugin-layout-menu {
+  border-bottom: 1px solid var(--color-border-secondary);
+  padding: 0 var(--spacing-lg);
+}
+
+.plugin-layout-menu .ant-menu {
+  border-bottom: none;
+}
+
+.plugin-layout-content {
+  min-height: calc(100vh - var(--header-height) - 140px);
+}

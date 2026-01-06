@@ -3,7 +3,7 @@
  */
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Card, Button, Space, Input, Typography } from "antd";
+import { Button, Space, Input, Typography } from "antd";
 import { PlusOutlined, ReloadOutlined, SearchOutlined, ApiOutlined } from "@ant-design/icons";
 import { GetApiClient } from "../../../ServiceClient";
 import { proxyRequestError } from "../../../../helper/RequestError";
@@ -171,95 +171,80 @@ export default function NativePluginPage() {
   return (
     <>
       {contextHolder}
-      <div className="native-plugin-page">
-        <Card className="native-plugin-card">
-          <div className="native-plugin-layout">
-            <ClassifySidebar
-              classifyList={classifyList}
-              allPluginCount={allPluginList.length}
-              pluginCountByClassify={pluginCountByClassify}
-              selectedClassify={selectedClassify}
-              onSelect={handleClassifySelect}
-            />
-            <div className="plugin-content">
-              <div className="plugin-header">
-                <Typography.Title level={4} className="plugin-header-title">
-                  <ApiOutlined className="plugin-header-title-icon" />
-                  内置插件管理
-                </Typography.Title>
-                <Typography.Text className="plugin-header-subtitle">
-                  管理系统内置插件，支持创建、编辑和测试运行
-                </Typography.Text>
-              </div>
-              <div className="plugin-toolbar">
-                <div className="plugin-toolbar-left">
-                  <Input
-                    placeholder="搜索插件名称、模板Key或描述..."
-                    allowClear
-                    prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-                    value={searchName}
-                    onChange={(e) => setSearchName(e.target.value)}
-                    onPressEnter={() => handleRefresh()}
-                    className="plugin-search-input"
-                  />
-                </div>
-                <div className="plugin-toolbar-right">
-                  <Space size="middle">
-                    <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading}>
-                      刷新
-                    </Button>
-                    <SortPopover fields={sortFields} value={sortState} onChange={setSortState} />
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateDrawer}>
-                      新增插件
-                    </Button>
-                  </Space>
-                </div>
-              </div>
-              <PluginTable
-                dataSource={pluginList}
-                loading={loading}
-                onEdit={handleEdit}
-                onRun={handleOpenRunModal}
-                onDelete={handleDelete}
-                onRunTemplate={handleRunTemplate}
-              />
+      <div className="native-plugin-layout">
+        <ClassifySidebar
+          classifyList={classifyList}
+          allPluginCount={allPluginList.length}
+          pluginCountByClassify={pluginCountByClassify}
+          selectedClassify={selectedClassify}
+          onSelect={handleClassifySelect}
+        />
+        <div className="plugin-content">
+          <div className="plugin-toolbar">
+            <div className="plugin-toolbar-left">
+              <Input
+                placeholder="搜索插件名称、模板Key或描述..."
+                allowClear
+                prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                onPressEnter={() => handleRefresh()}
+                className="plugin-search-input"
+              />·
+              <Space size="middle">
+                <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading}>
+                  刷新
+                </Button>
+                <SortPopover fields={sortFields} value={sortState} onChange={setSortState} />
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateDrawer}>
+                  新增插件
+                </Button>
+              </Space>
             </div>
           </div>
-        </Card>
-
-        <CreatePluginDrawer
-          open={createDrawerVisible}
-          onClose={handleCloseCreateDrawer}
-          onSuccess={handleCreateSuccess}
-          onSwitchToFullPage={handleSwitchToFullPage}
-          onOpenCodeEditor={handleOpenCodeEditor}
-        />
-
-        <EditPluginDrawer
-          open={editDrawerVisible}
-          target={editTarget}
-          onClose={handleCloseEditDrawer}
-          onSuccess={handleEditSuccess}
-          onOpenCodeEditor={handleOpenCodeEditor}
-        />
-
-        <RunTestModal
-          open={runModalVisible}
-          target={runTarget}
-          onClose={handleCloseRunModal}
-        />
-
-        <CodeEditorModal
-          open={codeEditorVisible}
-          initialValue={codeEditorInitialValue}
-          language="javascript"
-          title="代码编辑器"
-          onClose={handleCloseCodeEditor}
-          onConfirm={handleConfirmCodeEditor}
-          width={1200}
-          height="70vh"
-        />
+          <PluginTable
+            dataSource={pluginList}
+            loading={loading}
+            onEdit={handleEdit}
+            onRun={handleOpenRunModal}
+            onDelete={handleDelete}
+            onRunTemplate={handleRunTemplate}
+          />
+        </div>
       </div>
+
+      <CreatePluginDrawer
+        open={createDrawerVisible}
+        onClose={handleCloseCreateDrawer}
+        onSuccess={handleCreateSuccess}
+        onSwitchToFullPage={handleSwitchToFullPage}
+        onOpenCodeEditor={handleOpenCodeEditor}
+      />
+
+      <EditPluginDrawer
+        open={editDrawerVisible}
+        target={editTarget}
+        onClose={handleCloseEditDrawer}
+        onSuccess={handleEditSuccess}
+        onOpenCodeEditor={handleOpenCodeEditor}
+      />
+
+      <RunTestModal
+        open={runModalVisible}
+        target={runTarget}
+        onClose={handleCloseRunModal}
+      />
+
+      <CodeEditorModal
+        open={codeEditorVisible}
+        initialValue={codeEditorInitialValue}
+        language="javascript"
+        title="代码编辑器"
+        onClose={handleCloseCodeEditor}
+        onConfirm={handleConfirmCodeEditor}
+        width={1200}
+        height="70vh"
+      />
     </>
   );
 }

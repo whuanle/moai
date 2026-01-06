@@ -1,0 +1,8 @@
+{
+  "label": "自定义插件",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "自定义插件是用户根据自身需求开发的插件，可以轻松接入第三方服务，扩展 MoAI 的功能."
+  }
+}

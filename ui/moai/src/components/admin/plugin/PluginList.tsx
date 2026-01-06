@@ -10,7 +10,6 @@ import {
   Col,
   Typography,
   message,
-  Card,
   Divider,
   Table,
   Tag,
@@ -58,6 +57,7 @@ import { formatDateTime } from "../../../helper/DateTimeHelper";
 import { GetFileMd5 } from "../../../helper/Md5Helper";
 import useAppStore from "../../../stateshare/store";
 import { FileTypeHelper } from "../../../helper/FileTypeHelper";
+import "./PluginList.css";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -904,50 +904,39 @@ export default function PluginList() {
   return (
     <>
       {contextHolder}
-      <div style={{ padding: 24 }}>
-        <Card>
-          <div
-            style={{
-              marginBottom: "16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Title level={3} style={{ margin: 0 }}>
-              <ApiOutlined style={{ marginRight: "8px" }} />
-              插件管理
-            </Title>
-            <Space>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={loading}
-                size="large"
-              >
-                刷新
-              </Button>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleImportMCP}
-                size="large"
-              >
-                导入 MCP
-              </Button>
-              <Button
-                type="primary"
-                icon={<ApiOutlined />}
-                onClick={handleImportOpenApi}
-                size="large"
-              >
-                导入 OpenAPI
-              </Button>
-            </Space>
-          </div>
+      <div className="custom-plugin-content">
+        <div className="custom-plugin-header">
+          <Title level={4} style={{ margin: 0 }}>
+            <ApiOutlined style={{ marginRight: "8px" }} />
+            自定义插件管理
+          </Title>
+          <Space>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+              loading={loading}
+            >
+              刷新
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleImportMCP}
+            >
+              导入 MCP
+            </Button>
+            <Button
+              type="primary"
+              icon={<ApiOutlined />}
+              onClick={handleImportOpenApi}
+            >
+              导入 OpenAPI
+            </Button>
+          </Space>
+        </div>
 
-          <Table
-            columns={columns}
+        <Table
+          columns={columns}
             dataSource={pluginList}
             rowKey="pluginId"
             loading={loading}
@@ -962,7 +951,7 @@ export default function PluginList() {
               ),
             }}
           />
-        </Card>
+      </div>
 
         {/* 导入MCP模态框 */}
         <Modal
@@ -1545,7 +1534,6 @@ export default function PluginList() {
             />
           </Spin>
         </Modal>
-      </div>
     </>
   );
 }

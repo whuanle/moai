@@ -3,30 +3,10 @@
    设计理念：大气、优雅、专业
    ============================================ */
 
-/* 页面容器 */
-.native-plugin-page {
-  padding: var(--spacing-xl);
-  min-height: calc(100vh - var(--header-height) - 48px);
-  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
-}
-
-/* 主卡片 */
-.native-plugin-card {
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  border: none;
-  background: var(--color-bg-container);
-  overflow: hidden;
-}
-
-.native-plugin-card .ant-card-body {
-  padding: 0;
-}
-
 /* 主体布局 */
 .native-plugin-layout {
   display: flex;
-  min-height: calc(100vh - var(--header-height) - 120px);
+  min-height: calc(100vh - var(--header-height) - 140px);
 }
 
 /* ============================================
@@ -455,14 +435,6 @@
 }
 
 @media (max-width: 768px) {
-  .native-plugin-page {
-    padding: var(--spacing-md);
-  }
-
-  .native-plugin-card {
-    border-radius: var(--radius-lg);
-  }
-
   .plugin-content {
     padding: var(--spacing-md);
   }

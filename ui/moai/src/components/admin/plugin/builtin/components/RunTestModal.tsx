@@ -47,10 +47,21 @@ function formatJsonString(value: string): string {
   if (!value) return "";
   try {
     const parsed = JSON.parse(value);
-    return JSON.stringify(parsed, null, 2);
+    // 如果还是字符串，则说明本身真的是字符串，则返回解析后端字符串
+    if (typeof parsed === "string") {
+      return parsed;
+    }
+
+    // 如果是对象，则保留原本的 json 格式
+    if (typeof parsed === "object") {
+      return value;
+    }
+    
   } catch {
     return value;
   }
+
+  return value;
 }
 
 export default function RunTestModal({
@@ -287,9 +298,8 @@ export default function RunTestModal({
                     readOnly
                     rows={12}
                     value={result.message}
-                    className={`run-result-textarea ${
-                      result.success ? "run-result-success" : "run-result-error"
-                    }`}
+                    className={`run-result-textarea ${result.success ? "run-result-success" : "run-result-error"
+                      }`}
                   />
                 </div>
               </>
@@ -333,9 +343,8 @@ export default function RunTestModal({
             readOnly
             rows={30}
             value={result.message}
-            className={`run-result-textarea ${
-              result.success ? "run-result-success" : "run-result-error"
-            }`}
+            className={`run-result-textarea ${result.success ? "run-result-success" : "run-result-error"
+              }`}
           />
         )}
       </Modal>

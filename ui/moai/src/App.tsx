@@ -47,6 +47,7 @@ import TeamIntegration from "./components/team/TeamIntegration";
 import McpConfigPage from "./components/wiki/McpConfigPage";
 import PromptViewPage from "./components/prompt/PromptViewPage";
 import PluginClassPage from "./components/admin/plugin/classify/PluginClassPage";
+import PluginAuthorizationPage from "./components/admin/plugin/authorization/PluginAuthorizationPage";
 import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage";
 import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage";
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
@@ -158,6 +159,7 @@ function App() {
               <Route path="builtin" element={<NativePluginPage />} />
               <Route path="builtin/create" element={<CreatePluginPage />} />
               <Route path="classify" element={<PluginClassPage />} />
+              <Route path="authorization" element={<PluginAuthorizationPage />} />
             </Route>
             
             {/* 管理员功能 */}

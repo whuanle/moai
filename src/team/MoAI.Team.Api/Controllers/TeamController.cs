@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Commands;
@@ -265,5 +266,26 @@ public class TeamController : ControllerBase
         }
 
         return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询所有团队简单信息列表（管理员专用）.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>所有团队简单信息列表.</returns>
+    [HttpPost("all/simple")]
+    public async Task<QueryAllTeamSimpleListCommandResponse> GetAllTeamSimpleList(CancellationToken ct = default)
+    {
+        await CheckIsAdminAsync(ct);
+        return await _mediator.Send(new QueryAllTeamSimpleListCommand(), ct);
+    }
+
+    private async Task CheckIsAdminAsync(CancellationToken ct)
+    {
+        var isAdmin = await _mediator.Send(new QueryUserIsAdminCommand { ContextUserId = _userContext.UserId }, ct);
+        if (!isAdmin.IsAdmin)
+        {
+            throw new BusinessException("没有操作权限") { StatusCode = 403 };
+        }
     }
 }

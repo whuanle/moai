@@ -1,0 +1,33 @@
+@import "../../../../styles/theme.css";
+
+.plugin-authorization-page {
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.plugin-authorization-page .authorization-tabs .ant-tabs-nav {
+  margin-bottom: var(--spacing-sm);
+}
+
+.plugin-authorization-page .ant-table {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border-secondary);
+}
+
+.plugin-authorization-page .ant-table-thead > tr > th {
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 100%) !important;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.plugin-authorization-page .ant-table-tbody > tr:hover > td {
+  background: rgba(22, 119, 255, 0.02);
+}
+
+.modal-description {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-md);
+}

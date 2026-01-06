@@ -1,0 +1,8 @@
+{
+  "label": "插件系统",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "MoAI 提供了丰富的插件，帮助用户扩展和增强应用功能。"
+  }
+}

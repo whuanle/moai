@@ -10,6 +10,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AlibabaCloud.SDK.Bailian20231229" />
 		<PackageReference Include="FluentValidation" />
 		<PackageReference Include="Jint" />
 		<PackageReference Include="Markdig" />

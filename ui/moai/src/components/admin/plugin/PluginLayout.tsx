@@ -1,10 +1,9 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { Layout, Menu } from "antd";
-import { ApiOutlined, CloudServerOutlined, FolderOutlined } from "@ant-design/icons";
+import { Card, Menu } from "antd";
+import { ApiOutlined, CloudServerOutlined, FolderOutlined, SafetyOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import useAppStore from "../../../stateshare/store";
-
-const { Content } = Layout;
+import "./PluginLayout.css";
 
 export default function PluginLayout() {
   const navigate = useNavigate();
@@ -24,6 +23,9 @@ export default function PluginLayout() {
     if (path.includes("/plugin/classify")) {
       return "classify";
     }
+    if (path.includes("/plugin/authorization")) {
+      return "authorization";
+    }
     return "builtin";
   };
 
@@ -39,12 +41,19 @@ export default function PluginLayout() {
       icon: <ApiOutlined />,
       label: "自定义插件",
     },
-    // 只有管理员才显示分类管理
-    ...(isAdmin ? [{
-      key: "classify",
-      icon: <FolderOutlined />,
-      label: "分类管理",
-    }] : []),
+    // 只有管理员才显示分类管理和授权管理
+    ...(isAdmin ? [
+      {
+        key: "classify",
+        icon: <FolderOutlined />,
+        label: "分类管理",
+      },
+      {
+        key: "authorization",
+        icon: <SafetyOutlined />,
+        label: "授权管理",
+      },
+    ] : []),
   ];
 
   // 菜单点击处理
@@ -56,29 +65,26 @@ export default function PluginLayout() {
       navigate("/app/plugin/builtin");
     } else if (key === "classify") {
       navigate("/app/plugin/classify");
+    } else if (key === "authorization") {
+      navigate("/app/plugin/authorization");
     }
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "#fff" }}>
-      <div
-        style={{
-          background: "#fff",
-          borderBottom: "1px solid #f0f0f0",
-          padding: "0 24px",
-        }}
-      >
-        <Menu
-          mode="horizontal"
-          selectedKeys={[getSelectedKey()]}
-          items={menuItems}
-          onClick={handleMenuClick}
-          style={{ borderBottom: "none" }}
-        />
-      </div>
-      <Content>
-        <Outlet />
-      </Content>
-    </Layout>
+    <div className="plugin-layout-page">
+      <Card className="plugin-layout-card">
+        <div className="plugin-layout-menu">
+          <Menu
+            mode="horizontal"
+            selectedKeys={[getSelectedKey()]}
+            items={menuItems}
+            onClick={handleMenuClick}
+          />
+        </div>
+        <div className="plugin-layout-content">
+          <Outlet />
+        </div>
+      </Card>
+    </div>
   );
 }

@@ -1,0 +1,210 @@
+/* ============================================
+   自定义插件管理页面样式
+   ============================================ */
+
+/* 主体布局 */
+.plugin-custom-layout {
+  display: flex;
+  min-height: calc(100vh - var(--header-height) - 140px);
+}
+
+/* ============================================
+   左侧分类侧边栏
+   ============================================ */
+.classify-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 100%);
+  border-right: 1px solid var(--color-border-secondary);
+  padding: var(--spacing-lg);
+}
+
+.classify-sidebar-header {
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.classify-sidebar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.classify-sidebar .ant-list-item {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: 12px var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
+  transition: all var(--transition-normal);
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.classify-sidebar .ant-list-item:hover {
+  background: var(--color-bg-container);
+  border-color: var(--color-border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.classify-sidebar .ant-list-item.selected {
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.08) 0%, rgba(22, 119, 255, 0.04) 100%);
+  border-color: var(--color-primary-border);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.1);
+}
+
+.classify-sidebar .ant-list-item.selected .ant-typography {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.classify-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.classify-item-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.classify-item-icon {
+  font-size: 16px;
+  color: var(--color-text-tertiary);
+}
+
+.classify-sidebar .ant-list-item.selected .classify-item-icon {
+  color: var(--color-primary);
+}
+
+/* ============================================
+   右侧内容区域
+   ============================================ */
+.plugin-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-lg);
+  background: var(--color-bg-container);
+}
+
+/* 工具栏 */
+.plugin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-secondary);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.plugin-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.plugin-search-input {
+  width: 280px;
+}
+
+.plugin-search-input .ant-input-affix-wrapper {
+  border-radius: var(--radius-md) !important;
+  border-color: var(--color-border);
+  background: var(--color-bg-container);
+  transition: all var(--transition-normal);
+}
+
+.plugin-search-input .ant-input-affix-wrapper:hover,
+.plugin-search-input .ant-input-affix-wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1);
+}
+
+/* 表格样式 */
+.plugin-content .ant-table {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border-secondary);
+}
+
+.plugin-content .ant-table-thead > tr > th {
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 100%) !important;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.plugin-content .ant-table-tbody > tr > td {
+  padding: 16px;
+  transition: background var(--transition-fast);
+}
+
+.plugin-content .ant-table-tbody > tr:hover > td {
+  background: rgba(22, 119, 255, 0.02);
+}
+
+/* ============================================
+   响应式适配
+   ============================================ */
+@media (max-width: 1200px) {
+  .plugin-custom-layout {
+    flex-direction: column;
+  }
+
+  .classify-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-secondary);
+    padding-bottom: var(--spacing-md);
+  }
+
+  .classify-sidebar .ant-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .classify-sidebar .ant-list-item {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+  }
+
+  .plugin-search-input {
+    width: 100%;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .plugin-content {
+    padding: var(--spacing-md);
+  }
+
+  .plugin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--spacing-md);
+  }
+
+  .plugin-toolbar-left {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .plugin-search-input {
+    width: 100%;
+    max-width: none;
+  }
+}
