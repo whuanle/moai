@@ -1,11 +1,15 @@
-﻿using Microsoft.Extensions.Configuration;
-using System.Diagnostics;
+﻿using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Design.Internal;
+using Microsoft.EntityFrameworkCore.Scaffolding;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Pomelo.EntityFrameworkCore.MySql.Design.Internal;
 using System.Text;
 
 namespace MysqlScaffold;
 
 /// <summary>
-/// Program.
+/// DB first.
 /// </summary>
 public class Program
 {
@@ -13,9 +17,8 @@ public class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
 
-        // Console.WriteLine("请在目录下执行 dotnet run，请勿直接启动该项目");
-        // Console.WriteLine("使用前先删除 Data、Entities 两个目录，用完后也要删除");
-        DirectoryInfo? assemblyDirectory = Directory.GetParent(typeof(Program).Assembly.Location);
+        // 获取项目目录，避免文件放在 bin 目录下
+        var assemblyDirectory = Directory.GetParent(typeof(Program).Assembly.Location);
         if (assemblyDirectory!.FullName.Contains("bin", StringComparison.CurrentCultureIgnoreCase))
         {
             assemblyDirectory = assemblyDirectory!.Parent!.Parent!.Parent;
@@ -25,108 +28,163 @@ public class Program
         Directory.SetCurrentDirectory(projectDirectory);
         Console.WriteLine("当前工作目录: " + projectDirectory);
 
-        if (Directory.Exists(Path.Combine(projectDirectory, "Data")))
+        // 清理旧目录，统一放到 Database 目录下
+        var databaseDir = Path.Combine(projectDirectory, "Database");
+        var dataDir = Path.Combine(databaseDir, "Data");
+        var entitiesDir = Path.Combine(databaseDir, "Entities");
+
+        if (Directory.Exists(databaseDir))
         {
-            Directory.Delete(Path.Combine(projectDirectory, "Data"), true);
+            Directory.Delete(databaseDir, true);
+            Console.WriteLine("已删除 Database 目录");
         }
 
-        if (Directory.Exists(Path.Combine(projectDirectory, "Entities")))
-        {
-            Directory.Delete(Path.Combine(projectDirectory, "Entities"), true);
-        }
+        // 创建目录结构
+        Directory.CreateDirectory(databaseDir);
+        Directory.CreateDirectory(dataDir);
+        Directory.CreateDirectory(entitiesDir);
 
+        // 读取配置
         var configurationBuilder = new ConfigurationBuilder();
-        ImportSystemConfiguration(configurationBuilder);
+        ImportSystemConfiguration(projectDirectory, configurationBuilder);
         var configuration = configurationBuilder.Build();
 
         var connectionString = configuration["MoAI:Database"];
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("错误: 未找到数据库连接字符串配置 (MoAI:Database)");
+            Console.ResetColor();
+            return;
+        }
+
         if (!connectionString.EndsWith(';'))
         {
-            connectionString += ";"; // 确保连接字符串以分号结尾
+            connectionString += ";";
         }
 
         connectionString += "GuidFormat=Binary16";
 
-        // 本机已经安装需先安装 dotnet-ef
-        // dotnet tool install -g dotnet-ef
-        ProcessStartInfo? processStartInfo = new()
+        Console.WriteLine("开始从数据库生成实体代码...");
+        Console.WriteLine($"连接字符串: {connectionString}");
+
+        try
         {
-            FileName = "dotnet",
-            WorkingDirectory = projectDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
+            // 配置 EF Core Design 服务
+            var services = new ServiceCollection();
 
-        processStartInfo.ArgumentList.Add("ef");
-        processStartInfo.ArgumentList.Add("dbcontext");
-        processStartInfo.ArgumentList.Add("scaffold");
-        processStartInfo.ArgumentList.Add($"\"{connectionString.ToString()}\"");
-        processStartInfo.ArgumentList.Add("Pomelo.EntityFrameworkCore.MySql");
-        processStartInfo.ArgumentList.Add("--context-dir");
-        processStartInfo.ArgumentList.Add("Data");
-        processStartInfo.ArgumentList.Add("--context");
-        processStartInfo.ArgumentList.Add("DatabaseContext");
-        processStartInfo.ArgumentList.Add("--output-dir");
-        processStartInfo.ArgumentList.Add("Entities");
-        processStartInfo.ArgumentList.Add("--namespace");
-        processStartInfo.ArgumentList.Add("MoAI.Database.Entities");
-        processStartInfo.ArgumentList.Add("--context-namespace");
-        processStartInfo.ArgumentList.Add("MoAI.Database");
-        processStartInfo.ArgumentList.Add("--no-onconfiguring");
-        processStartInfo.ArgumentList.Add("-f");
+            // 添加 EF Core Design 服务
+            services.AddEntityFrameworkDesignTimeServices();
 
-        ////processStartInfo.Arguments = string.Join(" ", processStartInfo.ArgumentList);
-        ////processStartInfo.ArgumentList.Clear();
-        string? command = $"{processStartInfo.FileName} {string.Join(" ", processStartInfo.ArgumentList)}";
-        Console.WriteLine($"启动命令: {command}");
+            // 添加 MySQL Provider 的 Design 服务
+#pragma warning disable EF1001 // Internal EF Core API usage.
+            var mySqlDesignTimeServices = new MySqlDesignTimeServices();
+            mySqlDesignTimeServices.ConfigureDesignTimeServices(services);
 
-        using Process? process = new() { StartInfo = processStartInfo };
+            // 添加操作报告器
+            services.AddSingleton<IOperationReporter, ConsoleOperationReporter>();
 
-        process.OutputDataReceived += (sender, e) =>
-        {
-            if (!string.IsNullOrEmpty(e.Data))
+            var serviceProvider = services.BuildServiceProvider();
+
+            // 获取 scaffolder
+            var scaffolder = serviceProvider.GetRequiredService<IReverseEngineerScaffolder>();
+
+            // 配置 scaffold 选项
+            var scaffoldOptions = new DatabaseModelFactoryOptions(
+                tables: null,
+                schemas: null);
+
+            var modelOptions = new ModelReverseEngineerOptions();
+
+            var codeOptions = new ModelCodeGenerationOptions
             {
-                Console.WriteLine(e.Data);
-            }
-        };
+                ContextName = "DatabaseContext",
+                ContextDir = dataDir,
+                ContextNamespace = "MoAI.Database",
+                ModelNamespace = "MoAI.Database.Entities",
+                RootNamespace = "MoAI.Database",
+                SuppressConnectionStringWarning = true,
+                SuppressOnConfiguring = true,
+                UseDataAnnotations = true,
+                UseNullableReferenceTypes = true,
+                ProjectDir = projectDirectory,  // T4 模板会从 ProjectDir/CodeTemplates/EFCore 目录加载
+            };
 
-        process.ErrorDataReceived += (sender, e) =>
-        {
-            if (!string.IsNullOrEmpty(e.Data))
+            Console.WriteLine($"T4 模板目录: {Path.Combine(projectDirectory, "CodeTemplates", "EFCore")}");
+
+            // 执行 scaffold
+            Console.WriteLine("正在连接数据库并生成模型...");
+            var scaffoldedModel = scaffolder.ScaffoldModel(
+                connectionString,
+                scaffoldOptions,
+                modelOptions,
+                codeOptions);
+
+            // 保存生成的代码
+            Console.WriteLine("正在保存生成的代码...");
+
+            // DatabaseContext 要往上提一级
+            scaffoldedModel.ContextFile.Path = Path.Combine(Directory.GetParent(scaffoldedModel.ContextFile.Path)!.Parent!.FullName, Path.GetFileName(scaffoldedModel.ContextFile.Path));
+            var savedFiles = scaffolder.Save(
+                scaffoldedModel,
+                entitiesDir,
+                overwriteFiles: true);
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"DbContext 文件: {savedFiles.ContextFile}");
+            Console.WriteLine($"生成的实体文件数: {savedFiles.AdditionalFiles.Count}");
+            Console.ResetColor();
+
+            // 重命名实体文件，以及重新摆放文件位置
+            Console.WriteLine("正在重命名实体文件...");
+            foreach (var entityFile in savedFiles.AdditionalFiles)
             {
-                Console.BackgroundColor = ConsoleColor.Red;
-                Console.WriteLine(e.Data);
-                Console.ResetColor();
+                var directory = Path.GetDirectoryName(entityFile)!;
+                var fileName = Path.GetFileNameWithoutExtension(entityFile);
+
+                var newDir = directory;
+                var newFileName = entityFile;
+
+                if (directory.EndsWith("Entities", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    newDir = directory;
+                    newFileName = Path.Combine(directory, fileName + "Entity.cs");
+                }
+
+                if (File.Exists(entityFile))
+                {
+                    File.Move(entityFile, newFileName);
+                    Console.WriteLine($"  {Path.GetFileName(entityFile)} -> {Path.GetFileName(newFileName)}");
+                }
             }
-        };
 
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode == 0)
-        {
-            var entities = Directory.GetFiles(Path.Combine(projectDirectory, "Entities"), "*.cs", SearchOption.AllDirectories);
-            foreach (var entity in entities)
-            {
-                var newFileNamee = Path.Combine(Directory.GetParent(entity)!.FullName, Path.GetFileNameWithoutExtension(entity) + "Entity.cs");
-                File.Move(entity, newFileNamee);
-            }
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("\n✓ 代码生成完成!");
+            Console.WriteLine($"  - DbContext: {savedFiles.ContextFile}");
+            Console.WriteLine($"  - 实体目录: {entitiesDir}");
+            Console.WriteLine($"  - 请手动复制需要的文件到项目中");
+            Console.ResetColor();
         }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"错误: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            Console.ResetColor();
+        }
+
+        await Task.CompletedTask;
     }
 
-    // 导入系统配置.
-    private static void ImportSystemConfiguration(IConfigurationBuilder configurationBuilder)
+    /// <summary>
+    /// 导入系统配置.
+    /// </summary>
+    private static void ImportSystemConfiguration(string projectDirectory, IConfigurationBuilder configurationBuilder)
     {
-        // 指定环境变量从文件导入配置
-        var configurationFilePath = Environment.GetEnvironmentVariable("MAI_FILE");
+        var configurationFilePath = Path.Combine(Directory.GetParent(projectDirectory)!.Parent!.FullName, "src", "MoAI", "appsettings.Development.json");
         if (string.IsNullOrWhiteSpace(configurationFilePath))
         {
-            throw new ArgumentException("The environment variable `MAI_FILE` is not set or is empty. Please set it to the path of the configuration file.");
+            throw new ArgumentException("appsettings.Development.json 未设置或为空");
         }
 
         string? fileType = Path.GetExtension(configurationFilePath);
@@ -144,7 +202,45 @@ public class Program
         }
         else
         {
-            throw new ArgumentException($"The current file type cannot be imported,`MAI_FILE={configurationFilePath}`.");
+            throw new ArgumentException($"不支持的配置文件类型: `MAI_FILE={configurationFilePath}`");
         }
+    }
+}
+
+/// <summary>
+/// 控制台操作报告器.
+/// </summary>
+#pragma warning disable EF1001 // Internal EF Core API usage
+internal sealed class ConsoleOperationReporter : IOperationReporter
+#pragma warning restore EF1001
+{
+    /// <inheritdoc/>
+    public void WriteError(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"[错误] {message}");
+        Console.ResetColor();
+    }
+
+    /// <inheritdoc/>
+    public void WriteInformation(string message)
+    {
+        Console.WriteLine($"[信息] {message}");
+    }
+
+    /// <inheritdoc/>
+    public void WriteVerbose(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine($"[详细] {message}");
+        Console.ResetColor();
+    }
+
+    /// <inheritdoc/>
+    public void WriteWarning(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"[警告] {message}");
+        Console.ResetColor();
     }
 }

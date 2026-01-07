@@ -14,6 +14,12 @@
 <#@ import namespace="Microsoft.EntityFrameworkCore.Infrastructure" #>
 <#@ import namespace="Microsoft.EntityFrameworkCore.Scaffolding" #>
 <#@ import namespace="Microsoft.Extensions.DependencyInjection" #>
+#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
+
 <#
     if (!ProductInfo.GetVersion().StartsWith("9.0"))
     {
@@ -123,20 +129,10 @@ public partial class <#= Options.ContextName #> : DbContext
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
         OnModelCreatingPartial(modelBuilder);
 <#
     var anyConfiguration = false;
 
-    var modelFluentApiCalls = Model.GetFluentApiCalls(annotationCodeGenerator);
-    if (modelFluentApiCalls != null)
-    {
-        usings.AddRange(modelFluentApiCalls.GetRequiredUsings());
-#>
-        modelBuilder<#= code.Fragment(modelFluentApiCalls, indent: 3) #>;
-<#
-        anyConfiguration = true;
-    }
 
     StringBuilder mainEnvironment;
     foreach (var entityType in Model.GetEntityTypes().Where(e => !e.IsSimpleManyToManyJoinEntityType()))

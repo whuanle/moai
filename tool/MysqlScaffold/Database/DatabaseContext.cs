@@ -1,12 +1,14 @@
-﻿#pragma warning disable CA1051
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using MoAI.Database.Entities;
+
+#pragma warning disable CA1051
 #pragma warning disable SA1401
 #pragma warning disable SA1600
 #pragma warning disable SA1601
 #pragma warning disable SA1204
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using MoAI.Database.Entities;
 
 namespace MoAI.Database;
 
@@ -15,10 +17,7 @@ namespace MoAI.Database;
 /// </summary>
 public partial class DatabaseContext : DbContext
 {
-    /// <summary>
-    /// IServiceProvider.
-    /// </summary>
-    protected readonly IServiceProvider _serviceProvider;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseContext"/> class.
@@ -43,14 +42,14 @@ public partial class DatabaseContext : DbContext
     }
 
     /// <summary>
-    /// 授权模型给哪些团队使用.
-    /// </summary>
-    public virtual DbSet<AiModelAuthorizationEntity> AiModelAuthorizations { get; set; }
-
-    /// <summary>
     /// ai模型.
     /// </summary>
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
+
+    /// <summary>
+    /// 授权模型给哪些团队使用.
+    /// </summary>
+    public virtual DbSet<AiModelAuthorizationEntity> AiModelAuthorizations { get; set; }
 
     /// <summary>
     /// ai模型使用量限制，只能用于系统模型.
@@ -66,11 +65,6 @@ public partial class DatabaseContext : DbContext
     /// 模型使用日志,记录每次请求使用记录.
     /// </summary>
     public virtual DbSet<AiModelUseageLogEntity> AiModelUseageLogs { get; set; }
-
-    /// <summary>
-    /// 授权私有插件给哪些团队使用.
-    /// </summary>
-    public virtual DbSet<PluginAuthorizationEntity> PluginAuthorizations { get; set; }
 
     /// <summary>
     /// 应用.
@@ -131,6 +125,11 @@ public partial class DatabaseContext : DbContext
     /// 插件.
     /// </summary>
     public virtual DbSet<PluginEntity> Plugins { get; set; }
+
+    /// <summary>
+    /// 授权私有插件给哪些团队使用.
+    /// </summary>
+    public virtual DbSet<PluginAuthorizationEntity> PluginAuthorizations { get; set; }
 
     /// <summary>
     /// 自定义插件.
@@ -243,5 +242,5 @@ public partial class DatabaseContext : DbContext
         OnModelCreatingPartial(modelBuilder);
     }
 
-    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

@@ -13,6 +13,11 @@
 <#@ import namespace="Microsoft.EntityFrameworkCore" #>
 <#@ import namespace="Microsoft.EntityFrameworkCore.Design" #>
 <#@ import namespace="Microsoft.Extensions.DependencyInjection" #>
+#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
 <#
     if (EntityType.IsSimpleManyToManyJoinEntityType())
     {
