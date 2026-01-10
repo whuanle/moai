@@ -1,5 +1,6 @@
 ﻿#pragma warning disable SKEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
 
+using Google.Protobuf;
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
 using MoAI.AiModel.Events;
 using MoAI.AiModel.Models;
+using MoAI.AiModel.Queries;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
@@ -139,9 +141,6 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
             }
         }
 
-        _databaseContext.WikiDocumentChunkEmbeddings.AddRange(embeddingEntities);
-        await _databaseContext.SaveChangesAsync();
-
         // 4，开始向量化
         var wikiIndex = message.WikiId.ToString();
         var documentIndex = message.DocumentId.ToString();
@@ -151,14 +150,18 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
         await CheckIndexIsExistAsync(memoryDb, wikiIndex, wikiConfig.EmbeddingDimensions);
 
-        // 删除这个文档以前的向量
+        // 删除这个文档以前的向量、文本片段
         await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
         {
             WikiId = message.WikiId,
             DocumentId = message.DocumentId
         });
 
-        // 逐个向量化
+        // 原文片段存储到数据库
+        _databaseContext.WikiDocumentChunkEmbeddings.AddRange(embeddingEntities);
+        await _databaseContext.SaveChangesAsync();
+
+        // 逐个片段向量化
         var parallelism = Math.Max(1, embddingConfig.ThreadCount);
         using var embeddingSemaphore = new SemaphoreSlim(parallelism, parallelism);
         using var upsertSemaphore = new SemaphoreSlim(1, 1);
@@ -166,11 +169,6 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
         foreach (var item in embeddingEntities)
         {
-            //if (item.IsEmbedding == false)
-            //{
-            //    continue;
-            //}
-
             embeddingTasks.Add(ProcessEmbeddingAsync(item));
         }
 
@@ -291,38 +289,49 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
     private async Task<(EmbeddingConfig? WikiConfig, AiEndpoint? AiEndpoint)> GetWikiConfigAsync(int wikiId)
     {
-        var result = await _databaseContext.Wikis
-        .Where(x => x.Id == wikiId)
-        .Join(_databaseContext.AiModels, a => a.EmbeddingModelId, b => b.Id, (a, x) => new
-        {
-            WikiConfig = new EmbeddingConfig
+        var wikiConfig = await _databaseContext.Wikis
+            .Where(x => x.Id == wikiId)
+            .Select(x => new
             {
-                EmbeddingDimensions = a.EmbeddingDimensions,
-                EmbeddingModelId = a.EmbeddingModelId,
-            },
-            AiEndpoint = new AiEndpoint
-            {
-                Name = x.Name,
-                DeploymentName = x.DeploymentName,
-                Title = x.Title,
-                AiModelType = x.AiModelType.JsonToObject<AiModelType>(),
-                Provider = x.AiProvider.JsonToObject<AiProvider>(),
-                ContextWindowTokens = x.ContextWindowTokens,
-                Endpoint = x.Endpoint,
-                Abilities = new ModelAbilities
-                {
-                    Files = x.Files,
-                    FunctionCall = x.FunctionCall,
-                    ImageOutput = x.ImageOutput,
-                    Vision = x.IsVision,
-                },
-                MaxDimension = x.MaxDimension,
-                TextOutput = x.TextOutput,
-                Key = x.Key,
-            }
-        }).FirstOrDefaultAsync();
+                TeamId = x.TeamId,
+                EmbeddingDimensions = x.EmbeddingDimensions,
+                EmbeddingModelId = x.EmbeddingModelId,
+            }).FirstOrDefaultAsync();
 
-        return (result?.WikiConfig, result?.AiEndpoint);
+        if (wikiConfig == null)
+        {
+            return (null, null);
+        }
+
+        AiEndpoint? aiEndpoint = null;
+#pragma warning disable CA1031 // 不捕获常规异常类型
+        try
+        {
+            if (wikiConfig.TeamId == 0)
+            {
+                // 个人知识库只能使用公开的模型
+                aiEndpoint = await _mediator.Send(new QueryPublicAiModelToAiEndpointCommand
+                {
+                    AiModelId = wikiConfig.EmbeddingModelId
+                });
+            }
+            else
+            {
+                // 团队知识库优先使用团队模型
+                aiEndpoint = await _mediator.Send(new QueryTeamAiModelToAiEndpointCommand
+                {
+                    TeamId = wikiConfig.TeamId,
+                    AiModelId = wikiConfig.EmbeddingModelId
+                });
+            }
+        }
+        catch
+        {
+            return (null, null);
+        }
+#pragma warning restore CA1031 // 不捕获常规异常类型
+
+        return (new EmbeddingConfig { EmbeddingDimensions = wikiConfig.EmbeddingDimensions, EmbeddingModelId = wikiConfig.EmbeddingModelId }, aiEndpoint);
     }
 
     private async Task SetExceptionStateAsync(Guid taskId, WorkerState state, Exception? ex = null)

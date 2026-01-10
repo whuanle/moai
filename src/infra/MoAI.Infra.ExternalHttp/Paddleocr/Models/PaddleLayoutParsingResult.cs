@@ -1,4 +1,5 @@
 ﻿using Refit;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Paddleocr.Models;
@@ -18,5 +19,5 @@ public class PaddleLayoutParsingResult
     /// 输入数据信息.
     /// </summary>
     [JsonPropertyName("dataInfo")]
-    public object? DataInfo { get; set; }
+    public JsonElement? DataInfo { get; set; }
 }

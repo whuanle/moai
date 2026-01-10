@@ -19,7 +19,7 @@ public class PaddleocrPluginConfig
         Description = "Paddleocr 服务 API 地址",
         FieldType = PluginConfigFieldType.String,
         IsRequired = true,
-        ExampleValue = "http://localhost:8080")]
+        ExampleValue = "https://{id}.aistudio-app.com")]
     public string ApiUrl { get; set; } = string.Empty;
 
     /// <summary>

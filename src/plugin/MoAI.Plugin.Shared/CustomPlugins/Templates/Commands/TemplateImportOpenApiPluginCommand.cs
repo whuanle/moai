@@ -1,6 +1,9 @@
 ﻿using FluentValidation;
 using MediatR;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Storage.Helpers;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace MoAI.Plugin.CustomPlugins.Commands;
 
@@ -67,7 +70,16 @@ public class TemplateImportOpenApiPluginCommand : IRequest<SimpleInt>, IModelVal
 
         validate.RuleFor(x => x.FileName)
             .NotEmpty().WithMessage("文件名称长度在 2-100 之间.")
-            .Length(2, 100).WithMessage("文件名称长度在 2-100 之间.");
+            .Length(2, 100).WithMessage("文件名称长度在 2-100 之间.")
+            .Must(f =>
+            {
+                if (FileStoreHelper.OpenApiFormats.Contains(Path.GetExtension(f).ToLower()))
+                {
+                    return true;
+                }
+
+                return false;
+            }).WithMessage("不支持的文件格式，请导入 .json/.yaml/.yml 文件");
 
         validate.RuleFor(x => x.FileId)
             .GreaterThan(0).WithMessage("文件 ID 必须大于 0.");

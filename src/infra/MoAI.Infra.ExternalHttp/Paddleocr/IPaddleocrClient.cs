@@ -21,7 +21,7 @@ public interface IPaddleocrClient
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>OCR响应结果.</returns>
     [Post("/ocr")]
-    Task<PaddleOcrResponse<PaddleOcrResult>> OcrAsync([Header("token")] string token, [Body] PaddleOcrRequest request, CancellationToken cancellationToken = default);
+    Task<PaddleOcrResponse<PaddleOcrResult>> OcrAsync([Header("Authorization")] string token, [Body] PaddleOcrRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 文档解析 (Layout Parsing), 适合 PP-StructureV3 模型.
@@ -31,7 +31,7 @@ public interface IPaddleocrClient
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>文档解析响应结果.</returns>
     [Post("/layout-parsing")]
-    Task<PaddleOcrResponse<PaddleLayoutParsingResult>> StructureV3Async([Header("token")] string token, [Body] PaddleLayoutParsingRequest request, CancellationToken cancellationToken = default);
+    Task<PaddleOcrResponse<PaddleLayoutParsingResult>> StructureV3Async([Header("Authorization")] string token, [Body] PaddleLayoutParsingRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 文档解析 (PaddleOCR-VL), 适合 PaddleOCR-VL 模型.
@@ -41,5 +41,5 @@ public interface IPaddleocrClient
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>文档解析响应结果.</returns>
     [Post("/layout-parsing")]
-    Task<PaddleOcrResponse<PaddleLayoutParsingResult>> LayoutParsingVlAsync([Header("token")] string token, [Body] PaddleOcrVlRequest request, CancellationToken cancellationToken = default);
+    Task<PaddleOcrResponse<PaddleLayoutParsingResult>> LayoutParsingVlAsync([Header("Authorization")] string token, [Body] PaddleOcrVlRequest request, CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 ﻿using Refit;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MoAI.Infra.Paddleocr.Models;
@@ -12,7 +13,7 @@ public class PaddleLayoutParsingResultItem
     /// 简化版的预测结果.
     /// </summary>
     [JsonPropertyName("prunedResult")]
-    public object? PrunedResult { get; set; }
+    public JsonElement? PrunedResult { get; set; }
 
     /// <summary>
     /// Markdown结果.

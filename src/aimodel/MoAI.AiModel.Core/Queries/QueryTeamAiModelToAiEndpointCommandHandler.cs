@@ -9,6 +9,7 @@ using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 
 namespace MoAI.AiModel.Queries;
+
 /// <summary>
 /// <inheritdoc cref="QueryPublicAiModelToAiEndpointCommand"/>
 /// </summary>
@@ -28,10 +29,11 @@ public class QueryTeamAiModelToAiEndpointCommandHandler : IRequestHandler<QueryT
     /// <inheritdoc/>
     public async Task<AiEndpoint> Handle(QueryTeamAiModelToAiEndpointCommand request, CancellationToken cancellationToken)
     {
+        // 公开的模型或者团队被授权的模型
         var query = _databaseContext.AiModels
             .Where(x => x.Id == request.AiModelId &&
-            !x.IsPublic &&
-            _databaseContext.AiModelAuthorizations.Where(a => a.AiModelId == request.AiModelId && a.TeamId == request.TeamId).Any());
+            (x.IsPublic ||
+            _databaseContext.AiModelAuthorizations.Where(a => a.AiModelId == request.AiModelId && a.TeamId == request.TeamId).Any()));
 
         var aiEndpoint = await query.AsNoTracking().Select(x => new AiEndpoint
         {

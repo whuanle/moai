@@ -79,7 +79,7 @@ public class WikiBatchProcessDocumentCommand : IRequest<EmptyCommandResponse>, I
 
         validate.When(x => x.ThreadCount.HasValue, () =>
         {
-            validate.RuleFor(x => x.ThreadCount.Value)
+            validate.RuleFor(x => x.ThreadCount!.Value)
                 .GreaterThan(0).WithMessage("线程数量必须大于0");
         });
     }

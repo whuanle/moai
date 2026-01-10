@@ -16,7 +16,6 @@ using MoAI.Wiki.Batch.Commands;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Plugins.Feishu.Models;
-using System.IO;
 using System.Text;
 
 namespace MoAI.Wiki.Consumers;

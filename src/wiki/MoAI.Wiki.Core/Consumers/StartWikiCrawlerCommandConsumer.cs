@@ -11,7 +11,6 @@ using Microsoft.KernelMemory;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
-using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
 using MoAI.Storage.Commands;

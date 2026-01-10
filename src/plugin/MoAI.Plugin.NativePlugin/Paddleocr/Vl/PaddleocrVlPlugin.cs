@@ -9,8 +9,11 @@ using MoAI.Infra.Paddleocr.Models;
 using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
+using MoAI.Plugin.Paddleocr.Ocr;
+using MoAI.Plugin.Paddleocr.Vl;
 using MoAI.Plugin.Plugins.Paddleocr.Common;
 using System.ComponentModel;
+using System.Text;
 using System.Text.Json;
 
 namespace MoAI.Plugin.Plugins.Paddleocr.Vl;
@@ -21,11 +24,11 @@ namespace MoAI.Plugin.Plugins.Paddleocr.Vl;
 [NativePluginConfig(
     "paddleocr_vl",
     Name = "Paddleocr 文档解析 (VL)",
-    Description = "使用 PaddleOCR-VL 视觉语言模型进行文档解析",
+    Description = "使用 PaddleOCR-VL 视觉语言模型进行文档解析，这个模型非常牛批，生成的 Markdown 格式非常完美，推荐用",
     Classify = NativePluginClassify.OCR,
     ConfigType = typeof(PaddleocrPluginConfig))]
 [InjectOnTransient]
-[Description("使用 PaddleOCR-VL 视觉语言模型进行文档解析")]
+[Description("使用 PaddleOCR-VL 视觉语言模型进行文档解析，这个模型非常牛批，生成的 Markdown 格式非常完美，推荐用")]
 public partial class PaddleocrVlPlugin : INativePluginRuntime
 {
     private readonly IPaddleocrClient _paddleocrClient;
@@ -43,17 +46,18 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
     /// <inheritdoc/>
     public static string GetParamsExampleValue()
     {
-        var example = new PaddleOcrVlRequest
-        {
-            File = "https://example.com/document.pdf",
-            FileType = 0,
-            UseDocOrientationClassify = true,
-            UseLayoutDetection = true,
-            UseChartRecognition = true,
-            PrettifyMarkdown = true
-        };
-
-        return JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+        return """
+            {
+              "file": "https://example.com/document.pdf",   // 文档文件URL或Base64编码内容
+              "fileType": 0,                                // 文件类型 (0=PDF, 1=图像)
+              "useDocOrientationClassify": true,            // 是否使用文档方向分类
+              "useDocUnwarping": false,                     // 是否使用文本图像矫正
+              "useLayoutDetection": false,                   // 是否使用版面区域检测排序
+              "useChartRecognition": false,                  // 是否使用图表解析
+              "prettifyMarkdown": false,                     // 是否输出美化后的 Markdown
+              "showFormulaNumber": false                     // Markdown 中是否包含公式编号
+            }
+            """;
     }
 
     /// <inheritdoc/>
@@ -61,7 +65,7 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
     {
         try
         {
-            var objectParams = JsonSerializer.Deserialize<PaddleocrPluginConfig>(config);
+            var objectParams = JsonSerializer.Deserialize<PaddleocrPluginConfig>(config, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
             if (string.IsNullOrWhiteSpace(objectParams?.ApiUrl))
             {
                 return Task.FromResult<string?>("API 地址不能为空。");
@@ -87,7 +91,7 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
     {
         try
         {
-            var testParams = JsonSerializer.Deserialize<PaddleOcrVlRequest>(@params)!;
+            var testParams = JsonSerializer.Deserialize<PaddleVLParams>(@params, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
             var result = await InvokeAsync(
                 testParams.File,
                 testParams.FileType,
@@ -119,7 +123,7 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
     /// <returns>文档解析结果。</returns>
     [KernelFunction("invoke")]
     [Description("执行 PaddleOCR-VL 文档解析")]
-    public async Task<PaddleLayoutParsingResult> InvokeAsync(
+    public async Task<string> InvokeAsync(
         [Description("文档文件URL或Base64编码内容")] string file,
         [Description("文件类型 (0=PDF, 1=图像)")] int? fileType = null,
         [Description("是否使用文档方向分类")] bool? useDocOrientationClassify = null,
@@ -146,10 +150,16 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
             ShowFormulaNumber = showFormulaNumber
         };
 
-        var response = await _paddleocrClient.LayoutParsingVlAsync(_config?.Token ?? string.Empty, request);
+        var response = await _paddleocrClient.LayoutParsingVlAsync($"token {_config?.Token}", request);
         HandleApiError(response);
 
-        return response.Result!;
+        StringBuilder stringBuilder = new();
+        foreach (var ocrResult in response.Result!.LayoutParsingResults!)
+        {
+            stringBuilder.AppendLine(ocrResult.Markdown?.Text);
+        }
+
+        return stringBuilder.ToString()!;
     }
 
     private static void HandleApiError<T>(MoAI.Infra.Paddleocr.PaddleOcrResponse<T> response)

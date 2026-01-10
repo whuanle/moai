@@ -28,8 +28,4 @@
 		<ProjectReference Include="..\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Paddleocr\" />
-	</ItemGroup>
-
 </Project>

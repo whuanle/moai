@@ -4,7 +4,7 @@ using MoAI.AI.Models;
 namespace MoAI.AiModel.Queries;
 
 /// <summary>
-/// 查询 ai 模型信息，只能查到这个团队下的模型.
+/// 查询 ai 模型信息，公开的模型或者团队被授权的模型.
 /// </summary>
 public class QueryTeamAiModelToAiEndpointCommand : IRequest<AiEndpoint>
 {

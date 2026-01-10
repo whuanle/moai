@@ -4,13 +4,16 @@
 using Maomi;
 using Microsoft.SemanticKernel;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
 using MoAI.Infra.Paddleocr;
 using MoAI.Infra.Paddleocr.Models;
 using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
+using MoAI.Plugin.Paddleocr.Ocr;
 using MoAI.Plugin.Plugins.Paddleocr.Common;
 using System.ComponentModel;
+using System.Text;
 using System.Text.Json;
 
 namespace MoAI.Plugin.Plugins.Paddleocr.Ocr;
@@ -21,11 +24,11 @@ namespace MoAI.Plugin.Plugins.Paddleocr.Ocr;
 [NativePluginConfig(
     "paddleocr_ocr",
     Name = "Paddleocr OCR 识别",
-    Description = "使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别",
+    Description = "使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别，适合常规场景，速度较快，可以处理多页文件",
     Classify = NativePluginClassify.OCR,
     ConfigType = typeof(PaddleocrPluginConfig))]
 [InjectOnTransient]
-[Description("使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别")]
+[Description("使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别，适合常规场景，速度较快，可以处理多页文件")]
 public partial class PaddleocrPlugin : INativePluginRuntime
 {
     private readonly IPaddleocrClient _paddleocrClient;
@@ -43,16 +46,15 @@ public partial class PaddleocrPlugin : INativePluginRuntime
     /// <inheritdoc/>
     public static string GetParamsExampleValue()
     {
-        var example = new PaddleOcrRequest
-        {
-            File = "https://example.com/image.png",
-            FileType = 1,
-            UseDocOrientationClassify = true,
-            UseDocUnwarping = false,
-            UseTextlineOrientation = false
-        };
-
-        return JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+        return """
+            {
+              "file": "https://example.com/document.pdf",   // 图像文件URL或Base64编码内容
+              "fileType": 0,                                // 文件类型 (0=PDF, 1=图像)
+              "useDocOrientationClassify": true,            // 是否使用文档方向分类
+              "useDocUnwarping": false,                     // 是否使用文本图像矫正
+              "useTextlineOrientation": false               // 是否使用文本行方向分类
+            }
+            """;
     }
 
     /// <inheritdoc/>
@@ -86,7 +88,7 @@ public partial class PaddleocrPlugin : INativePluginRuntime
     {
         try
         {
-            var testParams = JsonSerializer.Deserialize<PaddleOcrRequest>(@params)!;
+            var testParams = JsonSerializer.Deserialize<PaddleOcrParams>(@params, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
             var result = await InvokeAsync(
                 testParams.File,
                 testParams.FileType,
@@ -112,7 +114,7 @@ public partial class PaddleocrPlugin : INativePluginRuntime
     /// <returns>OCR 识别结果。</returns>
     [KernelFunction("invoke")]
     [Description("执行 Paddleocr OCR 识别")]
-    public async Task<PaddleOcrResult> InvokeAsync(
+    public async Task<string> InvokeAsync(
         [Description("图像文件URL或Base64编码内容")] string file,
         [Description("文件类型 (0=PDF, 1=图像)")] int? fileType = null,
         [Description("是否使用文档方向分类")] bool? useDocOrientationClassify = null,
@@ -133,10 +135,20 @@ public partial class PaddleocrPlugin : INativePluginRuntime
             UseTextlineOrientation = useTextlineOrientation
         };
 
-        var response = await _paddleocrClient.OcrAsync(_config?.Token ?? string.Empty, request);
+        var response = await _paddleocrClient.OcrAsync($"token {_config?.Token}", request);
         HandleApiError(response);
 
-        return response.Result!;
+        StringBuilder stringBuilder = new();
+        foreach (var ocrResult in response.Result!.OcrResults!)
+        {
+            var texts = ocrResult.PrunedResult!.Value.GetProperty("rec_texts");
+            foreach (var text in texts.EnumerateArray())
+            {
+                stringBuilder.AppendLine(text.GetString());
+            }
+        }
+
+        return stringBuilder.ToString()!;
     }
 
     private static void HandleApiError<T>(MoAI.Infra.Paddleocr.PaddleOcrResponse<T> response)

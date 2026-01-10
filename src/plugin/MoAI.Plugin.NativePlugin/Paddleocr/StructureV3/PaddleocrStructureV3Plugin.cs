@@ -11,6 +11,7 @@ using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
 using MoAI.Plugin.Plugins.Paddleocr.Common;
 using System.ComponentModel;
+using System.Text;
 using System.Text.Json;
 
 namespace MoAI.Plugin.Plugins.Paddleocr.StructureV3;
@@ -21,11 +22,11 @@ namespace MoAI.Plugin.Plugins.Paddleocr.StructureV3;
 [NativePluginConfig(
     "paddleocr_structure_v3",
     Name = "Paddleocr 文档解析 (StructureV3)",
-    Description = "使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析",
+    Description = "使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析，适合各类带有结构的复杂文档，例如表格、发票、公式，速度比较慢，建议只处理单页文件",
     Classify = NativePluginClassify.OCR,
     ConfigType = typeof(PaddleocrPluginConfig))]
 [InjectOnTransient]
-[Description("使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析")]
+[Description("使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析，适合各类带有结构的复杂文档，例如表格、发票、公式，速度比较慢，建议只处理单页文件")]
 public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
 {
     private readonly IPaddleocrClient _paddleocrClient;
@@ -43,16 +44,19 @@ public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
     /// <inheritdoc/>
     public static string GetParamsExampleValue()
     {
-        var example = new PaddleLayoutParsingRequest
-        {
-            File = "https://example.com/document.pdf",
-            FileType = 0,
-            UseDocOrientationClassify = true,
-            UseTableRecognition = true,
-            UseFormulaRecognition = true
-        };
-
-        return JsonSerializer.Serialize(example, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+        return """
+            {
+              "file": "https://example.com/document.pdf",  // 文档文件URL或Base64编码内容
+              "fileType": 0,                                   // 文件类型 (0=PDF, 1=图像)
+              "useDocOrientationClassify": true,               // 是否使用文档方向分类
+              "useDocUnwarping": false,                        // 是否使用文本图像矫正
+              "useTableRecognition": false,                     // 是否使用表格识别
+              "useFormulaRecognition": false,                   // 是否使用公式识别
+              "useSealRecognition": false,                     // 是否使用印章识别
+              "useChartRecognition": false,                    // 是否使用图表解析
+              "useRegionDetection": false                      // 是否使用文档区域检测
+            }
+            """;
     }
 
     /// <inheritdoc/>
@@ -86,7 +90,7 @@ public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
     {
         try
         {
-            var testParams = JsonSerializer.Deserialize<PaddleLayoutParsingRequest>(@params)!;
+            var testParams = JsonSerializer.Deserialize<PaddleocrStructureV3Params>(@params, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
             var result = await InvokeAsync(
                 testParams.File,
                 testParams.FileType,
@@ -120,7 +124,7 @@ public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
     /// <returns>文档解析结果。</returns>
     [KernelFunction("invoke")]
     [Description("执行 Paddleocr 文档解析 (PP-StructureV3)")]
-    public async Task<PaddleLayoutParsingResult> InvokeAsync(
+    public async Task<string> InvokeAsync(
         [Description("文档文件URL或Base64编码内容")] string file,
         [Description("文件类型 (0=PDF, 1=图像)")] int? fileType = null,
         [Description("是否使用文档方向分类")] bool? useDocOrientationClassify = null,
@@ -149,10 +153,20 @@ public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
             UseRegionDetection = useRegionDetection
         };
 
-        var response = await _paddleocrClient.StructureV3Async(_config?.Token ?? string.Empty, request);
+        var response = await _paddleocrClient.StructureV3Async($"token {_config?.Token}", request);
         HandleApiError(response);
 
-        return response.Result!;
+        StringBuilder stringBuilder = new();
+        foreach (var ocrResult in response.Result!.LayoutParsingResults!)
+        {
+            foreach (var item in ocrResult.PrunedResult?.GetProperty("seal_res_list").EnumerateArray())
+            {
+                var text = item.GetProperty("rec_texts").EnumerateArray().FirstOrDefault();
+                stringBuilder.AppendLine(text.ToString());
+            }
+        }
+
+        return stringBuilder.ToString()!;
     }
 
     private static void HandleApiError<T>(MoAI.Infra.Paddleocr.PaddleOcrResponse<T> response)

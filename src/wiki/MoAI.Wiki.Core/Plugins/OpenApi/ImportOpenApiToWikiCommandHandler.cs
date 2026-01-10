@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Put;
 using MoAI.Storage.Commands;
@@ -37,41 +38,52 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(ImportOpenApiToWikiCommand request, CancellationToken cancellationToken)
     {
-        if (request.FileId != null && request.FileId > 0)
+        try
         {
-            _ = await _mediator.Send(new ComplateFileUploadCommand
+            if (request.FileId != null && request.FileId > 0)
             {
-                FileId = request.FileId.Value,
-                IsSuccess = true,
-            });
-
-            var downResult = await _mediator.Send(
-                new DownloadFileCommand
+                _ = await _mediator.Send(new ComplateFileUploadCommand
                 {
-                    FileId = request.FileId.Value
-                },
-                cancellationToken);
+                    FileId = request.FileId.Value,
+                    IsSuccess = true,
+                });
 
-            var filePath = downResult.LocalFilePath;
-            using FileStream fileStream = new FileStream(filePath, FileMode.Open);
+                var downResult = await _mediator.Send(
+                    new DownloadFileCommand
+                    {
+                        FileId = request.FileId.Value
+                    },
+                    cancellationToken);
 
-            await UploadApiFileAsync(request, fileStream);
+                var filePath = downResult.LocalFilePath;
+                using FileStream fileStream = new FileStream(filePath, FileMode.Open);
 
-            await _mediator.Send(new DeleteFileCommand
+                await UploadApiFileAsync(request, fileStream);
+
+                await _mediator.Send(new DeleteFileCommand
+                {
+                    FileIds = new[] { request.FileId.Value }
+                });
+            }
+            else if (!string.IsNullOrWhiteSpace(request.OpenApiSpecUrl))
             {
-                FileIds = new[] { request.FileId.Value }
-            });
+                var filePath = Path.GetTempFileName();
+                using var fileStream = File.Create(filePath);
+
+                _putClient.Client.BaseAddress = new Uri(request.OpenApiSpecUrl);
+
+                using var httpStream = await _putClient.DownloadAsync(string.Empty);
+                await httpStream.CopyToAsync(fileStream, cancellationToken);
+                await fileStream.FlushAsync();
+
+                fileStream.Seek(0, SeekOrigin.Begin);
+
+                await UploadApiFileAsync(request, fileStream);
+            }
         }
-        else if (!string.IsNullOrWhiteSpace(request.OpenApiSpecUrl))
+        catch (Exception ex)
         {
-            var filePath = Path.GetTempFileName();
-            using var fileStream = File.Create(filePath);
-            _putClient.Client.BaseAddress = new Uri(request.OpenApiSpecUrl);
-            using var httpStream = await _putClient.DownloadAsync(string.Empty);
-            await httpStream.CopyToAsync(fileStream, cancellationToken);
-            await fileStream.FlushAsync();
-            fileStream.Seek(0, SeekOrigin.Begin);
-            await UploadApiFileAsync(request, fileStream);
+            throw new BusinessException("导入 OpenAPI 失败", ex);
         }
 
         return EmptyCommandResponse.Default;
@@ -196,7 +208,10 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
                         sb.AppendLine();
                         var schema = requestBodyContent!.Schema;
                         sb.AppendLine("```json");
-                        sb.AppendLine(JsonSerializer.Serialize(SchemaToJson(schema, apiReaderResult.OpenApiDocument.Components.Schemas), jsonOptions));
+
+                        // 使用自定义序列化方法
+                        var fieldValue = SchemaToJson(schema, apiReaderResult.OpenApiDocument.Components.Schemas);
+                        sb.AppendLine(SerializeWithComments(fieldValue, jsonOptions));
                         sb.AppendLine("```");
                     }
                 }
@@ -209,7 +224,11 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
                 {
                     var schema = responseBodyContent.Schema;
                     sb.AppendLine("```json");
-                    sb.AppendLine(JsonSerializer.Serialize(SchemaToJson(schema, apiReaderResult.OpenApiDocument.Components.Schemas), jsonOptions));
+
+                    // 使用自定义序列化方法
+                    var fieldValue = SchemaToJson(schema, apiReaderResult.OpenApiDocument.Components.Schemas);
+                    sb.AppendLine(SerializeWithComments(fieldValue, jsonOptions));
+                    sb.AppendLine("```");
                     sb.AppendLine("```");
                 }
                 else
@@ -225,8 +244,74 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
         }
     }
 
+    // 自定义序列化方法，生成带注释的 JSON
+    private static string SerializeWithComments(FieldValue root, JsonSerializerOptions options, int indentLevel = 0)
+    {
+        var sb = new StringBuilder();
+        var indent = new string(' ', indentLevel * 2);
+
+        if (root.Value is Dictionary<string, FieldValue> obj)
+        {
+            sb.Append("{\n");
+            var keys = obj.Keys.ToList();
+            for (int i = 0; i < keys.Count; i++)
+            {
+                var key = keys[i];
+                var val = obj[key];
+
+                sb.Append($"{indent}  \"{key}\": ");
+                sb.Append(SerializeWithComments(val, options, indentLevel + 1));
+
+                if (i < keys.Count - 1)
+                {
+                    sb.Append(',');
+                }
+
+                if (!string.IsNullOrWhiteSpace(val.Comment))
+                {
+                    sb.Append($" // {val.Comment.Replace("\n", " ", StringComparison.CurrentCultureIgnoreCase)}");
+                }
+
+                sb.Append('\n');
+            }
+
+            sb.Append($"{indent}}}");
+        }
+        else if (root.Value is IEnumerable<FieldValue> arr)
+        {
+            sb.Append("[\n");
+            var list = arr.ToList();
+            for (int i = 0; i < list.Count; i++)
+            {
+                var val = list[i];
+                sb.Append($"{indent}  ");
+                sb.Append(SerializeWithComments(val, options, indentLevel + 1));
+
+                if (i < list.Count - 1)
+                {
+                    sb.Append(',');
+                }
+
+                if (!string.IsNullOrWhiteSpace(val.Comment))
+                {
+                    sb.Append($" // {val.Comment.Replace("\n", " ", StringComparison.CurrentCultureIgnoreCase)}");
+                }
+
+                sb.Append('\n');
+            }
+
+            sb.Append($"{indent}]");
+        }
+        else
+        {
+            sb.Append(JsonSerializer.Serialize(root.Value, options));
+        }
+
+        return sb.ToString();
+    }
+
     // 将 OpenApiSchema 转换为可序列化的对象
-    private static object SchemaToJson(OpenApiSchema schema, IDictionary<string, OpenApiSchema> components)
+    private static FieldValue SchemaToJson(OpenApiSchema schema, IDictionary<string, OpenApiSchema> components)
     {
         if (!string.IsNullOrEmpty(schema.Reference?.Id))
         {
@@ -238,15 +323,15 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
 
         if (schema.AllOf.Any())
         {
-            var allOfObj = new Dictionary<string, object>();
+            var allOfDict = new Dictionary<string, FieldValue>();
             foreach (var subSchema in schema.AllOf)
             {
                 var subJson = SchemaToJson(subSchema, components);
-                if (subJson is Dictionary<string, object> subDict)
+                if (subJson.Value is Dictionary<string, FieldValue> subDict)
                 {
                     foreach (var kvp in subDict)
                     {
-                        allOfObj[kvp.Key] = kvp.Value;
+                        allOfDict[kvp.Key] = kvp.Value;
                     }
                 }
             }
@@ -254,21 +339,21 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
             // 合并直接定义的属性
             foreach (var property in schema.Properties)
             {
-                allOfObj[property.Key] = SchemaToJson(property.Value, components);
+                allOfDict[property.Key] = SchemaToJson(property.Value, components);
             }
 
-            return allOfObj;
+            return new FieldValue { Value = allOfDict, Comment = schema.Description };
         }
 
         if (schema.Type == "object")
         {
-            var obj = new Dictionary<string, object>();
+            var obj = new Dictionary<string, FieldValue>();
             foreach (var property in schema.Properties)
             {
                 obj[property.Key] = SchemaToJson(property.Value, components);
             }
 
-            return obj;
+            return new FieldValue { Value = obj, Comment = schema.Description };
         }
 
         if (schema.Type == "array")
@@ -276,19 +361,15 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
             // 如果 Items 为 null，则返回一个空数组或表示任意类型的数组
             if (schema.Items == null)
             {
-                return new[] { "any" };
+                return new FieldValue { Value = new[] { new FieldValue { Value = "any" } }, Comment = schema.Description };
             }
-            return new[] { SchemaToJson(schema.Items, components) };
+
+            return new FieldValue { Value = new[] { SchemaToJson(schema.Items, components) }, Comment = schema.Description };
         }
 
-        // 为字段类型附加描述作为注释
+        // 基本类型
         var typeInfo = $"{schema.Type}{(schema.Format != null ? $"({schema.Format})" : string.Empty)}";
-        if (!string.IsNullOrWhiteSpace(schema.Description))
-        {
-            return $"{typeInfo} // {schema.Description}";
-        }
-
-        return typeInfo;
+        return new FieldValue { Value = typeInfo, Comment = schema.Description };
     }
 
     // 清理文件名，移除无效字符
@@ -298,6 +379,15 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
         {
             fileName = fileName.Replace(c, '_');
         }
+
         return fileName;
+    }
+
+    // 用于承载值和注释的辅助类
+    private class FieldValue
+    {
+        public object Value { get; set; } = default!;
+
+        public string? Comment { get; set; }
     }
 }
