@@ -2,6 +2,7 @@
 #pragma warning disable SA1118 // Parameter should not span multiple lines
 
 using Maomi;
+using MediatR;
 using Microsoft.SemanticKernel;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Paddleocr;
@@ -9,9 +10,11 @@ using MoAI.Infra.Paddleocr.Models;
 using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
+using MoAI.Plugin.Paddleocr.Common;
 using MoAI.Plugin.Paddleocr.Ocr;
 using MoAI.Plugin.Paddleocr.Vl;
 using MoAI.Plugin.Plugins.Paddleocr.Common;
+using MoAI.Plugin.Plugins.Paddleocr.StructureV3;
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
@@ -29,16 +32,20 @@ namespace MoAI.Plugin.Plugins.Paddleocr.Vl;
     ConfigType = typeof(PaddleocrPluginConfig))]
 [InjectOnTransient]
 [Description("使用 PaddleOCR-VL 视觉语言模型进行文档解析，这个模型非常牛批，生成的 Markdown 格式非常完美，推荐用")]
-public partial class PaddleocrVlPlugin : INativePluginRuntime
+public partial class PaddleocrVlPlugin : PaddleocrPluginBase, INativePluginRuntime, IPaddleocrPlugin
 {
     private readonly IPaddleocrClient _paddleocrClient;
     private PaddleocrPluginConfig _config = default!;
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="PaddleocrVlPlugin"/> class.
     /// </summary>
-    /// <param name="paddleocrClient">Paddleocr 客户端。</param>
-    public PaddleocrVlPlugin(IPaddleocrClient paddleocrClient)
+    /// <param name="mediator"></param>
+    /// <param name="serviceProvider"></param>
+    /// <param name="paddleocrClient"></param>
+    public PaddleocrVlPlugin(IMediator mediator, IServiceProvider serviceProvider, IPaddleocrClient paddleocrClient)
+        : base(serviceProvider, mediator)
     {
         _paddleocrClient = paddleocrClient;
     }
@@ -84,6 +91,52 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
     {
         _config = JsonSerializer.Deserialize<PaddleocrPluginConfig>(config) ?? new PaddleocrPluginConfig();
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyCollection<string> Texts, IReadOnlyCollection<string> Images)> OcrAsync(string base64, string @params)
+    {
+        try
+        {
+            var testParams = JsonSerializer.Deserialize<PaddleVLParams>(@params, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
+            if (!string.IsNullOrWhiteSpace(_config?.ApiUrl))
+            {
+                _paddleocrClient.Client.BaseAddress = new Uri(_config.ApiUrl);
+            }
+
+            var request = new PaddleOcrVlRequest
+            {
+                File = base64,
+                FileType = testParams.FileType,
+                UseDocOrientationClassify = testParams.UseDocOrientationClassify,
+                UseDocUnwarping = testParams.UseDocUnwarping,
+                UseLayoutDetection = testParams.UseLayoutDetection,
+                UseChartRecognition = testParams.UseChartRecognition,
+                PrettifyMarkdown = testParams.PrettifyMarkdown,
+                ShowFormulaNumber = testParams.ShowFormulaNumber,
+                Visualize = true,
+            };
+
+            var response = await _paddleocrClient.PaddleOCRVLAsync($"token {_config?.Token}", request);
+            HandleApiError(response);
+
+            List<string> texts = new();
+            List<string> images = new();
+            foreach (var ocrResult in response.Result!.LayoutParsingResults!)
+            {
+                var text = ocrResult.Markdown.Text;
+                texts.Add(text);
+
+                var imageUrl = ocrResult.InputImage;
+                await UploadTempFileAsync(images, imageUrl);
+            }
+
+            return (texts, images);
+        }
+        catch (Exception ex)
+        {
+            throw new BusinessException(ex.Message);
+        }
     }
 
     /// <inheritdoc/>
@@ -150,7 +203,7 @@ public partial class PaddleocrVlPlugin : INativePluginRuntime
             ShowFormulaNumber = showFormulaNumber
         };
 
-        var response = await _paddleocrClient.LayoutParsingVlAsync($"token {_config?.Token}", request);
+        var response = await _paddleocrClient.PaddleOCRVLAsync($"token {_config?.Token}", request);
         HandleApiError(response);
 
         StringBuilder stringBuilder = new();

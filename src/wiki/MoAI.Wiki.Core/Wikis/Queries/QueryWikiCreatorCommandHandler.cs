@@ -11,7 +11,7 @@ namespace MoAI.Plugin.Queries;
 /// <summary>
 /// <inheritdoc cref="QueryWikiCreatorCommandHandler"/>
 /// </summary>
-public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryWikiCreatorCommand, QueryWikiCreatorCommandResponse>
+public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryUserIsWikiMemberCommand, QueryUserIsWikiMemberCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IMediator _mediator;
@@ -28,7 +28,7 @@ public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryWikiCreatorCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiCreatorCommandResponse> Handle(QueryWikiCreatorCommand request, CancellationToken cancellationToken)
+    public async Task<QueryUserIsWikiMemberCommandResponse> Handle(QueryUserIsWikiMemberCommand request, CancellationToken cancellationToken)
     {
         var wikiEntity = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId)
             .AsNoTracking()
@@ -43,7 +43,7 @@ public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryWikiCreatorCo
 
         if (wikiEntity == null)
         {
-            return new QueryWikiCreatorCommandResponse
+            return new QueryUserIsWikiMemberCommandResponse
             {
                 IsExist = false,
                 TeamRole = Team.Models.TeamRole.None
@@ -53,7 +53,7 @@ public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryWikiCreatorCo
         // 个人知识库
         if (wikiEntity.TeamId == 0)
         {
-            return new QueryWikiCreatorCommandResponse
+            return new QueryUserIsWikiMemberCommandResponse
             {
                 WikiId = wikiEntity.Id,
                 IsExist = true,
@@ -73,7 +73,7 @@ public class QueryWikiCreatorCommandHandler : IRequestHandler<QueryWikiCreatorCo
             },
             cancellationToken);
 
-        return new QueryWikiCreatorCommandResponse
+        return new QueryUserIsWikiMemberCommandResponse
         {
             IsExist = true,
             WikiId = wikiEntity.Id,

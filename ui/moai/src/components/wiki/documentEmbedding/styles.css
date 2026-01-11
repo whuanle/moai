@@ -1,0 +1,306 @@
+/**
+ * 文档嵌入模块样式
+ * 使用 theme.css 中定义的 CSS 变量
+ */
+
+/* ============================================
+   通用样式
+   ============================================ */
+
+/* 折叠面板容器 */
+.doc-embed-collapse {
+  margin-top: var(--spacing-md);
+}
+
+.doc-embed-collapse .ant-collapse-header {
+  font-weight: 500;
+}
+
+/* 统计信息行 */
+.doc-embed-stats-row {
+  margin-bottom: var(--spacing-lg);
+}
+
+/* 表单字段包装器 */
+.doc-embed-field {
+  margin-bottom: var(--spacing-md);
+}
+
+.doc-embed-field-label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-primary);
+}
+
+.doc-embed-field-desc {
+  font-size: 12px;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+/* 提示信息 */
+.doc-embed-alert {
+  margin-top: var(--spacing-md);
+}
+
+/* ============================================
+   切割预览卡片样式
+   ============================================ */
+
+/* 预览网格 */
+.chunk-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* 预览卡片 */
+.chunk-card {
+  cursor: grab;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  background: var(--color-bg-container);
+}
+
+.chunk-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.chunk-card.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.chunk-card.drag-over {
+  border: 2px dashed var(--color-primary);
+  background-color: var(--color-primary-bg);
+}
+
+.chunk-card .ant-card-body {
+  padding: var(--spacing-md);
+}
+
+/* 卡片标题 */
+.chunk-card-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 拖拽图标 */
+.chunk-drag-icon {
+  cursor: move;
+  color: var(--color-text-tertiary);
+}
+
+/* 文本内容区域 */
+.chunk-text-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.chunk-text-label {
+  font-size: 12px;
+  margin-bottom: var(--spacing-sm);
+  display: block;
+  color: var(--color-text-secondary);
+}
+
+.chunk-text-content {
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 0;
+  max-height: 200px;
+  overflow: auto;
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-spotlight);
+  border-radius: var(--radius-sm);
+}
+
+/* 元数据区域 */
+.chunk-metadata-section {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.chunk-metadata-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.chunk-metadata-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-spotlight);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.chunk-metadata-item .ant-tag {
+  margin-bottom: 6px;
+  margin-right: 0;
+}
+
+.chunk-metadata-content {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ============================================
+   编辑模态框样式
+   ============================================ */
+
+.chunk-edit-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.chunk-edit-label {
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.chunk-edit-preview {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-spotlight);
+  border-radius: var(--radius-sm);
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* AI 生成面板 */
+.ai-generate-panel {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--color-primary-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-border);
+}
+
+.ai-generate-field-label {
+  margin-bottom: var(--spacing-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* 元数据添加区域 */
+.metadata-add-section {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-spotlight);
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================
+   批量生成模态框样式
+   ============================================ */
+
+.batch-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.batch-section-label {
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.batch-chunk-list {
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+}
+
+.batch-chunk-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.batch-chunk-info {
+  margin-left: var(--spacing-sm);
+  flex: 1;
+}
+
+.batch-chunk-title {
+  font-weight: 500;
+  margin-bottom: var(--spacing-xs);
+}
+
+.batch-results-container {
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-spotlight);
+}
+
+.batch-result-item {
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-container);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.batch-result-title {
+  font-weight: 500;
+  margin-bottom: var(--spacing-sm);
+}
+
+.batch-result-metadata {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-spotlight);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.batch-result-metadata-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ============================================
+   召回测试样式
+   ============================================ */
+
+.recall-form-row {
+  margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   任务列表样式
+   ============================================ */
+
+.task-list-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* ============================================
+   响应式适配
+   ============================================ */
+
+@media (max-width: 992px) {
+  .chunk-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}

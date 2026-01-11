@@ -3,10 +3,12 @@
  */
 import { useMemo } from "react";
 import { Table, Typography, Tag, Space, Button, Tooltip, Popconfirm, Empty } from "antd";
+import type { TableProps } from "antd";
 import { EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { PluginBaseInfoItem, PluginClassifyItem } from "../../../../../apiClient/models";
 import { PluginTypeObject } from "../../../../../apiClient/models";
 import { formatDateTime } from "../../../../../helper/DateTimeHelper";
+import type { TableSortState } from "../hooks/useCustomPluginData";
 
 const PLUGIN_TYPE_MAP = {
   [PluginTypeObject.Mcp]: { color: "green", text: "MCP" },
@@ -18,6 +20,8 @@ interface PluginTableProps {
   loading: boolean;
   classifyList: PluginClassifyItem[];
   currentUserId?: number;
+  sortState: TableSortState;
+  onSortChange: (sortState: TableSortState) => void;
   onView: (record: PluginBaseInfoItem) => void;
   onEdit: (record: PluginBaseInfoItem) => void;
   onDelete: (pluginId: number) => void;
@@ -28,10 +32,26 @@ export default function PluginTable({
   loading,
   classifyList,
   currentUserId,
+  sortState,
+  onSortChange,
   onView,
   onEdit,
   onDelete,
 }: PluginTableProps) {
+  // 处理表格排序变化
+  const handleTableChange: TableProps<PluginBaseInfoItem>['onChange'] = (_, __, sorter) => {
+    if (Array.isArray(sorter)) return;
+    
+    if (sorter.field && sorter.order) {
+      onSortChange({
+        field: sorter.field as string,
+        order: sorter.order,
+      });
+    } else {
+      onSortChange({ field: null, order: null });
+    }
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -39,6 +59,8 @@ export default function PluginTable({
         dataIndex: "pluginName",
         key: "pluginName",
         width: 140,
+        sorter: true,
+        sortOrder: sortState.field === 'pluginName' ? sortState.order : null,
         render: (name: string) => (
           <Typography.Text strong style={{ color: "var(--color-primary)" }}>{name}</Typography.Text>
         ),
@@ -49,6 +71,8 @@ export default function PluginTable({
         key: "title",
         width: 120,
         ellipsis: true,
+        sorter: true,
+        sortOrder: sortState.field === 'title' ? sortState.order : null,
         render: (title: string) => title || "-",
       },
       {
@@ -56,6 +80,8 @@ export default function PluginTable({
         dataIndex: "type",
         key: "type",
         width: 90,
+        sorter: true,
+        sortOrder: sortState.field === 'type' ? sortState.order : null,
         render: (type: string) => {
           const typeInfo = PLUGIN_TYPE_MAP[type as keyof typeof PLUGIN_TYPE_MAP] || { color: "default", text: type };
           return <Tag color={typeInfo.color}>{typeInfo.text}</Tag>;
@@ -153,7 +179,7 @@ export default function PluginTable({
         },
       },
     ],
-    [classifyList, currentUserId, onView, onEdit, onDelete]
+    [classifyList, currentUserId, sortState, onView, onEdit, onDelete]
   );
 
   return (
@@ -164,6 +190,7 @@ export default function PluginTable({
       loading={loading}
       pagination={false}
       scroll={{ x: 1200 }}
+      onChange={handleTableChange}
       locale={{ emptyText: <Empty description="暂无插件数据" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
     />
   );

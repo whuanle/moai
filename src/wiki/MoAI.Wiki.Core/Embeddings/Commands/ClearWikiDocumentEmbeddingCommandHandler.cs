@@ -31,7 +31,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
     /// <param name="systemOptions"></param>
     /// <param name="serviceProvider"></param>
     /// <param name="aiClientBuilder"></param>
-    public ClearWikiDocumentEmbeddingCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions, IServiceProvider serviceProvider, IAiClientBuilder aiClientBuilder = null)
+    public ClearWikiDocumentEmbeddingCommandHandler(DatabaseContext databaseContext, IMediator mediator, SystemOptions systemOptions, IServiceProvider serviceProvider, IAiClientBuilder aiClientBuilder)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
@@ -43,6 +43,13 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(ClearWikiDocumentEmbeddingCommand request, CancellationToken cancellationToken)
     {
+        var wikiEntity = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).FirstOrDefaultAsync();
+
+        if (wikiEntity == null)
+        {
+            throw new BusinessException("知识库不存在") { StatusCode = 500 };
+        }
+
         var aiModel = await _databaseContext.QueryWikiAiModelAsync(request.WikiId);
 
         if (aiModel == null)
@@ -50,38 +57,67 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             return EmptyCommandResponse.Default;
         }
 
-        // 清空向量
-        var embeddingIdsQuery = _databaseContext.WikiDocumentChunkEmbeddings
-            .Where(x => x.WikiId == request.WikiId);
+        var documentIdsQuery = _databaseContext.WikiDocuments
+            .Where(x => x.WikiId == request.WikiId && x.IsEmbedding);
 
-        if (request.DocumentId != null && request.DocumentId > 0)
+        if (request.ClearAllDocuments == true)
         {
-            embeddingIdsQuery = embeddingIdsQuery.Where(x => x.DocumentId == request.DocumentId);
-
-            await _databaseContext.WikiDocuments.Where(x => x.Id == request.WikiId && x.Id == request.DocumentId)
-                .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsEmbedding, false));
-            await _databaseContext.SaveChangesAsync();
+        }
+        else if (request.DocumentIds != null && request.DocumentIds.Count > 0)
+        {
+            var documentIds = request.DocumentIds.ToArray();
+            documentIdsQuery = documentIdsQuery.Where(x => documentIds.Contains(x.Id));
+        }
+        else
+        {
+            throw new BusinessException("未正确配置要清空的文档ID");
         }
 
-        var embeddingIds = await embeddingIdsQuery
-        .Select(x => x.Id)
-        .ToArrayAsync();
+        var offsetId = 0;
+        const int limit = 100;
 
         // 清空向量不需要存储时，向量维度随便填
         var textEmbeddingGenerator = _aiClientBuilder.CreateTextEmbeddingGenerator(aiModel, 500);
         var memoryClient = _aiClientBuilder.CreateMemoryDb(textEmbeddingGenerator, _systemOptions.Wiki.DBType.JsonToObject<MemoryDbType>());
 
-        foreach (var item in embeddingIds)
+        // 分批 清空向量
+        while (true)
         {
-            await memoryClient.DeleteAsync(index: request.WikiId.ToString(), new Microsoft.KernelMemory.MemoryStorage.MemoryRecord
-            {
-                Id = item.ToString("N")
-            });
-        }
+            var documentIds = await documentIdsQuery
+                .Where(x => x.Id > offsetId)
+                .OrderBy(x => x.Id)
+                .Take(limit)
+                .Select(x => x.Id)
+                .ToArrayAsync(cancellationToken);
 
-        await _databaseContext.WikiDocumentChunkEmbeddings
-            .Where(x => embeddingIds.Contains(x.Id))
-            .ExecuteDeleteAsync(cancellationToken);
+            if (documentIds.Length == 0)
+            {
+                break;
+            }
+
+            offsetId = documentIds.Max();
+
+            var embeddingIds = await _databaseContext.WikiDocumentChunkEmbeddings
+                .Where(x => documentIds.Contains(x.DocumentId))
+                .Select(x => x.Id)
+                .ToArrayAsync();
+
+            foreach (var item in embeddingIds)
+            {
+                await memoryClient.DeleteAsync(index: request.WikiId.ToString(), new Microsoft.KernelMemory.MemoryStorage.MemoryRecord
+                {
+                    Id = item.ToString("N")
+                });
+            }
+
+            await _databaseContext.WikiDocumentChunkEmbeddings
+                .Where(x => embeddingIds.Contains(x.Id))
+                .ExecuteDeleteAsync(cancellationToken);
+
+            await _databaseContext.WikiDocuments.Where(x => documentIds.Contains(x.Id))
+                .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsEmbedding, false));
+            await _databaseContext.SaveChangesAsync();
+        }
 
         var documentEmbeddingCount = await _databaseContext.WikiDocumentChunkEmbeddings.Where(x => x.WikiId == request.WikiId).CountAsync();
 
@@ -90,13 +126,6 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
             await memoryClient.DeleteIndexAsync(index: request.WikiId.ToString());
             await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
             await _databaseContext.SaveChangesAsync();
-        }
-
-        var wikiEntity = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).FirstOrDefaultAsync();
-
-        if (wikiEntity == null)
-        {
-            throw new BusinessException("知识库不存在") { StatusCode = 500 };
         }
 
         return EmptyCommandResponse.Default;

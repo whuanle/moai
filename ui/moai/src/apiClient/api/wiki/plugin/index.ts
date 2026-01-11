@@ -10,6 +10,8 @@ import { FeishuRequestBuilderNavigationMetadata, type FeishuRequestBuilder } fro
 // @ts-ignore
 import { McpRequestBuilderNavigationMetadata, type McpRequestBuilder } from './mcp/index.js';
 // @ts-ignore
+import { PaddleocrRequestBuilderNavigationMetadata, type PaddleocrRequestBuilder } from './paddleocr/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -32,6 +34,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The mcp property
      */
     get mcp(): McpRequestBuilder;
+    /**
+     * The paddleocr property
+     */
+    get paddleocr(): PaddleocrRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -52,6 +58,9 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     mcp: {
         navigationMetadata: McpRequestBuilderNavigationMetadata,
+    },
+    paddleocr: {
+        navigationMetadata: PaddleocrRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

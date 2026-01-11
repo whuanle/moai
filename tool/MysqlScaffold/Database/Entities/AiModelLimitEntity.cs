@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 using MoAI.Database.Audits;
 
 #pragma warning disable CA1051
@@ -15,73 +12,60 @@ namespace MoAI.Database.Entities;
 /// <summary>
 /// ai模型使用量限制，只能用于系统模型.
 /// </summary>
-[Table("ai_model_limit")]
 public partial class AiModelLimitEntity : IFullAudited
 {
     /// <summary>
     /// id.
     /// </summary>
-    [Key]
-    [Column("id", TypeName = "int(11)")]
     public int Id { get; set; }
 
     /// <summary>
     /// 模型id.
     /// </summary>
-    [Column("model_id", TypeName = "int(11)")]
     public int ModelId { get; set; }
 
     /// <summary>
     /// 用户id.
     /// </summary>
-    [Column("user_id", TypeName = "int(11)")]
     public int UserId { get; set; }
 
     /// <summary>
     /// 限制的规则类型,每天/总额/有效期.
     /// </summary>
-    [Column("rule_type", TypeName = "int(11)")]
     public int RuleType { get; set; }
 
     /// <summary>
     /// 限制值.
     /// </summary>
-    [Column("limit_value", TypeName = "int(11)")]
     public int LimitValue { get; set; }
 
     /// <summary>
     /// 过期时间.
     /// </summary>
-    [Column("expiration_time", TypeName = "datetime")]
     public DateTimeOffset ExpirationTime { get; set; }
 
     /// <summary>
     /// 创建人.
     /// </summary>
-    [Column("create_user_id", TypeName = "int(11)")]
     public int CreateUserId { get; set; }
 
     /// <summary>
     /// 创建时间.
     /// </summary>
-    [Column("create_time", TypeName = "datetime")]
     public DateTimeOffset CreateTime { get; set; }
 
     /// <summary>
     /// 更新人.
     /// </summary>
-    [Column("update_user_id", TypeName = "int(11)")]
     public int UpdateUserId { get; set; }
 
     /// <summary>
     /// 更新时间.
     /// </summary>
-    [Column("update_time", TypeName = "datetime")]
     public DateTimeOffset UpdateTime { get; set; }
 
     /// <summary>
     /// 软删除.
     /// </summary>
-    [Column("is_deleted", TypeName = "bigint(20)")]
     public long IsDeleted { get; set; }
 }

@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  Card,
   Typography,
   Button,
   Space,
@@ -11,33 +10,31 @@ import {
   Modal,
   Form,
   Input,
-  Row,
-  Col,
-  Popconfirm,
-  Tooltip,
   Radio,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined,
   BookOutlined,
-  DeleteOutlined,
   UserOutlined,
   ClockCircleOutlined,
   ReloadOutlined,
   FileTextOutlined,
+  TeamOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
-import { Avatar } from "antd";
 import { GetApiClient } from "../ServiceClient";
-import type { 
-  DeleteWikiCommand, 
-  QueryWikiBaseListCommand,
-} from "../../apiClient/models";
+import type { QueryWikiBaseListCommand } from "../../apiClient/models";
 import { useNavigate } from "react-router";
-import { proxyFormRequestError } from "../../helper/RequestError";
+import { proxyFormRequestError, proxyRequestError } from "../../helper/RequestError";
+import SortPopover, { type SortState } from "../common/SortPopover";
+import "./WikiListPage.css";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
+// ============================================
 // 类型定义
+// ============================================
 interface WikiItem {
   id: number;
   title: string;
@@ -46,321 +43,155 @@ interface WikiItem {
   createUserName?: string;
   createTime?: string;
   documentCount?: number;
-  createUserId?: number;
   teamId?: number;
+  teamName?: string;
   avatar?: string;
 }
 
-interface CreateWikiFormData {
-  name: string;
-  description: string;
-}
+type FilterType = "personal" | "team";
 
+// ============================================
+// 常量配置
+// ============================================
+const SORT_FIELDS = [
+  { key: "name", label: "名称" },
+  { key: "createTime", label: "创建时间" },
+  { key: "updateTime", label: "更新时间" },
+];
+
+// ============================================
 // 工具函数
+// ============================================
 const formatDateTime = (dateTimeString?: string): string => {
   if (!dateTimeString) return "";
-  
   try {
     const date = new Date(dateTimeString);
     if (isNaN(date.getTime())) return dateTimeString;
-    
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
+    return date.toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
     });
-  } catch (error) {
+  } catch {
     return dateTimeString;
   }
 };
 
-// 自定义Hook - 用户信息管理
-const useCurrentUser = () => {
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-
-  const fetchCurrentUser = useCallback(async () => {
-    try {
-      const client = GetApiClient();
-      const response = await client.api.common.userinfo.get();
-      if (response) {
-        setCurrentUserId(response.userId || null);
+const sortWikiList = (list: WikiItem[], sortState: SortState): WikiItem[] => {
+  return [...list].sort((a, b) => {
+    for (const field of SORT_FIELDS) {
+      const order = sortState[field.key];
+      if (!order) continue;
+      const multiplier = order === "asc" ? 1 : -1;
+      if (field.key === "name") {
+        return (a.title || "").localeCompare(b.title || "") * multiplier;
       }
-    } catch (error) {
-      console.error("获取用户信息失败:", error);
+      return (new Date(a.createTime || 0).getTime() - new Date(b.createTime || 0).getTime()) * multiplier;
     }
-  }, []);
-
-  return { currentUserId, fetchCurrentUser };
+    return 0;
+  });
 };
 
-// 筛选类型: all=全部私有, own=我创建的
-type FilterType = 'all' | 'own';
-
-// 自定义Hook - Wiki列表管理
-const useWikiList = () => {
-  const [wikiList, setWikiList] = useState<WikiItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
-  const [filterType, setFilterType] = useState<FilterType>('all');
-
-  const fetchWikiList = useCallback(async (filter: FilterType = 'all') => {
-    try {
-      setLoading(true);
-      const client = GetApiClient();
-      const command: QueryWikiBaseListCommand = {
-        isOwn: filter === 'own' ? true : undefined,
-      };
-      const response = await client.api.wiki.query_wiki_list.post(command);
-
-      if (response) {
-        const wikiItems: WikiItem[] = response.map(
-          (item) => ({
-            id: item.wikiId!,
-            title: item.name!,
-            description: item.description || "",
-            isPublic: item.isPublic || false,
-            createUserName: item.createUserName || undefined,
-            createTime: item.createTime || undefined,
-            documentCount: item.documentCount || 0,
-            createUserId: item.createUserId || undefined,
-            teamId: item.teamId || undefined,
-            avatar: item.avatar || undefined,
-          })
-        );
-        setWikiList(wikiItems);
-      }
-    } catch (error) {
-      console.error("获取知识库列表失败:", error);
-      messageApi.error("获取知识库列表失败");
-    } finally {
-      setLoading(false);
-    }
-  }, [messageApi]);
-
-  const deleteWiki = useCallback(async (id: number, currentFilter: FilterType) => {
-    try {
-      const client = GetApiClient();
-      const deleteCommand: DeleteWikiCommand = { wikiId: id };
-      await client.api.wiki.manager.delete_wiki.delete(deleteCommand);
-      messageApi.success("删除成功");
-      fetchWikiList(currentFilter);
-    } catch (error) {
-      console.error("删除知识库失败:", error);
-      messageApi.error("删除失败，请重试");
-    }
-  }, [messageApi, fetchWikiList]);
-
-  const handleFilterChange = useCallback((filter: FilterType) => {
-    setFilterType(filter);
-    fetchWikiList(filter);
-  }, [fetchWikiList]);
-
-  return { 
-    wikiList, 
-    loading, 
-    contextHolder, 
-    fetchWikiList, 
-    deleteWiki, 
-    filterType, 
-    handleFilterChange 
-  };
-};
-
-// 自定义Hook - 创建Wiki表单管理
-const useCreateWikiForm = (onSuccess: () => void) => {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
-  const [messageApi, contextHolder] = message.useMessage();
-
-  const handleSubmit = useCallback(async (values: CreateWikiFormData) => {
-    try {
-      const client = GetApiClient();
-      await client.api.wiki.create.post({
-        name: values.name,
-        description: values.description,
-      });
-      messageApi.success("创建成功");
-      setModalOpen(false);
-      form.resetFields();
-      onSuccess();
-    } catch (err: any) {
-      proxyFormRequestError(err, messageApi, form, "创建失败");
-    }
-  }, [form, messageApi, onSuccess]);
-
-  const handleCancel = useCallback(() => {
-    setModalOpen(false);
-    form.resetFields();
-  }, [form]);
-
-  return {
-    modalOpen,
-    setModalOpen,
-    form,
-    contextHolder,
-    handleSubmit,
-    handleCancel,
-  };
-};
-
-// Wiki卡片组件
+// ============================================
+// Wiki 卡片组件
+// ============================================
 interface WikiCardProps {
   item: WikiItem;
-  currentUserId: number | null;
-  onDelete: (id: number) => void;
   onClick: (id: number) => void;
 }
 
-const WikiCard: React.FC<WikiCardProps> = ({ item, currentUserId, onDelete, onClick }) => {
-  const canDelete = currentUserId === item.createUserId;
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('.wiki-delete-btn') || target.closest('.ant-popover') || target.closest('.ant-popconfirm')) {
-      return;
-    }
-    onClick(item.id);
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-  };
-
-  return (
-    <Col xs={24} sm={12} md={8} lg={6}>
-      <Card
-        hoverable
-        onClick={handleCardClick}
-        style={{ cursor: "pointer", height: "100%", position: "relative" }}
-      >
-        {canDelete && (
-          <div style={{ 
-            position: "absolute", 
-            top: 8, 
-            right: 8, 
-            zIndex: 10,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            borderRadius: "50%",
-            padding: 4
-          }}>
-            <Tooltip title="删除知识库">
-              <Popconfirm
-                title="删除知识库"
-                description="确定要删除这个知识库吗？删除后无法恢复。"
-                okText="确认删除"
-                cancelText="取消"
-                onConfirm={() => onDelete(item.id)}
-              >
-                <Button
-                  className="wiki-delete-btn"
-                  type="text"
-                  icon={<DeleteOutlined style={{ fontSize: '14px' }} />}
-                  danger
-                  size="small"
-                  onClick={handleDelete}
-                  style={{ 
-                    width: 24, 
-                    height: 24, 
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                />
-              </Popconfirm>
-            </Tooltip>
-          </div>
+const WikiCard: React.FC<WikiCardProps> = ({ item, onClick }) => (
+  <div className="wiki-card" onClick={() => onClick(item.id)}>
+    <div className="wiki-card-header">
+      <div className="wiki-card-avatar">
+        {item.avatar ? (
+          <img src={item.avatar} alt={item.title} />
+        ) : (
+          <BookOutlined />
         )}
-        <Card.Meta
-          avatar={
-            <Avatar 
-              size={48} 
-              src={item.avatar} 
-              icon={<BookOutlined />}
-            />
-          }
-          title={
-            <Space align="center" style={{ width: "100%" }}>
-              <Text strong style={{ fontSize: "16px", flex: 1 }}>
-                {item.title}
-              </Text>
-              {item.teamId ? (
-                <Tag color="orange">团队</Tag>
-              ) : (
-                <Tag color="blue">私有</Tag>
-              )}
-            </Space>
-          }
-          description={
-            <Space direction="vertical" size="small" style={{ width: "100%" }}>
-              <Paragraph 
-                type="secondary" 
-                ellipsis={{ rows: 2, tooltip: item.description }}
-                style={{ margin: 0 }}
-              >
-                {item.description}
-              </Paragraph>
-              
-              <Space size="small" wrap>
-                <Tag color="purple" icon={<FileTextOutlined />}>
-                  {item.documentCount || 0} 文档
-                </Tag>
-              </Space>
-              
-              <Space direction="vertical" size="small" style={{ marginTop: 8 }}>
-                <Space size="small">
-                  <UserOutlined />
-                  <Text type="secondary" style={{ fontSize: "12px" }}>
-                    {item.createUserName || "未知用户"}
-                  </Text>
-                </Space>
-                {item.createTime && (
-                  <Space size="small">
-                    <ClockCircleOutlined />
-                    <Text type="secondary" style={{ fontSize: "12px" }}>
-                      {formatDateTime(item.createTime)}
-                    </Text>
-                  </Space>
-                )}
-              </Space>
-            </Space>
-          }
-        />
-      </Card>
-    </Col>
-  );
-};
+      </div>
+      <div className="wiki-card-title-section">
+        <Tooltip title={item.title}>
+          <h3 className="wiki-card-title">{item.title}</h3>
+        </Tooltip>
+        <div className="wiki-card-tags">
+          {item.teamId ? (
+            <Tag color="orange" icon={<TeamOutlined />}>
+              {item.teamName || "团队"}
+            </Tag>
+          ) : (
+            <Tag color="blue" icon={<LockOutlined />}>
+              私有
+            </Tag>
+          )}
+        </div>
+      </div>
+    </div>
 
-// 创建Wiki表单组件
+    <div className="wiki-card-content">
+      <Paragraph className="wiki-card-description">
+        {item.description || "暂无描述"}
+      </Paragraph>
+    </div>
+
+    <div className="wiki-card-footer">
+      <div className="wiki-card-meta">
+        <span className="wiki-card-meta-item">
+          <UserOutlined />
+          {item.createUserName || "未知用户"}
+        </span>
+        {item.createTime && (
+          <span className="wiki-card-meta-item">
+            <ClockCircleOutlined />
+            {formatDateTime(item.createTime)}
+          </span>
+        )}
+      </div>
+      <div className="wiki-card-stats">
+        <Tag color="purple" icon={<FileTextOutlined />}>
+          {item.documentCount || 0} 文档
+        </Tag>
+      </div>
+    </div>
+  </div>
+);
+
+// ============================================
+// 创建 Wiki 弹窗组件
+// ============================================
+interface CreateWikiFormValues {
+  name: string;
+  description: string;
+}
+
 interface CreateWikiModalProps {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: CreateWikiFormData) => void;
-  form: any;
+  onSubmit: (values: CreateWikiFormValues) => void;
+  form: ReturnType<typeof Form.useForm<CreateWikiFormValues>>[0];
+  loading?: boolean;
 }
 
-const CreateWikiModal: React.FC<CreateWikiModalProps> = ({ open, onCancel, onSubmit, form }) => (
+const CreateWikiModal: React.FC<CreateWikiModalProps> = ({
+  open,
+  onCancel,
+  onSubmit,
+  form,
+  loading,
+}) => (
   <Modal
     title="新建私有知识库"
     open={open}
     onCancel={onCancel}
-    onOk={() => form.submit()}
+    footer={null}
+    width={480}
     maskClosable={false}
-    okText="创建"
-    cancelText="取消"
     destroyOnClose
   >
-    <Form 
-      form={form} 
-      layout="vertical" 
-      preserve={false}
-      onFinish={onSubmit}
-    >
+    <Form form={form} layout="vertical" preserve={false} onFinish={onSubmit}>
       <Form.Item
         label="知识库名称"
         name="name"
@@ -369,126 +200,197 @@ const CreateWikiModal: React.FC<CreateWikiModalProps> = ({ open, onCancel, onSub
         <Input placeholder="请输入知识库名称" maxLength={32} />
       </Form.Item>
       <Form.Item label="描述" name="description">
-        <Input.TextArea placeholder="请输入描述" maxLength={200} rows={3} />
+        <Input.TextArea
+          placeholder="请输入描述"
+          maxLength={200}
+          rows={3}
+          showCount
+        />
+      </Form.Item>
+      <Form.Item style={{ marginBottom: 0, marginTop: 24, textAlign: "right" }}>
+        <Space>
+          <Button onClick={onCancel}>取消</Button>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            创建
+          </Button>
+        </Space>
       </Form.Item>
     </Form>
   </Modal>
 );
 
+// ============================================
 // 主组件
+// ============================================
 export default function WikiListPage() {
   const navigate = useNavigate();
-  const { currentUserId, fetchCurrentUser } = useCurrentUser();
-  const { 
-    wikiList, 
-    loading, 
-    contextHolder: listContextHolder, 
-    fetchWikiList, 
-    deleteWiki, 
-    filterType, 
-    handleFilterChange 
-  } = useWikiList();
-  const { 
-    modalOpen, 
-    setModalOpen, 
-    form, 
-    contextHolder: formContextHolder, 
-    handleSubmit, 
-    handleCancel 
-  } = useCreateWikiForm(() => fetchWikiList(filterType));
+  const [messageApi, contextHolder] = message.useMessage();
+  const [form] = Form.useForm<CreateWikiFormValues>();
 
+  // 状态
+  const [wikiList, setWikiList] = useState<WikiItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [filterType, setFilterType] = useState<FilterType>("personal");
+  const [sortState, setSortState] = useState<SortState>({ createTime: "desc" });
+
+  // 获取知识库列表
+  const fetchWikiList = useCallback(
+    async (filter: FilterType = filterType) => {
+      try {
+        setLoading(true);
+        const client = GetApiClient();
+        const command: QueryWikiBaseListCommand = {
+          isOwn: filter === "personal" ? true : undefined,
+          isInTeam: filter === "team" ? true : undefined,
+        };
+        const response = await client.api.wiki.query_wiki_list.post(command);
+        if (response) {
+          setWikiList(
+            response.map((item) => ({
+              id: item.wikiId!,
+              title: item.name!,
+              description: item.description || "",
+              isPublic: item.isPublic || false,
+              createUserName: item.createUserName || undefined,
+              createTime: item.createTime || undefined,
+              documentCount: item.documentCount || 0,
+              teamId: item.teamId || undefined,
+              teamName: item.teamName || undefined,
+              avatar: item.avatar || undefined,
+            }))
+          );
+        }
+      } catch (error) {
+        proxyRequestError(error, messageApi, "获取知识库列表失败");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filterType, messageApi]
+  );
+
+  // 创建知识库
+  const handleCreate = useCallback(
+    async (values: { name: string; description: string }) => {
+      try {
+        setSubmitting(true);
+        const client = GetApiClient();
+        await client.api.wiki.create.post({
+          name: values.name,
+          description: values.description,
+        });
+        messageApi.success("创建成功");
+        setModalOpen(false);
+        form.resetFields();
+        fetchWikiList();
+      } catch (err) {
+        proxyFormRequestError(err, messageApi, form, "创建失败");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [form, messageApi, fetchWikiList]
+  );
+
+  // 筛选变更
+  const handleFilterChange = useCallback(
+    (filter: FilterType) => {
+      setFilterType(filter);
+      fetchWikiList(filter);
+    },
+    [fetchWikiList]
+  );
+
+  // 排序后的列表
+  const sortedWikiList = useMemo(
+    () => sortWikiList(wikiList, sortState),
+    [wikiList, sortState]
+  );
+
+  // 初始化加载
   useEffect(() => {
-    fetchCurrentUser();
-    fetchWikiList('all');
+    fetchWikiList("personal");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAddWiki = () => {
-    setModalOpen(true);
-  };
-
-  const handleRefresh = () => {
-    fetchWikiList(filterType);
-  };
-
-  const handleCardClick = (id: number) => {
-    navigate(`/app/wiki/${id}`);
-  };
-
-  const handleDeleteWiki = (id: number) => {
-    deleteWiki(id, filterType);
-  };
-
   return (
-    <>
-      {listContextHolder}
-      {formContextHolder}
-      
+    <div className="page-container">
+      {contextHolder}
+
       <CreateWikiModal
         open={modalOpen}
-        onCancel={handleCancel}
-        onSubmit={handleSubmit}
+        onCancel={() => {
+          setModalOpen(false);
+          form.resetFields();
+        }}
+        onSubmit={handleCreate}
         form={form}
+        loading={submitting}
       />
 
-      <Card style={{ margin: "24px 24px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Space size="large">
-            <Space>
-              <BookOutlined />
-              <Title level={3} style={{ margin: 0 }}>知识库管理</Title>
-            </Space>
-            <Space>
-            <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAddWiki}
-              >
-                新建知识库
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={loading}
-              >
-                刷新
-              </Button>
-              <Radio.Group 
-                value={filterType} 
-                onChange={(e) => handleFilterChange(e.target.value)}
-              >
-                <Radio.Button value="all">全部</Radio.Button>
-                <Radio.Button value="own">我创建的</Radio.Button>
-              </Radio.Group>
-            </Space>
-          </Space>
+      <div className="moai-toolbar">
+        <div className="moai-toolbar-left">
+          {/* <Space align="center" style={{ marginRight: 16 }}>
+            <BookOutlined style={{ fontSize: 20, color: "var(--color-primary)" }} />
+            <Title level={4} style={{ margin: 0 }}>
+              管理和组织你的知识库文档
+            </Title>
+          </Space> */}
+          <Radio.Group
+            value={filterType}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            optionType="button"
+            buttonStyle="solid"
+            className="wiki-filter-radio"
+          >
+            <Radio.Button value="personal">个人</Radio.Button>
+            <Radio.Button value="team">团队</Radio.Button>
+          </Radio.Group>
+          <SortPopover
+            fields={SORT_FIELDS}
+            value={sortState}
+            onChange={setSortState}
+          />
         </div>
-      </Card>
-
-      <div style={{ padding: "0 24px 24px" }}>
-        <Card>
-          <Spin spinning={loading}>
-            {wikiList.length > 0 ? (
-              <Row gutter={[16, 16]}>
-                {wikiList.map((item) => (
-                  <WikiCard
-                    key={item.id}
-                    item={item}
-                    currentUserId={currentUserId}
-                    onDelete={handleDeleteWiki}
-                    onClick={handleCardClick}
-                  />
-                ))}
-              </Row>
-            ) : (
-              <Empty
-                description="暂无知识库数据"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            )}
-          </Spin>
-        </Card>
+        <div className="moai-toolbar-right">
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => fetchWikiList()}
+            loading={loading}
+          >
+            刷新
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setModalOpen(true)}
+          >
+            新建知识库
+          </Button>
+        </div>
       </div>
-    </>
+
+      <Spin spinning={loading}>
+        {sortedWikiList.length > 0 ? (
+          <div className="wiki-grid">
+            {sortedWikiList.map((item) => (
+              <WikiCard
+                key={item.id}
+                item={item}
+                onClick={(id) => navigate(`/app/wiki/${id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <Empty
+            description="暂无知识库数据"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ padding: "60px 0" }}
+          />
+        )}
+      </Spin>
+    </div>
   );
 }

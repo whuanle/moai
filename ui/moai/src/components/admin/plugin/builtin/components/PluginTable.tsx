@@ -1,6 +1,6 @@
 /**
  * 插件表格组件
- * 显示插件列表，支持操作按钮
+ * 显示插件列表，支持操作按钮和表头排序
  */
 import { useMemo } from "react";
 import {
@@ -13,6 +13,7 @@ import {
   Empty,
   Popconfirm,
 } from "antd";
+import type { TableProps } from "antd";
 import {
   EditOutlined,
   PlayCircleOutlined,
@@ -24,10 +25,13 @@ import type {
 } from "../../../../../apiClient/models";
 import { PluginTypeObject } from "../../../../../apiClient/models";
 import { formatDateTime } from "../../../../../helper/DateTimeHelper";
+import type { TableSortState } from "../hooks/usePluginData";
 
 interface PluginTableProps {
   dataSource: NativePluginInfo[];
   loading: boolean;
+  sortState: TableSortState;
+  onSortChange: (sortState: TableSortState) => void;
   onEdit: (record: NativePluginInfo) => void;
   onRun: (record: NativePluginInfo) => void;
   onDelete: (pluginId: number) => void;
@@ -37,11 +41,27 @@ interface PluginTableProps {
 export default function PluginTable({
   dataSource,
   loading,
+  sortState,
+  onSortChange,
   onEdit,
   onRun,
   onDelete,
   onRunTemplate,
 }: PluginTableProps) {
+  // 处理表格排序变化
+  const handleTableChange: TableProps<NativePluginInfo>['onChange'] = (_, __, sorter) => {
+    if (Array.isArray(sorter)) return; // 不处理多列排序
+    
+    if (sorter.field && sorter.order) {
+      onSortChange({
+        field: sorter.field as string,
+        order: sorter.order,
+      });
+    } else {
+      onSortChange({ field: null, order: null });
+    }
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -49,6 +69,8 @@ export default function PluginTable({
         dataIndex: "pluginName",
         key: "pluginName",
         width: 160,
+        sorter: true,
+        sortOrder: sortState.field === 'pluginName' ? sortState.order : null,
         render: (
           pluginName: string,
           record: NativePluginInfo | NativePluginTemplateInfo
@@ -72,6 +94,8 @@ export default function PluginTable({
         dataIndex: "title",
         key: "title",
         width: 160,
+        sorter: true,
+        sortOrder: sortState.field === 'title' ? sortState.order : null,
         render: (
           title: string,
           record: NativePluginInfo | NativePluginTemplateInfo
@@ -87,6 +111,8 @@ export default function PluginTable({
         dataIndex: "templatePluginKey",
         key: "templatePluginKey",
         width: 180,
+        sorter: true,
+        sortOrder: sortState.field === 'templatePluginKey' ? sortState.order : null,
         render: (
           templatePluginKey: string,
           record: NativePluginInfo | NativePluginTemplateInfo
@@ -259,7 +285,7 @@ export default function PluginTable({
         },
       },
     ],
-    [onEdit, onRun, onDelete, onRunTemplate]
+    [onEdit, onRun, onDelete, onRunTemplate, sortState]
   );
 
   return (
@@ -273,6 +299,7 @@ export default function PluginTable({
         loading={loading}
         pagination={false}
         scroll={{ x: 1300, y: 'calc(100vh - 340px)' }}
+        onChange={handleTableChange}
         locale={{
           emptyText: (
             <Empty

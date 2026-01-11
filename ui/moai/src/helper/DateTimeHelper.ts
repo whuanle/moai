@@ -84,4 +84,25 @@ export const formatRelativeTime = (dateTimeString: string | null | undefined): s
 
     const diffInYears = Math.floor(diffInMonths / 12);
     return `${diffInYears}年前`;
+};
+
+/**
+ * Formats a JSON datetime string to "yyyy-MM-dd HH:mm:ss" format
+ * @param dateTimeString - The datetime string in JSON format (e.g. "2025-05-13T20:14:30.480838+08:00")
+ * @returns Formatted string like "2025-05-13 20:14:30" or empty string if invalid input
+ */
+export const formatDateTimeStandard = (dateTimeString: string | null | undefined): string => {
+    const date = parseJsonDateTime(dateTimeString);
+    if (!date) {
+        return '';
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }; 

@@ -35,6 +35,7 @@ import FeishuListPage from "./components/wiki/plugins/feishu/FeishuListPage";
 import FeishuDetailPage from "./components/wiki/plugins/feishu/FeishuDetailPage";
 import BatchListPage from "./components/wiki/BatchListPage";
 import OpenApiListPage from "./components/wiki/plugins/openapi/OpenApiListPage";
+import PaddleocrPage from "./components/wiki/plugins/paddleocr/PaddleocrPage";
 import TeamListPage from "./components/team/TeamListPage";
 import TeamLayout from "./components/team/TeamLayout";
 import TeamMembers from "./components/team/TeamMembers";
@@ -123,6 +124,7 @@ function App() {
                 <Route path="plugin/feishu/:configId" element={<FeishuDetailPage />} />
                 <Route path="plugin/feishu" element={<FeishuListPage />} />
                 <Route path="plugin/openapi" element={<OpenApiListPage />} />
+                <Route path="plugin/paddleocr" element={<PaddleocrPage />} />
                 <Route path="plugin/mcp" element={<McpConfigPage />} />
                 <Route path="batch" element={<BatchListPage />} />
               </Route>

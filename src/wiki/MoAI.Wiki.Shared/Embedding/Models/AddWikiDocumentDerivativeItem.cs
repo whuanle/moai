@@ -7,7 +7,7 @@ namespace MoAI.Wiki.DocumentEmbedding.Models;
 /// <summary>
 /// 切片元数据.
 /// </summary>
-public class AddWikiDocumentDerivativeItem : IModelValidator<AddWikiDocumentDerivativeItem>
+public class AddWikiDocumentMetadataItem : IModelValidator<AddWikiDocumentMetadataItem>
 {
     /// <summary>
     /// 关联的切片 id.
@@ -17,17 +17,17 @@ public class AddWikiDocumentDerivativeItem : IModelValidator<AddWikiDocumentDeri
     /// <summary>
     /// 元数据类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
     /// </summary>
-    public ParagrahProcessorMetadataType DerivativeType { get; init; }
+    public ParagrahProcessorMetadataType MetadataType { get; init; }
 
     /// <summary>
     /// 提问/提纲/摘要内容.
     /// </summary>
-    public string DerivativeContent { get; init; } = default!;
+    public string MetadataContent { get; init; } = default!;
 
     /// <inheritdoc/>
-    public static void Validate(AbstractValidator<AddWikiDocumentDerivativeItem> validate)
+    public static void Validate(AbstractValidator<AddWikiDocumentMetadataItem> validate)
     {
         validate.RuleFor(x => x.ChunkId).GreaterThan(0);
-        validate.RuleFor(x => x.DerivativeContent).NotEmpty();
+        validate.RuleFor(x => x.MetadataContent).NotEmpty();
     }
 }

@@ -17,8 +17,8 @@ export default function PluginCustomPage() {
     contextHolder: dataContextHolder,
     allPluginList, pluginList, loading, searchName, setSearchName,
     filterType, setFilterType, selectedClassify, classifyList,
-    pluginCountByClassify, currentUser, fetchPluginList, fetchAllPluginList,
-    handleClassifySelect, handleResetFilters,
+    pluginCountByClassify, currentUser, sortState, setSortState,
+    fetchPluginList, fetchAllPluginList, handleClassifySelect, handleResetFilters,
   } = useCustomPluginData();
 
   // 操作管理
@@ -87,6 +87,8 @@ export default function PluginCustomPage() {
             loading={loading}
             classifyList={classifyList}
             currentUserId={currentUser?.userId}
+            sortState={sortState}
+            onSortChange={setSortState}
             onView={actions.viewFunctions}
             onEdit={actions.openEditModal}
             onDelete={actions.deletePlugin}

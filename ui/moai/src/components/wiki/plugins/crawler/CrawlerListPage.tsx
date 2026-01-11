@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Card, Button, Table, Tag, Space, message, Spin, Popconfirm, Modal, Typography, Form, Input, Switch, InputNumber } from 'antd';
-import { PlusOutlined, ReloadOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import {
+  Button, Table, Tag, Space, message, Popconfirm, Modal,
+  Form, Input, Switch, InputNumber, Row, Col
+} from 'antd';
+import {
+  PlusOutlined, ReloadOutlined, DeleteOutlined, EyeOutlined
+} from '@ant-design/icons';
 import { GetApiClient } from '../../../ServiceClient';
-import { 
+import {
   QueryWikiCrawlerPluginConfigListCommand,
   QueryWikiCrawlerPluginConfigListCommandResponse,
   WikiCrawlerPluginConfigSimpleItem,
@@ -13,19 +18,20 @@ import {
   WorkerStateObject
 } from '../../../../apiClient/models';
 import { proxyFormRequestError, proxyRequestError } from '../../../../helper/RequestError';
+import '../../../../styles/theme.css';
+import { formatDateTimeStandard } from '../../../../helper/DateTimeHelper';
 
-const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 export default function CrawlerListPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const wikiId = id ? parseInt(id) : undefined;
-  
+
   const [loading, setLoading] = useState(false);
   const [configs, setConfigs] = useState<WikiCrawlerPluginConfigSimpleItem[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
-  
+
   // 创建 Modal 相关状态
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -45,9 +51,9 @@ export default function CrawlerListPage() {
         wikiId: wikiId,
       };
 
-      const response: QueryWikiCrawlerPluginConfigListCommandResponse | undefined = 
+      const response: QueryWikiCrawlerPluginConfigListCommandResponse | undefined =
         await client.api.wiki.plugin.crawler.config_list.post(requestBody);
-      
+
       if (response?.items) {
         setConfigs(response.items);
       } else {
@@ -61,14 +67,12 @@ export default function CrawlerListPage() {
     }
   };
 
-  // 页面初始化
   useEffect(() => {
     if (wikiId) {
       fetchConfigList();
     }
   }, [wikiId]);
 
-  // 处理创建配置
   const handleCreate = () => {
     form.resetFields();
     form.setFieldsValue({
@@ -81,16 +85,14 @@ export default function CrawlerListPage() {
     setModalVisible(true);
   };
 
-  // 处理保存配置
   const handleSave = async () => {
     try {
       await form.validateFields();
       const values = form.getFieldsValue();
-      
+
       setSaving(true);
       const client = GetApiClient();
 
-      // 创建配置
       const addBody: AddWikiCrawlerConfigCommand = {
         wikiId: wikiId || 0,
         title: values.title,
@@ -117,14 +119,13 @@ export default function CrawlerListPage() {
     }
   };
 
-  // 处理删除配置
   const handleDelete = async (record: WikiCrawlerPluginConfigSimpleItem) => {
     try {
       const client = GetApiClient();
       const deleteBody: DeleteWikiPluginConfigCommand = {
         configId: record.configId || 0,
         wikiId: wikiId || 0,
-        isDeleteDocuments: false, // 默认不删除文档
+        isDeleteDocuments: false,
       };
 
       await client.api.wiki.plugin.delete_config.delete(deleteBody);
@@ -136,13 +137,28 @@ export default function CrawlerListPage() {
     }
   };
 
+  // 状态渲染
+  const renderStatus = (state: WorkerState) => {
+    const stateMap: Record<string, { color: string; text: string }> = {
+      [WorkerStateObject.None]: { color: 'default', text: '未开始' },
+      [WorkerStateObject.Wait]: { color: 'gold', text: '等待中' },
+      [WorkerStateObject.Processing]: { color: 'processing', text: '处理中' },
+      [WorkerStateObject.Successful]: { color: 'success', text: '成功' },
+      [WorkerStateObject.Failed]: { color: 'error', text: '失败' },
+      [WorkerStateObject.Cancal]: { color: 'default', text: '已取消' },
+    };
+    const stateInfo = stateMap[state || ''] || { color: 'default', text: '未知' };
+    return <Tag color={stateInfo.color}>{stateInfo.text}</Tag>;
+  };
+
   // 表格列定义
   const columns = [
     {
-      title: '标题',
+      title: '配置名称',
       dataIndex: 'title',
       key: 'title',
-      render: (text: string) => <strong>{text}</strong>,
+      width: 160,
+      ellipsis: true,
     },
     {
       title: '地址',
@@ -155,25 +171,16 @@ export default function CrawlerListPage() {
       title: '状态',
       dataIndex: 'workState',
       key: 'workState',
-      width: 120,
-      render: (state: WorkerState) => {
-        const stateMap: Record<string, { color: string; text: string }> = {
-          [WorkerStateObject.None]: { color: 'default', text: '未开始' },
-          [WorkerStateObject.Wait]: { color: 'default', text: '等待中' },
-          [WorkerStateObject.Processing]: { color: 'processing', text: '处理中' },
-          [WorkerStateObject.Successful]: { color: 'success', text: '成功' },
-          [WorkerStateObject.Failed]: { color: 'error', text: '失败' },
-          [WorkerStateObject.Cancal]: { color: 'default', text: '已取消' },
-        };
-        const stateInfo = stateMap[state || ''] || { color: 'default', text: '未知' };
-        return <Tag color={stateInfo.color}>{stateInfo.text}</Tag>;
-      },
+      width: 150,
+      align: 'center' as const,
+      render: renderStatus,
     },
     {
-      title: '页面数量',
+      title: '页面数',
       dataIndex: 'pageCount',
       key: 'pageCount',
-      width: 100,
+      width: 80,
+      align: 'center' as const,
       render: (count: number) => count || 0,
     },
     {
@@ -184,55 +191,52 @@ export default function CrawlerListPage() {
       render: (text: string) => text || '-',
     },
     {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: 180,
-      render: (time: string) => time ? new Date(time).toLocaleString() : '-',
-    },
-    {
       title: '创建人',
       dataIndex: 'createUserName',
       key: 'createUserName',
-      render: (name: string) => name || '-',
+      width: 150,
+      render: (text: string) => text || '-',
     },
     {
       title: '更新时间',
       dataIndex: 'updateTime',
       key: 'updateTime',
-      width: 180,
-      render: (time: string) => time ? new Date(time).toLocaleString() : '-',
+      width: 200,
+      render: (text: string) => formatDateTimeStandard(text),
     },
     {
       title: '更新人',
       dataIndex: 'updateUserName',
       key: 'updateUserName',
-      render: (name: string) => name || '-',
+      width: 150,
+      render: (text: string) => text || '-',
     },
     {
       title: '操作',
       key: 'action',
-      width: 150,
-      render: (_: any, record: WikiCrawlerPluginConfigSimpleItem) => (
+      width: 200,
+      fixed: 'right' as const,
+      render: (_: unknown, record: WikiCrawlerPluginConfigSimpleItem) => (
         <Space size="middle">
-          <Button 
-            type="link" 
-            size="small" 
+          <Button
+            type="text"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/app/wiki/${wikiId}/plugin/crawler/${record.configId}`)}
           >
-            查看
+            详情
           </Button>
           <Popconfirm
             title="确认删除"
-            description="确定要删除这个爬虫配置吗？"
+            description="删除后不可恢复，确定要删除吗？"
             onConfirm={() => handleDelete(record)}
             okText="确定"
             cancelText="取消"
+            placement="topRight"
           >
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type="text"
+              size="small"
               danger
               icon={<DeleteOutlined />}
             >
@@ -246,53 +250,53 @@ export default function CrawlerListPage() {
 
   if (!wikiId) {
     return (
-      <Card>
-        <Text type="secondary">缺少知识库ID</Text>
-      </Card>
+      <div className="moai-empty">
+        <span style={{ color: '#999' }}>缺少知识库ID</span>
+      </div>
     );
   }
 
   return (
-    <div>
+    <div className="page-container">
       {contextHolder}
-      
-      {/* 头部操作区域 */}
-      <Card>
-        <Space>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+
+      {/* 页面标题区域 */}
+      <div className="moai-page-header">
+        <h1 className="moai-page-title">网页爬虫配置</h1>
+        <p className="moai-page-subtitle">管理知识库的网页爬虫任务，自动抓取网页内容并导入知识库</p>
+      </div>
+
+      {/* 工具栏 */}
+      <div className="moai-toolbar">
+        <div className="moai-toolbar-left">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={handleCreate}
           >
             新增爬虫配置
           </Button>
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={fetchConfigList} 
+        </div>
+        <div className="moai-toolbar-right">
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchConfigList}
             loading={loading}
           >
             刷新
           </Button>
-        </Space>
-      </Card>
+        </div>
+      </div>
 
       {/* 配置列表 */}
-      <Card style={{ marginTop: 16 }}>
-        <Spin spinning={loading}>
-          <Table
-            columns={columns}
-            dataSource={configs}
-            rowKey="configId"
-            pagination={{
-              total: configs.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条记录`,
-            }}
-          />
-        </Spin>
-      </Card>
+      <Table
+        columns={columns}
+        dataSource={configs}
+        rowKey="configId"
+        loading={loading}
+        scroll={{ x: 1100 }}
+        pagination={false}
+      />
 
       {/* 创建 Modal */}
       <Modal
@@ -301,95 +305,110 @@ export default function CrawlerListPage() {
         onCancel={() => setModalVisible(false)}
         onOk={handleSave}
         confirmLoading={saving}
-        width={800}
+        width={720}
         destroyOnClose
+        maskClosable={false}
+        closable={false}
       >
         <Form
           form={form}
           layout="vertical"
+          style={{ marginTop: 16 }}
         >
           <Form.Item
             name="title"
-            label="标题"
-            rules={[{ required: true, message: '请输入标题' }]}
+            label="配置名称"
+            rules={[{ required: true, message: '请输入配置名称' }]}
           >
-            <Input placeholder="请输入配置标题" />
+            <Input placeholder="请输入配置名称，便于识别" />
           </Form.Item>
 
           <Form.Item
             name="address"
-            label="页面地址"
-            rules={[{ required: true, message: '请输入页面地址' }]}
+            label="目标网址"
+            rules={[{ required: true, message: '请输入目标网址' }]}
           >
-            <Input placeholder="请输入要爬取的页面地址" />
+            <Input placeholder="请输入要爬取的网页地址，如 https://example.com/docs" />
           </Form.Item>
 
-          <Form.Item
-            name="isCrawlOther"
-            label="是否抓取其他页面"
-            tooltip="会自动查找这个页面或对应目录下的其它页面"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
-          <Form.Item
-            name="isOverExistPage"
-            label="是否覆盖已爬取页面"
-            tooltip="如果开启，将覆盖已经爬取过的页面"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="isCrawlOther"
+                label="抓取关联页面"
+                tooltip="开启后会自动查找并抓取该页面链接的其他页面"
+                valuePropName="checked"
+              >
+                <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="isOverExistPage"
+                label="覆盖已有页面"
+                tooltip="开启后会覆盖已经爬取过的相同页面"
+                valuePropName="checked"
+              >
+                <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="limitAddress"
-            label="限制地址"
-            tooltip="限制自动爬取的网页都在该路径之下，limitAddress跟address必须具有相同域名"
+            label="限制地址范围"
+            tooltip="限制自动爬取的网页都在该路径之下，需与目标网址具有相同域名"
           >
-            <Input placeholder="可选：限制爬取的地址范围" />
+            <Input placeholder="可选，如 https://example.com/docs/" />
           </Form.Item>
 
-          <Form.Item
-            name="limitMaxCount"
-            label="最大抓取数量"
-            rules={[{ required: true, message: '请输入最大抓取数量' }]}
-          >
-            <InputNumber 
-              min={1} 
-              placeholder="最大抓取数量" 
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="limitMaxCount"
+                label="最大抓取数量"
+                rules={[{ required: true, message: '请输入最大抓取数量' }]}
+              >
+                <InputNumber
+                  min={1}
+                  max={10000}
+                  placeholder="最大抓取页面数"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="timeOutSecond"
+                label="超时时间（秒）"
+                rules={[{ required: true, message: '请输入超时时间' }]}
+              >
+                <InputNumber
+                  min={5}
+                  max={300}
+                  placeholder="单页超时时间"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="selector"
-            label="选择器"
-            tooltip="CSS选择器，用于定位要抓取的内容"
+            label="CSS 选择器"
+            tooltip="用于定位要抓取的内容区域，如 article、.content 等"
           >
-            <Input placeholder="可选：CSS选择器" />
-          </Form.Item>
-
-          <Form.Item
-            name="timeOutSecond"
-            label="超时时间（秒）"
-            rules={[{ required: true, message: '请输入超时时间' }]}
-          >
-            <InputNumber 
-              min={1} 
-              placeholder="超时时间（秒）" 
-              style={{ width: '100%' }}
-            />
+            <Input placeholder="可选，如 article、.main-content" />
           </Form.Item>
 
           <Form.Item
             name="userAgent"
             label="User Agent"
-            tooltip="可选：自定义User Agent"
+            tooltip="自定义请求的 User Agent 标识"
           >
-            <TextArea 
-              rows={2} 
-              placeholder="可选：自定义User Agent" 
+            <TextArea
+              rows={2}
+              placeholder="可选，自定义 User Agent"
             />
           </Form.Item>
         </Form>
@@ -397,4 +416,3 @@ export default function CrawlerListPage() {
     </div>
   );
 }
-

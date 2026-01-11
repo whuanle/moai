@@ -29,15 +29,15 @@ export interface AddWikiCrawlerConfigCommand extends Parsable, WikiCrawlerConfig
 /**
  * 批量增加元数据.
  */
-export interface AddWikiDocumentChunkDerivativeCommand extends Parsable {
-    /**
-     * 要处理的文本块的 chunkId 和内容.
-     */
-    derivatives?: AddWikiDocumentDerivativeItem[] | null;
+export interface AddWikiDocumentChunkMetadataCommand extends Parsable {
     /**
      * 文档id.
      */
     documentId?: number | null;
+    /**
+     * 要处理的文本块的 chunkId 和内容.
+     */
+    metadatas?: AddWikiDocumentMetadataItem[] | null;
     /**
      * 知识库id.
      */
@@ -48,13 +48,13 @@ export interface AddWikiDocumentChunkDerivativeCommand extends Parsable {
  */
 export interface AddWikiDocumentChunksCommand extends Parsable {
     /**
-     * 元数据.
-     */
-    derivatives?: WikiDocumentDerivativeItem[] | null;
-    /**
      * 知识库 id.
      */
     documentId?: number | null;
+    /**
+     * 元数据.
+     */
+    metadatas?: WikiDocumentMetadataItem[] | null;
     /**
      * 分块顺序.
      */
@@ -71,7 +71,7 @@ export interface AddWikiDocumentChunksCommand extends Parsable {
 /**
  * 切片元数据.
  */
-export interface AddWikiDocumentDerivativeItem extends Parsable {
+export interface AddWikiDocumentMetadataItem extends Parsable {
     /**
      * 关联的切片 id.
      */
@@ -79,11 +79,11 @@ export interface AddWikiDocumentDerivativeItem extends Parsable {
     /**
      * 提问/提纲/摘要内容.
      */
-    derivativeContent?: string | null;
+    metadataContent?: string | null;
     /**
      * 元数据类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
      */
-    derivativeType?: ParagrahProcessorMetadataType | null;
+    metadataType?: ParagrahProcessorMetadataType | null;
 }
 /**
  * 飞书配置.
@@ -607,11 +607,15 @@ export interface ChatContentItem extends Parsable {
  */
 export interface ClearWikiDocumentEmbeddingCommand extends Parsable {
     /**
-     * 不填写时清空整个知识库的文档向量.
+     * 直接按照整个知识库清空.
      */
-    documentId?: number | null;
+    clearAllDocuments?: boolean | null;
     /**
-     * 是否删除索引.
+     * 文档id列表.
+     */
+    documentIds?: number[] | null;
+    /**
+     * 是否自动删除索引，如果知识库没有文档向量了，会自动删除向量数据索引.
      */
     isAutoDeleteIndex?: boolean | null;
     /**
@@ -701,11 +705,11 @@ export function createAddWikiCrawlerConfigCommandFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {AddWikiDocumentChunkDerivativeCommand}
+ * @returns {AddWikiDocumentChunkMetadataCommand}
  */
 // @ts-ignore
-export function createAddWikiDocumentChunkDerivativeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoAddWikiDocumentChunkDerivativeCommand;
+export function createAddWikiDocumentChunkMetadataCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAddWikiDocumentChunkMetadataCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -719,11 +723,11 @@ export function createAddWikiDocumentChunksCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {AddWikiDocumentDerivativeItem}
+ * @returns {AddWikiDocumentMetadataItem}
  */
 // @ts-ignore
-export function createAddWikiDocumentDerivativeItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoAddWikiDocumentDerivativeItem;
+export function createAddWikiDocumentMetadataItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAddWikiDocumentMetadataItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1588,6 +1592,15 @@ export function createImportOpenApiToWikiCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportPaddleocrDocumentCommand}
+ */
+// @ts-ignore
+export function createImportPaddleocrDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportPaddleocrDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {ImportTeamMcpServerPluginCommand}
  */
 // @ts-ignore
@@ -1884,6 +1897,24 @@ export function createOpenAIChatCompletionsUsageFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PaddleocrPluginItem}
+ */
+// @ts-ignore
+export function createPaddleocrPluginItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPaddleocrPluginItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PaddleocrPreviewResult}
+ */
+// @ts-ignore
+export function createPaddleocrPreviewResultFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPaddleocrPreviewResult;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PagedParamter}
  */
 // @ts-ignore
@@ -2041,6 +2072,24 @@ export function createPreUploadOpenApiFilePluginCommandResponseFromDiscriminator
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadTempFileCommand}
+ */
+// @ts-ignore
+export function createPreUploadTempFileCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadTempFileCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadTempFileCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadTempFileCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadTempFileCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreUploadWikiDocumentCommand}
  */
 // @ts-ignore
@@ -2055,6 +2104,15 @@ export function createPreUploadWikiDocumentCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createPreUploadWikiDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPreUploadWikiDocumentCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreviewPaddleocrDocumentCommand}
+ */
+// @ts-ignore
+export function createPreviewPaddleocrDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreviewPaddleocrDocumentCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2480,6 +2538,24 @@ export function createQueryNativePluginTemplateParamsCommandResponseFromDiscrimi
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPaddleocrPluginListCommand}
+ */
+// @ts-ignore
+export function createQueryPaddleocrPluginListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPaddleocrPluginListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPaddleocrPluginListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPaddleocrPluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPaddleocrPluginListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryPluginAuthorizationsCommand}
  */
 // @ts-ignore
@@ -2710,6 +2786,33 @@ export function createQueryTeamPluginListCommandFromDiscriminatorValue(parseNode
 // @ts-ignore
 export function createQueryTeamPluginListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryTeamPluginListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamViewAiModelListCommand}
+ */
+// @ts-ignore
+export function createQueryTeamViewAiModelListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamViewAiModelListCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamViewAiModelListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamViewAiModelListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamViewAiModelListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamWikiBaseListCommand}
+ */
+// @ts-ignore
+export function createQueryTeamWikiBaseListCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamWikiBaseListCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3673,20 +3776,20 @@ export function createWikiDocumentChunksOrderItemFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {WikiDocumentDerivativeItem}
- */
-// @ts-ignore
-export function createWikiDocumentDerivativeItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoWikiDocumentDerivativeItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {WikiDocumentEmbeddingTaskItem}
  */
 // @ts-ignore
 export function createWikiDocumentEmbeddingTaskItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoWikiDocumentEmbeddingTaskItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentMetadataItem}
+ */
+// @ts-ignore
+export function createWikiDocumentMetadataItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentMetadataItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3994,11 +4097,11 @@ export function deserializeIntoAddWikiCrawlerConfigCommand(addWikiCrawlerConfigC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoAddWikiDocumentChunkDerivativeCommand(addWikiDocumentChunkDerivativeCommand: Partial<AddWikiDocumentChunkDerivativeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoAddWikiDocumentChunkMetadataCommand(addWikiDocumentChunkMetadataCommand: Partial<AddWikiDocumentChunkMetadataCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "derivatives": n => { addWikiDocumentChunkDerivativeCommand.derivatives = n.getCollectionOfObjectValues<AddWikiDocumentDerivativeItem>(createAddWikiDocumentDerivativeItemFromDiscriminatorValue); },
-        "documentId": n => { addWikiDocumentChunkDerivativeCommand.documentId = n.getNumberValue(); },
-        "wikiId": n => { addWikiDocumentChunkDerivativeCommand.wikiId = n.getNumberValue(); },
+        "documentId": n => { addWikiDocumentChunkMetadataCommand.documentId = n.getNumberValue(); },
+        "metadatas": n => { addWikiDocumentChunkMetadataCommand.metadatas = n.getCollectionOfObjectValues<AddWikiDocumentMetadataItem>(createAddWikiDocumentMetadataItemFromDiscriminatorValue); },
+        "wikiId": n => { addWikiDocumentChunkMetadataCommand.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -4008,8 +4111,8 @@ export function deserializeIntoAddWikiDocumentChunkDerivativeCommand(addWikiDocu
 // @ts-ignore
 export function deserializeIntoAddWikiDocumentChunksCommand(addWikiDocumentChunksCommand: Partial<AddWikiDocumentChunksCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "derivatives": n => { addWikiDocumentChunksCommand.derivatives = n.getCollectionOfObjectValues<WikiDocumentDerivativeItem>(createWikiDocumentDerivativeItemFromDiscriminatorValue); },
         "documentId": n => { addWikiDocumentChunksCommand.documentId = n.getNumberValue(); },
+        "metadatas": n => { addWikiDocumentChunksCommand.metadatas = n.getCollectionOfObjectValues<WikiDocumentMetadataItem>(createWikiDocumentMetadataItemFromDiscriminatorValue); },
         "order": n => { addWikiDocumentChunksCommand.order = n.getNumberValue(); },
         "text": n => { addWikiDocumentChunksCommand.text = n.getStringValue(); },
         "wikiId": n => { addWikiDocumentChunksCommand.wikiId = n.getNumberValue(); },
@@ -4020,11 +4123,11 @@ export function deserializeIntoAddWikiDocumentChunksCommand(addWikiDocumentChunk
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoAddWikiDocumentDerivativeItem(addWikiDocumentDerivativeItem: Partial<AddWikiDocumentDerivativeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoAddWikiDocumentMetadataItem(addWikiDocumentMetadataItem: Partial<AddWikiDocumentMetadataItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "chunkId": n => { addWikiDocumentDerivativeItem.chunkId = n.getStringValue(); },
-        "derivativeContent": n => { addWikiDocumentDerivativeItem.derivativeContent = n.getStringValue(); },
-        "derivativeType": n => { addWikiDocumentDerivativeItem.derivativeType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
+        "chunkId": n => { addWikiDocumentMetadataItem.chunkId = n.getStringValue(); },
+        "metadataContent": n => { addWikiDocumentMetadataItem.metadataContent = n.getStringValue(); },
+        "metadataType": n => { addWikiDocumentMetadataItem.metadataType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
     }
 }
 /**
@@ -4374,7 +4477,8 @@ export function deserializeIntoChatContentItem(chatContentItem: Partial<ChatCont
 // @ts-ignore
 export function deserializeIntoClearWikiDocumentEmbeddingCommand(clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "documentId": n => { clearWikiDocumentEmbeddingCommand.documentId = n.getNumberValue(); },
+        "clearAllDocuments": n => { clearWikiDocumentEmbeddingCommand.clearAllDocuments = n.getBooleanValue(); },
+        "documentIds": n => { clearWikiDocumentEmbeddingCommand.documentIds = n.getCollectionOfPrimitiveValues<number>(); },
         "isAutoDeleteIndex": n => { clearWikiDocumentEmbeddingCommand.isAutoDeleteIndex = n.getBooleanValue(); },
         "wikiId": n => { clearWikiDocumentEmbeddingCommand.wikiId = n.getNumberValue(); },
     }
@@ -4995,6 +5099,18 @@ export function deserializeIntoImportOpenApiToWikiCommand(importOpenApiToWikiCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoImportPaddleocrDocumentCommand(importPaddleocrDocumentCommand: Partial<ImportPaddleocrDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "markdownContent": n => { importPaddleocrDocumentCommand.markdownContent = n.getStringValue(); },
+        "title": n => { importPaddleocrDocumentCommand.title = n.getStringValue(); },
+        "wikiId": n => { importPaddleocrDocumentCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoImportTeamMcpServerPluginCommand(importTeamMcpServerPluginCommand: Partial<ImportTeamMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoMcpServerPluginConnectionOptions(importTeamMcpServerPluginCommand),
@@ -5334,6 +5450,31 @@ export function deserializeIntoOpenAIChatCompletionsUsage(openAIChatCompletionsU
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPaddleocrPluginItem(paddleocrPluginItem: Partial<PaddleocrPluginItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { paddleocrPluginItem.description = n.getStringValue(); },
+        "pluginId": n => { paddleocrPluginItem.pluginId = n.getNumberValue(); },
+        "pluginName": n => { paddleocrPluginItem.pluginName = n.getStringValue(); },
+        "templatePluginKey": n => { paddleocrPluginItem.templatePluginKey = n.getStringValue(); },
+        "title": n => { paddleocrPluginItem.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPaddleocrPreviewResult(paddleocrPreviewResult: Partial<PaddleocrPreviewResult> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "images": n => { paddleocrPreviewResult.images = n.getCollectionOfPrimitiveValues<string>(); },
+        "texts": n => { paddleocrPreviewResult.texts = n.getCollectionOfPrimitiveValues<string>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPagedParamter(pagedParamter: Partial<PagedParamter> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pageNo": n => { pagedParamter.pageNo = n.getNumberValue(); },
@@ -5549,6 +5690,33 @@ export function deserializeIntoPreUploadOpenApiFilePluginCommandResponse(preUplo
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPreUploadTempFileCommand(preUploadTempFileCommand: Partial<PreUploadTempFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadTempFileCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadTempFileCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadTempFileCommand.fileSize = n.getNumberValue(); },
+        "mD5": n => { preUploadTempFileCommand.mD5 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadTempFileCommandResponse(preUploadTempFileCommandResponse: Partial<PreUploadTempFileCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadTempFileCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadTempFileCommandResponse.fileId = n.getNumberValue(); },
+        "isExist": n => { preUploadTempFileCommandResponse.isExist = n.getBooleanValue(); },
+        "objectKey": n => { preUploadTempFileCommandResponse.objectKey = n.getStringValue(); },
+        "uploadUrl": n => { preUploadTempFileCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPreUploadWikiDocumentCommand(preUploadWikiDocumentCommand: Partial<PreUploadWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "contentType": n => { preUploadWikiDocumentCommand.contentType = n.getStringValue(); },
@@ -5569,6 +5737,19 @@ export function deserializeIntoPreUploadWikiDocumentCommandResponse(preUploadWik
         "fileId": n => { preUploadWikiDocumentCommandResponse.fileId = n.getNumberValue(); },
         "isExist": n => { preUploadWikiDocumentCommandResponse.isExist = n.getBooleanValue(); },
         "uploadUrl": n => { preUploadWikiDocumentCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreviewPaddleocrDocumentCommand(previewPaddleocrDocumentCommand: Partial<PreviewPaddleocrDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "config": n => { previewPaddleocrDocumentCommand.config = n.getStringValue(); },
+        "fileId": n => { previewPaddleocrDocumentCommand.fileId = n.getNumberValue(); },
+        "pluginId": n => { previewPaddleocrDocumentCommand.pluginId = n.getNumberValue(); },
+        "wikiId": n => { previewPaddleocrDocumentCommand.wikiId = n.getNumberValue(); },
     }
 }
 /**
@@ -5928,6 +6109,7 @@ export function deserializeIntoQueryCustomPluginBaseListCommand(queryCustomPlugi
         "classifyId": n => { queryCustomPluginBaseListCommand.classifyId = n.getNumberValue(); },
         "isPublic": n => { queryCustomPluginBaseListCommand.isPublic = n.getBooleanValue(); },
         "name": n => { queryCustomPluginBaseListCommand.name = n.getStringValue(); },
+        "orderByFields": n => { queryCustomPluginBaseListCommand.orderByFields = n.getCollectionOfObjectValues<KeyValueBool>(createKeyValueBoolFromDiscriminatorValue); },
         "type": n => { queryCustomPluginBaseListCommand.type = n.getEnumValue<PluginType>(PluginTypeObject); },
     }
 }
@@ -6115,6 +6297,26 @@ export function deserializeIntoQueryNativePluginTemplateParamsCommand(queryNativ
 export function deserializeIntoQueryNativePluginTemplateParamsCommandResponse(queryNativePluginTemplateParamsCommandResponse: Partial<QueryNativePluginTemplateParamsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoNativePluginTemplateInfo(queryNativePluginTemplateParamsCommandResponse),
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPaddleocrPluginListCommand(queryPaddleocrPluginListCommand: Partial<QueryPaddleocrPluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "wikiId": n => { queryPaddleocrPluginListCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPaddleocrPluginListCommandResponse(queryPaddleocrPluginListCommandResponse: Partial<QueryPaddleocrPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPaddleocrPluginListCommandResponse.items = n.getCollectionOfObjectValues<PaddleocrPluginItem>(createPaddleocrPluginItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -6438,6 +6640,38 @@ export function deserializeIntoQueryTeamPluginListCommandResponse(queryTeamPlugi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryTeamViewAiModelListCommand(queryTeamViewAiModelListCommand: Partial<QueryTeamViewAiModelListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelType": n => { queryTeamViewAiModelListCommand.aiModelType = n.getEnumValue<AiModelType>(AiModelTypeObject); },
+        "wikiId": n => { queryTeamViewAiModelListCommand.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamViewAiModelListCommandResponse(queryTeamViewAiModelListCommandResponse: Partial<QueryTeamViewAiModelListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModels": n => { queryTeamViewAiModelListCommandResponse.aiModels = n.getCollectionOfObjectValues<PublicModelInfo>(createPublicModelInfoFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamWikiBaseListCommand(queryTeamWikiBaseListCommand: Partial<QueryTeamWikiBaseListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "orderByFields": n => { queryTeamWikiBaseListCommand.orderByFields = n.getCollectionOfObjectValues<KeyValueBool>(createKeyValueBoolFromDiscriminatorValue); },
+        "teamId": n => { queryTeamWikiBaseListCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryUserBindAccountCommandResponse(queryUserBindAccountCommandResponse: Partial<QueryUserBindAccountCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryUserBindAccountCommandResponse.items = n.getCollectionOfObjectValues<QueryUserBindAccountCommandResponseItem>(createQueryUserBindAccountCommandResponseItemFromDiscriminatorValue); },
@@ -6531,8 +6765,9 @@ export function deserializeIntoQueryWikiBaseListCommand(queryWikiBaseListCommand
     return {
         "contextUserId": n => { queryWikiBaseListCommand.contextUserId = n.getNumberValue(); },
         "contextUserType": n => { queryWikiBaseListCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "isInTeam": n => { queryWikiBaseListCommand.isInTeam = n.getBooleanValue(); },
         "isOwn": n => { queryWikiBaseListCommand.isOwn = n.getBooleanValue(); },
-        "teamId": n => { queryWikiBaseListCommand.teamId = n.getNumberValue(); },
+        "orderByFields": n => { queryWikiBaseListCommand.orderByFields = n.getCollectionOfObjectValues<KeyValueBool>(createKeyValueBoolFromDiscriminatorValue); },
     }
 }
 /**
@@ -6653,10 +6888,13 @@ export function deserializeIntoQueryWikiDocumentInfoCommand(queryWikiDocumentInf
 export function deserializeIntoQueryWikiDocumentInfoCommandResponse(queryWikiDocumentInfoCommandResponse: Partial<QueryWikiDocumentInfoCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryWikiDocumentInfoCommandResponse),
+        "chunkCount": n => { queryWikiDocumentInfoCommandResponse.chunkCount = n.getNumberValue(); },
         "contentType": n => { queryWikiDocumentInfoCommandResponse.contentType = n.getStringValue(); },
         "documentId": n => { queryWikiDocumentInfoCommandResponse.documentId = n.getNumberValue(); },
         "fileName": n => { queryWikiDocumentInfoCommandResponse.fileName = n.getStringValue(); },
         "fileSize": n => { queryWikiDocumentInfoCommandResponse.fileSize = n.getNumberValue(); },
+        "isEmbedding": n => { queryWikiDocumentInfoCommandResponse.isEmbedding = n.getBooleanValue(); },
+        "metedataCount": n => { queryWikiDocumentInfoCommandResponse.metedataCount = n.getNumberValue(); },
         "partionConfig": n => { queryWikiDocumentInfoCommandResponse.partionConfig = n.getObjectValue<DocumentTextPartionConfig>(createDocumentTextPartionConfigFromDiscriminatorValue); },
     }
 }
@@ -6670,6 +6908,8 @@ export function deserializeIntoQueryWikiDocumentListCommand(queryWikiDocumentLis
         ...deserializeIntoPagedParamter(queryWikiDocumentListCommand),
         "excludeFileTypes": n => { queryWikiDocumentListCommand.excludeFileTypes = n.getCollectionOfPrimitiveValues<string>(); },
         "includeFileTypes": n => { queryWikiDocumentListCommand.includeFileTypes = n.getCollectionOfPrimitiveValues<string>(); },
+        "isEmbedding": n => { queryWikiDocumentListCommand.isEmbedding = n.getBooleanValue(); },
+        "orderByFields": n => { queryWikiDocumentListCommand.orderByFields = n.getCollectionOfObjectValues<KeyValueBool>(createKeyValueBoolFromDiscriminatorValue); },
         "query": n => { queryWikiDocumentListCommand.query = n.getStringValue(); },
         "wikiId": n => { queryWikiDocumentListCommand.wikiId = n.getNumberValue(); },
     }
@@ -6692,11 +6932,13 @@ export function deserializeIntoQueryWikiDocumentListCommandResponse(queryWikiDoc
 export function deserializeIntoQueryWikiDocumentListItem(queryWikiDocumentListItem: Partial<QueryWikiDocumentListItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryWikiDocumentListItem),
+        "chunkCount": n => { queryWikiDocumentListItem.chunkCount = n.getNumberValue(); },
         "contentType": n => { queryWikiDocumentListItem.contentType = n.getStringValue(); },
         "documentId": n => { queryWikiDocumentListItem.documentId = n.getNumberValue(); },
         "embedding": n => { queryWikiDocumentListItem.embedding = n.getBooleanValue(); },
         "fileName": n => { queryWikiDocumentListItem.fileName = n.getStringValue(); },
         "fileSize": n => { queryWikiDocumentListItem.fileSize = n.getNumberValue(); },
+        "metedataCount": n => { queryWikiDocumentListItem.metedataCount = n.getNumberValue(); },
     }
 }
 /**
@@ -6775,6 +7017,7 @@ export function deserializeIntoQueryWikiInfoResponse(queryWikiInfoResponse: Part
         "name": n => { queryWikiInfoResponse.name = n.getStringValue(); },
         "role": n => { queryWikiInfoResponse.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
         "teamId": n => { queryWikiInfoResponse.teamId = n.getNumberValue(); },
+        "teamName": n => { queryWikiInfoResponse.teamName = n.getStringValue(); },
         "wikiId": n => { queryWikiInfoResponse.wikiId = n.getNumberValue(); },
     }
 }
@@ -7671,7 +7914,7 @@ export function deserializeIntoWikiCrawlerPluginConfigSimpleItem(wikiCrawlerPlug
 export function deserializeIntoWikiDocumenChunkItem(wikiDocumenChunkItem: Partial<WikiDocumenChunkItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "chunkId": n => { wikiDocumenChunkItem.chunkId = n.getStringValue(); },
-        "derivatives": n => { wikiDocumenChunkItem.derivatives = n.getCollectionOfObjectValues<WikiDocumentDerivativeItem>(createWikiDocumentDerivativeItemFromDiscriminatorValue); },
+        "metadatas": n => { wikiDocumenChunkItem.metadatas = n.getCollectionOfObjectValues<WikiDocumentMetadataItem>(createWikiDocumentMetadataItemFromDiscriminatorValue); },
         "order": n => { wikiDocumenChunkItem.order = n.getNumberValue(); },
         "text": n => { wikiDocumenChunkItem.text = n.getStringValue(); },
     }
@@ -7730,17 +7973,6 @@ export function deserializeIntoWikiDocumentChunksOrderItem(wikiDocumentChunksOrd
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoWikiDocumentDerivativeItem(wikiDocumentDerivativeItem: Partial<WikiDocumentDerivativeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "derivativeContent": n => { wikiDocumentDerivativeItem.derivativeContent = n.getStringValue(); },
-        "derivativeType": n => { wikiDocumentDerivativeItem.derivativeType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoWikiDocumentEmbeddingTaskItem(wikiDocumentEmbeddingTaskItem: Partial<WikiDocumentEmbeddingTaskItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(wikiDocumentEmbeddingTaskItem),
@@ -7753,6 +7985,17 @@ export function deserializeIntoWikiDocumentEmbeddingTaskItem(wikiDocumentEmbeddi
         "message": n => { wikiDocumentEmbeddingTaskItem.message = n.getStringValue(); },
         "state": n => { wikiDocumentEmbeddingTaskItem.state = n.getEnumValue<WorkerState>(WorkerStateObject); },
         "wikiId": n => { wikiDocumentEmbeddingTaskItem.wikiId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiDocumentMetadataItem(wikiDocumentMetadataItem: Partial<WikiDocumentMetadataItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "metadataContent": n => { wikiDocumentMetadataItem.metadataContent = n.getStringValue(); },
+        "metadataType": n => { wikiDocumentMetadataItem.metadataType = n.getEnumValue<ParagrahProcessorMetadataType>(ParagrahProcessorMetadataTypeObject); },
     }
 }
 /**
@@ -8115,6 +8358,23 @@ export interface ImportOpenApiToWikiCommand extends Parsable {
      * json 文件地址.
      */
     openApiSpecUrl?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: number | null;
+}
+/**
+ * 确认导入飞桨 OCR 解析的文档到知识库.
+ */
+export interface ImportPaddleocrDocumentCommand extends Parsable {
+    /**
+     * Markdown 内容.
+     */
+    markdownContent?: string | null;
+    /**
+     * 文档标题.
+     */
+    title?: string | null;
     /**
      * 知识库 id.
      */
@@ -8643,6 +8903,44 @@ export interface OpenAIChatCompletionsUsage extends Parsable {
     totalTokens?: number | null;
 }
 /**
+ * 飞桨 OCR 插件信息.
+ */
+export interface PaddleocrPluginItem extends Parsable {
+    /**
+     * 插件描述.
+     */
+    description?: string | null;
+    /**
+     * 插件 id.
+     */
+    pluginId?: number | null;
+    /**
+     * 插件名称.
+     */
+    pluginName?: string | null;
+    /**
+     * 模板 key (paddleocr_ocr, paddleocr_vl, paddleocr_structure_v3).
+     */
+    templatePluginKey?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+}
+/**
+ * 飞桨 OCR 预览结果.
+ */
+export interface PaddleocrPreviewResult extends Parsable {
+    /**
+     * OCR 处理后的图片列表 (Base64 或 URL).
+     */
+    images?: string[] | null;
+    /**
+     * 解析后的 Markdown 内容.
+     */
+    texts?: string[] | null;
+}
+/**
  * 分页参数.
  */
 export interface PagedParamter extends Parsable {
@@ -8995,6 +9293,52 @@ export interface PreUploadOpenApiFilePluginCommandResponse extends Parsable {
     uploadUrl?: string | null;
 }
 /**
+ * 临时文件预上传命令，生成预签名上传地址.
+ */
+export interface PreUploadTempFileCommand extends Parsable {
+    /**
+     * 文件类型 (MIME Type).
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小 (字节).
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 MD5.
+     */
+    mD5?: string | null;
+}
+/**
+ * 临时文件预上传响应.
+ */
+export interface PreUploadTempFileCommandResponse extends Parsable {
+    /**
+     * 签名过期时间，当 IsExist = true 时为空.
+     */
+    expiration?: string | null;
+    /**
+     * 文件ID.
+     */
+    fileId?: number | null;
+    /**
+     * 文件是否已存在，如果已存在则无需再次上传.
+     */
+    isExist?: boolean | null;
+    /**
+     * 文件 ObjectKey.
+     */
+    objectKey?: string | null;
+    /**
+     * 预签名上传地址，当 IsExist = true 时为空.
+     */
+    uploadUrl?: string | null;
+}
+/**
  * 预上传知识库文件.
  */
 export interface PreUploadWikiDocumentCommand extends Parsable {
@@ -9036,6 +9380,27 @@ export interface PreUploadWikiDocumentCommandResponse extends Parsable {
      * 预签名上传地址，当 IsExist = true 时字段为空.
      */
     uploadUrl?: string | null;
+}
+/**
+ * 预览飞桨 OCR 文档解析结果.
+ */
+export interface PreviewPaddleocrDocumentCommand extends Parsable {
+    /**
+     * 配置，Json 格式.
+     */
+    config?: string | null;
+    /**
+     * 文件id.
+     */
+    fileId?: number | null;
+    /**
+     * 插件 id.
+     */
+    pluginId?: number | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: number | null;
 }
 /**
  * 进行对话，对话时，History 每次做增量传递.
@@ -9623,6 +9988,10 @@ export interface QueryCustomPluginBaseListCommand extends Parsable {
      */
     name?: string | null;
     /**
+     * 排序，支持 PluginName、Title、Type 排序.
+     */
+    orderByFields?: KeyValueBool[] | null;
+    /**
      * 筛选类型，这里只能使用 mcp 或 openapi，不筛选则不填.
      */
     type?: PluginType | null;
@@ -9857,6 +10226,24 @@ export interface QueryNativePluginTemplateParamsCommand extends Parsable {
  * 插件模板参数.
  */
 export interface QueryNativePluginTemplateParamsCommandResponse extends NativePluginTemplateInfo, Parsable {
+}
+/**
+ * 查询可用的飞桨 OCR 插件列表 (公开或被授权的 paddleocr_ocr、paddleocr_vl、paddleocr_structure_v3 插件).
+ */
+export interface QueryPaddleocrPluginListCommand extends Parsable {
+    /**
+     * 知识库 id.
+     */
+    wikiId?: number | null;
+}
+/**
+ * 查询可用的飞桨 OCR 插件列表响应.
+ */
+export interface QueryPaddleocrPluginListCommandResponse extends Parsable {
+    /**
+     * 插件列表.
+     */
+    items?: PaddleocrPluginItem[] | null;
 }
 /**
  * 查询所有插件及其授权的团队列表.
@@ -10302,6 +10689,38 @@ export interface QueryTeamPluginListCommandResponse extends Parsable {
      */
     items?: PluginBaseInfoItem[] | null;
 }
+/**
+ * 按团队角度查询可用的 AI 模型列表（包含公开模型和团队被授权的模型）.
+ */
+export interface QueryTeamViewAiModelListCommand extends Parsable {
+    /**
+     * 筛选模型类型.
+     */
+    aiModelType?: AiModelType | null;
+    /**
+     * 知识库 ID.
+     */
+    wikiId?: number | null;
+}
+export interface QueryTeamViewAiModelListCommandResponse extends Parsable {
+    /**
+     * 模型列表.
+     */
+    aiModels?: PublicModelInfo[] | null;
+}
+/**
+ * 获取团队下的知识库列表.
+ */
+export interface QueryTeamWikiBaseListCommand extends Parsable {
+    /**
+     * 排序，支持 Name、CreateTime、UpdateTime 排序.
+     */
+    orderByFields?: KeyValueBool[] | null;
+    /**
+     * 限制查询某个团队下的知识库.
+     */
+    teamId?: number | null;
+}
 export interface QueryUserBindAccountCommandResponse extends Parsable {
     /**
      * The items property
@@ -10406,13 +10825,17 @@ export interface QueryWikiBaseListCommand extends Parsable {
      */
     contextUserType?: UserType | null;
     /**
+     * 这个知识库所在的团队，自己可以参与协作的，默认 true.
+     */
+    isInTeam?: boolean | null;
+    /**
      * 只查询私有知识库.
      */
     isOwn?: boolean | null;
     /**
-     * 限制查询某个团队下的知识库.
+     * 排序，支持 Name、CreateTime、UpdateTime 排序.
      */
-    teamId?: number | null;
+    orderByFields?: KeyValueBool[] | null;
 }
 /**
  * 查询知识库批处理任务.
@@ -10539,21 +10962,33 @@ export interface QueryWikiDocumentInfoCommand extends Parsable {
  */
 export interface QueryWikiDocumentInfoCommandResponse extends AuditsInfo, Parsable {
     /**
-     * The contentType property
+     * 切片数量.
+     */
+    chunkCount?: number | null;
+    /**
+     * 文件类型.
      */
     contentType?: string | null;
     /**
-     * The documentId property
+     * 文档 id.
      */
     documentId?: number | null;
     /**
-     * The fileName property
+     * 文件名称.
      */
     fileName?: string | null;
     /**
-     * The fileSize property
+     * 文件大小.
      */
     fileSize?: number | null;
+    /**
+     * 是否有向量化内容.
+     */
+    isEmbedding?: boolean | null;
+    /**
+     * 元数据数量.
+     */
+    metedataCount?: number | null;
     /**
      * The partionConfig property
      */
@@ -10572,6 +11007,14 @@ export interface QueryWikiDocumentListCommand extends PagedParamter, Parsable {
      */
     includeFileTypes?: string[] | null;
     /**
+     * 是否已经向量化.
+     */
+    isEmbedding?: boolean | null;
+    /**
+     * 排序，支持 FileName、FileSize、CreateTime、UpdateTime 排序.
+     */
+    orderByFields?: KeyValueBool[] | null;
+    /**
      * 筛选文件名称.
      */
     query?: string | null;
@@ -10582,13 +11025,20 @@ export interface QueryWikiDocumentListCommand extends PagedParamter, Parsable {
 }
 export interface QueryWikiDocumentListCommandResponse extends PagedResultOfQueryWikiDocumentListItem, Parsable {
 }
+/**
+ * 文档信息.
+ */
 export interface QueryWikiDocumentListItem extends AuditsInfo, Parsable {
     /**
-     * The contentType property
+     * 切片数量.
+     */
+    chunkCount?: number | null;
+    /**
+     * 文件类型.
      */
     contentType?: string | null;
     /**
-     * The documentId property
+     * 文档 id.
      */
     documentId?: number | null;
     /**
@@ -10596,13 +11046,17 @@ export interface QueryWikiDocumentListItem extends AuditsInfo, Parsable {
      */
     embedding?: boolean | null;
     /**
-     * The fileName property
+     * 文件名称.
      */
     fileName?: string | null;
     /**
-     * The fileSize property
+     * 文件大小.
      */
     fileSize?: number | null;
+    /**
+     * 元数据数量.
+     */
+    metedataCount?: number | null;
 }
 /**
  * 查询文档任务列表.
@@ -10718,6 +11172,10 @@ export interface QueryWikiInfoResponse extends AuditsInfo, Parsable {
      * 团队 id.
      */
     teamId?: number | null;
+    /**
+     * 团队名称.
+     */
+    teamName?: string | null;
     /**
      * 知识库 id.
      */
@@ -11041,11 +11499,11 @@ export function serializeAddWikiCrawlerConfigCommand(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeAddWikiDocumentChunkDerivativeCommand(writer: SerializationWriter, addWikiDocumentChunkDerivativeCommand: Partial<AddWikiDocumentChunkDerivativeCommand> | undefined | null = {}) : void {
-    if (addWikiDocumentChunkDerivativeCommand) {
-        writer.writeCollectionOfObjectValues<AddWikiDocumentDerivativeItem>("derivatives", addWikiDocumentChunkDerivativeCommand.derivatives, serializeAddWikiDocumentDerivativeItem);
-        writer.writeNumberValue("documentId", addWikiDocumentChunkDerivativeCommand.documentId);
-        writer.writeNumberValue("wikiId", addWikiDocumentChunkDerivativeCommand.wikiId);
+export function serializeAddWikiDocumentChunkMetadataCommand(writer: SerializationWriter, addWikiDocumentChunkMetadataCommand: Partial<AddWikiDocumentChunkMetadataCommand> | undefined | null = {}) : void {
+    if (addWikiDocumentChunkMetadataCommand) {
+        writer.writeNumberValue("documentId", addWikiDocumentChunkMetadataCommand.documentId);
+        writer.writeCollectionOfObjectValues<AddWikiDocumentMetadataItem>("metadatas", addWikiDocumentChunkMetadataCommand.metadatas, serializeAddWikiDocumentMetadataItem);
+        writer.writeNumberValue("wikiId", addWikiDocumentChunkMetadataCommand.wikiId);
     }
 }
 /**
@@ -11055,8 +11513,8 @@ export function serializeAddWikiDocumentChunkDerivativeCommand(writer: Serializa
 // @ts-ignore
 export function serializeAddWikiDocumentChunksCommand(writer: SerializationWriter, addWikiDocumentChunksCommand: Partial<AddWikiDocumentChunksCommand> | undefined | null = {}) : void {
     if (addWikiDocumentChunksCommand) {
-        writer.writeCollectionOfObjectValues<WikiDocumentDerivativeItem>("derivatives", addWikiDocumentChunksCommand.derivatives, serializeWikiDocumentDerivativeItem);
         writer.writeNumberValue("documentId", addWikiDocumentChunksCommand.documentId);
+        writer.writeCollectionOfObjectValues<WikiDocumentMetadataItem>("metadatas", addWikiDocumentChunksCommand.metadatas, serializeWikiDocumentMetadataItem);
         writer.writeNumberValue("order", addWikiDocumentChunksCommand.order);
         writer.writeStringValue("text", addWikiDocumentChunksCommand.text);
         writer.writeNumberValue("wikiId", addWikiDocumentChunksCommand.wikiId);
@@ -11067,11 +11525,11 @@ export function serializeAddWikiDocumentChunksCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeAddWikiDocumentDerivativeItem(writer: SerializationWriter, addWikiDocumentDerivativeItem: Partial<AddWikiDocumentDerivativeItem> | undefined | null = {}) : void {
-    if (addWikiDocumentDerivativeItem) {
-        writer.writeStringValue("chunkId", addWikiDocumentDerivativeItem.chunkId);
-        writer.writeStringValue("derivativeContent", addWikiDocumentDerivativeItem.derivativeContent);
-        writer.writeEnumValue<ParagrahProcessorMetadataType>("derivativeType", addWikiDocumentDerivativeItem.derivativeType);
+export function serializeAddWikiDocumentMetadataItem(writer: SerializationWriter, addWikiDocumentMetadataItem: Partial<AddWikiDocumentMetadataItem> | undefined | null = {}) : void {
+    if (addWikiDocumentMetadataItem) {
+        writer.writeStringValue("chunkId", addWikiDocumentMetadataItem.chunkId);
+        writer.writeStringValue("metadataContent", addWikiDocumentMetadataItem.metadataContent);
+        writer.writeEnumValue<ParagrahProcessorMetadataType>("metadataType", addWikiDocumentMetadataItem.metadataType);
     }
 }
 /**
@@ -11421,7 +11879,8 @@ export function serializeChatContentItem(writer: SerializationWriter, chatConten
 // @ts-ignore
 export function serializeClearWikiDocumentEmbeddingCommand(writer: SerializationWriter, clearWikiDocumentEmbeddingCommand: Partial<ClearWikiDocumentEmbeddingCommand> | undefined | null = {}) : void {
     if (clearWikiDocumentEmbeddingCommand) {
-        writer.writeNumberValue("documentId", clearWikiDocumentEmbeddingCommand.documentId);
+        writer.writeBooleanValue("clearAllDocuments", clearWikiDocumentEmbeddingCommand.clearAllDocuments);
+        writer.writeCollectionOfPrimitiveValues<number>("documentIds", clearWikiDocumentEmbeddingCommand.documentIds);
         writer.writeBooleanValue("isAutoDeleteIndex", clearWikiDocumentEmbeddingCommand.isAutoDeleteIndex);
         writer.writeNumberValue("wikiId", clearWikiDocumentEmbeddingCommand.wikiId);
     }
@@ -12042,6 +12501,18 @@ export function serializeImportOpenApiToWikiCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeImportPaddleocrDocumentCommand(writer: SerializationWriter, importPaddleocrDocumentCommand: Partial<ImportPaddleocrDocumentCommand> | undefined | null = {}) : void {
+    if (importPaddleocrDocumentCommand) {
+        writer.writeStringValue("markdownContent", importPaddleocrDocumentCommand.markdownContent);
+        writer.writeStringValue("title", importPaddleocrDocumentCommand.title);
+        writer.writeNumberValue("wikiId", importPaddleocrDocumentCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeImportTeamMcpServerPluginCommand(writer: SerializationWriter, importTeamMcpServerPluginCommand: Partial<ImportTeamMcpServerPluginCommand> | undefined | null = {}) : void {
     if (importTeamMcpServerPluginCommand) {
         serializeMcpServerPluginConnectionOptions(writer, importTeamMcpServerPluginCommand)
@@ -12381,6 +12852,31 @@ export function serializeOpenAIChatCompletionsUsage(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePaddleocrPluginItem(writer: SerializationWriter, paddleocrPluginItem: Partial<PaddleocrPluginItem> | undefined | null = {}) : void {
+    if (paddleocrPluginItem) {
+        writer.writeStringValue("description", paddleocrPluginItem.description);
+        writer.writeNumberValue("pluginId", paddleocrPluginItem.pluginId);
+        writer.writeStringValue("pluginName", paddleocrPluginItem.pluginName);
+        writer.writeStringValue("templatePluginKey", paddleocrPluginItem.templatePluginKey);
+        writer.writeStringValue("title", paddleocrPluginItem.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePaddleocrPreviewResult(writer: SerializationWriter, paddleocrPreviewResult: Partial<PaddleocrPreviewResult> | undefined | null = {}) : void {
+    if (paddleocrPreviewResult) {
+        writer.writeCollectionOfPrimitiveValues<string>("images", paddleocrPreviewResult.images);
+        writer.writeCollectionOfPrimitiveValues<string>("texts", paddleocrPreviewResult.texts);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePagedParamter(writer: SerializationWriter, pagedParamter: Partial<PagedParamter> | undefined | null = {}) : void {
     if (pagedParamter) {
         writer.writeNumberValue("pageNo", pagedParamter.pageNo);
@@ -12596,6 +13092,33 @@ export function serializePreUploadOpenApiFilePluginCommandResponse(writer: Seria
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePreUploadTempFileCommand(writer: SerializationWriter, preUploadTempFileCommand: Partial<PreUploadTempFileCommand> | undefined | null = {}) : void {
+    if (preUploadTempFileCommand) {
+        writer.writeStringValue("contentType", preUploadTempFileCommand.contentType);
+        writer.writeStringValue("fileName", preUploadTempFileCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadTempFileCommand.fileSize);
+        writer.writeStringValue("mD5", preUploadTempFileCommand.mD5);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadTempFileCommandResponse(writer: SerializationWriter, preUploadTempFileCommandResponse: Partial<PreUploadTempFileCommandResponse> | undefined | null = {}) : void {
+    if (preUploadTempFileCommandResponse) {
+        writer.writeStringValue("expiration", preUploadTempFileCommandResponse.expiration);
+        writer.writeNumberValue("fileId", preUploadTempFileCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadTempFileCommandResponse.isExist);
+        writer.writeStringValue("objectKey", preUploadTempFileCommandResponse.objectKey);
+        writer.writeStringValue("uploadUrl", preUploadTempFileCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePreUploadWikiDocumentCommand(writer: SerializationWriter, preUploadWikiDocumentCommand: Partial<PreUploadWikiDocumentCommand> | undefined | null = {}) : void {
     if (preUploadWikiDocumentCommand) {
         writer.writeStringValue("contentType", preUploadWikiDocumentCommand.contentType);
@@ -12616,6 +13139,19 @@ export function serializePreUploadWikiDocumentCommandResponse(writer: Serializat
         writer.writeNumberValue("fileId", preUploadWikiDocumentCommandResponse.fileId);
         writer.writeBooleanValue("isExist", preUploadWikiDocumentCommandResponse.isExist);
         writer.writeStringValue("uploadUrl", preUploadWikiDocumentCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreviewPaddleocrDocumentCommand(writer: SerializationWriter, previewPaddleocrDocumentCommand: Partial<PreviewPaddleocrDocumentCommand> | undefined | null = {}) : void {
+    if (previewPaddleocrDocumentCommand) {
+        writer.writeStringValue("config", previewPaddleocrDocumentCommand.config);
+        writer.writeNumberValue("fileId", previewPaddleocrDocumentCommand.fileId);
+        writer.writeNumberValue("pluginId", previewPaddleocrDocumentCommand.pluginId);
+        writer.writeNumberValue("wikiId", previewPaddleocrDocumentCommand.wikiId);
     }
 }
 /**
@@ -12975,6 +13511,7 @@ export function serializeQueryCustomPluginBaseListCommand(writer: SerializationW
         writer.writeNumberValue("classifyId", queryCustomPluginBaseListCommand.classifyId);
         writer.writeBooleanValue("isPublic", queryCustomPluginBaseListCommand.isPublic);
         writer.writeStringValue("name", queryCustomPluginBaseListCommand.name);
+        writer.writeCollectionOfObjectValues<KeyValueBool>("orderByFields", queryCustomPluginBaseListCommand.orderByFields, serializeKeyValueBool);
         writer.writeEnumValue<PluginType>("type", queryCustomPluginBaseListCommand.type);
     }
 }
@@ -13162,6 +13699,26 @@ export function serializeQueryNativePluginTemplateParamsCommand(writer: Serializ
 export function serializeQueryNativePluginTemplateParamsCommandResponse(writer: SerializationWriter, queryNativePluginTemplateParamsCommandResponse: Partial<QueryNativePluginTemplateParamsCommandResponse> | undefined | null = {}) : void {
     if (queryNativePluginTemplateParamsCommandResponse) {
         serializeNativePluginTemplateInfo(writer, queryNativePluginTemplateParamsCommandResponse)
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPaddleocrPluginListCommand(writer: SerializationWriter, queryPaddleocrPluginListCommand: Partial<QueryPaddleocrPluginListCommand> | undefined | null = {}) : void {
+    if (queryPaddleocrPluginListCommand) {
+        writer.writeNumberValue("wikiId", queryPaddleocrPluginListCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPaddleocrPluginListCommandResponse(writer: SerializationWriter, queryPaddleocrPluginListCommandResponse: Partial<QueryPaddleocrPluginListCommandResponse> | undefined | null = {}) : void {
+    if (queryPaddleocrPluginListCommandResponse) {
+        writer.writeCollectionOfObjectValues<PaddleocrPluginItem>("items", queryPaddleocrPluginListCommandResponse.items, serializePaddleocrPluginItem);
     }
 }
 /**
@@ -13485,6 +14042,38 @@ export function serializeQueryTeamPluginListCommandResponse(writer: Serializatio
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryTeamViewAiModelListCommand(writer: SerializationWriter, queryTeamViewAiModelListCommand: Partial<QueryTeamViewAiModelListCommand> | undefined | null = {}) : void {
+    if (queryTeamViewAiModelListCommand) {
+        writer.writeEnumValue<AiModelType>("aiModelType", queryTeamViewAiModelListCommand.aiModelType);
+        writer.writeNumberValue("wikiId", queryTeamViewAiModelListCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamViewAiModelListCommandResponse(writer: SerializationWriter, queryTeamViewAiModelListCommandResponse: Partial<QueryTeamViewAiModelListCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamViewAiModelListCommandResponse) {
+        writer.writeCollectionOfObjectValues<PublicModelInfo>("aiModels", queryTeamViewAiModelListCommandResponse.aiModels, serializePublicModelInfo);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamWikiBaseListCommand(writer: SerializationWriter, queryTeamWikiBaseListCommand: Partial<QueryTeamWikiBaseListCommand> | undefined | null = {}) : void {
+    if (queryTeamWikiBaseListCommand) {
+        writer.writeCollectionOfObjectValues<KeyValueBool>("orderByFields", queryTeamWikiBaseListCommand.orderByFields, serializeKeyValueBool);
+        writer.writeNumberValue("teamId", queryTeamWikiBaseListCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryUserBindAccountCommandResponse(writer: SerializationWriter, queryUserBindAccountCommandResponse: Partial<QueryUserBindAccountCommandResponse> | undefined | null = {}) : void {
     if (queryUserBindAccountCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryUserBindAccountCommandResponseItem>("items", queryUserBindAccountCommandResponse.items, serializeQueryUserBindAccountCommandResponseItem);
@@ -13578,8 +14167,9 @@ export function serializeQueryWikiBaseListCommand(writer: SerializationWriter, q
     if (queryWikiBaseListCommand) {
         writer.writeNumberValue("contextUserId", queryWikiBaseListCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", queryWikiBaseListCommand.contextUserType);
+        writer.writeBooleanValue("isInTeam", queryWikiBaseListCommand.isInTeam);
         writer.writeBooleanValue("isOwn", queryWikiBaseListCommand.isOwn);
-        writer.writeNumberValue("teamId", queryWikiBaseListCommand.teamId);
+        writer.writeCollectionOfObjectValues<KeyValueBool>("orderByFields", queryWikiBaseListCommand.orderByFields, serializeKeyValueBool);
     }
 }
 /**
@@ -13700,10 +14290,13 @@ export function serializeQueryWikiDocumentInfoCommand(writer: SerializationWrite
 export function serializeQueryWikiDocumentInfoCommandResponse(writer: SerializationWriter, queryWikiDocumentInfoCommandResponse: Partial<QueryWikiDocumentInfoCommandResponse> | undefined | null = {}) : void {
     if (queryWikiDocumentInfoCommandResponse) {
         serializeAuditsInfo(writer, queryWikiDocumentInfoCommandResponse)
+        writer.writeNumberValue("chunkCount", queryWikiDocumentInfoCommandResponse.chunkCount);
         writer.writeStringValue("contentType", queryWikiDocumentInfoCommandResponse.contentType);
         writer.writeNumberValue("documentId", queryWikiDocumentInfoCommandResponse.documentId);
         writer.writeStringValue("fileName", queryWikiDocumentInfoCommandResponse.fileName);
         writer.writeNumberValue("fileSize", queryWikiDocumentInfoCommandResponse.fileSize);
+        writer.writeBooleanValue("isEmbedding", queryWikiDocumentInfoCommandResponse.isEmbedding);
+        writer.writeNumberValue("metedataCount", queryWikiDocumentInfoCommandResponse.metedataCount);
         writer.writeObjectValue<DocumentTextPartionConfig>("partionConfig", queryWikiDocumentInfoCommandResponse.partionConfig, serializeDocumentTextPartionConfig);
     }
 }
@@ -13717,6 +14310,8 @@ export function serializeQueryWikiDocumentListCommand(writer: SerializationWrite
         serializePagedParamter(writer, queryWikiDocumentListCommand)
         writer.writeCollectionOfPrimitiveValues<string>("excludeFileTypes", queryWikiDocumentListCommand.excludeFileTypes);
         writer.writeCollectionOfPrimitiveValues<string>("includeFileTypes", queryWikiDocumentListCommand.includeFileTypes);
+        writer.writeBooleanValue("isEmbedding", queryWikiDocumentListCommand.isEmbedding);
+        writer.writeCollectionOfObjectValues<KeyValueBool>("orderByFields", queryWikiDocumentListCommand.orderByFields, serializeKeyValueBool);
         writer.writeStringValue("query", queryWikiDocumentListCommand.query);
         writer.writeNumberValue("wikiId", queryWikiDocumentListCommand.wikiId);
     }
@@ -13739,11 +14334,13 @@ export function serializeQueryWikiDocumentListCommandResponse(writer: Serializat
 export function serializeQueryWikiDocumentListItem(writer: SerializationWriter, queryWikiDocumentListItem: Partial<QueryWikiDocumentListItem> | undefined | null = {}) : void {
     if (queryWikiDocumentListItem) {
         serializeAuditsInfo(writer, queryWikiDocumentListItem)
+        writer.writeNumberValue("chunkCount", queryWikiDocumentListItem.chunkCount);
         writer.writeStringValue("contentType", queryWikiDocumentListItem.contentType);
         writer.writeNumberValue("documentId", queryWikiDocumentListItem.documentId);
         writer.writeBooleanValue("embedding", queryWikiDocumentListItem.embedding);
         writer.writeStringValue("fileName", queryWikiDocumentListItem.fileName);
         writer.writeNumberValue("fileSize", queryWikiDocumentListItem.fileSize);
+        writer.writeNumberValue("metedataCount", queryWikiDocumentListItem.metedataCount);
     }
 }
 /**
@@ -13822,6 +14419,7 @@ export function serializeQueryWikiInfoResponse(writer: SerializationWriter, quer
         writer.writeStringValue("name", queryWikiInfoResponse.name);
         writer.writeEnumValue<TeamRole>("role", queryWikiInfoResponse.role);
         writer.writeNumberValue("teamId", queryWikiInfoResponse.teamId);
+        writer.writeStringValue("teamName", queryWikiInfoResponse.teamName);
         writer.writeNumberValue("wikiId", queryWikiInfoResponse.wikiId);
     }
 }
@@ -14719,7 +15317,7 @@ export function serializeWikiCrawlerPluginConfigSimpleItem(writer: Serialization
 export function serializeWikiDocumenChunkItem(writer: SerializationWriter, wikiDocumenChunkItem: Partial<WikiDocumenChunkItem> | undefined | null = {}) : void {
     if (wikiDocumenChunkItem) {
         writer.writeStringValue("chunkId", wikiDocumenChunkItem.chunkId);
-        writer.writeCollectionOfObjectValues<WikiDocumentDerivativeItem>("derivatives", wikiDocumenChunkItem.derivatives, serializeWikiDocumentDerivativeItem);
+        writer.writeCollectionOfObjectValues<WikiDocumentMetadataItem>("metadatas", wikiDocumenChunkItem.metadatas, serializeWikiDocumentMetadataItem);
         writer.writeNumberValue("order", wikiDocumenChunkItem.order);
         writer.writeStringValue("text", wikiDocumenChunkItem.text);
     }
@@ -14778,17 +15376,6 @@ export function serializeWikiDocumentChunksOrderItem(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeWikiDocumentDerivativeItem(writer: SerializationWriter, wikiDocumentDerivativeItem: Partial<WikiDocumentDerivativeItem> | undefined | null = {}) : void {
-    if (wikiDocumentDerivativeItem) {
-        writer.writeStringValue("derivativeContent", wikiDocumentDerivativeItem.derivativeContent);
-        writer.writeEnumValue<ParagrahProcessorMetadataType>("derivativeType", wikiDocumentDerivativeItem.derivativeType);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeWikiDocumentEmbeddingTaskItem(writer: SerializationWriter, wikiDocumentEmbeddingTaskItem: Partial<WikiDocumentEmbeddingTaskItem> | undefined | null = {}) : void {
     if (wikiDocumentEmbeddingTaskItem) {
         serializeAuditsInfo(writer, wikiDocumentEmbeddingTaskItem)
@@ -14801,6 +15388,17 @@ export function serializeWikiDocumentEmbeddingTaskItem(writer: SerializationWrit
         writer.writeStringValue("message", wikiDocumentEmbeddingTaskItem.message);
         writer.writeEnumValue<WorkerState>("state", wikiDocumentEmbeddingTaskItem.state);
         writer.writeNumberValue("wikiId", wikiDocumentEmbeddingTaskItem.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiDocumentMetadataItem(writer: SerializationWriter, wikiDocumentMetadataItem: Partial<WikiDocumentMetadataItem> | undefined | null = {}) : void {
+    if (wikiDocumentMetadataItem) {
+        writer.writeStringValue("metadataContent", wikiDocumentMetadataItem.metadataContent);
+        writer.writeEnumValue<ParagrahProcessorMetadataType>("metadataType", wikiDocumentMetadataItem.metadataType);
     }
 }
 /**
@@ -16063,7 +16661,7 @@ export interface WikiDocumenChunkItem extends Parsable {
     /**
      * 元数据.
      */
-    derivatives?: WikiDocumentDerivativeItem[] | null;
+    metadatas?: WikiDocumentMetadataItem[] | null;
     /**
      * 分块顺序.
      */
@@ -16143,19 +16741,6 @@ export interface WikiDocumentChunksOrderItem extends Parsable {
     order?: number | null;
 }
 /**
- * 切片元数据.
- */
-export interface WikiDocumentDerivativeItem extends Parsable {
-    /**
-     * 提问/提纲/摘要内容.
-     */
-    derivativeContent?: string | null;
-    /**
-     * 元数据类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
-     */
-    derivativeType?: ParagrahProcessorMetadataType | null;
-}
-/**
  * 文档列表.
  */
 export interface WikiDocumentEmbeddingTaskItem extends AuditsInfo, Parsable {
@@ -16195,6 +16780,19 @@ export interface WikiDocumentEmbeddingTaskItem extends AuditsInfo, Parsable {
      * 知识库id.
      */
     wikiId?: number | null;
+}
+/**
+ * 切片元数据.
+ */
+export interface WikiDocumentMetadataItem extends Parsable {
+    /**
+     * 提问/提纲/摘要内容.
+     */
+    metadataContent?: string | null;
+    /**
+     * 元数据类型：1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
+     */
+    metadataType?: ParagrahProcessorMetadataType | null;
 }
 /**
  * 切割知识库文档.

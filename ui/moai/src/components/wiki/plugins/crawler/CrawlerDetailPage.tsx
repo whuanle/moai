@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   Card,
@@ -10,11 +10,13 @@ import {
   Spin,
   Typography,
   Switch,
-  Collapse,
   Modal,
   Form,
   Input,
   InputNumber,
+  Row,
+  Col,
+  Descriptions,
 } from "antd";
 import {
   PlayCircleOutlined,
@@ -22,6 +24,7 @@ import {
   ReloadOutlined,
   ArrowLeftOutlined,
   EditOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../../../ServiceClient";
 import {
@@ -40,10 +43,35 @@ import {
   proxyFormRequestError,
 } from "../../../../helper/RequestError";
 import StartTaskConfigModal from "../common/StartTaskConfigModal";
+import "../../../../styles/theme.css";
+import "./CrawlerDetailPage.css";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
-const { Panel } = Collapse;
+
+// 状态映射配置
+const STATE_MAP: Record<string, { color: string; text: string }> = {
+  [WorkerStateObject.None]: { color: "default", text: "未开始" },
+  [WorkerStateObject.Wait]: { color: "gold", text: "等待中" },
+  [WorkerStateObject.Processing]: { color: "processing", text: "处理中" },
+  [WorkerStateObject.Successful]: { color: "success", text: "成功" },
+  [WorkerStateObject.Failed]: { color: "error", text: "失败" },
+  [WorkerStateObject.Cancal]: { color: "default", text: "已取消" },
+};
+
+// 获取状态显示信息
+const getStateInfo = (state: WorkerState | null | undefined) => {
+  if (!state) return { color: "default", text: "未启动" };
+  return STATE_MAP[state] || { color: "default", text: "未知" };
+};
+
+// 格式化文件大小
+const formatFileSize = (size: number | undefined) => {
+  if (!size) return "-";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+};
 
 export default function CrawlerDetailPage() {
   const navigate = useNavigate();
@@ -59,7 +87,7 @@ export default function CrawlerDetailPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true); // 自动刷新开关，默认开启
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 配置相关状态
@@ -71,21 +99,32 @@ export default function CrawlerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [startConfigModalVisible, setStartConfigModalVisible] = useState(false);
 
+  // 统计数据
+  const stats = useMemo(() => {
+    const successCount = pages.filter(
+      (p) => p.state === WorkerStateObject.Successful
+    ).length;
+    const failedCount = pages.filter(
+      (p) => p.state === WorkerStateObject.Failed
+    ).length;
+    const processingCount = pages.filter(
+      (p) =>
+        p.state === WorkerStateObject.Wait ||
+        p.state === WorkerStateObject.Processing
+    ).length;
+    return { successCount, failedCount, processingCount, total: pages.length };
+  }, [pages]);
+
   // 获取配置信息
   const fetchConfig = useCallback(async () => {
-    if (!wikiId || !crawlerConfigId) {
-      return;
-    }
+    if (!wikiId || !crawlerConfigId) return;
 
     setConfigLoading(true);
     try {
       const client = GetApiClient();
       const response: QueryWikiCrawlerConfigCommandResponse | undefined =
         await client.api.wiki.plugin.crawler.config.get({
-          queryParameters: {
-            configId: crawlerConfigId,
-            wikiId: wikiId,
-          },
+          queryParameters: { configId: crawlerConfigId, wikiId },
         });
 
       if (response) {
@@ -93,8 +132,6 @@ export default function CrawlerDetailPage() {
         setConfigTitle(response.title || "");
         setWorkState(response.workState || null);
         setWorkMessage(response.workMessage || "");
-        // 根据 workState 判断是否正在工作
-        // 只在 Processing 状态下才认为是正在工作（用于自动刷新）
         setIsWorking(response.workState === WorkerStateObject.Processing);
       } else {
         setConfig(null);
@@ -111,7 +148,7 @@ export default function CrawlerDetailPage() {
     }
   }, [wikiId, crawlerConfigId, messageApi]);
 
-  // 获取爬虫状态和任务列表
+  // 获取页面任务列表
   const fetchPageState = useCallback(async () => {
     if (!wikiId || !crawlerConfigId) {
       messageApi.error("缺少必要参数");
@@ -119,25 +156,15 @@ export default function CrawlerDetailPage() {
     }
 
     setLoading(true);
-    // 每次请求前先清空列表
     setPages([]);
     try {
       const client = GetApiClient();
       const response: QueryWikiCrawlerPageTasksCommandResponse | undefined =
         await client.api.wiki.plugin.crawler.query_page_state.get({
-          queryParameters: {
-            configId: crawlerConfigId,
-            wikiId: wikiId,
-          },
+          queryParameters: { configId: crawlerConfigId, wikiId },
         });
 
-      if (response) {
-        setPages(response.items || []);
-      } else {
-        setPages([]);
-      }
-
-      // 同时刷新配置信息以获取最新的工作状态
+      setPages(response?.items || []);
       await fetchConfig();
     } catch (error) {
       console.error("获取爬虫状态失败:", error);
@@ -146,11 +173,6 @@ export default function CrawlerDetailPage() {
       setLoading(false);
     }
   }, [wikiId, crawlerConfigId, messageApi, fetchConfig]);
-
-  // 打开启动配置模态窗口
-  const handleOpenStartConfig = () => {
-    setStartConfigModalVisible(true);
-  };
 
   // 启动爬虫
   const handleStart = async (
@@ -167,15 +189,14 @@ export default function CrawlerDetailPage() {
       const client = GetApiClient();
       const requestBody: StartWikiCrawlerPluginTaskCommand = {
         configId: crawlerConfigId,
-        wikiId: wikiId,
-        isStart: true, // true 表示启动任务
+        wikiId,
+        isStart: true,
         isAutoProcess: isAutoProcess || undefined,
         autoProcessConfig: autoProcessConfig || undefined,
       };
 
       await client.api.wiki.plugin.crawler.lanuch_task.post(requestBody);
       messageApi.success("爬虫已启动");
-      // 延迟一下再刷新状态，给服务端一些时间
       setTimeout(() => {
         fetchConfig();
         fetchPageState();
@@ -200,13 +221,12 @@ export default function CrawlerDetailPage() {
       const client = GetApiClient();
       const requestBody: StartWikiCrawlerPluginTaskCommand = {
         configId: crawlerConfigId,
-        wikiId: wikiId,
-        isStart: false, // false 表示停止任务
+        wikiId,
+        isStart: false,
       };
 
       await client.api.wiki.plugin.crawler.lanuch_task.post(requestBody);
       messageApi.success("爬虫已停止");
-      // 延迟一下再刷新状态
       setTimeout(() => {
         fetchConfig();
         fetchPageState();
@@ -219,7 +239,7 @@ export default function CrawlerDetailPage() {
     }
   };
 
-  // 处理编辑配置
+  // 打开编辑配置模态窗口
   const handleEdit = () => {
     if (!config) {
       messageApi.error("配置信息不存在");
@@ -243,7 +263,7 @@ export default function CrawlerDetailPage() {
     setEditModalVisible(true);
   };
 
-  // 处理保存配置
+  // 保存配置
   const handleSaveConfig = async () => {
     try {
       await form.validateFields();
@@ -251,7 +271,6 @@ export default function CrawlerDetailPage() {
 
       setSaving(true);
       const client = GetApiClient();
-
       const updateBody: UpdateWikiCrawlerConfigCommand = {
         configId: crawlerConfigId,
         wikiId: wikiId || 0,
@@ -268,7 +287,6 @@ export default function CrawlerDetailPage() {
 
       await client.api.wiki.plugin.crawler.update_config.post(updateBody);
       messageApi.success("配置已更新");
-
       setEditModalVisible(false);
       fetchConfig();
     } catch (error) {
@@ -287,22 +305,17 @@ export default function CrawlerDetailPage() {
     }
   }, [wikiId, crawlerConfigId, fetchConfig, fetchPageState]);
 
-  // 自动刷新逻辑：当 isWorking 为 true 且 autoRefresh 为 true 时，每秒刷新
+  // 自动刷新逻辑
   useEffect(() => {
-    // 清除之前的定时器
     if (refreshTimerRef.current) {
       clearInterval(refreshTimerRef.current);
       refreshTimerRef.current = null;
     }
 
-    // 如果 isWorking 为 true 且 autoRefresh 为 true，则启动自动刷新
     if (isWorking && autoRefresh && wikiId && crawlerConfigId) {
-      refreshTimerRef.current = setInterval(() => {
-        fetchPageState();
-      }, 1000); // 每秒刷新
+      refreshTimerRef.current = setInterval(fetchPageState, 1000);
     }
 
-    // 清理函数：组件卸载或依赖变化时清除定时器
     return () => {
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current);
@@ -311,13 +324,13 @@ export default function CrawlerDetailPage() {
     };
   }, [isWorking, autoRefresh, fetchPageState, wikiId, crawlerConfigId]);
 
-  // 任务状态表格列定义
-  const pageColumns = [
+  // 表格列定义
+  const columns = [
     {
       title: "URL",
       dataIndex: "url",
       key: "url",
-      width: 400, 
+      width: 360,
       ellipsis: true,
       render: (text: string) => (
         <a href={text} target="_blank" rel="noopener noreferrer">
@@ -329,24 +342,10 @@ export default function CrawlerDetailPage() {
       title: "状态",
       dataIndex: "state",
       key: "state",
-      width: 120,
+      width: 100,
       render: (state: WorkerState) => {
-        const stateMap: Record<string, { color: string; text: string }> = {
-          [WorkerStateObject.None]: { color: "default", text: "未开始" },
-          [WorkerStateObject.Wait]: { color: "default", text: "等待中" },
-          [WorkerStateObject.Processing]: {
-            color: "processing",
-            text: "处理中",
-          },
-          [WorkerStateObject.Successful]: { color: "success", text: "成功" },
-          [WorkerStateObject.Failed]: { color: "error", text: "失败" },
-          [WorkerStateObject.Cancal]: { color: "default", text: "已取消" },
-        };
-        const stateInfo = stateMap[state || ""] || {
-          color: "default",
-          text: "未知",
-        };
-        return <Tag color={stateInfo.color}>{stateInfo.text}</Tag>;
+        const info = getStateInfo(state);
+        return <Tag color={info.color}>{info.text}</Tag>;
       },
     },
     {
@@ -360,19 +359,14 @@ export default function CrawlerDetailPage() {
       title: "文件大小",
       dataIndex: "fileSize",
       key: "fileSize",
-      width: 120,
-      render: (size: number) => {
-        if (!size) return "-";
-        if (size < 1024) return `${size} B`;
-        if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
-        return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-      },
+      width: 100,
+      render: formatFileSize,
     },
     {
-      title: "是否向量化",
+      title: "向量化",
       dataIndex: "isEmbedding",
       key: "isEmbedding",
-      width: 100,
+      width: 80,
       render: (isEmbedding: boolean) => (
         <Tag color={isEmbedding ? "success" : "default"}>
           {isEmbedding ? "是" : "否"}
@@ -390,251 +384,218 @@ export default function CrawlerDetailPage() {
       title: "更新时间",
       dataIndex: "updateTime",
       key: "updateTime",
-      width: 180,
+      width: 170,
       render: (time: string) => (time ? new Date(time).toLocaleString() : "-"),
     },
   ];
 
+  // 参数校验
   if (!wikiId || !crawlerConfigId) {
     return (
-      <Card>
-        <Text type="secondary">缺少必要参数</Text>
-      </Card>
+      <div className="page-container">
+        <div className="moai-empty">
+          <Text type="secondary">缺少必要参数</Text>
+        </div>
+      </div>
     );
   }
 
-  // 获取任务状态显示
-  const getTaskStateDisplay = () => {
-    if (!workState) return { color: "default", text: "未启动" };
-    const stateMap: Record<string, { color: string; text: string }> = {
-      [WorkerStateObject.None]: { color: "default", text: "未开始" },
-      [WorkerStateObject.Wait]: { color: "default", text: "等待中" },
-      [WorkerStateObject.Processing]: { color: "processing", text: "处理中" },
-      [WorkerStateObject.Successful]: { color: "success", text: "成功" },
-      [WorkerStateObject.Failed]: { color: "error", text: "失败" },
-      [WorkerStateObject.Cancal]: { color: "default", text: "已取消" },
-    };
-    return stateMap[workState] || { color: "default", text: "未知" };
-  };
-
-  const taskStateDisplay = getTaskStateDisplay();
+  const stateInfo = getStateInfo(workState);
 
   return (
-    <div>
+    <div className="page-container">
       {contextHolder}
 
-      {/* 头部操作区域 */}
-      <Card>
-        <Space
-          style={{
-            width: "100%",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
+      {/* 页面标题区域 */}
+      <div className="moai-page-header">
+        <Space style={{ marginBottom: 8 }}>
           <Button
+            type="text"
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(`/app/wiki/${wikiId}/plugin/crawler`)}
           >
             返回列表
           </Button>
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={handleOpenStartConfig}
-              loading={starting}
-              disabled={isWorking}
-            >
-              启动
-            </Button>
-            <Button
-              danger
-              icon={<StopOutlined />}
-              onClick={handleStop}
-              loading={stopping}
-              disabled={!isWorking}
-            >
-              停止
-            </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchPageState}
-              loading={loading}
-            >
-              刷新
-            </Button>
-          </Space>
         </Space>
+        <h1 className="moai-page-title">{configTitle || "爬虫任务详情"}</h1>
+        <p className="moai-page-subtitle">
+          查看和管理爬虫任务的运行状态和抓取结果
+        </p>
+      </div>
 
-        {/* 任务状态信息 */}
-        {workState && (
-          <Card size="small" style={{ marginTop: 16 }}>
-            <Space direction="vertical" style={{ width: "100%" }} size="small">
-              <div>
-                <Text strong>任务状态：</Text>
-                <Tag color={taskStateDisplay.color} style={{ marginLeft: 8 }}>
-                  {taskStateDisplay.text}
+      {/* 操作工具栏 */}
+      <div className="moai-toolbar">
+        <div className="moai-toolbar-left">
+          <Button
+            type="primary"
+            icon={<PlayCircleOutlined />}
+            onClick={() => setStartConfigModalVisible(true)}
+            loading={starting}
+            disabled={isWorking}
+          >
+            启动任务
+          </Button>
+          <Button
+            danger
+            icon={<StopOutlined />}
+            onClick={handleStop}
+            loading={stopping}
+            disabled={!isWorking}
+          >
+            停止任务
+          </Button>
+          <Button
+            icon={<EditOutlined />}
+            onClick={handleEdit}
+            disabled={isWorking}
+          >
+            编辑配置
+          </Button>
+        </div>
+        <div className="moai-toolbar-right">
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchPageState}
+            loading={loading}
+          >
+            刷新
+          </Button>
+        </div>
+      </div>
+
+      {/* 任务状态卡片 */}
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={[24, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <div className="crawler-stat-item">
+              <Text type="secondary">任务状态</Text>
+              <div className="crawler-stat-value">
+                <Tag color={stateInfo.color} className="crawler-status-tag">
+                  {stateInfo.text}
                 </Tag>
               </div>
-              {workMessage && (
-                <div>
-                  <Text strong>运行信息：</Text>
-                  <Text>{workMessage}</Text>
-                </div>
-              )}
-              <div>
-                <Text strong>成功数量：</Text>
-                <Text type="success">
-                  {
-                    pages.filter(
-                      (page) => page.state === WorkerStateObject.Successful
-                    ).length
-                  }
-                </Text>
-                <Text strong style={{ marginLeft: 10 }}>失败数量：</Text>
-                <Text type="danger">
-                  {
-                    pages.filter(
-                      (page) => page.state === WorkerStateObject.Failed
-                    ).length
-                  }
-                </Text>
-                <Text strong style={{ marginLeft: 10 }}>爬取中：</Text>
-                <Text type="danger">
-                  {
-                    pages.filter(
-                      (page) => page.state === WorkerStateObject.Wait || page.state === WorkerStateObject.Processing
-                    ).length
-                  }
-                </Text>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div className="crawler-stat-item">
+              <Text type="secondary">成功</Text>
+              <div className="crawler-stat-value">
+                <span className="crawler-stat-value-success">
+                  {stats.successCount}
+                </span>
               </div>
-            </Space>
-          </Card>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div className="crawler-stat-item">
+              <Text type="secondary">失败</Text>
+              <div className="crawler-stat-value">
+                <span className="crawler-stat-value-error">
+                  {stats.failedCount}
+                </span>
+              </div>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div className="crawler-stat-item">
+              <Text type="secondary">处理中</Text>
+              <div className="crawler-stat-value">
+                <span className="crawler-stat-value-processing">
+                  {stats.processingCount}
+                </span>
+              </div>
+            </div>
+          </Col>
+        </Row>
+        {workMessage && (
+          <div className="crawler-work-message">
+            <Text type="secondary">运行信息：</Text>
+            <Text>{workMessage}</Text>
+          </div>
         )}
       </Card>
 
-      {/* 配置信息显示块 */}
-      <Card style={{ marginTop: 16 }}>
-        <Collapse defaultActiveKey={[]}>
-          <Panel
-            header={
-              <Space>
-                <Text strong>配置信息</Text>
-                {configTitle && <Text type="secondary">({configTitle})</Text>}
-              </Space>
-            }
-            key="config"
-            extra={
-              <Button
-                type="link"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit();
-                }}
-                disabled={isWorking}
-                title={isWorking ? "爬虫运行中，无法编辑配置" : "编辑配置"}
-              >
-                编辑
-              </Button>
-            }
-          >
-            <Spin spinning={configLoading}>
-              {config ? (
-                <Space
-                  direction="vertical"
-                  style={{ width: "100%" }}
-                  size="small"
-                >
-                  <div>
-                    <Text strong>标题：</Text>
-                    <Text>{configTitle || "-"}</Text>
-                  </div>
-                  <div>
-                    <Text strong>页面地址：</Text>
-                    <Text>{config.address || "-"}</Text>
-                  </div>
-                  <div>
-                    <Text strong>是否抓取其他页面：</Text>
-                    <Tag color={config.isCrawlOther ? "success" : "default"}>
-                      {config.isCrawlOther ? "是" : "否"}
-                    </Tag>
-                  </div>
-                  <div>
-                    <Text strong>是否覆盖已爬取页面：</Text>
-                    <Tag color={config.isOverExistPage ? "success" : "default"}>
-                      {config.isOverExistPage ? "是" : "否"}
-                    </Tag>
-                  </div>
-                  {config.limitAddress && (
-                    <div>
-                      <Text strong>限制地址：</Text>
-                      <Text>{config.limitAddress}</Text>
-                    </div>
-                  )}
-                  <div>
-                    <Text strong>最大抓取数量：</Text>
-                    <Text>{config.limitMaxCount || "-"}</Text>
-                  </div>
-                  {config.selector && (
-                    <div>
-                      <Text strong>选择器：</Text>
-                      <Text code>{config.selector}</Text>
-                    </div>
-                  )}
-                  <div>
-                    <Text strong>超时时间（秒）：</Text>
-                    <Text>{config.timeOutSecond || "-"}</Text>
-                  </div>
-                  {config.userAgent && (
-                    <div>
-                      <Text strong>User Agent：</Text>
-                      <Text code style={{ fontSize: "12px" }}>
-                        {config.userAgent}
-                      </Text>
-                    </div>
-                  )}
-                </Space>
-              ) : (
-                <Text type="secondary">暂无配置信息</Text>
-              )}
-            </Spin>
-          </Panel>
-        </Collapse>
+      {/* 配置信息卡片 */}
+      <Card
+        title={
+          <Space>
+            <SettingOutlined />
+            <span>配置信息</span>
+          </Space>
+        }
+        style={{ marginBottom: 16 }}
+        loading={configLoading}
+      >
+        {config ? (
+          <Descriptions column={{ xs: 1, sm: 2, md: 3 }} size="small">
+            <Descriptions.Item label="目标地址" span={3}>
+              <a href={config.address || "#"} target="_blank" rel="noopener noreferrer">
+                {config.address || "-"}
+              </a>
+            </Descriptions.Item>
+            <Descriptions.Item label="抓取关联页面">
+              <Tag color={config.isCrawlOther ? "success" : "default"}>
+                {config.isCrawlOther ? "是" : "否"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="覆盖已有页面">
+              <Tag color={config.isOverExistPage ? "success" : "default"}>
+                {config.isOverExistPage ? "是" : "否"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="最大抓取数量">
+              {config.limitMaxCount || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="限制地址范围" span={config.limitAddress ? 3 : 1}>
+              {config.limitAddress || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="CSS 选择器">
+              {config.selector ? <Text code>{config.selector}</Text> : "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="超时时间">
+              {config.timeOutSecond ? `${config.timeOutSecond} 秒` : "-"}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : (
+          <div className="moai-empty">
+            <Text type="secondary">暂无配置信息</Text>
+          </div>
+        )}
       </Card>
 
-      {/* 任务列表 */}
-      <Card style={{ marginTop: 16 }}>
-        <Space
-          style={{
-            width: "100%",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <Title level={5} style={{ margin: 0 }}>
-            页面列表
-          </Title>
-          {workState === WorkerStateObject.Processing && (
+      {/* 页面列表 */}
+      <Card
+        title={
+          <Space>
+            <Title level={5} style={{ margin: 0 }}>
+              页面列表
+            </Title>
+            <Tag>{stats.total} 条</Tag>
+          </Space>
+        }
+        extra={
+          workState === WorkerStateObject.Processing && (
             <Space>
-              <Text type="secondary">自动刷新：</Text>
+              <Text type="secondary">自动刷新</Text>
               <Switch
                 checked={autoRefresh}
                 onChange={setAutoRefresh}
-                checkedChildren="开启"
-                unCheckedChildren="关闭"
+                checkedChildren="开"
+                unCheckedChildren="关"
+                size="small"
               />
             </Space>
-          )}
-        </Space>
+          )
+        }
+      >
         <Spin spinning={loading}>
           <Table
-            columns={pageColumns}
+            columns={columns}
             dataSource={pages}
             rowKey="pageId"
             pagination={false}
+            scroll={{ x: 1000 }}
+            size="small"
           />
         </Spin>
       </Card>
@@ -646,90 +607,103 @@ export default function CrawlerDetailPage() {
         onCancel={() => setEditModalVisible(false)}
         onOk={handleSaveConfig}
         confirmLoading={saving}
-        width={800}
+        width={720}
         destroyOnClose
+        maskClosable={false}
       >
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="title"
-            label="标题"
-            rules={[{ required: true, message: "请输入标题" }]}
+            label="配置名称"
+            rules={[{ required: true, message: "请输入配置名称" }]}
           >
-            <Input placeholder="请输入配置标题" />
+            <Input placeholder="请输入配置名称" />
           </Form.Item>
 
           <Form.Item
             name="address"
-            label="页面地址"
-            rules={[{ required: true, message: "请输入页面地址" }]}
+            label="目标网址"
+            rules={[{ required: true, message: "请输入目标网址" }]}
           >
-            <Input placeholder="请输入要爬取的页面地址" />
+            <Input placeholder="请输入要爬取的网页地址" />
           </Form.Item>
 
-          <Form.Item
-            name="isCrawlOther"
-            label="是否抓取其他页面"
-            tooltip="会自动查找这个页面或对应目录下的其它页面"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
-          <Form.Item
-            name="isOverExistPage"
-            label="是否覆盖已爬取页面"
-            tooltip="如果开启，将覆盖会已经爬取过的页面"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="isCrawlOther"
+                label="抓取关联页面"
+                tooltip="开启后会自动查找并抓取该页面链接的其他页面"
+                valuePropName="checked"
+              >
+                <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="isOverExistPage"
+                label="覆盖已有页面"
+                tooltip="开启后会覆盖已经爬取过的相同页面"
+                valuePropName="checked"
+              >
+                <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="limitAddress"
-            label="限制地址"
-            tooltip="限制自动爬取的网页都在该路径之下，limitAddress跟address必须具有相同域名"
+            label="限制地址范围"
+            tooltip="限制自动爬取的网页都在该路径之下，需与目标网址具有相同域名"
           >
-            <Input placeholder="可选：限制爬取的地址范围" />
+            <Input placeholder="可选，如 https://example.com/docs/" />
           </Form.Item>
 
-          <Form.Item
-            name="limitMaxCount"
-            label="最大抓取数量"
-            rules={[{ required: true, message: "请输入最大抓取数量" }]}
-          >
-            <InputNumber
-              min={1}
-              placeholder="最大抓取数量"
-              style={{ width: "100%" }}
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="limitMaxCount"
+                label="最大抓取数量"
+                rules={[{ required: true, message: "请输入最大抓取数量" }]}
+              >
+                <InputNumber
+                  min={1}
+                  max={10000}
+                  placeholder="最大抓取页面数"
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="timeOutSecond"
+                label="超时时间（秒）"
+                rules={[{ required: true, message: "请输入超时时间" }]}
+              >
+                <InputNumber
+                  min={5}
+                  max={300}
+                  placeholder="单页超时时间"
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="selector"
-            label="选择器"
-            tooltip="CSS选择器，用于定位要抓取的内容"
+            label="CSS 选择器"
+            tooltip="用于定位要抓取的内容区域"
           >
-            <Input placeholder="可选：CSS选择器" />
-          </Form.Item>
-
-          <Form.Item
-            name="timeOutSecond"
-            label="超时时间（秒）"
-            rules={[{ required: true, message: "请输入超时时间" }]}
-          >
-            <InputNumber
-              min={1}
-              placeholder="超时时间（秒）"
-              style={{ width: "100%" }}
-            />
+            <Input placeholder="可选，如 article、.main-content" />
           </Form.Item>
 
           <Form.Item
             name="userAgent"
             label="User Agent"
-            tooltip="可选：自定义User Agent"
+            tooltip="自定义请求的 User Agent 标识"
           >
-            <TextArea rows={2} placeholder="可选：自定义User Agent" />
+            <TextArea rows={2} placeholder="可选，自定义 User Agent" />
           </Form.Item>
         </Form>
       </Modal>

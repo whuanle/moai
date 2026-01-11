@@ -20,4 +20,10 @@ public class PaddleLayoutParsingResult
     /// </summary>
     [JsonPropertyName("dataInfo")]
     public JsonElement? DataInfo { get; set; }
+
+    /// <summary>
+    /// 输入数据信息.
+    /// </summary>
+    [JsonPropertyName("ocrResults")]
+    public List<JsonElement>? OcrResults { get; set; }
 }

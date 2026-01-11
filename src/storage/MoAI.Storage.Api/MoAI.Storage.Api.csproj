@@ -10,8 +10,4 @@
 	  <ProjectReference Include="..\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Controllers\" />
-	</ItemGroup>
-
 </Project>

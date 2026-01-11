@@ -24,24 +24,50 @@ public partial class PluginFunctionConfiguration : IEntityTypeConfiguration<Plug
 
         entity.ToTable("plugin_function", tb => tb.HasComment("插件函数"));
 
-        entity.Property(e => e.Id).HasComment("id");
+        entity.Property(e => e.Id)
+            .HasComment("id")
+            .HasColumnType("int(11)")
+            .HasColumnName("id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("创建时间");
-        entity.Property(e => e.CreateUserId).HasComment("创建人");
-        entity.Property(e => e.IsDeleted).HasComment("软删除");
-        entity.Property(e => e.Name).HasComment("函数名称");
+            .HasComment("创建时间")
+            .HasColumnType("datetime")
+            .HasColumnName("create_time");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnType("int(11)")
+            .HasColumnName("create_user_id");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("is_deleted");
+        entity.Property(e => e.Name)
+            .HasMaxLength(255)
+            .HasComment("函数名称")
+            .HasColumnName("name");
         entity.Property(e => e.Path)
+            .HasMaxLength(255)
             .HasDefaultValueSql("''")
-            .HasComment("api路径");
-        entity.Property(e => e.PluginCustomId).HasComment("plugin_custom_id");
+            .HasComment("api路径")
+            .HasColumnName("path");
+        entity.Property(e => e.PluginCustomId)
+            .HasComment("plugin_custom_id")
+            .HasColumnType("int(11)")
+            .HasColumnName("plugin_custom_id");
         entity.Property(e => e.Summary)
+            .HasMaxLength(1000)
             .HasDefaultValueSql("''")
-            .HasComment("描述");
+            .HasComment("描述")
+            .HasColumnName("summary");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间");
-        entity.Property(e => e.UpdateUserId).HasComment("最后修改人");
+            .HasComment("最后更新时间")
+            .HasColumnType("datetime")
+            .HasColumnName("update_time");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("最后修改人")
+            .HasColumnType("int(11)")
+            .HasColumnName("update_user_id");
 
         OnConfigurePartial(entity);
     }

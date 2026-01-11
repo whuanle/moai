@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Office2010.Word;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.KernelMemory.Chunkers;
@@ -45,8 +46,10 @@ public class QueryWikiDocumentInfoCommandHandler : IRequestHandler<QueryWikiDocu
             CreateUserId = a.CreateUserId,
             UpdateTime = a.UpdateTime,
             UpdateUserId = a.UpdateUserId,
-            Embedding = a.IsEmbedding,
-            SliceConfig = a.SliceConfig
+            IsEmbedding = a.IsEmbedding,
+            ChunkCount = _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.DocumentId == request.DocumentId).Count(),
+            MetedataCount = _databaseContext.WikiDocumentChunkMetadataPreviews.Where(x => x.DocumentId == request.DocumentId).Count(),
+            SliceConfig = a.SliceConfig,
         }).FirstOrDefaultAsync();
 
         if (result == null)
@@ -66,6 +69,9 @@ public class QueryWikiDocumentInfoCommandHandler : IRequestHandler<QueryWikiDocu
             CreateUserId = result.CreateUserId,
             UpdateTime = result.UpdateTime,
             UpdateUserId = result.UpdateUserId,
+            ChunkCount = result.ChunkCount,
+            MetedataCount = result.MetedataCount,
+            IsEmbedding = result.IsEmbedding,
             PartionConfig = new DocumentTextPartionConfig
             {
                 ChunkHeader = chunkConfig.ChunkHeader,

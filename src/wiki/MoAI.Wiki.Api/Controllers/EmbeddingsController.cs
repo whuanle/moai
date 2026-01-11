@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;
@@ -19,7 +20,8 @@ namespace MoAI.Wiki.Controllers;
 /// 文档分片相关接口控制器.
 /// </summary>
 [ApiController]
-[Route(ApiPrefix.Document)]
+[Route("/wiki/document")]
+[EndpointGroupName("wiki")]
 public class EmbeddingsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -156,8 +158,8 @@ public class EmbeddingsController : ControllerBase
     /// <param name="req"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    [HttpPost("add_chunk_derivatives")]
-    public async Task<EmptyCommandResponse> AddChunkDerivatives([FromBody] AddWikiDocumentChunkDerivativeCommand req, CancellationToken ct = default)
+    [HttpPost("add_chunk_metadatas")]
+    public async Task<EmptyCommandResponse> AddChunkMetadatas([FromBody] AddWikiDocumentChunkMetadataCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
         return await _mediator.Send(req, ct);
@@ -237,7 +239,7 @@ public class EmbeddingsController : ControllerBase
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryWikiCreatorCommand
+            new QueryUserIsWikiMemberCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = wikiId

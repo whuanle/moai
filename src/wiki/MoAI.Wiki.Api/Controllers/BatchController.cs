@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;
@@ -14,6 +15,7 @@ namespace MoAI.Wiki.Controllers;
 /// </summary>
 [ApiController]
 [Route("/wiki/batch")]
+[EndpointGroupName("wiki")]
 public class BatchController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -72,7 +74,7 @@ public class BatchController : ControllerBase
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryWikiCreatorCommand
+            new QueryUserIsWikiMemberCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = wikiId

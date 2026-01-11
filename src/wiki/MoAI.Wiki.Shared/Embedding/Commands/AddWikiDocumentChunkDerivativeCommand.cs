@@ -10,7 +10,7 @@ namespace MoAI.Wiki.Embedding.Commands;
 /// <summary>
 /// 批量增加元数据.
 /// </summary>
-public class AddWikiDocumentChunkDerivativeCommand : IRequest<EmptyCommandResponse>, IModelValidator<AddWikiDocumentChunkDerivativeCommand>
+public class AddWikiDocumentChunkMetadataCommand : IRequest<EmptyCommandResponse>, IModelValidator<AddWikiDocumentChunkMetadataCommand>
 {
     /// <summary>
     /// 知识库id.
@@ -25,14 +25,14 @@ public class AddWikiDocumentChunkDerivativeCommand : IRequest<EmptyCommandRespon
     /// <summary>
     /// 要处理的文本块的 chunkId 和内容.
     /// </summary>
-    public IReadOnlyCollection<AddWikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<AddWikiDocumentDerivativeItem>();
+    public IReadOnlyCollection<AddWikiDocumentMetadataItem> Metadatas { get; init; } = Array.Empty<AddWikiDocumentMetadataItem>();
 
     /// <inheritdoc/>
-    public static void Validate(AbstractValidator<AddWikiDocumentChunkDerivativeCommand> validate)
+    public static void Validate(AbstractValidator<AddWikiDocumentChunkMetadataCommand> validate)
     {
         validate.RuleFor(x => x.WikiId).GreaterThan(0);
         validate.RuleFor(x => x.DocumentId).GreaterThan(0);
-        validate.RuleFor(x => x.Derivatives).NotNull()
+        validate.RuleFor(x => x.Metadatas).NotNull()
             .Must(x => x.Count > 0);
     }
 }

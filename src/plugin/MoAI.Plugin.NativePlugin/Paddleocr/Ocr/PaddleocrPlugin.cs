@@ -2,14 +2,16 @@
 #pragma warning disable SA1118 // Parameter should not span multiple lines
 
 using Maomi;
+using MediatR;
 using Microsoft.SemanticKernel;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Helpers;
 using MoAI.Infra.Paddleocr;
 using MoAI.Infra.Paddleocr.Models;
+using MoAI.Infra.Put;
 using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
+using MoAI.Plugin.Paddleocr.Common;
 using MoAI.Plugin.Paddleocr.Ocr;
 using MoAI.Plugin.Plugins.Paddleocr.Common;
 using System.ComponentModel;
@@ -29,16 +31,20 @@ namespace MoAI.Plugin.Plugins.Paddleocr.Ocr;
     ConfigType = typeof(PaddleocrPluginConfig))]
 [InjectOnTransient]
 [Description("使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别，适合常规场景，速度较快，可以处理多页文件")]
-public partial class PaddleocrPlugin : INativePluginRuntime
+public partial class PaddleocrPlugin : PaddleocrPluginBase, INativePluginRuntime, IPaddleocrPlugin
 {
     private readonly IPaddleocrClient _paddleocrClient;
+
     private PaddleocrPluginConfig _config = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PaddleocrPlugin"/> class.
     /// </summary>
-    /// <param name="paddleocrClient">Paddleocr 客户端。</param>
-    public PaddleocrPlugin(IPaddleocrClient paddleocrClient)
+    /// <param name="mediator"></param>
+    /// <param name="serviceProvider"></param>
+    /// <param name="paddleocrClient"></param>
+    public PaddleocrPlugin(IMediator mediator, IServiceProvider serviceProvider, IPaddleocrClient paddleocrClient)
+        : base(serviceProvider, mediator)
     {
         _paddleocrClient = paddleocrClient;
     }
@@ -81,6 +87,61 @@ public partial class PaddleocrPlugin : INativePluginRuntime
     {
         _config = JsonSerializer.Deserialize<PaddleocrPluginConfig>(config) ?? new PaddleocrPluginConfig();
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyCollection<string> Texts, IReadOnlyCollection<string> Images)> OcrAsync(string base64, string @params)
+    {
+        try
+        {
+            var testParams = JsonSerializer.Deserialize<PaddleOcrParams>(@params, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
+            if (!string.IsNullOrWhiteSpace(_config?.ApiUrl))
+            {
+                _paddleocrClient.Client.BaseAddress = new Uri(_config.ApiUrl);
+            }
+
+            var request = new PaddleOcrRequest
+            {
+                File = base64,
+                FileType = testParams.FileType,
+                UseDocOrientationClassify = testParams.UseDocOrientationClassify,
+                UseDocUnwarping = testParams.UseDocUnwarping,
+                UseTextlineOrientation = testParams.UseTextlineOrientation
+            };
+
+            var response = await _paddleocrClient.OcrAsync($"token {_config?.Token}", request);
+            HandleApiError(response);
+
+            List<string> texts = new();
+            List<string> images = new();
+            StringBuilder stringBuilder = new();
+            foreach (var ocrResult in response.Result!.OcrResults!)
+            {
+                stringBuilder.Clear();
+
+                var recTexts = ocrResult.PrunedResult!.Value.GetProperty("rec_texts");
+
+                if (string.IsNullOrWhiteSpace(ocrResult.OcrImage))
+                {
+                    continue;
+                }
+
+                await UploadTempFileAsync(images, ocrResult.OcrImage);
+
+                foreach (var text in recTexts.EnumerateArray())
+                {
+                    stringBuilder.AppendLine(text.GetString()!);
+                }
+
+                texts.Add(stringBuilder.ToString());
+            }
+
+            return (texts, images);
+        }
+        catch (Exception ex)
+        {
+            throw new BusinessException(ex.Message);
+        }
     }
 
     /// <inheritdoc/>

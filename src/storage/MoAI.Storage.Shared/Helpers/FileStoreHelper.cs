@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1054 // 类 URI 参数不应为字符串
 using MimeKit;
+using System.IO;
 
 namespace MoAI.Storage.Helpers;
 
@@ -136,6 +137,20 @@ public static class FileStoreHelper
         using var md5 = System.Security.Cryptography.MD5.Create();
         using var stream = File.OpenRead(filePath);
         var hash = md5.ComputeHash(stream);
+        return Convert.ToHexStringLower(hash);
+    }
+
+    /// <summary>
+    /// 计算文件 SHA256 哈希值.
+    /// </summary>
+    /// <param name="stream">文件路径.</param>
+    /// <returns>文件的 SHA256 哈希值.</returns>
+    public static string CalculateFileMd5(Stream stream)
+    {
+#pragma warning disable CA5351 // 不要使用损坏的加密算法
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        var hash = md5.ComputeHash(stream);
+        stream.Seek(0, SeekOrigin.Begin);
         return Convert.ToHexStringLower(hash);
     }
 

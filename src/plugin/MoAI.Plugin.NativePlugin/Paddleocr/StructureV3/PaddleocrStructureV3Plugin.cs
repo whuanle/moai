@@ -2,6 +2,7 @@
 #pragma warning disable SA1118 // Parameter should not span multiple lines
 
 using Maomi;
+using MediatR;
 using Microsoft.SemanticKernel;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Paddleocr;
@@ -9,7 +10,10 @@ using MoAI.Infra.Paddleocr.Models;
 using MoAI.Infra.System.Text.Json;
 using MoAI.Plugin.Attributes;
 using MoAI.Plugin.Models;
+using MoAI.Plugin.Paddleocr.Common;
+using MoAI.Plugin.Paddleocr.Ocr;
 using MoAI.Plugin.Plugins.Paddleocr.Common;
+using MoAI.Plugin.Plugins.Paddleocr.Ocr;
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
@@ -27,7 +31,7 @@ namespace MoAI.Plugin.Plugins.Paddleocr.StructureV3;
     ConfigType = typeof(PaddleocrPluginConfig))]
 [InjectOnTransient]
 [Description("使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析，适合各类带有结构的复杂文档，例如表格、发票、公式，速度比较慢，建议只处理单页文件")]
-public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
+public partial class PaddleocrStructureV3Plugin : PaddleocrPluginBase, INativePluginRuntime, IPaddleocrPlugin
 {
     private readonly IPaddleocrClient _paddleocrClient;
     private PaddleocrPluginConfig _config = default!;
@@ -35,8 +39,11 @@ public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
     /// <summary>
     /// Initializes a new instance of the <see cref="PaddleocrStructureV3Plugin"/> class.
     /// </summary>
-    /// <param name="paddleocrClient">Paddleocr 客户端。</param>
-    public PaddleocrStructureV3Plugin(IPaddleocrClient paddleocrClient)
+    /// <param name="mediator"></param>
+    /// <param name="serviceProvider"></param>
+    /// <param name="paddleocrClient"></param>
+    public PaddleocrStructureV3Plugin(IMediator mediator, IServiceProvider serviceProvider, IPaddleocrClient paddleocrClient)
+        : base(serviceProvider, mediator)
     {
         _paddleocrClient = paddleocrClient;
     }
@@ -83,6 +90,63 @@ public partial class PaddleocrStructureV3Plugin : INativePluginRuntime
     {
         _config = JsonSerializer.Deserialize<PaddleocrPluginConfig>(config) ?? new PaddleocrPluginConfig();
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyCollection<string> Texts, IReadOnlyCollection<string> Images)> OcrAsync(string base64, string @params)
+    {
+        try
+        {
+            var testParams = JsonSerializer.Deserialize<PaddleocrStructureV3Params>(@params, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping)!;
+            if (!string.IsNullOrWhiteSpace(_config?.ApiUrl))
+            {
+                _paddleocrClient.Client.BaseAddress = new Uri(_config.ApiUrl);
+            }
+
+            var request = new PaddleLayoutParsingRequest
+            {
+                File = base64,
+                FileType = testParams.FileType,
+                UseDocOrientationClassify = testParams.UseDocOrientationClassify,
+                UseDocUnwarping = testParams.UseDocUnwarping,
+                UseTableRecognition = testParams.UseTableRecognition,
+                UseFormulaRecognition = testParams.UseFormulaRecognition,
+                UseSealRecognition = testParams.UseSealRecognition,
+                UseChartRecognition = testParams.UseChartRecognition,
+                UseRegionDetection = testParams.UseRegionDetection
+            };
+
+            var response = await _paddleocrClient.StructureV3Async($"token {_config?.Token}", request);
+            HandleApiError(response);
+
+            List<string> texts = new();
+            List<string> images = new();
+            StringBuilder stringBuilder = new();
+            foreach (var ocrResult in response.Result!.OcrResults!)
+            {
+                stringBuilder.Clear();
+
+                var prunedResult = ocrResult.GetProperty("prunedResult");
+
+                var recTexts = prunedResult.GetProperty("rec_texts");
+                var imageUrl = ocrResult.GetProperty("ocrImage").ToString();
+
+                await UploadTempFileAsync(images, imageUrl);
+
+                foreach (var text in recTexts.EnumerateArray())
+                {
+                    stringBuilder.AppendLine(text.GetString()!);
+                }
+
+                texts.Add(stringBuilder.ToString());
+            }
+
+            return (texts, images);
+        }
+        catch (Exception ex)
+        {
+            throw new BusinessException(ex.Message);
+        }
     }
 
     /// <inheritdoc/>

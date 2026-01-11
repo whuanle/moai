@@ -105,7 +105,7 @@ public class Program
                 RootNamespace = "MoAI.Database",
                 SuppressConnectionStringWarning = true,
                 SuppressOnConfiguring = true,
-                UseDataAnnotations = true,
+                UseDataAnnotations = false,
                 UseNullableReferenceTypes = true,
                 ProjectDir = projectDirectory,  // T4 模板会从 ProjectDir/CodeTemplates/EFCore 目录加载
             };

@@ -24,21 +24,50 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
 
         entity.ToTable("app_assistant_chat_history", tb => tb.HasComment("对话历史，不保存实际历史记录"));
 
-        entity.Property(e => e.Id).HasComment("id");
-        entity.Property(e => e.ChatId).HasComment("对话id");
-        entity.Property(e => e.CompletionsId).HasComment("对话id");
-        entity.Property(e => e.Content).HasComment("内容");
+        entity.HasIndex(e => e.ChatId, "chat_history_pk_2");
+
+        entity.Property(e => e.Id)
+            .HasComment("id")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("id");
+        entity.Property(e => e.ChatId)
+            .HasComment("对话id")
+            .HasColumnName("chat_id");
+        entity.Property(e => e.CompletionsId)
+            .HasMaxLength(50)
+            .HasComment("对话id")
+            .HasColumnName("completions_id");
+        entity.Property(e => e.Content)
+            .HasComment("内容")
+            .HasColumnType("text")
+            .HasColumnName("content");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
-            .HasComment("创建时间");
-        entity.Property(e => e.CreateUserId).HasComment("创建人");
-        entity.Property(e => e.IsDeleted).HasComment("软删除");
-        entity.Property(e => e.Role).HasComment("角色");
+            .HasComment("创建时间")
+            .HasColumnType("datetime")
+            .HasColumnName("create_time");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnType("int(11)")
+            .HasColumnName("create_user_id");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("is_deleted");
+        entity.Property(e => e.Role)
+            .HasMaxLength(20)
+            .HasComment("角色")
+            .HasColumnName("role");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")
-            .HasComment("更新时间");
-        entity.Property(e => e.UpdateUserId).HasComment("更新人");
+            .HasComment("更新时间")
+            .HasColumnType("datetime")
+            .HasColumnName("update_time");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnType("int(11)")
+            .HasColumnName("update_user_id");
 
         OnConfigurePartial(entity);
     }

@@ -1,8 +1,11 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Team.Models;
+using MoAI.Team.Queries;
 using MoAI.Wiki.Wikis.Commands;
 using MoAI.Wiki.Wikis.Queries;
 using MoAI.Wiki.Wikis.Queries.Response;
@@ -14,7 +17,7 @@ namespace MoAI.Wiki.Controllers;
 /// </summary>
 [ApiController]
 [Route("/wiki")]
-[Authorize]
+[EndpointGroupName("wiki")]
 public partial class WikiController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -59,6 +62,48 @@ public partial class WikiController : ControllerBase
     }
 
     /// <summary>
+    /// 查询团队知识库.
+    /// </summary>
+    /// <param name="req">查询知识库列表的命令对象.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="IReadOnlyCollection{QueryWikiInfoResponse}"/> 列表.</returns>
+    [HttpPost("query_team_wiki_list")]
+    public async Task<IReadOnlyCollection<QueryWikiInfoResponse>> QueryWikiBaseList([FromBody] QueryTeamWikiBaseListCommand req, CancellationToken ct = default)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 按团队角度获取可用的 AI 模型列表（包含公开模型和团队被授权的模型）.
+    /// </summary>
+    /// <param name="req">请求体，见 <see cref="QueryTeamViewAiModelListCommand"/>.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryTeamViewAiModelListCommandResponse"/>，包含团队可用模型列表.</returns>
+    [HttpPost("team_modellist")]
+    public async Task<QueryTeamViewAiModelListCommandResponse> QueryTeamAiModelList([FromBody] QueryTeamViewAiModelListCommand req, CancellationToken ct = default)
+    {
+        var userIsWikiUser = await _mediator.Send(
+            new QueryUserIsWikiMemberCommand
+            {
+                ContextUserId = _userContext.UserId,
+                WikiId = req.WikiId
+            },
+            ct);
+
+        if (userIsWikiUser.IsExist == false)
+        {
+            throw new BusinessException("未找到知识库.") { StatusCode = 404 };
+        }
+
+        if (userIsWikiUser.TeamRole > Team.Models.TeamRole.None)
+        {
+            return await _mediator.Send(req, ct);
+        }
+
+        throw new BusinessException("未找到知识库.") { StatusCode = 404 };
+    }
+
+    /// <summary>
     /// 获取知识库详细的信息.
     /// </summary>
     /// <param name="req">查询知识库详细信息的命令对象, 包含 WikiId.</param>
@@ -68,7 +113,7 @@ public partial class WikiController : ControllerBase
     public async Task<QueryWikiInfoResponse> QueryWikiInfo([FromBody] QueryWikiDetailInfoCommand req, CancellationToken ct = default)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryWikiCreatorCommand
+            new QueryUserIsWikiMemberCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = req.WikiId

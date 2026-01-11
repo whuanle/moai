@@ -41,5 +41,5 @@ public interface IPaddleocrClient
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>文档解析响应结果.</returns>
     [Post("/layout-parsing")]
-    Task<PaddleOcrResponse<PaddleLayoutParsingResult>> LayoutParsingVlAsync([Header("Authorization")] string token, [Body] PaddleOcrVlRequest request, CancellationToken cancellationToken = default);
+    Task<PaddleOcrResponse<PaddleLayoutParsingResult>> PaddleOCRVLAsync([Header("Authorization")] string token, [Body] PaddleOcrVlRequest request, CancellationToken cancellationToken = default);
 }

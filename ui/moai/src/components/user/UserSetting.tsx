@@ -84,7 +84,7 @@ export default function UserSetting() {
       const md5 = await GetFileMd5(file);
       
       // 2. 获取预上传地址
-      const preUploadResponse = await client.api.storage.image.pre_upload.post({
+      const preUploadResponse = await client.api.storage.public.pre_upload_image.post({
         fileName: file.name,
         fileSize: file.size,
         contentType: file.type,

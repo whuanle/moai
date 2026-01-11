@@ -10,7 +10,7 @@ namespace MoAI.Plugin.CustomPlugins.Queries;
 /// <summary>
 /// 获取自定义插件插件基础信息列表.
 /// </summary>
-public class QueryCustomPluginBaseListCommand : IRequest<QueryCustomPluginBaseListCommandResponse>, IModelValidator<QueryCustomPluginBaseListCommand>
+public class QueryCustomPluginBaseListCommand : IRequest<QueryCustomPluginBaseListCommandResponse>, IModelValidator<QueryCustomPluginBaseListCommand>, IDynamicOrderable
 {
     /// <summary>
     /// 名称搜索.
@@ -32,8 +32,26 @@ public class QueryCustomPluginBaseListCommand : IRequest<QueryCustomPluginBaseLi
     /// </summary>
     public bool? IsPublic { get; init; } = default!;
 
+    /// <summary>
+    /// 排序，支持 PluginName、Title、Type 排序.
+    /// </summary>
+    public IReadOnlyCollection<KeyValueBool> OrderByFields { get; init; } = Array.Empty<KeyValueBool>();
+
+    private static readonly HashSet<string> allowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        nameof(PluginBaseInfoItem.PluginName),
+        nameof(PluginBaseInfoItem.Title),
+        nameof(PluginBaseInfoItem.Type),
+    };
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryCustomPluginBaseListCommand> validate)
     {
+        validate.RuleFor(x => x.OrderByFields)
+            .Must(fields =>
+            {
+                return fields.All(field => allowedFields.Contains(field.Key));
+            })
+            .WithMessage("只支持排序 PluginName、Title、Type.");
     }
 }

@@ -1,28 +1,174 @@
-/* Wiki页面样式 */
+/* Wiki 布局样式 */
 .wiki-layout {
   height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
 }
 
-/* 自定义侧边栏样式 */
+/* 侧边栏样式 */
 .wiki-sider {
-  background: #fff;
-  border-right: 1px solid #f0f0f0;
+  background: var(--color-bg-container) !important;
+  border-right: 1px solid var(--color-border-secondary);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
 }
 
+/* 侧边栏头部 */
 .wiki-sider-header {
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--color-border-secondary);
 }
 
+.wiki-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-left: calc(var(--spacing-sm) * -1);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.wiki-back-btn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.wiki-info {
+  margin-top: var(--spacing-md);
+}
+
+.wiki-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wiki-description {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 菜单样式 */
+.wiki-menu {
+  padding: var(--spacing-sm) 0;
+  border-right: none !important;
+  background: transparent !important;
+}
+
+.wiki-menu .ant-menu-item {
+  margin: 2px var(--spacing-sm) !important;
+  padding-left: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  height: 42px !important;
+  line-height: 42px !important;
+  font-size: 15px;
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+}
+
+.wiki-menu .ant-menu-item:hover {
+  background: var(--color-primary-bg) !important;
+  color: var(--color-primary);
+}
+
+.wiki-menu .ant-menu-item-selected {
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.1) 0%, rgba(22, 119, 255, 0.06) 100%) !important;
+  color: var(--color-primary) !important;
+  font-weight: 500;
+}
+
+.wiki-menu .ant-menu-item-selected::after {
+  display: none;
+}
+
+.wiki-menu .ant-menu-submenu-title {
+  margin: 2px var(--spacing-sm) !important;
+  padding-left: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  height: 42px !important;
+  line-height: 42px !important;
+  font-size: 15px;
+  color: var(--color-text-primary);
+}
+
+.wiki-menu .ant-menu-submenu-title:hover {
+  background: var(--color-primary-bg) !important;
+  color: var(--color-primary);
+}
+
+.wiki-menu .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: var(--color-primary);
+}
+
+.wiki-menu .ant-menu-sub {
+  background: transparent !important;
+}
+
+.wiki-menu .ant-menu-sub .ant-menu-item {
+  padding-left: 44px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  font-size: 14px;
+}
+
+/* 菜单图标样式 */
+.wiki-menu .ant-menu-item .anticon,
+.wiki-menu .ant-menu-submenu-title .anticon {
+  font-size: 16px;
+}
+
+/* 内容区域 */
 .wiki-content {
-  padding: 24px;
+  padding: var(--spacing-lg);
+  padding-top: 0px;
   overflow: auto;
+  background: transparent;
+}
+
+/* 加载状态 */
+.wiki-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
+}
+
+/* 空状态 */
+.wiki-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
+}
+
+.wiki-empty-card {
+  text-align: center;
+  padding: var(--spacing-xl);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .wiki-content {
-    padding: 16px;
+    padding: var(--spacing-md);
+  }
+  
+  .wiki-sider-header {
+    padding: var(--spacing-md);
   }
 } 

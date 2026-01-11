@@ -42,7 +42,7 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
             return EmptyCommandResponse.Default;
         }
 
-        List<WikiDocumentChunkDerivativePreviewEntity> derivativePreviewEntities = new();
+        List<WikiDocumentChunkMetadataPreviewEntity> metadataPreviewEntities = new();
 
         foreach (var item in request.Chunks)
         {
@@ -56,17 +56,17 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
             entity.SliceLength = item.Text.Length;
             entity.SliceOrder = item.Order;
 
-            if (item.Derivatives != null && item.Derivatives.Count > 0)
+            if (item.Metadatas != null && item.Metadatas.Count > 0)
             {
-                foreach (var derivative in item.Derivatives)
+                foreach (var metadata in item.Metadatas)
                 {
-                    derivativePreviewEntities.Add(new WikiDocumentChunkDerivativePreviewEntity
+                    metadataPreviewEntities.Add(new WikiDocumentChunkMetadataPreviewEntity
                     {
                         WikiId = request.WikiId,
                         DocumentId = request.DocumentId,
                         ChunkId = entity.Id,
-                        DerivativeType = (int)derivative.DerivativeType,
-                        DerivativeContent = derivative.DerivativeContent
+                        MetadataType = (int)metadata.MetadataType,
+                        MetadataContent = metadata.MetadataContent
                     });
                 }
             }
@@ -74,13 +74,13 @@ public class UpdateWikiDocumentChunksCommandHandler : IRequestHandler<UpdateWiki
 
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
-        await _databaseContext.WikiDocumentChunkDerivativePreviews
+        await _databaseContext.WikiDocumentChunkMetadataPreviews
             .Where(x => x.WikiId == request.WikiId && x.DocumentId == request.DocumentId && chunkIds.Contains(x.ChunkId))
             .ExecuteDeleteAsync();
 
-        if (derivativePreviewEntities.Count > 0)
+        if (metadataPreviewEntities.Count > 0)
         {
-            await _databaseContext.WikiDocumentChunkDerivativePreviews.AddRangeAsync(derivativePreviewEntities, cancellationToken);
+            await _databaseContext.WikiDocumentChunkMetadataPreviews.AddRangeAsync(metadataPreviewEntities, cancellationToken);
         }
 
         _databaseContext.WikiDocumentChunkContentPreviews.UpdateRange(chunks);

@@ -38,14 +38,14 @@ public class QueryWikiDocumentChunksCommandHandler : IRequestHandler<QueryWikiDo
 
         var partitionItems = await _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.WikiId == x.WikiId && x.DocumentId == request.DocumentId).ToArrayAsync();
         var sliceIds = partitionItems.Select(x => x.Id).ToArray();
-        var derivativeItems = await _databaseContext.WikiDocumentChunkDerivativePreviews.Where(x => x.DocumentId == request.DocumentId && sliceIds.Contains(x.ChunkId)).ToArrayAsync();
+        var metadataItems = await _databaseContext.WikiDocumentChunkMetadataPreviews.Where(x => x.DocumentId == request.DocumentId && sliceIds.Contains(x.ChunkId)).ToArrayAsync();
 
         foreach (var item in partitionItems)
         {
-            var derivatives = derivativeItems.Where(x => x.ChunkId == item.Id).Select(x => new WikiDocumentDerivativeItem
+            var metadatas = metadataItems.Where(x => x.ChunkId == item.Id).Select(x => new WikiDocumentMetadataItem
             {
-                DerivativeType = (ParagrahProcessorMetadataType)x.DerivativeType,
-                DerivativeContent = x.DerivativeContent
+                MetadataType = (ParagrahProcessorMetadataType)x.MetadataType,
+                MetadataContent = x.MetadataContent
             }).ToArray();
 
             chunks.Add(new WikiDocumenChunkItem
@@ -53,7 +53,7 @@ public class QueryWikiDocumentChunksCommandHandler : IRequestHandler<QueryWikiDo
                 Order = item.SliceOrder,
                 Text = item.SliceContent,
                 ChunkId = item.Id,
-                Derivatives = derivatives
+                Metadatas = metadatas
             });
         }
 

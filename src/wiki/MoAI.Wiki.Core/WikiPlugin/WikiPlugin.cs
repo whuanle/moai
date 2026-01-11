@@ -80,7 +80,7 @@ internal class WikiPlugin
         var chunkEmbeddings = await _databaseContext.WikiDocumentChunkEmbeddings.AsNoTracking()
             .Where(x => chunkIds.Contains(x.Id))
             .OrderBy(x => x.Id)
-            .Select(x => x.DerivativeContent)
+            .Select(x => x.MetadataContent)
             .ToListAsync();
 
         if (chunkEmbeddings.Count == 0)

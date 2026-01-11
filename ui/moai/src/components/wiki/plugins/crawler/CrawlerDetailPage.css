@@ -1,0 +1,47 @@
+/* CrawlerDetailPage 样式 */
+
+/* 统计卡片项 */
+.crawler-stat-item {
+  text-align: center;
+}
+
+.crawler-stat-item .crawler-stat-value {
+  margin-top: 8px;
+}
+
+.crawler-stat-value-success {
+  font-size: 24px;
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.crawler-stat-value-error {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ff4d4f;
+}
+
+.crawler-stat-value-processing {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1677ff;
+}
+
+/* 状态标签样式 */
+.crawler-status-tag {
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+/* 运行信息区域 */
+.crawler-work-message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg-spotlight, #fafafa);
+  border-radius: var(--radius-sm, 6px);
+}
+
+/* 返回按钮区域 */
+.crawler-back-btn {
+  margin-bottom: 8px;
+}

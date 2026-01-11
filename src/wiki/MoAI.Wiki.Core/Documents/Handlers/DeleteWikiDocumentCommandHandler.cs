@@ -61,18 +61,15 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
         _databaseContext.WikiDocuments.RemoveRange(documents);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        foreach (var item in documents)
+        await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
         {
-            await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
-            {
-                WikiId = request.WikiId,
-                DocumentId = item.Id,
-                IsAutoDeleteIndex = true
-            });
+            WikiId = request.WikiId,
+            DocumentIds = documents.Select(x => x.Id).ToArray(),
+            IsAutoDeleteIndex = true
+        });
 
-            // 删除 oss 文件
-            await _mediator.Send(new DeleteFileCommand { FileIds = new[] { item.FileId } });
-        }
+        // 删除 oss 文件
+        await _mediator.Send(new DeleteFileCommand { FileIds = documents.Select(x => x.FileId).ToArray() });
 
         var documentCount = await _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).CountAsync();
         if (documentCount == 0)

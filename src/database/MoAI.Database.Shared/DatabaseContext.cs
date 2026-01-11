@@ -16,41 +16,14 @@ namespace MoAI.Database;
 public partial class DatabaseContext : DbContext
 {
     /// <summary>
-    /// IServiceProvider.
+    /// ai模型.
     /// </summary>
-    protected readonly IServiceProvider _serviceProvider;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DatabaseContext"/> class.
-    /// </summary>
-    /// <param name="options"></param>
-    /// <param name="serviceProvider"></param>
-    public DatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
-        : base(options)
-    {
-        _serviceProvider = serviceProvider;
-
-        // 配置过滤器.
-        ChangeTracker.Tracked += (state, args) =>
-        {
-            AuditFilter(args);
-        };
-
-        ChangeTracker.StateChanged += (state, args) =>
-        {
-            AuditFilter(args);
-        };
-    }
+    public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
     /// 授权模型给哪些团队使用.
     /// </summary>
     public virtual DbSet<AiModelAuthorizationEntity> AiModelAuthorizations { get; set; }
-
-    /// <summary>
-    /// ai模型.
-    /// </summary>
-    public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
     /// ai模型使用量限制，只能用于系统模型.
@@ -66,11 +39,6 @@ public partial class DatabaseContext : DbContext
     /// 模型使用日志,记录每次请求使用记录.
     /// </summary>
     public virtual DbSet<AiModelUseageLogEntity> AiModelUseageLogs { get; set; }
-
-    /// <summary>
-    /// 授权私有插件给哪些团队使用.
-    /// </summary>
-    public virtual DbSet<PluginAuthorizationEntity> PluginAuthorizations { get; set; }
 
     /// <summary>
     /// 应用.
@@ -131,6 +99,11 @@ public partial class DatabaseContext : DbContext
     /// 插件.
     /// </summary>
     public virtual DbSet<PluginEntity> Plugins { get; set; }
+
+    /// <summary>
+    /// 授权私有插件给哪些团队使用.
+    /// </summary>
+    public virtual DbSet<PluginAuthorizationEntity> PluginAuthorizations { get; set; }
 
     /// <summary>
     /// 自定义插件.
@@ -208,14 +181,14 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentPreviewEntity> WikiDocumentChunkContentPreviews { get; set; }
 
     /// <summary>
-    /// 切片元数据内容表（提问/提纲/摘要）.
-    /// </summary>
-    public virtual DbSet<WikiDocumentChunkDerivativePreviewEntity> WikiDocumentChunkDerivativePreviews { get; set; }
-
-    /// <summary>
     /// 切片向量化内容.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
+
+    /// <summary>
+    /// 切片元数据内容表（提问/提纲/摘要）.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkMetadataPreviewEntity> WikiDocumentChunkMetadataPreviews { get; set; }
 
     /// <summary>
     /// 知识库插件配置.

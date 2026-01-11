@@ -97,7 +97,7 @@ public class StartWikiBatchhuMessageConsumer : IConsumer<StartWikiBatchhuMessage
                     continue;
                 }
 
-                List<AddWikiDocumentDerivativeItem> derivativeItems = new();
+                List<AddWikiDocumentMetadataItem> metadataItems = new();
 
                 // 生成元数据
                 foreach (var preprocessStrategyType in message.Command.PreprocessStrategyType)
@@ -117,23 +117,23 @@ public class StartWikiBatchhuMessageConsumer : IConsumer<StartWikiBatchhuMessage
                     {
                         foreach (var metadataItem in metadata.Value.Metadata)
                         {
-                            derivativeItems.Add(new AddWikiDocumentDerivativeItem
+                            metadataItems.Add(new AddWikiDocumentMetadataItem
                             {
                                 ChunkId = metadata.Key,
-                                DerivativeType = metadataItem.Key.JsonToObject<ParagrahProcessorMetadataType>(),
-                                DerivativeContent = metadataItem.Value,
+                                MetadataType = metadataItem.Key.JsonToObject<ParagrahProcessorMetadataType>(),
+                                MetadataContent = metadataItem.Value,
                             });
                         }
                     }
                 }
 
-                if (derivativeItems.Count > 0)
+                if (metadataItems.Count > 0)
                 {
-                    await _mediator.Send(new AddWikiDocumentChunkDerivativeCommand
+                    await _mediator.Send(new AddWikiDocumentChunkMetadataCommand
                     {
                         WikiId = message.WikiId,
                         DocumentId = documentId,
-                        Derivatives = derivativeItems
+                        Metadatas = metadataItems
                     });
                 }
 

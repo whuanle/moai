@@ -1,0 +1,172 @@
+/* PaddleOCR 页面样式 */
+
+.paddleocr-config-card {
+  margin-bottom: var(--spacing-lg);
+}
+
+.paddleocr-form-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  height: 100%;
+}
+
+.paddleocr-form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+}
+
+.paddleocr-form-item .ant-select {
+  width: 100%;
+}
+
+.paddleocr-form-item .ant-select .ant-select-selector {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.paddleocr-plugin-option {
+  padding: 4px 0;
+}
+
+.paddleocr-config-card .ant-row {
+  align-items: stretch;
+}
+
+.paddleocr-plugin-desc {
+  font-size: 12px;
+  display: block;
+  margin-top: 2px;
+}
+
+.paddleocr-param-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+
+.paddleocr-param-item:hover {
+  background: #e6f4ff;
+}
+
+.paddleocr-param-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.paddleocr-param-desc {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.paddleocr-actions {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.paddleocr-result-card {
+  margin-bottom: var(--spacing-lg);
+}
+
+.paddleocr-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.paddleocr-result-item {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.paddleocr-result-index {
+  flex-shrink: 0;
+  width: 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: var(--spacing-sm);
+  font-weight: 600;
+}
+
+.paddleocr-result-content {
+  flex: 1;
+  display: flex;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.paddleocr-result-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.paddleocr-result-text .ant-input {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+}
+
+.paddleocr-result-image {
+  flex-shrink: 0;
+  width: 300px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.paddleocr-preview-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.paddleocr-no-image {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-container);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.paddleocr-import-section-top {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.paddleocr-import-section {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.paddleocr-empty-card {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paddleocr-empty-card .moai-empty {
+  text-align: center;
+  padding: var(--spacing-xl);
+}

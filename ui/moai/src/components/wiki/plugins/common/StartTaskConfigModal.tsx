@@ -15,13 +15,10 @@ import {
 } from "antd";
 import type {
   WikiPluginAutoProcessConfig,
-  PreprocessStrategyType,
   WikiDocumentTextPartitionPreviewCommand,
   WikiDocumentAiTextPartionCommand,
 } from "../../../../apiClient/models";
-import { GetApiClient } from "../../../ServiceClient";
-import { proxyRequestError } from "../../../../helper/RequestError";
-import { message } from "antd";
+import { useAiModelList } from "../../wiki_hooks";
 
 const { TextArea } = Input;
 
@@ -59,43 +56,16 @@ export default function StartTaskConfigModal({
   const [partitionType, setPartitionType] = useState<"normal" | "ai">("normal");
   const [isEmbedding, setIsEmbedding] = useState(false);
   const [hasPreprocessStrategy, setHasPreprocessStrategy] = useState(false);
-  const [modelList, setModelList] = useState<Array<{ id: number; name: string }>>([]);
-  const [modelListLoading, setModelListLoading] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
+  
+  // 使用共享 hook 获取 AI 模型列表
+  const { modelList, loading: modelListLoading, contextHolder, fetchModelList } = useAiModelList(wikiId, "chat");
 
   // 获取 AI 模型列表
   useEffect(() => {
     if (open) {
       fetchModelList();
     }
-  }, [open]);
-
-  const fetchModelList = async () => {
-    try {
-      setModelListLoading(true);
-      const apiClient = GetApiClient();
-      const response = await apiClient.api.aimodel.modellist.post({
-        aiModelType: "chat",
-      });
-
-      if (response?.aiModels && Array.isArray(response.aiModels)) {
-        const models = response.aiModels
-          .filter((item: any) => item && typeof item.id === "number" && item.name)
-          .map((item: any) => ({
-            id: Number(item.id),
-            name: String(item.name || ""),
-          }));
-        setModelList(models);
-      } else {
-        setModelList([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch AI model list:", error);
-      proxyRequestError(error, messageApi, "获取AI模型列表失败");
-    } finally {
-      setModelListLoading(false);
-    }
-  };
+  }, [open, fetchModelList]);
 
   // 重置表单
   const handleCancel = () => {
@@ -279,22 +249,18 @@ export default function StartTaskConfigModal({
 
 请根据用户提供的完整文档内容按照以下要求拆分文本：
 
-1. 每个文本块长度尽量不超过 1000 个字符，可根据语义适当调整。
-2. 相邻文本块需要保留约 50 个字符的重叠内容以保证上下文衔接。
+1. 每个文本块长度尽量不超过 1000 个字符，尽可能不要切开多个文本块，可根据语义适当调整，如果长度够用，则请勿拆分多个块。
+2. 在有多个文本块的情况下，则相邻文本块需要保留约 50 个字符的重叠内容以保证上下文衔接，只有一个块则不需要生成重叠内容。
 3.尽可能不要拆开代码或段落，尽可能让语义相近的内容在一个段落内。
 
 3. 只允许引用原文内容，不要编造或总结。
 
-4. 输出统一使用 JSON，格式如下：
+4. 输出统一使用 JSON 字符串数组，格式如下：
 
-{
-  "chunks": [
-    { "order": 1, "text": "第一块原文内容" },
-    { "order": 2, "text": "第二块原文内容" }
-  ]
-}
-
-order 从 1 开始递增，text 为对应的原文片段。
+[
+"第一块原文内容",
+"第二块原文内容"
+]
 
 只输出 JSON，不要附加其他解释。`}
               >

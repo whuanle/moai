@@ -1,39 +1,250 @@
-.wiki-settings-form {
-  max-width: 800px;
+/* WikiSettings 样式 */
+@import "../../styles/theme.css";
+
+/* 外层包装器 - 靠左布局 */
+.wiki-settings-wrapper {
+  padding: var(--spacing-lg);
+  padding-top: 0px;
+  min-height: 100%;
 }
 
-.wiki-avatar-upload-wrapper {
+/* 表单样式 - 靠左，限制最大宽度 */
+.wiki-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-width: 720px;
+}
+
+.wiki-settings-form .ant-form-item {
+  margin-bottom: var(--spacing-md);
+}
+
+.wiki-settings-form .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.wiki-settings-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* 卡片样式 */
+.wiki-settings-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.wiki-settings-card .ant-card-head {
+  border-bottom: 1px solid var(--color-border-secondary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-height: auto;
+}
+
+.wiki-settings-card .ant-card-head-title {
+  padding: 0;
+}
+
+.wiki-settings-card .ant-card-body {
+  padding: var(--spacing-lg);
+}
+
+/* 卡片标题头部 */
+.wiki-settings-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wiki-settings-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.wiki-settings-card-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.wiki-settings-card-title.danger {
+  color: #ff4d4f;
+}
+
+.wiki-settings-card-icon {
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+.wiki-settings-card-icon.locked {
+  color: #faad14;
+}
+
+.wiki-settings-card-title.danger .wiki-settings-card-icon {
+  color: #ff4d4f;
+}
+
+.wiki-settings-lock-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: rgba(250, 173, 20, 0.1);
+  color: #d48806;
+  border-radius: var(--radius-sm);
+  margin-left: var(--spacing-sm);
+}
+
+/* 危险操作卡片 */
+.wiki-settings-danger-card {
+  border-color: rgba(255, 77, 79, 0.2);
+}
+
+.wiki-settings-danger-card .ant-card-head {
+  background: rgba(255, 77, 79, 0.02);
+  border-bottom-color: rgba(255, 77, 79, 0.1);
+}
+
+/* 头像上传区域 - 同一行布局 */
+.wiki-settings-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-spotlight);
+  border-radius: var(--radius-md);
+}
+
+.wiki-settings-avatar-wrapper {
   position: relative;
   display: inline-block;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.wiki-avatar-upload-overlay {
+.wiki-settings-avatar {
+  border: 2px solid var(--color-bg-container);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-normal);
+}
+
+.wiki-settings-avatar-wrapper:hover .wiki-settings-avatar {
+  transform: scale(1.05);
+}
+
+.wiki-settings-avatar-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #fff;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--transition-normal);
 }
 
-.wiki-avatar-upload-overlay .anticon {
-  font-size: 20px;
-  margin-bottom: 4px;
+.wiki-settings-avatar-overlay .anticon {
+  font-size: 18px;
 }
 
-.wiki-avatar-upload-overlay span {
-  font-size: 12px;
-}
-
-.wiki-avatar-upload-wrapper:hover .wiki-avatar-upload-overlay {
+.wiki-settings-avatar-wrapper:hover .wiki-settings-avatar-overlay {
   opacity: 1;
+}
+
+.wiki-settings-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wiki-settings-avatar-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.wiki-settings-avatar-tip {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+/* 锁定提示 */
+.wiki-settings-lock-alert {
+  margin-bottom: var(--spacing-lg);
+}
+
+/* 危险操作项 */
+.wiki-settings-danger-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+}
+
+.wiki-settings-danger-info {
+  flex: 1;
+}
+
+.wiki-settings-danger-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.wiki-settings-danger-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* 底部按钮 - 靠左 */
+.wiki-settings-footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.wiki-settings-footer .ant-btn-lg {
+  min-width: 140px;
+  height: 40px;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .wiki-settings-wrapper {
+    padding: var(--spacing-md);
+  }
+
+  .wiki-settings-card .ant-card-body {
+    padding: var(--spacing-md);
+  }
+
+  .wiki-settings-avatar-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wiki-settings-danger-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .wiki-settings-danger-item .ant-btn {
+    width: 100%;
+  }
+
+  .wiki-settings-footer .ant-btn {
+    width: 100%;
+  }
 }

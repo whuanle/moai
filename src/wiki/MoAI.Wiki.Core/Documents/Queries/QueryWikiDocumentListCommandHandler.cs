@@ -37,6 +37,11 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
             query = query.Where(x => x.FileName.Contains(request.Query));
         }
 
+        if (request.IsEmbedding != null)
+        {
+            query = query.Where(x => x.IsEmbedding == request.IsEmbedding);
+        }
+
         if (request.IncludeFileTypes != null && request.IncludeFileTypes.Count > 0)
         {
             query = query.Where(x => request.IncludeFileTypes.Contains(x.FileType));
@@ -50,21 +55,44 @@ public class QueryWikiDocumentListCommandHandler : IRequestHandler<QueryWikiDocu
         var totalCount = await query.CountAsync();
 
         var result = await query
-            .OrderByDescending(x => x.CreateTime)
+            .Join(_databaseContext.Files.Where(x => x.IsUploaded), a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
+            {
+                DocumentId = a.Id,
+                FileName = a.FileName,
+                FileSize = b.FileSize,
+                ContentType = b.ContentType,
+                CreateTime = a.CreateTime,
+                CreateUserId = a.CreateUserId,
+                UpdateTime = a.UpdateTime,
+                UpdateUserId = a.UpdateUserId,
+                Embedding = a.IsEmbedding
+            })
+            .DynamicOrder(request.OrderByFields)
             .Skip(request.Skip)
             .Take(request.Take)
-            .Join(_databaseContext.Files.Where(x => x.IsUploaded), a => a.FileId, b => b.Id, (a, b) => new QueryWikiDocumentListItem
+            .ToArrayAsync();
+
+        var documentIds = result.Select(x => x.DocumentId).ToArray();
+        var chunkCounts = await _databaseContext.WikiDocumentChunkContentPreviews
+            .Where(x => documentIds.Contains(x.DocumentId))
+            .GroupBy(x => x.DocumentId)
+            .Select(g => new { DocumentId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.DocumentId, x => x.Count);
+
+        foreach (var item in result)
         {
-            DocumentId = a.Id,
-            FileName = a.FileName,
-            FileSize = b.FileSize,
-            ContentType = b.ContentType,
-            CreateTime = a.CreateTime,
-            CreateUserId = a.CreateUserId,
-            UpdateTime = a.UpdateTime,
-            UpdateUserId = a.UpdateUserId,
-            Embedding = a.IsEmbedding
-        }).ToArrayAsync();
+            item.ChunkCount = chunkCounts.TryGetValue(item.DocumentId, out int value) ? value : 0;
+        }
+
+        var metadataCounts = await _databaseContext.WikiDocumentChunkMetadataPreviews
+            .Where(x => documentIds.Contains(x.DocumentId))
+            .GroupBy(x => x.DocumentId)
+            .Select(g => new { DocumentId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.DocumentId, x => x.Count);
+        foreach (var item in result)
+        {
+            item.MetedataCount = metadataCounts.TryGetValue(item.DocumentId, out int value) ? value : 0;
+        }
 
         await _mediator.Send(new FillUserInfoCommand
         {

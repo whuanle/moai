@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using MoAI.Database.Audits;
 
+#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
 namespace MoAI.Database.Entities;
 
 /// <summary>

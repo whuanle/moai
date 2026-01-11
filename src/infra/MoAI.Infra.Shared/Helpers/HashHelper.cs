@@ -27,7 +27,28 @@ public static class HashHelper
         return builder.ToString();
     }
 
-    // 计算文件 md5
+    /// <summary>
+    /// 计算数据的 MD5 哈希值.
+    /// </summary>
+    /// <param name="data">要哈希的数据.</param>
+    /// <returns>哈希值的十六进制字符串表示.</returns>
+    public static string ComputeMd5(ReadOnlySpan<byte> data)
+    {
+        byte[] hash = MD5.HashData(data);
+        StringBuilder builder = new(hash.Length * 2);
+        foreach (byte b in hash)
+        {
+            builder.Append(b.ToString("x2"));
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// 计算文件 SHA256 哈希值.
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <returns></returns>
     public static string ComputeFileMd5(string filePath)
     {
         using FileStream? stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);

@@ -12,9 +12,13 @@ import { ManagerRequestBuilderNavigationMetadata, type ManagerRequestBuilder } f
 // @ts-ignore
 import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
 // @ts-ignore
+import { Query_team_wiki_listRequestBuilderRequestsMetadata, type Query_team_wiki_listRequestBuilder } from './query_team_wiki_list/index.js';
+// @ts-ignore
 import { Query_wiki_infoRequestBuilderRequestsMetadata, type Query_wiki_infoRequestBuilder } from './query_wiki_info/index.js';
 // @ts-ignore
 import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequestBuilder } from './query_wiki_list/index.js';
+// @ts-ignore
+import { Team_modellistRequestBuilderRequestsMetadata, type Team_modellistRequestBuilder } from './team_modellist/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -43,6 +47,10 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      */
     get plugin(): PluginRequestBuilder;
     /**
+     * The query_team_wiki_list property
+     */
+    get query_team_wiki_list(): Query_team_wiki_listRequestBuilder;
+    /**
      * The query_wiki_info property
      */
     get query_wiki_info(): Query_wiki_infoRequestBuilder;
@@ -50,6 +58,10 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The query_wiki_list property
      */
     get query_wiki_list(): Query_wiki_listRequestBuilder;
+    /**
+     * The team_modellist property
+     */
+    get team_modellist(): Team_modellistRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -74,11 +86,17 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     plugin: {
         navigationMetadata: PluginRequestBuilderNavigationMetadata,
     },
+    query_team_wiki_list: {
+        requestsMetadata: Query_team_wiki_listRequestBuilderRequestsMetadata,
+    },
     query_wiki_info: {
         requestsMetadata: Query_wiki_infoRequestBuilderRequestsMetadata,
     },
     query_wiki_list: {
         requestsMetadata: Query_wiki_listRequestBuilderRequestsMetadata,
+    },
+    team_modellist: {
+        requestsMetadata: Team_modellistRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

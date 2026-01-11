@@ -44,22 +44,22 @@ public class AddWikiDocumentChunksCommandHandler : IRequestHandler<AddWikiDocume
         await _databaseContext.WikiDocumentChunkContentPreviews.AddAsync(chunkEntity, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        List<WikiDocumentChunkDerivativePreviewEntity> derivativePreviewEntities = new();
-        if (request.Derivatives != null && request.Derivatives.Count > 0)
+        List<WikiDocumentChunkMetadataPreviewEntity> metadataPreviewEntities = new();
+        if (request.Metadatas != null && request.Metadatas.Count > 0)
         {
-            foreach (var item in request.Derivatives)
+            foreach (var item in request.Metadatas)
             {
-                derivativePreviewEntities.Add(new WikiDocumentChunkDerivativePreviewEntity
+                metadataPreviewEntities.Add(new WikiDocumentChunkMetadataPreviewEntity
                 {
                     WikiId = request.WikiId,
                     DocumentId = request.DocumentId,
                     ChunkId = chunkEntity.Id,
-                    DerivativeType = (int)item.DerivativeType,
-                    DerivativeContent = item.DerivativeContent
+                    MetadataType = (int)item.MetadataType,
+                    MetadataContent = item.MetadataContent
                 });
             }
 
-            await _databaseContext.WikiDocumentChunkDerivativePreviews.AddRangeAsync(derivativePreviewEntities, cancellationToken);
+            await _databaseContext.WikiDocumentChunkMetadataPreviews.AddRangeAsync(metadataPreviewEntities, cancellationToken);
             await _databaseContext.SaveChangesAsync(cancellationToken);
         }
 

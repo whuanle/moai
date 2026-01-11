@@ -24,23 +24,57 @@ public partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration<A
 
         entity.ToTable("ai_model_token_audit", tb => tb.HasComment("统计不同模型的token使用量，该表不是实时刷新的"));
 
-        entity.Property(e => e.Id).HasComment("id");
-        entity.Property(e => e.CompletionTokens).HasComment("完成数量");
-        entity.Property(e => e.Count).HasComment("调用次数");
+        entity.Property(e => e.Id)
+            .HasComment("id")
+            .HasColumnType("int(11)")
+            .HasColumnName("id");
+        entity.Property(e => e.CompletionTokens)
+            .HasComment("完成数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("completion_tokens");
+        entity.Property(e => e.Count)
+            .HasComment("调用次数")
+            .HasColumnType("int(11)")
+            .HasColumnName("count");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
-            .HasComment("创建时间");
-        entity.Property(e => e.CreateUserId).HasComment("创建人");
-        entity.Property(e => e.IsDeleted).HasComment("软删除");
-        entity.Property(e => e.ModelId).HasComment("模型id");
-        entity.Property(e => e.PromptTokens).HasComment("输入数量");
-        entity.Property(e => e.TotalTokens).HasComment("总数量");
+            .HasComment("创建时间")
+            .HasColumnType("datetime")
+            .HasColumnName("create_time");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnType("int(11)")
+            .HasColumnName("create_user_id");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("is_deleted");
+        entity.Property(e => e.ModelId)
+            .HasComment("模型id")
+            .HasColumnType("int(11)")
+            .HasColumnName("model_id");
+        entity.Property(e => e.PromptTokens)
+            .HasComment("输入数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("prompt_tokens");
+        entity.Property(e => e.TotalTokens)
+            .HasComment("总数量")
+            .HasColumnType("int(11)")
+            .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")
-            .HasComment("更新时间");
-        entity.Property(e => e.UpdateUserId).HasComment("更新人");
-        entity.Property(e => e.UseriId).HasComment("用户id");
+            .HasComment("更新时间")
+            .HasColumnType("datetime")
+            .HasColumnName("update_time");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnType("int(11)")
+            .HasColumnName("update_user_id");
+        entity.Property(e => e.UseriId)
+            .HasComment("用户id")
+            .HasColumnType("int(11)")
+            .HasColumnName("useri_id");
 
         OnConfigurePartial(entity);
     }

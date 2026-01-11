@@ -4,6 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
 
+#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
 namespace MoAI.Database;
 
 /// <summary>
@@ -19,15 +24,15 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
 
         entity.ToTable("wiki_document_chunk_embedding", tb => tb.HasComment("切片向量化内容"));
 
-        entity.HasIndex(e => e.DerivativeType, "idx_deriv_type");
+        entity.HasIndex(e => e.MetadataType, "idx_deriv_type");
 
-        entity.HasIndex(e => new { e.DocumentId, e.DerivativeType }, "idx_doc_deriv");
+        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_doc_deriv");
 
         entity.HasIndex(e => e.Id, "idx_slice_deriv");
 
         entity.Property(e => e.Id)
             .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
-            .HasComment("元数据内容唯一ID（derivative_id）")
+            .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)
             .HasComment("源id，关联自身")
@@ -41,14 +46,6 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
-        entity.Property(e => e.DerivativeContent)
-            .HasComment("提问/提纲/摘要内容")
-            .HasColumnType("text")
-            .HasColumnName("derivative_content");
-        entity.Property(e => e.DerivativeType)
-            .HasComment("元数据类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段")
-            .HasColumnType("int(11)")
-            .HasColumnName("derivative_type");
         entity.Property(e => e.DocumentId)
             .HasComment("关联文档唯一标识（冗余字段）")
             .HasColumnType("int(11)")
@@ -60,6 +57,14 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
         entity.Property(e => e.IsEmbedding)
             .HasComment("是否被向量化")
             .HasColumnName("is_embedding");
+        entity.Property(e => e.MetadataContent)
+            .HasComment("提问/提纲/摘要内容")
+            .HasColumnType("text")
+            .HasColumnName("metadata_content");
+        entity.Property(e => e.MetadataType)
+            .HasComment("元数据类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段")
+            .HasColumnType("int(11)")
+            .HasColumnName("metadata_type");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

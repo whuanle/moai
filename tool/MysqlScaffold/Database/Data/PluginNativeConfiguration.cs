@@ -24,21 +24,45 @@ public partial class PluginNativeConfiguration : IEntityTypeConfiguration<Plugin
 
         entity.ToTable("plugin_native", tb => tb.HasComment("内置插件"));
 
-        entity.Property(e => e.Id).HasComment("id");
+        entity.Property(e => e.Id)
+            .HasComment("id")
+            .HasColumnType("int(11)")
+            .HasColumnName("id");
         entity.Property(e => e.Config)
             .HasDefaultValueSql("'{}'")
-            .HasComment("配置参数");
+            .HasComment("配置参数")
+            .HasColumnType("json")
+            .HasColumnName("config");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("创建时间");
-        entity.Property(e => e.CreateUserId).HasComment("创建人");
-        entity.Property(e => e.IsDeleted).HasComment("软删除");
-        entity.Property(e => e.TemplatePluginClassify).HasComment("模板分类");
-        entity.Property(e => e.TemplatePluginKey).HasComment("对应的内置插件key");
+            .HasComment("创建时间")
+            .HasColumnType("datetime")
+            .HasColumnName("create_time");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnType("int(11)")
+            .HasColumnName("create_user_id");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除")
+            .HasColumnType("bigint(20)")
+            .HasColumnName("is_deleted");
+        entity.Property(e => e.TemplatePluginClassify)
+            .HasMaxLength(20)
+            .HasComment("模板分类")
+            .HasColumnName("template_plugin_classify");
+        entity.Property(e => e.TemplatePluginKey)
+            .HasMaxLength(50)
+            .HasComment("对应的内置插件key")
+            .HasColumnName("template_plugin_key");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间");
-        entity.Property(e => e.UpdateUserId).HasComment("最后修改人");
+            .HasComment("最后更新时间")
+            .HasColumnType("datetime")
+            .HasColumnName("update_time");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("最后修改人")
+            .HasColumnType("int(11)")
+            .HasColumnName("update_user_id");
 
         OnConfigurePartial(entity);
     }

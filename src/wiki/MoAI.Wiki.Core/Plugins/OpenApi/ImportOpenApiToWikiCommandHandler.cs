@@ -72,7 +72,7 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
 
                 _putClient.Client.BaseAddress = new Uri(request.OpenApiSpecUrl);
 
-                using var httpStream = await _putClient.DownloadAsync(string.Empty);
+                using var httpStream = await _putClient.DownloadAsync(request.OpenApiSpecUrl);
                 await httpStream.CopyToAsync(fileStream, cancellationToken);
                 await fileStream.FlushAsync();
 

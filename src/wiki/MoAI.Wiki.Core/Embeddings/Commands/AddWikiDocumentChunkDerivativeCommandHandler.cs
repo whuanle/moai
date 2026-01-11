@@ -11,23 +11,23 @@ using MoAI.Wiki.Embedding.Commands;
 namespace MoAI.Wiki.DocumentEmbeddings.Queries;
 
 /// <summary>
-/// <inheritdoc cref="AddWikiDocumentChunkDerivativeCommand"/>
+/// <inheritdoc cref="AddWikiDocumentChunkMetadataCommand"/>
 /// </summary>
-public class AddWikiDocumentChunkDerivativeCommandHandler : IRequestHandler<AddWikiDocumentChunkDerivativeCommand, EmptyCommandResponse>
+public class AddWikiDocumentChunkMetadataCommandHandler : IRequestHandler<AddWikiDocumentChunkMetadataCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AddWikiDocumentChunkDerivativeCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="AddWikiDocumentChunkMetadataCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    public AddWikiDocumentChunkDerivativeCommandHandler(DatabaseContext databaseContext)
+    public AddWikiDocumentChunkMetadataCommandHandler(DatabaseContext databaseContext)
     {
         _databaseContext = databaseContext;
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(AddWikiDocumentChunkDerivativeCommand request, CancellationToken cancellationToken)
+    public async Task<EmptyCommandResponse> Handle(AddWikiDocumentChunkMetadataCommand request, CancellationToken cancellationToken)
     {
         // 检查数据库文档是否存在
         var existDocument = await _databaseContext.WikiDocuments
@@ -39,22 +39,22 @@ public class AddWikiDocumentChunkDerivativeCommandHandler : IRequestHandler<AddW
             throw new BusinessException("文档不存在");
         }
 
-        List<WikiDocumentChunkDerivativePreviewEntity> derivativePreviewEntities = new();
-        foreach (var item in request.Derivatives)
+        List<WikiDocumentChunkMetadataPreviewEntity> metadataPreviewEntities = new();
+        foreach (var item in request.Metadatas)
         {
-            derivativePreviewEntities.Add(new WikiDocumentChunkDerivativePreviewEntity
+            metadataPreviewEntities.Add(new WikiDocumentChunkMetadataPreviewEntity
             {
                 WikiId = request.WikiId,
                 DocumentId = request.DocumentId,
                 ChunkId = item.ChunkId,
-                DerivativeType = (int)item.DerivativeType,
-                DerivativeContent = item.DerivativeContent
+                MetadataType = (int)item.MetadataType,
+                MetadataContent = item.MetadataContent
             });
         }
 
-        if (derivativePreviewEntities.Count > 0)
+        if (metadataPreviewEntities.Count > 0)
         {
-            await _databaseContext.WikiDocumentChunkDerivativePreviews.AddRangeAsync(derivativePreviewEntities, cancellationToken);
+            await _databaseContext.WikiDocumentChunkMetadataPreviews.AddRangeAsync(metadataPreviewEntities, cancellationToken);
             await _databaseContext.SaveChangesAsync(cancellationToken);
         }
 

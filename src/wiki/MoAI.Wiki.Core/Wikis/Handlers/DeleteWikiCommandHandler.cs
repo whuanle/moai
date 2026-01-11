@@ -59,7 +59,7 @@ public class DeleteWikiCommandHandler : IRequestHandler<DeleteWikiCommand, Empty
         await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentChunkContentPreviews
             .Where(x => x.WikiId == request.WikiId));
 
-        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentChunkDerivativePreviews
+        await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentChunkMetadataPreviews
             .Where(x => x.WikiId == request.WikiId));
 
         await _databaseContext.SoftDeleteAsync(_databaseContext.WikiDocumentChunkEmbeddings

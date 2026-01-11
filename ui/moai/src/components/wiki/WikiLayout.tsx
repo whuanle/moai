@@ -1,31 +1,24 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Outlet } from "react-router";
-import {
-  Layout,
-  Menu,
-  Typography,
-  Space,
-  Button,
-  message,
-  Spin,
-  Card,
-} from "antd";
+import { Layout, Menu, Button, message, Spin, Card, Typography } from "antd";
 import {
   ArrowLeftOutlined,
   SettingOutlined,
   FileTextOutlined,
-  UserOutlined,
   SearchOutlined,
   ThunderboltOutlined,
-  ImportOutlined,
+  CloudDownloadOutlined,
   ApiOutlined,
   CloudServerOutlined,
+  GlobalOutlined,
+  BookOutlined,
+  ScanOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import "./Wiki.css";
 
 const { Sider, Content } = Layout;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface WikiInfo {
   wikiId: number;
@@ -90,6 +83,8 @@ export default function WikiLayout() {
       navigate(`/app/wiki/${id}/plugin/feishu`);
     } else if (key === "openapi") {
       navigate(`/app/wiki/${id}/plugin/openapi`);
+    } else if (key === "paddleocr") {
+      navigate(`/app/wiki/${id}/plugin/paddleocr`);
     } else if (key === "mcp") {
       navigate(`/app/wiki/${id}/plugin/mcp`);
     } else if (key === "batch") {
@@ -109,6 +104,8 @@ export default function WikiLayout() {
       return "feishu";
     } else if (path.includes("/plugin/openapi")) {
       return "openapi";
+    } else if (path.includes("/plugin/paddleocr")) {
+      return "paddleocr";
     } else if (path.includes("/plugin/mcp")) {
       return "mcp";
     } else if (path.includes("/search")) {
@@ -124,12 +121,8 @@ export default function WikiLayout() {
   };
 
   const getDefaultOpenKeys = () => {
-    const path = location.pathname;
-    // 如果当前路径在外部导入子菜单中，则展开该菜单
-    if (path.includes("/plugin/feishu") || path.includes("/batch") || path.includes("/plugin/openapi") || path.includes("/plugin/mcp")) {
-      return ["external-import"];
-    }
-    return [];
+    // 默认展开外部导入子菜单
+    return ["external-import"];
   };
 
   const menuItems = [
@@ -139,24 +132,19 @@ export default function WikiLayout() {
       label: "文档列表",
     },
     {
-      key: "crawle",
-      icon: <FileTextOutlined />,
-      label: "爬虫",
-    },
-    {
       key: "external-import",
-      icon: <ImportOutlined />,
+      icon: <CloudDownloadOutlined />,
       label: "外部导入",
       children: [
         {
-          key: "feishu",
-          icon: <FileTextOutlined />,
-          label: "飞书知识库",
+          key: "crawle",
+          icon: <GlobalOutlined />,
+          label: "网页爬虫",
         },
         {
-          key: "batch",
-          icon: <ThunderboltOutlined />,
-          label: "批处理任务",
+          key: "feishu",
+          icon: <BookOutlined />,
+          label: "飞书知识库",
         },
         {
           key: "openapi",
@@ -164,11 +152,21 @@ export default function WikiLayout() {
           label: "OpenAPI",
         },
         {
+          key: "paddleocr",
+          icon: <ScanOutlined />,
+          label: "飞桨 OCR",
+        },
+        {
           key: "mcp",
           icon: <CloudServerOutlined />,
           label: "MCP 配置",
         },
       ],
+    },
+    {
+      key: "batch",
+      icon: <ThunderboltOutlined />,
+      label: "批处理任务",
     },
     {
       key: "search",
@@ -184,7 +182,7 @@ export default function WikiLayout() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
+      <div className="wiki-loading">
         <Spin size="large" />
       </div>
     );
@@ -192,34 +190,34 @@ export default function WikiLayout() {
 
   if (!wikiInfo) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
+      <div className="wiki-empty">
+        <Card className="wiki-empty-card">
           <Text type="secondary">未找到知识库信息</Text>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
   return (
     <>
       {contextHolder}
-      <Layout style={{ height: '100vh' }}>
-        <Sider width={250} theme="light" style={{ borderRight: '1px solid #f0f0f0' }}>
-          <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0' }}>
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-              <Button 
-                icon={<ArrowLeftOutlined />} 
-                onClick={handleBack}
-                type="text"
-                style={{ padding: 0, height: 'auto' }}
-              >
-                返回列表
-              </Button>
-              <Title level={4} style={{ marginTop: 5, marginBottom: 0 }}>
-                {wikiInfo.name}
-              </Title>
-              <Text>{wikiInfo.description}</Text>
-            </Space>
+      <Layout className="wiki-layout">
+        <Sider width={260} className="wiki-sider">
+          <div className="wiki-sider-header">
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={handleBack}
+              type="text"
+              className="wiki-back-btn"
+            >
+              返回列表
+            </Button>
+            <div className="wiki-info">
+              <h2 className="wiki-title">{wikiInfo.name}</h2>
+              {wikiInfo.description && (
+                <p className="wiki-description">{wikiInfo.description}</p>
+              )}
+            </div>
           </div>
           <Menu
             mode="inline"
@@ -227,10 +225,10 @@ export default function WikiLayout() {
             defaultOpenKeys={getDefaultOpenKeys()}
             items={menuItems}
             onClick={handleMenuClick}
-            style={{ borderRight: 'none' }}
+            className="wiki-menu"
           />
         </Sider>
-        <Content style={{ padding: '24px', overflow: 'auto' }}>
+        <Content className="wiki-content">
           <Outlet />
         </Content>
       </Layout>

@@ -1,0 +1,57 @@
+/* WikiDocument 页面样式 */
+
+.wiki-document-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  min-height: calc(100vh - var(--header-height) - 48px);
+}
+
+.wiki-document-table-card {
+  flex: 1;
+  border-radius: var(--radius-lg);
+}
+
+.wiki-document-table-card .ant-card-body {
+  padding: var(--spacing-md);
+}
+
+/* 文件名样式 */
+.wiki-doc-filename {
+  cursor: pointer;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+  transition: color var(--transition-fast);
+}
+
+.wiki-doc-filename:hover {
+  color: var(--color-primary);
+}
+
+/* 表格优化 */
+.wiki-document-page .ant-table-thead > tr > th {
+  background: var(--color-bg-spotlight) !important;
+  font-weight: 600;
+}
+
+.wiki-document-page .ant-table-tbody > tr:hover > td {
+  background: var(--color-primary-bg) !important;
+}
+
+/* 工具栏响应式 */
+@media (max-width: 1200px) {
+  .wiki-document-page .moai-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .wiki-document-page .moai-toolbar-left,
+  .wiki-document-page .moai-toolbar-right {
+    flex-wrap: wrap;
+  }
+}

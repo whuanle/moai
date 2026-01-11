@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.Wikis.Commands;
@@ -13,7 +14,7 @@ namespace MoAI.Wiki.Controllers;
 /// </summary>
 [ApiController]
 [Route("/wiki/manager")]
-[Authorize]
+[EndpointGroupName("wiki")]
 public partial class WikiManagerController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -61,7 +62,7 @@ public partial class WikiManagerController : ControllerBase
 
     private async Task CheckIsCreatorAsync(int wikiId, CancellationToken ct)
     {
-        var isCreator = await _mediator.Send(new QueryWikiCreatorCommand { WikiId = wikiId, ContextUserId = _userContext.UserId }, ct);
+        var isCreator = await _mediator.Send(new QueryUserIsWikiMemberCommand { WikiId = wikiId, ContextUserId = _userContext.UserId }, ct);
 
         if (!isCreator.IsExist)
         {

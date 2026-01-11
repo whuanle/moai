@@ -86,7 +86,7 @@ public class McpController : ControllerBase
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(
-            new QueryWikiCreatorCommand
+            new QueryUserIsWikiMemberCommand
             {
                 ContextUserId = _userContext.UserId,
                 WikiId = wikiId

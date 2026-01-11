@@ -17,30 +17,6 @@ namespace MoAI.Database;
 /// </summary>
 public partial class DatabaseContext : DbContext
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DatabaseContext"/> class.
-    /// </summary>
-    /// <param name="options"></param>
-    /// <param name="serviceProvider"></param>
-    public DatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
-        : base(options)
-    {
-        _serviceProvider = serviceProvider;
-
-        // 配置过滤器.
-        ChangeTracker.Tracked += (state, args) =>
-        {
-            AuditFilter(args);
-        };
-
-        ChangeTracker.StateChanged += (state, args) =>
-        {
-            AuditFilter(args);
-        };
-    }
-
     /// <summary>
     /// ai模型.
     /// </summary>
@@ -207,14 +183,14 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentPreviewEntity> WikiDocumentChunkContentPreviews { get; set; }
 
     /// <summary>
-    /// 切片元数据内容表（提问/提纲/摘要）.
-    /// </summary>
-    public virtual DbSet<WikiDocumentChunkDerivativePreviewEntity> WikiDocumentChunkDerivativePreviews { get; set; }
-
-    /// <summary>
     /// 切片向量化内容.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
+
+    /// <summary>
+    /// 切片元数据内容表（提问/提纲/摘要）.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkMetadataPreviewEntity> WikiDocumentChunkMetadataPreviews { get; set; }
 
     /// <summary>
     /// 知识库插件配置.

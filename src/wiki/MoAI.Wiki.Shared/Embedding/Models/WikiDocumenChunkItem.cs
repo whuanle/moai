@@ -26,7 +26,7 @@ public class WikiDocumenChunkItem : IModelValidator<WikiDocumenChunkItem>
     /// <summary>
     /// 元数据.
     /// </summary>
-    public IReadOnlyCollection<WikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<WikiDocumentDerivativeItem>();
+    public IReadOnlyCollection<WikiDocumentMetadataItem> Metadatas { get; init; } = Array.Empty<WikiDocumentMetadataItem>();
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<WikiDocumenChunkItem> validate)

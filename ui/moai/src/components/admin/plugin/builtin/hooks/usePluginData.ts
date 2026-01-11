@@ -13,7 +13,11 @@ import type {
   KeyValueBool,
 } from "../../../../../apiClient/models";
 import { TemplateItem, ClassifyList } from "../TemplatePlugin";
-import type { SortState } from "../../../../common/SortPopover";
+// 排序状态类型
+export interface TableSortState {
+  field: string | null;
+  order: 'ascend' | 'descend' | null;
+}
 
 // JSON 字符串处理
 export const getJsonString = (json: string): string => {
@@ -39,15 +43,15 @@ export const setJsonString = (json: any): string => {
   return JSON.stringify(json, null, 2);
 };
 
-// 将 SortState 转换为后端 API 需要的 orderByFields 格式
-const buildOrderByFields = (sortState: SortState): KeyValueBool[] | undefined => {
-  const fields: KeyValueBool[] = [];
-  Object.entries(sortState).forEach(([key, value]) => {
-    if (value) {
-      fields.push({ key, value: value === "asc" });
-    }
-  });
-  return fields.length > 0 ? fields : undefined;
+// 将表格排序状态转换为后端 API 需要的 orderByFields 格式
+const buildOrderByFields = (sortState: TableSortState): KeyValueBool[] | undefined => {
+  if (!sortState.field || !sortState.order) {
+    return undefined;
+  }
+  return [{
+    key: sortState.field,
+    value: sortState.order === 'ascend' // true 为升序，false 为降序
+  }];
 };
 
 export function usePluginData() {
@@ -60,7 +64,7 @@ export function usePluginData() {
   const [searchName, setSearchName] = useState("");
   const [classifyList, setClassifyList] = useState<PluginClassifyItem[]>([]);
   const [selectedClassify, setSelectedClassify] = useState<number | "all">("all");
-  const [sortState, setSortState] = useState<SortState>({});
+  const [sortState, setSortState] = useState<TableSortState>({ field: null, order: null });
 
   // 使用 ref 存储最新值，避免作为依赖导致重复请求
   const searchNameRef = useRef(searchName);
@@ -157,6 +161,17 @@ export function usePluginData() {
     [fetchPluginList]
   );
 
+  // 处理排序变化
+  const handleSortChange = useCallback(
+    (newSortState: TableSortState) => {
+      setSortState(newSortState);
+      // 更新 ref 后立即请求
+      sortStateRef.current = newSortState;
+      fetchPluginList();
+    },
+    [fetchPluginList]
+  );
+
   // 计算每个分类的插件数量
   const pluginCountByClassify = useMemo(() => {
     const countMap: Record<number, number> = {};
@@ -187,7 +202,7 @@ export function usePluginData() {
     pluginCountByClassify,
     handleClassifySelect,
     sortState,
-    setSortState,
+    setSortState: handleSortChange,
     fetchPluginList,
     fetchAllPluginList,
     handleRefresh,

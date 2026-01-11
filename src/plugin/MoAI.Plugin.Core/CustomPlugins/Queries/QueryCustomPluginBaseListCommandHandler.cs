@@ -61,7 +61,7 @@ public class QueryCustomPluginBaseListCommandHandler : IRequestHandler<QueryCust
             query = query.Where(x => x.IsPublic == request.IsPublic.Value);
         }
 
-        var plugins = await query
+        var plugins = await query.DynamicOrder(request.OrderByFields)
             .Join(_dbContext.PluginCustoms, a => a.PluginId, b => b.Id, (x, y) => new PluginBaseInfoItem
             {
                 PluginId = x.Id,

@@ -21,6 +21,21 @@ export const proxyRequestError = (
     return;
   }
 
+  // 模型验证错误
+  if (!businessError.detail) {
+    // 处理字段级别的错误，只显示第一条错误
+    if (businessError.errors && businessError.errors.length > 0) {
+      const firstError = businessError.errors.find(
+        (err) => err.name && err.errors && err.errors.length > 0
+      );
+
+      if (firstError) {
+        messageApi.error(firstError.errors![0]);
+      }
+    }
+    return;
+  }
+
   messageApi.error(businessError.detail);
 };
 

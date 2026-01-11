@@ -16,6 +16,30 @@ namespace MoAI.Database;
 /// </summary>
 public partial class DatabaseContext
 {
+    private readonly IServiceProvider _serviceProvider;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DatabaseContext"/> class.
+    /// </summary>
+    /// <param name="options"></param>
+    /// <param name="serviceProvider"></param>
+    public DatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
+        : base(options)
+    {
+        _serviceProvider = serviceProvider;
+
+        // 配置过滤器.
+        ChangeTracker.Tracked += (state, args) =>
+        {
+            AuditFilter(args);
+        };
+
+        ChangeTracker.StateChanged += (state, args) =>
+        {
+            AuditFilter(args);
+        };
+    }
+
     /// <summary>
     /// OnModelCreatingPartial.
     /// </summary>

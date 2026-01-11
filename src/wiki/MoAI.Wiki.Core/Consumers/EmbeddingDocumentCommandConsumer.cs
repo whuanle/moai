@@ -103,7 +103,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
         }
 
         var chunkIds = chunks.Select(x => x.Id).ToArray();
-        var derivedContents = await _databaseContext.WikiDocumentChunkDerivativePreviews
+        var derivedContents = await _databaseContext.WikiDocumentChunkMetadataPreviews
             .Where(x => chunkIds.Contains(x.ChunkId))
             .ToListAsync();
 
@@ -117,8 +117,8 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
                 ChunkId = default(Guid),
                 WikiId = chunk.WikiId,
                 DocumentId = chunk.DocumentId,
-                DerivativeContent = chunk.SliceContent,
-                DerivativeType = 0,
+                MetadataContent = chunk.SliceContent,
+                MetadataType = 0,
                 IsEmbedding = embddingConfig.IsEmbedSourceText
             };
 
@@ -133,8 +133,8 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
                     ChunkId = item.Id,
                     WikiId = chunk.WikiId,
                     DocumentId = chunk.DocumentId,
-                    DerivativeContent = derived.DerivativeContent,
-                    DerivativeType = (int)derived.DerivativeType,
+                    MetadataContent = derived.MetadataContent,
+                    MetadataType = (int)derived.MetadataType,
                     IsEmbedding = true
                 };
                 embeddingEntities.Add(derivedItem);
@@ -154,7 +154,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
         await _mediator.Send(new ClearWikiDocumentEmbeddingCommand
         {
             WikiId = message.WikiId,
-            DocumentId = message.DocumentId
+            DocumentIds = new List<int> { message.DocumentId }
         });
 
         // 原文片段存储到数据库
@@ -182,8 +182,8 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
             await embeddingSemaphore.WaitAsync();
             try
             {
-                var embedding = await textEmbeddingGenerator.GenerateEmbeddingAsync(item.DerivativeContent);
-                var useage = textEmbeddingGenerator.CountTokens(item.DerivativeContent);
+                var embedding = await textEmbeddingGenerator.GenerateEmbeddingAsync(item.MetadataContent);
+                var useage = textEmbeddingGenerator.CountTokens(item.MetadataContent);
 
                 await _messagePublisher.AutoPublishAsync(
                     new AiModelUseageMessage
@@ -206,7 +206,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
                     Payload = new Dictionary<string, object>
                     {
                         { "file",  documenEntity.FileName },
-                        { "text", item.DerivativeContent },
+                        { "text", item.MetadataContent },
                         { "vector_provider", aiEndpoint.Provider },
                         { "last_update", DateTimeOffset.Now.ToJsonString() }
                     },
@@ -247,10 +247,9 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
 
         documenEntity.IsEmbedding = true;
         _databaseContext.WikiDocuments.Update(documenEntity);
-
-        await _databaseContext.Wikis.Where(x => x.Id == message.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, true));
         await _databaseContext.SaveChangesAsync();
 
+        await _databaseContext.Wikis.Where(x => x.Id == message.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, true));
         await _databaseContext.SaveChangesAsync();
     }
 

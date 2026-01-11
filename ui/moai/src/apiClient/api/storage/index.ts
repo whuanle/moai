@@ -4,7 +4,7 @@
 // @ts-ignore
 import { Complate_urlRequestBuilderRequestsMetadata, type Complate_urlRequestBuilder } from './complate_url/index.js';
 // @ts-ignore
-import { ImageRequestBuilderNavigationMetadata, type ImageRequestBuilder } from './image/index.js';
+import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
 // @ts-ignore
 import { type UploadRequestBuilder, UploadRequestBuilderNavigationMetadata } from './upload/index.js';
 // @ts-ignore
@@ -19,9 +19,9 @@ export interface StorageRequestBuilder extends BaseRequestBuilder<StorageRequest
      */
     get complate_url(): Complate_urlRequestBuilder;
     /**
-     * The image property
+     * The public property
      */
-    get image(): ImageRequestBuilder;
+    get public(): PublicRequestBuilder;
     /**
      * The upload property
      */
@@ -38,8 +38,8 @@ export const StorageRequestBuilderNavigationMetadata: Record<Exclude<keyof Stora
     complate_url: {
         requestsMetadata: Complate_urlRequestBuilderRequestsMetadata,
     },
-    image: {
-        navigationMetadata: ImageRequestBuilderNavigationMetadata,
+    public: {
+        navigationMetadata: PublicRequestBuilderNavigationMetadata,
     },
     upload: {
         navigationMetadata: UploadRequestBuilderNavigationMetadata,

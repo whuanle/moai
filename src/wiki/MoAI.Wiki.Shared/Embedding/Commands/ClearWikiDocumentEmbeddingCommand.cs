@@ -15,14 +15,19 @@ public class ClearWikiDocumentEmbeddingCommand : IRequest<EmptyCommandResponse>,
     public int WikiId { get; init; }
 
     /// <summary>
-    /// 不填写时清空整个知识库的文档向量.
+    /// 文档id列表.
     /// </summary>
-    public int? DocumentId { get; init; }
+    public IReadOnlyCollection<int> DocumentIds { get; init; } = Array.Empty<int>();
 
     /// <summary>
-    /// 是否删除索引.
+    /// 是否自动删除索引，如果知识库没有文档向量了，会自动删除向量数据索引.
     /// </summary>
     public bool IsAutoDeleteIndex { get; init; }
+
+    /// <summary>
+    /// 直接按照整个知识库清空.
+    /// </summary>
+    public bool? ClearAllDocuments { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<ClearWikiDocumentEmbeddingCommand> validate)

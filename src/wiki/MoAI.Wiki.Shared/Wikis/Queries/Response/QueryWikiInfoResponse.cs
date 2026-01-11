@@ -35,6 +35,11 @@ public class QueryWikiInfoResponse : AuditsInfo, IAvatarPath
     public TeamRole Role { get; set; }
 
     /// <summary>
+    /// 团队名称.
+    /// </summary>
+    public string? TeamName { get; set; }
+
+    /// <summary>
     /// 团队 id.
     /// </summary>
     public int TeamId { get; init; }

@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.Commands;
 using MoAI.AI.Models;
+using MoAI.AiModel.Queries;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -42,6 +43,8 @@ public class WikiDocumentAiTextPartionCommandHandler : IRequestHandler<WikiDocum
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(WikiDocumentAiTextPartionCommand request, CancellationToken cancellationToken)
     {
+        var teamId = await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).Select(x => x.TeamId).FirstOrDefaultAsync();
+
         // 提取文档
         var document = await _databaseContext.WikiDocuments
         .Where(d => d.WikiId == request.WikiId && d.Id == request.DocumentId)
@@ -71,43 +74,18 @@ public class WikiDocumentAiTextPartionCommandHandler : IRequestHandler<WikiDocum
 
         var promptTemplate = request.PromptTemplate;
 
-        // ai 切割
-        var aiModel = await _databaseContext.AiModels
-            .Where(x => x.Id == request.AiModelId && x.IsPublic)
-            .FirstOrDefaultAsync();
-
-        if (aiModel == null)
+        var aiEndpoint = await _mediator.Send(new QueryTeamAiModelToAiEndpointCommand
         {
-            throw new BusinessException("未找到可用 ai 模型");
-        }
-
-        var aiEndpoint = new AiEndpoint
-        {
-            Name = aiModel.Name,
-            DeploymentName = aiModel.DeploymentName,
-            Title = aiModel.Title,
-            AiModelType = Enum.Parse<AiModelType>(aiModel.AiModelType, true),
-            Provider = Enum.Parse<AiProvider>(aiModel.AiProvider, true),
-            ContextWindowTokens = aiModel.ContextWindowTokens,
-            Endpoint = aiModel.Endpoint,
-            Key = aiModel.Key,
-            Abilities = new ModelAbilities
-            {
-                Files = aiModel.Files,
-                FunctionCall = aiModel.FunctionCall,
-                ImageOutput = aiModel.ImageOutput,
-                Vision = aiModel.IsVision,
-            },
-            MaxDimension = aiModel.MaxDimension,
-            TextOutput = aiModel.TextOutput
-        };
+            AiModelId = request.AiModelId,
+            TeamId = teamId
+        });
 
         var aiResponse = await _mediator.Send(new OneSimpleChatCommand
         {
             Endpoint = aiEndpoint,
             Question = text,
             Prompt = promptTemplate,
-            AiModelId = aiModel.Id,
+            AiModelId = request.AiModelId,
             ContextUserId = request.ContextUserId,
             Channel = "wiki_text_partition"
         });
@@ -179,123 +157,30 @@ public class WikiDocumentAiTextPartionCommandHandler : IRequestHandler<WikiDocum
             return jsonChunks;
         }
 
-        return SplitByParagraph(responseContent);
+        return jsonChunks;
     }
 
     private static bool TryParseJsonChunks(string responseContent, out IReadOnlyCollection<string> chunks)
     {
+        var list = new List<string>();
+        chunks = list;
         try
         {
             using var document = JsonDocument.Parse(responseContent);
             var root = document.RootElement;
-
-            if (root.ValueKind == JsonValueKind.Object)
+            if (root.ValueKind == JsonValueKind.Array)
             {
-                if (root.TryGetProperty("chunks", out var chunkElement) && chunkElement.ValueKind == JsonValueKind.Array)
+                foreach (var item in root.EnumerateArray())
                 {
-                    var parsed = ExtractStringChunksFromArray(chunkElement);
-                    if (parsed.Count > 0)
-                    {
-                        chunks = parsed;
-                        return true;
-                    }
-                }
-            }
-            else if (root.ValueKind == JsonValueKind.Array)
-            {
-                var parsed = ExtractStringChunksFromArray(root);
-                if (parsed.Count > 0)
-                {
-                    chunks = parsed;
-                    return true;
+                    list.Add(item.ToString());
                 }
             }
         }
-        catch (JsonException)
+        catch (Exception ex)
         {
-            // ignore and fallback
+            throw new BusinessException(ex.Message, ex);
         }
 
-        chunks = Array.Empty<string>();
         return false;
-    }
-
-    private static List<string> ExtractStringChunksFromArray(JsonElement element)
-    {
-        var result = new List<string>();
-        foreach (var item in element.EnumerateArray())
-        {
-            switch (item.ValueKind)
-            {
-                case JsonValueKind.String:
-                    var value = item.GetString();
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        result.Add(value.Trim());
-                    }
-
-                    break;
-                case JsonValueKind.Object:
-                    var text = ReadTextProperty(item);
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        result.Add(text.Trim());
-                    }
-
-                    break;
-            }
-        }
-
-        return result;
-    }
-
-    private static string? ReadTextProperty(JsonElement element)
-    {
-        if (element.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String)
-        {
-            return textElement.GetString();
-        }
-
-        if (element.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.String)
-        {
-            return contentElement.GetString();
-        }
-
-        if (element.TryGetProperty("value", out var valueElement) && valueElement.ValueKind == JsonValueKind.String)
-        {
-            return valueElement.GetString();
-        }
-
-        return null;
-    }
-
-    private static IReadOnlyCollection<string> SplitByParagraph(string content)
-    {
-        var normalized = content.Replace("\r\n", "\n").Trim();
-        var segments = Regex.Split(normalized, "\n{2,}")
-            .Select(NormalizeChunkText)
-            .Where(segment => !string.IsNullOrWhiteSpace(segment))
-            .ToList();
-
-        if (segments.Count == 0 && !string.IsNullOrWhiteSpace(normalized))
-        {
-            segments.Add(NormalizeChunkText(normalized));
-        }
-
-        return segments;
-    }
-
-    private static string NormalizeChunkText(string chunk)
-    {
-        if (string.IsNullOrWhiteSpace(chunk))
-        {
-            return string.Empty;
-        }
-
-        var cleaned = chunk.Trim();
-        cleaned = Regex.Replace(cleaned, @"^(?:[-*•]+)\s*", string.Empty);
-        cleaned = Regex.Replace(cleaned, @"^(?:chunk|part|section|段落|第)\s*\d+\s*(?:[-:：、])?\s*", string.Empty, RegexOptions.IgnoreCase);
-        cleaned = Regex.Replace(cleaned, @"^\d+\s*(?:[.:：、-])\s*", string.Empty);
-        return cleaned.Trim();
     }
 }

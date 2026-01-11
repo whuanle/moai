@@ -3,14 +3,13 @@
  */
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Button, Space, Input, Typography } from "antd";
-import { PlusOutlined, ReloadOutlined, SearchOutlined, ApiOutlined } from "@ant-design/icons";
+import { Button, Space, Input } from "antd";
+import { PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { GetApiClient } from "../../../ServiceClient";
 import { proxyRequestError } from "../../../../helper/RequestError";
 import type { NativePluginInfo, NativePluginTemplateInfo } from "../../../../apiClient/models";
 import { PluginTypeObject } from "../../../../apiClient/models";
 import CodeEditorModal from "../../../common/CodeEditorModal";
-import SortPopover, { SortField } from "../../../common/SortPopover";
 import {
   ClassifySidebar,
   PluginTable,
@@ -21,12 +20,6 @@ import {
 import type { EditTarget, RunTarget } from "./components";
 import { usePluginData } from "./hooks";
 import "./NativePluginPage.css";
-
-const sortFields: SortField[] = [
-  { key: "templatePluginKey", label: "模板Key" },
-  { key: "pluginName", label: "插件名称" },
-  { key: "title", label: "标题" },
-];
 
 export default function NativePluginPage() {
   const {
@@ -195,7 +188,6 @@ export default function NativePluginPage() {
                 <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading}>
                   刷新
                 </Button>
-                <SortPopover fields={sortFields} value={sortState} onChange={setSortState} />
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateDrawer}>
                   新增插件
                 </Button>
@@ -205,6 +197,8 @@ export default function NativePluginPage() {
           <PluginTable
             dataSource={pluginList}
             loading={loading}
+            sortState={sortState}
+            onSortChange={setSortState}
             onEdit={handleEdit}
             onRun={handleOpenRunModal}
             onDelete={handleDelete}

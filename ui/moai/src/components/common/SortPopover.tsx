@@ -20,6 +20,56 @@ interface SortPopoverProps {
   onChange: (value: SortState) => void;
 }
 
+/**
+ * 排序组件使用规范
+ * 
+ * 【排序行为】
+ * - 点击排序字段后立即在页面起效（前端排序），无需请求后端
+ * - 点击刷新按钮时，将排序字段传递到后端进行服务端排序
+ * 
+ * 【使用方式】
+ * 1. 定义排序字段：
+ *    const sortFields: SortField[] = [
+ *      { key: 'fieldName', label: '显示名称' },
+ *    ];
+ * 
+ * 2. 创建排序状态：
+ *    const [sortState, setSortState] = useState<SortState>({});
+ * 
+ * 3. 前端排序函数（点击排序时立即生效）：
+ *    const sortedList = useMemo(() => {
+ *      const list = [...dataList];
+ *      const sortEntries = Object.entries(sortState).filter(([_, v]) => v);
+ *      if (sortEntries.length === 0) return list;
+ *      
+ *      return list.sort((a, b) => {
+ *        for (const [key, order] of sortEntries) {
+ *          const aVal = a[key] ?? '';
+ *          const bVal = b[key] ?? '';
+ *          const cmp = String(aVal).localeCompare(String(bVal), 'zh-CN');
+ *          if (cmp !== 0) return order === 'asc' ? cmp : -cmp;
+ *        }
+ *        return 0;
+ *      });
+ *    }, [dataList, sortState]);
+ * 
+ * 4. 后端排序参数构建（刷新时传递）：
+ *    const buildOrderByFields = (sortState: SortState): KeyValueBool[] | undefined => {
+ *      const fields: KeyValueBool[] = [];
+ *      Object.entries(sortState).forEach(([key, value]) => {
+ *        if (value) {
+ *          fields.push({ key, value: value === 'asc' });
+ *        }
+ *      });
+ *      return fields.length > 0 ? fields : undefined;
+ *    };
+ * 
+ * 5. 在刷新请求中使用：
+ *    await client.api.xxx.list.post({
+ *      orderByFields: buildOrderByFields(sortState),
+ *    });
+ */
+
 export default function SortPopover({ fields, value, onChange }: SortPopoverProps) {
   const [open, setOpen] = useState(false);
 

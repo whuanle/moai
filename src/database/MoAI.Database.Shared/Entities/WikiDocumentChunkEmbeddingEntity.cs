@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using MoAI.Database.Audits;
 
+#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
 namespace MoAI.Database.Entities;
 
 /// <summary>
@@ -10,7 +15,7 @@ namespace MoAI.Database.Entities;
 public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
 {
     /// <summary>
-    /// 元数据内容唯一ID（derivative_id）.
+    /// id.
     /// </summary>
     public Guid Id { get; set; }
 
@@ -32,12 +37,12 @@ public partial class WikiDocumentChunkEmbeddingEntity : IFullAudited
     /// <summary>
     /// 元数据类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段.
     /// </summary>
-    public int DerivativeType { get; set; }
+    public int MetadataType { get; set; }
 
     /// <summary>
     /// 提问/提纲/摘要内容.
     /// </summary>
-    public string DerivativeContent { get; set; } = default!;
+    public string MetadataContent { get; set; } = default!;
 
     /// <summary>
     /// 是否被向量化.

@@ -12,10 +12,10 @@
 	</ItemGroup>
 
 	<!-- 排除 Database 目录不参与编译 -->
-	<ItemGroup>
+	<!--<ItemGroup>
 		<Compile Remove="Database\**\*.cs" />
 		<None Include="Database\**\*.cs" />
-	</ItemGroup>
+	</ItemGroup>-->
 	
 	<!-- t4模板，自定义实体和配置 -->
 	<ItemGroup>

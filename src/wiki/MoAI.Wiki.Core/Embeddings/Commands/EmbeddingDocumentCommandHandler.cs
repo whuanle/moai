@@ -49,6 +49,20 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
             throw new BusinessException("当前文档已在处理任务，请勿重复添加") { StatusCode = 409 };
         }
 
+        // 检查切片
+        var existChunks = await _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.DocumentId == request.DocumentId).AnyAsync();
+        var existMetadatas = await _databaseContext.WikiDocumentChunkMetadataPreviews.Where(x => x.DocumentId == request.DocumentId).AnyAsync();
+
+        if (!existChunks && !existMetadatas)
+        {
+            throw new BusinessException("该文档无可向量化的内容");
+        }
+
+        if (!request.IsEmbedSourceText && !existMetadatas)
+        {
+            throw new BusinessException("该文档无可向量化的元数据内容");
+        }
+
         var fileId = await _databaseContext.WikiDocuments.Where(x => x.Id == request.DocumentId)
             .Select(x => x.FileId)
             .FirstOrDefaultAsync();

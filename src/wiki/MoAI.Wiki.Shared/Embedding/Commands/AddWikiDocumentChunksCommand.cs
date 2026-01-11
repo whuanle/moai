@@ -33,7 +33,7 @@ public class AddWikiDocumentChunksCommand : IRequest<EmptyCommandResponse>, IMod
     /// <summary>
     /// 元数据.
     /// </summary>
-    public IReadOnlyCollection<WikiDocumentDerivativeItem> Derivatives { get; init; } = Array.Empty<WikiDocumentDerivativeItem>();
+    public IReadOnlyCollection<WikiDocumentMetadataItem> Metadatas { get; init; } = Array.Empty<WikiDocumentMetadataItem>();
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<AddWikiDocumentChunksCommand> validate)
@@ -41,6 +41,6 @@ public class AddWikiDocumentChunksCommand : IRequest<EmptyCommandResponse>, IMod
         validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库ID错误");
         validate.RuleFor(x => x.DocumentId).GreaterThan(0).WithMessage("文档ID错误");
         validate.RuleFor(x => x.Text).NotEmpty().WithMessage("分块文本不能为空");
-        validate.RuleFor(x => x.Derivatives).NotNull().WithMessage("分块文本不能为空");
+        validate.RuleFor(x => x.Metadatas).NotNull().WithMessage("分块文本不能为空");
     }
 }
