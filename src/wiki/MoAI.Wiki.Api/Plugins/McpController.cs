@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;
@@ -16,7 +17,7 @@ namespace MoAI.Wiki.Plugins;
 /// </summary>
 [ApiController]
 [Route("/wiki/plugin/mcp")]
-[Authorize]
+[EndpointGroupName("wiki")]
 public class McpController : ControllerBase
 {
     private readonly IMediator _mediator;

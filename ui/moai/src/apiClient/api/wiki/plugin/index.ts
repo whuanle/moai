@@ -10,6 +10,8 @@ import { FeishuRequestBuilderNavigationMetadata, type FeishuRequestBuilder } fro
 // @ts-ignore
 import { McpRequestBuilderNavigationMetadata, type McpRequestBuilder } from './mcp/index.js';
 // @ts-ignore
+import { OpenapiRequestBuilderNavigationMetadata, type OpenapiRequestBuilder } from './openapi/index.js';
+// @ts-ignore
 import { PaddleocrRequestBuilderNavigationMetadata, type PaddleocrRequestBuilder } from './paddleocr/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -35,6 +37,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      */
     get mcp(): McpRequestBuilder;
     /**
+     * The openapi property
+     */
+    get openapi(): OpenapiRequestBuilder;
+    /**
      * The paddleocr property
      */
     get paddleocr(): PaddleocrRequestBuilder;
@@ -58,6 +64,9 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     mcp: {
         navigationMetadata: McpRequestBuilderNavigationMetadata,
+    },
+    openapi: {
+        navigationMetadata: OpenapiRequestBuilderNavigationMetadata,
     },
     paddleocr: {
         navigationMetadata: PaddleocrRequestBuilderNavigationMetadata,

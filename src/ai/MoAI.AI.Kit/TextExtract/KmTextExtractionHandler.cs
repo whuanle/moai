@@ -85,8 +85,7 @@ public sealed class KmTextExtractionHandler : IDisposable
     {
         var filePath = Path.GetTempFileName();
         using var stream = File.Create(filePath);
-        _putClient.Client.BaseAddress = url;
-        using var httpStream = await _putClient.DownloadAsync(string.Empty);
+        using var httpStream = await _putClient.DownloadAsync(url);
         await httpStream.CopyToAsync(stream, cancellationToken);
         await stream.FlushAsync();
         stream.Seek(0, SeekOrigin.Begin);

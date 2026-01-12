@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Commands.Response;
 
@@ -10,6 +11,7 @@ namespace MoAI.Storage.Controllers;
 /// </summary>
 [ApiController]
 [Route("/storage/public")]
+[EndpointGroupName("storage")]
 public class PublicController : ControllerBase
 {
     private readonly IMediator _mediator;

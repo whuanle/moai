@@ -78,6 +78,18 @@ public class BusinessException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="BusinessException"/> class.
     /// </summary>
+    /// <param name="ex"></param>
+    /// <param name="format"></param>
+    /// <param name="args"></param>
+    public BusinessException(Exception ex, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
+        : base(format, ex)
+    {
+        Argments = args;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BusinessException"/> class.
+    /// </summary>
     /// <param name="message"></param>
     public BusinessException(string message)
         : base(message)

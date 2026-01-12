@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Card, Button, Table, Tag, Space, message, Spin, Popconfirm, Modal, Typography, Form, Input, Switch } from 'antd';
-import { PlusOutlined, ReloadOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import {
+  Button, Table, Tag, Space, message, Popconfirm, Modal,
+  Form, Input, Switch, Row, Col
+} from 'antd';
+import {
+  PlusOutlined, ReloadOutlined, DeleteOutlined, EyeOutlined
+} from '@ant-design/icons';
 import { GetApiClient } from '../../../ServiceClient';
-import { 
+import {
   QueryWikiFeishuPluginConfigListCommand,
   QueryWikiFeishuPluginConfigListCommandResponse,
   WikiFeishuPluginConfigSimpleItem,
@@ -13,24 +18,22 @@ import {
   WorkerStateObject
 } from '../../../../apiClient/models';
 import { proxyFormRequestError, proxyRequestError } from '../../../../helper/RequestError';
-
-const { Title, Text } = Typography;
+import { formatDateTimeStandard } from '../../../../helper/DateTimeHelper';
+import '../../../../styles/theme.css';
 
 export default function FeishuListPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const wikiId = id ? parseInt(id) : undefined;
-  
+
   const [loading, setLoading] = useState(false);
   const [configs, setConfigs] = useState<WikiFeishuPluginConfigSimpleItem[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
-  
-  // 创建 Modal 相关状态
+
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
 
-  // 获取飞书配置列表
   const fetchConfigList = async () => {
     if (!wikiId) {
       messageApi.error('缺少知识库ID');
@@ -44,14 +47,10 @@ export default function FeishuListPage() {
         wikiId: wikiId,
       };
 
-      const response: QueryWikiFeishuPluginConfigListCommandResponse | undefined = 
+      const response: QueryWikiFeishuPluginConfigListCommandResponse | undefined =
         await client.api.wiki.plugin.feishu.config_list.post(requestBody);
-      
-      if (response?.items) {
-        setConfigs(response.items);
-      } else {
-        setConfigs([]);
-      }
+
+      setConfigs(response?.items || []);
     } catch (error) {
       console.error('获取飞书配置列表失败:', error);
       proxyRequestError(error, messageApi, '获取飞书配置列表失败');
@@ -60,32 +59,26 @@ export default function FeishuListPage() {
     }
   };
 
-  // 页面初始化
   useEffect(() => {
     if (wikiId) {
       fetchConfigList();
     }
   }, [wikiId]);
 
-  // 处理创建配置
   const handleCreate = () => {
     form.resetFields();
-    form.setFieldsValue({
-      isOverExistPage: false,
-    });
+    form.setFieldsValue({ isOverExistPage: false });
     setModalVisible(true);
   };
 
-  // 处理保存配置
   const handleSave = async () => {
     try {
       await form.validateFields();
       const values = form.getFieldsValue();
-      
+
       setSaving(true);
       const client = GetApiClient();
 
-      // 创建配置
       const addBody: AddWikiFeishuConfigCommand = {
         wikiId: wikiId || 0,
         title: values.title,
@@ -109,14 +102,13 @@ export default function FeishuListPage() {
     }
   };
 
-  // 处理删除配置
   const handleDelete = async (record: WikiFeishuPluginConfigSimpleItem) => {
     try {
       const client = GetApiClient();
       const deleteBody: DeleteWikiPluginConfigCommand = {
         configId: record.configId || 0,
         wikiId: wikiId || 0,
-        isDeleteDocuments: false, // 默认不删除文档
+        isDeleteDocuments: false,
       };
 
       await client.api.wiki.plugin.delete_config.delete(deleteBody);
@@ -128,13 +120,26 @@ export default function FeishuListPage() {
     }
   };
 
-  // 表格列定义
+  const renderStatus = (state: WorkerState) => {
+    const stateMap: Record<string, { color: string; text: string }> = {
+      [WorkerStateObject.None]: { color: 'default', text: '未开始' },
+      [WorkerStateObject.Wait]: { color: 'gold', text: '等待中' },
+      [WorkerStateObject.Processing]: { color: 'processing', text: '处理中' },
+      [WorkerStateObject.Successful]: { color: 'success', text: '成功' },
+      [WorkerStateObject.Failed]: { color: 'error', text: '失败' },
+      [WorkerStateObject.Cancal]: { color: 'default', text: '已取消' },
+    };
+    const stateInfo = stateMap[state || ''] || { color: 'default', text: '未知' };
+    return <Tag color={stateInfo.color}>{stateInfo.text}</Tag>;
+  };
+
   const columns = [
     {
-      title: '标题',
+      title: '配置名称',
       dataIndex: 'title',
       key: 'title',
-      render: (text: string) => <strong>{text}</strong>,
+      width: 160,
+      ellipsis: true,
     },
     {
       title: '飞书知识库ID',
@@ -154,25 +159,16 @@ export default function FeishuListPage() {
       title: '状态',
       dataIndex: 'workState',
       key: 'workState',
-      width: 120,
-      render: (state: WorkerState) => {
-        const stateMap: Record<string, { color: string; text: string }> = {
-          [WorkerStateObject.None]: { color: 'default', text: '未开始' },
-          [WorkerStateObject.Wait]: { color: 'default', text: '等待中' },
-          [WorkerStateObject.Processing]: { color: 'processing', text: '处理中' },
-          [WorkerStateObject.Successful]: { color: 'success', text: '成功' },
-          [WorkerStateObject.Failed]: { color: 'error', text: '失败' },
-          [WorkerStateObject.Cancal]: { color: 'default', text: '已取消' },
-        };
-        const stateInfo = stateMap[state || ''] || { color: 'default', text: '未知' };
-        return <Tag color={stateInfo.color}>{stateInfo.text}</Tag>;
-      },
+      width: 100,
+      align: 'center' as const,
+      render: renderStatus,
     },
     {
-      title: '页面数量',
+      title: '页面数',
       dataIndex: 'pageCount',
       key: 'pageCount',
-      width: 100,
+      width: 80,
+      align: 'center' as const,
       render: (count: number) => count || 0,
     },
     {
@@ -183,55 +179,52 @@ export default function FeishuListPage() {
       render: (text: string) => text || '-',
     },
     {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: 180,
-      render: (time: string) => time ? new Date(time).toLocaleString() : '-',
-    },
-    {
       title: '创建人',
       dataIndex: 'createUserName',
       key: 'createUserName',
-      render: (name: string) => name || '-',
+      width: 100,
+      render: (text: string) => text || '-',
     },
     {
       title: '更新时间',
       dataIndex: 'updateTime',
       key: 'updateTime',
       width: 180,
-      render: (time: string) => time ? new Date(time).toLocaleString() : '-',
+      render: (text: string) => formatDateTimeStandard(text),
     },
     {
       title: '更新人',
       dataIndex: 'updateUserName',
       key: 'updateUserName',
-      render: (name: string) => name || '-',
+      width: 150,
+      render: (text: string) => text || '-',
     },
     {
       title: '操作',
       key: 'action',
-      width: 150,
-      render: (_: any, record: WikiFeishuPluginConfigSimpleItem) => (
+      width: 200,
+      fixed: 'right' as const,
+      render: (_: unknown, record: WikiFeishuPluginConfigSimpleItem) => (
         <Space size="middle">
-          <Button 
-            type="link" 
-            size="small" 
+          <Button
+            type="text"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/app/wiki/${wikiId}/plugin/feishu/${record.configId}`)}
           >
-            查看
+            详情
           </Button>
           <Popconfirm
             title="确认删除"
-            description="确定要删除这个飞书配置吗？"
+            description="删除后不可恢复，确定要删除吗？"
             onConfirm={() => handleDelete(record)}
             okText="确定"
             cancelText="取消"
+            placement="topRight"
           >
-            <Button 
-              type="link" 
-              size="small" 
+            <Button
+              type="text"
+              size="small"
               danger
               icon={<DeleteOutlined />}
             >
@@ -245,119 +238,127 @@ export default function FeishuListPage() {
 
   if (!wikiId) {
     return (
-      <Card>
-        <Text type="secondary">缺少知识库ID</Text>
-      </Card>
+      <div className="moai-empty">
+        <span style={{ color: '#999' }}>缺少知识库ID</span>
+      </div>
     );
   }
 
   return (
-    <div>
+    <div className="page-container">
       {contextHolder}
-      
-      {/* 头部操作区域 */}
-      <Card>
-        <Space>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+
+      <div className="moai-page-header">
+        <h1 className="moai-page-title">飞书知识库配置</h1>
+        <p className="moai-page-subtitle">管理飞书知识库同步任务，自动导入飞书文档到知识库</p>
+      </div>
+
+      <div className="moai-toolbar">
+        <div className="moai-toolbar-left">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={handleCreate}
           >
             新增飞书配置
           </Button>
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={fetchConfigList} 
+        </div>
+        <div className="moai-toolbar-right">
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchConfigList}
             loading={loading}
           >
             刷新
           </Button>
-        </Space>
-      </Card>
+        </div>
+      </div>
 
-      {/* 配置列表 */}
-      <Card style={{ marginTop: 16 }}>
-        <Spin spinning={loading}>
-          <Table
-            columns={columns}
-            dataSource={configs}
-            rowKey="configId"
-            pagination={{
-              total: configs.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条记录`,
-            }}
-          />
-        </Spin>
-      </Card>
+      <Table
+        columns={columns}
+        dataSource={configs}
+        rowKey="configId"
+        loading={loading}
+        scroll={{ x: 1100 }}
+        pagination={false}
+      />
 
-      {/* 创建 Modal */}
       <Modal
         title="新增飞书配置"
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={handleSave}
         confirmLoading={saving}
-        width={800}
+        width={720}
         destroyOnClose
+        maskClosable={false}
+        closable={false}
       >
         <Form
           form={form}
           layout="vertical"
+          style={{ marginTop: 16 }}
         >
           <Form.Item
             name="title"
-            label="标题"
-            rules={[{ required: true, message: '请输入标题' }]}
+            label="配置名称"
+            rules={[{ required: true, message: '请输入配置名称' }]}
           >
-            <Input placeholder="请输入配置标题" />
+            <Input placeholder="请输入配置名称，便于识别" />
           </Form.Item>
 
-          <Form.Item
-            name="appId"
-            label="飞书应用ID"
-            rules={[{ required: true, message: '请输入飞书应用ID' }]}
-          >
-            <Input placeholder="请输入飞书应用ID" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="appId"
+                label="飞书应用ID"
+                rules={[{ required: true, message: '请输入飞书应用ID' }]}
+              >
+                <Input placeholder="请输入飞书应用ID" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="appSecret"
+                label="飞书应用密钥"
+                rules={[{ required: true, message: '请输入飞书应用密钥' }]}
+              >
+                <Input.Password placeholder="请输入飞书应用密钥" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="appSecret"
-            label="飞书应用密钥"
-            rules={[{ required: true, message: '请输入飞书应用密钥' }]}
-          >
-            <Input.Password placeholder="请输入飞书应用密钥" />
-          </Form.Item>
-
-          <Form.Item
-            name="spaceId"
-            label="飞书知识库ID"
-            rules={[{ required: true, message: '请输入飞书知识库ID' }]}
-          >
-            <Input placeholder="请输入飞书知识库ID" />
-          </Form.Item>
-
-          <Form.Item
-            name="parentNodeToken"
-            label="顶部文档Token"
-            tooltip="可选：指定从哪个文档节点开始同步，如果不填则同步整个知识库"
-          >
-            <Input placeholder="可选：顶部文档Token" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="spaceId"
+                label="飞书知识库ID"
+                rules={[{ required: true, message: '请输入飞书知识库ID' }]}
+              >
+                <Input placeholder="请输入飞书知识库ID" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="parentNodeToken"
+                label="顶部文档Token"
+                tooltip="可选：指定从哪个文档节点开始同步"
+              >
+                <Input placeholder="可选，不填则同步整个知识库" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="isOverExistPage"
-            label="是否覆盖已存在的页面"
-            tooltip="如果开启，将覆盖已经同步过的页面"
+            label="覆盖已有页面"
+            tooltip="开启后会覆盖已经同步过的相同页面"
             valuePropName="checked"
           >
-            <Switch />
+            <Switch checkedChildren="开启" unCheckedChildren="关闭" />
           </Form.Item>
         </Form>
       </Modal>
     </div>
   );
 }
-

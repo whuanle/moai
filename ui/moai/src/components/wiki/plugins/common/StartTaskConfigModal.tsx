@@ -53,6 +53,7 @@ export default function StartTaskConfigModal({
   wikiId,
 }: StartTaskConfigModalProps) {
   const [form] = Form.useForm();
+  const [isAutoProcess, setIsAutoProcess] = useState(false);
   const [partitionType, setPartitionType] = useState<"normal" | "ai">("normal");
   const [isEmbedding, setIsEmbedding] = useState(false);
   const [hasPreprocessStrategy, setHasPreprocessStrategy] = useState(false);
@@ -70,6 +71,7 @@ export default function StartTaskConfigModal({
   // 重置表单
   const handleCancel = () => {
     form.resetFields();
+    setIsAutoProcess(false);
     setPartitionType("normal");
     setIsEmbedding(false);
     setHasPreprocessStrategy(false);
@@ -79,6 +81,13 @@ export default function StartTaskConfigModal({
   // 提交配置
   const handleConfirm = async () => {
     try {
+      // 如果不启用自动处理，直接提交
+      if (!isAutoProcess) {
+        onConfirm(false, null);
+        handleCancel();
+        return;
+      }
+
       // 验证相应的字段
       const fieldsToValidate: string[] = [];
       if (partitionType === "normal") {
@@ -143,12 +152,27 @@ export default function StartTaskConfigModal({
         onOk={handleConfirm}
         width={800}
         destroyOnClose={false}
-        maskClosable={ false}
+        maskClosable={false}
       >
         <Form form={form} layout="vertical">
-          <Divider orientation="left">切割配置</Divider>
+          {/* 是否启用自动处理 */}
+          <Form.Item
+            label="启用自动处理"
+            tooltip="开启后将自动对抓取的文档进行切割、元数据生成和向量化处理"
+          >
+            <Switch
+              checked={isAutoProcess}
+              onChange={setIsAutoProcess}
+              checkedChildren="启用"
+              unCheckedChildren="禁用"
+            />
+          </Form.Item>
 
-          {/* 切割方式选择 */}
+          {isAutoProcess && (
+            <>
+              <Divider orientation="left">切割配置</Divider>
+
+              {/* 切割方式选择 */}
           <Form.Item
             label="切割方式"
             tooltip="选择普通切割或 AI 智能切割"
@@ -357,13 +381,15 @@ export default function StartTaskConfigModal({
             </>
           )}
 
-          <Alert
-            message="配置说明"
-            description="普通切割适合对称检索，按照固定的token数量和重叠数量对文档进行分段。AI 切割使用AI模型来理解文档内容，按照语义和上下文进行更智能的分段。"
-            type="info"
-            showIcon
-            style={{ marginTop: 16 }}
-          />
+              <Alert
+                message="配置说明"
+                description="普通切割适合对称检索，按照固定的token数量和重叠数量对文档进行分段。AI 切割使用AI模型来理解文档内容，按照语义和上下文进行更智能的分段。"
+                type="info"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            </>
+          )}
         </Form>
       </Modal>
     </>

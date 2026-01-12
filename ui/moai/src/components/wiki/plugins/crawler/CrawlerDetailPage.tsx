@@ -42,6 +42,7 @@ import {
   proxyRequestError,
   proxyFormRequestError,
 } from "../../../../helper/RequestError";
+import { FileSizeHelper } from "../../../../helper/FileSizeHelper";
 import StartTaskConfigModal from "../common/StartTaskConfigModal";
 import "../../../../styles/theme.css";
 import "./CrawlerDetailPage.css";
@@ -63,14 +64,6 @@ const STATE_MAP: Record<string, { color: string; text: string }> = {
 const getStateInfo = (state: WorkerState | null | undefined) => {
   if (!state) return { color: "default", text: "未启动" };
   return STATE_MAP[state] || { color: "default", text: "未知" };
-};
-
-// 格式化文件大小
-const formatFileSize = (size: number | undefined) => {
-  if (!size) return "-";
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
 export default function CrawlerDetailPage() {
@@ -148,8 +141,8 @@ export default function CrawlerDetailPage() {
     }
   }, [wikiId, crawlerConfigId, messageApi]);
 
-  // 获取页面任务列表
-  const fetchPageState = useCallback(async () => {
+  // 获取页面任务列表（refreshConfig 控制是否同时刷新配置）
+  const fetchPageState = useCallback(async (refreshConfig = true) => {
     if (!wikiId || !crawlerConfigId) {
       messageApi.error("缺少必要参数");
       return;
@@ -165,7 +158,9 @@ export default function CrawlerDetailPage() {
         });
 
       setPages(response?.items || []);
-      await fetchConfig();
+      if (refreshConfig) {
+        await fetchConfig();
+      }
     } catch (error) {
       console.error("获取爬虫状态失败:", error);
       proxyRequestError(error, messageApi, "获取爬虫状态失败");
@@ -191,9 +186,13 @@ export default function CrawlerDetailPage() {
         configId: crawlerConfigId,
         wikiId,
         isStart: true,
-        isAutoProcess: isAutoProcess || undefined,
-        autoProcessConfig: autoProcessConfig || undefined,
       };
+
+      // 只有开启自动处理时才传递相关配置
+      if (isAutoProcess && autoProcessConfig) {
+        requestBody.isAutoProcess = true;
+        requestBody.autoProcessConfig = autoProcessConfig;
+      }
 
       await client.api.wiki.plugin.crawler.lanuch_task.post(requestBody);
       messageApi.success("爬虫已启动");
@@ -313,7 +312,7 @@ export default function CrawlerDetailPage() {
     }
 
     if (isWorking && autoRefresh && wikiId && crawlerConfigId) {
-      refreshTimerRef.current = setInterval(fetchPageState, 1000);
+      refreshTimerRef.current = setInterval(() => fetchPageState(false), 1000);
     }
 
     return () => {
@@ -360,7 +359,7 @@ export default function CrawlerDetailPage() {
       dataIndex: "fileSize",
       key: "fileSize",
       width: 100,
-      render: formatFileSize,
+      render: (size: number) => size ? FileSizeHelper.formatFileSize(size) : "-",
     },
     {
       title: "向量化",
@@ -455,7 +454,7 @@ export default function CrawlerDetailPage() {
         <div className="moai-toolbar-right">
           <Button
             icon={<ReloadOutlined />}
-            onClick={fetchPageState}
+            onClick={() => fetchPageState()}
             loading={loading}
           >
             刷新

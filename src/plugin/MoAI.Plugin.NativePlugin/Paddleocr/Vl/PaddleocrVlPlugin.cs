@@ -37,7 +37,6 @@ public partial class PaddleocrVlPlugin : PaddleocrPluginBase, INativePluginRunti
     private readonly IPaddleocrClient _paddleocrClient;
     private PaddleocrPluginConfig _config = default!;
 
-
     /// <summary>
     /// Initializes a new instance of the <see cref="PaddleocrVlPlugin"/> class.
     /// </summary>

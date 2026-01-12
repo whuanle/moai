@@ -24,11 +24,22 @@ public interface IPutClient
     Task PutAsync(string path, [Body(buffered: true)] StreamPart stream);
 
     /// <summary>
-    /// 下载文件请求.
+    /// 下载文件.
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>
-    [Get("/{**path}")]
-    [QueryUriFormat(UriFormat.Unescaped)]
-    Task<Stream> DownloadAsync(string path);
+    public async Task<Stream> DownloadAsync(Uri path)
+    {
+        return await Client.GetStreamAsync(path);
+    }
+
+    /// <summary>
+    /// 下载文件.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public async Task<Stream> DownloadAsync(string path)
+    {
+        return await Client.GetStreamAsync(new Uri(path));
+    }
 }

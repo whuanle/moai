@@ -28,7 +28,6 @@ public partial class DocumentController : ControllerBase
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DocumentController"/> class.
-    /// Initializes a new instance of the <see cref="DocumentController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 的实例.</param>
     /// <param name="userContext">当前请求的用户上下文.</param>
@@ -88,20 +87,6 @@ public partial class DocumentController : ControllerBase
     /// <returns>返回 <see cref="PreUploadWikiDocumentCommandResponse"/> 包含预上传结果.</returns>
     [HttpPost("preupload_document")]
     public async Task<PreUploadWikiDocumentCommandResponse> PreUploadWikiDocument([FromBody] PreUploadWikiDocumentCommand req, CancellationToken ct = default)
-    {
-        await CheckUserIsMemberAsync(req.WikiId, ct);
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 上传 api 接口文件生成知识库文档.
-    /// </summary>
-    /// <param name="req"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    [HttpPost("import_api")]
-    public async Task<EmptyCommandResponse> ImportOpenApiToWiki([FromBody] ImportOpenApiToWikiCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 

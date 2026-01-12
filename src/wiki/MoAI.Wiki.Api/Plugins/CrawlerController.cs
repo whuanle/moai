@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;
@@ -20,7 +21,7 @@ namespace MoAI.Wiki.Plugins;
 /// </summary>
 [ApiController]
 [Route("/wiki/plugin/crawler")]
-[Authorize]
+[EndpointGroupName("wiki")]
 public class CrawlerController : ControllerBase
 {
     private readonly IMediator _mediator;

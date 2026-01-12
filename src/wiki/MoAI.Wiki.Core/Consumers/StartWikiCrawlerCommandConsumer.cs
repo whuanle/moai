@@ -475,7 +475,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
          */
 
         // 如果不需要爬取其他地址
-        if (string.IsNullOrEmpty(wikiWebConfig.LimitAddress) || currentUrl.ToString().StartsWith(wikiWebConfig.LimitAddress, StringComparison.CurrentCultureIgnoreCase))
+        if (wikiWebConfig.IsCrawlOther == false || string.IsNullOrEmpty(wikiWebConfig.LimitAddress) || !currentUrl.ToString().StartsWith(wikiWebConfig.LimitAddress, StringComparison.CurrentCultureIgnoreCase))
         {
             return await SaveWikiCrawlerAsync(wikiWebConfig, currentUrl, document, wikiId);
         }

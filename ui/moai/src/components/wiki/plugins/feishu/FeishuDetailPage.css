@@ -1,0 +1,42 @@
+/* FeishuDetailPage 样式 */
+
+/* 统计卡片项 */
+.feishu-stat-item {
+  text-align: center;
+}
+
+.feishu-stat-item .feishu-stat-value {
+  margin-top: 8px;
+}
+
+.feishu-stat-value-success {
+  font-size: 24px;
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.feishu-stat-value-error {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ff4d4f;
+}
+
+.feishu-stat-value-processing {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1677ff;
+}
+
+/* 状态标签样式 */
+.feishu-status-tag {
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+/* 运行信息区域 */
+.feishu-work-message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg-spotlight, #fafafa);
+  border-radius: var(--radius-sm, 6px);
+}

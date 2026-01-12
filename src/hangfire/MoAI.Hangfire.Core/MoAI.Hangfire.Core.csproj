@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Hangfire</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Hangfire.AspNetCore" />
+	  <PackageReference Include="Hangfire.Redis.StackExchange" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

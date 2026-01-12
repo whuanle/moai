@@ -1,48 +1,44 @@
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;
-using MoAI.Wiki.Plugins.Crawler.Commands;
-using MoAI.Wiki.Plugins.Template.Commands;
-using MoAI.Wiki.Plugins.Template.Models;
-using MoAI.Wiki.Plugins.Template.Queries;
+using MoAI.Wiki.Plugins.OpenApi;
 using MoAI.Wiki.Wikis.Queries;
 
-namespace MoAI.Wiki.Plugins;
+namespace MoAI.Wiki.Controllers;
 
 /// <summary>
-/// 知识库插件管理接口.
+/// 文档相关接口控制器, 提供文档上传、下载、查询、向量化及任务管理等功能.
 /// </summary>
 [ApiController]
-[Route("/wiki/plugin")]
+[Route("/wiki/plugin/openapi")]
 [EndpointGroupName("wiki")]
-public class WikiPluginController : ControllerBase
+public partial class OpenApiController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WikiPluginController"/> class.
+    /// Initializes a new instance of the <see cref="OpenApiController"/> class.
     /// </summary>
-    /// <param name="mediator">MediatR 实例.</param>
-    /// <param name="userContext">当前用户上下文.</param>
-    public WikiPluginController(IMediator mediator, UserContext userContext)
+    /// <param name="mediator">MediatR 的实例.</param>
+    /// <param name="userContext">当前请求的用户上下文.</param>
+    public OpenApiController(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
         _userContext = userContext;
     }
 
     /// <summary>
-    /// 删除插件配置.
+    /// 上传 api 接口文件生成知识库文档.
     /// </summary>
-    /// <param name="req">删除配置命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回操作结果.</returns>
-    [HttpDelete("delete_config")]
-    public async Task<EmptyCommandResponse> DeleteWikiPluginConfig([FromBody] DeleteWikiPluginConfigCommand req, CancellationToken ct = default)
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpPost("import_api")]
+    public async Task<EmptyCommandResponse> ImportOpenApiToWiki([FromBody] ImportOpenApiToWikiCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
 

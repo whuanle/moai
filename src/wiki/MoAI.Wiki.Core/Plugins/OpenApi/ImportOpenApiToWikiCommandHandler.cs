@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using MoAI.Database;
+using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Put;
@@ -70,8 +71,6 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
                 var filePath = Path.GetTempFileName();
                 using var fileStream = File.Create(filePath);
 
-                _putClient.Client.BaseAddress = new Uri(request.OpenApiSpecUrl);
-
                 using var httpStream = await _putClient.DownloadAsync(request.OpenApiSpecUrl);
                 await httpStream.CopyToAsync(fileStream, cancellationToken);
                 await fileStream.FlushAsync();
@@ -83,7 +82,7 @@ public class ImportOpenApiToWikiCommandHandler : IRequestHandler<ImportOpenApiTo
         }
         catch (Exception ex)
         {
-            throw new BusinessException("导入 OpenAPI 失败", ex);
+            throw new BusinessException(ex, "导入 OpenAPI 失败{0}", ex.Message);
         }
 
         return EmptyCommandResponse.Default;

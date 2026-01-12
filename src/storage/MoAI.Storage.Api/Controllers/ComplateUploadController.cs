@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
 
@@ -10,6 +11,7 @@ namespace MoAI.Storage.Controllers;
 /// </summary>
 [ApiController]
 [Route("/storage")]
+[EndpointGroupName("storage")]
 public class ComplateUploadController : ControllerBase
 {
     private readonly IMediator _mediator;

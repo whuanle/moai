@@ -63,7 +63,7 @@ public class StartWikiCrawlerPluginTaskCommandHandler : IRequestHandler<StartWik
         }
         else
         {
-            if (entity.WorkState < (int)WorkerState.Cancal)
+            if (entity.WorkState >= (int)WorkerState.Cancal)
             {
                 throw new BusinessException("当前没有运行中的任务") { StatusCode = 400 };
             }
