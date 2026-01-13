@@ -1,0 +1,115 @@
+.user-select-container {
+  border: 1px solid var(--color-border, #e8e8e8);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-bg-container, #fff);
+  overflow: hidden;
+}
+
+.user-select-header {
+  padding: var(--spacing-md, 16px);
+  background: linear-gradient(to bottom, #fafafa, #fff);
+  border-bottom: 1px solid var(--color-border, #e8e8e8);
+}
+
+.user-select-header .ant-input-affix-wrapper {
+  border-radius: var(--radius-md, 8px);
+  background: #fff;
+}
+
+.user-select-selected-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-sm, 8px);
+  padding: 8px 12px;
+  background: rgba(22, 119, 255, 0.06);
+  border-radius: var(--radius-sm, 6px);
+}
+
+.user-select-selected-count {
+  color: var(--color-primary, #1677ff);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.user-select-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.user-select-list .ant-list-item {
+  padding: 0;
+  border-bottom: none;
+}
+
+.user-select-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 16px);
+  padding: var(--spacing-md, 16px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.user-select-item:last-child {
+  border-bottom: none;
+}
+
+.user-select-item:hover {
+  background: linear-gradient(to right, #f8faff, #fff);
+}
+
+.user-select-item.selected {
+  background: linear-gradient(to right, rgba(22, 119, 255, 0.08), rgba(22, 119, 255, 0.02));
+}
+
+.user-select-item .ant-checkbox-wrapper {
+  margin-right: 0;
+}
+
+.user-select-avatar {
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.user-select-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-select-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-text-primary, #1f1f1f);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-select-username {
+  font-size: 12px;
+  color: var(--color-text-secondary, #666);
+}
+
+.user-select-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-lg, 24px);
+}
+
+.user-select-footer {
+  text-align: center;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  color: var(--color-text-secondary, #999);
+  font-size: 12px;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.user-select-empty {
+  padding: var(--spacing-xl, 32px);
+  text-align: center;
+  color: var(--color-text-secondary, #999);
+}

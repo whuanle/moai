@@ -39,16 +39,28 @@
   margin-top: var(--spacing-md);
 }
 
+.wiki-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
 .wiki-title {
   font-size: 18px;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-xs) 0;
+  margin: 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.wiki-team-tag {
+  flex-shrink: 0;
+  margin: 0;
 }
 
 .wiki-description {

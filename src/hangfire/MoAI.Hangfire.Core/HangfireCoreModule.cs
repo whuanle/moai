@@ -51,5 +51,7 @@ public class HangfireCoreModule : IModule
             // 工作者数量
             options.WorkerCount = Environment.ProcessorCount * 2;
         });
+
+        context.Services.AddHostedService<AutoRegisterHangfireBackgroundService>();
     }
 }

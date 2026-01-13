@@ -45,6 +45,7 @@ import { FileSizeHelper } from "../../../../helper/FileSizeHelper";
 import StartTaskConfigModal from "../common/StartTaskConfigModal";
 import "../../../../styles/theme.css";
 import "./FeishuDetailPage.css";
+import { formatRelativeTime } from "../../../../helper/DateTimeHelper";
 
 const { Title, Text } = Typography;
 
@@ -380,7 +381,7 @@ export default function FeishuDetailPage() {
       dataIndex: "updateTime",
       key: "updateTime",
       width: 170,
-      render: (time: string) => (time ? new Date(time).toLocaleString() : "-"),
+      render: (time: string) => formatRelativeTime(time),
     },
   ];
 

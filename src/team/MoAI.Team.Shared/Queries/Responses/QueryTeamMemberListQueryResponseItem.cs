@@ -18,6 +18,11 @@ public class QueryTeamMemberListQueryResponseItem : IAvatarPath
     /// </summary>
     public string UserName { get; init; } = default!;
 
+    /// <summary>
+    /// 昵称.
+    /// </summary>
+    public string NiceName { get; init; } = default!;
+
     /// <inheritdoc/>
     public string Avatar { get; set; } = default!;
 

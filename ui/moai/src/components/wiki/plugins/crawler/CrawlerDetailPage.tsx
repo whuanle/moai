@@ -46,6 +46,7 @@ import { FileSizeHelper } from "../../../../helper/FileSizeHelper";
 import StartTaskConfigModal from "../common/StartTaskConfigModal";
 import "../../../../styles/theme.css";
 import "./CrawlerDetailPage.css";
+import { formatRelativeTime } from "../../../../helper/DateTimeHelper";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -384,7 +385,7 @@ export default function CrawlerDetailPage() {
       dataIndex: "updateTime",
       key: "updateTime",
       width: 170,
-      render: (time: string) => (time ? new Date(time).toLocaleString() : "-"),
+      render: (time: string) => formatRelativeTime(time),
     },
   ];
 

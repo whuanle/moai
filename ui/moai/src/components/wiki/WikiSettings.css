@@ -208,6 +208,13 @@
   line-height: 1.5;
 }
 
+/* 危险操作分隔线 */
+.wiki-settings-danger-divider {
+  height: 1px;
+  background: rgba(255, 77, 79, 0.15);
+  margin: var(--spacing-lg) 0;
+}
+
 /* 底部按钮 - 靠左 */
 .wiki-settings-footer {
   display: flex;

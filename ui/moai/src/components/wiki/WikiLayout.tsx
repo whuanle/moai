@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Outlet } from "react-router";
-import { Layout, Menu, Button, message, Spin, Card, Typography } from "antd";
+import { Layout, Menu, Button, message, Spin, Card, Typography, Tag, Tooltip } from "antd";
 import {
   ArrowLeftOutlined,
   SettingOutlined,
@@ -13,6 +13,7 @@ import {
   GlobalOutlined,
   BookOutlined,
   ScanOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import "./Wiki.css";
@@ -25,6 +26,8 @@ interface WikiInfo {
   name: string;
   description: string;
   createUserName?: string;
+  teamId?: number;
+  teamName?: string;
 }
 
 export default function WikiLayout() {
@@ -54,6 +57,8 @@ export default function WikiLayout() {
           name: response.name!,
           description: response.description || "",
           createUserName: response.createUserName || undefined,
+          teamId: response.teamId || undefined,
+          teamName: response.teamName || undefined,
         });
       }
     } catch (error) {
@@ -71,7 +76,11 @@ export default function WikiLayout() {
   }, [id]);
 
   const handleBack = () => {
-    navigate("/app/wiki/list");
+    if (wikiInfo?.teamId && wikiInfo.teamId > 0) {
+      navigate(`/app/team/${wikiInfo.teamId}/wiki`);
+    } else {
+      navigate("/app/wiki/list");
+    }
   };
 
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -210,10 +219,19 @@ export default function WikiLayout() {
               type="text"
               className="wiki-back-btn"
             >
-              返回列表
+              {wikiInfo.teamId && wikiInfo.teamId > 0 ? "返回团队" : "返回列表"}
             </Button>
             <div className="wiki-info">
-              <h2 className="wiki-title">{wikiInfo.name}</h2>
+              <div className="wiki-title-row">
+                <h2 className="wiki-title">{wikiInfo.name}</h2>
+                {wikiInfo.teamId && wikiInfo.teamId > 0 && (
+                  <Tooltip title={`所属团队: ${wikiInfo.teamName || "团队"}`}>
+                    <Tag color="blue" icon={<TeamOutlined />} className="wiki-team-tag">
+                      团队
+                    </Tag>
+                  </Tooltip>
+                )}
+              </div>
               {wikiInfo.description && (
                 <p className="wiki-description">{wikiInfo.description}</p>
               )}

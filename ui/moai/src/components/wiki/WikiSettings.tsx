@@ -28,10 +28,11 @@ import {
   SettingOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { proxyRequestError, proxyFormRequestError } from "../../helper/RequestError";
 import { useAiModelList } from "./wiki_hooks";
 import { GetFileMd5 } from "../../helper/Md5Helper";
+import { TeamRole } from "../../apiClient/models";
 import "./WikiSettings.css";
 
 // 表单值类型
@@ -105,15 +106,19 @@ export default function WikiSettings() {
   const [messageApi, contextHolder] = message.useMessage();
   const { modal } = App.useApp();
   const { id } = useParams();
+  const navigate = useNavigate();
   const apiClient = GetApiClient();
 
   // 状态
   const [loading, setLoading] = useState(false);
   const [clearingVectors, setClearingVectors] = useState(false);
+  const [deletingWiki, setDeletingWiki] = useState(false);
   const [isLock, setIsLock] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>();
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [originalWikiInfo, setOriginalWikiInfo] = useState<OriginalWikiInfo | null>(null);
+  const [wikiRole, setWikiRole] = useState<TeamRole | null>(null);
+  const [isTeamWiki, setIsTeamWiki] = useState(false);
 
   // 使用共享 hook 获取向量化模型列表
   const { modelList: embeddingModels, loading: modelsLoading, fetchModelList: fetchEmbeddingModels } = useAiModelList(parseInt(id || "0"), "embedding");
@@ -134,6 +139,8 @@ export default function WikiSettings() {
       if (response) {
         setIsLock(response.isLock ?? false);
         setAvatarUrl(response.avatar ?? undefined);
+        setWikiRole(response.role ?? null);
+        setIsTeamWiki(!!response.teamId);
         setOriginalWikiInfo({
           name: response.name ?? "",
           description: response.description ?? "",
@@ -144,7 +151,7 @@ export default function WikiSettings() {
           name: response.name ?? undefined,
           description: response.description ?? undefined,
           isPublic: response.isPublic ?? undefined,
-          embeddingDimensions: response.embeddingDimensions ?? undefined,
+          embeddingDimensions: response.embeddingDimensions ?? 1024,
           embeddingModelId: response.embeddingModelId === 0 ? undefined : (response.embeddingModelId ?? undefined),
           avatarKey: response.avatarKey ?? undefined,
         });
@@ -288,6 +295,43 @@ export default function WikiSettings() {
     });
   };
 
+  // 删除知识库
+  const deleteWiki = async () => {
+    if (!id) {
+      messageApi.error("缺少必要的参数");
+      return;
+    }
+
+    try {
+      setDeletingWiki(true);
+      await apiClient.api.wiki.manager.delete_wiki.delete({
+        wikiId: parseInt(id),
+      });
+      messageApi.success("知识库已删除");
+      navigate("/wiki");
+    } catch (error) {
+      console.error("删除知识库失败:", error);
+      proxyRequestError(error, messageApi, "删除知识库失败");
+    } finally {
+      setDeletingWiki(false);
+    }
+  };
+
+  const handleDeleteWiki = () => {
+    modal.confirm({
+      title: "确认删除知识库",
+      content: "此操作将永久删除该知识库及其所有文档和向量数据，操作不可逆。确定要继续吗？",
+      okText: "确定删除",
+      cancelText: "取消",
+      okType: "danger",
+      maskClosable: false,
+      onOk: deleteWiki,
+    });
+  };
+
+  // 判断是否可以删除知识库
+  const canDeleteWiki = wikiRole === "admin" || wikiRole === "owner";
+
   return (
     <div className="wiki-settings-wrapper">
       {contextHolder}
@@ -347,12 +391,19 @@ export default function WikiSettings() {
             />
           </Form.Item>
 
-          <Form.Item name="isPublic" label="可见性" valuePropName="checked">
-            <Switch
-              checkedChildren={<><GlobalOutlined /> 公开</>}
-              unCheckedChildren={<><EyeInvisibleOutlined /> 私有</>}
-            />
-          </Form.Item>
+          {isTeamWiki && (
+            <Form.Item
+              name="isPublic"
+              label="可见性"
+              valuePropName="checked"
+              extra="让团队外部成员可以读取知识库，但是不能参与协作"
+            >
+              <Switch
+                checkedChildren={<><GlobalOutlined /> 公开</>}
+                unCheckedChildren={<><EyeInvisibleOutlined /> 私有</>}
+              />
+            </Form.Item>
+          )}
         </Card>
 
         {/* 向量化配置卡片 */}
@@ -407,6 +458,7 @@ export default function WikiSettings() {
             tooltip="向量的维度大小，需与所选模型匹配"
           >
             <InputNumber
+              defaultValue={1024}
               min={1}
               max={4096}
               disabled={isLock}
@@ -414,36 +466,6 @@ export default function WikiSettings() {
               placeholder="请输入向量维度"
             />
           </Form.Item>
-        </Card>
-
-        {/* 危险操作卡片 */}
-        <Card
-          title={
-            <span className="wiki-settings-card-title danger">
-              <DeleteOutlined className="wiki-settings-card-icon" />
-              危险操作
-            </span>
-          }
-          className="wiki-settings-card wiki-settings-danger-card"
-        >
-          <div className="wiki-settings-danger-item">
-            <div className="wiki-settings-danger-info">
-              <div className="wiki-settings-danger-title">清空知识库向量</div>
-              <div className="wiki-settings-danger-desc">
-                删除所有已生成的向量数据，此操作不可逆。清空后可重新配置向量化参数。
-              </div>
-            </div>
-            <Tooltip title="清空后将解锁向量化配置">
-              <Button
-                danger
-                loading={clearingVectors}
-                onClick={handleClearVectors}
-                icon={<DeleteOutlined />}
-              >
-                清空向量
-              </Button>
-            </Tooltip>
-          </div>
         </Card>
 
         {/* 提交按钮 */}
@@ -458,6 +480,58 @@ export default function WikiSettings() {
             保存设置
           </Button>
         </div>
+
+        {/* 危险操作卡片 - 仅管理员和所有者可见 */}
+        {canDeleteWiki && (
+          <Card
+            title={
+              <span className="wiki-settings-card-title danger">
+                <DeleteOutlined className="wiki-settings-card-icon" />
+                危险操作
+              </span>
+            }
+            className="wiki-settings-card wiki-settings-danger-card"
+          >
+            <div className="wiki-settings-danger-item">
+              <div className="wiki-settings-danger-info">
+                <div className="wiki-settings-danger-title">清空知识库向量</div>
+                <div className="wiki-settings-danger-desc">
+                  删除所有已生成的向量数据，此操作不可逆。清空后可重新配置向量化参数。
+                </div>
+              </div>
+              <Tooltip title="清空后将解锁向量化配置">
+                <Button
+                  danger
+                  loading={clearingVectors}
+                  onClick={handleClearVectors}
+                  icon={<DeleteOutlined />}
+                >
+                  清空向量
+                </Button>
+              </Tooltip>
+            </div>
+
+            <div className="wiki-settings-danger-divider" />
+
+            <div className="wiki-settings-danger-item">
+              <div className="wiki-settings-danger-info">
+                <div className="wiki-settings-danger-title">删除知识库</div>
+                <div className="wiki-settings-danger-desc">
+                  永久删除该知识库及其所有文档和向量数据，此操作不可逆。
+                </div>
+              </div>
+              <Button
+                danger
+                type="primary"
+                loading={deletingWiki}
+                onClick={handleDeleteWiki}
+                icon={<DeleteOutlined />}
+              >
+                删除知识库
+              </Button>
+            </div>
+          </Card>
+        )}
       </Form>
     </div>
   );

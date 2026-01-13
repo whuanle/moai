@@ -39,6 +39,7 @@ public class QueryTeamMemberListCommandHandler : IRequestHandler<QueryTeamMember
                              {
                                  UserId = tu.UserId,
                                  UserName = u.UserName,
+                                 NiceName = u.NickName,
                                  AvatarKey = u.AvatarPath,
                                  Role = (TeamRole)tu.Role,
                                  JoinTime = tu.CreateTime

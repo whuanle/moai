@@ -6,7 +6,6 @@ import {
   message,
   Modal,
   Form,
-  Input,
   Space,
   Avatar,
   Tag,
@@ -27,6 +26,8 @@ import { useParams } from "react-router";
 import { proxyRequestError } from "../../helper/RequestError";
 import type { QueryTeamMemberListQueryResponseItem, TeamRole } from "../../apiClient/models";
 import { TeamRoleObject } from "../../apiClient/models";
+import UserSelect from "../common/UserSelect";
+import { formatRelativeTime } from "../../helper/DateTimeHelper";
 
 const { Text } = Typography;
 
@@ -100,15 +101,18 @@ export default function TeamMembers() {
     fetchMembers();
   }, [fetchMyRole, fetchMembers]);
 
-  const handleInviteUser = async (values: { userName: string; role: TeamRole }) => {
-    if (!id) return;
+  // 获取已有成员的用户ID列表（用于排除）
+  const memberUserIds = members.map(m => m.userId).filter((id): id is number => id !== undefined && id !== null);
+
+  const handleInviteUser = async (values: { userNames: string[] }) => {
+    if (!id || !values.userNames || values.userNames.length === 0) return;
 
     try {
       setInviteLoading(true);
       const apiClient = GetApiClient();
       await apiClient.api.team.invite.post({
         teamId: parseInt(id),
-        userNames: [values.userName],
+        userNames: values.userNames,
       });
 
       messageApi.success("邀请成功");
@@ -224,9 +228,16 @@ export default function TeamMembers() {
       ),
     },
     {
+      title: "昵称",
+      dataIndex: "nickName",
+      key: "nickName",
+      render: (_: unknown, record: QueryTeamMemberListQueryResponseItem) => record.niceName,
+    },
+    {
       title: "加入时间",
       dataIndex: "joinTime",
       key: "joinTime",
+      render: (_: unknown, record: QueryTeamMemberListQueryResponseItem) => formatRelativeTime(record.joinTime),
     },
     {
       title: "角色",
@@ -239,7 +250,7 @@ export default function TeamMembers() {
       render: (_: unknown, record: QueryTeamMemberListQueryResponseItem) => {
         if (record.role === TeamRoleObject.Owner) return null;
         if (!canManage) return null;
-        
+
         return (
           <Space>
             <Button
@@ -261,16 +272,15 @@ export default function TeamMembers() {
 
   const rowSelection = canManage
     ? {
-        selectedRowKeys: selectedUserIds,
-        onChange: (selectedRowKeys: React.Key[]) => {
-          setSelectedUserIds(selectedRowKeys as number[]);
-        },
-        getCheckboxProps: (record: QueryTeamMemberListQueryResponseItem) => ({
-          disabled: record.role === TeamRoleObject.Owner,
-        }),
-      }
+      selectedRowKeys: selectedUserIds,
+      onChange: (selectedRowKeys: React.Key[]) => {
+        setSelectedUserIds(selectedRowKeys as number[]);
+      },
+      getCheckboxProps: (record: QueryTeamMemberListQueryResponseItem) => ({
+        disabled: record.role === TeamRoleObject.Owner,
+      }),
+    }
     : undefined;
-
 
   return (
     <>
@@ -336,12 +346,7 @@ export default function TeamMembers() {
           dataSource={members}
           loading={loading}
           rowSelection={rowSelection}
-          pagination={{
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-          }}
+          pagination={false}
           locale={{ emptyText: "暂无成员数据，请先邀请成员加入团队" }}
         />
       </Card>
@@ -360,11 +365,11 @@ export default function TeamMembers() {
       >
         <Form form={inviteForm} layout="vertical" onFinish={handleInviteUser}>
           <Form.Item
-            name="userName"
-            label="用户账号"
-            rules={[{ required: true, message: "请输入用户账号" }]}
+            name="userNames"
+            label="选择用户"
+            rules={[{ required: true, message: "请选择要邀请的用户" }]}
           >
-            <Input placeholder="请输入要邀请的用户账号" />
+            <UserSelect excludeUserIds={memberUserIds} />
           </Form.Item>
           <Form.Item>
             <Space>

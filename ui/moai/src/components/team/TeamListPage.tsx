@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  Card,
   Typography,
   Button,
   Space,
@@ -11,10 +10,9 @@ import {
   Modal,
   Form,
   Input,
-  Row,
-  Col,
   Radio,
   Avatar,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined,
@@ -33,13 +31,27 @@ import type {
   TeamRole,
 } from "../../apiClient/models";
 import { TeamRoleObject } from "../../apiClient/models";
+import SortPopover, { type SortState } from "../common/SortPopover";
+import "./TeamListPage.css";
 
-const { Title, Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
-// 筛选类型
+// ============================================
+// 类型定义
+// ============================================
 type FilterType = "all" | "created" | "joined";
 
+// ============================================
+// 常量配置
+// ============================================
+const SORT_FIELDS = [
+  { key: "name", label: "名称" },
+  { key: "createTime", label: "创建时间" },
+];
+
+// ============================================
 // 工具函数
+// ============================================
 const formatDateTime = (dateTimeString?: string | null): string => {
   if (!dateTimeString) return "";
   try {
@@ -71,74 +83,90 @@ const getRoleTag = (role?: TeamRole | null) => {
   }
 };
 
+const sortTeamList = (
+  list: QueryTeamListQueryResponseItem[],
+  sortState: SortState
+): QueryTeamListQueryResponseItem[] => {
+  return [...list].sort((a, b) => {
+    for (const field of SORT_FIELDS) {
+      const order = sortState[field.key];
+      if (!order) continue;
+      const multiplier = order === "asc" ? 1 : -1;
+      if (field.key === "name") {
+        return (a.name || "").localeCompare(b.name || "") * multiplier;
+      }
+      return (
+        (new Date(a.createTime || 0).getTime() -
+          new Date(b.createTime || 0).getTime()) *
+        multiplier
+      );
+    }
+    return 0;
+  });
+};
+
+// ============================================
 // 团队卡片组件
+// ============================================
 interface TeamCardProps {
   item: QueryTeamListQueryResponseItem;
   onClick: (id: number) => void;
 }
 
-const TeamCard: React.FC<TeamCardProps> = ({ item, onClick }) => {
-  return (
-    <Col xs={24} sm={12} md={8} lg={6}>
-      <Card
-        hoverable
-        onClick={() => onClick(item.id!)}
-        style={{ cursor: "pointer", height: "100%" }}
-      >
-        <Card.Meta
-          avatar={
-            item.avatar ? (
-              <Avatar size={48} src={item.avatar} />
-            ) : (
-              <Avatar size={48} icon={<TeamOutlined />} />
-            )
-          }
-          title={
-            <Space align="center" style={{ width: "100%" }}>
-              <Text strong style={{ fontSize: "16px" }}>
-                {item.name}
-              </Text>
-              {getRoleTag(item.role)}
-            </Space>
-          }
-          description={
-            <Space direction="vertical" size="small" style={{ width: "100%" }}>
-              <Paragraph
-                type="secondary"
-                ellipsis={{ rows: 2, tooltip: item.description }}
-                style={{ margin: 0 }}
-              >
-                {item.description || "暂无描述"}
-              </Paragraph>
+const TeamCard: React.FC<TeamCardProps> = ({ item, onClick }) => (
+  <div className="team-card" onClick={() => onClick(item.id!)}>
+    <div className="team-card-header">
+      <div className="team-card-avatar">
+        {item.avatar ? (
+          <Avatar size={56} src={item.avatar} />
+        ) : (
+          <Avatar size={56} icon={<TeamOutlined />} />
+        )}
+      </div>
+      <div className="team-card-title-section">
+        <Tooltip title={item.name}>
+          <h3 className="team-card-title">{item.name}</h3>
+        </Tooltip>
+        <div className="team-card-tags">{getRoleTag(item.role)}</div>
+      </div>
+    </div>
 
-              <Space size="small" wrap>
-                <Tag color="purple" icon={<UserOutlined />}>
-                  {item.memberCount || 0} 成员
-                </Tag>
-              </Space>
+    <div className="team-card-content">
+      <Paragraph className="team-card-description">
+        {item.description || "暂无描述"}
+      </Paragraph>
+    </div>
 
-              <Space direction="vertical" size={0} style={{ marginTop: 8 }}>
-                <Space size="small">
-                  <ClockCircleOutlined />
-                  <Text type="secondary" style={{ fontSize: "12px" }}>
-                    {formatDateTime(item.createTime)}
-                  </Text>
-                </Space>
-              </Space>
-            </Space>
-          }
-        />
-      </Card>
-    </Col>
-  );
-};
+    <div className="team-card-footer">
+      <div className="team-card-meta">
+        <span className="team-card-meta-item">
+          <UserOutlined />
+          {item.memberCount || 0} 成员
+        </span>
+        {item.createTime && (
+          <span className="team-card-meta-item">
+            <ClockCircleOutlined />
+            {formatDateTime(item.createTime)}
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+);
 
-// 创建团队表单
+// ============================================
+// 创建团队弹窗组件
+// ============================================
+interface CreateTeamFormValues {
+  name: string;
+  description?: string;
+}
+
 interface CreateTeamModalProps {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: CreateTeamCommand) => void;
-  form: any;
+  onSubmit: (values: CreateTeamFormValues) => void;
+  form: ReturnType<typeof Form.useForm<CreateTeamFormValues>>[0];
   loading: boolean;
 }
 
@@ -153,11 +181,9 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
     title="新建团队"
     open={open}
     onCancel={onCancel}
-    onOk={() => form.submit()}
-    confirmLoading={loading}
+    footer={null}
+    width={480}
     maskClosable={false}
-    okText="创建"
-    cancelText="取消"
     destroyOnClose
   >
     <Form form={form} layout="vertical" preserve={false} onFinish={onSubmit}>
@@ -169,25 +195,44 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
         <Input placeholder="请输入团队名称" maxLength={100} />
       </Form.Item>
       <Form.Item label="团队描述" name="description">
-        <Input.TextArea placeholder="请输入团队描述" maxLength={500} rows={3} />
+        <Input.TextArea
+          placeholder="请输入团队描述"
+          maxLength={500}
+          rows={3}
+          showCount
+        />
+      </Form.Item>
+      <Form.Item className="modal-footer-actions">
+        <Space>
+          <Button onClick={onCancel}>取消</Button>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            创建
+          </Button>
+        </Space>
       </Form.Item>
     </Form>
   </Modal>
 );
 
+// ============================================
 // 主组件
+// ============================================
 export default function TeamListPage() {
   const navigate = useNavigate();
+  const [messageApi, contextHolder] = message.useMessage();
+  const [form] = Form.useForm<CreateTeamFormValues>();
+
+  // 状态
   const [teamList, setTeamList] = useState<QueryTeamListQueryResponseItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filterType, setFilterType] = useState<FilterType>("all");
+  const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
-  const [form] = Form.useForm();
+  const [filterType, setFilterType] = useState<FilterType>("all");
+  const [sortState, setSortState] = useState<SortState>({ createTime: "desc" });
 
+  // 获取团队列表
   const fetchTeamList = useCallback(
-    async (filter: FilterType = "all") => {
+    async (filter: FilterType = filterType) => {
       try {
         setLoading(true);
         const client = GetApiClient();
@@ -199,7 +244,6 @@ export default function TeamListPage() {
         const response = await client.api.team.list.post({
           filterType: filterTypeMap[filter],
         });
-
         if (response?.items) {
           setTeamList(response.items);
         }
@@ -210,42 +254,54 @@ export default function TeamListPage() {
         setLoading(false);
       }
     },
-    [messageApi]
+    [filterType, messageApi]
   );
 
+  // 创建团队
+  const handleCreate = useCallback(
+    async (values: CreateTeamCommand) => {
+      try {
+        setSubmitting(true);
+        const client = GetApiClient();
+        const response = await client.api.team.create.post(values);
+        if (response?.teamId) {
+          messageApi.success("创建成功");
+          setModalOpen(false);
+          form.resetFields();
+          fetchTeamList(filterType);
+        }
+      } catch (err) {
+        proxyFormRequestError(err, messageApi, form, "创建失败");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [form, messageApi, fetchTeamList, filterType]
+  );
+
+  // 筛选变更
+  const handleFilterChange = useCallback(
+    (filter: FilterType) => {
+      setFilterType(filter);
+      fetchTeamList(filter);
+    },
+    [fetchTeamList]
+  );
+
+  // 排序后的列表
+  const sortedTeamList = useMemo(
+    () => sortTeamList(teamList, sortState),
+    [teamList, sortState]
+  );
+
+  // 初始化加载
   useEffect(() => {
     fetchTeamList("all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleFilterChange = (filter: FilterType) => {
-    setFilterType(filter);
-    fetchTeamList(filter);
-  };
-
-  const handleCreateTeam = async (values: CreateTeamCommand) => {
-    try {
-      setCreateLoading(true);
-      const client = GetApiClient();
-      const response = await client.api.team.create.post(values);
-      if (response?.teamId) {
-        messageApi.success("创建成功");
-        setModalOpen(false);
-        form.resetFields();
-        fetchTeamList(filterType);
-      }
-    } catch (err: any) {
-      proxyFormRequestError(err, messageApi, form, "创建失败");
-    } finally {
-      setCreateLoading(false);
-    }
-  };
-
-  const handleCardClick = (id: number) => {
-    navigate(`/app/team/${id}`);
-  };
-
   return (
-    <>
+    <div className="page-container">
       {contextHolder}
 
       <CreateTeamModal
@@ -254,76 +310,67 @@ export default function TeamListPage() {
           setModalOpen(false);
           form.resetFields();
         }}
-        onSubmit={handleCreateTeam}
+        onSubmit={handleCreate}
         form={form}
-        loading={createLoading}
+        loading={submitting}
       />
 
-      <Card style={{ margin: "24px 24px 0" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Space size="large">
-            <Space>
-              <TeamOutlined />
-              <Title level={3} style={{ margin: 0 }}>
-                团队管理
-              </Title>
-            </Space>
-            <Space>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setModalOpen(true)}
-              >
-                新建团队
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => fetchTeamList(filterType)}
-                loading={loading}
-              >
-                刷新
-              </Button>
-              <Radio.Group
-                value={filterType}
-                onChange={(e) => handleFilterChange(e.target.value)}
-              >
-                <Radio.Button value="all">全部</Radio.Button>
-                <Radio.Button value="created">我创建的</Radio.Button>
-                <Radio.Button value="joined">我加入的</Radio.Button>
-              </Radio.Group>
-            </Space>
-          </Space>
+      <div className="moai-toolbar">
+        <div className="moai-toolbar-left">
+          <Radio.Group
+            value={filterType}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            optionType="button"
+            buttonStyle="solid"
+            className="team-filter-radio"
+          >
+            <Radio.Button value="all">全部</Radio.Button>
+            <Radio.Button value="created">我创建的</Radio.Button>
+            <Radio.Button value="joined">我加入的</Radio.Button>
+          </Radio.Group>
+          <SortPopover
+            fields={SORT_FIELDS}
+            value={sortState}
+            onChange={setSortState}
+          />
         </div>
-      </Card>
-
-      <div style={{ padding: "0 24px 24px" }}>
-        <Card>
-          <Spin spinning={loading}>
-            {teamList.length > 0 ? (
-              <Row gutter={[16, 16]}>
-                {teamList.map((item) => (
-                  <TeamCard
-                    key={item.id}
-                    item={item}
-                    onClick={handleCardClick}
-                  />
-                ))}
-              </Row>
-            ) : (
-              <Empty
-                description="暂无团队数据"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            )}
-          </Spin>
-        </Card>
+        <div className="moai-toolbar-right">
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => fetchTeamList()}
+            loading={loading}
+          >
+            刷新
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setModalOpen(true)}
+          >
+            新建团队
+          </Button>
+        </div>
       </div>
-    </>
+
+      <Spin spinning={loading}>
+        {sortedTeamList.length > 0 ? (
+          <div className="team-grid">
+            {sortedTeamList.map((item) => (
+              <TeamCard
+                key={item.id}
+                item={item}
+                onClick={(id) => navigate(`/app/team/${id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <Empty
+            description="暂无团队数据"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            className="moai-empty"
+          />
+        )}
+      </Spin>
+    </div>
   );
 }

@@ -9,6 +9,8 @@ using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Login.Queries.Responses;
 
+#pragma warning disable SA1009
+
 namespace MoAI.Common.Controllers;
 
 /// <summary>
@@ -73,6 +75,18 @@ public class CommonController : ControllerBase
     {
         var cmd = new QueryUserViewUserInfoCommand() { ContextUserId = _userContext.UserId };
         return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 获取用户列表.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct">CancellationToken，用于取消操作.</param>
+    /// <returns>返回 <see cref="UserStateInfo"/>，包含用户状态信息.</returns>
+    [HttpPost("userlist")]
+    public Task<QueryUserSelectListCommandResponse> QueryUserList(QueryUserSelectListCommand req, CancellationToken ct)
+    {
+        return _mediator.Send(req, ct);
     }
 
     /// <summary>

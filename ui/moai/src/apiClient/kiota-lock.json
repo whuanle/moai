@@ -1,5 +1,5 @@
 {
-  "descriptionHash": "1A26041081B902D03FE8C297067E2DC5798B33C9E935DA1B9F1847A0C0AA61CA531428382DE55FD249DE6235081B867054B5B43B3D2487E760D544ED963CFE67",
+  "descriptionHash": "5812630FAD795F18EC2A3DF79FF3443AA420D9EC20CF1324532A26E2E08BF57A95FF8F8BC8856D567C3F4E65D8EB452A7759BBF68F739AD12A99E6DFC9C3D465",
   "descriptionLocation": "http://127.0.0.1:5000/openapi/v1.json",
   "lockFileVersion": "1.0.0",
   "kiotaVersion": "1.27.0",
@@ -9,7 +9,7 @@
   "language": "TypeScript",
   "usesBackingStore": false,
   "excludeBackwardCompatible": false,
-  "includeAdditionalData": false,
+  "includeAdditionalData": true,
   "disableSSLValidation": false,
   "serializers": [
     "Microsoft.Kiota.Serialization.Json.JsonSerializationWriterFactory",

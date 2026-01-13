@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { 
   Card, 
@@ -23,7 +23,7 @@ import {
   WorkerStateObject
 } from '../../apiClient/models';
 import { proxyRequestError } from '../../helper/RequestError';
-import { formatDateTime } from '../../helper/DateTimeHelper';
+import { formatDateTime, formatRelativeTime } from '../../helper/DateTimeHelper';
 
 const { Text } = Typography;
 
@@ -161,7 +161,7 @@ export default function BatchListPage() {
       dataIndex: 'updateTime',
       key: 'updateTime',
       width: 180,
-      render: (time: string) => time ? formatDateTime(time) : '-',
+      render: (time: string) => formatRelativeTime(time),
     },
     {
       title: '更新人',
@@ -254,14 +254,7 @@ export default function BatchListPage() {
             columns={columns}
             dataSource={tasks}
             rowKey="taskId"
-            pagination={{
-              total: tasks.length,
-              pageSize: 20,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条记录`,
-              pageSizeOptions: ['20', '50', '100'],
-            }}
+            pagination={false}
             scroll={{ x: 1200 }}
             locale={{
               emptyText: (

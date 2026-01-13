@@ -38,6 +38,7 @@
 		<ProjectReference Include="..\app\MoAI.App.Core\MoAI.App.Core.csproj" />
 		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
 		<ProjectReference Include="..\external\MoAI.External.Core\MoAI.External.Core.csproj" />
+		<ProjectReference Include="..\hangfire\MoAI.Hangfire.Core\MoAI.Hangfire.Core.csproj" />
 		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
 		<ProjectReference Include="..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />
 		<ProjectReference Include="..\common\MoAI.Common.Core\MoAI.Common.Core.csproj" />
