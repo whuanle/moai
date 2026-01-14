@@ -45,8 +45,8 @@ public class WebContentFetchPlugin : IToolPluginRuntime
     /// <param name="extractText"></param>
     /// <returns>网页内容</returns>
     [KernelFunction("invoke")]
-    [Description("获取指定网页链接的内容")]
-    public async Task<string> InvokeAsync([Description("目标网页链接")] string url, [Description("是否提取html中的纯文本内容")] bool extractText = false)
+    [Description("获取指定网页链接的内容，默认开启extractText，否则页面内容非常大")]
+    public async Task<string> InvokeAsync([Description("目标网页链接")] string url, [Description("是否提取html中的纯文本内容")] bool extractText = true)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -98,7 +98,8 @@ public class WebContentFetchPlugin : IToolPluginRuntime
                 return document.DocumentElement.OuterHtml;
             }
 
-            return AngleSharpHelper.ExtractTextContent(document);
+            var result = AngleSharpHelper.ExtractTextContent(document);
+            return result;
         }
         catch (Exception ex)
         {

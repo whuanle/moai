@@ -27,11 +27,17 @@ public class WikiCounterActivatorJob : ICounterActivatorJob
     {
         var ids = values.Keys.Select(x => int.Parse(x)).ToArray();
 
-        // 刷新这些模型的使用量
-        await _databaseContext.Wikis
-            .Where(t => ids.Contains(t.Id))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(t => t.Counter, t => t.Counter + values[t.Id.ToString()]));
+        //// 刷新这些模型的使用量
+        //await _databaseContext.Wikis
+        //    .Where(t => ids.Contains(t.Id))
+        //    .ExecuteUpdateAsync(setters => setters
+        //        .SetProperty(t => t.Counter, t => t.Counter + values[t.Id.ToString()]));
+
+        var enntities = await _databaseContext.Wikis.Where(t => ids.Contains(t.Id)).ToArrayAsync();
+        foreach (var item in enntities)
+        {
+            item.Counter += ids[item.Id];
+        }
     }
 
     /// <inheritdoc/>

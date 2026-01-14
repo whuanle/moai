@@ -29,11 +29,19 @@ public class PluginCounterActivatorJob : ICounterActivatorJob
         var keys = values.Keys.Where(x => !x.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase)).ToArray();
         if (keys.Length > 0)
         {
-            // 刷新这些插件的使用量
-            await _databaseContext.Plugins
-                .Where(t => keys.Contains(t.PluginName))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(t => t.Counter, t => t.Counter + values[t.PluginName]));
+            //// 刷新这些插件的使用量
+            //await _databaseContext.Plugins
+            //    .Where(t => keys.Contains(t.PluginName))
+            //    .ExecuteUpdateAsync(setters => setters
+            //        .SetProperty(t => t.Counter, t => t.Counter + values[t.PluginName]));
+
+            var enntities = await _databaseContext.Plugins.Where(t => keys.Contains(t.PluginName)).ToArrayAsync();
+            foreach (var item in enntities)
+            {
+                item.Counter += values[item.PluginName];
+            }
+
+            await _databaseContext.SaveChangesAsync();
         }
 
         // 解析 wiki_{id} 出来
@@ -45,10 +53,18 @@ public class PluginCounterActivatorJob : ICounterActivatorJob
         if (keys.Length > 0)
         {
             // 刷新这些插件的使用量
-            await _databaseContext.Wikis
-                .Where(t => ids.Contains(t.Id))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(t => t.Counter, t => t.Counter + wiki[t.Id]));
+            //await _databaseContext.Wikis
+            //    .Where(t => ids.Contains(t.Id))
+            //    .ExecuteUpdateAsync(setters => setters
+            //        .SetProperty(t => t.Counter, t => t.Counter + wiki[t.Id]));
+
+            var enntities = await _databaseContext.Wikis.Where(t => ids.Contains(t.Id)).ToArrayAsync();
+            foreach (var item in enntities)
+            {
+                item.Counter += wiki[item.Id];
+            }
+
+            await _databaseContext.SaveChangesAsync();
         }
     }
 

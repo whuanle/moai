@@ -39,29 +39,17 @@ public class CounterActivatorJobHandler
         var activatorJobs = _serviceProvider.GetServices<ICounterActivatorJob>();
 
         // 并发获取每个激活器
-        List<Task> tasks = new();
         foreach (var activatorJob in activatorJobs)
         {
-            var task = Task.Factory.StartNew(
-                async () =>
-                {
-                    try
-                    {
-                        await ActivatorAsync(activatorJob);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Counter activation execution failed {ActivatorJob}", activatorJob.GetType().FullName);
-                    }
-                },
-                cancellationToken,
-                TaskCreationOptions.None,
-                TaskScheduler.Default).Unwrap();
-
-            tasks.Add(task);
+            try
+            {
+                await ActivatorAsync(activatorJob);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Counter activation execution failed {ActivatorJob}", activatorJob.GetType().FullName);
+            }
         }
-
-        await Task.WhenAll(tasks);
     }
 
     private async Task ActivatorAsync(ICounterActivatorJob activatorJob)
