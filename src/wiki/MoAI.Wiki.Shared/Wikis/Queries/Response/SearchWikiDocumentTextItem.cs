@@ -11,6 +11,11 @@ public class SearchWikiDocumentTextItem
     public Guid ChunkId { get; init; }
 
     /// <summary>
+    /// 被索引的文本的 id，可用方便聚合.
+    /// </summary>
+    public Guid SourceChunkId { get; init; }
+
+    /// <summary>
     /// 被索引的文本.
     /// </summary>
     public string Text { get; init; } = string.Empty;

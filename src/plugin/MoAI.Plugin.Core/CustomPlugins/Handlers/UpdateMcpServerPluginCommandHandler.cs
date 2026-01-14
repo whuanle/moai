@@ -129,15 +129,15 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
         }
 
         var serverUrl = uriBuilder.Uri;
-        var defaultConfig = new SseClientTransportOptions
+        var defaultConfig = new HttpClientTransportOptions
         {
             Endpoint = serverUrl,
             Name = request.Name,
             AdditionalHeaders = request.Header.ToDictionary(x => x.Key, x => x.Value),
         };
 
-        await using var sseTransport = new SseClientTransport(defaultConfig);
-        await using var client = await McpClientFactory.CreateAsync(
+        await using var sseTransport = new HttpClientTransport(defaultConfig);
+        await using var client = await McpClient.CreateAsync(
          sseTransport,
          defaultOptions,
          loggerFactory: _loggerFactory);

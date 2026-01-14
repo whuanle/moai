@@ -82,15 +82,15 @@ public partial class ProcessingAiAssistantChatCommandHandler
             }
 
             var serverUrl = uriBuilder.Uri;
-            var defaultConfig = new SseClientTransportOptions
+            var defaultConfig = new HttpClientTransportOptions
             {
                 Endpoint = serverUrl,
                 AdditionalHeaders = headers.ToDictionary(x => x.Key, x => x.Value),
             };
 
             // 这里不能使用 using，因为要给插件插件使用
-            var sseTransport = new SseClientTransport(defaultConfig);
-            var client = await McpClientFactory.CreateAsync(
+            var sseTransport = new HttpClientTransport(defaultConfig);
+            var client = await McpClient.CreateAsync(
              sseTransport,
              defaultOptions,
              loggerFactory: _loggerFactory);

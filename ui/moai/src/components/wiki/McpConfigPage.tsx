@@ -22,6 +22,7 @@ import { GetApiClient } from "../ServiceClient";
 import { useParams } from "react-router";
 import { proxyRequestError } from "../../helper/RequestError";
 import type { QueryWikiMcpConfigCommandResponse } from "../../apiClient/models";
+import { formatRelativeTime } from "../../helper/DateTimeHelper";
 
 const { Text, Paragraph, Title } = Typography;
 
@@ -61,7 +62,7 @@ export default function McpConfigPage() {
     try {
       setToggleLoading(true);
       const client = GetApiClient();
-      
+
       if (enabled) {
         await client.api.wiki.plugin.mcp.enable.post({ wikiId });
         messageApi.success("已启用 MCP 功能");
@@ -69,7 +70,7 @@ export default function McpConfigPage() {
         await client.api.wiki.plugin.mcp.disable.post({ wikiId });
         messageApi.success("已禁用 MCP 功能");
       }
-      
+
       fetchConfig();
     } catch (error) {
       console.error("操作失败:", error);
@@ -191,7 +192,7 @@ export default function McpConfigPage() {
                 </Descriptions.Item>
 
                 <Descriptions.Item label="创建时间">
-                  <Text>{config?.createTime || "-"}</Text>
+                  <Text>{formatRelativeTime(config?.createTime)}</Text>
                 </Descriptions.Item>
               </>
             )}
@@ -205,13 +206,10 @@ export default function McpConfigPage() {
                 <Text>3. 配置示例（以 Claude Desktop 为例）：</Text>
                 <Paragraph>
                   <pre style={{ background: "#f5f5f5", padding: "12px", borderRadius: "4px", overflow: "auto" }}>
-{`{
+                    {`{
   "mcpServers": {
     "wiki-${wikiId}": {
-      "url": "${config?.mcpUrl || ""}",
-      "headers": {
-        "Authorization": "Bearer ${config?.key || "YOUR_KEY"}"
-      }
+      "url": "${config?.mcpUrl || ""}"
     }
   }
 }`}

@@ -95,6 +95,11 @@ public partial class AiModelEntity : IFullAudited
     public bool IsPublic { get; set; }
 
     /// <summary>
+    /// 计数器.
+    /// </summary>
+    public int Counter { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }

@@ -35,7 +35,7 @@ public class QueryTeamViewAiModelListCommandHandler : IRequestHandler<QueryTeamV
             .Select(x => x.TeamId)
             .FirstAsync(cancellationToken: cancellationToken);
 
-        var query = _dbContext.AiModels.AsQueryable(); ;
+        var query = _dbContext.AiModels.AsQueryable();
 
         // 个人知识库
         if (teamId == 0)
@@ -72,7 +72,8 @@ public class QueryTeamViewAiModelListCommandHandler : IRequestHandler<QueryTeamV
                     Vision = x.IsVision,
                 },
                 MaxDimension = x.MaxDimension,
-                TextOutput = x.TextOutput
+                TextOutput = x.TextOutput,
+                IsAuthorization = x.IsPublic ? false : true,
             }).ToArrayAsync(cancellationToken: cancellationToken);
 
         return new QueryTeamViewAiModelListCommandResponse

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
 
@@ -55,6 +53,10 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("向量化模型的id")
             .HasColumnType("int(11)")
             .HasColumnName("embedding_model_id");
+        entity.Property(e => e.Counter)
+            .HasComment("计数器")
+            .HasColumnType("int(11)")
+            .HasColumnName("counter");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")

@@ -8,12 +8,13 @@
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.OpenApi.Readers" />
 	  <PackageReference Include="ModelContextProtocol" />
-	  <PackageReference Include="ModelContextProtocol-SemanticKernel" />
+	  <PackageReference Include="Stef.ModelContextProtocol.SemanticKernel" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 	  <ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
+	  <ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
 	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.Api\MoAI.Plugin.Api.csproj" />
 	  <ProjectReference Include="..\MoAI.Plugin.NativePlugin\MoAI.Plugin.NativePlugin.csproj" />

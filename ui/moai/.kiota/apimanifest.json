@@ -95,19 +95,4 @@
         "x-ms-kiota-version": "1.25.1"
       }
     },
-    "MaomiClient": {
-      "apiDescriptionUrl": "http://127.0.0.1:5000/openapi/v1.json",
-      "apiDeploymentBaseUrl": "http://127.0.0.1:5000/",
-      "requests": [
-        {
-          "method": "GET",
-          "uriTemplate": "/migration-placeholder"
-        }
-      ],
-      "extensions": {
-        "x-ms-kiota-hash": "434E3236375224D1CAEDBA54ED251B98D687596B3C499F11C1FE5867EB8E9D5A",
-        "x-ms-kiota-version": "1.23.0"
-      }
-    }
-  }
-}
+    "MaomiClient": 

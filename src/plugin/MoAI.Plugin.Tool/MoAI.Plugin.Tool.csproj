@@ -16,7 +16,7 @@
 		<PackageReference Include="Markdig" />
 		<PackageReference Include="Microsoft.OpenApi.Readers" />
 		<PackageReference Include="ModelContextProtocol" />
-		<PackageReference Include="ModelContextProtocol-SemanticKernel" />
+		<PackageReference Include="Stef.ModelContextProtocol.SemanticKernel" />
 	</ItemGroup>
 
 	<ItemGroup>

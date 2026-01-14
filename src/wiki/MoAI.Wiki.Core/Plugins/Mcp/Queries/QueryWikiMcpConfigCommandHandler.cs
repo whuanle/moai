@@ -21,10 +21,12 @@ public class QueryWikiMcpConfigCommandHandler : IRequestHandler<QueryWikiMcpConf
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryWikiMcpConfigCommandHandler"/> class.
     /// </summary>
-    public QueryWikiMcpConfigCommandHandler(DatabaseContext databaseContext, IOptions<SystemOptions> systemOptions)
+    /// <param name="databaseContext"></param>
+    /// <param name="systemOptions"></param>
+    public QueryWikiMcpConfigCommandHandler(DatabaseContext databaseContext, SystemOptions systemOptions)
     {
         _databaseContext = databaseContext;
-        _systemOptions = systemOptions.Value;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
@@ -51,7 +53,7 @@ public class QueryWikiMcpConfigCommandHandler : IRequestHandler<QueryWikiMcpConf
             WikiId = config.WikiId,
             Enabled = true,
             Key = mcpConfig?.Key ?? string.Empty,
-            McpUrl = $"{serverUrl}/external/wiki/{request.WikiId}",
+            McpUrl = $"{serverUrl}/mcp/wiki/{request.WikiId}?key={mcpConfig?.Key}",
             CreateTime = config.CreateTime
         };
     }

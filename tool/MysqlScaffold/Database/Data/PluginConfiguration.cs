@@ -36,6 +36,10 @@ public partial class PluginConfiguration : IEntityTypeConfiguration<PluginEntity
             .HasComment("分类id")
             .HasColumnType("int(11)")
             .HasColumnName("classify_id");
+        entity.Property(e => e.Counter)
+            .HasComment("计数器")
+            .HasColumnType("int(11)")
+            .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("创建时间")

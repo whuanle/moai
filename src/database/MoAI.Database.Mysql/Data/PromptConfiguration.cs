@@ -32,6 +32,10 @@ public partial class PromptConfiguration : IEntityTypeConfiguration<PromptEntity
             .HasComment("提示词内容")
             .HasColumnType("text")
             .HasColumnName("content");
+        entity.Property(e => e.Counter)
+            .HasComment("计数器")
+            .HasColumnType("int(11)")
+            .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")

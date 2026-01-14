@@ -46,4 +46,9 @@ public class PublicModelInfo
     /// 向量模型的维度.
     /// </summary>
     public int MaxDimension { get; init; }
+
+    /// <summary>
+    /// true 表示专门针对团队授权，否则是公开的模型.
+    /// </summary>
+    public bool IsAuthorization { get; init; }
 }

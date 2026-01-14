@@ -79,14 +79,14 @@ public partial class ProcessingAppChatCommandHandler
             }
 
             var serverUrl = uriBuilder.Uri;
-            var defaultConfig = new SseClientTransportOptions
+            var defaultConfig = new HttpClientTransportOptions
             {
                 Endpoint = serverUrl,
                 AdditionalHeaders = headers.ToDictionary(x => x.Key, x => x.Value),
             };
 
-            var sseTransport = new SseClientTransport(defaultConfig);
-            var client = await McpClientFactory.CreateAsync(
+            var sseTransport = new HttpClientTransport(defaultConfig);
+            var client = await McpClient.CreateAsync(
              sseTransport,
              defaultOptions,
              loggerFactory: _loggerFactory);

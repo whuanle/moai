@@ -162,6 +162,7 @@ public class SearchWikiDocumentTextCommandHandler : IRequestHandler<SearchWikiDo
             var record = new SearchWikiDocumentTextItem
             {
                 ChunkId = embedding.Id,
+                SourceChunkId = chunkEmbedding.Id,
                 Text = embedding.MetadataContent,
                 ChunkText = chunkEmbedding.MetadataContent,
                 RecordRelevance = item.Item2,

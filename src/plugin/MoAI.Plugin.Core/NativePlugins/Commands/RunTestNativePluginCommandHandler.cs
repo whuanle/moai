@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.Models;
 using MoAI.Database;
+using MoAI.Hangfire.Services;
 using MoAI.Infra.Exceptions;
 using MoAI.Plugin.NativePlugins.Commands;
 using MoAI.Plugin.NativePlugins.Models;
@@ -17,6 +18,7 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
     private readonly IServiceProvider _serviceProvider;
     private readonly DatabaseContext _databaseContext;
     private readonly INativePluginFactory _nativePluginFactory;
+    private readonly IMediator _mediator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RunTestNativePluginCommandHandler"/> class.
@@ -24,11 +26,13 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
     /// <param name="serviceProvider"></param>
     /// <param name="databaseContext"></param>
     /// <param name="nativePluginFactory"></param>
-    public RunTestNativePluginCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, INativePluginFactory nativePluginFactory)
+    /// <param name="mediator"></param>
+    public RunTestNativePluginCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, INativePluginFactory nativePluginFactory, IMediator mediator)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
         _nativePluginFactory = nativePluginFactory;
+        _mediator = mediator;
     }
 
     /// <inheritdoc/>
@@ -45,6 +49,16 @@ public class RunTestNativePluginCommandHandler : IRequestHandler<RunTestNativePl
         {
             throw new BusinessException("未找到插件模板") { StatusCode = 404 };
         }
+
+        // 插件用量统计
+        await _mediator.Send(new IncrementCounterActivatorCommand
+        {
+            Name = "plugin",
+            Counters = new Dictionary<string, int>
+            {
+                { pluginInfo.Key, 1 },
+            },
+        });
 
         if (pluginInfo.PluginType == PluginType.ToolPlugin)
         {

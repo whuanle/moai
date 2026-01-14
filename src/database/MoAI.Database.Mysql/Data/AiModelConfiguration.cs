@@ -45,6 +45,10 @@ public partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEnti
             .HasComment("上下文最大token数量")
             .HasColumnType("int(11)")
             .HasColumnName("context_window_tokens");
+        entity.Property(e => e.Counter)
+            .HasComment("计数器")
+            .HasColumnType("int(11)")
+            .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("utc_timestamp()")
             .HasComment("创建时间")

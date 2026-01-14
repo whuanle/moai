@@ -34,7 +34,7 @@ public static partial class MainExtensions
     {
         // 指定环境变量从文件导入配置
         var configurationFilePath = Environment.GetEnvironmentVariable("MAI_FILE");
-        if (string.IsNullOrWhiteSpace(configurationFilePath))
+        if (string.IsNullOrWhiteSpace(configurationFilePath) || !File.Exists(configurationFilePath))
         {
             configurationFilePath = Path.Combine(AppConst.ConfigsPath, "system.json");
         }

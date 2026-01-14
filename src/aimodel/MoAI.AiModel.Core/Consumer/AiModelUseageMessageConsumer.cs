@@ -1,6 +1,8 @@
 ﻿using Maomi.MQ;
+using MediatR;
 using MoAI.AiModel.Events;
 using MoAI.Database;
+using MoAI.Hangfire.Services;
 
 namespace MoAI.AiModel.Consumer;
 
@@ -11,14 +13,17 @@ namespace MoAI.AiModel.Consumer;
 public class AiModelUseageMessageConsumer : IConsumer<AiModelUseageMessage>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IMediator _mediator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiModelUseageMessageConsumer"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    public AiModelUseageMessageConsumer(DatabaseContext databaseContext)
+    /// <param name="mediator"></param>
+    public AiModelUseageMessageConsumer(DatabaseContext databaseContext, IMediator mediator)
     {
         _databaseContext = databaseContext;
+        _mediator = mediator;
     }
 
     /// <inheritdoc/>
@@ -35,7 +40,17 @@ public class AiModelUseageMessageConsumer : IConsumer<AiModelUseageMessage>
             CreateUserId = message.ContextUserId,
             UpdateUserId = message.ContextUserId,
         });
+
         await _databaseContext.SaveChangesAsync();
+
+        await _mediator.Send(new IncrementCounterActivatorCommand
+        {
+            Name = "aimodel",
+            Counters = new Dictionary<string, int>
+            {
+                { message.AiModelId.ToString(), 1 }
+            },
+        });
     }
 
     /// <inheritdoc/>

@@ -18,6 +18,7 @@ using MoAI.AiModel.Events;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Hangfire.Services;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -264,15 +265,6 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             TotalTokens = useages.Sum(x => x.TotalTokens)
         };
 
-        await _messagePublisher.AutoPublishAsync(
-            new AiModelUseageMessage
-            {
-                AiModelId = chatObjectEntity.ModelId,
-                Channel = "chat",
-                ContextUserId = request.ContextUserId,
-                Usage = usage
-            });
-
         chatObjectEntity.OutTokens += usage?.CompletionTokens ?? 0;
         chatObjectEntity.InputTokens += usage?.PromptTokens ?? 0;
         chatObjectEntity.TotalTokens += usage?.TotalTokens ?? 0;
@@ -290,6 +282,25 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
 
         await _databaseContext.AppAssistantChatHistories.AddAsync(aiChatRecord);
         await _databaseContext.SaveChangesAsync();
+
+        // 模型用量统计
+        await _messagePublisher.AutoPublishAsync(
+            new AiModelUseageMessage
+            {
+                AiModelId = chatObjectEntity.ModelId,
+                Channel = "chat",
+                ContextUserId = request.ContextUserId,
+                Usage = usage!
+            });
+
+        // 插件用量统计
+        await _mediator.Send(new IncrementCounterActivatorCommand
+        {
+            Name = "plugin",
+            Counters = chatContext.Choices.Where(x => x.PluginCall != null)
+            .GroupBy(x => x.PluginCall!.PluginKey)
+            .ToDictionary(x => x.Key, x => x.Count())
+        });
     }
 
     /// <inheritdoc/>

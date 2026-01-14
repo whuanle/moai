@@ -46,7 +46,7 @@ public class QueryAiModelPublicModelInfoCommandHandler : IRequestHandler<QueryAi
                     Vision = x.IsVision,
                 },
                 MaxDimension = x.MaxDimension,
-                TextOutput = x.TextOutput
+                TextOutput = x.TextOutput,
             })
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
         if (model == null)

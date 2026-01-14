@@ -11,7 +11,7 @@
 		<PackageReference Include="Microsoft.OpenApi.Readers" />
 		<PackageReference Include="Microsoft.SemanticKernel.Plugins.OpenApi" />
 		<PackageReference Include="ModelContextProtocol" />
-		<PackageReference Include="ModelContextProtocol-SemanticKernel" />
+		<PackageReference Include="Stef.ModelContextProtocol.SemanticKernel" />
 		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" />
 	</ItemGroup>
 

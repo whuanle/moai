@@ -20,7 +20,7 @@ public enum UserType
     External = 1,
 
     /// <summary>
-    /// 外部应用.
+    /// 外部应用，包括 MCP 这些.
     /// </summary>
     [JsonPropertyName("externalapp")]
     ExternalApp = 2,

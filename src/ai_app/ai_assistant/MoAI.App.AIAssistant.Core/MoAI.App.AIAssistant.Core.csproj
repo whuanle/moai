@@ -11,12 +11,13 @@
 		<PackageReference Include="Microsoft.OpenApi.Readers" />
 		<PackageReference Include="Microsoft.SemanticKernel.Plugins.OpenApi" />
 		<PackageReference Include="ModelContextProtocol" />
-		<PackageReference Include="ModelContextProtocol-SemanticKernel" />
+		<PackageReference Include="Stef.ModelContextProtocol.SemanticKernel" />
 		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
 		<ProjectReference Include="..\..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 		<ProjectReference Include="..\..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />

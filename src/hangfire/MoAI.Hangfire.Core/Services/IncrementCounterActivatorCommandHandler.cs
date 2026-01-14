@@ -1,18 +1,13 @@
 ﻿using FluentValidation;
 using MediatR;
 using StackExchange.Redis.Extensions.Core.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MoAI.Hangfire.Services;
 
 /// <summary>
 /// 实现计数器.
 /// </summary>
-public class IncrementCounterActivatorCommandHandler : IRequestHandler<IncrementCounterActivatorCommand, int>
+public class IncrementCounterActivatorCommandHandler : IRequestHandler<IncrementCounterActivatorCommand>
 {
     private readonly IValidator<IncrementCounterActivatorCommand> _validator;
     private readonly IRedisDatabase _redisDatabase;
@@ -29,11 +24,25 @@ public class IncrementCounterActivatorCommandHandler : IRequestHandler<Increment
     }
 
     /// <inheritdoc/>
-    public async Task<int> Handle(IncrementCounterActivatorCommand request, CancellationToken cancellationToken)
+    public async Task Handle(IncrementCounterActivatorCommand request, CancellationToken cancellationToken)
     {
+        if (request.Counters.Count == 0)
+        {
+            return;
+        }
+
         _validator.ValidateAndThrow(request);
 
-        var newValue = await _redisDatabase.HashIncrementByAsync($"counter:{request.Name}", request.Id, request.Count);
-        return (int)newValue;
+        List<Task> tasks = new();
+        var batch = _redisDatabase.Database.CreateBatch();
+        foreach (var item in request.Counters)
+        {
+            var task = batch.HashIncrementAsync($"counter:{request.Name}", item.Key, item.Value);
+            tasks.Add(task);
+        }
+
+        batch.Execute();
+
+        await Task.WhenAll(tasks);
     }
 }

@@ -95,7 +95,7 @@ export default function WikiLayout() {
     } else if (key === "paddleocr") {
       navigate(`/app/wiki/${id}/plugin/paddleocr`);
     } else if (key === "mcp") {
-      navigate(`/app/wiki/${id}/plugin/mcp`);
+      navigate(`/app/wiki/${id}/mcp`);
     } else if (key === "batch") {
       navigate(`/app/wiki/${id}/batch`);
     } else {
@@ -115,7 +115,7 @@ export default function WikiLayout() {
       return "openapi";
     } else if (path.includes("/plugin/paddleocr")) {
       return "paddleocr";
-    } else if (path.includes("/plugin/mcp")) {
+    } else if (path.includes("/mcp")) {
       return "mcp";
     } else if (path.includes("/search")) {
       return "search";
@@ -165,11 +165,6 @@ export default function WikiLayout() {
           icon: <ScanOutlined />,
           label: "飞桨 OCR",
         },
-        {
-          key: "mcp",
-          icon: <CloudServerOutlined />,
-          label: "MCP 配置",
-        },
       ],
     },
     {
@@ -181,6 +176,11 @@ export default function WikiLayout() {
       key: "search",
       icon: <SearchOutlined />,
       label: "召回测试",
+    },
+    {
+      key: "mcp",
+      icon: <CloudServerOutlined />,
+      label: "MCP 配置",
     },
     {
       key: "settings",

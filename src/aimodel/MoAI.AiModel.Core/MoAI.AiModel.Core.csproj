@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+    <ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
     <ProjectReference Include="..\MoAI.AiModel.Api\MoAI.AiModel.Api.csproj" />
   </ItemGroup>
 

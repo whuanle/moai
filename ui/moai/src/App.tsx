@@ -125,7 +125,7 @@ function App() {
                 <Route path="plugin/feishu" element={<FeishuListPage />} />
                 <Route path="plugin/openapi" element={<OpenApiListPage />} />
                 <Route path="plugin/paddleocr" element={<PaddleocrPage />} />
-                <Route path="plugin/mcp" element={<McpConfigPage />} />
+                <Route path="mcp" element={<McpConfigPage />} />
                 <Route path="batch" element={<BatchListPage />} />
               </Route>
             </Route>
