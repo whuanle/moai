@@ -6,6 +6,11 @@ namespace MoAI.Wiki.Plugins.Mcp.Models;
 public class WikiMcpConfig
 {
     /// <summary>
+    /// 是否启用.
+    /// </summary>
+    public bool IsEnable { get; set; }
+
+    /// <summary>
     /// MCP 访问密钥.
     /// </summary>
     public string Key { get; set; } = string.Empty;

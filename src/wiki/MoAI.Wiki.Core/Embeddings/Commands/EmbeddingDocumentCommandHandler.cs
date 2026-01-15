@@ -101,8 +101,9 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
         };
 
         await _databaseContext.WorkerTasks.AddAsync(documentTaskEntity, cancellationToken);
-        await _databaseContext.Wikis.Where(x => x.Id == request.WikiId)
-            .ExecuteUpdateAsync(x => x.SetProperty(x => x.IsLock, true), cancellationToken: cancellationToken);
+        await _databaseContext.WhereUpdateAsync(
+            _databaseContext.Wikis.Where(x => x.Id == request.WikiId),
+            x => x.SetProperty(x => x.IsLock, true));
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         // 后台处理

@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Wiki.Models;
+using MoAI.Wiki.Plugins.Crawler.Models;
 using MoAI.Wiki.Plugins.Feishu.Models;
 using MoAI.Wiki.Plugins.Feishu.Queries;
+using System.Collections.Generic;
 
 namespace MoAI.Wiki.Feishu.Queries;
 
@@ -34,68 +36,87 @@ public class QueryWikiFeishuPageTasksCommandHandler : IRequestHandler<QueryWikiF
             throw new BusinessException("未找到知识库配置");
         }
 
-        // 所有页面
-        var urlStates = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
-            .Where(x => x.ConfigId == request.ConfigId)
-            .ToArrayAsync();
-
-        // 已经成功爬取的
-        var pageItems = await _databaseContext.WikiPluginConfigDocuments
-            .OrderByDescending(x => x.UpdateTime)
-            .Where(x => x.ConfigId == request.ConfigId)
-            .Join(
-            _databaseContext.WikiDocuments.Join(_databaseContext.Files, a => a.FileId, b => b.Id, (a, b) => new
-            {
-                Id = a.Id,
-                IsEmbedding = a.IsEmbedding,
-                FileName = a.FileName,
-                FileSize = b.FileSize
-            }),
-            a => a.WikiDocumentId,
-            b => b.Id,
-            (a, b) => new WikiFeishuPageItem
-            {
-                PageId = a.Id,
-                UpdateTime = a.UpdateTime,
-                NodeToken = a.RelevanceKey,
-                ObjToken = a.RelevanceValue,
-                IsEmbedding = b.IsEmbedding,
-                Message = string.Empty,
-                WikiDocumentId = a.WikiDocumentId,
-                FileName = b.FileName,
-                FileSize = b.FileSize,
-                CreateUserId = a.CreateUserId,
-                State = WorkerState.Successful
-            }).ToListAsync();
-
-        foreach (var item in urlStates.OrderByDescending(x => x.UpdateTime))
+        List<WikiFeishuPageItem> wikiCrawlerPages = new();
+        if (wikiPluginConfigEntity.WorkState <= (int)WorkerState.Cancal)
         {
-            if (pageItems.Any(x => x.ObjToken == item.RelevanceValue))
-            {
-                continue;
-            }
+            // 所有页面
+            var urlStates = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
+                .Where(x => x.ConfigId == request.ConfigId)
+                .OrderByDescending(x => x.UpdateTime)
+                .Select(a => new WikiFeishuPageItem
+                {
+                    PageId = a.Id,
+                    UpdateTime = a.UpdateTime,
+                    NodeToken = a.RelevanceKey,
+                    ObjToken = a.RelevanceValue,
+                    Message = string.Empty,
+                    CreateUserId = a.CreateUserId,
+                    State = (WorkerState)a.State
+                })
+                .ToArrayAsync();
 
-            pageItems.Add(new WikiFeishuPageItem
-            {
-                PageId = 0,
-                WikiDocumentId = 0,
-                NodeToken = item.RelevanceKey,
-                ObjToken = item.RelevanceValue,
-                State = (WorkerState)item.State,
-                Message = item.Message,
-                CreateUserId = item.CreateUserId,
-                FileName = string.Empty,
-                FileSize = 0,
-                IsEmbedding = false,
-                UpdateTime = item.UpdateTime
-            });
+            wikiCrawlerPages.AddRange(urlStates);
         }
+        else
+        {
+            // 除开成功的页面
+            var urlStates = await _databaseContext.WikiPluginConfigDocumentStates.AsNoTracking()
+                .Where(x => x.ConfigId == request.ConfigId && x.State != (int)WorkerState.Successful)
+                .OrderByDescending(x => x.UpdateTime)
+                .Select(a => new WikiFeishuPageItem
+                {
+                    PageId = a.Id,
+                    UpdateTime = a.UpdateTime,
+                    NodeToken = a.RelevanceKey,
+                    ObjToken = a.RelevanceValue,
+                    Message = string.Empty,
+                    CreateUserId = a.CreateUserId,
+                    State = (WorkerState)a.State
+                })
+                .ToArrayAsync();
 
-        pageItems = pageItems.OrderBy(x => x.State).ToList();
+            wikiCrawlerPages.AddRange(urlStates);
+
+            // 已经成功爬取的
+            var docWithFiles = _databaseContext.WikiDocuments.AsNoTracking()
+                .Join(
+                _databaseContext.Files.AsNoTracking(),
+                doc => doc.FileId,
+                file => file.Id,
+                (doc, file) => new { Doc = doc, File = file });
+
+            var pageItems = await _databaseContext.WikiPluginConfigDocuments.AsNoTracking()
+                .Where(x => x.ConfigId == request.ConfigId)
+                .OrderByDescending(x => x.UpdateTime)
+                .GroupJoin(
+                docWithFiles,
+                config => config.WikiDocumentId,
+                df => df.Doc.Id,
+                (config, dfs) => new { Config = config, Dfs = dfs })
+                .SelectMany(
+                    x => x.Dfs.DefaultIfEmpty(),
+                    (x, df) => new WikiFeishuPageItem
+                    {
+                        PageId = x.Config.Id,
+                        UpdateTime = x.Config.UpdateTime,
+                        NodeToken = x.Config.RelevanceKey,
+                        ObjToken = x.Config.RelevanceValue,
+                        IsEmbedding = df != null && df.Doc.IsEmbedding,
+                        Message = string.Empty,
+                        WikiDocumentId = x.Config.WikiDocumentId,
+                        FileName = df != null ? df.Doc.FileName : string.Empty,
+                        FileSize = df != null ? df.File.FileSize : 0,
+                        CreateUserId = x.Config.CreateUserId,
+                        State = WorkerState.Successful
+                    })
+                .ToListAsync();
+
+            wikiCrawlerPages.AddRange(pageItems);
+        }
 
         return new QueryWikiFeishuPageTasksCommandResponse
         {
-            Items = pageItems
+            Items = wikiCrawlerPages
         };
     }
 }

@@ -21,6 +21,7 @@ public class EnableWikiMcpCommandHandler : IRequestHandler<EnableWikiMcpCommand,
     /// <summary>
     /// Initializes a new instance of the <see cref="EnableWikiMcpCommandHandler"/> class.
     /// </summary>
+    /// <param name="databaseContext"></param>
     public EnableWikiMcpCommandHandler(DatabaseContext databaseContext)
     {
         _databaseContext = databaseContext;
@@ -35,31 +36,39 @@ public class EnableWikiMcpCommandHandler : IRequestHandler<EnableWikiMcpCommand,
             throw new BusinessException("知识库不存在") { StatusCode = 404 };
         }
 
-        var existConfig = await _databaseContext.WikiPluginConfigs
-            .AnyAsync(x => x.WikiId == request.WikiId && x.PluginType == PluginType, cancellationToken);
+        var entity = await _databaseContext.WikiPluginConfigs
+            .FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.PluginType == PluginType, cancellationToken);
 
-        if (existConfig)
+        if (entity == null)
         {
-            throw new BusinessException("该知识库已开启 MCP 功能") { StatusCode = 400 };
+            var config = new WikiMcpConfig
+            {
+                IsEnable = request.IsEnable,
+                Key = Guid.NewGuid().ToString("N")
+            };
+
+            entity = new WikiPluginConfigEntity
+            {
+                WikiId = request.WikiId,
+                Title = "MCP",
+                PluginType = PluginType,
+                Config = config.ToJsonString(),
+                WorkMessage = string.Empty,
+                WorkState = 0,
+            };
+
+            _databaseContext.WikiPluginConfigs.Add(entity);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
         }
-
-        var config = new WikiMcpConfig
+        else
         {
-            Key = Guid.NewGuid().ToString("N")
-        };
+            var config = entity.Config.JsonToObject<WikiMcpConfig>();
+            config!.IsEnable = request.IsEnable;
+            entity.Config = config.ToJsonString();
 
-        var entity = new WikiPluginConfigEntity
-        {
-            WikiId = request.WikiId,
-            Title = "MCP",
-            PluginType = PluginType,
-            Config = config.ToJsonString(),
-            WorkMessage = string.Empty,
-            WorkState = 0
-        };
-
-        _databaseContext.WikiPluginConfigs.Add(entity);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+            _databaseContext.WikiPluginConfigs.Update(entity);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+        }
 
         return EmptyCommandResponse.Default;
     }

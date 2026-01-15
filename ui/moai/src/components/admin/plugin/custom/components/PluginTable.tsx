@@ -127,6 +127,15 @@ export default function PluginTable({
         ),
       },
       {
+        title: "使用量",
+        dataIndex: "counter",
+        key: "counter",
+        width: 100,
+        sorter: true,
+        sortOrder: sortState.field === 'counter' ? sortState.order : null,
+        render: (counter: number) => counter ?? 0,
+      },
+      {
         title: "创建者",
         dataIndex: "createUserName",
         key: "createUserName",

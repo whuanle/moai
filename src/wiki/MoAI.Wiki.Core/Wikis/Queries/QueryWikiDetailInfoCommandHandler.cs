@@ -47,6 +47,7 @@ public class QueryWikiDetailInfoCommandHandler : IRequestHandler<QueryWikiDetail
                 IsLock = x.IsLock,
                 AvatarKey = x.Avatar,
                 TeamId = x.TeamId,
+                Counter = x.Counter,
                 Role = Team.Models.TeamRole.Owner,
                 DocumentCount = _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).Count()
             }).FirstOrDefaultAsync();

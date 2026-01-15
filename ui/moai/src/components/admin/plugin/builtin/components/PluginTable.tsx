@@ -169,6 +169,23 @@ export default function PluginTable({
         },
       },
       {
+        title: "使用量",
+        dataIndex: "counter",
+        key: "counter",
+        width: 100,
+        sorter: true,
+        sortOrder: sortState.field === 'counter' ? sortState.order : null,
+        render: (
+          counter: number,
+          record: NativePluginInfo | NativePluginTemplateInfo
+        ) => {
+          if (!("pluginId" in record)) {
+            return "-";
+          }
+          return counter ?? 0;
+        },
+      },
+      {
         title: "创建时间",
         dataIndex: "createTime",
         key: "createTime",

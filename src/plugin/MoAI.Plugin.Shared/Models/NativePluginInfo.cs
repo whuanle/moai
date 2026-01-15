@@ -53,4 +53,9 @@ public class NativePluginInfo : AuditsInfo
     /// 是否公开.
     /// </summary>
     public bool IsPublic { get; init; } = default!;
+
+    /// <summary>
+    /// 使用量计数.
+    /// </summary>
+    public int Counter { get; init; }
 }

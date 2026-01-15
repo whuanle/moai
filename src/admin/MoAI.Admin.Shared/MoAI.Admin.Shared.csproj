@@ -12,4 +12,9 @@
 	  <ProjectReference Include="..\..\user\MoAI.User.Shared\MoAI.User.Shared.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Queries\" />
+	  <Folder Include="Queries\Responses\" />
+	</ItemGroup>
+
 </Project>

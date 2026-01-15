@@ -95,15 +95,22 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
         // 准备爬取的列表
         Queue<Url> workUrls = new Queue<Url>();
 
-        // 已经爬取过的列表
+        // 已经爬取过的列表或者被忽略的页面
         HashSet<string> existUrl = new HashSet<string>();
+
+        // 新页面数量
+        int newPageCount = 0;
 
         workUrls.Enqueue(new Url(wikiWebConfig.Address.ToString()));
 
-        var pageCount = 0;
+        var maxNewCount = wikiWebConfig.LimitMaxNewCount;
+        if (maxNewCount == 0)
+        {
+            maxNewCount = 1000;
+        }
 
         // 爬取每一个链接
-        while (workUrls.Count > 0 && pageCount <= wikiWebConfig.LimitMaxCount)
+        while (workUrls.Count > 0 && newPageCount < maxNewCount)
         {
             _databaseContext.ChangeTracker.Clear();
 
@@ -140,11 +147,9 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 // 新的页面，之前完全没有记录，直接插入
                 if (overridePage.WikiConfigDocument == null)
                 {
-                    pageCount++;
-
                     // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
                     var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
-                        .Where(x => x.FileId == uploadResult.FileId)
+                        .Where(x => x.WikiId == message.WikiId && x.FileId == uploadResult.FileId)
                         .FirstOrDefaultAsync();
 
                     // 主要被其它地方使用了，都忽略本次操作
@@ -153,6 +158,8 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                         await SetPageAsync(message.WikiId, message.ConfigId, currentUrl, WorkerState.Cancal);
                         continue;
                     }
+
+                    newPageCount++;
 
                     var documentEntity = new WikiDocumentEntity
                     {
@@ -188,7 +195,6 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 // 记录存在，重新爬取后，碰到页面有没有变化
                 if (overridePage.WikiDocument != null)
                 {
-                    pageCount++;
                     if (overridePage.WikiDocument.FileId == uploadResult.FileId)
                     {
                         await SetPageAsync(message.WikiId, configId: message.ConfigId, currentUrl, WorkerState.Cancal);
@@ -198,11 +204,9 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
 
                 // 存在，并且需要覆盖，因为抓取的页面有变化
                 {
-                    pageCount++;
-
                     // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
                     var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
-                        .Where(x => x.FileId == uploadResult.FileId)
+                        .Where(x => x.WikiId == message.WikiId && x.FileId == uploadResult.FileId)
                         .FirstOrDefaultAsync();
 
                     // 主要被其它地方使用了，都忽略本次操作
@@ -244,6 +248,11 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
             }
         }
 
+        // 将那些没有爬取的任务设置为已取消
+        await _databaseContext.WhereUpdateAsync(
+            _databaseContext.WikiPluginConfigDocumentStates.Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId && x.State == (int)WorkerState.Wait),
+            x => x.SetProperty(a => a.State, (int)WorkerState.Cancal));
+
         (isBreak, _) = await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
         if (isBreak)
         {
@@ -263,13 +272,13 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 {
                     WikiId = message.WikiId,
                     AiPartion = message.Command.AutoProcessConfig.AiPartion,
-                    IsEmbedSourceText = message.Command.AutoProcessConfig.IsEmbedSourceText,
+                    IsEmbedSourceText = message.Command.AutoProcessConfig.IsEmbedSourceText ?? false,
                     Partion = message.Command.AutoProcessConfig.Partion,
                     PreprocessStrategyType = message.Command.AutoProcessConfig.PreprocessStrategyType,
                     ThreadCount = message.Command.AutoProcessConfig.ThreadCount,
                     DocumentIds = documentIds,
-                    PreprocessStrategyAiModel = message.Command.AutoProcessConfig.PreprocessStrategyAiModel,
-                    IsEmbedding = message.Command.AutoProcessConfig.IsEmbedding
+                    PreprocessStrategyAiModel = message.Command.AutoProcessConfig.PreprocessStrategyAiModel ?? 0,
+                    IsEmbedding = message.Command.AutoProcessConfig.IsEmbedding ?? false
                 });
             }
         }
@@ -417,7 +426,7 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
     {
         // 查找
         var wikiConfigDocument = await _databaseContext.WikiPluginConfigDocuments
-            .FirstOrDefaultAsync(x => x.ConfigId == configId && x.RelevanceKey == currentUrl.ToString());
+            .FirstOrDefaultAsync(x => x.ConfigId == configId && x.RelevanceValue == currentUrl.ToString());
 
         // 如果页面存在，替换还是忽略
         if (wikiConfigDocument == null)
@@ -520,8 +529,13 @@ public class StartWikiCrawlerCommandConsumer : IConsumer<StartWikiCrawlerMessage
                 }
 
                 existUrls.Add(url.ToString());
-                workUrls.Enqueue(url);
-                newUrls.Add(url.ToString());
+
+                // 不能超过 N 个任务
+                if (existUrls.Count + workUrls.Count < wikiWebConfig.LimitMaxCount)
+                {
+                    workUrls.Enqueue(url);
+                    newUrls.Add(url.ToString());
+                }
             }
         }
 

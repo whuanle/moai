@@ -18,8 +18,4 @@
 	  <ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Mcp\" />
-	</ItemGroup>
-
 </Project>

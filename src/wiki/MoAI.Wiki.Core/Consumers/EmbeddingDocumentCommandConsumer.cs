@@ -249,7 +249,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
         _databaseContext.WikiDocuments.Update(documenEntity);
         await _databaseContext.SaveChangesAsync();
 
-        await _databaseContext.Wikis.Where(x => x.Id == message.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, true));
+        await _databaseContext.WhereUpdateAsync(_databaseContext.Wikis.Where(x => x.Id == message.WikiId), x => x.SetProperty(a => a.IsLock, true));
         await _databaseContext.SaveChangesAsync();
     }
 

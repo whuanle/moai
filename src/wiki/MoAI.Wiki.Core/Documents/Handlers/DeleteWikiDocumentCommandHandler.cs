@@ -74,7 +74,7 @@ public class DeleteWikiDocumentCommandHandler : IRequestHandler<DeleteWikiDocume
         var documentCount = await _databaseContext.WikiDocuments.Where(x => x.WikiId == request.WikiId).CountAsync();
         if (documentCount == 0)
         {
-            await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
+            await _databaseContext.WhereUpdateAsync(_databaseContext.Wikis.Where(x => x.Id == request.WikiId), x => x.SetProperty(a => a.IsLock, false));
         }
 
         return EmptyCommandResponse.Default;

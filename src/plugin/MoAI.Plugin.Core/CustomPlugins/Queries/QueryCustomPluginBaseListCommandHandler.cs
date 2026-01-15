@@ -77,6 +77,7 @@ public class QueryCustomPluginBaseListCommandHandler : IRequestHandler<QueryCust
                 UpdateTime = x.UpdateTime,
                 UpdateUserId = x.UpdateUserId,
                 IsPublic = x.IsPublic,
+                Counter = x.Counter,
                 ClassifyId = x.ClassifyId
             }).ToArrayAsync();
 

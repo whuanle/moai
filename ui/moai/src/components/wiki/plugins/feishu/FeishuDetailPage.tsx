@@ -16,6 +16,7 @@ import {
   Row,
   Col,
   Descriptions,
+  Tooltip,
 } from "antd";
 import {
   PlayCircleOutlined,
@@ -24,6 +25,7 @@ import {
   ArrowLeftOutlined,
   EditOutlined,
   SettingOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../../../ServiceClient";
 import {
@@ -43,6 +45,7 @@ import {
 } from "../../../../helper/RequestError";
 import { FileSizeHelper } from "../../../../helper/FileSizeHelper";
 import StartTaskConfigModal from "../common/StartTaskConfigModal";
+import ScheduledTaskConfigModal from "../common/ScheduledTaskConfigModal";
 import "../../../../styles/theme.css";
 import "./FeishuDetailPage.css";
 import { formatRelativeTime } from "../../../../helper/DateTimeHelper";
@@ -91,6 +94,13 @@ export default function FeishuDetailPage() {
   const [saving, setSaving] = useState(false);
   const [startConfigModalVisible, setStartConfigModalVisible] = useState(false);
 
+  // 定时任务相关状态
+  const [jobRunning, setJobRunning] = useState(false);
+  const [jobLoading, setJobLoading] = useState(false);
+  const [jobModalVisible, setJobModalVisible] = useState(false);
+  const [jobCron, setJobCron] = useState<string>("");
+  const [jobNextExecution, setJobNextExecution] = useState<string>("");
+
   // 计算是否正在工作
   const isWorking = useMemo(
     () =>
@@ -114,6 +124,25 @@ export default function FeishuDetailPage() {
     ).length;
     return { successCount, failedCount, processingCount, total: pages.length };
   }, [pages]);
+
+  // 查询定时任务状态
+  const fetchJobStatus = useCallback(async () => {
+    if (!wikiId || !feishuConfigId) return;
+
+    try {
+      const client = GetApiClient();
+      const response = await client.api.wiki.plugin.query_job.post({
+        configId: feishuConfigId, wikiId,
+      });
+
+      setJobRunning(response?.isExist || false);
+      setJobCron(response?.cron || "");
+      setJobNextExecution(response?.nextExecution || "");
+    } catch (error) {
+      console.error("查询定时任务状态失败:", error);
+      // 静默失败，不显示错误提示
+    }
+  }, [wikiId, feishuConfigId]);
 
   // 获取配置信息
   const fetchConfig = useCallback(async () => {
@@ -289,13 +318,86 @@ export default function FeishuDetailPage() {
     }
   };
 
+  // 切换定时任务状态
+  const handleToggleJob = async () => {
+    if (!wikiId || !feishuConfigId) {
+      messageApi.error("缺少必要参数");
+      return;
+    }
+
+    // 如果当前正在运行，直接关闭
+    if (jobRunning) {
+      setJobLoading(true);
+      try {
+        const client = GetApiClient();
+        await client.api.wiki.plugin.start_job.post({
+          configId: feishuConfigId,
+          wikiId,
+          isStart: false,
+          cron: "*" // 关闭定时任务时，可以随便填
+        });
+
+        setJobRunning(false);
+        messageApi.success("定时任务已关闭");
+      } catch (error) {
+        console.error("关闭定时任务失败:", error);
+        proxyRequestError(error, messageApi, "关闭定时任务失败");
+      } finally {
+        setJobLoading(false);
+      }
+    } else {
+      // 如果未运行，打开配置模态窗口
+      setJobModalVisible(true);
+    }
+  };
+
+  // 启动定时任务
+  const handleStartJob = async (
+    cron: string,
+    isAutoProcess: boolean,
+    autoProcessConfig: WikiPluginAutoProcessConfig | null
+  ) => {
+    if (!wikiId || !feishuConfigId) {
+      messageApi.error("缺少必要参数");
+      return;
+    }
+
+    setJobLoading(true);
+    try {
+      const client = GetApiClient();
+      const requestBody: any = {
+        configId: feishuConfigId,
+        wikiId,
+        isStart: true,
+        cron: cron,
+        isAutoProcess: isAutoProcess,
+        autoProcessConfig: autoProcessConfig,
+      };
+
+      await client.api.wiki.plugin.start_job.post(requestBody);
+
+      setJobRunning(true);
+      messageApi.success("定时任务已启动");
+      // 重新查询定时任务状态以获取最新的 cron 和 nextExecution
+      setTimeout(() => {
+        fetchJobStatus();
+      }, 500);
+    } catch (error) {
+      console.error("启动定时任务失败:", error);
+      proxyRequestError(error, messageApi, "启动定时任务失败");
+    } finally {
+      setJobLoading(false);
+    }
+  };
+
   // 页面初始化
   useEffect(() => {
     if (wikiId && feishuConfigId) {
       fetchConfig();
       fetchPageState();
+      fetchJobStatus();
     }
-  }, [wikiId, feishuConfigId, fetchConfig, fetchPageState]);
+  }, [wikiId, feishuConfigId, fetchConfig, fetchPageState, fetchJobStatus]);
 
   // 自动刷新逻辑
   useEffect(() => {
@@ -305,7 +407,10 @@ export default function FeishuDetailPage() {
     }
 
     if (isWorking && autoRefresh && wikiId && feishuConfigId) {
-      refreshTimerRef.current = setInterval(() => fetchPageState(false), 1000);
+      refreshTimerRef.current = setInterval(() => {
+        fetchPageState(false);
+        fetchConfig(); // 每次刷新时检测状态
+      }, 1000);
     }
 
     return () => {
@@ -349,7 +454,23 @@ export default function FeishuDetailPage() {
       dataIndex: "fileName",
       key: "fileName",
       ellipsis: true,
-      render: (text: string) => text || "-",
+      render: (text: string, record: WikiFeishuPageItem) => {
+        if (!text) return "-";
+        
+        // 如果 wikiDocumentId 不为 0，显示为可点击链接
+        if (record.wikiDocumentId && record.wikiDocumentId !== 0) {
+          return (
+            <a
+              onClick={() => navigate(`/app/wiki/${wikiId}/document/${record.wikiDocumentId}/embedding`)}
+              style={{ cursor: "pointer" }}
+            >
+              {text}
+            </a>
+          );
+        }
+        
+        return text;
+      },
     },
     {
       title: "文件大小",
@@ -447,11 +568,31 @@ export default function FeishuDetailPage() {
           >
             编辑配置
           </Button>
+          <Tooltip
+            title={
+              jobRunning && jobCron && jobNextExecution
+                ? `Cron: ${jobCron}\n下次执行: ${jobNextExecution}`
+                : undefined
+            }
+          >
+            <Button
+              type={jobRunning ? "default" : "dashed"}
+              icon={<ClockCircleOutlined />}
+              onClick={handleToggleJob}
+              loading={jobLoading}
+              danger={jobRunning}
+            >
+              {jobRunning ? "关闭定时任务" : "启动定时任务"}
+            </Button>
+          </Tooltip>
         </div>
         <div className="moai-toolbar-right">
           <Button
             icon={<ReloadOutlined />}
-            onClick={() => fetchPageState()}
+            onClick={() => {
+              fetchPageState();
+              fetchJobStatus();
+            }}
             loading={loading}
           >
             刷新
@@ -568,7 +709,7 @@ export default function FeishuDetailPage() {
             dataSource={pages}
             rowKey="pageId"
             pagination={false}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 1000, y: 400 }}
             size="small"
           />
         </Spin>
@@ -653,6 +794,15 @@ export default function FeishuDetailPage() {
         onCancel={() => setStartConfigModalVisible(false)}
         onConfirm={handleStart}
         wikiId={wikiId || 0}
+      />
+
+      {/* 定时任务配置模态窗口 */}
+      <ScheduledTaskConfigModal
+        open={jobModalVisible}
+        onCancel={() => setJobModalVisible(false)}
+        onConfirm={handleStartJob}
+        wikiId={wikiId || 0}
+        loading={jobLoading}
       />
     </div>
   );

@@ -12,4 +12,9 @@ public class EnableWikiMcpCommand : IRequest<EmptyCommandResponse>
     /// 知识库 Id.
     /// </summary>
     public int WikiId { get; init; }
+
+    /// <summary>
+    /// 是否开启，flase 是禁用.
+    /// </summary>
+    public bool IsEnable { get; init; }
 }

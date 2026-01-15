@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1031 // 不捕获常规异常类型
 
 using Hangfire;
+using Hangfire.Common;
 using Maomi;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,11 +13,14 @@ namespace MoAI.Hangfire.Services;
 /// <summary>
 /// 定时任务执行器.
 /// </summary>
+/// <typeparam name="TCommand">命令.</typeparam>
+/// <typeparam name="TParams">参数.</typeparam>
 [InjectOnScoped]
-public class RecurringJobHandler
+public class RecurringJobHandler<TCommand, TParams>
+    where TCommand : RecuringJobCommand<TParams>, new()
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<RecurringJobHandler> _logger;
+    private readonly ILogger<RecurringJobHandler<TCommand, TParams>> _logger;
     private readonly IMediator _mediator;
 
     /// <summary>
@@ -25,7 +29,7 @@ public class RecurringJobHandler
     /// <param name="serviceProvider"></param>
     /// <param name="logger"></param>
     /// <param name="mediator"></param>
-    public RecurringJobHandler(IServiceProvider serviceProvider, ILogger<RecurringJobHandler> logger, IMediator mediator)
+    public RecurringJobHandler(IServiceProvider serviceProvider, ILogger<RecurringJobHandler<TCommand, TParams>> logger, IMediator mediator)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -35,14 +39,11 @@ public class RecurringJobHandler
     /// <summary>
     /// 执行任务.
     /// </summary>
-    /// <typeparam name="TCommand">命令.</typeparam>
-    /// <typeparam name="TParams">传递的参数.</typeparam>
     /// <param name="key"></param>
     /// <param name="cron"></param>
     /// <param name="params"></param>
     /// <returns></returns>
-    public async Task HandlerAsync<TCommand, TParams>(string key, string cron, TParams @params)
-        where TCommand : RecuringJobCommand<TParams>, new()
+    public async Task HandlerAsync(string key, string cron, TParams @params)
     {
         var recurringJobManager = _serviceProvider.GetRequiredService<IRecurringJobManager>();
         CancellationToken cancellationToken = default;
@@ -73,15 +74,12 @@ public class RecurringJobHandler
     /// <summary>
     /// 执行任务.
     /// </summary>
-    /// <typeparam name="TCommand">命令.</typeparam>
-    /// <typeparam name="TParams">传递的参数.</typeparam>
     /// <param name="key"></param>
     /// <param name="startTime"></param>
     /// <param name="cron"></param>
     /// <param name="params"></param>
     /// <returns></returns>
-    public async Task HandlerAsync<TCommand, TParams>(string key, DateTimeOffset startTime, string cron, TParams @params)
-        where TCommand : RecuringJobCommand<TParams>, new()
+    public async Task HandlerAsync(string key, DateTimeOffset startTime, string cron, TParams @params)
     {
         var recurringJobManager = _serviceProvider.GetRequiredService<IRecurringJobManager>();
         CancellationToken cancellationToken = default;
@@ -114,10 +112,13 @@ public class RecurringJobHandler
         }
         else
         {
+            var job = Job.FromExpression<RecurringJobHandler<TCommand, TParams>>(task =>
+            task.HandlerAsync(key, startTime, cron, @params));
+
             // 执行一次完成后，将其转换为定时任务
-            recurringJobManager.AddOrUpdate<RecurringJobHandler>(
+            recurringJobManager.AddOrUpdate(
                 key,
-                task => task.HandlerAsync<TCommand, TParams>(key, startTime, cron, @params),
+                job,
                 cronExpression: cron,
                 options: new RecurringJobOptions
                 {

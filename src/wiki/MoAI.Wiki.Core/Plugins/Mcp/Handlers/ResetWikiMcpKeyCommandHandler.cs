@@ -28,20 +28,19 @@ public class ResetWikiMcpKeyCommandHandler : IRequestHandler<ResetWikiMcpKeyComm
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(ResetWikiMcpKeyCommand request, CancellationToken cancellationToken)
     {
-        var config = await _databaseContext.WikiPluginConfigs
+        var entity = await _databaseContext.WikiPluginConfigs
             .FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.PluginType == PluginType, cancellationToken);
 
-        if (config == null)
+        if (entity == null)
         {
             throw new BusinessException("该知识库未开启 MCP 功能") { StatusCode = 404 };
         }
 
-        var mcpConfig = new WikiMcpConfig
-        {
-            Key = Guid.NewGuid().ToString("N")
-        };
+        var config = entity.Config.JsonToObject<WikiMcpConfig>();
+        config!.Key = Guid.NewGuid().ToString("N");
+        entity.Config = config.ToJsonString();
 
-        config.Config = mcpConfig.ToJsonString();
+        _databaseContext.WikiPluginConfigs.Update(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

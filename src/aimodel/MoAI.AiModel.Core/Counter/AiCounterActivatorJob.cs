@@ -1,7 +1,9 @@
 ﻿using Maomi;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Entities;
 using MoAI.Hangfire.Services;
+using System.Text;
 
 namespace MoAI.AiModel.Counter;
 
@@ -25,24 +27,51 @@ public class AiCounterActivatorJob : ICounterActivatorJob
     /// <inheritdoc/>
     public async Task ActivateAsync(IReadOnlyDictionary<string, int> values)
     {
-        var kvs = values.ToDictionary(x => int.Parse(x.Key), x => x.Value);
-        var ids = kvs.Keys.ToArray();
-
-        // todo: 后续优化
-
-        //// 刷新这些模型的使用量
-        //await _databaseContext.AiModels
-        //    .Where(t => ids.Contains(t.Id))
-        //    .ExecuteUpdateAsync(setters => setters
-        //        .SetProperty(t => t.Counter, t => t.Counter + kvs[t.Id]));
-
-        var enntities = await _databaseContext.AiModels.Where(t => ids.Contains(t.Id)).ToArrayAsync();
-        foreach (var item in enntities)
+        if (values == null || values.Count == 0)
         {
-            item.Counter += kvs[item.Id];
+            return;
         }
 
-        await _databaseContext.SaveChangesAsync();
+        var entityType = _databaseContext.Model.FindEntityType(typeof(AiModelEntity));
+        if (entityType == null)
+        {
+            return;
+        }
+
+        // 获取表名和Schema
+        var tableName = entityType.GetTableName();
+        var schema = entityType.GetSchema();
+
+        // 获取列名映射
+        var idProperty = entityType.FindProperty(nameof(AiModelEntity.Id));
+        var idColumnName = idProperty?.GetColumnName();
+
+        var counterProperty = entityType.FindProperty(nameof(AiModelEntity.Counter));
+        var counterColumnName = counterProperty?.GetColumnName();
+
+        if (idColumnName == null || counterColumnName == null)
+        {
+            return;
+        }
+
+        // 构建批量更新 SQL
+        // 格式: UPDATE [TableName] SET [Counter] = [Counter] + Value WHERE [Id] = IdValue;
+        const string UpdateTemplate = "UPDATE {0} SET {1} = {1} + {2} WHERE {3} = {4};";
+
+        StringBuilder stringBuilder = new();
+        foreach (var item in values)
+        {
+            if (int.TryParse(item.Key, out int id))
+            {
+                var sql = string.Format(UpdateTemplate, tableName, counterColumnName, item.Value, idColumnName, id);
+                stringBuilder.AppendLine(sql);
+            }
+        }
+
+        if (stringBuilder.Length > 0)
+        {
+            await _databaseContext.Database.ExecuteSqlRawAsync(stringBuilder.ToString());
+        }
     }
 
     /// <inheritdoc/>

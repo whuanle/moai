@@ -114,8 +114,9 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
                 .Where(x => embeddingIds.Contains(x.Id))
                 .ExecuteDeleteAsync(cancellationToken);
 
-            await _databaseContext.WikiDocuments.Where(x => documentIds.Contains(x.Id))
-                .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsEmbedding, false));
+            await _databaseContext.WhereUpdateAsync(
+                _databaseContext.WikiDocuments.Where(x => documentIds.Contains(x.Id)),
+                x => x.SetProperty(a => a.IsEmbedding, false));
             await _databaseContext.SaveChangesAsync();
         }
 
@@ -124,7 +125,7 @@ public class ClearWikiDocumentEmbeddingCommandHandler : IRequestHandler<ClearWik
         if (request.IsAutoDeleteIndex && documentEmbeddingCount == 0)
         {
             await memoryClient.DeleteIndexAsync(index: request.WikiId.ToString());
-            await _databaseContext.Wikis.Where(x => x.Id == request.WikiId).ExecuteUpdateAsync(x => x.SetProperty(a => a.IsLock, false));
+            await _databaseContext.WhereUpdateAsync(_databaseContext.Wikis.Where(x => x.Id == request.WikiId), x => x.SetProperty(a => a.IsLock, false));
             await _databaseContext.SaveChangesAsync();
         }
 

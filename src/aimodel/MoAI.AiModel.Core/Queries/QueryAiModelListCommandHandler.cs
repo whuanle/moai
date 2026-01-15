@@ -57,6 +57,7 @@ public class QueryAiModelListCommandHandler : IRequestHandler<QueryAiModelListCo
                     ContextWindowTokens = x.ContextWindowTokens,
                     Endpoint = x.Endpoint,
                     IsPublic = x.IsPublic,
+                    Counter = x.Counter,
                     Abilities = new ModelAbilities
                     {
                         Files = x.Files,

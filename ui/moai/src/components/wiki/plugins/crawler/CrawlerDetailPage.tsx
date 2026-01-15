@@ -17,6 +17,7 @@ import {
   Row,
   Col,
   Descriptions,
+  Tooltip,
 } from "antd";
 import {
   PlayCircleOutlined,
@@ -44,6 +45,7 @@ import {
 } from "../../../../helper/RequestError";
 import { FileSizeHelper } from "../../../../helper/FileSizeHelper";
 import StartTaskConfigModal from "../common/StartTaskConfigModal";
+import ScheduledTaskConfigModal from "../common/ScheduledTaskConfigModal";
 import "../../../../styles/theme.css";
 import "./CrawlerDetailPage.css";
 import { formatRelativeTime } from "../../../../helper/DateTimeHelper";
@@ -93,6 +95,13 @@ export default function CrawlerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [startConfigModalVisible, setStartConfigModalVisible] = useState(false);
 
+  // 定时任务相关状态
+  const [jobRunning, setJobRunning] = useState(false);
+  const [jobLoading, setJobLoading] = useState(false);
+  const [jobModalVisible, setJobModalVisible] = useState(false);
+  const [jobCron, setJobCron] = useState<string>("");
+  const [jobNextExecution, setJobNextExecution] = useState<string>("");
+
   // 统计数据
   const stats = useMemo(() => {
     const successCount = pages.filter(
@@ -108,6 +117,25 @@ export default function CrawlerDetailPage() {
     ).length;
     return { successCount, failedCount, processingCount, total: pages.length };
   }, [pages]);
+
+  // 查询定时任务状态
+  const fetchJobStatus = useCallback(async () => {
+    if (!wikiId || !crawlerConfigId) return;
+
+    try {
+      const client = GetApiClient();
+      const response = await client.api.wiki.plugin.query_job.post({
+        configId: crawlerConfigId, wikiId,
+      });
+
+      setJobRunning(response?.isExist || false);
+      setJobCron(response?.cron || "");
+      setJobNextExecution(response?.nextExecution || "");
+    } catch (error) {
+      console.error("查询定时任务状态失败:", error);
+      // 静默失败，不显示错误提示
+    }
+  }, [wikiId, crawlerConfigId]);
 
   // 获取配置信息
   const fetchConfig = useCallback(async () => {
@@ -197,6 +225,7 @@ export default function CrawlerDetailPage() {
 
       await client.api.wiki.plugin.crawler.lanuch_task.post(requestBody);
       messageApi.success("爬虫已启动");
+      setAutoRefresh(true); // 启动任务后自动开启刷新
       setTimeout(() => {
         fetchConfig();
         fetchPageState();
@@ -254,6 +283,7 @@ export default function CrawlerDetailPage() {
       isOverExistPage: config.isOverExistPage || false,
       limitAddress: config.limitAddress || "",
       limitMaxCount: config.limitMaxCount || 100,
+      limitMaxNewCount: config.limitMaxNewCount || 0,
       selector: config.selector || "",
       timeOutSecond: config.timeOutSecond || 30,
       userAgent:
@@ -279,6 +309,7 @@ export default function CrawlerDetailPage() {
         isCrawlOther: values.isCrawlOther || false,
         limitAddress: values.limitAddress,
         limitMaxCount: values.limitMaxCount,
+        limitMaxNewCount: values.limitMaxNewCount || 0,
         selector: values.selector,
         timeOutSecond: values.timeOutSecond,
         userAgent: values.userAgent,
@@ -297,13 +328,86 @@ export default function CrawlerDetailPage() {
     }
   };
 
+  // 切换定时任务状态
+  const handleToggleJob = async () => {
+    if (!wikiId || !crawlerConfigId) {
+      messageApi.error("缺少必要参数");
+      return;
+    }
+
+    // 如果当前正在运行，直接关闭
+    if (jobRunning) {
+      setJobLoading(true);
+      try {
+        const client = GetApiClient();
+        await client.api.wiki.plugin.start_job.post({
+          configId: crawlerConfigId,
+          wikiId,
+          isStart: false,
+          cron: "*" // 关闭定时任务时，可以随便填
+        });
+
+        setJobRunning(false);
+        messageApi.success("定时任务已关闭");
+      } catch (error) {
+        console.error("关闭定时任务失败:", error);
+        proxyRequestError(error, messageApi, "关闭定时任务失败");
+      } finally {
+        setJobLoading(false);
+      }
+    } else {
+      // 如果未运行，打开配置模态窗口
+      setJobModalVisible(true);
+    }
+  };
+
+  // 启动定时任务
+  const handleStartJob = async (
+    cron: string,
+    isAutoProcess: boolean,
+    autoProcessConfig: WikiPluginAutoProcessConfig | null
+  ) => {
+    if (!wikiId || !crawlerConfigId) {
+      messageApi.error("缺少必要参数");
+      return;
+    }
+
+    setJobLoading(true);
+    try {
+      const client = GetApiClient();
+      const requestBody: any = {
+        configId: crawlerConfigId,
+        wikiId,
+        isStart: true,
+        cron: cron,
+        isAutoProcess: isAutoProcess,
+        autoProcessConfig: autoProcessConfig,
+      };
+
+      await client.api.wiki.plugin.start_job.post(requestBody);
+
+      setJobRunning(true);
+      messageApi.success("定时任务已启动");
+      // 重新查询定时任务状态以获取最新的 cron 和 nextExecution
+      setTimeout(() => {
+        fetchJobStatus();
+      }, 500);
+    } catch (error) {
+      console.error("启动定时任务失败:", error);
+      proxyRequestError(error, messageApi, "启动定时任务失败");
+    } finally {
+      setJobLoading(false);
+    }
+  };
+
   // 页面初始化
   useEffect(() => {
     if (wikiId && crawlerConfigId) {
       fetchConfig();
       fetchPageState();
+      fetchJobStatus();
     }
-  }, [wikiId, crawlerConfigId, fetchConfig, fetchPageState]);
+  }, [wikiId, crawlerConfigId, fetchConfig, fetchPageState, fetchJobStatus]);
 
   // 自动刷新逻辑
   useEffect(() => {
@@ -313,7 +417,10 @@ export default function CrawlerDetailPage() {
     }
 
     if (isWorking && autoRefresh && wikiId && crawlerConfigId) {
-      refreshTimerRef.current = setInterval(() => fetchPageState(false), 1000);
+      refreshTimerRef.current = setInterval(() => {
+        fetchPageState(false);
+        fetchConfig(); // 每次刷新时检测爬虫状态
+      }, 1000);
     }
 
     return () => {
@@ -322,7 +429,7 @@ export default function CrawlerDetailPage() {
         refreshTimerRef.current = null;
       }
     };
-  }, [isWorking, autoRefresh, fetchPageState, wikiId, crawlerConfigId]);
+  }, [isWorking, autoRefresh, fetchPageState, fetchConfig, wikiId, crawlerConfigId]);
 
   // 表格列定义
   const columns = [
@@ -352,8 +459,25 @@ export default function CrawlerDetailPage() {
       title: "文件名",
       dataIndex: "fileName",
       key: "fileName",
+      width: 200,
       ellipsis: true,
-      render: (text: string) => text || "-",
+      render: (text: string, record: WikiCrawlerPageItem) => {
+        if (!text) return "-";
+        
+        // 如果 wikiDocumentId 不为 0，显示为可点击链接
+        if (record.wikiDocumentId && record.wikiDocumentId !== 0) {
+          return (
+            <a
+              onClick={() => navigate(`/app/wiki/${wikiId}/document/${record.wikiDocumentId}/embedding`)}
+              style={{ cursor: "pointer" }}
+            >
+              {text}
+            </a>
+          );
+        }
+        
+        return text;
+      },
     },
     {
       title: "文件大小",
@@ -377,6 +501,7 @@ export default function CrawlerDetailPage() {
       title: "消息",
       dataIndex: "message",
       key: "message",
+      width: 250,
       ellipsis: true,
       render: (text: string) => text || "-",
     },
@@ -451,11 +576,31 @@ export default function CrawlerDetailPage() {
           >
             编辑配置
           </Button>
+          <Tooltip
+            title={
+              jobRunning && jobCron && jobNextExecution
+                ? `Cron: ${jobCron}\n下次执行: ${jobNextExecution}`
+                : undefined
+            }
+          >
+            <Button
+              type={jobRunning ? "default" : "dashed"}
+              icon={<SettingOutlined />}
+              onClick={handleToggleJob}
+              loading={jobLoading}
+              danger={jobRunning}
+            >
+              {jobRunning ? "关闭定时任务" : "启动定时任务"}
+            </Button>
+          </Tooltip>
         </div>
         <div className="moai-toolbar-right">
           <Button
             icon={<ReloadOutlined />}
-            onClick={() => fetchPageState()}
+            onClick={() => {
+              fetchPageState();
+              fetchJobStatus();
+            }}
             loading={loading}
           >
             刷新
@@ -546,6 +691,9 @@ export default function CrawlerDetailPage() {
             <Descriptions.Item label="最大抓取数量">
               {config.limitMaxCount || "-"}
             </Descriptions.Item>
+            <Descriptions.Item label="最大新增数量">
+              {config.limitMaxNewCount || "不限制"}
+            </Descriptions.Item>
             <Descriptions.Item label="限制地址范围" span={config.limitAddress ? 3 : 1}>
               {config.limitAddress || "-"}
             </Descriptions.Item>
@@ -594,7 +742,7 @@ export default function CrawlerDetailPage() {
             dataSource={pages}
             rowKey="pageId"
             pagination={false}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 1260 }}
             size="small"
           />
         </Spin>
@@ -660,7 +808,7 @@ export default function CrawlerDetailPage() {
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 name="limitMaxCount"
                 label="最大抓取数量"
@@ -674,7 +822,21 @@ export default function CrawlerDetailPage() {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item
+                name="limitMaxNewCount"
+                label="最大新增数量"
+                tooltip="限制每次任务新抓取的页面数量上限，为 0 则不限制"
+              >
+                <InputNumber
+                  min={0}
+                  max={10000}
+                  placeholder="可选，0 表示不限制"
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item
                 name="timeOutSecond"
                 label="超时时间（秒）"
@@ -714,6 +876,15 @@ export default function CrawlerDetailPage() {
         onCancel={() => setStartConfigModalVisible(false)}
         onConfirm={handleStart}
         wikiId={wikiId || 0}
+      />
+
+      {/* 定时任务配置模态窗口 */}
+      <ScheduledTaskConfigModal
+        open={jobModalVisible}
+        onCancel={() => setJobModalVisible(false)}
+        onConfirm={handleStartJob}
+        wikiId={wikiId || 0}
+        loading={jobLoading}
       />
     </div>
   );

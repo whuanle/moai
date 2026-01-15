@@ -53,6 +53,7 @@ public class QueryCustomPluginInfoListCommandHandler : IRequestHandler<QueryCust
                 Type = (PluginType)x.Type,
                 Description = x.Description,
                 IsPublic = x.IsPublic,
+                Counter = x.Counter,
                 ClassifyId = x.ClassifyId,
             }).ToArrayAsync();
 

@@ -28,8 +28,9 @@ public class SetUserAdminCommandHandler : IRequestHandler<SetUserAdminCommand, E
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(SetUserAdminCommand request, CancellationToken cancellationToken)
     {
-        await _databaseContext.Users.Where(x => request.UserIds.Contains(x.Id))
-            .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsAdmin, request.IsAdmin));
+        await _databaseContext.WhereUpdateAsync(
+            _databaseContext.Users.Where(x => request.UserIds.Contains(x.Id)),
+            x => x.SetProperty(a => a.IsAdmin, request.IsAdmin));
 
         foreach (var item in request.UserIds)
         {

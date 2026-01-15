@@ -69,4 +69,9 @@ public class QueryWikiInfoResponse : AuditsInfo, IAvatarPath
     /// 维度，跟模型有关.
     /// </summary>
     public int EmbeddingDimensions { get; init; }
+
+    /// <summary>
+    /// 使用量计数.
+    /// </summary>
+    public int Counter { get; init; }
 }

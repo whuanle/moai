@@ -49,6 +49,34 @@ public class WikiPluginController : ControllerBase
         return await _mediator.Send(req, ct);
     }
 
+    /// <summary>
+    /// 启动或取消插件定时任务.
+    /// </summary>
+    /// <param name="req">操作.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回操作结果.</returns>
+    [HttpPost("start_job")]
+    public async Task<EmptyCommandResponse> DeleteWikiPluginConfig([FromBody] AddWikiPluginRecuringJobCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询插件的定时任务.
+    /// </summary>
+    /// <param name="req">操作.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回操作结果.</returns>
+    [HttpPost("query_job")]
+    public async Task<QueryRecurringJobCommandResponse> DeleteWikiPluginConfig([FromBody] QueryRecurringJobCommand req, CancellationToken ct = default)
+    {
+        await CheckUserIsMemberAsync(req.WikiId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
     private async Task CheckUserIsMemberAsync(int wikiId, CancellationToken ct)
     {
         var userIsWikiUser = await _mediator.Send(

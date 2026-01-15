@@ -53,6 +53,7 @@ public class QueryTeamWikiBaseListCommandHandler : IRequestHandler<QueryTeamWiki
                     UpdateTime = x.UpdateTime,
                     TeamId = x.TeamId,
                     AvatarKey = x.Avatar,
+                    Counter = x.Counter,
                     TeamName = y.Name,
                     Role = TeamRole.Collaborator,
                     DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()

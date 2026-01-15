@@ -9,4 +9,9 @@ public class AiModelItem : AiNotKeyEndpoint
     /// 公开给用户使用.
     /// </summary>
     public bool IsPublic { get; init; }
+
+    /// <summary>
+    /// 使用量计数.
+    /// </summary>
+    public int Counter { get; init; }
 }

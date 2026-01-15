@@ -14,6 +14,10 @@ import { OpenapiRequestBuilderNavigationMetadata, type OpenapiRequestBuilder } f
 // @ts-ignore
 import { PaddleocrRequestBuilderNavigationMetadata, type PaddleocrRequestBuilder } from './paddleocr/index.js';
 // @ts-ignore
+import { Query_jobRequestBuilderRequestsMetadata, type Query_jobRequestBuilder } from './query_job/index.js';
+// @ts-ignore
+import { Start_jobRequestBuilderRequestsMetadata, type Start_jobRequestBuilder } from './start_job/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -44,6 +48,14 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The paddleocr property
      */
     get paddleocr(): PaddleocrRequestBuilder;
+    /**
+     * The query_job property
+     */
+    get query_job(): Query_jobRequestBuilder;
+    /**
+     * The start_job property
+     */
+    get start_job(): Start_jobRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -70,6 +82,12 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     paddleocr: {
         navigationMetadata: PaddleocrRequestBuilderNavigationMetadata,
+    },
+    query_job: {
+        requestsMetadata: Query_jobRequestBuilderRequestsMetadata,
+    },
+    start_job: {
+        requestsMetadata: Start_jobRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

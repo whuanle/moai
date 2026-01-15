@@ -1,7 +1,10 @@
 ﻿using Hangfire;
+using Hangfire.Common;
+using Hangfire.Storage;
 using Maomi;
 using Microsoft.Extensions.Logging;
 using MoAI.Hangfire.Models;
+using MoAI.Infra.Extensions;
 
 namespace MoAI.Hangfire.Services;
 
@@ -12,6 +15,7 @@ namespace MoAI.Hangfire.Services;
 public class RecurringJobService : IRecurringJobService
 {
     private readonly IRecurringJobManager _recurringJobManager;
+    private readonly JobStorage _jobStorage;
     private readonly ILogger<RecurringJobService> _logger;
 
     /// <summary>
@@ -19,10 +23,12 @@ public class RecurringJobService : IRecurringJobService
     /// </summary>
     /// <param name="recurringJobManager"></param>
     /// <param name="logger"></param>
-    public RecurringJobService(IRecurringJobManager recurringJobManager, ILogger<RecurringJobService> logger)
+    /// <param name="jobStorage"></param>
+    public RecurringJobService(IRecurringJobManager recurringJobManager, ILogger<RecurringJobService> logger, JobStorage jobStorage)
     {
         _recurringJobManager = recurringJobManager;
         _logger = logger;
+        _jobStorage = jobStorage;
     }
 
     /// <inheritdoc/>
@@ -30,9 +36,13 @@ public class RecurringJobService : IRecurringJobService
         where TCommand : RecuringJobCommand<TParams>, new()
     {
         await Task.CompletedTask;
-        _recurringJobManager.AddOrUpdate<RecurringJobHandler>(
+
+        var job = Job.FromExpression<RecurringJobHandler<TCommand, TParams>>(task =>
+            task.HandlerAsync(key, cron, @params));
+
+        _recurringJobManager.AddOrUpdate(
             key,
-            task => task.HandlerAsync<TCommand, TParams>(key, cron, @params),
+            job,
             cronExpression: cron,
             options: new RecurringJobOptions
             {
@@ -48,9 +58,12 @@ public class RecurringJobService : IRecurringJobService
 
         var cronExpression = $"{startTime.Minute} {startTime.Hour} {startTime.Day} {startTime.Month} * {startTime.Year}";
 
-        _recurringJobManager.AddOrUpdate<RecurringJobHandler>(
+        var job = Job.FromExpression<RecurringJobHandler<TCommand, TParams>>(task =>
+            task.HandlerAsync(key, startTime, cron, @params));
+
+        _recurringJobManager.AddOrUpdate(
             key,
-            task => task.HandlerAsync<TCommand, TParams>(key, startTime, cron, @params),
+            job,
             cronExpression: cronExpression,
             options: new RecurringJobOptions
             {
@@ -66,9 +79,12 @@ public class RecurringJobService : IRecurringJobService
 
         var cronExpression = $"{startTime.Minute} {startTime.Hour} {startTime.Day} {startTime.Month} * {startTime.Year}";
 
-        _recurringJobManager.AddOrUpdate<RecurringJobHandler>(
+        var job = Job.FromExpression<RecurringJobHandler<TCommand, TParams>>(task =>
+            task.HandlerAsync(key, startTime, string.Empty, @params));
+
+        _recurringJobManager.AddOrUpdate(
             key,
-            task => task.HandlerAsync<TCommand, TParams>(key, startTime, string.Empty, @params),
+            job,
             cronExpression: cronExpression,
             options: new RecurringJobOptions
             {
@@ -81,5 +97,26 @@ public class RecurringJobService : IRecurringJobService
     {
         await Task.CompletedTask;
         _recurringJobManager.RemoveIfExists(key);
+    }
+
+    /// <summary>
+    /// 查询某个 key 有没有任务.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    public async Task<JobInfo> QueryJobAsync(string key)
+    {
+        using var connection = _jobStorage.GetConnection();
+        var job = connection.GetRecurringJobs(new[] { key }).FirstOrDefault();
+        return new JobInfo
+        {
+            LastExecution = job?.LastExecution,
+            NextExecution = job?.NextExecution,
+            Cron = job?.Cron,
+            Error = job?.Error,
+            LastJobState = job?.LastJobState,
+            IsExist = !(job?.Removed ?? true),
+            LoadException = job?.LoadException?.Message,
+        };
     }
 }

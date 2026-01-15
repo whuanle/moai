@@ -4,8 +4,6 @@
 // @ts-ignore
 import { ConfigRequestBuilderRequestsMetadata, type ConfigRequestBuilder } from './config/index.js';
 // @ts-ignore
-import { DisableRequestBuilderRequestsMetadata, type DisableRequestBuilder } from './disable/index.js';
-// @ts-ignore
 import { EnableRequestBuilderRequestsMetadata, type EnableRequestBuilder } from './enable/index.js';
 // @ts-ignore
 import { Reset_keyRequestBuilderRequestsMetadata, type Reset_keyRequestBuilder } from './reset_key/index.js';
@@ -20,10 +18,6 @@ export interface McpRequestBuilder extends BaseRequestBuilder<McpRequestBuilder>
      * The config property
      */
     get config(): ConfigRequestBuilder;
-    /**
-     * The disable property
-     */
-    get disable(): DisableRequestBuilder;
     /**
      * The enable property
      */
@@ -43,9 +37,6 @@ export const McpRequestBuilderUriTemplate = "{+baseurl}/api/wiki/plugin/mcp";
 export const McpRequestBuilderNavigationMetadata: Record<Exclude<keyof McpRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     config: {
         requestsMetadata: ConfigRequestBuilderRequestsMetadata,
-    },
-    disable: {
-        requestsMetadata: DisableRequestBuilderRequestsMetadata,
     },
     enable: {
         requestsMetadata: EnableRequestBuilderRequestsMetadata,

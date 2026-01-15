@@ -26,6 +26,8 @@ public class McpController : ControllerBase
     /// <summary>
     /// Initializes a new instance of the <see cref="McpController"/> class.
     /// </summary>
+    /// <param name="mediator"></param>
+    /// <param name="userContext"></param>
     public McpController(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
@@ -33,26 +35,13 @@ public class McpController : ControllerBase
     }
 
     /// <summary>
-    /// 开启知识库 MCP 功能.
+    /// 启用禁用知识库 MCP 功能.
     /// </summary>
     /// <param name="req">开启命令.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回操作结果.</returns>
     [HttpPost("enable")]
     public async Task<EmptyCommandResponse> EnableMcp([FromBody] EnableWikiMcpCommand req, CancellationToken ct = default)
-    {
-        await CheckUserIsMemberAsync(req.WikiId, ct);
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 关闭知识库 MCP 功能.
-    /// </summary>
-    /// <param name="req">关闭命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回操作结果.</returns>
-    [HttpPost("disable")]
-    public async Task<EmptyCommandResponse> DisableMcp([FromBody] DisableWikiMcpCommand req, CancellationToken ct = default)
     {
         await CheckUserIsMemberAsync(req.WikiId, ct);
         return await _mediator.Send(req, ct);

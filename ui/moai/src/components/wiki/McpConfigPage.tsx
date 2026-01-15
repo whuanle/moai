@@ -24,7 +24,7 @@ import { proxyRequestError } from "../../helper/RequestError";
 import type { QueryWikiMcpConfigCommandResponse } from "../../apiClient/models";
 import { formatRelativeTime } from "../../helper/DateTimeHelper";
 
-const { Text, Paragraph, Title } = Typography;
+const { Text, Paragraph } = Typography;
 
 export default function McpConfigPage() {
   const { id } = useParams();
@@ -63,13 +63,11 @@ export default function McpConfigPage() {
       setToggleLoading(true);
       const client = GetApiClient();
 
-      if (enabled) {
-        await client.api.wiki.plugin.mcp.enable.post({ wikiId });
-        messageApi.success("已启用 MCP 功能");
-      } else {
-        await client.api.wiki.plugin.mcp.disable.post({ wikiId });
-        messageApi.success("已禁用 MCP 功能");
-      }
+      await client.api.wiki.plugin.mcp.enable.post({ 
+        wikiId, 
+        isEnable: enabled 
+      });
+      messageApi.success(enabled ? "已启用 MCP 功能" : "已禁用 MCP 功能");
 
       fetchConfig();
     } catch (error) {
@@ -203,7 +201,7 @@ export default function McpConfigPage() {
               <Space direction="vertical" size="small">
                 <Text>1. 复制上方的 MCP 服务地址和访问密钥</Text>
                 <Text>2. 在支持 MCP 协议的 AI 工具中配置此服务</Text>
-                <Text>3. 配置示例（以 Claude Desktop 为例）：</Text>
+                <Text>3. 配置示例（以 Claude Desktop、Cursor 为例）：</Text>
                 <Paragraph>
                   <pre style={{ background: "#f5f5f5", padding: "12px", borderRadius: "4px", overflow: "auto" }}>
                     {`{

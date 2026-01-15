@@ -29,22 +29,22 @@ public class WikiPluginAutoProcessConfig : IModelValidator<WikiPluginAutoProcess
     /// <summary>
     /// 策略化Ai 模型，如果不填写则不使用.
     /// </summary>
-    public int PreprocessStrategyAiModel { get; init; }
+    public int? PreprocessStrategyAiModel { get; init; } = 0;
 
     /// <summary>
     /// 是否自动向量化，如果不启用，则不需要填写 IsEmbedSourceText、ThreadCount。
     /// </summary>
-    public bool IsEmbedding { get; init; }
+    public bool? IsEmbedding { get; init; } = false;
 
     /// <summary>
     /// 是否将 chunk 源文本也向量化.
     /// </summary>
-    public bool IsEmbedSourceText { get; init; } = true;
+    public bool? IsEmbedSourceText { get; init; } = false;
 
     /// <summary>
-    /// 并发线程数量.
+    /// 并发线程数量，不需要向量化的时候不需要填写.
     /// </summary>
-    public int ThreadCount { get; init; } = 5;
+    public int? ThreadCount { get; init; } = 5;
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<WikiPluginAutoProcessConfig> validate)

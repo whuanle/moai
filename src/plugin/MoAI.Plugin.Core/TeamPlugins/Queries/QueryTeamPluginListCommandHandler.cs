@@ -80,6 +80,7 @@ public class QueryTeamPluginListCommandHandler : IRequestHandler<QueryTeamPlugin
                 UpdateTime = x.UpdateTime,
                 UpdateUserId = x.UpdateUserId,
                 IsPublic = x.IsPublic,
+                Counter = x.Counter,
                 ClassifyId = x.ClassifyId
             }).ToArrayAsync(cancellationToken);
 

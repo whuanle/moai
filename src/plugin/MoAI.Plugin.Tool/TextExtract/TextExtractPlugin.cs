@@ -17,25 +17,7 @@ namespace MoAI.Plugin.Plugins.TextExtract;
 [Attributes.NativePluginConfig(
     "text_extract",
     Name = "文本提取",
-    Description =
-    """
-    # 文本类
-    "text": [".txt", ".md"],
-    "markup": [".htm", ".html", ".xhtml", ".xml", ".jsonld"],
-
-    # 代码类
-    "code": [".css", ".js", ".sh"],
-
-    # 文档类
-    "documents": [".pdf", ".rtf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"],
-    "opendocs": [".odt", ".ods", ".odp", ".epub"],
-
-    # 数据类
-    "data": [".url", ".text_embedding", ".json", ".csv"],
-
-    # 压缩包
-    "archives": [".tar", ".gz", ".zip", ".rar", ".7z"]
-    """,
+    Description = "支持格式：文本(.txt .md)，网页(.html .xml)，代码(.js .css .sh)，文档(.pdf .docx .pptx .xlsx .epub .odt)，数据(.json .csv)，压缩包(.zip .rar .7z .tar .gz)",
 #pragma warning restore SA1118 // Parameter should not span multiple lines
     Classify = NativePluginClassify.DocumentProcessing)]
 [Description("从文件中提取文本内容")]

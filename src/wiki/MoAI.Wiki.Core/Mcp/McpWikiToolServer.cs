@@ -77,7 +77,8 @@ public class McpWikiToolServer
         }
 
         var config = wikiPluginConfig.JsonToObject<WikiMcpConfig>();
-        if (config == null || !string.Equals(config.Key, key, StringComparison.Ordinal))
+
+        if (config == null || !config.IsEnable || !string.Equals(config.Key, key, StringComparison.Ordinal))
         {
             throw new BusinessException($"No MCP configuration found for wikiId: {wikiId}");
         }

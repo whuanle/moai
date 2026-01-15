@@ -129,7 +129,7 @@ export default function StartTaskConfigModal({
         partion: partion,
         aiPartion: aiPartion,
         preprocessStrategyType: values.preprocessStrategyType || null,
-        preprocessStrategyAiModel: values.preprocessStrategyAiModel || null,
+        preprocessStrategyAiModel: values.preprocessStrategyAiModel || 0,
         isEmbedding: isEmbedding || false,
         isEmbedSourceText: isEmbedding ? (values.isEmbedSourceText || false) : false,
         threadCount: isEmbedding ? (values.threadCount || null) : null,

@@ -28,8 +28,9 @@ public class DisableUserCommandHandler : IRequestHandler<DisableUserCommand, Emp
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DisableUserCommand request, CancellationToken cancellationToken)
     {
-        await _databaseContext.Users.Where(x => request.UserIds.Contains(x.Id))
-            .ExecuteUpdateAsync(x => x.SetProperty(a => a.IsDisable, request.IsDisable));
+        await _databaseContext.WhereUpdateAsync(
+            _databaseContext.Users.Where(x => request.UserIds.Contains(x.Id)),
+            x => x.SetProperty(a => a.IsDisable, request.IsDisable));
 
         foreach (var item in request.UserIds)
         {

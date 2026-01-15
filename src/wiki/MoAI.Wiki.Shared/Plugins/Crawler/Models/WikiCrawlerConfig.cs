@@ -30,7 +30,12 @@ public class WikiCrawlerConfig : IWikiPluginKey, IModelValidator<WikiCrawlerConf
     public int TimeOutSecond { get; init; } = 10;
 
     /// <summary>
-    /// 最大抓取数量.
+    /// 新抓取的页面最大数量，0不限制.
+    /// </summary>
+    public int LimitMaxNewCount { get; set; }
+
+    /// <summary>
+    /// 队列最大任务数量.
     /// </summary>
     public int LimitMaxCount { get; set; }
 

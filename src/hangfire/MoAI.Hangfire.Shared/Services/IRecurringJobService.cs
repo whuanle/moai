@@ -1,4 +1,5 @@
 ﻿using MoAI.Hangfire.Models;
+using System.Runtime;
 
 namespace MoAI.Hangfire.Services;
 
@@ -43,6 +44,13 @@ public interface IRecurringJobService
     /// <returns></returns>
     Task AddOrUpdateRecurringJobAsync<TCommand, TParams>(string key, DateTimeOffset startTime, TParams @params)
         where TCommand : RecuringJobCommand<TParams>, new();
+
+    /// <summary>
+    /// 根据 key 查询定时任务信息.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    Task<JobInfo> QueryJobAsync(string key);
 
     /// <summary>
     /// 根据 key 取消任务.

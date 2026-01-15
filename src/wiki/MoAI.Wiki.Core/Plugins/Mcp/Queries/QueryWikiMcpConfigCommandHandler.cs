@@ -51,7 +51,7 @@ public class QueryWikiMcpConfigCommandHandler : IRequestHandler<QueryWikiMcpConf
         {
             ConfigId = config.Id,
             WikiId = config.WikiId,
-            Enabled = true,
+            Enabled = mcpConfig!.IsEnable,
             Key = mcpConfig?.Key ?? string.Empty,
             McpUrl = $"{serverUrl}/mcp/wiki/{request.WikiId}?key={mcpConfig?.Key}",
             CreateTime = config.CreateTime

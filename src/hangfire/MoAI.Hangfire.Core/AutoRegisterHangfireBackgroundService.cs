@@ -13,19 +13,19 @@ internal class AutoRegisterHangfireBackgroundService : BackgroundService
 {
     private readonly ILogger<AutoRegisterHangfireBackgroundService> _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AutoRegisterHangfireBackgroundService"/> class.
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="hostApplicationLifetime"></param>
-    /// <param name="serviceProvider"></param>
-    public AutoRegisterHangfireBackgroundService(ILogger<AutoRegisterHangfireBackgroundService> logger, IHostApplicationLifetime hostApplicationLifetime, IServiceProvider serviceProvider)
+    /// <param name="serviceScopeFactory"></param>
+    public AutoRegisterHangfireBackgroundService(ILogger<AutoRegisterHangfireBackgroundService> logger, IHostApplicationLifetime hostApplicationLifetime, IServiceScopeFactory serviceScopeFactory)
     {
         _logger = logger;
         _hostApplicationLifetime = hostApplicationLifetime;
-        _serviceProvider = serviceProvider;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     /// <inheritdoc/>
@@ -40,7 +40,9 @@ internal class AutoRegisterHangfireBackgroundService : BackgroundService
             return;
         }
 
-        var recurringJobManager = _serviceProvider.GetRequiredService<IRecurringJobManager>();
+        using var scope = _serviceScopeFactory.CreateScope();
+
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
         // 每分钟执行一次计数器任务
         recurringJobManager.AddOrUpdate<CounterActivatorJobHandler>(

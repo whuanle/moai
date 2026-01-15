@@ -55,6 +55,7 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
                     UpdateUserId = x.UpdateUserId,
                     CreateTime = x.CreateTime,
                     UpdateTime = x.UpdateTime,
+                    Counter = x.Counter,
                     TeamId = x.TeamId,
                     AvatarKey = x.Avatar,
                     Role = TeamRole.Owner,
@@ -80,6 +81,7 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
                     UpdateTime = x.UpdateTime,
                     TeamId = x.TeamId,
                     AvatarKey = x.Avatar,
+                    Counter = x.Counter,
                     TeamName = y.Name,
                     Role = TeamRole.Collaborator,
                     DocumentCount = _databaseContext.WikiDocuments.Where(a => a.WikiId == x.Id).Count()
@@ -99,6 +101,7 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
                     Name = x.Name,
                     Description = x.Description,
                     IsPublic = x.IsPublic,
+                    Counter = x.Counter,
                     CreateUserId = x.CreateUserId,
                     UpdateUserId = x.UpdateUserId,
                     CreateTime = x.CreateTime,

@@ -33,7 +33,8 @@ public class QueryWikiCrawlerConfigCommandHandler : IRequestHandler<QueryWikiCra
     /// <inheritdoc/>
     public async Task<QueryWikiCrawlerConfigCommandResponse> Handle(QueryWikiCrawlerConfigCommand request, CancellationToken cancellationToken)
     {
-        var wikiPluginConfigEntity = await _databaseContext.WikiPluginConfigs.FirstOrDefaultAsync(x => x.Id == request.ConfigId && x.WikiId == request.WikiId, cancellationToken);
+        var wikiPluginConfigEntity = await _databaseContext.WikiPluginConfigs
+            .FirstOrDefaultAsync(x => x.Id == request.ConfigId && x.WikiId == request.WikiId && x.PluginType == "crawler", cancellationToken);
 
         if (wikiPluginConfigEntity == null)
         {

@@ -1,4 +1,6 @@
 ﻿using Maomi;
+using Microsoft.Extensions.DependencyInjection;
+using MoAI.Hangfire;
 
 namespace MoAI.Plugin;
 
@@ -20,5 +22,6 @@ public class PluginCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        context.Services.AddHostedService<AutoRegisterToolBackgroundService>();
     }
 }

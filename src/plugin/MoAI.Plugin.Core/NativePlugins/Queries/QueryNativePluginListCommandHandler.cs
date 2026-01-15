@@ -79,6 +79,7 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
                     UpdateTime = x.UpdateTime,
                     UpdateUserId = x.UpdateUserId,
                     IsPublic = x.IsPublic,
+                    Counter = x.Counter,
                     ClassifyId = x.ClassifyId,
                     TemplatePluginClassify = y.TemplatePluginClassify.JsonToObject<NativePluginClassify>(),
                     TemplatePluginKey = y.TemplatePluginKey
@@ -106,6 +107,7 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
                         PluginName = item.Key,
                         ClassifyId = 0,
                         IsPublic = true,
+                        Counter = 0,
                         UpdateUserId = 0,
                         CreateUserId = 0
                     });
@@ -125,6 +127,7 @@ public class QueryNativePluginListCommandHandler : IRequestHandler<QueryNativePl
                         PluginName = item.Name,
                         ClassifyId = toolPlugin.ClassifyId,
                         IsPublic = true,
+                        Counter = toolPlugin.Counter,
                         UpdateUserId = 0,
                         CreateUserId = 0
                     });

@@ -169,13 +169,13 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
                 {
                     // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
                     var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
-                        .Where(x => x.FileId == uploadResult.FileId)
+                        .Where(x => x.WikiId == message.WikiId && x.FileId == uploadResult.FileId)
                         .FirstOrDefaultAsync();
 
                     // 主要被其它地方使用了，都忽略本次操作
                     if (existingDocument != null)
                     {
-                        await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Cancal);
+                        await SetPageAsync(message.WikiId, message.ConfigId, currentNode, WorkerState.Successful);
                         continue;
                     }
 
@@ -224,7 +224,7 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
                 {
                     // 片段这个文件是否被其他配置使用，或者被当前配置的其他文档使用了
                     var existingDocument = await _databaseContext.WikiDocuments.AsNoTracking()
-                        .Where(x => x.FileId == uploadResult.FileId)
+                        .Where(x => x.WikiId == message.WikiId && x.FileId == uploadResult.FileId)
                         .FirstOrDefaultAsync();
 
                     // 主要被其它地方使用了，都忽略本次操作
@@ -266,6 +266,11 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
             }
         }
 
+        // 将那些没有爬取的任务设置为已取消
+        await _databaseContext.WhereUpdateAsync(
+            _databaseContext.WikiPluginConfigDocumentStates.Where(x => x.WikiId == message.WikiId && x.ConfigId == message.ConfigId && x.State == (int)WorkerState.Wait),
+            x => x.SetProperty(a => a.State, (int)WorkerState.Cancal));
+
         (isBreak, _) = await SetStateAsync(wikiWebConfigEntity.Id, WorkerState.Successful, "爬取完成");
         if (isBreak)
         {
@@ -285,13 +290,13 @@ public class StartWikiFeishuCommandConsumer : IConsumer<StartWikiFeishuMessage>
                 {
                     WikiId = message.WikiId,
                     AiPartion = message.Command.AutoProcessConfig.AiPartion,
-                    IsEmbedSourceText = message.Command.AutoProcessConfig.IsEmbedSourceText,
+                    IsEmbedSourceText = message.Command.AutoProcessConfig.IsEmbedSourceText ?? false,
                     Partion = message.Command.AutoProcessConfig.Partion,
                     PreprocessStrategyType = message.Command.AutoProcessConfig.PreprocessStrategyType,
                     ThreadCount = message.Command.AutoProcessConfig.ThreadCount,
                     DocumentIds = documentIds,
-                    PreprocessStrategyAiModel = message.Command.AutoProcessConfig.PreprocessStrategyAiModel,
-                    IsEmbedding = message.Command.AutoProcessConfig.IsEmbedding
+                    PreprocessStrategyAiModel = message.Command.AutoProcessConfig.PreprocessStrategyAiModel ?? 0,
+                    IsEmbedding = message.Command.AutoProcessConfig.IsEmbedding ?? false
                 });
             }
         }

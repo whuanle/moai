@@ -58,7 +58,7 @@ public class CounterActivatorJobHandler
         var values = await _redisDatabase.HashGetAllAsync<int>($"counter:{name}");
         if (values != null && values.Count > 0)
         {
-            await activatorJob.ActivateAsync(values.AsReadOnly());
+            await activatorJob.ActivateAsync(values.Where(x => x.Value > 0).ToDictionary().AsReadOnly());
 
             // 获取服务器最新统计值
             var lastValues = await _redisDatabase.HashGetAllAsync<int>($"counter:{name}");

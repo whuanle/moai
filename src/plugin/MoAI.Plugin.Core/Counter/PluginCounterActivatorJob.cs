@@ -1,8 +1,10 @@
-﻿using Maomi;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using Maomi;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Entities;
 using MoAI.Hangfire.Services;
-using System;
+using System.Text;
 
 namespace MoAI.Plugin.Counter;
 
@@ -24,53 +26,100 @@ public class PluginCounterActivatorJob : ICounterActivatorJob
     }
 
     /// <inheritdoc/>
-    public async Task ActivateAsync(IReadOnlyDictionary<string, int> values)
-    {
-        var keys = values.Keys.Where(x => !x.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase)).ToArray();
-        if (keys.Length > 0)
-        {
-            //// 刷新这些插件的使用量
-            //await _databaseContext.Plugins
-            //    .Where(t => keys.Contains(t.PluginName))
-            //    .ExecuteUpdateAsync(setters => setters
-            //        .SetProperty(t => t.Counter, t => t.Counter + values[t.PluginName]));
-
-            var enntities = await _databaseContext.Plugins.Where(t => keys.Contains(t.PluginName)).ToArrayAsync();
-            foreach (var item in enntities)
-            {
-                item.Counter += values[item.PluginName];
-            }
-
-            await _databaseContext.SaveChangesAsync();
-        }
-
-        // 解析 wiki_{id} 出来
-        var wiki = values.Where(x => x.Key.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase))
-            .ToDictionary(x => int.Parse(x.Key.Remove(0, "wiki_".Length))!, x => x.Value);
-
-        var ids = wiki.Keys.ToArray();
-
-        if (keys.Length > 0)
-        {
-            // 刷新这些插件的使用量
-            //await _databaseContext.Wikis
-            //    .Where(t => ids.Contains(t.Id))
-            //    .ExecuteUpdateAsync(setters => setters
-            //        .SetProperty(t => t.Counter, t => t.Counter + wiki[t.Id]));
-
-            var enntities = await _databaseContext.Wikis.Where(t => ids.Contains(t.Id)).ToArrayAsync();
-            foreach (var item in enntities)
-            {
-                item.Counter += wiki[item.Id];
-            }
-
-            await _databaseContext.SaveChangesAsync();
-        }
-    }
-
-    /// <inheritdoc/>
     public Task<string> GetNameAsync()
     {
         return Task.FromResult("plugin");
+    }
+
+    /// <inheritdoc/>
+    public async Task ActivateAsync(IReadOnlyDictionary<string, int> values)
+    {
+        if (values == null || values.Count == 0)
+        {
+            return;
+        }
+
+        // 构建批量更新 SQL
+        // 格式: UPDATE [TableName] SET [Counter] = [Counter] + Value WHERE [Id] = IdValue;
+        const string UpdateTemplate = "UPDATE {0} SET {1} = {1} + {2} WHERE {3} = {4};";
+        StringBuilder stringBuilder = new();
+
+        UpdatePluginAsync(values, UpdateTemplate, stringBuilder);
+        UpdateWikiPluginAsync(values, UpdateTemplate, stringBuilder);
+
+        if (stringBuilder.Length > 0)
+        {
+            await _databaseContext.Database.ExecuteSqlRawAsync(stringBuilder.ToString());
+        }
+    }
+
+    private void UpdatePluginAsync(IReadOnlyDictionary<string, int> values, string UpdateTemplate, StringBuilder stringBuilder)
+    {
+        var entityType = _databaseContext.Model.FindEntityType(typeof(PluginEntity));
+        if (entityType == null)
+        {
+            return;
+        }
+
+        // 获取表名和Schema
+        var tableName = entityType.GetTableName();
+        var schema = entityType.GetSchema();
+
+        // 获取列名映射
+        var keyProperty = entityType.FindProperty(nameof(PluginEntity.PluginName));
+        var keyColumnName = keyProperty?.GetColumnName();
+
+        var counterProperty = entityType.FindProperty(nameof(PluginEntity.Counter));
+        var counterColumnName = counterProperty?.GetColumnName();
+
+        if (keyColumnName == null || counterColumnName == null)
+        {
+            return;
+        }
+
+        foreach (var item in values.Where(x => !x.Key.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase)))
+        {
+            var sql = string.Format(UpdateTemplate, tableName, counterColumnName, item.Value, keyColumnName, $"'{item.Key}'");
+            stringBuilder.AppendLine(sql);
+        }
+
+        return;
+    }
+
+    private void UpdateWikiPluginAsync(IReadOnlyDictionary<string, int> values, string UpdateTemplate, StringBuilder stringBuilder)
+    {
+        var entityType = _databaseContext.Model.FindEntityType(typeof(WikiEntity));
+        if (entityType == null)
+        {
+            return;
+        }
+
+        // 获取表名和Schema
+        var tableName = entityType.GetTableName();
+        var schema = entityType.GetSchema();
+
+        // 获取列名映射
+        var idProperty = entityType.FindProperty(nameof(WikiEntity.Id));
+        var idColumnName = idProperty?.GetColumnName();
+
+        var counterProperty = entityType.FindProperty(nameof(WikiEntity.Counter));
+        var counterColumnName = counterProperty?.GetColumnName();
+
+        if (idColumnName == null || counterColumnName == null)
+        {
+            return;
+        }
+
+        foreach (var item in values.Where(x => x.Key.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase)))
+        {
+            // wiki_{id}
+            if (int.TryParse(item.Key.Remove(0, "wiki_".Length), out int id))
+            {
+                var sql = string.Format(UpdateTemplate, tableName, counterColumnName, item.Value, idColumnName, id);
+                stringBuilder.AppendLine(sql);
+            }
+        }
+
+        return;
     }
 }

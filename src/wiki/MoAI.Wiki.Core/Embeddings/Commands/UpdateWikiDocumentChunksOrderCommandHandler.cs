@@ -28,8 +28,9 @@ public class UpdateWikiDocumentChunksOrderCommandHandler : IRequestHandler<Updat
     {
         foreach (var item in request.Chunks)
         {
-            await _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.Id == item.ChunkId)
-                .ExecuteUpdateAsync(x => x.SetProperty(a => a.SliceOrder, item.Order));
+            await _databaseContext.WhereUpdateAsync(
+                _databaseContext.WikiDocumentChunkContentPreviews.Where(x => x.Id == item.ChunkId),
+                x => x.SetProperty(a => a.SliceOrder, item.Order));
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
