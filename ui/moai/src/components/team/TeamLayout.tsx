@@ -36,12 +36,12 @@ export default function TeamLayout() {
     try {
       setLoading(true);
       const client = GetApiClient();
-      
+
       // 使用新的 info API 获取团队信息
       const response = await client.api.team.common.info.post({
         teamId: parseInt(id!),
       });
-      
+
       if (response) {
         setTeamInfo(response);
         setMyRole(response.myRole || null);
@@ -63,6 +63,7 @@ export default function TeamLayout() {
     if (path.includes("/settings")) return "settings";
     if (path.includes("/members")) return "members";
     if (path.includes("/wiki")) return "wiki";
+    if (path.includes("/appstore")) return "appstore";
     if (path.includes("/apps")) return "apps";
     if (path.includes("/integration")) return "integration";
     return "wiki";
@@ -77,28 +78,33 @@ export default function TeamLayout() {
       label: "知识库",
     },
     {
+      key: "appstore",
+      icon: <AppstoreOutlined />,
+      label: "应用中心",
+    },
+    {
       key: "members",
       icon: <UserOutlined />,
       label: "团队成员",
     },
-    {
-      key: "apps",
-      icon: <AppstoreOutlined />,
-      label: "应用",
-    },
-    {
-      key: "integration",
-      icon: <ApiOutlined />,
-      label: "系统接入",
-    },
     ...(canManage
       ? [
-          {
-            key: "settings",
-            icon: <SettingOutlined />,
-            label: "团队设置",
-          },
-        ]
+        {
+          key: "apps",
+          icon: <SettingOutlined />,
+          label: "应用管理",
+        },
+        {
+          key: "integration",
+          icon: <ApiOutlined />,
+          label: "系统接入",
+        },
+        {
+          key: "settings",
+          icon: <SettingOutlined />,
+          label: "团队设置",
+        },
+      ]
       : []),
   ];
 

@@ -7,7 +7,7 @@ import { createBusinessValidationResultFromDiscriminatorValue, createCreateAppCh
 import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/app/manage/create_chat
+ * Builds and executes requests for operations under /api/app/common/create_chat
  */
 export interface Create_chatRequestBuilder extends BaseRequestBuilder<Create_chatRequestBuilder> {
     /**
@@ -33,7 +33,7 @@ export interface Create_chatRequestBuilder extends BaseRequestBuilder<Create_cha
 /**
  * Uri template for the request builder.
  */
-export const Create_chatRequestBuilderUriTemplate = "{+baseurl}/api/app/manage/create_chat";
+export const Create_chatRequestBuilderUriTemplate = "{+baseurl}/api/app/common/create_chat";
 /**
  * Metadata for all the requests in the request builder.
  */

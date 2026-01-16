@@ -53,6 +53,8 @@ import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage
 import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage";
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
 import AppConfigCommon from "./components/team/apps/AppConfigCommon";
+import AppStorePage from "./components/team/appstore/AppStorePage";
+import AppChatPage from "./components/team/appstore/AppChatPage";
 
 const { Content } = Layout;
 
@@ -137,9 +139,12 @@ function App() {
               <Route path="list" element={<TeamListPage />} />
               {/* 应用配置调试页面 - 独立路由，不显示团队菜单 */}
               <Route path=":id/apps/:appId/config" element={<AppConfigCommon />} />
+              {/* 应用对话页面 - 独立路由，不显示团队菜单 */}
+              <Route path=":id/appstore/:appId" element={<AppChatPage />} />
               <Route path=":id" element={<TeamLayout />}>
                 <Route index element={<TeamWikiWrapper />} />
                 <Route path="wiki" element={<TeamWikiWrapper />} />
+                <Route path="appstore" element={<AppStorePage />} />
                 <Route path="apps" element={<TeamApps />} />
                 <Route path="integration" element={<TeamIntegration />} />
                 <Route path="members" element={<TeamMembers />} />

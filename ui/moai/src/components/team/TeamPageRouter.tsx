@@ -7,6 +7,8 @@ import TeamWikiWrapper from "./TeamWikiWrapper";
 import TeamApps from "./apps/TeamApps";
 import AppConfigCommon from "./apps/AppConfigCommon";
 import TeamIntegration from "./TeamIntegration";
+import AppStorePage from "./appstore/AppStorePage";
+import AppChatPage from "./appstore/AppChatPage";
 
 export const TeamPageRouters: RouteObject[] = [
   {
@@ -27,6 +29,14 @@ export const TeamPageRouters: RouteObject[] = [
           {
             path: "wiki",
             Component: TeamWikiWrapper,
+          },
+          {
+            path: "appstore",
+            Component: AppStorePage,
+          },
+          {
+            path: "appstore/:appId",
+            Component: AppChatPage,
           },
           {
             path: "members",

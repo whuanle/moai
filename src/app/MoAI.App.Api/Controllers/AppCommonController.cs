@@ -43,6 +43,20 @@ public class AppCommonController : ControllerBase
     }
 
     /// <summary>
+    /// 获取团队内部可用的应用列表.
+    /// </summary>
+    /// <param name="req">查询请求，包含团队ID.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryTeamAppListCommandResponse"/>，包含团队应用列表.</returns>
+    [HttpGet("app_list")]
+    public async Task<QueryTeamAppListCommandResponse> QueryTeamAppList([FromQuery] QueryTeamAppListCommand req, CancellationToken ct = default)
+    {
+        await CheckIsMemberAsync(req.TeamId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 创建应用对话.
     /// </summary>
     /// <param name="req">创建对话请求，包含应用ID和话题标题.</param>

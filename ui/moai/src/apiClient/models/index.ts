@@ -2695,6 +2695,15 @@ export function createQueryServerInfoCommandResponseFromDiscriminatorValue(parse
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamAppListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamAppListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamAppListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryTeamAuthorizationsCommand2}
  */
 // @ts-ignore
@@ -3447,6 +3456,15 @@ export function createStartWikiCrawlerPluginTaskCommandFromDiscriminatorValue(pa
 // @ts-ignore
 export function createStartWikiFeishuPluginTaskCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoStartWikiFeishuPluginTaskCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamAppItem}
+ */
+// @ts-ignore
+export function createTeamAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamAppItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -6251,6 +6269,7 @@ export function deserializeIntoQueryAppChatTopicListCommand(queryAppChatTopicLis
         "appId": n => { queryAppChatTopicListCommand.appId = n.getGuidValue(); },
         "contextUserId": n => { queryAppChatTopicListCommand.contextUserId = n.getNumberValue(); },
         "contextUserType": n => { queryAppChatTopicListCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "teamId": n => { queryAppChatTopicListCommand.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -6656,6 +6675,16 @@ export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCom
         "publicStoreUrl": n => { queryServerInfoCommandResponse.publicStoreUrl = n.getStringValue(); },
         "rsaPublic": n => { queryServerInfoCommandResponse.rsaPublic = n.getStringValue(); },
         "serviceUrl": n => { queryServerInfoCommandResponse.serviceUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamAppListCommandResponse(queryTeamAppListCommandResponse: Partial<QueryTeamAppListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamAppListCommandResponse.items = n.getCollectionOfObjectValues<TeamAppItem>(createTeamAppItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -7673,6 +7702,23 @@ export function deserializeIntoStartWikiFeishuPluginTaskCommand(startWikiFeishuP
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoTeamAppItem(teamAppItem: Partial<TeamAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appType": n => { teamAppItem.appType = n.getNumberValue(); },
+        "avatar": n => { teamAppItem.avatar = n.getStringValue(); },
+        "avatarKey": n => { teamAppItem.avatarKey = n.getStringValue(); },
+        "createTime": n => { teamAppItem.createTime = n.getStringValue(); },
+        "description": n => { teamAppItem.description = n.getStringValue(); },
+        "id": n => { teamAppItem.id = n.getGuidValue(); },
+        "name": n => { teamAppItem.name = n.getStringValue(); },
+        "updateTime": n => { teamAppItem.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoTeamAuthorizationItem(teamAuthorizationItem: Partial<TeamAuthorizationItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "authorizedModels": n => { teamAuthorizationItem.authorizedModels = n.getCollectionOfObjectValues<AuthorizedModelItem>(createAuthorizedModelItemFromDiscriminatorValue); },
@@ -7764,9 +7810,11 @@ export function deserializeIntoUpdateAiModelCommand(updateAiModelCommand: Partia
 // @ts-ignore
 export function deserializeIntoUpdateAppChatTitleCommand(updateAppChatTitleCommand: Partial<UpdateAppChatTitleCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "appId": n => { updateAppChatTitleCommand.appId = n.getGuidValue(); },
         "chatId": n => { updateAppChatTitleCommand.chatId = n.getGuidValue(); },
         "contextUserId": n => { updateAppChatTitleCommand.contextUserId = n.getNumberValue(); },
         "contextUserType": n => { updateAppChatTitleCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "teamId": n => { updateAppChatTitleCommand.teamId = n.getNumberValue(); },
         "title": n => { updateAppChatTitleCommand.title = n.getStringValue(); },
     }
 }
@@ -10151,6 +10199,10 @@ export interface QueryAppChatTopicListCommand extends Parsable {
      * 通过上下文自动配置用户了偶像，前端不需要传递.
      */
     contextUserType?: UserType | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: number | null;
 }
 /**
  * 应用对话列表响应.
@@ -10717,6 +10769,15 @@ export interface QueryServerInfoCommandResponse extends Parsable {
      * 系统访问地址.
      */
     serviceUrl?: string | null;
+}
+/**
+ * 团队应用列表响应.
+ */
+export interface QueryTeamAppListCommandResponse extends Parsable {
+    /**
+     * 应用列表.
+     */
+    items?: TeamAppItem[] | null;
 }
 /**
  * 查询所有团队及其授权的模型列表.
@@ -13916,6 +13977,7 @@ export function serializeQueryAppChatTopicListCommand(writer: SerializationWrite
         writer.writeGuidValue("appId", queryAppChatTopicListCommand.appId);
         writer.writeNumberValue("contextUserId", queryAppChatTopicListCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", queryAppChatTopicListCommand.contextUserType);
+        writer.writeNumberValue("teamId", queryAppChatTopicListCommand.teamId);
     }
 }
 /**
@@ -14321,6 +14383,16 @@ export function serializeQueryServerInfoCommandResponse(writer: SerializationWri
         writer.writeStringValue("publicStoreUrl", queryServerInfoCommandResponse.publicStoreUrl);
         writer.writeStringValue("rsaPublic", queryServerInfoCommandResponse.rsaPublic);
         writer.writeStringValue("serviceUrl", queryServerInfoCommandResponse.serviceUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamAppListCommandResponse(writer: SerializationWriter, queryTeamAppListCommandResponse: Partial<QueryTeamAppListCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamAppListCommandResponse) {
+        writer.writeCollectionOfObjectValues<TeamAppItem>("items", queryTeamAppListCommandResponse.items, serializeTeamAppItem);
     }
 }
 /**
@@ -15338,6 +15410,23 @@ export function serializeStartWikiFeishuPluginTaskCommand(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTeamAppItem(writer: SerializationWriter, teamAppItem: Partial<TeamAppItem> | undefined | null = {}) : void {
+    if (teamAppItem) {
+        writer.writeNumberValue("appType", teamAppItem.appType);
+        writer.writeStringValue("avatar", teamAppItem.avatar);
+        writer.writeStringValue("avatarKey", teamAppItem.avatarKey);
+        writer.writeStringValue("createTime", teamAppItem.createTime);
+        writer.writeStringValue("description", teamAppItem.description);
+        writer.writeGuidValue("id", teamAppItem.id);
+        writer.writeStringValue("name", teamAppItem.name);
+        writer.writeStringValue("updateTime", teamAppItem.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeTeamAuthorizationItem(writer: SerializationWriter, teamAuthorizationItem: Partial<TeamAuthorizationItem> | undefined | null = {}) : void {
     if (teamAuthorizationItem) {
         writer.writeCollectionOfObjectValues<AuthorizedModelItem>("authorizedModels", teamAuthorizationItem.authorizedModels, serializeAuthorizedModelItem);
@@ -15429,9 +15518,11 @@ export function serializeUpdateAiModelCommand(writer: SerializationWriter, updat
 // @ts-ignore
 export function serializeUpdateAppChatTitleCommand(writer: SerializationWriter, updateAppChatTitleCommand: Partial<UpdateAppChatTitleCommand> | undefined | null = {}) : void {
     if (updateAppChatTitleCommand) {
+        writer.writeGuidValue("appId", updateAppChatTitleCommand.appId);
         writer.writeGuidValue("chatId", updateAppChatTitleCommand.chatId);
         writer.writeNumberValue("contextUserId", updateAppChatTitleCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", updateAppChatTitleCommand.contextUserType);
+        writer.writeNumberValue("teamId", updateAppChatTitleCommand.teamId);
         writer.writeStringValue("title", updateAppChatTitleCommand.title);
     }
 }
@@ -16236,6 +16327,43 @@ export interface StartWikiFeishuPluginTaskCommand extends Parsable {
     wikiId?: number | null;
 }
 /**
+ * 团队应用项.
+ */
+export interface TeamAppItem extends Parsable {
+    /**
+     * 应用类型，普通应用=0,流程编排=1.
+     */
+    appType?: number | null;
+    /**
+     * 头像.
+     */
+    avatar?: string | null;
+    /**
+     * 头像 objectKey.
+     */
+    avatarKey?: string | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 应用 id.
+     */
+    id?: Guid | null;
+    /**
+     * 应用名称.
+     */
+    name?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+}
+/**
  * 团队授权信息项.
  */
 export interface TeamAuthorizationItem extends Parsable {
@@ -16376,6 +16504,10 @@ export interface UpdateAiModelCommand extends AiEndpoint, Parsable {
  */
 export interface UpdateAppChatTitleCommand extends Parsable {
     /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
      * 对话 id.
      */
     chatId?: Guid | null;
@@ -16387,6 +16519,10 @@ export interface UpdateAppChatTitleCommand extends Parsable {
      * 通过上下文自动配置用户了偶像，前端不需要传递.
      */
     contextUserType?: UserType | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: number | null;
     /**
      * 新标题.
      */
@@ -17622,6 +17758,7 @@ export const AiProviderObject = {
  */
 export const AppTypeObject = {
     Common: "common",
+    Agent: "agent",
     Workflow: "workflow",
 } as const;
 /**

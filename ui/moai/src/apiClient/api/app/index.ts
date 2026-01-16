@@ -4,6 +4,8 @@
 // @ts-ignore
 import { AssistantRequestBuilderNavigationMetadata, type AssistantRequestBuilder } from './assistant/index.js';
 // @ts-ignore
+import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
+// @ts-ignore
 import { ExternalRequestBuilderNavigationMetadata, ExternalRequestBuilderRequestsMetadata, type ExternalRequestBuilder } from './external/index.js';
 // @ts-ignore
 import { ManageRequestBuilderNavigationMetadata, type ManageRequestBuilder } from './manage/index.js';
@@ -18,6 +20,10 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The assistant property
      */
     get assistant(): AssistantRequestBuilder;
+    /**
+     * The common property
+     */
+    get common(): CommonRequestBuilder;
     /**
      * The external property
      */
@@ -37,6 +43,9 @@ export const AppRequestBuilderUriTemplate = "{+baseurl}/api/app";
 export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     assistant: {
         navigationMetadata: AssistantRequestBuilderNavigationMetadata,
+    },
+    common: {
+        navigationMetadata: CommonRequestBuilderNavigationMetadata,
     },
     external: {
         requestsMetadata: ExternalRequestBuilderRequestsMetadata,
