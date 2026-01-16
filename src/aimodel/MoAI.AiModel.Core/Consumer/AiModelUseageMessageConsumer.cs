@@ -29,12 +29,13 @@ public class AiModelUseageMessageConsumer : IConsumer<AiModelUseageMessage>
     /// <inheritdoc/>
     public async Task ExecuteAsync(MessageHeader messageHeader, AiModelUseageMessage message)
     {
+        // token 使用量
         await _databaseContext.AiModelUseageLogs.AddAsync(new Database.Entities.AiModelUseageLogEntity
         {
             Channel = message.Channel,
-            CompletionTokens = message.Usage.CompletionTokens,
-            PromptTokens = message.Usage.PromptTokens,
-            TotalTokens = message.Usage.TotalTokens,
+            CompletionTokens = message.TokenUsage.CompletionTokens,
+            PromptTokens = message.TokenUsage.PromptTokens,
+            TotalTokens = message.TokenUsage.TotalTokens,
             ModelId = message.AiModelId,
             UseriId = message.ContextUserId,
             CreateUserId = message.ContextUserId,
@@ -50,6 +51,23 @@ public class AiModelUseageMessageConsumer : IConsumer<AiModelUseageMessage>
             {
                 { message.AiModelId.ToString(), 1 }
             },
+        });
+
+        // 插件用量统计
+        var plugins = message.PluginUsage.Where(x => !x.Key.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase)).ToDictionary();
+        var wikis = message.PluginUsage.Where(x => x.Key.StartsWith("wiki_", StringComparison.CurrentCultureIgnoreCase))
+            .ToDictionary(x => x.Key.Remove(0, "wiki_".Length), x => x.Value);
+
+        await _mediator.Send(new IncrementCounterActivatorCommand
+        {
+            Name = "plugin",
+            Counters = plugins
+        });
+
+        await _mediator.Send(new IncrementCounterActivatorCommand
+        {
+            Name = "wiki",
+            Counters = wikis
         });
     }
 

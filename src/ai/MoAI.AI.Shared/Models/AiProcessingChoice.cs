@@ -9,6 +9,11 @@ namespace MoAI.AI.Models;
 public class AiProcessingChoice
 {
     /// <summary>
+    /// 方便前端聚合数据.
+    /// </summary>
+    public Guid Id { get; init; } = Guid.CreateVersion7();
+
+    /// <summary>
     /// 流类型.
     /// </summary>
     public AiProcessingChatStreamType StreamType { get; init; }

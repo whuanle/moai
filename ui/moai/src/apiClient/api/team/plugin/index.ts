@@ -24,6 +24,8 @@ import { type Update_mcpRequestBuilder, Update_mcpRequestBuilderRequestsMetadata
 // @ts-ignore
 import { type Update_openapiRequestBuilder, Update_openapiRequestBuilderRequestsMetadata } from './update_openapi/index.js';
 // @ts-ignore
+import { type User_view_listRequestBuilder, User_view_listRequestBuilderRequestsMetadata } from './user_view_list/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -74,6 +76,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The update_openapi property
      */
     get update_openapi(): Update_openapiRequestBuilder;
+    /**
+     * The user_view_list property
+     */
+    get user_view_list(): User_view_listRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -115,6 +121,9 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     update_openapi: {
         requestsMetadata: Update_openapiRequestBuilderRequestsMetadata,
+    },
+    user_view_list: {
+        requestsMetadata: User_view_listRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

@@ -6,6 +6,7 @@ using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Storage.Queries;
+using MoAI.Team.Queries;
 using MoAI.Wiki.Documents.Queries;
 using MoAI.Wiki.Plugins.Mcp.Models;
 using MoAI.Wiki.Wikis.Queries;
@@ -145,11 +146,14 @@ public class McpWikiToolServer
             return "未指定知识库";
         }
 
-        // 查询知识库被授权的 chat 模型，如果没有再查公开的
+        var teamId = await _databaseContext.Wikis.Where(x => x.Id == wikiId)
+            .Select(x => x.TeamId).FirstOrDefaultAsync(cancellationToken);
+
+        // 查询团队被授权的 chat 模型，如果没有再查公开的
         var aiModels = await _mediator.Send(new QueryTeamViewAiModelListCommand
         {
             AiModelType = AI.Models.AiModelType.Chat,
-            WikiId = wikiId,
+            TeamId = teamId,
         });
 
         if (aiModels == null)

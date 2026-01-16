@@ -38,7 +38,7 @@ export default function TeamLayout() {
       const client = GetApiClient();
       
       // 使用新的 info API 获取团队信息
-      const response = await client.api.team.info.post({
+      const response = await client.api.team.common.info.post({
         teamId: parseInt(id!),
       });
       

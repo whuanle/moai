@@ -43,7 +43,7 @@ import TeamSettings from "./components/team/TeamSettings";
 import ApplicationPage from "./components/application/ApplicationPage";
 import UserLayout from "./components/user/UserLayout";
 import TeamWikiWrapper from "./components/team/TeamWikiWrapper";
-import TeamApps from "./components/team/TeamApps";
+import TeamApps from "./components/team/apps/TeamApps";
 import TeamIntegration from "./components/team/TeamIntegration";
 import McpConfigPage from "./components/wiki/McpConfigPage";
 import PromptViewPage from "./components/prompt/PromptViewPage";
@@ -52,6 +52,7 @@ import PluginAuthorizationPage from "./components/admin/plugin/authorization/Plu
 import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage";
 import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage";
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
+import AppConfigCommon from "./components/team/apps/AppConfigCommon";
 
 const { Content } = Layout;
 
@@ -134,6 +135,8 @@ function App() {
             <Route path="team">
               <Route index element={<Navigate to="list" replace />} />
               <Route path="list" element={<TeamListPage />} />
+              {/* 应用配置调试页面 - 独立路由，不显示团队菜单 */}
+              <Route path=":id/apps/:appId/config" element={<AppConfigCommon />} />
               <Route path=":id" element={<TeamLayout />}>
                 <Route index element={<TeamWikiWrapper />} />
                 <Route path="wiki" element={<TeamWikiWrapper />} />

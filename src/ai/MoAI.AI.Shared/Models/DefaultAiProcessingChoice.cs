@@ -9,6 +9,11 @@ namespace MoAI.AI.Models;
 public class DefaultAiProcessingChoice
 {
     /// <summary>
+    /// 方便前端聚合数据.
+    /// </summary>
+    public Guid Id { get; init; } = Guid.CreateVersion7();
+
+    /// <summary>
     /// 是否已经推送返回.
     /// </summary>
     public bool IsPush { get; set; }
@@ -46,6 +51,7 @@ public class DefaultAiProcessingChoice
     {
         return new AiProcessingChoice
         {
+            Id = Id,
             StreamType = StreamType,
             StreamState = StreamState,
             PluginCall = PluginCall,

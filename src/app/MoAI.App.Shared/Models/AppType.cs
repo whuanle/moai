@@ -11,7 +11,12 @@ public enum AppType
     Common = 0,
 
     /// <summary>
+    /// Agent 应用.
+    /// </summary>
+    Agent = 1,
+
+    /// <summary>
     /// 流程编排.
     /// </summary>
-    Workflow = 1
+    Workflow = 2,
 }

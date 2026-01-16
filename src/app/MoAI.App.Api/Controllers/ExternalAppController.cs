@@ -1,10 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using MoAI.App.Commands;
-using MoAI.App.Commands.Responses;
-using MoAI.App.Queries;
-using MoAI.App.Queries.Responses;
+using MoAI.App.Manager.ExternalApi.Commands;
+using MoAI.App.Manager.ExternalApi.Models;
+using MoAI.App.Manager.ExternalApi.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;

@@ -1,0 +1,97 @@
+/* 应用配置调试页面样式 - 左侧对话 + 右侧配置面板 */
+
+/* 根布局 - 全屏布局，抵消 app-content 的 padding */
+.app-config-debug-layout {
+  /* 抵消父容器 app-content 的 padding */
+  margin: calc(-1 * var(--spacing-lg));
+  /* 宽度加回 padding */
+  width: calc(100% + var(--spacing-lg) * 2);
+  /* 高度：视口高度 - header高度 */
+  height: calc(100vh - var(--header-height));
+  background: transparent;
+  display: flex;
+  overflow: hidden;
+}
+
+.app-config-debug-layout .ant-layout-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 中间对话调试区域 */
+.app-config-debug-content {
+  display: flex;
+  flex-direction: column;
+  background: var(--ant-color-bg-layout);
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.debug-chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.debug-chat-header {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 16px;
+  background: var(--ant-color-bg-container);
+  border-bottom: 1px solid var(--ant-color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 对话组件容器 */
+.debug-chat-container > .ant-spin-nested-loading {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.debug-chat-container > .ant-spin-nested-loading > .ant-spin-container {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 右侧配置面板 */
+.app-config-debug-sider {
+  background: var(--ant-color-bg-container) !important;
+  border-left: 1px solid var(--ant-color-border);
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-config-debug-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.config-panel-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.config-panel-header {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--ant-color-border);
+  display: flex;
+  align-items: center;
+}
+
+.config-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}

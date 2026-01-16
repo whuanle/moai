@@ -138,6 +138,7 @@ internal partial class UnifyAiResponseStreamCommandCommandHandler
                         {
                             new AiProcessingChoice
                             {
+                                Id = lastChoice.Id,
                                 StreamType = AiProcessingChatStreamType.Text,
                                 StreamState = lastChoice.StreamState,
                                 TextCall = new DefaultAiProcessingTextCall { Content = textDelta.Text }

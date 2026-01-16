@@ -150,6 +150,31 @@ public partial class TeamPluginController : ControllerBase
     }
 
     /// <summary>
+    /// 查询用户可见的插件列表（团队下可用的插件）.
+    /// </summary>
+    /// <param name="req">请求体，见 <see cref="QueryUserViewPluginListCommand"/>.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryUserViewPluginListCommandResponse"/>，包含插件列表.</returns>
+    [HttpPost("user_view_list")]
+    public async Task<QueryUserViewPluginListCommandResponse> QueryUserViewPluginList([FromBody] QueryUserViewPluginListCommand req, CancellationToken ct = default)
+    {
+        var existInTeam = await _mediator.Send(
+            new QueryUserTeamRoleCommand
+            {
+                TeamId = req.TeamId,
+                ContextUserId = _userContext.UserId,
+            },
+            ct);
+
+        if (existInTeam.Role < TeamRole.Collaborator)
+        {
+            throw new BusinessException("没有操作权限");
+        }
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 查询团队插件详情.
     /// </summary>
     /// <param name="req"></param>

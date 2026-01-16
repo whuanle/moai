@@ -127,13 +127,15 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
         var wikiId = chatObjectEntity.WikiIds.JsonToObject<IReadOnlyCollection<int>>()!;
 
         List<OpenAIChatCompletionsUsage> useages = new List<OpenAIChatCompletionsUsage>();
+        Dictionary<string, string> pluginKeyNames = new();
         ProcessingAiAssistantChatContext chatContext = new()
         {
             ChatId = chatObjectEntity.Id,
             AiModel = aiEndpoint,
+            PluginKeyNames = pluginKeyNames,
         };
 
-        var plugins = await GetPluginsAsync(chatContext, pluginKeys, wikiId);
+        var plugins = await GetPluginsAsync(chatContext, pluginKeyNames, pluginKeys, wikiId);
 
         ChatHistory chatMessages = RestoreChatHistory(history, chatObjectEntity.Prompt);
 
@@ -290,17 +292,12 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
                 AiModelId = chatObjectEntity.ModelId,
                 Channel = "chat",
                 ContextUserId = request.ContextUserId,
-                Usage = usage!
+                ContextUserType = request.ContextUserType,
+                TokenUsage = usage!,
+                PluginUsage = chatContext.Choices.Where(x => x.PluginCall != null)
+                    .GroupBy(x => x.PluginCall!.PluginKey)
+                    .ToDictionary(x => x.Key, x => x.Count()),
             });
-
-        // 插件用量统计
-        await _mediator.Send(new IncrementCounterActivatorCommand
-        {
-            Name = "plugin",
-            Counters = chatContext.Choices.Where(x => x.PluginCall != null)
-            .GroupBy(x => x.PluginCall!.PluginKey)
-            .ToDictionary(x => x.Key, x => x.Count())
-        });
     }
 
     /// <inheritdoc/>

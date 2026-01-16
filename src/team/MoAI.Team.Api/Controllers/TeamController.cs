@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using MoAI.Common.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -15,6 +16,7 @@ namespace MoAI.Team.Controllers;
 /// </summary>
 [ApiController]
 [Route("/team")]
+[EndpointGroupName("team")]
 [Authorize]
 public class TeamController : ControllerBase
 {
@@ -30,18 +32,6 @@ public class TeamController : ControllerBase
     {
         _mediator = mediator;
         _userContext = userContext;
-    }
-
-    /// <summary>
-    /// 创建团队.
-    /// </summary>
-    /// <param name="req">创建团队命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>创建结果.</returns>
-    [HttpPost("create")]
-    public async Task<CreateTeamCommandResponse> Create([FromBody] CreateTeamCommand req, CancellationToken ct = default)
-    {
-        return await _mediator.Send(req, ct);
     }
 
     /// <summary>
@@ -145,18 +135,6 @@ public class TeamController : ControllerBase
     }
 
     /// <summary>
-    /// 查询团队列表.
-    /// </summary>
-    /// <param name="req">查询命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>团队列表.</returns>
-    [HttpPost("list")]
-    public async Task<QueryTeamListCommandResponse> List([FromBody] QueryTeamListCommand req, CancellationToken ct = default)
-    {
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
     /// 转让团队所有者.
     /// </summary>
     /// <param name="req">转让命令.</param>
@@ -176,93 +154,6 @@ public class TeamController : ControllerBase
         if (existInTeam.Role < Models.TeamRole.Owner)
         {
             throw new BusinessException("没有操作权限");
-        }
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 退出团队.
-    /// </summary>
-    /// <param name="req">退出命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>操作结果.</returns>
-    [HttpPost("leave")]
-    public async Task<EmptyCommandResponse> Leave([FromBody] LeaveTeamCommand req, CancellationToken ct = default)
-    {
-        var existInTeam = await _mediator.Send(
-            new QueryUserTeamRoleCommand
-            {
-                TeamId = req.TeamId,
-                ContextUserId = _userContext.UserId,
-            },
-            ct);
-
-        if (existInTeam.Role == 0)
-        {
-            throw new BusinessException("没有操作权限");
-        }
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 查询用户在团队的角色.
-    /// </summary>
-    /// <param name="req">查询命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>用户角色.</returns>
-    [HttpPost("role")]
-    public async Task<QueryUserTeamRoleQueryResponse> GetUserRole([FromBody] QueryUserTeamRoleCommand req, CancellationToken ct = default)
-    {
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 查询团队成员列表.
-    /// </summary>
-    /// <param name="req">查询命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>成员列表.</returns>
-    [HttpPost("members")]
-    public async Task<QueryTeamMemberListCommandResponse> GetMembers([FromBody] QueryTeamMemberListCommand req, CancellationToken ct = default)
-    {
-        var existInTeam = await _mediator.Send(
-            new QueryUserTeamRoleCommand
-            {
-                TeamId = req.TeamId,
-                ContextUserId = _userContext.UserId,
-            },
-            ct);
-
-        if (existInTeam.Role == 0)
-        {
-            throw new BusinessException("非团队成员");
-        }
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 获取单个团队信息.
-    /// </summary>
-    /// <param name="req">查询命令.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>团队信息.</returns>
-    [HttpPost("info")]
-    public async Task<QueryTeamInfoCommandResponse> GetInfo([FromBody] QueryTeamInfoCommand req, CancellationToken ct = default)
-    {
-        var existInTeam = await _mediator.Send(
-            new QueryUserTeamRoleCommand
-            {
-                TeamId = req.TeamId,
-                ContextUserId = _userContext.UserId,
-            },
-            ct);
-
-        if (existInTeam.Role == 0)
-        {
-            throw new BusinessException("非团队成员");
         }
 
         return await _mediator.Send(req, ct);

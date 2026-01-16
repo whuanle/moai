@@ -70,7 +70,7 @@ export default function TeamMembers() {
     if (!id) return;
     try {
       const apiClient = GetApiClient();
-      const response = await apiClient.api.team.role.post({
+      const response = await apiClient.api.team.common.role.post({
         teamId: parseInt(id),
       });
       setMyRole(response?.role || null);
@@ -85,7 +85,7 @@ export default function TeamMembers() {
     try {
       setLoading(true);
       const apiClient = GetApiClient();
-      const response = await apiClient.api.team.members.post({
+      const response = await apiClient.api.team.common.members.post({
         teamId: parseInt(id),
       });
       setMembers(response?.items || []);
@@ -203,7 +203,7 @@ export default function TeamMembers() {
     try {
       setLoading(true);
       const apiClient = GetApiClient();
-      await apiClient.api.team.leave.post({
+      await apiClient.api.team.common.leave.post({
         teamId: parseInt(id),
       });
 

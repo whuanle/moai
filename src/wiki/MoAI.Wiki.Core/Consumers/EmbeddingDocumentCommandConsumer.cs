@@ -191,7 +191,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
                         AiModelId = wikiConfig.EmbeddingModelId,
                         Channel = "embedding",
                         ContextUserId = workerTask.CreateUserId,
-                        Usage = new OpenAIChatCompletionsUsage
+                        TokenUsage = new OpenAIChatCompletionsUsage
                         {
                             TotalTokens = useage,
                             PromptTokens = useage,

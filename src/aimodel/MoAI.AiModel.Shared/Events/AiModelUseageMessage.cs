@@ -16,7 +16,7 @@ public class AiModelUseageMessage : IUserIdContext
     /// <summary>
     /// 使用量.
     /// </summary>
-    public OpenAIChatCompletionsUsage Usage { get; init; } = default!;
+    public OpenAIChatCompletionsUsage TokenUsage { get; init; } = default!;
 
     /// <inheritdoc/>
     public int ContextUserId { get; init; }
@@ -28,4 +28,9 @@ public class AiModelUseageMessage : IUserIdContext
     /// 消耗渠道
     /// </summary>
     public string Channel { get; init; } = default!;
+
+    /// <summary>
+    /// 插件消耗量.
+    /// </summary>
+    public IReadOnlyDictionary<string, int> PluginUsage { get; init; } = new Dictionary<string, int>();
 }

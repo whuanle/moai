@@ -18,8 +18,6 @@ import { Query_wiki_infoRequestBuilderRequestsMetadata, type Query_wiki_infoRequ
 // @ts-ignore
 import { Query_wiki_listRequestBuilderRequestsMetadata, type Query_wiki_listRequestBuilder } from './query_wiki_list/index.js';
 // @ts-ignore
-import { Team_modellistRequestBuilderRequestsMetadata, type Team_modellistRequestBuilder } from './team_modellist/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -58,10 +56,6 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The query_wiki_list property
      */
     get query_wiki_list(): Query_wiki_listRequestBuilder;
-    /**
-     * The team_modellist property
-     */
-    get team_modellist(): Team_modellistRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -94,9 +88,6 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     query_wiki_list: {
         requestsMetadata: Query_wiki_listRequestBuilderRequestsMetadata,
-    },
-    team_modellist: {
-        requestsMetadata: Team_modellistRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

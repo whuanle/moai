@@ -12,7 +12,7 @@ public class AiProcessingChatItem
     /// 当前对话 id.
     /// </summary>
     [JsonPropertyName("id")]
-    public Guid Id { get; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// 可以为 null，如果整个聊天对话完成 是 stop，错误是 error."/>

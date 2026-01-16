@@ -4,23 +4,13 @@
 // @ts-ignore
 import { AllRequestBuilderNavigationMetadata, type AllRequestBuilder } from './all/index.js';
 // @ts-ignore
-import { CreateRequestBuilderRequestsMetadata, type CreateRequestBuilder } from './create/index.js';
-// @ts-ignore
-import { InfoRequestBuilderRequestsMetadata, type InfoRequestBuilder } from './info/index.js';
+import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
 import { InviteRequestBuilderRequestsMetadata, type InviteRequestBuilder } from './invite/index.js';
 // @ts-ignore
-import { LeaveRequestBuilderRequestsMetadata, type LeaveRequestBuilder } from './leave/index.js';
-// @ts-ignore
-import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
-// @ts-ignore
 import { MemberRequestBuilderNavigationMetadata, type MemberRequestBuilder } from './member/index.js';
 // @ts-ignore
-import { MembersRequestBuilderRequestsMetadata, type MembersRequestBuilder } from './members/index.js';
-// @ts-ignore
 import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
-// @ts-ignore
-import { RoleRequestBuilderRequestsMetadata, type RoleRequestBuilder } from './role/index.js';
 // @ts-ignore
 import { TransferRequestBuilderRequestsMetadata, type TransferRequestBuilder } from './transfer/index.js';
 // @ts-ignore
@@ -37,41 +27,21 @@ export interface TeamRequestBuilder extends BaseRequestBuilder<TeamRequestBuilde
      */
     get all(): AllRequestBuilder;
     /**
-     * The create property
+     * The common property
      */
-    get create(): CreateRequestBuilder;
-    /**
-     * The info property
-     */
-    get info(): InfoRequestBuilder;
+    get common(): CommonRequestBuilder;
     /**
      * The invite property
      */
     get invite(): InviteRequestBuilder;
     /**
-     * The leave property
-     */
-    get leave(): LeaveRequestBuilder;
-    /**
-     * The list property
-     */
-    get list(): ListRequestBuilder;
-    /**
      * The member property
      */
     get member(): MemberRequestBuilder;
     /**
-     * The members property
-     */
-    get members(): MembersRequestBuilder;
-    /**
      * The plugin property
      */
     get plugin(): PluginRequestBuilder;
-    /**
-     * The role property
-     */
-    get role(): RoleRequestBuilder;
     /**
      * The transfer property
      */
@@ -92,32 +62,17 @@ export const TeamRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamRequ
     all: {
         navigationMetadata: AllRequestBuilderNavigationMetadata,
     },
-    create: {
-        requestsMetadata: CreateRequestBuilderRequestsMetadata,
-    },
-    info: {
-        requestsMetadata: InfoRequestBuilderRequestsMetadata,
+    common: {
+        navigationMetadata: CommonRequestBuilderNavigationMetadata,
     },
     invite: {
         requestsMetadata: InviteRequestBuilderRequestsMetadata,
     },
-    leave: {
-        requestsMetadata: LeaveRequestBuilderRequestsMetadata,
-    },
-    list: {
-        requestsMetadata: ListRequestBuilderRequestsMetadata,
-    },
     member: {
         navigationMetadata: MemberRequestBuilderNavigationMetadata,
     },
-    members: {
-        requestsMetadata: MembersRequestBuilderRequestsMetadata,
-    },
     plugin: {
         navigationMetadata: PluginRequestBuilderNavigationMetadata,
-    },
-    role: {
-        requestsMetadata: RoleRequestBuilderRequestsMetadata,
     },
     transfer: {
         requestsMetadata: TransferRequestBuilderRequestsMetadata,

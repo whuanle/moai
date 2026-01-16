@@ -82,7 +82,7 @@ public class OneSimpleChatCommandHandler : IRequestHandler<OneSimpleChatCommand,
                 AiModelId = request.AiModelId,
                 Channel = request.Channel,
                 ContextUserId = request.ContextUserId,
-                Usage = chatCompletionsUsage
+                TokenUsage = chatCompletionsUsage
             });
 
         return new OneSimpleChatCommandResponse

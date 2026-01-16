@@ -16,6 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\ai\MoAI.AI.Kit\MoAI.AI.Kit.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
@@ -24,8 +25,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="External\Handlers\" />
-	  <Folder Include="External\Queries\" />
+	  <Folder Include="Handlers\" />
 	</ItemGroup>
 
 </Project>

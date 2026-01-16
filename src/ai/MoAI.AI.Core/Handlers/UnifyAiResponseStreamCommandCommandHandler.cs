@@ -13,7 +13,7 @@ internal partial class UnifyAiResponseStreamCommandCommandHandler : IStreamReque
     /// <inheritdoc/>
     public async IAsyncEnumerable<AiProcessingChatItem> Handle(UnifyAiResponseStreamCommand request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        List<OpenAIChatCompletionsUsage> useages = new List<OpenAIChatCompletionsUsage>();
+        List<OpenAIChatCompletionsUsage> useages = request.ChatContext.Usage;
         var chatContext = request.ChatContext;
 
         await foreach (var chunk in request.ResponseStream)
@@ -93,8 +93,6 @@ internal partial class UnifyAiResponseStreamCommandCommandHandler : IStreamReque
             CompletionTokens = useages.Sum(x => x.CompletionTokens),
             TotalTokens = useages.Sum(x => x.TotalTokens)
         };
-
-        // 要考虑中途取消了
 
         // 生成汇总
         yield return new AiProcessingChatItem

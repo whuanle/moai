@@ -24,25 +24,25 @@ namespace MoAI.App.AIAssistant.Handlers;
 /// </summary>
 public partial class ProcessingAiAssistantChatCommandHandler
 {
-    private async Task<IReadOnlyCollection<KernelPlugin>> GetPluginsAsync(ProcessingAiAssistantChatContext context, IReadOnlyCollection<string> pluginKeys, IReadOnlyCollection<int> wikiIds)
+    private async Task<IReadOnlyCollection<KernelPlugin>> GetPluginsAsync(ProcessingAiAssistantChatContext context, Dictionary<string, string> pluginKeyNames, IReadOnlyCollection<string> pluginKeys, IReadOnlyCollection<int> wikiIds)
     {
         var plugins = new List<KernelPlugin>();
-        var mcpPlugins = await GetMCPPluginsAsync(context, pluginKeys);
+        var mcpPlugins = await GetMCPPluginsAsync(pluginKeyNames, pluginKeys);
         plugins.AddRange(mcpPlugins);
 
-        var openApiPlugins = await GetOpenApiPluginsAsync(context, pluginKeys);
+        var openApiPlugins = await GetOpenApiPluginsAsync(pluginKeyNames, pluginKeys);
         plugins.AddRange(openApiPlugins);
 
-        var nativePlugins = await GeNativePluginsAsync(context, pluginKeys);
+        var nativePlugins = await GeNativePluginsAsync(pluginKeyNames, pluginKeys);
         plugins.AddRange(nativePlugins);
 
-        var wikiPlugins = await GeWikiPluginsAsync(context, wikiIds);
+        var wikiPlugins = await GeWikiPluginsAsync(context, pluginKeyNames, wikiIds);
         plugins.AddRange(wikiPlugins);
 
         return plugins;
     }
 
-    private async Task<IReadOnlyCollection<KernelPlugin>> GetMCPPluginsAsync(ProcessingAiAssistantChatContext context, IReadOnlyCollection<string> pluginKeys)
+    private async Task<IReadOnlyCollection<KernelPlugin>> GetMCPPluginsAsync(Dictionary<string, string> pluginKeyNames, IReadOnlyCollection<string> pluginKeys)
     {
         var customPlugins = await _databaseContext.Plugins.Where(x => pluginKeys.Contains(x.PluginName) && x.Type == (int)PluginType.MCP)
             .Join(_databaseContext.PluginCustoms, a => a.PluginId, b => b.Id, (a, b) => new
@@ -106,13 +106,13 @@ public partial class ProcessingAiAssistantChatCommandHandler
                 functions: tools.Select(aiFunction => aiFunction.AsKernelFunction()));
 
             kernelFunctions.Add(plugin);
-            context.PluginKeyNames[pluginEntity.PluginName] = pluginEntity.Title;
+            pluginKeyNames[pluginEntity.PluginName] = pluginEntity.Title;
         }
 
         return kernelFunctions;
     }
 
-    private async Task<IReadOnlyCollection<KernelPlugin>> GetOpenApiPluginsAsync(ProcessingAiAssistantChatContext context, IReadOnlyCollection<string> pluginKeys)
+    private async Task<IReadOnlyCollection<KernelPlugin>> GetOpenApiPluginsAsync(Dictionary<string, string> pluginKeyNames, IReadOnlyCollection<string> pluginKeys)
     {
 #pragma warning disable CA1849 // 当在异步方法中时，调用异步方法
 
@@ -180,13 +180,13 @@ public partial class ProcessingAiAssistantChatCommandHandler
             _disposables.Add(httpClient);
 
             kernelFunctions.Add(plugin);
-            context.PluginKeyNames[pluginEntity.PluginName] = pluginEntity.Title;
+            pluginKeyNames[pluginEntity.PluginName] = pluginEntity.Title;
         }
 
         return kernelFunctions;
     }
 
-    private async Task<IReadOnlyCollection<KernelPlugin>> GeNativePluginsAsync(ProcessingAiAssistantChatContext context, IReadOnlyCollection<string> pluginKeys)
+    private async Task<IReadOnlyCollection<KernelPlugin>> GeNativePluginsAsync(Dictionary<string, string> pluginKeyNames, IReadOnlyCollection<string> pluginKeys)
     {
         var templatePlugins = _nativePluginFactory.GetPlugins();
 
@@ -239,7 +239,7 @@ public partial class ProcessingAiAssistantChatCommandHandler
 
             var kernelPlugin = KernelPluginFactory.CreateFromObject(nativePluginRuntime, pluginEntity.PluginName);
             kernelFunctions.Add(kernelPlugin);
-            context.PluginKeyNames[pluginEntity.PluginName] = pluginEntity.Title;
+            pluginKeyNames[pluginEntity.PluginName] = pluginEntity.Title;
         }
 
         foreach (var item in templatePlugins.Where(x => x.PluginType == PluginType.ToolPlugin && pluginKeys.Contains(x.Key)))
@@ -263,20 +263,20 @@ public partial class ProcessingAiAssistantChatCommandHandler
 
             var kernelPlugin = KernelPluginFactory.CreateFromObject(nativePluginRuntime, item.Key);
             kernelFunctions.Add(kernelPlugin);
-            context.PluginKeyNames[item.Key] = item.Name;
+            pluginKeyNames[item.Key] = item.Name;
         }
 
         return kernelFunctions;
     }
 
-    private async Task<IReadOnlyCollection<KernelPlugin>> GeWikiPluginsAsync(ProcessingAiAssistantChatContext context, IReadOnlyCollection<int> wikiIds)
+    private async Task<IReadOnlyCollection<KernelPlugin>> GeWikiPluginsAsync(ProcessingAiAssistantChatContext context, Dictionary<string, string> pluginKeyNames, IReadOnlyCollection<int> wikiIds)
     {
         var nativePluginRuntime = _serviceProvider.GetRequiredService<IWikiPluginBuilder>();
-        var (pluginKeyNames, plugins) = await nativePluginRuntime.CreatePlugin(context.AiModel, wikiIds);
+        var (ps, plugins) = await nativePluginRuntime.CreatePlugin(context.AiModel, wikiIds);
 
-        foreach (var item in pluginKeyNames)
+        foreach (var item in ps)
         {
-            context.PluginKeyNames[item.Key] = item.Value;
+            pluginKeyNames[item.Key] = item.Value;
         }
 
         return plugins;

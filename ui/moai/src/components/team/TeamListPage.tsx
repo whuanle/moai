@@ -236,16 +236,15 @@ export default function TeamListPage() {
       try {
         setLoading(true);
         const client = GetApiClient();
-        const filterTypeMap: Record<FilterType, string | undefined> = {
-          all: undefined,
-          created: "created",
-          joined: "joined",
-        };
-        const response = await client.api.team.list.post({
-          filterType: filterTypeMap[filter],
-        });
+        // isOwn: true = 我创建的, false/undefined = 全部
+        const isOwn = filter === "created" ? true : undefined;
+        const response = await client.api.team.common.list.post({ isOwn });
         if (response?.items) {
-          setTeamList(response.items);
+          // 前端过滤"我加入的"（非所有者）
+          const items = filter === "joined"
+            ? response.items.filter((item) => item.role !== TeamRoleObject.Owner)
+            : response.items;
+          setTeamList(items);
         }
       } catch (error) {
         console.error("获取团队列表失败:", error);
@@ -263,7 +262,7 @@ export default function TeamListPage() {
       try {
         setSubmitting(true);
         const client = GetApiClient();
-        const response = await client.api.team.create.post(values);
+        const response = await client.api.team.common.create.post(values);
         if (response?.teamId) {
           messageApi.success("创建成功");
           setModalOpen(false);

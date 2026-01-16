@@ -6,7 +6,11 @@ import { Chat_historyRequestBuilderRequestsMetadata, type Chat_historyRequestBui
 // @ts-ignore
 import { CompletionsRequestBuilderRequestsMetadata, type CompletionsRequestBuilder } from './completions/index.js';
 // @ts-ignore
+import { Create_chatRequestBuilderRequestsMetadata, type Create_chatRequestBuilder } from './create_chat/index.js';
+// @ts-ignore
 import { CreateRequestBuilderRequestsMetadata, type CreateRequestBuilder } from './create/index.js';
+// @ts-ignore
+import { Debug_completionsRequestBuilderRequestsMetadata, type Debug_completionsRequestBuilder } from './debug_completions/index.js';
 // @ts-ignore
 import { Delete_chatRequestBuilderRequestsMetadata, type Delete_chatRequestBuilder } from './delete_chat/index.js';
 // @ts-ignore
@@ -44,6 +48,14 @@ export interface ManageRequestBuilder extends BaseRequestBuilder<ManageRequestBu
      * The create property
      */
     get create(): CreateRequestBuilder;
+    /**
+     * The create_chat property
+     */
+    get create_chat(): Create_chatRequestBuilder;
+    /**
+     * The debug_completions property
+     */
+    get debug_completions(): Debug_completionsRequestBuilder;
     /**
      * The delete_chat property
      */
@@ -97,6 +109,12 @@ export const ManageRequestBuilderNavigationMetadata: Record<Exclude<keyof Manage
     },
     create: {
         requestsMetadata: CreateRequestBuilderRequestsMetadata,
+    },
+    create_chat: {
+        requestsMetadata: Create_chatRequestBuilderRequestsMetadata,
+    },
+    debug_completions: {
+        requestsMetadata: Debug_completionsRequestBuilderRequestsMetadata,
     },
     deletePath: {
         requestsMetadata: DeleteRequestBuilderRequestsMetadata,
