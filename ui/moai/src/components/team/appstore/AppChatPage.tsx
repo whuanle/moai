@@ -168,7 +168,7 @@ export default function AppChatPage() {
       const response = await client.api.app.common.app_list.get({
         queryParameters: { teamId },
       });
-      const app = response?.items?.find((a) => a.id === appId);
+      const app = response?.items?.find((a: any) => a.id === appId);
       if (app) {
         setAppInfo({ name: app.name || "应用", avatar: app.avatar || null });
       }
@@ -254,24 +254,35 @@ export default function AppChatPage() {
     }
   };
 
-  const handleDeleteTopic = async (chatId: string) => {
+  const handleDeleteTopic = useCallback((chatId: string) => {
     Modal.confirm({
       title: "确认删除",
       content: "确定要删除这个对话吗？",
       maskClosable: false,
+      okText: "确认删除",
+      cancelText: "取消",
+      okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const client = GetApiClient();
-          await client.api.app.common.delete_chat.delete({
-            teamId,
-            appId,
-            chatId,
+          const token = localStorage.getItem("userinfo.accessToken");
+          const response = await fetch(`${EnvOptions.ServerUrl}/api/app/common/delete_chat`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+            body: JSON.stringify({ chatId }),
           });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
           if (currentChatId === chatId) {
             setCurrentChatId(null);
             setMessages([]);
           }
-          fetchTopics();
+          await fetchTopics();
           messageApi.success("删除成功");
         } catch (error) {
           console.error("删除对话失败:", error);
@@ -279,7 +290,7 @@ export default function AppChatPage() {
         }
       },
     });
-  };
+  }, [currentChatId, messageApi]);
 
   const handleUpdateTitle = async (chatId: string) => {
     if (!editingTitle.trim()) {

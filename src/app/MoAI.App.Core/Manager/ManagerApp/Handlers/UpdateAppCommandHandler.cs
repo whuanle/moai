@@ -46,6 +46,7 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
         appEntity.Name = request.Name;
         appEntity.Description = request.Description;
         appEntity.IsPublic = request.IsPublic;
+        appEntity.ClassifyId = request.ClassifyId;
 
         // 更新配置信息
         appEntity.Avatar = request.Avatar;

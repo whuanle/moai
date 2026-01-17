@@ -31,7 +31,7 @@ public class QueryAppSimpleInfoCommandHandler : IRequestHandler<QueryAppSimpleIn
     public async Task<QueryAppSimpleInfoCommandResponse> Handle(QueryAppSimpleInfoCommand request, CancellationToken cancellationToken)
     {
         var result = await _databaseContext.Apps
-            .Where(x => x.Id == request.AppId && x.TeamId == request.TeamId)
+            .Where(x => x.Id == request.AppId)
             .Join(
                 _databaseContext.AppCommons,
                 app => app.Id,
@@ -41,7 +41,7 @@ public class QueryAppSimpleInfoCommandHandler : IRequestHandler<QueryAppSimpleIn
                     AppId = app.Id,
                     Name = app.Name,
                     Description = app.Description,
-                    Avatar = app.Avatar
+                    AvatarKey = app.Avatar
                 })
             .FirstOrDefaultAsync(cancellationToken);
 

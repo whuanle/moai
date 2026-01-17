@@ -35,6 +35,7 @@ import type {
   PluginSimpleInfo,
   PluginClassifyItem,
   PromptItem,
+  AppClassifyItem,
 } from "../../../apiClient/models";
 import { AiModelTypeObject } from "../../../apiClient/models";
 import PromptSelector from "../../common/PromptSelector";
@@ -60,6 +61,7 @@ export interface AppConfigData {
   plugins?: string[];
   isPublic?: boolean;
   isAuth?: boolean;
+  classifyId?: number;
 }
 
 // 表单值类型
@@ -77,6 +79,7 @@ interface FormValues {
   plugins: string[];
   isPublic?: boolean;
   isAuth?: boolean;
+  classifyId: number;
 }
 
 interface AppConfigPanelProps {
@@ -114,6 +117,8 @@ export default function AppConfigPanel({
   const [pluginsLoading, setPluginsLoading] = useState(false);
   const [pluginClasses, setPluginClasses] = useState<PluginClassifyItem[]>([]);
   const [pluginClassesLoading, setPluginClassesLoading] = useState(false);
+  const [appClassifies, setAppClassifies] = useState<AppClassifyItem[]>([]);
+  const [appClassifiesLoading, setAppClassifiesLoading] = useState(false);
 
   // 监听表单值变化（用于显示滑块当前值）
   const temperature = Form.useWatch("temperature", form);
@@ -147,6 +152,7 @@ export default function AppConfigPanel({
       plugins: values.plugins,
       isPublic: values.isPublic,
       isAuth: values.isAuth,
+      classifyId: values.classifyId,
     });
   }, [appId, avatarUrl, form, onConfigChange]);
 
@@ -209,13 +215,27 @@ export default function AppConfigPanel({
     }
   }, []);
 
+  const loadAppClassifies = useCallback(async () => {
+    setAppClassifiesLoading(true);
+    try {
+      const client = GetApiClient();
+      const response = await client.api.app.store.classify_list.get();
+      setAppClassifies(response?.items || []);
+    } catch (error) {
+      console.error("加载应用分类失败:", error);
+    } finally {
+      setAppClassifiesLoading(false);
+    }
+  }, []);
+
   // 初始化加载
   useEffect(() => {
     loadModels();
     loadWikis();
     loadPlugins();
     loadPluginClasses();
-  }, [loadModels, loadWikis, loadPlugins, loadPluginClasses]);
+    loadAppClassifies();
+  }, [loadModels, loadWikis, loadPlugins, loadPluginClasses, loadAppClassifies]);
 
   // 初始化表单数据
   useEffect(() => {
@@ -235,6 +255,7 @@ export default function AppConfigPanel({
       plugins: initialData.plugins || [],
       isPublic: initialData.isPublic,
       isAuth: initialData.isAuth,
+      classifyId: initialData.classifyId || undefined,
     });
   }, [initialData, form]);
 
@@ -329,6 +350,7 @@ export default function AppConfigPanel({
       plugins: values.plugins,
       isPublic: values.isPublic,
       isAuth: values.isAuth,
+      classifyId: values.classifyId,
     });
   };
 
@@ -387,6 +409,29 @@ export default function AppConfigPanel({
             <Form.Item name="description" style={{ marginBottom: 0 }}>
               <TextArea placeholder="请输入应用描述" rows={2} maxLength={200} onChange={() => notifyConfigChange()} />
             </Form.Item>
+          </div>
+
+          <div className="config-item">
+            <div className="config-label">
+              <Text strong>应用分类</Text>
+              <Tag color="red">* 必选</Tag>
+            </div>
+            <Spin spinning={appClassifiesLoading}>
+              <Form.Item
+                name="classifyId"
+                rules={[{ required: true, message: "请选择应用分类" }]}
+                style={{ marginBottom: 0 }}
+              >
+                <Select
+                  placeholder="请选择分类"
+                  options={appClassifies.map((item) => ({
+                    label: item.name,
+                    value: item.classifyId,
+                  }))}
+                  onChange={() => notifyConfigChange()}
+                />
+              </Form.Item>
+            </Spin>
           </div>
 
           <div className="config-item">

@@ -33,7 +33,7 @@ public class QueryAppDetailInfoCommandHandler : IRequestHandler<QueryAppDetailIn
     public async Task<QueryAppDetailInfoCommandResponse> Handle(QueryAppDetailInfoCommand request, CancellationToken cancellationToken)
     {
         var result = await _databaseContext.Apps
-            .Where(x => x.Id == request.AppId && x.TeamId == request.TeamId)
+            .Where(x => x.Id == request.AppId)
             .Join(
                 _databaseContext.AppCommons,
                 app => app.Id,

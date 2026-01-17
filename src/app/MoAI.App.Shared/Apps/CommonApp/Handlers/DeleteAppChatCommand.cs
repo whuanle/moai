@@ -17,9 +17,9 @@ public class DeleteAppChatCommand : IUserIdContext, IRequest<EmptyCommandRespons
     public UserType ContextUserType { get; init; }
 
     /// <summary>
-    /// 团队 id.
+    /// 应用id.
     /// </summary>
-    public int TeamId { get; init; }
+    public Guid AppId { get; init; }
 
     /// <summary>
     /// 对话 id.

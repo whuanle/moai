@@ -22,11 +22,6 @@ public class UpdateAppChatTitleCommand : IUserIdContext, IRequest<EmptyCommandRe
     public Guid ChatId { get; init; }
 
     /// <summary>
-    /// 团队 id.
-    /// </summary>
-    public int TeamId { get; init; }
-
-    /// <summary>
     /// 应用 id.
     /// </summary>
     public Guid AppId { get; init; }

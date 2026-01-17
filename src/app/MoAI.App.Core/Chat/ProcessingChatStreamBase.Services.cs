@@ -25,7 +25,7 @@ public abstract partial class ProcessingChatStreamBase
     /// <param name="question"></param>
     /// <param name="fileKey"></param>
     /// <returns></returns>
-    protected virtual async Task<IReadOnlyCollection<DefaultAiProcessingChoice>> GenerateChatProcessingChoice(Guid chatId, string question, string? fileKey)
+    protected virtual IReadOnlyCollection<DefaultAiProcessingChoice> GenerateChatProcessingChoice(Guid chatId, string question, string? fileKey)
     {
         List<DefaultAiProcessingChoice> choices = new();
 

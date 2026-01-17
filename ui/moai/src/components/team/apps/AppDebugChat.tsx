@@ -159,10 +159,9 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
     creatingChatRef.current = true;
     try {
       const client = GetApiClient();
-      const response = await client.api.app.manage.create_chat.post({
-        teamId,
+      const response = await client.api.app.common.create_chat.post({
         appId,
-        title: "调试会话 "+ Date.now().toLocaleString()
+        title: "调试会话 " + new Date().toLocaleString()
       });
       const newChatId = response?.chatId || null;
       if (newChatId) {
@@ -176,7 +175,7 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
     } finally {
       creatingChatRef.current = false;
     }
-  }, [appId, teamId, messageApi]);
+  }, [appId, messageApi]);
 
   // 滚动到底部
   const scrollToBottom = useCallback(() => {
@@ -188,14 +187,11 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
   // 发送调试消息 - 流式对话
   const handleSendDebugMessage = async () => {
     const config = getConfig();
+    console.log("开始发送消息，配置:", config);
     if (!inputValue.trim() || sending) return;
 
-    if (!config.modelId) {
-      messageApi.warning("请先选择AI模型");
-      return;
-    }
-
     const userMessage = inputValue.trim();
+    console.log("用户消息:", userMessage);
     setInputValue("");
     setSending(true);
     setIsStreaming(true);
@@ -204,7 +200,9 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
     // 首次对话时创建 chatId
     let currentChatId = chatId;
     if (!currentChatId && appId) {
+      console.log("创建新的对话...");
       currentChatId = await createChat();
+      console.log("创建的 chatId:", currentChatId);
       if (!currentChatId) {
         setSending(false);
         setIsStreaming(false);
@@ -230,29 +228,35 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
         { key: "frequency_penalty", value: String(config.frequencyPenalty ?? 0) },
       ];
 
+      const requestBody = {
+        teamId,
+        appId,
+        chatId: currentChatId,
+        question: userMessage,
+        modelId: config.modelId,
+        prompt: config.prompt,
+        executionSettings,
+        wikiIds: config.wikiIds,
+        plugins: config.plugins,
+      };
+      console.log("发送请求体:", requestBody);
+
       // 使用 debug_completions API
-      const response = await fetch(`${EnvOptions.ServerUrl}/api/app/manage/debug_completions`, {
+      const response = await fetch(`${EnvOptions.ServerUrl}/api/app/common/debug_completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: token ? `Bearer ${token}` : "",
         },
-        body: JSON.stringify({
-          teamId,
-          appId,
-          chatId: currentChatId,
-          question: userMessage,
-          modelId: config.modelId,
-          prompt: config.prompt,
-          executionSettings,
-          wikiIds: config.wikiIds,
-          plugins: config.plugins,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
       });
 
+      console.log("响应状态:", response.status);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("响应错误:", errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
 
       const reader = response.body?.getReader();
@@ -478,7 +482,7 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
       <div className="debug-chat-history" ref={chatContainerRef}>
         {debugMessages.length === 0 && !isStreaming ? (
           <div className="debug-chat-empty">
-            <Empty description="在右侧配置参数后，发送消息开始调试" />
+            <Empty description="发送消息开始调试" />
           </div>
         ) : (
           <div className="debug-chat-messages">
@@ -549,31 +553,20 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
         )}
       </div>
 
-      {/* 输入框区域 - 固定高度 200px */}
+      {/* 输入框区域 - 左右布局 */}
       <div className="debug-chat-input-area">
         <div className="debug-chat-input-wrapper">
           <TextArea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              config.modelId
-                ? "输入消息，按 Enter 发送，Shift+Enter 换行..."
-                : "请先在右侧选择AI模型"
-            }
+            placeholder="输入消息，按 Enter 发送，Shift+Enter 换行..."
             disabled={sending}
             className="debug-chat-input"
           />
-          <div className="debug-chat-input-actions">
-            {!config.modelId ? (
-              <Text type="warning" className="debug-input-hint">
-                请先在右侧面板选择AI模型才能开始调试
-              </Text>
-            ) : (
-              <span />
-            )}
+          <div className="debug-chat-send-button">
             {isStreaming ? (
-              <Button danger onClick={handleCancelStream}>
+              <Button danger onClick={handleCancelStream} size="large">
                 停止
               </Button>
             ) : (
@@ -582,7 +575,8 @@ export default function AppDebugChat({ teamId, appId, getConfig, appAvatar }: Ap
                 icon={<SendOutlined />}
                 onClick={handleSendDebugMessage}
                 loading={sending}
-                disabled={!inputValue.trim() || !config.modelId}
+                disabled={!inputValue.trim()}
+                size="large"
               >
                 发送
               </Button>

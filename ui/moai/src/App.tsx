@@ -41,6 +41,9 @@ import TeamLayout from "./components/team/TeamLayout";
 import TeamMembers from "./components/team/TeamMembers";
 import TeamSettings from "./components/team/TeamSettings";
 import ApplicationPage from "./components/application/ApplicationPage";
+import ApplicationClassifyPage from "./components/application/ApplicationClassifyPage";
+import ApplicationListPage from "./components/application/ApplicationListPage";
+import AppChatPage from "./components/application/Apps/AppCommon/AppChatPage";
 import UserLayout from "./components/user/UserLayout";
 import TeamWikiWrapper from "./components/team/TeamWikiWrapper";
 import TeamApps from "./components/team/apps/TeamApps";
@@ -54,7 +57,6 @@ import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
 import AppConfigCommon from "./components/team/apps/AppConfigCommon";
 import AppStorePage from "./components/team/appstore/AppStorePage";
-import AppChatPage from "./components/team/appstore/AppChatPage";
 
 const { Content } = Layout;
 
@@ -110,7 +112,12 @@ function App() {
             <Route path="index" element={<Navigate to="/app/application" replace />} />
             
             {/* 应用 */}
-            <Route path="application" element={<ApplicationPage />} />
+            <Route path="application">
+              <Route index element={<ApplicationPage />} />
+              <Route path="classify" element={<ApplicationClassifyPage />} />
+              <Route path="list/:classifyId" element={<ApplicationListPage />} />
+              <Route path="chat/:appId" element={<AppChatPage />} />
+            </Route>
             
             {/* 知识库 */}
             <Route path="wiki">

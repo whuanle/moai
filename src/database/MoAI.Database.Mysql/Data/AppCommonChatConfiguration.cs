@@ -52,10 +52,6 @@ public partial class AppCommonChatConfiguration : IEntityTypeConfiguration<AppCo
             .HasComment("输出token统计")
             .HasColumnType("int(11)")
             .HasColumnName("out_tokens");
-        entity.Property(e => e.TeamId)
-            .HasComment("团队id")
-            .HasColumnType("int(11)")
-            .HasColumnName("team_id");
         entity.Property(e => e.Title)
             .HasMaxLength(100)
             .HasDefaultValueSql("'未命名标题'")

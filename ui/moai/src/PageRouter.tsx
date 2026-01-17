@@ -9,6 +9,8 @@ import { UserPageRouters } from "./components/user/UserPageRouter";
 import { WikiPageRouters } from "./components/wiki/WikiPageRouter";
 import { TeamPageRouters } from "./components/team/TeamPageRouter";
 import { PromptPageRouters } from "./components/prompt/PromptPageRouter";
+import { AppStorePageRouters } from "./components/appstore/AppStorePageRouter";
+import { ApplicationPageRouters } from "./components/application/ApplicationPageRouter";
 import AiAssistant from "./components/app/AiAssistant";
 import { PluginPageRouters } from "./components/admin/plugin/PluginPageRouter";
 
@@ -30,6 +32,8 @@ export const PageRouterProvider = createBrowserRouter([
       ...PluginPageRouters,
       ...TeamPageRouters,
       ...PromptPageRouters,
+      ...AppStorePageRouters,
+      ...ApplicationPageRouters,
     ],
   },
   // AI 助手独立页面（不带菜单）

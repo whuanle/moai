@@ -16,11 +16,6 @@ public class QueryAppChatTopicListCommand : IUserIdContext, IRequest<QueryAppCha
     public UserType ContextUserType { get; init; }
 
     /// <summary>
-    /// 团队 id.
-    /// </summary>
-    public int TeamId { get; init; }
-
-    /// <summary>
     /// 应用 id.
     /// </summary>
     public Guid AppId { get; init; }

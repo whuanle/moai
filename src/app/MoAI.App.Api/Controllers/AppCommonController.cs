@@ -9,6 +9,8 @@ using MoAI.AI.Models;
 using MoAI.App.Apps.CommonApp.Handlers;
 using MoAI.App.Apps.CommonApp.Queries;
 using MoAI.App.Apps.CommonApp.Responses;
+using MoAI.App.Manager.ManagerApp.Models;
+using MoAI.App.Manager.ManagerApp.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -22,12 +24,12 @@ namespace MoAI.App.Controllers;
 /// </summary>
 [ApiController]
 [Route("/app/common")]
-[EndpointGroupName("AppCommon")]
+[EndpointGroupName("app_common")]
 public class AppCommonController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
-    private readonly ILogger<AppManagerController> _logger;
+    private readonly ILogger<TeamAppController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppCommonController"/> class.
@@ -35,7 +37,7 @@ public class AppCommonController : ControllerBase
     /// <param name="logger"></param>
     /// <param name="mediator"></param>
     /// <param name="userContext"></param>
-    public AppCommonController(IMediator mediator, UserContext userContext, ILogger<AppManagerController> logger)
+    public AppCommonController(IMediator mediator, UserContext userContext, ILogger<TeamAppController> logger)
     {
         _mediator = mediator;
         _userContext = userContext;
@@ -43,15 +45,29 @@ public class AppCommonController : ControllerBase
     }
 
     /// <summary>
-    /// 获取团队内部可用的应用列表.
+    /// 查询应用简单信息.
     /// </summary>
-    /// <param name="req">查询请求，包含团队ID.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryTeamAppListCommandResponse"/>，包含团队应用列表.</returns>
-    [HttpGet("app_list")]
-    public async Task<QueryTeamAppListCommandResponse> QueryTeamAppList([FromQuery] QueryTeamAppListCommand req, CancellationToken ct = default)
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpGet("simple_info")]
+    public async Task<QueryAppSimpleInfoCommandResponse> QueryAppSimpleInfo([FromQuery] QueryAppSimpleInfoCommand req, CancellationToken ct = default)
     {
-        await CheckIsMemberAsync(req.TeamId, ct);
+        await CheckCanAccessAppAsync(appId: req.AppId, ct);
+
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询应用详细信息.
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    [HttpGet("detail_info")]
+    public async Task<QueryAppDetailInfoCommandResponse> QueryAppDetailInfo([FromQuery] QueryAppDetailInfoCommand req, CancellationToken ct = default)
+    {
+        await CheckCanAccessAppAsync(req.AppId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -65,7 +81,7 @@ public class AppCommonController : ControllerBase
     [HttpPost("create_chat")]
     public async Task<CreateAppChatCommandResponse> CreateChat([FromBody] CreateAppChatCommand req, CancellationToken ct = default)
     {
-        await CheckIsMemberAsync(req.TeamId, ct);
+        await CheckCanAccessAppAsync(req.AppId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -79,7 +95,7 @@ public class AppCommonController : ControllerBase
     [HttpDelete("delete_chat")]
     public async Task<EmptyCommandResponse> DeleteChat([FromBody] DeleteAppChatCommand req, CancellationToken ct = default)
     {
-        await CheckIsMemberAsync(req.TeamId, ct);
+        await CheckCanAccessAppAsync(req.AppId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -93,7 +109,7 @@ public class AppCommonController : ControllerBase
     [HttpGet("chat_history")]
     public async Task<QueryAppChatHistoryCommandResponse> QueryChatHistory([FromQuery] QueryAppChatHistoryCommand req, CancellationToken ct = default)
     {
-        await CheckIsMemberAsync(req.TeamId, ct);
+        await CheckCanAccessAppAsync(req.AppId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -107,7 +123,7 @@ public class AppCommonController : ControllerBase
     [HttpPost("topic_list")]
     public async Task<QueryAppChatTopicListCommandResponse> QueryTopicList(QueryAppChatTopicListCommand req, CancellationToken ct = default)
     {
-        await CheckIsMemberAsync(req.TeamId, ct);
+        await CheckCanAccessAppAsync(req.AppId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -121,7 +137,7 @@ public class AppCommonController : ControllerBase
     [HttpPost("update_chat_title")]
     public async Task<EmptyCommandResponse> UpdateChatTitle([FromBody] UpdateAppChatTitleCommand req, CancellationToken ct = default)
     {
-        await CheckIsMemberAsync(req.TeamId, ct);
+        await CheckCanAccessAppAsync(req.AppId, ct);
 
         return await _mediator.Send(req, ct);
     }
@@ -193,7 +209,7 @@ public class AppCommonController : ControllerBase
     [ProducesDefaultResponseType(typeof(AiProcessingChatItem))]
     public async Task Completions([FromBody] ProcessingAppChatCommand command, CancellationToken cancellationToken = default)
     {
-        await CheckIsMemberAsync(command.TeamId, cancellationToken);
+        await CheckCanAccessAppAsync(command.AppId, cancellationToken);
 
         Response.ContentType = "text/event-stream; charset=utf-8";
         Response.Headers["Cache-Control"] = "no-cache";
@@ -261,19 +277,23 @@ public class AppCommonController : ControllerBase
         return WriteSseDataAsync(errorPayload, cancellationToken);
     }
 
-    private async Task CheckIsMemberAsync(int teamId, CancellationToken ct)
+    /// <summary>
+    /// 检查用户是否可以访问应用（用户在团队内或应用是公开的）.
+    /// </summary>
+    private async Task CheckCanAccessAppAsync(Guid appId, CancellationToken ct)
     {
-        var existInTeam = await _mediator.Send(
-            new QueryUserTeamRoleCommand
+        var app = await _mediator.Send(
+            new CheckAppAccessCommand
             {
-                TeamId = teamId,
+                AppId = appId,
                 ContextUserId = _userContext.UserId,
+                ContextUserType = _userContext.UserType,
             },
             ct);
 
-        if (existInTeam.Role < TeamRole.Collaborator)
+        if (!app.HasAccess)
         {
-            throw new BusinessException("未加入团队");
+            throw new BusinessException("无权访问此应用") { StatusCode = 403 };
         }
     }
 }

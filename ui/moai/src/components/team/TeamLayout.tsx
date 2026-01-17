@@ -109,7 +109,11 @@ export default function TeamLayout() {
   ];
 
   const handleMenuClick = (key: string) => {
-    navigate(`/app/team/${id}/${key}`);
+    if (key === "appstore") {
+      navigate(`/app/appstore/${id}`);
+    } else {
+      navigate(`/app/team/${id}/${key}`);
+    }
   };
 
   if (loading) {

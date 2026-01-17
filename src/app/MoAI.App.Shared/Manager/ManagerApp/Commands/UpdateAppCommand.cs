@@ -69,6 +69,11 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IModelValidator<
     /// </summary>
     public bool IsAuth { get; init; }
 
+    /// <summary>
+    /// 分类id.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateAppCommand> validate)
     {

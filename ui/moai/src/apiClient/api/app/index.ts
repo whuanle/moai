@@ -8,7 +8,9 @@ import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } fro
 // @ts-ignore
 import { ExternalRequestBuilderNavigationMetadata, ExternalRequestBuilderRequestsMetadata, type ExternalRequestBuilder } from './external/index.js';
 // @ts-ignore
-import { ManageRequestBuilderNavigationMetadata, type ManageRequestBuilder } from './manage/index.js';
+import { StoreRequestBuilderNavigationMetadata, type StoreRequestBuilder } from './store/index.js';
+// @ts-ignore
+import { TeamRequestBuilderNavigationMetadata, type TeamRequestBuilder } from './team/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -29,9 +31,13 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      */
     get external(): ExternalRequestBuilder;
     /**
-     * The manage property
+     * The store property
      */
-    get manage(): ManageRequestBuilder;
+    get store(): StoreRequestBuilder;
+    /**
+     * The team property
+     */
+    get team(): TeamRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -51,8 +57,11 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
         requestsMetadata: ExternalRequestBuilderRequestsMetadata,
         navigationMetadata: ExternalRequestBuilderNavigationMetadata,
     },
-    manage: {
-        navigationMetadata: ManageRequestBuilderNavigationMetadata,
+    store: {
+        navigationMetadata: StoreRequestBuilderNavigationMetadata,
+    },
+    team: {
+        navigationMetadata: TeamRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

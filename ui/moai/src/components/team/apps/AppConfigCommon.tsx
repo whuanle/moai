@@ -32,8 +32,8 @@ export default function AppConfigCommon() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const response = await client.api.app.manage.detail_info.get({
-        queryParameters: { teamId, appId },
+      const response = await client.api.app.common.detail_info.get({
+        queryParameters: { appId },
       });
 
       if (response) {
@@ -62,7 +62,7 @@ export default function AppConfigCommon() {
           isAuth: response.isAuth ?? undefined,
         };
         setInitialData(data);
-        currentConfigRef.current = data;
+        currentConfigRef.current = data; // 同时更新 ref
       }
     } catch (error) {
       console.error("获取应用详情失败:", error);
@@ -70,7 +70,7 @@ export default function AppConfigCommon() {
     } finally {
       setLoading(false);
     }
-  }, [teamId, appId, messageApi]);
+  }, [appId, messageApi]);
 
   useEffect(() => {
     loadAppDetail();
@@ -93,6 +93,9 @@ export default function AppConfigCommon() {
   const handleSave = async (data: AppConfigData) => {
     if (!appId) return;
 
+    console.log("保存配置，data:", data);
+    console.log("modelId:", data.modelId);
+
     try {
       setSaveLoading(true);
       const client = GetApiClient();
@@ -104,7 +107,7 @@ export default function AppConfigCommon() {
         { key: "frequency_penalty", value: String(data.frequencyPenalty ?? 0) },
       ];
 
-      await client.api.app.manage.update.post({
+      const requestBody = {
         teamId,
         appId,
         name: data.name,
@@ -117,7 +120,12 @@ export default function AppConfigCommon() {
         plugins: data.plugins,
         isPublic: data.isPublic,
         isAuth: data.isAuth,
-      });
+        classifyId: data.classifyId,
+      };
+
+      console.log("保存请求体:", requestBody);
+
+      await client.api.app.team.update.post(requestBody);
 
       messageApi.success("保存成功");
     } catch (error) {

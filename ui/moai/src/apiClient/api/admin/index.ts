@@ -4,6 +4,8 @@
 // @ts-ignore
 import { AimodelRequestBuilderNavigationMetadata, type AimodelRequestBuilder } from './aimodel/index.js';
 // @ts-ignore
+import { AppclassifyRequestBuilderNavigationMetadata, type AppclassifyRequestBuilder } from './appclassify/index.js';
+// @ts-ignore
 import { Custom_pluginRequestBuilderNavigationMetadata, type Custom_pluginRequestBuilder } from './custom_plugin/index.js';
 // @ts-ignore
 import { Native_pluginRequestBuilderNavigationMetadata, type Native_pluginRequestBuilder } from './native_plugin/index.js';
@@ -26,6 +28,10 @@ export interface AdminRequestBuilder extends BaseRequestBuilder<AdminRequestBuil
      * The aimodel property
      */
     get aimodel(): AimodelRequestBuilder;
+    /**
+     * The appclassify property
+     */
+    get appclassify(): AppclassifyRequestBuilder;
     /**
      * The custom_plugin property
      */
@@ -61,6 +67,9 @@ export const AdminRequestBuilderUriTemplate = "{+baseurl}/api/admin";
 export const AdminRequestBuilderNavigationMetadata: Record<Exclude<keyof AdminRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     aimodel: {
         navigationMetadata: AimodelRequestBuilderNavigationMetadata,
+    },
+    appclassify: {
+        navigationMetadata: AppclassifyRequestBuilderNavigationMetadata,
     },
     custom_plugin: {
         navigationMetadata: Custom_pluginRequestBuilderNavigationMetadata,

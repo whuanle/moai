@@ -47,6 +47,7 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, CreateA
             Description = request.Description,
             IsForeign = request.IsForeign,
             AppType = (int)request.AppType,
+            ClassifyId = request.ClassifyId,
             IsPublic = false,
             IsDisable = false,
             Avatar = string.Empty

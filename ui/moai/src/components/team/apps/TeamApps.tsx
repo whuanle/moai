@@ -10,7 +10,6 @@ import {
   Space,
   Tag,
   Popconfirm,
-  Tabs,
   Select,
   Avatar,
 } from "antd";
@@ -19,19 +18,20 @@ import {
   DeleteOutlined,
   EditOutlined,
   StopOutlined,
-  CheckCircleOutlined,
   AppstoreOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../../ServiceClient";
 import { useParams, useOutletContext, useNavigate } from "react-router";
 import { proxyRequestError, proxyFormRequestError } from "../../../helper/RequestError";
 import type {
-  QueryAppListCommandResponseItem,
   TeamRole,
   AppType,
+  TeamAppItem,
+  AppClassifyItem,
 } from "../../../apiClient/models";
 import { AppTypeObject, TeamRoleObject } from "../../../apiClient/models";
 import type { Guid } from "@microsoft/kiota-abstractions";
+import "./TeamApps.css";
 
 const { TextArea } = Input;
 
@@ -46,6 +46,7 @@ interface CreateFormValues {
   description?: string;
   isForeign: boolean;
   appType: AppType;
+  classifyId?: number;
 }
 
 export default function TeamApps() {
@@ -56,8 +57,10 @@ export default function TeamApps() {
 
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
-  const [apps, setApps] = useState<QueryAppListCommandResponseItem[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("internal");
+  const [apps, setApps] = useState<TeamAppItem[]>([]);
+  const [classifyList, setClassifyList] = useState<AppClassifyItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [isForeign, setIsForeign] = useState(false); // false=内部应用, true=外部应用
 
   // 创建应用弹窗
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -66,15 +69,37 @@ export default function TeamApps() {
 
   const canManage = myRole === TeamRoleObject.Owner || myRole === TeamRoleObject.Admin;
 
+  // 加载分类列表
+  const fetchClassifyList = useCallback(async () => {
+    try {
+      const client = GetApiClient();
+      const response = await client.api.app.store.classify_list.get();
+      setClassifyList(response?.items || []);
+    } catch (error) {
+      console.error("获取分类列表失败:", error);
+      // 分类列表加载失败不影响主流程，只记录错误
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClassifyList();
+  }, [fetchClassifyList]);
+
   // 加载应用列表
   const fetchApps = useCallback(async () => {
     try {
       setLoading(true);
       const client = GetApiClient();
-      const isForeign = activeTab === "external";
-      const response = await client.api.app.manage.list.get({
-        queryParameters: { teamId, isForeign },
-      });
+      
+      const queryParams = {
+        teamId,
+        isForeign,
+        classifyId: selectedCategory ?? undefined,
+      };
+      
+      console.log("查询应用列表参数:", queryParams);
+      
+      const response = await client.api.app.team.list.post(queryParams);
       setApps(response?.items || []);
     } catch (error) {
       console.error("获取应用列表失败:", error);
@@ -82,7 +107,7 @@ export default function TeamApps() {
     } finally {
       setLoading(false);
     }
-  }, [teamId, activeTab, messageApi]);
+  }, [teamId, isForeign, selectedCategory, messageApi]);
 
   useEffect(() => {
     fetchApps();
@@ -92,7 +117,7 @@ export default function TeamApps() {
   const handleOpenCreateModal = () => {
     createForm.resetFields();
     createForm.setFieldsValue({
-      isForeign: activeTab === "external",
+      isForeign: false,
       appType: AppTypeObject.Common,
     });
     setCreateModalOpen(true);
@@ -103,12 +128,13 @@ export default function TeamApps() {
     try {
       setCreateLoading(true);
       const client = GetApiClient();
-      await client.api.app.manage.create.post({
+      await client.api.app.team.create.post({
         teamId,
         name: values.name,
         description: values.description,
         isForeign: values.isForeign,
         appType: values.appType,
+        classifyId: values.classifyId,
       });
       messageApi.success("创建应用成功");
       setCreateModalOpen(false);
@@ -123,9 +149,9 @@ export default function TeamApps() {
   };
 
   // 跳转到配置页面
-  const handleConfig = (record: QueryAppListCommandResponseItem) => {
-    if (record.appType === AppTypeObject.Common) {
-      navigate(`/app/team/${teamId}/apps/${record.appId}/config`);
+  const handleConfig = (record: TeamAppItem) => {
+    if (record.appType === 0) { // 0 = Common
+      navigate(`/app/team/${teamId}/apps/${record.id}/config`);
     }
     // TODO: 流程编排类型的配置页面
   };
@@ -134,7 +160,7 @@ export default function TeamApps() {
   const handleToggleDisable = async (appId: Guid, isDisable: boolean) => {
     try {
       const client = GetApiClient();
-      await client.api.app.manage.set_disable.post({
+      await client.api.app.team.set_disable.post({
         teamId,
         appId,
         isDisable,
@@ -151,7 +177,7 @@ export default function TeamApps() {
   const handleDelete = async (appId: Guid) => {
     try {
       const client = GetApiClient();
-      await client.api.app.manage.deletePath.delete({
+      await client.api.app.team.deletePath.delete({
         teamId,
         appId,
       });
@@ -167,7 +193,7 @@ export default function TeamApps() {
     {
       title: "应用",
       key: "app",
-      render: (_: unknown, record: QueryAppListCommandResponseItem) => (
+      render: (_: unknown, record: TeamAppItem) => (
         <Space>
           <Avatar src={record.avatar} icon={<AppstoreOutlined />} size="small" />
           <span>{record.name}</span>
@@ -178,21 +204,13 @@ export default function TeamApps() {
       title: "类型",
       dataIndex: "appType",
       key: "appType",
-      render: (appType: string) => (
-        <Tag color={appType === AppTypeObject.Workflow ? "purple" : "blue"}>
-          {appType === AppTypeObject.Workflow ? "流程编排" : "普通应用"}
+      render: (appType: number) => (
+        <Tag color={appType === 1 ? "purple" : "blue"}>
+          {appType === 1 ? "流程编排" : "普通应用"}
         </Tag>
       ),
     },
-    {
-      title: "状态",
-      key: "status",
-      render: (_: unknown, record: QueryAppListCommandResponseItem) => (
-        <Tag color={record.isDisable ? "red" : "green"}>
-          {record.isDisable ? "已禁用" : "已启用"}
-        </Tag>
-      ),
-    },
+
     {
       title: "创建时间",
       dataIndex: "createTime",
@@ -201,7 +219,7 @@ export default function TeamApps() {
     {
       title: "操作",
       key: "action",
-      render: (_: unknown, record: QueryAppListCommandResponseItem) => {
+      render: (_: unknown, record: TeamAppItem) => {
         if (!canManage) return null;
         return (
           <Space>
@@ -216,15 +234,15 @@ export default function TeamApps() {
             <Button
               type="link"
               size="small"
-              icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
-              onClick={() => handleToggleDisable(record.appId!, !record.isDisable)}
+              icon={<StopOutlined />}
+              onClick={() => handleToggleDisable(record.id!, true)}
             >
-              {record.isDisable ? "启用" : "禁用"}
+              禁用
             </Button>
             <Popconfirm
               title="确认删除"
               description="确定要删除此应用吗？此操作不可恢复。"
-              onConfirm={() => handleDelete(record.appId!)}
+              onConfirm={() => handleDelete(record.id!)}
               okText="确定"
               cancelText="取消"
             >
@@ -238,34 +256,76 @@ export default function TeamApps() {
     },
   ];
 
-  const tabItems = [
-    { key: "internal", label: "内部应用" },
-    { key: "external", label: "外部应用" },
-  ];
-
   return (
     <>
       {contextHolder}
-      <Card
-        title={`${teamInfo?.name || ""} - 应用管理`}
-        extra={
-          canManage && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
+      <div className="page-container">
+        {/* 页面标题 */}
+        <div className="moai-page-header">
+          <h1 className="moai-page-title">{teamInfo?.name || ""} - 应用管理</h1>
+          <p className="moai-page-subtitle">管理团队应用，配置AI模型和功能</p>
+        </div>
+
+        {/* 应用类型切换 */}
+        <div className="app-type-bar">
+          <div className="app-type-tabs">
+            <div
+              className={`app-type-tab ${!isForeign ? "active" : ""}`}
+              onClick={() => setIsForeign(false)}
+            >
+              内部应用
+            </div>
+            <div
+              className={`app-type-tab ${isForeign ? "active" : ""}`}
+              onClick={() => setIsForeign(true)}
+            >
+              外部应用
+            </div>
+          </div>
+        </div>
+
+        {/* 分类标签栏 */}
+        <div className="app-category-bar">
+          <div className="category-tags">
+            <div
+              className={`category-tag ${selectedCategory === null ? "active" : ""}`}
+              onClick={() => setSelectedCategory(null)}
+            >
+              全部
+            </div>
+            {classifyList.map((category) => (
+              <div
+                key={category.classifyId}
+                className={`category-tag ${selectedCategory === category.classifyId ? "active" : ""}`}
+                onClick={() => setSelectedCategory(category.classifyId ?? null)}
+              >
+                {category.name}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 操作按钮 */}
+        {canManage && (
+          <div className="team-apps-actions">
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal} size="large">
               创建应用
             </Button>
-          )
-        }
-      >
-        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
-        <Table
-          rowKey="appId"
-          columns={columns}
-          dataSource={apps}
-          loading={loading}
-          pagination={false}
-          locale={{ emptyText: "暂无应用" }}
-        />
-      </Card>
+          </div>
+        )}
+
+        {/* 应用列表表格 */}
+        <div className="team-apps-table-container">
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={apps}
+            loading={loading}
+            pagination={false}
+            locale={{ emptyText: "暂无应用" }}
+          />
+        </div>
+      </div>
 
       {/* 创建应用弹窗 */}
       <Modal
@@ -301,6 +361,19 @@ export default function TeamApps() {
                 { label: "普通应用", value: AppTypeObject.Common },
                 { label: "流程编排", value: AppTypeObject.Workflow, disabled: true },
               ]}
+            />
+          </Form.Item>
+          <Form.Item 
+            name="classifyId" 
+            label="应用分类"
+            rules={[{ required: true, message: "请选择应用分类" }]}
+          >
+            <Select
+              placeholder="请选择分类"
+              options={classifyList.map((item) => ({
+                label: item.name,
+                value: item.classifyId,
+              }))}
             />
           </Form.Item>
           <Form.Item>

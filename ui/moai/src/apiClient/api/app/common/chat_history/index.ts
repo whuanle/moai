@@ -48,15 +48,11 @@ export interface Chat_historyRequestBuilderGetQueryParameters {
      * 通过上下文自动配置用户了偶像，前端不需要传递.
      */
     contextUserType?: UserType;
-    /**
-     * 团队 id.
-     */
-    teamId?: number;
 }
 /**
  * Uri template for the request builder.
  */
-export const Chat_historyRequestBuilderUriTemplate = "{+baseurl}/api/app/common/chat_history{?AppId*,ChatId*,ContextUserId*,ContextUserType*,TeamId*}";
+export const Chat_historyRequestBuilderUriTemplate = "{+baseurl}/api/app/common/chat_history{?AppId*,ChatId*,ContextUserId*,ContextUserType*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
@@ -65,7 +61,6 @@ const Chat_historyRequestBuilderGetQueryParametersMapper: Record<string, string>
     "chatId": "ChatId",
     "contextUserId": "ContextUserId",
     "contextUserType": "ContextUserType",
-    "teamId": "TeamId",
 };
 /**
  * Metadata for all the requests in the request builder.

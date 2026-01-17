@@ -36,6 +36,11 @@ public class CreateAppCommand : IRequest<CreateAppCommandResponse>, IModelValida
     /// </summary>
     public AppType AppType { get; init; } = AppType.Common;
 
+    /// <summary>
+    /// 分类id.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateAppCommand> validate)
     {

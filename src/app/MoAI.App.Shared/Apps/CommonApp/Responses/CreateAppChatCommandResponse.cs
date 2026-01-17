@@ -9,4 +9,9 @@ public class CreateAppChatCommandResponse
     /// 对话 id.
     /// </summary>
     public Guid ChatId { get; init; }
+
+    /// <summary>
+    /// 标题.
+    /// </summary>
+    public string Title { get; init; } = string.Empty;
 }

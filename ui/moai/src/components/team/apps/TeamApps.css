@@ -1,0 +1,92 @@
+/* 应用类型切换栏 */
+.app-type-bar {
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border, #e8e8e8);
+}
+
+.app-type-tabs {
+  display: flex;
+  gap: 24px;
+}
+
+.app-type-tab {
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #666);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.app-type-tab:hover {
+  color: var(--color-primary, #1677ff);
+}
+
+.app-type-tab.active {
+  color: var(--color-primary, #1677ff);
+  border-bottom-color: var(--color-primary, #1677ff);
+}
+
+/* 分类标签栏 */
+.app-category-bar {
+  margin-bottom: 20px;
+  padding: 16px 0;
+}
+
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.category-tag {
+  padding: 6px 16px;
+  font-size: 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid var(--color-border, #e8e8e8);
+  background: var(--color-bg-container, #fff);
+  color: var(--color-text-primary, #1f1f1f);
+}
+
+.category-tag:hover {
+  border-color: var(--color-primary, #1677ff);
+  color: var(--color-primary, #1677ff);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.15);
+}
+
+.category-tag.active {
+  background: var(--color-primary, #1677ff);
+  border-color: var(--color-primary, #1677ff);
+  color: #fff;
+}
+
+.category-tag-edit {
+  border-style: dashed;
+  color: var(--color-text-secondary, #666);
+}
+
+.category-tag-edit:hover {
+  border-color: var(--color-primary, #1677ff);
+  color: var(--color-primary, #1677ff);
+  background: rgba(22, 119, 255, 0.05);
+}
+
+/* 表格容器 */
+.team-apps-table-container {
+  background: var(--color-bg-container, #fff);
+  border-radius: var(--radius-lg, 12px);
+  padding: 24px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+/* 操作按钮区域 */
+.team-apps-actions {
+  margin-bottom: 16px;
+}

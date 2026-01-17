@@ -46,6 +46,10 @@ public partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
+        entity.Property(e => e.ClassifyId)
+            .HasComment("创建人")
+            .HasColumnType("int(11)")
+            .HasColumnName("classify_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
             .HasComment("描述")

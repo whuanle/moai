@@ -20,11 +20,6 @@ public partial class AppCommonChatEntity : IFullAudited
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 团队id.
-    /// </summary>
-    public int TeamId { get; set; }
-
-    /// <summary>
     /// appid.
     /// </summary>
     public Guid AppId { get; set; }
