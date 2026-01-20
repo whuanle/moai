@@ -8,7 +8,7 @@ namespace MoAI.Modules;
 [InjectModule<ConfigureLoggerModule>]
 [InjectModule<ConfigureAuthorizaModule>]
 [InjectModule<ConfigureMVCModule>]
-[InjectModule<FastEndpointModule>]
+[InjectModule<OpenApiModule>]
 [InjectModule<ConfigureMediatRModule>]
 [InjectModule<ConfigureOpenTelemetryModule>]
 public class ApiModule : IModule

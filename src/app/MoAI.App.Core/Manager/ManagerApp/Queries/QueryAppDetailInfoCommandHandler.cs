@@ -62,10 +62,11 @@ public class QueryAppDetailInfoCommandHandler : IRequestHandler<QueryAppDetailIn
             IsPublic = result.App.IsPublic,
             Prompt = result.Common.Prompt,
             ModelId = result.Common.ModelId,
+            ClassifyId = result.App.ClassifyId,
             WikiIds = result.Common.WikiIds.JsonToObject<IReadOnlyCollection<int>>() ?? Array.Empty<int>(),
             Plugins = result.Common.Plugins.JsonToObject<IReadOnlyCollection<string>>() ?? Array.Empty<string>(),
             ExecutionSettings = result.Common.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>() ?? Array.Empty<KeyValueString>(),
-            IsAuth = result.Common.IsAuth,
+            IsAuth = result.App.IsAuth,
             CreateTime = result.App.CreateTime,
             UpdateTime = result.App.UpdateTime
         };

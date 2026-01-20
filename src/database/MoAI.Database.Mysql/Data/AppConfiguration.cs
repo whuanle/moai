@@ -58,6 +58,9 @@ public partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsAuth)
+    .HasComment("是否开启授权验证")
+    .HasColumnName("is_auth");
         entity.Property(e => e.IsDisable)
             .HasComment("禁用")
             .HasColumnName("is_disable");

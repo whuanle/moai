@@ -50,6 +50,11 @@ public partial class AppEntity : IFullAudited
     public bool IsForeign { get; set; }
 
     /// <summary>
+    /// 是否开启授权验证.
+    /// </summary>
+    public bool IsAuth { get; set; }
+
+    /// <summary>
     /// 应用类型，普通应用=0,流程编排=1.
     /// </summary>
     public int AppType { get; set; }

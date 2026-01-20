@@ -95,7 +95,7 @@ public class ExternalHttpMessageHandler : DelegatingHandler
         _logger.LogInformation("{@HttpLog}", logData);
     }
 
-    private static Dictionary<string, string> GetHeaders(HttpHeaders headers,HttpContentHeaders? contentHeaders)
+    private static Dictionary<string, string> GetHeaders(HttpHeaders headers, HttpContentHeaders? contentHeaders)
     {
         var headersDict = headers.ToDictionary(h => h.Key, h => string.Join(", ", h.Value));
         if (contentHeaders != null)

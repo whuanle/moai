@@ -61,6 +61,11 @@ public class QueryAppDetailInfoCommandResponse : IAvatarPath
     public int ModelId { get; set; }
 
     /// <summary>
+    /// 分类 id.
+    /// </summary>
+    public int ClassifyId { get; set; }
+
+    /// <summary>
     /// 知识库id列表.
     /// </summary>
     public IReadOnlyCollection<int> WikiIds { get; set; } = Array.Empty<int>();

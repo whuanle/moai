@@ -26,6 +26,7 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateAppCommand request, CancellationToken cancellationToken)
     {
+        // todo：要检查这个团队能不能使用这些模型、知识库和插件
         var appEntity = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId && x.TeamId == request.TeamId, cancellationToken);
 
@@ -48,6 +49,11 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
         appEntity.IsPublic = request.IsPublic;
         appEntity.ClassifyId = request.ClassifyId;
 
+        if (appEntity.IsForeign)
+        {
+            appEntity.IsAuth = request.IsAuth;
+        }
+
         // 更新配置信息
         appEntity.Avatar = request.Avatar;
         appCommonEntity.Prompt = request.Prompt;
@@ -55,7 +61,6 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
         appCommonEntity.WikiIds = request.WikiIds.ToJsonString();
         appCommonEntity.Plugins = request.Plugins.ToJsonString();
         appCommonEntity.ExecutionSettings = request.ExecutionSettings.ToJsonString();
-        appCommonEntity.IsAuth = request.IsAuth;
 
         _databaseContext.Apps.Update(appEntity);
         _databaseContext.AppCommons.Update(appCommonEntity);

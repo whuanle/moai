@@ -16,7 +16,7 @@ public class QueryTeamAppListCommandResponse
 /// <summary>
 /// 团队应用项.
 /// </summary>
-public class TeamAppItem : IAvatarPath
+public class TeamAppItem : Infra.Models.AuditsInfo, IAvatarPath
 {
     /// <summary>
     /// 应用 id.
@@ -49,12 +49,12 @@ public class TeamAppItem : IAvatarPath
     public int AppType { get; init; }
 
     /// <summary>
-    /// 创建时间.
+    /// 是否禁用.
     /// </summary>
-    public DateTimeOffset CreateTime { get; init; }
+    public bool IsDisable { get; init; }
 
     /// <summary>
-    /// 更新时间.
+    /// 是否外部应用.
     /// </summary>
-    public DateTimeOffset UpdateTime { get; init; }
+    public bool IsForeign { get; init; }
 }

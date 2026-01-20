@@ -14,6 +14,7 @@ import {
   Tag,
   Upload,
   Avatar,
+  Switch,
 } from "antd";
 import type { UploadProps } from "antd";
 import {
@@ -60,6 +61,7 @@ export interface AppConfigData {
   wikiIds?: number[];
   plugins?: string[];
   isPublic?: boolean;
+  isForeign?: boolean;
   isAuth?: boolean;
   classifyId?: number;
 }
@@ -78,6 +80,7 @@ interface FormValues {
   wikiIds: number[];
   plugins: string[];
   isPublic?: boolean;
+  isForeign?: boolean;
   isAuth?: boolean;
   classifyId: number;
 }
@@ -151,6 +154,7 @@ export default function AppConfigPanel({
       wikiIds: values.wikiIds,
       plugins: values.plugins,
       isPublic: values.isPublic,
+      isForeign: values.isForeign,
       isAuth: values.isAuth,
       classifyId: values.classifyId,
     });
@@ -240,12 +244,18 @@ export default function AppConfigPanel({
   // 初始化表单数据
   useEffect(() => {
     if (!initialData) return;
+    
+    console.log("AppConfigPanel 收到 initialData:", initialData);
+    console.log("modelId 值:", initialData.modelId, "类型:", typeof initialData.modelId);
+    console.log("classifyId 值:", initialData.classifyId, "类型:", typeof initialData.classifyId);
+    
     setAvatarUrl(initialData.avatar || undefined);
-    form.setFieldsValue({
+    
+    // 构建要设置的值对象，只设置有值的字段
+    const formValues: any = {
       name: initialData.name || "",
       description: initialData.description || "",
       avatarKey: initialData.avatarKey || "",
-      modelId: initialData.modelId || undefined,
       prompt: initialData.prompt || "",
       temperature: initialData.temperature ?? 1,
       topP: initialData.topP ?? 1,
@@ -253,10 +263,32 @@ export default function AppConfigPanel({
       frequencyPenalty: initialData.frequencyPenalty ?? 0,
       wikiIds: initialData.wikiIds || [],
       plugins: initialData.plugins || [],
-      isPublic: initialData.isPublic,
-      isAuth: initialData.isAuth,
-      classifyId: initialData.classifyId || undefined,
-    });
+    };
+    
+    // 只有当值存在时才设置
+    if (initialData.modelId !== undefined && initialData.modelId !== null) {
+      formValues.modelId = initialData.modelId;
+    }
+    if (initialData.classifyId !== undefined && initialData.classifyId !== null) {
+      formValues.classifyId = initialData.classifyId;
+    }
+    if (initialData.isPublic !== undefined) {
+      formValues.isPublic = initialData.isPublic;
+    }
+    if (initialData.isForeign !== undefined) {
+      formValues.isForeign = initialData.isForeign;
+    }
+    if (initialData.isAuth !== undefined) {
+      formValues.isAuth = initialData.isAuth;
+    }
+    
+    console.log("准备设置的表单值:", formValues);
+    form.setFieldsValue(formValues);
+    
+    // 验证设置后的表单值
+    setTimeout(() => {
+      console.log("表单设置后的值:", form.getFieldsValue());
+    }, 100);
   }, [initialData, form]);
 
   // 初始化表单数据后通知配置变更
@@ -334,6 +366,18 @@ export default function AppConfigPanel({
 
   // 保存配置
   const handleSave = (values: FormValues) => {
+    console.log("表单验证通过，准备保存:", values);
+    
+    if (!values.modelId) {
+      messageApi.error("请选择AI模型");
+      return;
+    }
+    
+    if (!values.classifyId) {
+      messageApi.error("请选择应用分类");
+      return;
+    }
+    
     onSave?.({
       appId,
       name: values.name,
@@ -349,6 +393,7 @@ export default function AppConfigPanel({
       wikiIds: values.wikiIds,
       plugins: values.plugins,
       isPublic: values.isPublic,
+      isForeign: values.isForeign,
       isAuth: values.isAuth,
       classifyId: values.classifyId,
     });
@@ -433,6 +478,20 @@ export default function AppConfigPanel({
               </Form.Item>
             </Spin>
           </div>
+
+          {initialData?.isForeign && (
+            <div className="config-item">
+              <div className="config-label">
+                <Text strong>是否开启鉴权</Text>
+              </div>
+              <Text type="secondary" className="config-hint">
+                开启后，外部应用访问时需要进行身份验证
+              </Text>
+              <Form.Item name="isAuth" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Switch onChange={() => notifyConfigChange()} />
+              </Form.Item>
+            </div>
+          )}
 
           <div className="config-item">
             <div className="config-label">
@@ -637,11 +696,59 @@ export default function AppConfigPanel({
           plugins: [],
         }}
       >
+        {/* 所有表单字段都在这里，但用 hidden 隐藏 */}
+        <Form.Item name="name" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="description" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="avatarKey" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="modelId" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="prompt" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="temperature" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="topP" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="presencePenalty" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="frequencyPenalty" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="wikiIds" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="plugins" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="isPublic" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="isForeign" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="isAuth" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="classifyId" hidden>
+          <Input />
+        </Form.Item>
+
         <Collapse
           defaultActiveKey={["basic"]}
           items={collapseItems}
           bordered={false}
           className="app-config-collapse"
+          destroyInactivePanel={false}
         />
         {onSave && (
           <div className="config-panel-footer">

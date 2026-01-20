@@ -50,7 +50,8 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, CreateA
             ClassifyId = request.ClassifyId,
             IsPublic = false,
             IsDisable = false,
-            Avatar = string.Empty
+            Avatar = string.Empty,
+            IsAuth = false,
         };
 
         var appCommonEntity = new AppCommonEntity
@@ -63,7 +64,6 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, CreateA
             WikiIds = "[]",
             Plugins = "[]",
             ExecutionSettings = "[]",
-            IsAuth = false,
         };
 
         await _databaseContext.Apps.AddAsync(appEntity, cancellationToken);

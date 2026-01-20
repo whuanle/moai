@@ -19,7 +19,7 @@ namespace MoAI.Modules;
 /// <summary>
 /// 使用 NSwag 作为 API 文档的模块.
 /// </summary>
-public class FastEndpointModule : IModule
+public class OpenApiModule : IModule
 {
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)

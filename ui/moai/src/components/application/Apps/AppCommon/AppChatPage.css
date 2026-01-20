@@ -2,7 +2,7 @@
 
 .app-chat-page {
   display: flex;
-  height: 100vh;
+  height: 100%;
   background: var(--color-bg-container);
   overflow: hidden;
 }
@@ -32,6 +32,10 @@
   border-bottom: 1px solid var(--color-border-secondary);
 }
 
+.app-chat-back-btn {
+  margin-bottom: 8px;
+}
+
 .app-chat-app-info {
   display: flex;
   flex-direction: column;
@@ -52,6 +56,10 @@
   font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.5;
+}
+
+.app-chat-app-avatar {
+  margin-bottom: 8px;
 }
 
 .app-chat-sidebar-title {
@@ -124,17 +132,20 @@
   display: flex;
 }
 
-/* 右侧对话区域 */
+/* 右侧对话区域 - 主容器，flex column 布局 */
 .app-chat-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
+/* Header 区域 - 固定高度 */
 .app-chat-header {
   height: 60px;
   min-height: 60px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   padding: 0 var(--spacing-lg);
@@ -156,9 +167,16 @@
   background: var(--color-bg-spotlight);
 }
 
+.app-chat-title-input {
+  max-width: 400px;
+}
+
+/* 对话历史区域 - 占满剩余空间，可滚动 */
 .app-chat-history {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--spacing-lg);
 }
 
@@ -314,35 +332,36 @@
   padding: 8px 0;
 }
 
-/* 输入框区域 */
+/* 输入框区域 - 固定在底部，不被压缩 */
 .app-chat-input-area {
-  height: 160px;
-  min-height: 160px;
+  flex-shrink: 0;
+  min-height: 120px;
   padding: 12px 16px;
   background: var(--color-bg-container);
   border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .app-chat-input-wrapper {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
+  gap: 12px;
+  align-items: stretch;
 }
 
 .app-chat-input {
   flex: 1;
-  min-height: 0;
+  min-height: 80px;
   resize: none !important;
 }
 
 .app-chat-input-actions {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 /* 插件调用样式 */

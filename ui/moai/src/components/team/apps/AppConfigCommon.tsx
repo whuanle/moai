@@ -37,6 +37,7 @@ export default function AppConfigCommon() {
       });
 
       if (response) {
+        console.log("加载应用详情成功:", response);
         setAppName(response.name || "");
         const executionSettings = response.executionSettings || [];
         const getSettingValue = (key: string, defaultValue: number): number => {
@@ -59,8 +60,11 @@ export default function AppConfigCommon() {
           wikiIds: response.wikiIds || [],
           plugins: response.plugins || [],
           isPublic: response.isPublic ?? undefined,
+          isForeign: response.isForeign ?? undefined,
           isAuth: response.isAuth ?? undefined,
+          classifyId: response.classifyId || undefined,
         };
+        console.log("初始化数据:", data);
         setInitialData(data);
         currentConfigRef.current = data; // 同时更新 ref
       }

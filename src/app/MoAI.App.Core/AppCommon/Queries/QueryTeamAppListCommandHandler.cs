@@ -4,6 +4,7 @@ using MoAI.App.Apps.CommonApp.Queries;
 using MoAI.App.Apps.CommonApp.Responses;
 using MoAI.Database;
 using MoAI.Storage.Queries;
+using MoAI.User.Queries;
 
 namespace MoAI.App.AppCommon.Queries;
 
@@ -29,11 +30,22 @@ public class QueryTeamAppListCommandHandler : IRequestHandler<QueryTeamAppListCo
     /// <inheritdoc/>
     public async Task<QueryTeamAppListCommandResponse> Handle(QueryTeamAppListCommand request, CancellationToken cancellationToken)
     {
-        var query = _databaseContext.Apps.Where(x => x.TeamId == request.TeamId && x.IsForeign == request.IsForeign);
-        if (request.ClassifyId != 0)
+        var query = _databaseContext.Apps.Where(x => x.TeamId == request.TeamId);
+        if (request.ClassifyId != null)
         {
             query = query.Where(x => x.ClassifyId == request.ClassifyId);
         }
+
+        if (request.AppType != null)
+        {
+            query = query.Where(x => x.AppType == (int)request.AppType.Value);
+        }
+
+        if (request.IsForeign != null)
+        {
+            query = query.Where(x => x.IsForeign == request.IsForeign.Value);
+        }
+
         var apps = await query
             .OrderByDescending(x => x.UpdateTime)
             .Select(x => new TeamAppItem
@@ -45,10 +57,15 @@ public class QueryTeamAppListCommandHandler : IRequestHandler<QueryTeamAppListCo
                 AppType = x.AppType,
                 CreateTime = x.CreateTime,
                 UpdateTime = x.UpdateTime,
+                CreateUserId = x.CreateUserId,
+                UpdateUserId = x.UpdateUserId,
+                IsDisable = x.IsDisable,
+                IsForeign = x.IsForeign
             })
             .ToListAsync(cancellationToken);
 
         await _mediator.Send(new QueryAvatarUrlCommand { Items = apps }, cancellationToken);
+        await _mediator.Send(new FillUserInfoCommand { Items = apps }, cancellationToken);
 
         return new QueryTeamAppListCommandResponse { Items = apps };
     }

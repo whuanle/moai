@@ -193,7 +193,6 @@ export default function AppChatPage() {
       setTopicsLoading(true);
       const client = GetApiClient();
       const response = await client.api.app.common.topic_list.post({
-        teamId: teamId || 0,
         appId,
       });
       setTopics(response?.items || []);
@@ -209,7 +208,7 @@ export default function AppChatPage() {
     try {
       const client = GetApiClient();
       const response = await client.api.app.common.chat_history.get({
-        queryParameters: { teamId: teamId || 0, appId, chatId },
+        queryParameters: { appId, chatId },
       });
       if (response?.chatHistory) {
         const msgs: ChatMessage[] = response.chatHistory.map((item: AppChatHistoryItem) => {
@@ -281,7 +280,6 @@ export default function AppChatPage() {
     try {
       const client = GetApiClient();
       await client.api.app.common.update_chat_title.post({
-        teamId: teamId || 0,
         appId,
         chatId: currentChatId,
         title: chatTitle.trim(),
@@ -362,7 +360,6 @@ export default function AppChatPage() {
           Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({
-          teamId: teamId || 0,
           appId,
           chatId,
           question: userMessage,
@@ -579,14 +576,14 @@ export default function AppChatPage() {
             type="text"
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate("/app/application")}
-            style={{ marginBottom: 8 }}
+            className="app-chat-back-btn"
           >
             返回
           </Button>
         </div>
         <div className="app-chat-app-info">
           {appInfo.avatar && (
-            <Avatar src={appInfo.avatar} size={48} style={{ marginBottom: 8 }} />
+            <Avatar src={appInfo.avatar} size={48} className="app-chat-app-avatar" />
           )}
           <div className="app-chat-app-name">{appInfo.name}</div>
           {appInfo.description && (
@@ -655,14 +652,13 @@ export default function AppChatPage() {
                 onBlur={handleUpdateChatTitle}
                 onPressEnter={handleUpdateChatTitle}
                 autoFocus
-                style={{ maxWidth: 400 }}
+                className="app-chat-title-input"
               />
             ) : (
               <div 
                 className="app-chat-header-title" 
                 onClick={() => currentChatId && setEditingChatTitle(true)}
                 title={currentChatId ? "点击编辑标题" : ""}
-                style={{ cursor: currentChatId ? "pointer" : "default" }}
               >
                 {chatTitle || "未命名对话"}
               </div>

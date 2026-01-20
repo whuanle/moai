@@ -8,14 +8,8 @@ namespace MoAI.App.Apps.CommonApp.Queries;
 /// <summary>
 /// 查询团队内部可用的应用列表.
 /// </summary>
-public class QueryTeamAppListCommand : IUserIdContext, IRequest<QueryTeamAppListCommandResponse>
+public class QueryTeamAppListCommand : IRequest<QueryTeamAppListCommandResponse>
 {
-    /// <inheritdoc/>
-    public int ContextUserId { get; init; }
-
-    /// <inheritdoc/>
-    public UserType ContextUserType { get; init; }
-
     /// <summary>
     /// 团队 id.
     /// </summary>
@@ -34,5 +28,5 @@ public class QueryTeamAppListCommand : IUserIdContext, IRequest<QueryTeamAppList
     /// <summary>
     /// 是否外部应用.
     /// </summary>
-    public bool IsForeign { get; init; }
+    public bool? IsForeign { get; init; }
 }

@@ -6543,6 +6543,7 @@ export function deserializeIntoQueryAppDetailInfoCommandResponse(queryAppDetailI
         "appType": n => { queryAppDetailInfoCommandResponse.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "avatar": n => { queryAppDetailInfoCommandResponse.avatar = n.getStringValue(); },
         "avatarKey": n => { queryAppDetailInfoCommandResponse.avatarKey = n.getStringValue(); },
+        "classifyId": n => { queryAppDetailInfoCommandResponse.classifyId = n.getNumberValue(); },
         "createTime": n => { queryAppDetailInfoCommandResponse.createTime = n.getStringValue(); },
         "description": n => { queryAppDetailInfoCommandResponse.description = n.getStringValue(); },
         "executionSettings": n => { queryAppDetailInfoCommandResponse.executionSettings = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
@@ -6907,8 +6908,6 @@ export function deserializeIntoQueryTeamAppListCommand(queryTeamAppListCommand: 
     return {
         "appType": n => { queryTeamAppListCommand.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "classifyId": n => { queryTeamAppListCommand.classifyId = n.getNumberValue(); },
-        "contextUserId": n => { queryTeamAppListCommand.contextUserId = n.getNumberValue(); },
-        "contextUserType": n => { queryTeamAppListCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "isForeign": n => { queryTeamAppListCommand.isForeign = n.getBooleanValue(); },
         "teamId": n => { queryTeamAppListCommand.teamId = n.getNumberValue(); },
     }
@@ -7940,14 +7939,15 @@ export function deserializeIntoStartWikiFeishuPluginTaskCommand(startWikiFeishuP
 // @ts-ignore
 export function deserializeIntoTeamAppItem(teamAppItem: Partial<TeamAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        ...deserializeIntoAuditsInfo(teamAppItem),
         "appType": n => { teamAppItem.appType = n.getNumberValue(); },
         "avatar": n => { teamAppItem.avatar = n.getStringValue(); },
         "avatarKey": n => { teamAppItem.avatarKey = n.getStringValue(); },
-        "createTime": n => { teamAppItem.createTime = n.getStringValue(); },
         "description": n => { teamAppItem.description = n.getStringValue(); },
         "id": n => { teamAppItem.id = n.getGuidValue(); },
+        "isDisable": n => { teamAppItem.isDisable = n.getBooleanValue(); },
+        "isForeign": n => { teamAppItem.isForeign = n.getBooleanValue(); },
         "name": n => { teamAppItem.name = n.getStringValue(); },
-        "updateTime": n => { teamAppItem.updateTime = n.getStringValue(); },
     }
 }
 /**
@@ -10513,6 +10513,10 @@ export interface QueryAppDetailInfoCommandResponse extends Parsable {
      */
     avatarKey?: string | null;
     /**
+     * 分类 id.
+     */
+    classifyId?: number | null;
+    /**
      * 创建时间.
      */
     createTime?: string | null;
@@ -11011,14 +11015,6 @@ export interface QueryTeamAppListCommand extends Parsable {
      * 分类id.
      */
     classifyId?: number | null;
-    /**
-     * 通过上下文自动配置id，前端不需要传递.
-     */
-    contextUserId?: number | null;
-    /**
-     * 通过上下文自动配置用户了偶像，前端不需要传递.
-     */
-    contextUserType?: UserType | null;
     /**
      * 是否外部应用.
      */
@@ -14346,6 +14342,7 @@ export function serializeQueryAppDetailInfoCommandResponse(writer: Serialization
         writer.writeEnumValue<AppType>("appType", queryAppDetailInfoCommandResponse.appType);
         writer.writeStringValue("avatar", queryAppDetailInfoCommandResponse.avatar);
         writer.writeStringValue("avatarKey", queryAppDetailInfoCommandResponse.avatarKey);
+        writer.writeNumberValue("classifyId", queryAppDetailInfoCommandResponse.classifyId);
         writer.writeStringValue("createTime", queryAppDetailInfoCommandResponse.createTime);
         writer.writeStringValue("description", queryAppDetailInfoCommandResponse.description);
         writer.writeCollectionOfObjectValues<KeyValueString>("executionSettings", queryAppDetailInfoCommandResponse.executionSettings, serializeKeyValueString);
@@ -14710,8 +14707,6 @@ export function serializeQueryTeamAppListCommand(writer: SerializationWriter, qu
     if (queryTeamAppListCommand) {
         writer.writeEnumValue<AppType>("appType", queryTeamAppListCommand.appType);
         writer.writeNumberValue("classifyId", queryTeamAppListCommand.classifyId);
-        writer.writeNumberValue("contextUserId", queryTeamAppListCommand.contextUserId);
-        writer.writeEnumValue<UserType>("contextUserType", queryTeamAppListCommand.contextUserType);
         writer.writeBooleanValue("isForeign", queryTeamAppListCommand.isForeign);
         writer.writeNumberValue("teamId", queryTeamAppListCommand.teamId);
     }
@@ -15743,14 +15738,15 @@ export function serializeStartWikiFeishuPluginTaskCommand(writer: SerializationW
 // @ts-ignore
 export function serializeTeamAppItem(writer: SerializationWriter, teamAppItem: Partial<TeamAppItem> | undefined | null = {}) : void {
     if (teamAppItem) {
+        serializeAuditsInfo(writer, teamAppItem)
         writer.writeNumberValue("appType", teamAppItem.appType);
         writer.writeStringValue("avatar", teamAppItem.avatar);
         writer.writeStringValue("avatarKey", teamAppItem.avatarKey);
-        writer.writeStringValue("createTime", teamAppItem.createTime);
         writer.writeStringValue("description", teamAppItem.description);
         writer.writeGuidValue("id", teamAppItem.id);
+        writer.writeBooleanValue("isDisable", teamAppItem.isDisable);
+        writer.writeBooleanValue("isForeign", teamAppItem.isForeign);
         writer.writeStringValue("name", teamAppItem.name);
-        writer.writeStringValue("updateTime", teamAppItem.updateTime);
     }
 }
 /**
@@ -16672,7 +16668,7 @@ export interface StartWikiFeishuPluginTaskCommand extends Parsable {
 /**
  * 团队应用项.
  */
-export interface TeamAppItem extends Parsable {
+export interface TeamAppItem extends AuditsInfo, Parsable {
     /**
      * 应用类型，普通应用=0,流程编排=1.
      */
@@ -16686,10 +16682,6 @@ export interface TeamAppItem extends Parsable {
      */
     avatarKey?: string | null;
     /**
-     * 创建时间.
-     */
-    createTime?: string | null;
-    /**
      * 描述.
      */
     description?: string | null;
@@ -16698,13 +16690,17 @@ export interface TeamAppItem extends Parsable {
      */
     id?: Guid | null;
     /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 是否外部应用.
+     */
+    isForeign?: boolean | null;
+    /**
      * 应用名称.
      */
     name?: string | null;
-    /**
-     * 更新时间.
-     */
-    updateTime?: string | null;
 }
 /**
  * 团队授权信息项.
