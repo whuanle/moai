@@ -7,18 +7,19 @@
 
 	<ItemGroup>
 	  <PackageReference Include="Jint" />
-	  <PackageReference Include="Newtonsoft.Json" />
+	  <PackageReference Include="JsonPath.Net" />
 	  <PackageReference Include="RulesEngine" />
 	  <PackageReference Include="SmartFormat.NET" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\ai\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
+	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 	  <ProjectReference Include="..\MoAI.Workflow.Shared\MoAI.Workflow.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Services\" />
+	  <Folder Include="Defines\" />
 	</ItemGroup>
 
 </Project>

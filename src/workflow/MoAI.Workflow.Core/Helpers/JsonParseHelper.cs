@@ -1,250 +1,542 @@
 ﻿using System.Buffers;
+using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace MoAI.Infra.Helpers;
 
-// todo: 后续优化性能
-
 /// <summary>
-/// JSON 读取帮助类.
+/// Json 解析器.
 /// </summary>
 internal static class JsonParseHelper
 {
-    private static readonly JsonSerializerOptions DefaultJsonSerializerOptions = new JsonSerializerOptions
+    // 连接符，流程字段使用 `.` 连接
+    private const char Connector = '.';
+    private static readonly JsonSerializerOptions DefaultJsonSerializerOptions = new()
     {
         WriteIndented = true,
-        MaxDepth = 10, // 设置最大深度，防止过深的嵌套导致栈溢出
+        MaxDepth = 10,
     };
 
     /// <summary>
-    /// 读取 json 字节流.
+    /// 从 json 读取生成字典.
     /// </summary>
     /// <param name="sequence"></param>
-    /// <param name="jsonReaderOptions"></param>
-    /// <returns>字典集合.</returns>
-    public static Dictionary<string, object> Read(ReadOnlySequence<byte> sequence, JsonReaderOptions jsonReaderOptions)
-    {
-        var reader = new Utf8JsonReader(sequence, jsonReaderOptions);
-        var map = new Dictionary<string, object>();
-        BuildJsonField(ref reader, map, null);
-        return map;
-    }
+    /// <param name="readerOptions"></param>
+    /// <returns></returns>
+    public static Dictionary<string, object?> Read(ReadOnlySequence<byte> sequence, JsonReaderOptions readerOptions = default)
+        => JsonToDictionaryConverter.Read(sequence, readerOptions);
 
     /// <summary>
-    /// 将 Dictionary 转换为 JSON 字符串.
+    /// 从 json 读取生成字典.
     /// </summary>
-    /// <param name="dictionary">需要转换的字典.</param>
-    /// <param name="options">JSON 序列化选项.</param>
-    /// <returns>JSON 字符串.</returns>
-    public static string Write(Dictionary<string, object> dictionary, JsonSerializerOptions? options = null)
-    {
-        var convertedDict = ConvertDictionaryForSerialization(dictionary);
-        return JsonSerializer.Serialize(convertedDict, DefaultJsonSerializerOptions);
-    }
+    /// <param name="jsonElement"></param>
+    /// <returns></returns>
+    public static Dictionary<string, object?> Read(JsonElement jsonElement)
+        => JsonToDictionaryConverter.Read(jsonElement);
 
     /// <summary>
-    /// 将 Dictionary 转换为 JSON 字节数组.
+    /// 从字典生成 json 字符串.
     /// </summary>
-    /// <param name="dictionary">需要转换的字典.</param>
-    /// <param name="options">JSON 序列化选项.</param>
-    /// <returns>JSON 字节数组.</returns>
-    public static byte[] WriteBytes(Dictionary<string, object> dictionary, JsonSerializerOptions? options = null)
-    {
-        var convertedDict = ConvertDictionaryForSerialization(dictionary);
-        return JsonSerializer.SerializeToUtf8Bytes(convertedDict, DefaultJsonSerializerOptions);
-    }
+    /// <param name="dictionary"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static string Write(Dictionary<string, object?> dictionary, JsonSerializerOptions? options = null)
+        => DictionaryToJsonConverter.Write(dictionary, options ?? DefaultJsonSerializerOptions);
 
-    // 处理嵌套键格式（例如 "parent.child"）和数组键（例如 "key[0]"）
-    private static object ConvertDictionaryForSerialization(Dictionary<string, object> dictionary)
-    {
-        var result = new Dictionary<string, object?>();
+    /// <summary>
+    /// 写入 byte[].
+    /// </summary>
+    /// <param name="dictionary"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static byte[] WriteBytes(Dictionary<string, object?> dictionary, JsonSerializerOptions? options = null)
+        => DictionaryToJsonConverter.WriteBytes(dictionary, options ?? DefaultJsonSerializerOptions);
 
-        foreach (var pair in dictionary)
+    private static class JsonToDictionaryConverter
+    {
+        public static Dictionary<string, object?> Read(ReadOnlySequence<byte> sequence, JsonReaderOptions readerOptions)
         {
-            BuildNestedObject(result, pair.Key, pair.Value);
+            var reader = new Utf8JsonReader(sequence, readerOptions);
+            var map = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+            if (!reader.Read())
+            {
+                return map;
+            }
+
+            var pathBuilder = new PathBuilder();
+            ReadToken(ref reader, map, ref pathBuilder);
+            return map;
         }
 
-        return result;
-    }
-
-    private static void BuildNestedObject(Dictionary<string, object?> result, string key, object value)
-    {
-        // 处理数组格式 "key[0]"
-        if (key.Contains('[') && key.EndsWith(']'))
+        public static Dictionary<string, object?> Read(JsonElement element)
         {
-            var arrayMatch = Regex.Match(key, @"^(.*?)\[(\d+)\]$");
-            if (arrayMatch.Success)
-            {
-                var arrayKey = arrayMatch.Groups[1].Value;
-                var index = int.Parse(arrayMatch.Groups[2].Value);
-
-                // 如果是嵌套数组路径
-                if (arrayKey.Contains('.'))
-                {
-                    var parts = arrayKey.Split('.', 2);
-                    var parent = parts[0];
-                    var remainingPath = $"{parts[1]}[{index}]";
-
-                    if (!result.TryGetValue(parent, out var parentValue) || parentValue is not Dictionary<string, object?>)
-                    {
-                        result[parent] = new Dictionary<string, object?>();
-                    }
-
-                    BuildNestedObject((Dictionary<string, object?>)result[parent]!, remainingPath, value);
-                }
-                else
-                {
-                    // 直接数组处理
-                    if (!result.TryGetValue(arrayKey, out var existingArray) || existingArray is not List<object?>)
-                    {
-                        result[arrayKey] = new List<object?>();
-                    }
-
-                    var array = (List<object?>)result[arrayKey]!;
-
-                    // 确保数组长度足够
-                    while (array.Count <= index)
-                    {
-                        array.Add(null);
-                    }
-
-                    array[index] = value;
-                }
-
-                return;
-            }
+            var map = new Dictionary<string, object?>(StringComparer.Ordinal);
+            var pathBuilder = new PathBuilder();
+            ReadElement(element, map, ref pathBuilder);
+            return map;
         }
 
-        // 处理嵌套键格式 "parent:child"
-        if (key.Contains('.'))
+        private static void ReadToken(ref Utf8JsonReader reader, Dictionary<string, object?> map, ref PathBuilder pathBuilder)
         {
-            var parts = key.Split('.', 2);
-            var parent = parts[0];
-            var child = parts[1];
-
-            if (!result.TryGetValue(parent, out var parentValue) || parentValue is not Dictionary<string, object?>)
-            {
-                result[parent] = new Dictionary<string, object?>();
-            }
-
-            BuildNestedObject((Dictionary<string, object?>)result[parent]!, child, value);
-        }
-        else
-        {
-            // 常规键
-            result[key] = value;
-        }
-    }
-
-    // 解析 json 对象
-    private static void BuildJsonField(ref Utf8JsonReader reader, Dictionary<string, object> map, string? baseKey)
-    {
-        while (reader.Read())
-        {
-            // 顶级数组 "[123,123]"
-            if (reader.TokenType is JsonTokenType.StartArray)
-            {
-                ParseArray(ref reader, map, baseKey);
-            }
-            else if (reader.TokenType is JsonTokenType.EndObject)
-            {
-                break;
-            }
-            else if (reader.TokenType is JsonTokenType.PropertyName)
-            {
-                var key = reader.GetString()!;
-                var newkey = baseKey is null ? key : $"{baseKey}:{key}";
-
-                reader.Read();
-                if (reader.TokenType is JsonTokenType.StartArray)
-                {
-                    ParseArray(ref reader, map, newkey);
-                }
-                else if (reader.TokenType is JsonTokenType.StartObject)
-                {
-                    BuildJsonField(ref reader, map, newkey);
-                }
-                else
-                {
-                    map[newkey] = ReadObject(ref reader) ?? string.Empty;
-                }
-            }
-        }
-    }
-
-    // 解析数组
-    private static void ParseArray(ref Utf8JsonReader reader, Dictionary<string, object> map, string? baseKey)
-    {
-        int i = 0;
-        while (reader.Read())
-        {
-            if (reader.TokenType is JsonTokenType.EndArray)
-            {
-                break;
-            }
-
-            var newkey = baseKey is null ? $"[{i}]" : $"{baseKey}[{i}]";
-            i++;
-
             switch (reader.TokenType)
             {
-                // [...,null,...]
-                case JsonTokenType.Null:
-                    map[newkey] = default!;
-                    break;
-
-                // [...,123.666,...]
-                case JsonTokenType.Number:
-                    map[newkey] = reader.GetDouble();
-                    break;
-
-                // [...,"123",...]
-                case JsonTokenType.String:
-                    map[newkey] = reader.GetString()!;
-                    break;
-
-                // [...,true,...]
-                case JsonTokenType.True:
-                    map[newkey] = reader.GetBoolean();
-                    break;
-
-                case JsonTokenType.False:
-                    map[newkey] = reader.GetBoolean();
-                    break;
-
-                // [...,{...},...]
                 case JsonTokenType.StartObject:
-                    BuildJsonField(ref reader, map, newkey);
+                    ReadObject(ref reader, map, ref pathBuilder);
                     break;
-
-                // [...,[],...]
                 case JsonTokenType.StartArray:
-                    ParseArray(ref reader, map, newkey);
+                    ReadArray(ref reader, map, ref pathBuilder);
                     break;
                 default:
-                    map[newkey] = JsonValueKind.Null;
+                    if (pathBuilder.IsEmpty)
+                    {
+                        return;
+                    }
+
+                    map[pathBuilder.Build()] = ReadValue(ref reader);
                     break;
             }
         }
+
+        private static void ReadObject(ref Utf8JsonReader reader, Dictionary<string, object?> map, ref PathBuilder pathBuilder)
+        {
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                {
+                    return;
+                }
+
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    continue;
+                }
+
+                var propertyName = reader.GetString();
+                if (propertyName is null)
+                {
+                    reader.Read();
+                    continue;
+                }
+
+                reader.Read();
+                pathBuilder.PushProperty(propertyName);
+                try
+                {
+                    ReadToken(ref reader, map, ref pathBuilder);
+                }
+                finally
+                {
+                    pathBuilder.Pop();
+                }
+            }
+        }
+
+        private static void ReadArray(ref Utf8JsonReader reader, Dictionary<string, object?> map, ref PathBuilder pathBuilder)
+        {
+            var index = 0;
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndArray)
+                {
+                    return;
+                }
+
+                pathBuilder.PushArrayIndex(index);
+                try
+                {
+                    ReadToken(ref reader, map, ref pathBuilder);
+                }
+                finally
+                {
+                    pathBuilder.Pop();
+                }
+
+                index++;
+            }
+        }
+
+        private static object? ReadValue(ref Utf8JsonReader reader)
+            => reader.TokenType switch
+            {
+                JsonTokenType.Null => null,
+                JsonTokenType.False => false,
+                JsonTokenType.True => true,
+                JsonTokenType.Number => reader.GetDouble(),
+                JsonTokenType.String => reader.GetString() ?? string.Empty,
+                _ => null,
+            };
+
+        private static object? ReadValue(JsonElement element)
+            => element.ValueKind switch
+            {
+                JsonValueKind.Null => null,
+                JsonValueKind.False => false,
+                JsonValueKind.True => true,
+                JsonValueKind.Number => element.GetDouble(),
+                JsonValueKind.String => element.GetString() ?? string.Empty,
+                _ => null,
+            };
+
+        private static void ReadElement(JsonElement element, Dictionary<string, object?> map, ref PathBuilder pathBuilder)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        pathBuilder.PushProperty(property.Name);
+                        try
+                        {
+                            ReadElement(property.Value, map, ref pathBuilder);
+                        }
+                        finally
+                        {
+                            pathBuilder.Pop();
+                        }
+                    }
+
+                    break;
+                case JsonValueKind.Array:
+                    var index = 0;
+                    foreach (var arrayElement in element.EnumerateArray())
+                    {
+                        pathBuilder.PushArrayIndex(index);
+                        try
+                        {
+                            ReadElement(arrayElement, map, ref pathBuilder);
+                        }
+                        finally
+                        {
+                            pathBuilder.Pop();
+                        }
+
+                        index++;
+                    }
+
+                    break;
+                default:
+                    if (!pathBuilder.IsEmpty)
+                    {
+                        map[pathBuilder.Build()] = ReadValue(element);
+                    }
+
+                    break;
+            }
+        }
+
+        private sealed class PathBuilder
+        {
+            private readonly StringBuilder _builder = new(256);
+            private readonly List<int> _lengthStack = new(16);
+
+            public bool IsEmpty => _builder.Length == 0;
+
+            public void PushProperty(string propertyName)
+            {
+                _lengthStack.Add(_builder.Length);
+                if (_builder.Length > 0)
+                {
+                    _builder.Append(Connector);
+                }
+
+                _builder.Append(propertyName);
+            }
+
+            public void PushArrayIndex(int index)
+            {
+                _lengthStack.Add(_builder.Length);
+                _builder.Append('[').Append(index).Append(']');
+            }
+
+            public void Pop()
+            {
+                if (_lengthStack.Count == 0)
+                {
+                    _builder.Clear();
+                    return;
+                }
+
+                var previousLength = _lengthStack[^1];
+                _lengthStack.RemoveAt(_lengthStack.Count - 1);
+                _builder.Length = previousLength;
+            }
+
+            public string Build() => _builder.ToString();
+        }
     }
 
-    // 读取字段值
-    private static object? ReadObject(ref Utf8JsonReader reader)
+    private static class DictionaryToJsonConverter
     {
-        switch (reader.TokenType)
+        public static string Write(Dictionary<string, object?> dictionary, JsonSerializerOptions options)
         {
-            case JsonTokenType.Null or JsonTokenType.None:
-                return null;
-            case JsonTokenType.False:
-                return reader.GetBoolean();
-            case JsonTokenType.True:
-                return reader.GetBoolean();
-            case JsonTokenType.Number:
-                return reader.GetDouble();
-            case JsonTokenType.String:
-                return reader.GetString() ?? string.Empty;
-            default: return null;
+            var payload = BuildPayload(dictionary);
+            return JsonSerializer.Serialize(payload, options);
+        }
+
+        public static byte[] WriteBytes(Dictionary<string, object?> dictionary, JsonSerializerOptions options)
+        {
+            var payload = BuildPayload(dictionary);
+            return JsonSerializer.SerializeToUtf8Bytes(payload, options);
+        }
+
+        private static object BuildPayload(Dictionary<string, object?> values)
+        {
+            if (values.Count == 0)
+            {
+                return new Dictionary<string, object?>(StringComparer.Ordinal);
+            }
+
+            var builder = new NestedStructureBuilder();
+            foreach (var entry in values)
+            {
+                if (string.IsNullOrEmpty(entry.Key))
+                {
+                    continue;
+                }
+
+                using var reader = new PathStepReader(entry.Key);
+                builder.Insert(reader.AsSpan(), entry.Value);
+            }
+
+            return builder.Build();
+        }
+
+        private sealed class NestedStructureBuilder
+        {
+            private object? _root;
+
+            public void Insert(ReadOnlySpan<PathStep> steps, object? value)
+            {
+                if (steps.Length == 0)
+                {
+                    _root = value;
+                    return;
+                }
+
+                _root ??= CreateContainer(steps[0]);
+                InsertRecursive(_root, steps, 0, value);
+            }
+
+            public object Build()
+                => _root ?? new Dictionary<string, object?>(StringComparer.Ordinal);
+
+            private static void InsertRecursive(object container, ReadOnlySpan<PathStep> steps, int index, object? value)
+            {
+                var step = steps[index];
+                var isLast = index == steps.Length - 1;
+
+                if (step.IsProperty)
+                {
+                    var dictionary = EnsureDictionary(container);
+
+                    if (isLast)
+                    {
+                        dictionary[step.PropertyName!] = value;
+                        return;
+                    }
+
+                    var propertyNextStep = steps[index + 1];
+                    if (!dictionary.TryGetValue(step.PropertyName!, out var next) || !IsCompatible(next, propertyNextStep))
+                    {
+                        next = CreateContainer(propertyNextStep);
+                        dictionary[step.PropertyName!] = next;
+                    }
+
+                    InsertRecursive(next!, steps, index + 1, value);
+                    return;
+                }
+
+                var list = EnsureList(container);
+                var arrayIndex = step.ArrayIndex!.Value;
+
+                while (list.Count <= arrayIndex)
+                {
+                    list.Add(null);
+                }
+
+                if (isLast)
+                {
+                    list[arrayIndex] = value;
+                    return;
+                }
+
+                var arrayNextStep = steps[index + 1];
+                var element = list[arrayIndex];
+                if (element is null || !IsCompatible(element, arrayNextStep))
+                {
+                    element = CreateContainer(arrayNextStep);
+                    list[arrayIndex] = element;
+                }
+
+                InsertRecursive(element!, steps, index + 1, value);
+            }
+
+            private static Dictionary<string, object?> EnsureDictionary(object container)
+                => container is Dictionary<string, object?> dictionary
+                    ? dictionary
+                    : throw new InvalidOperationException("期望的容器为字典，但实际类型不匹配。");
+
+            private static List<object?> EnsureList(object container)
+                => container is List<object?> list
+                    ? list
+                    : throw new InvalidOperationException("期望的容器为数组，但实际类型不匹配。");
+
+            private static object CreateContainer(PathStep step)
+                => step.IsArray ? new List<object?>() : new Dictionary<string, object?>(StringComparer.Ordinal);
+
+            private static bool IsCompatible(object? container, PathStep nextStep)
+                => nextStep.IsArray ? container is List<object?> : container is Dictionary<string, object?>;
+        }
+
+        private sealed class PathStepReader : IDisposable
+        {
+            private readonly PathStepCollector _collector = new();
+
+            public PathStepReader(string path)
+            {
+                Parse(path.AsSpan());
+            }
+
+            public ReadOnlySpan<PathStep> AsSpan() => _collector.AsSpan();
+
+            public void Dispose() => _collector.Dispose();
+
+            private void Parse(ReadOnlySpan<char> span)
+            {
+                var position = 0;
+
+                while (position < span.Length)
+                {
+                    var current = span[position];
+                    if (current == Connector)
+                    {
+                        position++;
+                        continue;
+                    }
+
+                    if (current == '[')
+                    {
+                        var closingOffset = span.Slice(position + 1).IndexOf(']');
+                        if (closingOffset == -1)
+                        {
+                            break;
+                        }
+
+                        var numberSpan = span.Slice(position + 1, closingOffset);
+                        _collector.Append(PathStep.Array(ParseNumber(numberSpan)));
+                        position += closingOffset + 2;
+                        continue;
+                    }
+
+                    var start = position;
+                    while (position < span.Length && span[position] != ':' && span[position] != '[')
+                    {
+                        position++;
+                    }
+
+                    if (position > start)
+                    {
+                        var propertyName = span.Slice(start, position - start).ToString();
+                        if (!string.IsNullOrEmpty(propertyName))
+                        {
+                            _collector.Append(PathStep.Property(propertyName));
+                        }
+                    }
+
+                    while (position < span.Length && span[position] == '[')
+                    {
+                        var closingOffset = span.Slice(position + 1).IndexOf(']');
+                        if (closingOffset == -1)
+                        {
+                            position = span.Length;
+                            break;
+                        }
+
+                        var numberSpan = span.Slice(position + 1, closingOffset);
+                        _collector.Append(PathStep.Array(ParseNumber(numberSpan)));
+                        position += closingOffset + 2;
+                    }
+                }
+            }
+
+            private static int ParseNumber(ReadOnlySpan<char> span)
+            {
+                var result = 0;
+                foreach (var ch in span)
+                {
+                    if (ch < '0' || ch > '9')
+                    {
+                        break;
+                    }
+
+                    result = (result * 10) + (ch - '0');
+                }
+
+                return result;
+            }
+        }
+
+        private sealed class PathStepCollector : IDisposable
+        {
+            private const int DefaultCapacity = 16;
+            private PathStep[]? _buffer;
+            private int _count;
+
+            public void Append(PathStep step)
+            {
+                var buffer = _buffer;
+                if (buffer is null)
+                {
+                    buffer = ArrayPool<PathStep>.Shared.Rent(DefaultCapacity);
+                    _buffer = buffer;
+                }
+                else if (_count == buffer.Length)
+                {
+                    var next = ArrayPool<PathStep>.Shared.Rent(buffer.Length * 2);
+                    Array.Copy(buffer, 0, next, 0, _count);
+                    ArrayPool<PathStep>.Shared.Return(buffer, clearArray: true);
+                    buffer = next;
+                    _buffer = buffer;
+                }
+
+                buffer[_count++] = step;
+            }
+
+            public ReadOnlySpan<PathStep> AsSpan()
+                => _buffer is null ? ReadOnlySpan<PathStep>.Empty : _buffer.AsSpan(0, _count);
+
+            public void Dispose()
+            {
+                if (_buffer is not null)
+                {
+                    ArrayPool<PathStep>.Shared.Return(_buffer, clearArray: true);
+                    _buffer = null;
+                    _count = 0;
+                }
+            }
+        }
+
+        private readonly struct PathStep
+        {
+            public string? PropertyName { get; }
+
+            public int? ArrayIndex { get; }
+
+            public bool IsProperty => PropertyName is not null;
+
+            public bool IsArray => ArrayIndex.HasValue;
+
+            private PathStep(string? propertyName, int? arrayIndex)
+            {
+                PropertyName = propertyName;
+                ArrayIndex = arrayIndex;
+            }
+
+            public static PathStep Property(string propertyName) => new(propertyName, null);
+
+            public static PathStep Array(int index) => new(null, index);
         }
     }
 }

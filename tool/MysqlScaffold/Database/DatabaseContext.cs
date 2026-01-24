@@ -212,6 +212,21 @@ public partial class DatabaseContext : DbContext
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
 
+    /// <summary>
+    /// 流程设计快照，每次发布都会留下快照.
+    /// </summary>
+    public virtual DbSet<WorkflowDesginSnapshootEntity> WorkflowDesginSnapshoots { get; set; }
+
+    /// <summary>
+    /// 流程设计实例表.
+    /// </summary>
+    public virtual DbSet<WorkflowDesignEntity> WorkflowDesigns { get; set; }
+
+    /// <summary>
+    /// 流程执行记录.
+    /// </summary>
+    public virtual DbSet<WorkflowHistoryEntity> WorkflowHistories { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

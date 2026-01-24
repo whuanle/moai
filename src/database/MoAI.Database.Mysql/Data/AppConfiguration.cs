@@ -37,6 +37,10 @@ public partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasDefaultValueSql("''")
             .HasComment("头像 objectKey")
             .HasColumnName("avatar");
+        entity.Property(e => e.ClassifyId)
+            .HasComment("分类id")
+            .HasColumnType("int(11)")
+            .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("current_timestamp()")
             .HasComment("创建时间")
@@ -46,21 +50,17 @@ public partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("创建人")
             .HasColumnType("int(11)")
             .HasColumnName("create_user_id");
-        entity.Property(e => e.ClassifyId)
-            .HasComment("创建人")
-            .HasColumnType("int(11)")
-            .HasColumnName("classify_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
             .HasComment("描述")
             .HasColumnName("description");
+        entity.Property(e => e.IsAuth)
+            .HasComment("是否开启授权才能使用，只有外部应用可以设置")
+            .HasColumnName("is_auth");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnType("bigint(20)")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.IsAuth)
-    .HasComment("是否开启授权验证")
-    .HasColumnName("is_auth");
         entity.Property(e => e.IsDisable)
             .HasComment("禁用")
             .HasColumnName("is_disable");

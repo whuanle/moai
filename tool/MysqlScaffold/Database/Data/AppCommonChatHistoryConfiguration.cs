@@ -58,10 +58,6 @@ public partial class AppCommonChatHistoryConfiguration : IEntityTypeConfiguratio
             .HasMaxLength(20)
             .HasComment("角色")
             .HasColumnName("role");
-        entity.Property(e => e.TeamId)
-            .HasComment("团队id")
-            .HasColumnType("int(11)")
-            .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .ValueGeneratedOnAddOrUpdate()
             .HasDefaultValueSql("current_timestamp()")

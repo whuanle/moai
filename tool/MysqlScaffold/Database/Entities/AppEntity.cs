@@ -45,9 +45,19 @@ public partial class AppEntity : IFullAudited
     public bool IsDisable { get; set; }
 
     /// <summary>
+    /// 分类id.
+    /// </summary>
+    public int ClassifyId { get; set; }
+
+    /// <summary>
     /// 是否外部应用.
     /// </summary>
     public bool IsForeign { get; set; }
+
+    /// <summary>
+    /// 是否开启授权才能使用，只有外部应用可以设置.
+    /// </summary>
+    public bool IsAuth { get; set; }
 
     /// <summary>
     /// 应用类型，普通应用=0,流程编排=1.

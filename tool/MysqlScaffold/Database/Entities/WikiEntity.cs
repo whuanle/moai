@@ -35,6 +35,11 @@ public partial class WikiEntity : IFullAudited
     public bool IsPublic { get; set; }
 
     /// <summary>
+    /// 计数器.
+    /// </summary>
+    public int Counter { get; set; }
+
+    /// <summary>
     /// 是否已被锁定配置.
     /// </summary>
     public bool IsLock { get; set; }
