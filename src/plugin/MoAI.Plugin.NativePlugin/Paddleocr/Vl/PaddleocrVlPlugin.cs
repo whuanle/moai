@@ -29,7 +29,8 @@ namespace MoAI.Plugin.Plugins.Paddleocr.Vl;
     Name = "Paddleocr 文档解析 (VL)",
     Description = "使用 PaddleOCR-VL 视觉语言模型进行文档解析，这个模型非常牛批，生成的 Markdown 格式非常完美，推荐用",
     Classify = NativePluginClassify.OCR,
-    ConfigType = typeof(PaddleocrPluginConfig))]
+    ConfigType = typeof(PaddleocrPluginConfig),
+    ParamType = typeof(PaddleVLParams))]
 [InjectOnTransient]
 [Description("使用 PaddleOCR-VL 视觉语言模型进行文档解析，这个模型非常牛批，生成的 Markdown 格式非常完美，推荐用")]
 public partial class PaddleocrVlPlugin : PaddleocrPluginBase, INativePluginRuntime, IPaddleocrPlugin

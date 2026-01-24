@@ -12,7 +12,7 @@ public class BailianRetrievePluginConfig
     /// 阿里云 AccessKey ID.
     /// </summary>
     [JsonPropertyName("AccessKeyId")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(AccessKeyId),
         Description = "阿里云 AccessKey ID",
         FieldType = PluginConfigFieldType.String,
@@ -24,7 +24,7 @@ public class BailianRetrievePluginConfig
     /// 阿里云 AccessKey Secret.
     /// </summary>
     [JsonPropertyName("AccessKeySecret")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(AccessKeySecret),
         Description = "阿里云 AccessKey Secret",
         FieldType = PluginConfigFieldType.String,
@@ -36,7 +36,7 @@ public class BailianRetrievePluginConfig
     /// 工作空间 ID.
     /// </summary>
     [JsonPropertyName("WorkspaceId")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(WorkspaceId),
         Description = "工作空间 ID",
         FieldType = PluginConfigFieldType.String,
@@ -48,7 +48,7 @@ public class BailianRetrievePluginConfig
     /// 知识库主键 ID.
     /// </summary>
     [JsonPropertyName("IndexId")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(IndexId),
         Description = "知识库主键 ID",
         FieldType = PluginConfigFieldType.String,
@@ -60,7 +60,7 @@ public class BailianRetrievePluginConfig
     /// 向量检索 Top K，默认 100，范围 0-100.
     /// </summary>
     [JsonPropertyName("DenseSimilarityTopK")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(DenseSimilarityTopK),
         Description = "向量检索 Top K (0-100)",
         FieldType = PluginConfigFieldType.Number,
@@ -72,7 +72,7 @@ public class BailianRetrievePluginConfig
     /// 关键词检索 Top K，默认 100，范围 0-100.
     /// </summary>
     [JsonPropertyName("SparseSimilarityTopK")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(SparseSimilarityTopK),
         Description = "关键词检索 Top K (0-100)",
         FieldType = PluginConfigFieldType.Number,

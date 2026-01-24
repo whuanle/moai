@@ -18,7 +18,8 @@ namespace MoAI.Plugin.Tools.MarkdownToHtml;
     "markdown_to_html",
     Name = "markdown转html",
     Description = "将 markdown 转换为 html，消息内容格式为普通文本",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ParamType = typeof(string)]
 [Description("将 markdown 转换为 html")]
 [InjectOnTransient]
 public class MarkdownToHtmlPlugin : IToolPluginRuntime
@@ -45,7 +46,7 @@ public class MarkdownToHtmlPlugin : IToolPluginRuntime
     /// <returns></returns>
     [KernelFunction("invoke")]
     [Description("将markdown转换为html")]
-    public async Task<string> InvokeAsync([Description("markdown内容")]string markdown)
+    public async Task<string> InvokeAsync([Description("markdown内容")] string markdown)
     {
         await Task.CompletedTask;
         return Markdig.Markdown.ToHtml(markdown);

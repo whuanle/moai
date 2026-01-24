@@ -21,7 +21,8 @@ namespace MoAI.Plugin.Plugins.MysqlPlugin;
     Name = "MySQL 数据库插件",
     Description = "执行 SQL 查询并返回 JSON 格式的结果",
     Classify = NativePluginClassify.Tool,
-    ConfigType = typeof(MysqlPluginConfig))]
+    ConfigType = typeof(MysqlPluginConfig),
+    ParamType = typeof(string))]
 [InjectOnTransient]
 [Description("执行 SQL 查询并返回 JSON 格式的结果")]
 public class MysqlPlugin : INativePluginRuntime

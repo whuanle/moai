@@ -22,7 +22,7 @@ namespace MoAI.Plugin.Plugins.FeishuWebHookText;
 public class FeishuWebHookTextPluginConfig
 {
     [JsonPropertyName("WebhookKey")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(WebhookKey),
         Description = "飞书机器人 WebHook Key",
         FieldType = PluginConfigFieldType.String,
@@ -31,7 +31,7 @@ public class FeishuWebHookTextPluginConfig
     public string WebhookKey { get; init; } = string.Empty;
 
     [JsonPropertyName("SignKey")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(SignKey),
         Description = "设置签名校验后，向 webhook 发送请求需要签名校验来保障来源可信",
         FieldType = PluginConfigFieldType.String,

@@ -48,4 +48,9 @@ public sealed class NativePluginConfigAttribute : Attribute
     /// 配置模型类，只有 tool 不需要配置.
     /// </summary>
     public Type? ConfigType { get; init; }
+
+    /// <summary>
+    /// 参数配置.
+    /// </summary>
+    public Type? ParamType { get; init; }
 }

@@ -27,7 +27,7 @@ namespace MoAI.Plugin.Plugins.Doc2xPdf;
 public class Doc2xPdfPluginConfig
 {
     [JsonPropertyName("Key")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(Key),
         Description = "key",
         FieldType = PluginConfigFieldType.String,

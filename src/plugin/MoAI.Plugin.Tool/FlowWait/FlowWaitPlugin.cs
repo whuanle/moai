@@ -17,7 +17,8 @@ namespace MoAI.Plugin.Plugins.FlowWait;
     "flow_wait",
     Name = "流程等待",
     Description = "让工作流等待指定时间后运行",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ParamType = typeof(FlowWaitParams))]
 [Description("让工作流等待指定时间后运行")]
 [InjectOnTransient]
 public class FlowWaitPlugin : IToolPluginRuntime

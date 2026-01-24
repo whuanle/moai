@@ -21,7 +21,8 @@ namespace MoAI.Plugin.Plugins.JavaScriptExecutor;
     "javascript_executor_nohave_paramter",
     Name = "JavaScript 执行器",
     Description = "执行指定的 JavaScript 代码，限制最大内存4MB、超时4s、最大语句1000行",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ParamType = typeof(string))]
 [Description("执行指定的 JavaScript 代码，无输入参数")]
 [InjectOnTransient]
 public class JavaScriptExecutorPlugin : IToolPluginRuntime

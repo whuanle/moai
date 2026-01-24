@@ -14,7 +14,7 @@ public class PaddleocrPluginConfig
     /// API 地址.
     /// </summary>
     [JsonPropertyName("ApiUrl")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(ApiUrl),
         Description = "Paddleocr 服务 API 地址",
         FieldType = PluginConfigFieldType.String,
@@ -26,7 +26,7 @@ public class PaddleocrPluginConfig
     /// Token.
     /// </summary>
     [JsonPropertyName("Token")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(Token),
         Description = "Paddleocr 服务 Token",
         FieldType = PluginConfigFieldType.String,

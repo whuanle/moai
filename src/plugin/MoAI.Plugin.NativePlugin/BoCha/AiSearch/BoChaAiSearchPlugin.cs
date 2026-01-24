@@ -23,7 +23,8 @@ namespace MoAI.Plugin.Plugins.BoCha.AiSearch;
     Name = "BoCha AI 搜索",
     Description = "使用 BoCha API 进行混合搜索",
     Classify = NativePluginClassify.Search,
-    ConfigType = typeof(BoChaPluginConfig))]
+    ConfigType = typeof(BoChaPluginConfig),
+    ParamType = typeof(BoChaAiSearchParams))]
 [InjectOnTransient]
 [Description("使用 BoCha API 进行混合搜索")]
 public partial class BoChaAiSearchPlugin : INativePluginRuntime

@@ -9,7 +9,7 @@ public class BoChaPluginConfig
     /// Key.
     /// </summary>
     [JsonPropertyName("Key")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(Key),
         Description = "飞书机器人 WebHook Key",
         FieldType = PluginConfigFieldType.String,

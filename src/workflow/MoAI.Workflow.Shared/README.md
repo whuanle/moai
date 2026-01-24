@@ -217,9 +217,9 @@ public enum FieldTypeDefine
 
 每个节点的 INodeDefine不一定会固定。
 
-对于插件节点，插件使用的是 MoAI.Plugin 里面的插件引擎，有自定义插件、内置插件，每个插件的输入参数输出参数完全不一样。
+对于插件节点，插件使用的是 MoAI.Plugin 里面的插件引擎内置插件，不能使用自定义插件，每个插件的输入参数输出参数完全不一样。
 
-例如在 FeishuWebHookTextPlugin 插件里面，请求参数只有字符串；PaddleocrPlugin 插件里面，参数是 PaddleOcrParams，所以还需要读取插件的一些信息才能生成 FieldDefine 。
+例如在 FeishuWebHookTextPlugin 插件里面，请求参数只有字符串；PaddleocrPlugin 插件里面，参数是 PaddleOcrParams，所以还需要读取插件的一些信息才能生成 FieldDefine 。可以通过 INativePluginFactory 读取到插件的 NativePluginTemplateInfo，然后通过 ParamsFieldTemplates 转换为 FieldDefine 。
 
 所以对于开始节点等一开始就有对应的 INodeDefine 是固定的，但是对于插件引擎这种节点，还需要在用户选择使用哪个插件时，根据插件信息实时生成 INodeDefine。
 
@@ -227,7 +227,7 @@ public enum FieldTypeDefine
 
 ## 节点设计定义
 
-设计节点时，需要设计当前节点的每个输入字段怎么从上一个节点中提取数据出来，配置节点需要的参数、配置节点之间的连线，节点定义和连线数据需要存储到数据库，节点设计相关的代码使用 `Design` 结尾。
+设计节点时，需要设计当前节点的每个输入字段怎么从上一个节点中提取数据出来，配置节点需要的参数、配置节点之间的连线，节点定义和连线数据需要存储到数据库，节点设计相关的代码使用 `Design` 结尾。
 
 
 
@@ -634,6 +634,6 @@ public class WorkflowRuntime
 
 直接使用变量很简单：`sys.define_id`、`A1.Name` 这样就可以读取值。
 
-全局变量使用 `sys.` 开头读取，数量和名字是固定的；而启动参数需要在流程变量里面定义，启动流程数外部传递进去，也是使用 `sys.` 读取，这两种变量都是全局可以读取的。
+全局变量使用 `sys.` 开头读取，数量和名字是固定的；而启动参数需要在流程变量里面定义，启动流程数外部传递进去，也是使用 `sys.` 读取，这两种变量都是全局可以读取的。
 
 正常变量可以通过 `input.{field}` 使用，如果是数组，可以使用 `intput.mya[*]` 使用全部或 `input.mya[0].a` 这样。如果 input 就是字符串，那么应该使用 `input` 就行。

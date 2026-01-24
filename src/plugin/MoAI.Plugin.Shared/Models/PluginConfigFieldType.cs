@@ -33,5 +33,8 @@ public enum PluginConfigFieldType
     Object,
 
     [JsonPropertyName("map")]
-    Map
+    Map,
+
+    [JsonPropertyName("array")]
+    Array
 }

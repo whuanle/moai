@@ -17,7 +17,8 @@ namespace MoAI.Plugin.Plugins.CurrentTime;
     "current_time",
     Name = "获取当前时间",
     Description = "获取当前系统时间",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ParamType = typeof(string))]
 [Description("获取当前系统时间")]
 [InjectOnTransient]
 public class CurrentTimePlugin : IToolPluginRuntime

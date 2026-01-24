@@ -12,6 +12,7 @@ using MoAI.Plugin.Models;
 using MoAI.Plugin.Plugins.BoCha.Common;
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MoAI.Plugin.Plugins.BoCha.SemanticRerank;
 
@@ -23,7 +24,8 @@ namespace MoAI.Plugin.Plugins.BoCha.SemanticRerank;
     Name = "BoCha 语义排序",
     Description = "使用 BoCha API 对文档进行语义排序，返回 query 跟 documents 每个文本的相关度",
     Classify = NativePluginClassify.Search,
-    ConfigType = typeof(BoChaPluginConfig))]
+    ConfigType = typeof(BoChaPluginConfig),
+    ParamType = typeof(BoChaSemanticRerankParams))]
 [InjectOnTransient]
 [Description("使用 BoCha API 对文档进行语义排序，返回 query 跟 documents 每个文本的相关度")]
 public partial class BoChaSemanticRerankPlugin : INativePluginRuntime

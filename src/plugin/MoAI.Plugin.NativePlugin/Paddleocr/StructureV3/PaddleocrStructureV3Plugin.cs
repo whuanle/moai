@@ -28,7 +28,8 @@ namespace MoAI.Plugin.Plugins.Paddleocr.StructureV3;
     Name = "Paddleocr 文档解析 (StructureV3)",
     Description = "使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析，适合各类带有结构的复杂文档，例如表格、发票、公式，速度比较慢，建议只处理单页文件",
     Classify = NativePluginClassify.OCR,
-    ConfigType = typeof(PaddleocrPluginConfig))]
+    ConfigType = typeof(PaddleocrPluginConfig),
+    ParamType = typeof(PaddleocrStructureV3Params))]
 [InjectOnTransient]
 [Description("使用 Paddleocr PP-StructureV3 模型进行文档版面分析和解析，适合各类带有结构的复杂文档，例如表格、发票、公式，速度比较慢，建议只处理单页文件")]
 public partial class PaddleocrStructureV3Plugin : PaddleocrPluginBase, INativePluginRuntime, IPaddleocrPlugin

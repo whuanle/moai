@@ -28,7 +28,8 @@ namespace MoAI.Plugin.Plugins.Paddleocr.Ocr;
     Name = "Paddleocr OCR 识别",
     Description = "使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别，适合常规场景，速度较快，可以处理多页文件",
     Classify = NativePluginClassify.OCR,
-    ConfigType = typeof(PaddleocrPluginConfig))]
+    ConfigType = typeof(PaddleocrPluginConfig),
+    ParamType = typeof(PaddleOcrParams))]
 [InjectOnTransient]
 [Description("使用 Paddleocr PP-OCRv5 模型进行图像/PDF文字识别，适合常规场景，速度较快，可以处理多页文件")]
 public partial class PaddleocrPlugin : PaddleocrPluginBase, INativePluginRuntime, IPaddleocrPlugin

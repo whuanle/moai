@@ -17,7 +17,7 @@ public class JavaScriptExecutorConfig
     /// 要执行的代码.
     /// </summary>
     [JsonPropertyName(nameof(JavaScriptCode))]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(JavaScriptCode),
         Description = "JavaScript 代码",
         FieldType = PluginConfigFieldType.Code,

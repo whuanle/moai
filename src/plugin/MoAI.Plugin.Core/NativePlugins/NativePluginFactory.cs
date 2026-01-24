@@ -51,6 +51,7 @@ public class NativePluginFactory : INativePluginFactory
                 PluginType = PluginType.NativePlugin,
                 ConfigType = internalPluginAttribute.ConfigType,
                 FieldTemplates = GetFieldTemplates(internalPluginAttribute.ConfigType!),
+                ParamsFieldTemplates = GetFieldTemplates(internalPluginAttribute.ParamType!),
                 ExampleValue = GetExampleValue(item)
             };
 
@@ -75,6 +76,7 @@ public class NativePluginFactory : INativePluginFactory
                 Classify = internalPluginAttribute.Classify,
                 PluginType = PluginType.ToolPlugin,
                 ConfigType = internalPluginAttribute.ConfigType,
+                ParamsFieldTemplates = GetFieldTemplates(internalPluginAttribute.ParamType!),
                 ExampleValue = GetExampleValue(item)
             };
 
@@ -105,12 +107,28 @@ public class NativePluginFactory : INativePluginFactory
 
     private static List<NativePluginConfigFieldTemplate> GetFieldTemplates(Type configType)
     {
+        // string、number 这些类型，不需要解析类型，直接返回一个字段
+        if (TypeInfo.GetTypeCode(configType) != TypeCode.Object)
+        {
+            return new List<NativePluginConfigFieldTemplate>()
+            {
+                new NativePluginConfigFieldTemplate
+                {
+                    Key = "value",
+                    Description = "配置值",
+                    IsRequired = true,
+                    FieldType = PluginConfigFieldType.String,
+                    ExampleValue = string.Empty,
+                }
+            };
+        }
+
         List<NativePluginConfigFieldTemplate> templates = new();
         var properties = configType.GetProperties();
 
         foreach (var item in properties)
         {
-            var nativePluginConfigFieldAttribute = item.GetCustomAttribute<NativePluginConfigFieldAttribute>();
+            var nativePluginConfigFieldAttribute = item.GetCustomAttribute<NativePluginFieldAttribute>();
             if (nativePluginConfigFieldAttribute != null)
             {
                 templates.Add(new NativePluginConfigFieldTemplate

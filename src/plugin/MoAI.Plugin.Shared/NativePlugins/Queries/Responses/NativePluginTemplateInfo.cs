@@ -48,9 +48,14 @@ public class NativePluginTemplateInfo
     public Type? ConfigType { get; init; } = default!;
 
     /// <summary>
-    /// 字段模板.
+    /// 配置字段模板.
     /// </summary>
     public IReadOnlyCollection<NativePluginConfigFieldTemplate> FieldTemplates { get; init; } = Array.Empty<NativePluginConfigFieldTemplate>();
+
+    /// <summary>
+    /// 参数字段模板.
+    /// </summary>
+    public IReadOnlyCollection<NativePluginConfigFieldTemplate> ParamsFieldTemplates { get; init; } = Array.Empty<NativePluginConfigFieldTemplate>();
 
     /// <summary>
     /// 示例值.

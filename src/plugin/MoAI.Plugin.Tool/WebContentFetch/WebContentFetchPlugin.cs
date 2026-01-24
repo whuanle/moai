@@ -22,7 +22,8 @@ namespace MoAI.Plugin.Plugins.WebContentFetch;
     "web_content_fetch",
     Name = "网页内容抓取",
     Description = "获取指定网页链接的内容",
-    Classify = NativePluginClassify.Tool)]
+    Classify = NativePluginClassify.Tool,
+    ParamType = typeof(WebContentFetchParams))]
 [Description("获取指定网页链接的内容")]
 [InjectOnTransient]
 public class WebContentFetchPlugin : IToolPluginRuntime

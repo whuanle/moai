@@ -12,7 +12,7 @@ public class MysqlPluginConfig
     /// 数据库连接字符串。
     /// </summary>
     [JsonPropertyName("ConnectionString")]
-    [NativePluginConfigField(
+    [NativePluginField(
         Key = nameof(ConnectionString),
         Description = "数据库连接字符串",
         FieldType = PluginConfigFieldType.String,

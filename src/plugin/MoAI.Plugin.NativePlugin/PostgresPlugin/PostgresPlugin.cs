@@ -20,7 +20,8 @@ namespace MoAI.Plugin.Plugins.PostgresPlugin;
     Name = "PostgreSQL 数据库插件",
     Description = "执行 SQL 查询并返回 JSON 格式的结果",
     Classify = NativePluginClassify.Tool,
-    ConfigType = typeof(PostgresPluginConfig))]
+    ConfigType = typeof(PostgresPluginConfig),
+    ParamType = typeof(string))]
 [InjectOnTransient]
 [Description("执行 SQL 查询并返回 JSON 格式的结果")]
 public class PostgresPlugin : INativePluginRuntime

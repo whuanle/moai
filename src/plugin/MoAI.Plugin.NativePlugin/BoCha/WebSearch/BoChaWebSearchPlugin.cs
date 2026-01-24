@@ -23,7 +23,8 @@ namespace MoAI.Plugin.Plugins.BoCha.WebSearch;
     Name = "BoCha 全网搜索",
     Description = "使用 BoCha API 进行全网搜索",
     Classify = NativePluginClassify.Search,
-    ConfigType = typeof(BoChaPluginConfig))]
+    ConfigType = typeof(BoChaPluginConfig),
+    ParamType = typeof(BoChaWebSearchParams))]
 [InjectOnTransient]
 [Description("使用 BoCha API 进行全网搜索")]
 
