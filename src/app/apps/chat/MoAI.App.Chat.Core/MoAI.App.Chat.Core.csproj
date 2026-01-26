@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.App.Chat</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.KernelMemory.Core" />
+		<PackageReference Include="Microsoft.KernelMemory.SemanticKernelPlugin" />
+		<PackageReference Include="Microsoft.OpenApi.Readers" />
+		<PackageReference Include="Microsoft.SemanticKernel.Plugins.OpenApi" />
+		<PackageReference Include="ModelContextProtocol" />
+		<PackageReference Include="Stef.ModelContextProtocol.SemanticKernel" />
+		<PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\..\aimodel\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
+		<ProjectReference Include="..\..\..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
+		<ProjectReference Include="..\MoAi.App.Chat.Shared\MoAi.App.Chat.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

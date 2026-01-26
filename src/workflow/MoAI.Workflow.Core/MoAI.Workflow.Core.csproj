@@ -6,20 +6,20 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Jint" />
-	  <PackageReference Include="JsonPath.Net" />
-	  <PackageReference Include="RulesEngine" />
-	  <PackageReference Include="SmartFormat.NET" />
+		<ProjectReference Include="..\..\ai\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
+		<ProjectReference Include="..\..\aimodel\MoAI.AiModel.Shared\MoAI.AiModel.Shared.csproj" />
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
+		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
+		<ProjectReference Include="..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Workflow.Shared\MoAI.Workflow.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Workflow.Api\MoAI.Workflow.Api.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\ai\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
-	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
-	  <ProjectReference Include="..\MoAI.Workflow.Shared\MoAI.Workflow.Shared.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Defines\" />
+		<PackageReference Include="JsonPath.Net" />
+		<PackageReference Include="SmartFormat.NET" />
+		<PackageReference Include="Jint" />
 	</ItemGroup>
 
 </Project>

@@ -18,6 +18,7 @@ using MoAI.Storage;
 using MoAI.Team;
 using MoAI.User;
 using MoAI.Wiki;
+using MoAI.Workflow;
 using MoAIPrompt.Core;
 
 namespace MoAI;
@@ -42,6 +43,7 @@ namespace MoAI;
 [InjectModule<AppCoreModule>]
 [InjectModule<ExternalCoreModule>]
 [InjectModule<HangfireCoreModule>]
+[InjectModule<WorkflowCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

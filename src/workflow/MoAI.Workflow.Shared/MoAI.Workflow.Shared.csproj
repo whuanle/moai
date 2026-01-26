@@ -7,6 +7,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.KernelMemory.Abstractions" />
+		<PackageReference Include="JsonPath.Net" />
+		<PackageReference Include="SmartFormat.NET" />
 	</ItemGroup>
 
 	<ItemGroup>

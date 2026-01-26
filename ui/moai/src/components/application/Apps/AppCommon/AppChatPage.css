@@ -1,8 +1,9 @@
 /* 应用对话页面样式 */
 
 .app-chat-page {
-  display: flex;
+  width: 100%;
   height: 100%;
+  display: flex;
   background: var(--color-bg-container);
   overflow: hidden;
 }
@@ -23,10 +24,11 @@
   display: flex;
   flex-direction: column;
   background: var(--color-bg-spotlight);
+  overflow: hidden;
 }
 
 .app-chat-sidebar-header {
-  display: flex;
+ay: flex;
   flex-direction: column;
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--color-border-secondary);
@@ -45,7 +47,7 @@
   text-align: center;
 }
 
-.app-chat-app-name {
+.-chat-app-name {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -112,7 +114,7 @@
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+ : nowrap;
   font-size: 14px;
   color: var(--color-text-primary);
   cursor: pointer;
@@ -132,12 +134,12 @@
   display: flex;
 }
 
-/* 右侧对话区域 - 主容器，flex column 布局 */
+/* 右侧对话区域 - 占满剩余屏幕 */
 .app-chat-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  position: relative;
   overflow: hidden;
 }
 
@@ -147,7 +149,7 @@
   min-height: 60px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
+lign-items: center;
   padding: 0 var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-container);
@@ -171,10 +173,13 @@
   max-width: 400px;
 }
 
-/* 对话历史区域 - 占满剩余空间，可滚动 */
+/* 对话历史区域 - 占满所有剩余高度 */
 .app-chat-history {
-  flex: 1;
-  min-height: 0;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 120px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--spacing-lg);
@@ -205,7 +210,7 @@
 .chat-message-user {
   align-self: flex-end;
   flex-direction: row-reverse;
-  background: var(--color-primary-bg);
+  background: var(--color-prmary-bg);
 }
 
 .chat-message-user .message-body {
@@ -279,8 +284,8 @@
 .message-markdown code {
   background: var(--color-bg-layout);
   padding: 2px 6px;
-  border-radius: 4px;
-  font-family: "Consolas", "Monaco", monospace;
+ x;
+olas", "Monaco", monospace;
   font-size: 13px;
 }
 
@@ -332,10 +337,13 @@
   padding: 8px 0;
 }
 
-/* 输入框区域 - 固定在底部，不被压缩 */
+/* 输入框区域 - 固定在底部 */
 .app-chat-input-area {
-  flex-shrink: 0;
-  min-height: 120px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
   padding: 12px 16px;
   background: var(--color-bg-container);
   border-top: 1px solid var(--color-border);
@@ -382,7 +390,7 @@
   font-size: 13px;
 }
 
-.plugin-call-collapse .ant-collapse-content-box {
+.plugin-call-collapt-collapse-content-box {
   padding: 12px !important;
 }
 
@@ -414,7 +422,7 @@
 
 .plugin-detail-section {
   display: flex;
-  flex-direction: column;
+ ex-direction: column;
   gap: 8px;
 }
 
@@ -443,11 +451,11 @@
   color: var(--color-primary);
   min-width: 100px;
   flex-shrink: 0;
-  font-family: "Consolas", "Monaco", monospace;
+  font-family: "ConsMonaco", monospace;
   font-size: 12px;
 }
 
-.plugin-param-value {
+.plugin-param-value
   flex: 1;
   word-break: break-all;
   white-space: pre-wrap;

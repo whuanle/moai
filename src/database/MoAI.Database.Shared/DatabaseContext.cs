@@ -58,17 +58,27 @@ public partial class DatabaseContext : DbContext
     /// <summary>
     /// 普通应用.
     /// </summary>
-    public virtual DbSet<AppCommonEntity> AppCommons { get; set; }
+    public virtual DbSet<AppChatappEntity> AppChatapps { get; set; }
 
     /// <summary>
     /// 普通应用对话表.
     /// </summary>
-    public virtual DbSet<AppCommonChatEntity> AppCommonChats { get; set; }
+    public virtual DbSet<AppChatappChatEntity> AppChatappChats { get; set; }
 
     /// <summary>
     /// 对话历史，不保存实际历史记录.
     /// </summary>
-    public virtual DbSet<AppCommonChatHistoryEntity> AppCommonChatHistories { get; set; }
+    public virtual DbSet<AppChatappChatHistoryEntity> AppChatappChatHistories { get; set; }
+
+    /// <summary>
+    /// 流程设计实例表.
+    /// </summary>
+    public virtual DbSet<AppWorkflowDesignEntity> AppWorkflowDesigns { get; set; }
+
+    /// <summary>
+    /// 流程执行记录.
+    /// </summary>
+    public virtual DbSet<AppWorkflowHistoryEntity> AppWorkflowHistories { get; set; }
 
     /// <summary>
     /// 分类.

@@ -25,7 +25,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Handlers\" />
+	  <Folder Include="AppStore\Handlers\" />
 	</ItemGroup>
 
 </Project>

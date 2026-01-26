@@ -19,7 +19,7 @@ namespace MoAI.Plugin.Tools.MarkdownToHtml;
     Name = "markdown转html",
     Description = "将 markdown 转换为 html，消息内容格式为普通文本",
     Classify = NativePluginClassify.Tool,
-    ParamType = typeof(string)]
+    ParamType = typeof(string))]
 [Description("将 markdown 转换为 html")]
 [InjectOnTransient]
 public class MarkdownToHtmlPlugin : IToolPluginRuntime

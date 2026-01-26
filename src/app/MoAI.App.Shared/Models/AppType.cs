@@ -8,7 +8,7 @@ public enum AppType
     /// <summary>
     /// 普通应用.
     /// </summary>
-    Common = 0,
+    Chat = 0,
 
     /// <summary>
     /// Agent 应用.

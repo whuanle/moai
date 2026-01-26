@@ -60,17 +60,27 @@ public partial class DatabaseContext : DbContext
     /// <summary>
     /// 普通应用.
     /// </summary>
-    public virtual DbSet<AppCommonEntity> AppCommons { get; set; }
+    public virtual DbSet<AppChatappEntity> AppChatapps { get; set; }
 
     /// <summary>
     /// 普通应用对话表.
     /// </summary>
-    public virtual DbSet<AppCommonChatEntity> AppCommonChats { get; set; }
+    public virtual DbSet<AppChatappChatEntity> AppChatappChats { get; set; }
 
     /// <summary>
     /// 对话历史，不保存实际历史记录.
     /// </summary>
-    public virtual DbSet<AppCommonChatHistoryEntity> AppCommonChatHistories { get; set; }
+    public virtual DbSet<AppChatappChatHistoryEntity> AppChatappChatHistories { get; set; }
+
+    /// <summary>
+    /// 流程设计实例表.
+    /// </summary>
+    public virtual DbSet<AppWorkflowDesignEntity> AppWorkflowDesigns { get; set; }
+
+    /// <summary>
+    /// 流程执行记录.
+    /// </summary>
+    public virtual DbSet<AppWorkflowHistoryEntity> AppWorkflowHistories { get; set; }
 
     /// <summary>
     /// 分类.
@@ -211,21 +221,6 @@ public partial class DatabaseContext : DbContext
     /// 工作任务.
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
-
-    /// <summary>
-    /// 流程设计快照，每次发布都会留下快照.
-    /// </summary>
-    public virtual DbSet<WorkflowDesginSnapshootEntity> WorkflowDesginSnapshoots { get; set; }
-
-    /// <summary>
-    /// 流程设计实例表.
-    /// </summary>
-    public virtual DbSet<WorkflowDesignEntity> WorkflowDesigns { get; set; }
-
-    /// <summary>
-    /// 流程执行记录.
-    /// </summary>
-    public virtual DbSet<WorkflowHistoryEntity> WorkflowHistories { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
