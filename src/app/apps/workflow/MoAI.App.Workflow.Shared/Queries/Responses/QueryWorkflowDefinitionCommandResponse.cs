@@ -8,9 +8,14 @@ namespace MoAI.Workflow.Queries.Responses;
 public class QueryWorkflowDefinitionCommandResponse
 {
     /// <summary>
-    /// 工作流定义 ID.
+    /// 工作流设计 ID（AppWorkflowDesignEntity.Id）.
     /// </summary>
     public Guid Id { get; init; }
+
+    /// <summary>
+    /// 应用 ID（AppEntity.Id）.
+    /// </summary>
+    public Guid AppId { get; init; }
 
     /// <summary>
     /// 团队 ID.
@@ -18,17 +23,17 @@ public class QueryWorkflowDefinitionCommandResponse
     public int TeamId { get; init; }
 
     /// <summary>
-    /// 工作流名称.
+    /// 工作流名称（来自 AppEntity）.
     /// </summary>
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// 工作流描述信息.
+    /// 工作流描述信息（来自 AppEntity）.
     /// </summary>
     public string Description { get; init; } = string.Empty;
 
     /// <summary>
-    /// 工作流头像 ObjectKey.
+    /// 工作流头像 ObjectKey（来自 AppEntity）.
     /// </summary>
     public string Avatar { get; init; } = string.Empty;
 
@@ -51,6 +56,11 @@ public class QueryWorkflowDefinitionCommandResponse
     /// 功能设计草稿数据（仅当 IncludeDraft 为 true 时返回）.
     /// </summary>
     public string? FunctionDesignDraft { get; init; }
+
+    /// <summary>
+    /// 是否已发布.
+    /// </summary>
+    public bool IsPublish { get; init; }
 
     /// <summary>
     /// 创建时间.

@@ -14,6 +14,83 @@
   border-radius: var(--radius-sm);
 }
 
+/* 分类卡片列表 */
+.classify-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.classify-card-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+}
+
+.classify-card-icon {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e6f4ff 0%, #bae0ff 100%);
+  border-radius: var(--radius-md);
+}
+
+.classify-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.classify-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.classify-card-desc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-sm) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.classify-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.classify-card-count {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.classify-card-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-bg-layout);
+  transition: all 0.3s ease;
+}
+
+.moai-card-interactive:hover .classify-card-action {
+  background: var(--color-primary);
+}
+
+.moai-card-interactive:hover .classify-card-action .anticon {
+  color: #ffffff !important;
+}
+
 /* 应用卡片网格 */
 .app-card-grid {
   display: grid;
@@ -132,6 +209,15 @@
   
   .app-search-input {
     width: 100%;
+  }
+  
+  .classify-card-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .classify-card-desc {
+    white-space: normal;
   }
 }
 

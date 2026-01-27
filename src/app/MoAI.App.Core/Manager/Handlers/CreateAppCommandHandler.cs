@@ -76,11 +76,12 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, CreateA
         }
         else if (request.AppType == App.Models.AppType.Workflow)
         {
-            var appWorkflow = new AppWorkflowDesignEntity
+            // 创建工作流设计实体
+            var workflowDesignEntity = new AppWorkflowDesignEntity
             {
                 Id = Guid.CreateVersion7(),
-                AppId = appId,
                 TeamId = request.TeamId,
+                AppId = appId,  // 关联到 AppEntity
                 UiDesign = string.Empty,
                 FunctionDesgin = string.Empty,
                 UiDesignDraft = string.Empty,
@@ -88,7 +89,8 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, CreateA
                 IsPublish = false
             };
 
-            await _databaseContext.AppWorkflowDesigns.AddAsync(appWorkflow, cancellationToken);
+            // 存储到数据库
+            await _databaseContext.AppWorkflowDesigns.AddAsync(workflowDesignEntity, cancellationToken);
             await _databaseContext.SaveChangesAsync(cancellationToken);
         }
 

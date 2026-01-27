@@ -1,0 +1,38 @@
+/* 流程编排配置页面样式 */
+
+.workflow-config-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-layout);
+}
+
+.workflow-config-header {
+  height: 60px;
+  padding: 0 var(--spacing-lg);
+  background: var(--color-bg-container);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-config-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--spacing-lg);
+}
+
+.workflow-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-empty-state .ant-empty-description {
+  margin-top: var(--spacing-md);
+}

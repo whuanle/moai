@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilder> {
     /**
      * 查询团队下的应用列表.
-     * @param body 查询团队内部可用的应用列表.
+     * @param body 查询团队下的应用列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryTeamAppListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilde
      post(body: QueryTeamAppListCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryTeamAppListCommandResponse | undefined>;
     /**
      * 查询团队下的应用列表.
-     * @param body 查询团队内部可用的应用列表.
+     * @param body 查询团队下的应用列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

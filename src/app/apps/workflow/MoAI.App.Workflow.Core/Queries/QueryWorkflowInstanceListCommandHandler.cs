@@ -27,7 +27,7 @@ public class QueryWorkflowInstanceListCommandHandler : IRequestHandler<QueryWork
         QueryWorkflowInstanceListCommand request,
         CancellationToken cancellationToken)
     {
-        var query = _databaseContext.WorkflowHistories
+        var query = _databaseContext.AppWorkflowHistories
             .Where(w => w.IsDeleted == 0);
 
         // 应用过滤条件
@@ -56,7 +56,7 @@ public class QueryWorkflowInstanceListCommandHandler : IRequestHandler<QueryWork
             .Skip(pageIndex * request.PageSize)
             .Take(request.PageSize)
             .Join(
-                _databaseContext.WorkflowDesigns,
+                _databaseContext.AppWorkflowDesigns,
                 history => history.WorkflowDesignId,
                 design => design.Id,
                 (history, design) => new QueryWorkflowInstanceListCommandResponseItem
@@ -64,7 +64,7 @@ public class QueryWorkflowInstanceListCommandHandler : IRequestHandler<QueryWork
                     Id = history.Id,
                     TeamId = history.TeamId,
                     WorkflowDesignId = history.WorkflowDesignId,
-                    WorkflowName = design.Name,
+                    //WorkflowName = design.Name,
                     State = history.State,
                     CreateTime = history.CreateTime,
                     UpdateTime = history.UpdateTime,

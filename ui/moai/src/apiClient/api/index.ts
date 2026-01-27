@@ -28,6 +28,8 @@ import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from '.
 // @ts-ignore
 import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata } from './wiki/index.js';
 // @ts-ignore
+import { type WorkflowRequestBuilder, WorkflowRequestBuilderNavigationMetadata } from './workflow/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -86,6 +88,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The wiki property
      */
     get wiki(): WikiRequestBuilder;
+    /**
+     * The workflow property
+     */
+    get workflow(): WorkflowRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -133,6 +139,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     wiki: {
         navigationMetadata: WikiRequestBuilderNavigationMetadata,
+    },
+    workflow: {
+        navigationMetadata: WorkflowRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

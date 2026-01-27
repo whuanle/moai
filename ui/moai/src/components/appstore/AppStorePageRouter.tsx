@@ -1,6 +1,6 @@
 import { RouteObject } from "react-router";
 import AppStorePage from "./AppStorePage";
-import AppChatPage from "../application/Apps/AppCommon/AppChatPage";
+import AppChatPage from "../application/Apps/chatapp/AppChatPage";
 
 export const AppStorePageRouters: RouteObject[] = [
   {

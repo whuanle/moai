@@ -4,13 +4,15 @@
 // @ts-ignore
 import { AssistantRequestBuilderNavigationMetadata, type AssistantRequestBuilder } from './assistant/index.js';
 // @ts-ignore
-import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
+import { ChatappRequestBuilderNavigationMetadata, type ChatappRequestBuilder } from './chatapp/index.js';
 // @ts-ignore
 import { ExternalRequestBuilderNavigationMetadata, ExternalRequestBuilderRequestsMetadata, type ExternalRequestBuilder } from './external/index.js';
 // @ts-ignore
 import { StoreRequestBuilderNavigationMetadata, type StoreRequestBuilder } from './store/index.js';
 // @ts-ignore
 import { TeamRequestBuilderNavigationMetadata, type TeamRequestBuilder } from './team/index.js';
+// @ts-ignore
+import { type WorkflowRequestBuilder, WorkflowRequestBuilderNavigationMetadata } from './workflow/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -23,9 +25,9 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      */
     get assistant(): AssistantRequestBuilder;
     /**
-     * The common property
+     * The chatapp property
      */
-    get common(): CommonRequestBuilder;
+    get chatapp(): ChatappRequestBuilder;
     /**
      * The external property
      */
@@ -38,6 +40,10 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The team property
      */
     get team(): TeamRequestBuilder;
+    /**
+     * The workflow property
+     */
+    get workflow(): WorkflowRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -50,8 +56,8 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
     assistant: {
         navigationMetadata: AssistantRequestBuilderNavigationMetadata,
     },
-    common: {
-        navigationMetadata: CommonRequestBuilderNavigationMetadata,
+    chatapp: {
+        navigationMetadata: ChatappRequestBuilderNavigationMetadata,
     },
     external: {
         requestsMetadata: ExternalRequestBuilderRequestsMetadata,
@@ -62,6 +68,9 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
     },
     team: {
         navigationMetadata: TeamRequestBuilderNavigationMetadata,
+    },
+    workflow: {
+        navigationMetadata: WorkflowRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

@@ -27,7 +27,7 @@ import { proxyRequestError, proxyFormRequestError } from "../../../helper/Reques
 import type {
   TeamRole,
   AppType,
-  TeamAppItem,
+  QueryAppListCommandResponseItem,
   AppClassifyItem,
 } from "../../../apiClient/models";
 import { AppTypeObject, TeamRoleObject } from "../../../apiClient/models";
@@ -59,7 +59,7 @@ export default function TeamApps() {
 
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
-  const [apps, setApps] = useState<TeamAppItem[]>([]);
+  const [apps, setApps] = useState<QueryAppListCommandResponseItem[]>([]);
   const [classifyList, setClassifyList] = useState<AppClassifyItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedAppType, setSelectedAppType] = useState<AppType | null>(null);
@@ -122,7 +122,7 @@ export default function TeamApps() {
     createForm.resetFields();
     createForm.setFieldsValue({
       isForeign: false,
-      appType: AppTypeObject.Common,
+      appType: AppTypeObject.Chat,
     });
     setCreateModalOpen(true);
   };
@@ -153,11 +153,12 @@ export default function TeamApps() {
   };
 
   // 跳转到配置页面
-  const handleConfig = (record: TeamAppItem) => {
-    if (record.appType === 0) { // 0 = Common
-      navigate(`/app/team/${teamId}/apps/${record.id}/config`);
+  const handleConfig = (record: QueryAppListCommandResponseItem) => {
+    if (record.appType === AppTypeObject.Chat || record.appType === AppTypeObject.Agent) {
+      navigate(`/app/team/${teamId}/apps/${record.appId}/config`);
+    } else if (record.appType === AppTypeObject.Workflow) {
+      navigate(`/app/team/${teamId}/apps/${record.appId}/workflow`);
     }
-    // TODO: 流程编排类型的配置页面
   };
 
   // 启用/禁用应用
@@ -193,13 +194,13 @@ export default function TeamApps() {
     }
   };
 
-  const columns: TableProps<TeamAppItem>['columns'] = [
+  const columns: TableProps<QueryAppListCommandResponseItem>['columns'] = [
     {
       title: "应用",
       dataIndex: "name",
       key: "name",
       sorter: (a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'zh-CN'),
-      render: (_: unknown, record: TeamAppItem) => (
+      render: (_: unknown, record: QueryAppListCommandResponseItem) => (
         <Space>
           <Avatar src={record.avatar} icon={<AppstoreOutlined />} size="small" />
           <span>{record.name}</span>
@@ -210,11 +211,15 @@ export default function TeamApps() {
       title: "类型",
       dataIndex: "appType",
       key: "appType",
-      render: (appType: number) => (
-        <Tag color={appType === 1 ? "purple" : "blue"}>
-          {appType === 1 ? "流程编排" : "普通应用"}
-        </Tag>
-      ),
+      render: (appType: AppType) => {
+        if (appType === AppTypeObject.Workflow) {
+          return <Tag color="purple">流程编排</Tag>;
+        } else if (appType === AppTypeObject.Agent) {
+          return <Tag color="cyan">智能体</Tag>;
+        } else {
+          return <Tag color="blue">对话应用</Tag>;
+        }
+      },
     },
     {
       title: "状态",
@@ -225,7 +230,7 @@ export default function TeamApps() {
           {isDisable ? "已禁用" : "正常"}
         </Tag>
       ),
-    },    {
+    }, {
       title: "isForeign",
       dataIndex: "isForeign",
       key: "isForeign",
@@ -266,7 +271,7 @@ export default function TeamApps() {
       key: "action",
       fixed: 'right',
       width: 260,
-      render: (_: unknown, record: TeamAppItem) => {
+      render: (_: unknown, record: QueryAppListCommandResponseItem) => {
         if (!canManage) return null;
         const isDisabled = record.isDisable === true;
         return (
@@ -284,7 +289,7 @@ export default function TeamApps() {
                 type="link"
                 size="small"
                 icon={<StopOutlined />}
-                onClick={() => handleToggleDisable(record.id!, false)}
+                onClick={() => handleToggleDisable(record.appId!, false)}
               >
                 启用
               </Button>
@@ -292,8 +297,10 @@ export default function TeamApps() {
               <Button
                 type="link"
                 size="small"
+                style={{ color: "red" }}
+                danger
                 icon={<StopOutlined />}
-                onClick={() => handleToggleDisable(record.id!, true)}
+                onClick={() => handleToggleDisable(record.appId!, true)}
               >
                 禁用
               </Button>
@@ -301,7 +308,7 @@ export default function TeamApps() {
             <Popconfirm
               title="确认删除"
               description="确定要删除此应用吗？此操作不可恢复。"
-              onConfirm={() => handleDelete(record.id!)}
+              onConfirm={() => handleDelete(record.appId!)}
               okText="确定"
               cancelText="取消"
               okButtonProps={{ danger: true }}
@@ -356,7 +363,8 @@ export default function TeamApps() {
             allowClear
             style={{ width: 150 }}
             options={[
-              { label: "普通应用", value: AppTypeObject.Common },
+              { label: "对话应用", value: AppTypeObject.Chat },
+              { label: "智能体", value: AppTypeObject.Agent },
               { label: "流程编排", value: AppTypeObject.Workflow },
             ]}
           />
@@ -384,7 +392,7 @@ export default function TeamApps() {
         {/* 应用列表表格 */}
         <div className="team-apps-table-container">
           <Table
-            rowKey="id"
+            rowKey="appId"
             columns={columns}
             dataSource={apps}
             loading={loading}
@@ -427,8 +435,9 @@ export default function TeamApps() {
           <Form.Item name="appType" label="应用模式" rules={[{ required: true }]}>
             <Select
               options={[
-                { label: "普通应用", value: AppTypeObject.Common },
-                { label: "流程编排", value: AppTypeObject.Workflow, disabled: true },
+                { label: "对话应用", value: AppTypeObject.Chat },
+                { label: "智能体", value: AppTypeObject.Agent, disabled: true },
+                { label: "流程编排", value: AppTypeObject.Workflow },
               ]}
             />
           </Form.Item>

@@ -14,10 +14,14 @@ import { proxyRequestError } from "../../helper/RequestError";
 import useAppStore from "../../stateshare/store";
 import "./ApplicationPage.css";
 
+interface ApplicationPageProps {
+  teamId?: number;
+}
+
 /**
  * 应用中心页面 - 按分类展示应用
  */
-export default function ApplicationPage() {
+export default function ApplicationPage({ teamId }: ApplicationPageProps) {
   const navigate = useNavigate();
   const [classifyList, setClassifyList] = useState<AppClassifyItem[]>([]);
   const [appList, setAppList] = useState<AccessibleAppItem[]>([]);
@@ -32,7 +36,7 @@ export default function ApplicationPage() {
   const fetchClassifyList = async () => {
     try {
       const client = GetApiClient();
-      const response = await client.api.admin.appclassify.classify_list.get();
+      const response = await client.api.app.store.classify_list.get();
       if (response?.items) {
         setClassifyList(response.items || []);
       }
@@ -50,6 +54,7 @@ export default function ApplicationPage() {
       const command: QueryAccessibleAppListCommand = {
         classifyId: selectedCategory ?? undefined,
         name: searchText || undefined,
+        teamId: teamId, // 使用传入的 teamId
       };
       const response = await client.api.app.store.accessible_list.post(command);
       if (response?.items) {
@@ -65,21 +70,21 @@ export default function ApplicationPage() {
 
   useEffect(() => {
     fetchClassifyList();
-    fetchAppList();
   }, []);
 
-  // 当分类改变时重新获取
+  // 当分类或团队改变时重新获取
   useEffect(() => {
     fetchAppList();
-  }, [selectedCategory]);
+  }, [selectedCategory, teamId]);
 
   const handleManageClassify = () => {
     navigate("/app/application/classify");
   };
 
-  const handleViewApp = (appId: string | null | undefined) => {
-    if (appId) {
-      navigate(`/app/application/chat/${appId}`);
+  const handleViewApp = (app: AccessibleAppItem) => {
+    if (app.id) {
+      // 根据应用类型确定路由路径，无论是否有 teamId 都使用统一路由
+      navigate(`/app/application/${app.appType}/${app.id}`);
     }
   };
 
@@ -89,7 +94,7 @@ export default function ApplicationPage() {
 
   const renderAppCard = (app: AccessibleAppItem) => {
     return (
-      <div key={app.id || ""} className="app-card" onClick={() => handleViewApp(app.id)}>
+      <div key={app.id || ""} className="app-card" onClick={() => handleViewApp(app)}>
         <div className="app-card-header">
           <div className="app-card-avatar">
             {app.avatar ? (
@@ -160,7 +165,7 @@ export default function ApplicationPage() {
               {category.name}
             </Tag>
           ))}
-          {isAdmin && (
+          {isAdmin && !teamId && (
             <Tag
               className="category-tag category-tag-edit"
               onClick={handleManageClassify}

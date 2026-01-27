@@ -15,7 +15,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
+		<ProjectReference Include="..\..\..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 		<ProjectReference Include="..\..\..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
+		<ProjectReference Include="..\..\..\MoAI.App.Shared\MoAI.App.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.App.Workflow.Shared\MoAI.App.Workflow.Shared.csproj" />
 	</ItemGroup>
 

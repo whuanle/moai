@@ -36,28 +36,37 @@ public class UpdateWorkflowDefinitionCommandHandler : IRequestHandler<UpdateWork
     public async Task<EmptyCommandResponse> Handle(UpdateWorkflowDefinitionCommand request, CancellationToken cancellationToken)
     {
         // 查询现有的工作流设计实体
-        var workflowDesignEntity = await _databaseContext.WorkflowDesigns
-            .FirstOrDefaultAsync(w => w.Id == request.Id && w.IsDeleted == 0, cancellationToken);
+        var workflowDesignEntity = await _databaseContext.AppWorkflowDesigns
+            .FirstOrDefaultAsync(w => w.AppId == request.AppId && w.IsDeleted == 0, cancellationToken);
 
         if (workflowDesignEntity == null)
         {
             throw new BusinessException("工作流定义不存在") { StatusCode = 404 };
         }
 
-        // 部分更新：只更新提供的字段
+        // 查询对应的应用实体（用于更新基础信息）
+        var appEntity = await _databaseContext.Apps
+            .FirstOrDefaultAsync(a => a.Id == request.AppId && a.IsDeleted == 0, cancellationToken);
+
+        if (appEntity == null)
+        {
+            throw new BusinessException("应用不存在") { StatusCode = 404 };
+        }
+
+        // 更新应用基础信息（Name、Description、Avatar 存储在 AppEntity 中）
         if (!string.IsNullOrEmpty(request.Name))
         {
-            workflowDesignEntity.Name = request.Name;
+            appEntity.Name = request.Name;
         }
 
         if (request.Description != null)
         {
-            workflowDesignEntity.Description = request.Description;
+            appEntity.Description = request.Description;
         }
 
         if (request.Avatar != null)
         {
-            workflowDesignEntity.Avatar = request.Avatar;
+            appEntity.Avatar = request.Avatar;
         }
 
         // 更新草稿字段（不影响已发布版本）

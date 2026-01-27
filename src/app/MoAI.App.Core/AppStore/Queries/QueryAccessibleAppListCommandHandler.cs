@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Chat.Chats.Models;
+using MoAI.App.Models;
 using MoAI.Database;
 using MoAI.Storage.Queries;
 
@@ -29,7 +30,13 @@ public class QueryAccessibleAppListCommandHandler : IRequestHandler<QueryAccessi
     public async Task<QueryAccessibleAppListCommandResponse> Handle(QueryAccessibleAppListCommand request, CancellationToken cancellationToken)
     {
         // 获取用户所在的所有团队 ID
-        var userTeamIds = await _databaseContext.TeamUsers
+        var teamQuery = _databaseContext.TeamUsers.AsQueryable();
+        if (request.TeamId.GetValueOrDefault() > 0)
+        {
+            teamQuery = teamQuery.Where(x => x.TeamId == request.TeamId);
+        }
+
+        var userTeamIds = await teamQuery
             .Where(x => x.UserId == request.ContextUserId)
             .Select(x => x.TeamId)
             .ToListAsync(cancellationToken);
@@ -63,7 +70,7 @@ public class QueryAccessibleAppListCommandHandler : IRequestHandler<QueryAccessi
                 Name = x.app.Name,
                 Description = x.app.Description,
                 AvatarKey = x.app.Avatar,
-                AppType = x.app.AppType,
+                AppType = (AppType)x.app.AppType,
                 TeamId = x.app.TeamId,
                 TeamName = x.team.Name,
                 IsPublic = x.app.IsPublic,

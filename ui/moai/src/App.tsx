@@ -43,10 +43,11 @@ import TeamSettings from "./components/team/TeamSettings";
 import ApplicationPage from "./components/application/ApplicationPage";
 import ApplicationClassifyPage from "./components/application/ApplicationClassifyPage";
 import ApplicationListPage from "./components/application/ApplicationListPage";
-import AppChatPage from "./components/application/Apps/AppCommon/AppChatPage";
+import AppChatPage from "./components/application/Apps/chatapp/AppChatPage";
 import UserLayout from "./components/user/UserLayout";
 import TeamWikiWrapper from "./components/team/TeamWikiWrapper";
 import TeamApps from "./components/team/apps/TeamApps";
+import TeamApplicationListPage from "./components/team/apps/TeamApplicationListPage";
 import TeamIntegration from "./components/team/TeamIntegration";
 import McpConfigPage from "./components/wiki/McpConfigPage";
 import PromptViewPage from "./components/prompt/PromptViewPage";
@@ -55,8 +56,7 @@ import PluginAuthorizationPage from "./components/admin/plugin/authorization/Plu
 import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage";
 import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage";
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
-import AppConfigCommon from "./components/team/apps/AppConfigCommon";
-import AppStorePage from "./components/team/appstore/AppStorePage";
+import AppConfigCommon from "./components/team/apps/chatapp/ChatAppConfig";
 
 const { Content } = Layout;
 
@@ -115,7 +115,6 @@ function App() {
             <Route path="application">
               <Route index element={<ApplicationPage />} />
               <Route path="classify" element={<ApplicationClassifyPage />} />
-              <Route path="list/:classifyId" element={<ApplicationListPage />} />
               <Route path="chat/:appId" element={<AppChatPage />} />
             </Route>
             
@@ -146,13 +145,11 @@ function App() {
               <Route path="list" element={<TeamListPage />} />
               {/* 应用配置调试页面 - 独立路由，不显示团队菜单 */}
               <Route path=":id/apps/:appId/config" element={<AppConfigCommon />} />
-              {/* 应用对话页面 - 独立路由，不显示团队菜单 */}
-              <Route path=":id/appstore/:appId" element={<AppChatPage />} />
               <Route path=":id" element={<TeamLayout />}>
                 <Route index element={<TeamWikiWrapper />} />
                 <Route path="wiki" element={<TeamWikiWrapper />} />
-                <Route path="appstore" element={<AppStorePage />} />
-                <Route path="apps" element={<TeamApps />} />
+                <Route path="applist" element={<TeamApplicationListPage />} />
+                <Route path="manage_apps" element={<TeamApps />} />
                 <Route path="integration" element={<TeamIntegration />} />
                 <Route path="members" element={<TeamMembers />} />
                 <Route path="settings" element={<TeamSettings />} />

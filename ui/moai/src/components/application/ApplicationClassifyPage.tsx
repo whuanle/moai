@@ -41,7 +41,7 @@ export default function ApplicationClassifyPage() {
     setLoading(true);
     try {
       const client = GetApiClient();
-      const response = await client.api.admin.appclassify.classify_list.get();
+      const response = await client.api.app.store.classify_list.get();
       if (response?.items) {
         setClassList(response.items || []);
       }

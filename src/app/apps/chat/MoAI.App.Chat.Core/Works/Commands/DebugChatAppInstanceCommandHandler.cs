@@ -89,8 +89,9 @@ public partial class DebugChatAppInstanceCommandHandler : ProcessingChatStreamBa
             Role = AuthorRole.User.Label,
         };
 
-        await _databaseContext.AppChatappChatHistories.AddAsync(userChatRecord);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+        history.Add(userChatRecord);
+        await _redisDatabase.AddAsync(debugKey, history, StackExchange.Redis.When.Always);
+        await _redisDatabase.UpdateExpiryAsync(debugKey, DateTimeOffset.Now.AddHours(1));
 
         AiProcessingChatItem lastChunk = default!;
         await foreach (var item in HandlerAsync(processingChatStreamParameters, cancellationToken))
@@ -120,5 +121,7 @@ public partial class DebugChatAppInstanceCommandHandler : ProcessingChatStreamBa
         };
 
         history.Add(aiChatRecord);
+        await _redisDatabase.AddAsync(debugKey, history, StackExchange.Redis.When.Always);
+        await _redisDatabase.UpdateExpiryAsync(debugKey, DateTimeOffset.Now.AddHours(1));
     }
 }

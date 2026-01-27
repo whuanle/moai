@@ -2,10 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
-using MoAI.App.Apps.CommonApp.Queries;
-using MoAI.App.Apps.CommonApp.Responses;
 using MoAI.App.Manager.Commands;
-using MoAI.App.Manager.ManagerApp.Queries;
 using MoAI.App.Manager.Models;
 using MoAI.App.Manager.Queries;
 using MoAI.Infra.Exceptions;
@@ -20,7 +17,7 @@ namespace MoAI.App.Team;
 /// </summary>
 [ApiController]
 [Route("/app/team")]
-[EndpointGroupName("team_app")]
+[EndpointGroupName("app_manage")]
 public class TeamAppController : ControllerBase
 {
     private readonly IMediator _mediator;

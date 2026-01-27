@@ -24,4 +24,9 @@ public class QueryAccessibleAppListCommand : IUserIdContext, IRequest<QueryAcces
     /// 应用名称（可选，用于模糊搜索）.
     /// </summary>
     public string? Name { get; init; }
+
+    /// <summary>
+    /// 限制团队.
+    /// </summary>
+    public int? TeamId { get; init; }
 }

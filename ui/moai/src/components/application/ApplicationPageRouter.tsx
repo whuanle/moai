@@ -2,7 +2,7 @@ import { RouteObject } from "react-router";
 import ApplicationPage from "./ApplicationPage";
 import ApplicationClassifyPage from "./ApplicationClassifyPage";
 import ApplicationListPage from "./ApplicationListPage";
-import AppChatPage from "./Apps/AppCommon/AppChatPage";
+import AppChatPage from "./Apps/chatapp/AppChatPage";
 
 export const ApplicationPageRouters: RouteObject[] = [
   {
@@ -15,6 +15,10 @@ export const ApplicationPageRouters: RouteObject[] = [
       {
         path: "classify",
         Component: ApplicationClassifyPage,
+      },
+      {
+        path: "list",
+        Component: ApplicationListPage,
       },
       {
         path: "list/:classifyId",

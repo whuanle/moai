@@ -321,7 +321,7 @@ function OAuthPage() {
           <Table
             columns={columns}
             dataSource={data}
-            rowKey="oAuthConnectionId"
+            rowKey="id"
             loading={loading}
             pagination={false}
           />

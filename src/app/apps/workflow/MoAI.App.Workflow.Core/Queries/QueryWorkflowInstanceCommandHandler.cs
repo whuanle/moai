@@ -27,7 +27,7 @@ public class QueryWorkflowInstanceCommandHandler : IRequestHandler<QueryWorkflow
     public async Task<QueryWorkflowInstanceCommandResponse> Handle(QueryWorkflowInstanceCommand request, CancellationToken cancellationToken)
     {
         // 查询工作流执行历史
-        var workflowHistory = await _databaseContext.WorkflowHistories
+        var workflowHistory = await _databaseContext.AppWorkflowHistories
             .Where(w => w.Id == request.Id && w.IsDeleted == 0)
             .FirstOrDefaultAsync(cancellationToken);
 

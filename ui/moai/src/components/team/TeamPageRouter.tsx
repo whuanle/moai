@@ -5,7 +5,9 @@ import TeamMembers from "./TeamMembers";
 import TeamSettings from "./TeamSettings";
 import TeamWikiWrapper from "./TeamWikiWrapper";
 import TeamApps from "./apps/TeamApps";
-import AppConfigCommon from "./apps/AppConfigCommon";
+import TeamApplicationListPage from "./apps/TeamApplicationListPage";
+import AppConfigCommon from "./apps/chatapp/ChatAppConfig";
+import WorkflowConfig from "./apps/workflow/WorkflowConfig";
 import TeamIntegration from "./TeamIntegration";
 
 export const TeamPageRouters: RouteObject[] = [
@@ -37,8 +39,16 @@ export const TeamPageRouters: RouteObject[] = [
             Component: TeamApps,
           },
           {
+            path: "applist",
+            Component: TeamApplicationListPage,
+          },
+          {
             path: "apps/:appId/config",
             Component: AppConfigCommon,
+          },
+          {
+            path: "apps/:appId/workflow",
+            Component: WorkflowConfig,
           },
           {
             path: "integration",

@@ -16,6 +16,8 @@ import { TransferRequestBuilderRequestsMetadata, type TransferRequestBuilder } f
 // @ts-ignore
 import { type UpdateRequestBuilder, UpdateRequestBuilderRequestsMetadata } from './update/index.js';
 // @ts-ignore
+import { type WorkflowappRequestBuilder, WorkflowappRequestBuilderNavigationMetadata } from './workflowapp/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -50,6 +52,10 @@ export interface TeamRequestBuilder extends BaseRequestBuilder<TeamRequestBuilde
      * The update property
      */
     get update(): UpdateRequestBuilder;
+    /**
+     * The workflowapp property
+     */
+    get workflowapp(): WorkflowappRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -79,6 +85,9 @@ export const TeamRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamRequ
     },
     update: {
         requestsMetadata: UpdateRequestBuilderRequestsMetadata,
+    },
+    workflowapp: {
+        navigationMetadata: WorkflowappRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

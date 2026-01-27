@@ -1,3 +1,4 @@
+using MoAI.App.Models;
 using MoAI.Storage.Queries;
 
 namespace MoAI.App.Chat.Chats.Models;
@@ -46,7 +47,7 @@ public class AccessibleAppItem : IAvatarPath
     /// <summary>
     /// 应用类型，普通应用=0,流程编排=1.
     /// </summary>
-    public int AppType { get; init; }
+    public AppType AppType { get; init; }
 
     /// <summary>
     /// 所属团队 id.

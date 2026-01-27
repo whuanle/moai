@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.App.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Workflow.Queries;
@@ -26,33 +27,50 @@ public class QueryWorkflowDefinitionCommandHandler : IRequestHandler<QueryWorkfl
     /// <inheritdoc/>
     public async Task<QueryWorkflowDefinitionCommandResponse> Handle(QueryWorkflowDefinitionCommand request, CancellationToken cancellationToken)
     {
-        // 查询工作流定义
-        var workflowDesign = await _databaseContext.WorkflowDesigns
-            .Where(w => w.Id == request.Id && w.IsDeleted == 0)
+        // 查询应用实体（获取基础信息）
+        var appEntity = await _databaseContext.Apps
+            .Where(a => a.Id == request.AppId && a.IsDeleted == 0)
             .FirstOrDefaultAsync(cancellationToken);
 
-        // 如果不存在，抛出异常
+        if (appEntity == null)
+        {
+            throw new BusinessException("应用不存在") { StatusCode = 404 };
+        }
+
+        // 验证是否为 Workflow 类型
+        if (appEntity.AppType != (int)AppType.Workflow)
+        {
+            throw new BusinessException("该应用不是工作流类型") { StatusCode = 400 };
+        }
+
+        // 查询工作流设计实体（获取设计数据）
+        var workflowDesign = await _databaseContext.AppWorkflowDesigns
+            .Where(w => w.AppId == request.AppId && w.IsDeleted == 0)
+            .FirstOrDefaultAsync(cancellationToken);
+
         if (workflowDesign == null)
         {
             throw new BusinessException("工作流定义不存在") { StatusCode = 404 };
         }
 
-        // 构建响应
+        // 构建响应（基础信息来自 AppEntity，设计数据来自 AppWorkflowDesignEntity）
         return new QueryWorkflowDefinitionCommandResponse
         {
             Id = workflowDesign.Id,
-            TeamId = workflowDesign.TeamId,
-            Name = workflowDesign.Name,
-            Description = workflowDesign.Description,
-            Avatar = workflowDesign.Avatar,
+            AppId = appEntity.Id,
+            TeamId = appEntity.TeamId,
+            Name = appEntity.Name,
+            Description = appEntity.Description,
+            Avatar = appEntity.Avatar,
             UiDesign = workflowDesign.UiDesign,
             FunctionDesign = workflowDesign.FunctionDesgin,
-            UiDesignDraft = request.IncludeDraft ? workflowDesign.UiDesignDraft : null,
-            FunctionDesignDraft = request.IncludeDraft ? workflowDesign.FunctionDesignDraft : null,
-            CreateTime = workflowDesign.CreateTime,
-            UpdateTime = workflowDesign.UpdateTime,
-            CreateUserId = workflowDesign.CreateUserId,
-            UpdateUserId = workflowDesign.UpdateUserId
+            UiDesignDraft = workflowDesign.UiDesignDraft,
+            FunctionDesignDraft = workflowDesign.FunctionDesignDraft,
+            IsPublish = workflowDesign.IsPublish,
+            CreateTime = appEntity.CreateTime,
+            UpdateTime = appEntity.UpdateTime,
+            CreateUserId = appEntity.CreateUserId,
+            UpdateUserId = appEntity.UpdateUserId
         };
     }
 }

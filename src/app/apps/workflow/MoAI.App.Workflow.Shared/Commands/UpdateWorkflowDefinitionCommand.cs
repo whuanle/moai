@@ -8,19 +8,25 @@ namespace MoAI.Workflow.Commands;
 /// <summary>
 /// 更新工作流定义命令.
 /// 用于更新工作流的基础信息和设计草稿.
-/// 设计草稿保存在 UiDesignDraft 和 FunctionDesignDraft 字段中，不会影响已发布的版本.
+/// 基础信息（Name、Description、Avatar）保存在 AppEntity 中.
+/// 设计草稿保存在 AppWorkflowDesignEntity 的 UiDesignDraft 和 FunctionDesignDraft 字段中，不会影响已发布的版本.
 /// 更新时会验证工作流定义的有效性（节点类型、连接等）.
 /// 需要通过发布命令将草稿发布为正式版本.
 /// </summary>
 public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateWorkflowDefinitionCommand>
 {
     /// <summary>
-    /// 工作流定义 ID.
+    /// 团队 id.
     /// </summary>
-    public Guid Id { get; set; }
+    public int TeamId { get; init; }
 
     /// <summary>
-    /// 工作流名称.
+    /// 应用 ID.
+    /// </summary>
+    public Guid AppId { get; set; }
+
+    /// <summary>
+    /// 工作流名称）.
     /// </summary>
     public string? Name { get; set; }
 
@@ -55,8 +61,8 @@ public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, I
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateWorkflowDefinitionCommand> validate)
     {
-        validate.RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("工作流定义 ID 不能为空");
+        validate.RuleFor(x => x.AppId)
+            .NotEmpty().WithMessage("应用 ID 不能为空");
 
         validate.RuleFor(x => x.Name)
             .MaximumLength(100).WithMessage("工作流名称不能超过100个字符")

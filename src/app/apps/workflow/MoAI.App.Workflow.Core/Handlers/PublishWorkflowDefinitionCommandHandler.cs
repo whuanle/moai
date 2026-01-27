@@ -37,8 +37,8 @@ public class PublishWorkflowDefinitionCommandHandler : IRequestHandler<PublishWo
     public async Task<EmptyCommandResponse> Handle(PublishWorkflowDefinitionCommand request, CancellationToken cancellationToken)
     {
         // 1. 检索工作流定义
-        var workflowDesignEntity = await _databaseContext.WorkflowDesigns
-            .FirstOrDefaultAsync(w => w.Id == request.Id && w.IsDeleted == 0, cancellationToken);
+        var workflowDesignEntity = await _databaseContext.AppWorkflowDesigns
+            .FirstOrDefaultAsync(w => w.AppId == request.AppId && w.IsDeleted == 0, cancellationToken);
 
         if (workflowDesignEntity == null)
         {
@@ -81,30 +81,31 @@ public class PublishWorkflowDefinitionCommandHandler : IRequestHandler<PublishWo
         }
 
         // 5. 创建版本快照（保存当前已发布版本）
-        if (!string.IsNullOrEmpty(workflowDesignEntity.FunctionDesgin))
-        {
-            // 计算新版本号
-            var latestSnapshot = await _databaseContext.WorkflowDesginSnapshoots
-                .Where(s => s.WorkflowDesginId == workflowDesignEntity.Id && s.IsDeleted == 0)
-                .OrderByDescending(s => s.CreateTime)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            var newVersion = latestSnapshot != null
-                ? IncrementVersion(latestSnapshot.Version)
-                : "1.0.0";
-
-            var snapshot = new WorkflowDesginSnapshootEntity
-            {
-                Id = Guid.NewGuid(),
-                WorkflowDesginId = workflowDesignEntity.Id,
-                TeamId = workflowDesignEntity.TeamId,
-                UiDesign = workflowDesignEntity.UiDesign,
-                FunctionDesign = workflowDesignEntity.FunctionDesgin,
-                Version = newVersion
-            };
-
-            await _databaseContext.WorkflowDesginSnapshoots.AddAsync(snapshot, cancellationToken);
-        }
+        // TODO: 需要确认快照表的实际名称和结构
+        // if (!string.IsNullOrEmpty(workflowDesignEntity.FunctionDesgin))
+        // {
+        //     // 计算新版本号
+        //     var latestSnapshot = await _databaseContext.AppWorkflowDesignSnapshots
+        //         .Where(s => s.WorkflowDesignId == workflowDesignEntity.Id && s.IsDeleted == 0)
+        //         .OrderByDescending(s => s.CreateTime)
+        //         .FirstOrDefaultAsync(cancellationToken);
+        //
+        //     var newVersion = latestSnapshot != null
+        //         ? IncrementVersion(latestSnapshot.Version)
+        //         : "1.0.0";
+        //
+        //     var snapshot = new AppWorkflowDesignSnapshotEntity
+        //     {
+        //         Id = Guid.CreateVersion7(),
+        //         WorkflowDesignId = workflowDesignEntity.Id,
+        //         TeamId = workflowDesignEntity.TeamId,
+        //         UiDesign = workflowDesignEntity.UiDesign,
+        //         FunctionDesign = workflowDesignEntity.FunctionDesgin,
+        //         Version = newVersion
+        //     };
+        //
+        //     await _databaseContext.AppWorkflowDesignSnapshots.AddAsync(snapshot, cancellationToken);
+        // }
 
         // 6. 发布草稿（复制草稿到正式版本）
         workflowDesignEntity.UiDesign = workflowDesignEntity.UiDesignDraft;

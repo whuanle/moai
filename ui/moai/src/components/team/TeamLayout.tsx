@@ -63,8 +63,8 @@ export default function TeamLayout() {
     if (path.includes("/settings")) return "settings";
     if (path.includes("/members")) return "members";
     if (path.includes("/wiki")) return "wiki";
-    if (path.includes("/appstore")) return "appstore";
-    if (path.includes("/apps")) return "apps";
+    if (path.includes("/applist")) return "applist";
+    if (path.includes("/manage_apps")) return "manage_apps";
     if (path.includes("/integration")) return "integration";
     return "wiki";
   };
@@ -78,7 +78,7 @@ export default function TeamLayout() {
       label: "知识库",
     },
     {
-      key: "appstore",
+      key: "applist",
       icon: <AppstoreOutlined />,
       label: "应用中心",
     },
@@ -90,7 +90,7 @@ export default function TeamLayout() {
     ...(canManage
       ? [
         {
-          key: "apps",
+          key: "manage_apps",
           icon: <SettingOutlined />,
           label: "应用管理",
         },
@@ -109,11 +109,7 @@ export default function TeamLayout() {
   ];
 
   const handleMenuClick = (key: string) => {
-    if (key === "appstore") {
-      navigate(`/app/appstore/${id}`);
-    } else {
-      navigate(`/app/team/${id}/${key}`);
-    }
+    navigate(`/app/team/${id}/${key}`);
   };
 
   if (loading) {

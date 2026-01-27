@@ -34,7 +34,22 @@ public class DeleteAppCommandHandler : IRequestHandler<DeleteAppCommand, EmptyCo
             throw new BusinessException("应用不存在") { StatusCode = 404 };
         }
 
+        // 软删除应用实体
         _databaseContext.Apps.Remove(appEntity);
+
+        // 如果是 Workflow 类型的应用，同时软删除关联的 AppWorkflowDesignEntity
+        if (appEntity.AppType == (int)App.Models.AppType.Workflow)
+        {
+            var workflowDesignEntity = await _databaseContext.AppWorkflowDesigns
+                .FirstOrDefaultAsync(w => w.AppId == request.AppId && w.IsDeleted == 0, cancellationToken);
+
+            if (workflowDesignEntity != null)
+            {
+                _databaseContext.AppWorkflowDesigns.Remove(workflowDesignEntity);
+            }
+        }
+
+        // 注意：AppWorkflowHistoryEntity 执行历史不会被删除，保留以供审计
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
