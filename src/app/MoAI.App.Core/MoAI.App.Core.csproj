@@ -21,6 +21,7 @@
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\plugin\MoAI.Plugin.Shared\MoAI.Plugin.Shared.csproj" />
 		<ProjectReference Include="..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
+		<ProjectReference Include="..\apps\workflow\MoAI.App.Workflow.Core\MoAI.App.Workflow.Core.csproj" />
 		<ProjectReference Include="..\MoAI.App.Api\MoAI.App.Api.csproj" />
 	</ItemGroup>
 

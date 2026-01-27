@@ -3,13 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 using MoAI.Workflow.Runtime;
 using MoAI.Workflow.Services;
 
-namespace MoAI.Workflow;
+namespace MoAI.App.Workflow;
 
 /// <summary>
 /// Workflow Core 模块.
 /// </summary>
 [InjectModule<WorkflowSharedModule>]
-[InjectModule<WorkflowApiModule>]
 public class WorkflowCoreModule : IModule
 {
     /// <inheritdoc/>

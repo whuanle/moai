@@ -43,7 +43,6 @@ namespace MoAI;
 [InjectModule<AppCoreModule>]
 [InjectModule<ExternalCoreModule>]
 [InjectModule<HangfireCoreModule>]
-[InjectModule<WorkflowCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule
 {

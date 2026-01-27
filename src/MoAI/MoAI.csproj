@@ -48,7 +48,6 @@
 		<ProjectReference Include="..\team\MoAI.Team.Core\MoAI.Team.Core.csproj" />
 		<ProjectReference Include="..\user\MoAI.User.Core\MoAI.User.Core.csproj" />
 		<ProjectReference Include="..\wiki\MoAI.Wiki.Core\MoAI.Wiki.Core.csproj" />
-		<ProjectReference Include="..\workflow\MoAI.Workflow.Core\MoAI.Workflow.Core.csproj" />
 	</ItemGroup>
 
 </Project>

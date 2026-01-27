@@ -1,4 +1,6 @@
 using Maomi;
+using MoAI.App.Chat;
+using MoAI.App.Workflow;
 
 namespace MoAI.App;
 
@@ -7,6 +9,8 @@ namespace MoAI.App;
 /// </summary>
 [InjectModule<AppSharedModule>]
 [InjectModule<AppApiModule>]
+[InjectModule<AppChatAppCoreModule>]
+[InjectModule<WorkflowCoreModule>]
 public class AppCoreModule : IModule
 {
     /// <inheritdoc/>

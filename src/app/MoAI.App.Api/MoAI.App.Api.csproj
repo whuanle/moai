@@ -13,7 +13,7 @@
 		<ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
-		<ProjectReference Include="..\..\workflow\MoAI.Workflow.Shared\MoAI.Workflow.Shared.csproj" />
+		<ProjectReference Include="..\apps\chat\MoAI.App.Chat.Core\MoAI.App.Chat.Core.csproj" />
 		<ProjectReference Include="..\apps\chat\MoAi.App.Chat.Shared\MoAi.App.Chat.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.App.Shared\MoAI.App.Shared.csproj" />
 	</ItemGroup>

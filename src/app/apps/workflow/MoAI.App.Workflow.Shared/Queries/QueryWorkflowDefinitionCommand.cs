@@ -19,7 +19,7 @@ public class QueryWorkflowDefinitionCommand : IRequest<QueryWorkflowDefinitionCo
     /// 是否包含草稿数据.
     /// 如果为 true，返回草稿版本；否则返回已发布版本.
     /// </summary>
-    public bool IncludeDraft { get; init; } = false;
+    public bool IncludeDraft { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryWorkflowDefinitionCommand> validate)

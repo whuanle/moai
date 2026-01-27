@@ -26,7 +26,7 @@ public class CreateWorkflowDefinitionCommandHandler : IRequestHandler<CreateWork
     public async Task<SimpleGuid> Handle(CreateWorkflowDefinitionCommand request, CancellationToken cancellationToken)
     {
         // 创建工作流设计实体（只包含基础信息）
-        var workflowDesignEntity = new WorkflowDesignEntity
+        var workflowDesignEntity = new AppWorkflowDesignEntity
         {
             Id = Guid.NewGuid(),
             TeamId = request.TeamId,
@@ -41,7 +41,7 @@ public class CreateWorkflowDefinitionCommandHandler : IRequestHandler<CreateWork
         };
 
         // 存储到数据库
-        await _databaseContext.WorkflowDesigns.AddAsync(workflowDesignEntity, cancellationToken);
+        await _databaseContext.AppWorkflowDesigns.AddAsync(workflowDesignEntity, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         // 返回工作流定义 ID
