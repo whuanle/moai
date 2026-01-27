@@ -12,7 +12,7 @@ import "./ChatAppConfig.css";
 const { Sider, Content } = Layout;
 const { Title } = Typography;
 
-export default function AppConfigCommon() {
+export default function ChatAppConfig() {
   const { id, appId } = useParams();
   const navigate = useNavigate();
   const teamId = parseInt(id!);
@@ -159,7 +159,7 @@ export default function AppConfigCommon() {
   };
 
   const handleBack = () => {
-    navigate(`/app/team/${teamId}/apps`);
+    navigate(`/app/team/${teamId}/manage_apps`);
   };
 
   return (

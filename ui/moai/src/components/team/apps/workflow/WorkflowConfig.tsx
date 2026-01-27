@@ -11,7 +11,7 @@ export default function WorkflowConfig() {
   const teamId = parseInt(id!);
 
   const handleBack = () => {
-    navigate(`/app/team/${teamId}/apps`);
+    navigate(`/app/team/${teamId}/manage_apps`);
   };
 
   return (

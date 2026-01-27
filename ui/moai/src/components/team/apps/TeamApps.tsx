@@ -155,9 +155,9 @@ export default function TeamApps() {
   // 跳转到配置页面
   const handleConfig = (record: QueryAppListCommandResponseItem) => {
     if (record.appType === AppTypeObject.Chat || record.appType === AppTypeObject.Agent) {
-      navigate(`/app/team/${teamId}/apps/${record.appId}/config`);
+      navigate(`/app/team/${teamId}/manage_app/chat/${record.appId}`);
     } else if (record.appType === AppTypeObject.Workflow) {
-      navigate(`/app/team/${teamId}/apps/${record.appId}/workflow`);
+      navigate(`/app/team/${teamId}/manage_app/workflow/${record.appId}`);
     }
   };
 
