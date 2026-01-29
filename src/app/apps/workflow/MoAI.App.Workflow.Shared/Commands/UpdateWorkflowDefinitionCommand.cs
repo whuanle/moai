@@ -44,7 +44,7 @@ public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, I
     /// UI 设计草稿，用于前端可视化设计器.
     /// 保存草稿不会影响已发布的版本.
     /// </summary>
-    public UiDesign? UiDesignDraft { get; set; }
+    public string UiDesignDraft { get; set; } = default!;
 
     /// <summary>
     /// 节点设计列表.
@@ -71,6 +71,9 @@ public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, I
         validate.RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("工作流描述不能超过500个字符")
             .When(x => !string.IsNullOrEmpty(x.Description));
+
+        validate.RuleFor(x => x.UiDesignDraft)
+           .NotEmpty().WithMessage("画布设计不能为空");
 
         validate.RuleFor(x => x.Avatar)
             .MaximumLength(200).WithMessage("头像路径不能超过200个字符")

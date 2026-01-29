@@ -10,7 +10,7 @@ import {
 import "@flowgram.ai/free-layout-editor/index.css";
 import { useEditorProps } from "./useEditorProps";
 import { NodePanel } from "./NodePanel";
-import { NodeTemplate } from "./nodeTemplates";
+import { NodeTemplate } from "./types";
 import { Tools } from "./Tools";
 import { Minimap } from "./Minimap";
 import "./WorkflowConfig.css";
@@ -26,7 +26,6 @@ function WorkflowTools() {
     try {
       const currentDoc = document.toJSON();
       messageApi.success("工作流已保存");
-      console.log("保存的工作流数据:", currentDoc);
       // TODO: 调用 API 保存到后端
     } catch (error) {
       console.error("保存失败:", error);
@@ -37,7 +36,6 @@ function WorkflowTools() {
   const handleRun = () => {
     try {
       const currentDoc = document.toJSON();
-      console.log("执行工作流:", currentDoc);
       messageApi.info("工作流执行功能开发中");
       // TODO: 调用 API 执行工作流
     } catch (error) {
@@ -87,18 +85,17 @@ function WorkflowCanvas() {
       // 将鼠标位置转换为画布坐标
       const canvasPos = playground.config.getPosFromMouseEvent(e.nativeEvent);
       
-      // 创建新节点
-      const newNode = {
+      // 使用 createWorkflowNode 创建节点
+      document.createWorkflowNode({
         id: `${template.type}_${Date.now()}`,
         type: template.type,
         meta: {
           position: canvasPos,
         },
-        data: template.defaultData
-      };
-      
-      // 添加到画布
-      document.addNode(newNode);
+        data: template.defaultData,
+        blocks: [],
+        edges: []
+      });
       
       messageApi.success(`已添加 ${template.name} 节点`);
     } catch (error) {
@@ -233,26 +230,24 @@ export default function WorkflowConfig() {
   return (
     <div className="workflow-config-container">
       {contextHolder}
-      {/* 头部 */}
-      <div className="workflow-config-header">
-        <Space>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleBack} />
-          <Title level={4} style={{ margin: 0 }}>
-            流程编排配置
-          </Title>
-        </Space>
-        <FreeLayoutEditorProvider {...editorProps}>
+      <FreeLayoutEditorProvider {...editorProps}>
+        {/* 头部 */}
+        <div className="workflow-config-header">
+          <Space>
+            <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleBack} />
+            <Title level={4} style={{ margin: 0 }}>
+              流程编排配置
+            </Title>
+          </Space>
           <WorkflowTools />
-        </FreeLayoutEditorProvider>
-      </div>
+        </div>
 
-      {/* 画布区域 */}
-      <div className="workflow-canvas-container">
-        <NodePanel />
-        <FreeLayoutEditorProvider {...editorProps}>
+        {/* 画布区域 */}
+        <div className="workflow-canvas-container">
+          <NodePanel />
           <WorkflowCanvas />
-        </FreeLayoutEditorProvider>
-      </div>
+        </div>
+      </FreeLayoutEditorProvider>
     </div>
   );
 }

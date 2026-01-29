@@ -10,6 +10,8 @@ export const nodeRegistries: WorkflowNodeRegistry[] = nodeTemplates.map(template
     type: template.type,
     meta: {
       defaultExpanded: true,
+      color: template.color,
+      icon: template.icon,
     },
   };
 

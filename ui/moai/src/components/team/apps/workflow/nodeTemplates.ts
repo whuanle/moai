@@ -1,53 +1,13 @@
 /**
  * 工作流节点模板定义
- * 定义所有可用的节点类型、分类和默认配置
  */
 
-/**
- * 节点分类枚举
- */
-export enum NodeCategory {
-  Control = 'control',      // 控制流
-  AI = 'ai',               // AI 节点
-  Data = 'data',           // 数据处理
-  Integration = 'integration' // 集成
-}
+import { NodeTemplate, NodeType, NodeCategory, FieldType } from './types';
 
-/**
- * 字段定义接口
- */
-export interface FieldDefine {
-  fieldName: string;
-  fieldType: 'empty' | 'string' | 'number' | 'boolean' | 'object' | 'array' | 'dynamic';
-  isRequired: boolean;
-}
-
-/**
- * 节点模板接口
- */
-export interface NodeTemplate {
-  type: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  category: NodeCategory;
-  defaultData: {
-    title: string;
-    content?: string;
-    inputFields?: FieldDefine[];
-    outputFields?: FieldDefine[];
-  };
-}
-
-/**
- * 节点模板数组
- * 包含所有可用的节点类型定义
- */
 export const nodeTemplates: NodeTemplate[] = [
   // ==================== 控制流节点 ====================
   {
-    type: 'start',
+    type: NodeType.Start,
     name: '开始',
     description: '工作流的起始节点',
     icon: '▶️',
@@ -56,12 +16,17 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '开始',
       outputFields: [
-        { fieldName: 'trigger', fieldType: 'object', isRequired: false }
+        { 
+          fieldName: 'trigger', 
+          fieldType: FieldType.Object, 
+          isRequired: false,
+          description: '触发器数据'
+        }
       ]
     }
   },
   {
-    type: 'end',
+    type: NodeType.End,
     name: '结束',
     description: '工作流的结束节点',
     icon: '⏹️',
@@ -70,12 +35,17 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '结束',
       inputFields: [
-        { fieldName: 'result', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'result', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '工作流执行结果'
+        }
       ]
     }
   },
   {
-    type: 'condition',
+    type: NodeType.Condition,
     name: '条件判断',
     description: '根据条件分支执行',
     icon: '◆',
@@ -84,16 +54,31 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '条件判断',
       inputFields: [
-        { fieldName: 'condition', fieldType: 'boolean', isRequired: true }
+        { 
+          fieldName: 'condition', 
+          fieldType: FieldType.Boolean, 
+          isRequired: true,
+          description: '判断条件'
+        }
       ],
       outputFields: [
-        { fieldName: 'true', fieldType: 'dynamic', isRequired: false },
-        { fieldName: 'false', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'true', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '条件为真时的输出'
+        },
+        { 
+          fieldName: 'false', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '条件为假时的输出'
+        }
       ]
     }
   },
   {
-    type: 'fork',
+    type: NodeType.Fork,
     name: '并行分支',
     description: '同时执行多个分支',
     icon: '⑂',
@@ -102,15 +87,25 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '并行分支',
       inputFields: [
-        { fieldName: 'input', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'input', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '输入数据'
+        }
       ],
       outputFields: [
-        { fieldName: 'branches', fieldType: 'array', isRequired: false }
+        { 
+          fieldName: 'branches', 
+          fieldType: FieldType.Array, 
+          isRequired: false,
+          description: '分支执行结果'
+        }
       ]
     }
   },
   {
-    type: 'forEach',
+    type: NodeType.ForEach,
     name: '循环遍历',
     description: '遍历数组中的每个元素',
     icon: '🔁',
@@ -119,18 +114,33 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '循环遍历',
       inputFields: [
-        { fieldName: 'array', fieldType: 'array', isRequired: true }
+        { 
+          fieldName: 'array', 
+          fieldType: FieldType.Array, 
+          isRequired: true,
+          description: '要遍历的数组'
+        }
       ],
       outputFields: [
-        { fieldName: 'item', fieldType: 'dynamic', isRequired: false },
-        { fieldName: 'index', fieldType: 'number', isRequired: false }
+        { 
+          fieldName: 'item', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '当前遍历的元素'
+        },
+        { 
+          fieldName: 'index', 
+          fieldType: FieldType.Number, 
+          isRequired: false,
+          description: '当前元素的索引'
+        }
       ]
     }
   },
   
   // ==================== AI 节点 ====================
   {
-    type: 'aiChat',
+    type: NodeType.AiChat,
     name: 'AI 对话',
     description: '调用 AI 模型进行对话',
     icon: '🤖',
@@ -139,18 +149,33 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: 'AI 对话',
       inputFields: [
-        { fieldName: 'prompt', fieldType: 'string', isRequired: true },
-        { fieldName: 'context', fieldType: 'string', isRequired: false }
+        { 
+          fieldName: 'prompt', 
+          fieldType: FieldType.String, 
+          isRequired: true,
+          description: '对话提示词'
+        },
+        { 
+          fieldName: 'context', 
+          fieldType: FieldType.String, 
+          isRequired: false,
+          description: '上下文信息'
+        }
       ],
       outputFields: [
-        { fieldName: 'response', fieldType: 'string', isRequired: false }
+        { 
+          fieldName: 'response', 
+          fieldType: FieldType.String, 
+          isRequired: false,
+          description: 'AI 回复内容'
+        }
       ]
     }
   },
   
   // ==================== 数据处理节点 ====================
   {
-    type: 'dataProcess',
+    type: NodeType.DataProcess,
     name: '数据处理',
     description: '处理和转换数据',
     icon: '⚙️',
@@ -159,15 +184,25 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '数据处理',
       inputFields: [
-        { fieldName: 'input', fieldType: 'dynamic', isRequired: true }
+        { 
+          fieldName: 'input', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: true,
+          description: '输入数据'
+        }
       ],
       outputFields: [
-        { fieldName: 'output', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'output', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '处理后的数据'
+        }
       ]
     }
   },
   {
-    type: 'javaScript',
+    type: NodeType.JavaScript,
     name: 'JavaScript',
     description: '执行 JavaScript 代码',
     icon: '📜',
@@ -177,17 +212,27 @@ export const nodeTemplates: NodeTemplate[] = [
       title: 'JavaScript',
       content: '// 编写 JavaScript 代码\nreturn input;',
       inputFields: [
-        { fieldName: 'input', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'input', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '输入变量'
+        }
       ],
       outputFields: [
-        { fieldName: 'output', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'output', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '代码执行结果'
+        }
       ]
     }
   },
   
   // ==================== 集成节点 ====================
   {
-    type: 'plugin',
+    type: NodeType.Plugin,
     name: '插件调用',
     description: '调用已配置的插件',
     icon: '🔌',
@@ -196,15 +241,25 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '插件调用',
       inputFields: [
-        { fieldName: 'params', fieldType: 'object', isRequired: false }
+        { 
+          fieldName: 'params', 
+          fieldType: FieldType.Object, 
+          isRequired: false,
+          description: '插件参数'
+        }
       ],
       outputFields: [
-        { fieldName: 'result', fieldType: 'dynamic', isRequired: false }
+        { 
+          fieldName: 'result', 
+          fieldType: FieldType.Dynamic, 
+          isRequired: false,
+          description: '插件执行结果'
+        }
       ]
     }
   },
   {
-    type: 'wiki',
+    type: NodeType.Wiki,
     name: '知识库查询',
     description: '从知识库中检索信息',
     icon: '📚',
@@ -213,21 +268,39 @@ export const nodeTemplates: NodeTemplate[] = [
     defaultData: {
       title: '知识库查询',
       inputFields: [
-        { fieldName: 'query', fieldType: 'string', isRequired: true }
+        { 
+          fieldName: 'query', 
+          fieldType: FieldType.String, 
+          isRequired: true,
+          description: '查询关键词'
+        }
       ],
       outputFields: [
-        { fieldName: 'documents', fieldType: 'array', isRequired: false }
+        { 
+          fieldName: 'documents', 
+          fieldType: FieldType.Array, 
+          isRequired: false,
+          description: '检索到的文档'
+        }
       ]
     }
   }
 ];
 
-/**
- * 分类名称映射
- */
+// 分类名称映射
 export const categoryNames: Record<NodeCategory, string> = {
   [NodeCategory.Control]: '控制流',
   [NodeCategory.AI]: 'AI 节点',
   [NodeCategory.Data]: '数据处理',
   [NodeCategory.Integration]: '集成'
 };
+
+// 根据类型获取节点模板
+export function getNodeTemplate(type: NodeType): NodeTemplate | undefined {
+  return nodeTemplates.find(t => t.type === type);
+}
+
+// 根据分类获取节点模板
+export function getNodeTemplatesByCategory(category: NodeCategory): NodeTemplate[] {
+  return nodeTemplates.filter(t => t.category === category);
+}

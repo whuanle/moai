@@ -3920,33 +3920,6 @@ export function createTransferTeamOwnerCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UiDesign_customSettings}
- */
-// @ts-ignore
-export function createUiDesign_customSettingsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUiDesign_customSettings;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UiDesign_nodePositions}
- */
-// @ts-ignore
-export function createUiDesign_nodePositionsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUiDesign_nodePositions;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UiDesign}
- */
-// @ts-ignore
-export function createUiDesignFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUiDesign;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UnbindUserAccountCommand}
  */
 // @ts-ignore
@@ -8597,38 +8570,6 @@ export function deserializeIntoTransferTeamOwnerCommand(transferTeamOwnerCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoUiDesign(uiDesign: Partial<UiDesign> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "customSettings": n => { uiDesign.customSettings = n.getObjectValue<UiDesign_customSettings>(createUiDesign_customSettingsFromDiscriminatorValue); },
-        "nodePositions": n => { uiDesign.nodePositions = n.getObjectValue<UiDesign_nodePositions>(createUiDesign_nodePositionsFromDiscriminatorValue); },
-        "offsetX": n => { uiDesign.offsetX = n.getNumberValue(); },
-        "offsetY": n => { uiDesign.offsetY = n.getNumberValue(); },
-        "zoom": n => { uiDesign.zoom = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoUiDesign_customSettings(uiDesign_customSettings: Partial<UiDesign_customSettings> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoUiDesign_nodePositions(uiDesign_nodePositions: Partial<UiDesign_nodePositions> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoUnbindUserAccountCommand(unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "bindId": n => { unbindUserAccountCommand.bindId = n.getNumberValue(); },
@@ -9032,7 +8973,7 @@ export function deserializeIntoUpdateWorkflowDefinitionCommand(updateWorkflowDef
         "name": n => { updateWorkflowDefinitionCommand.name = n.getStringValue(); },
         "nodes": n => { updateWorkflowDefinitionCommand.nodes = n.getCollectionOfObjectValues<NodeDesign>(createNodeDesignFromDiscriminatorValue); },
         "teamId": n => { updateWorkflowDefinitionCommand.teamId = n.getNumberValue(); },
-        "uiDesignDraft": n => { updateWorkflowDefinitionCommand.uiDesignDraft = n.getObjectValue<UiDesign>(createUiDesignFromDiscriminatorValue); },
+        "uiDesignDraft": n => { updateWorkflowDefinitionCommand.uiDesignDraft = n.getStringValue(); },
     }
 }
 /**
@@ -17288,38 +17229,6 @@ export function serializeTransferTeamOwnerCommand(writer: SerializationWriter, t
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeUiDesign(writer: SerializationWriter, uiDesign: Partial<UiDesign> | undefined | null = {}) : void {
-    if (uiDesign) {
-        writer.writeObjectValue<UiDesign_customSettings>("customSettings", uiDesign.customSettings, serializeUiDesign_customSettings);
-        writer.writeObjectValue<UiDesign_nodePositions>("nodePositions", uiDesign.nodePositions, serializeUiDesign_nodePositions);
-        writer.writeNumberValue("offsetX", uiDesign.offsetX);
-        writer.writeNumberValue("offsetY", uiDesign.offsetY);
-        writer.writeNumberValue("zoom", uiDesign.zoom);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeUiDesign_customSettings(writer: SerializationWriter, uiDesign_customSettings: Partial<UiDesign_customSettings> | undefined | null = {}) : void {
-    if (uiDesign_customSettings) {
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeUiDesign_nodePositions(writer: SerializationWriter, uiDesign_nodePositions: Partial<UiDesign_nodePositions> | undefined | null = {}) : void {
-    if (uiDesign_nodePositions) {
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeUnbindUserAccountCommand(writer: SerializationWriter, unbindUserAccountCommand: Partial<UnbindUserAccountCommand> | undefined | null = {}) : void {
     if (unbindUserAccountCommand) {
         writer.writeNumberValue("bindId", unbindUserAccountCommand.bindId);
@@ -17723,7 +17632,7 @@ export function serializeUpdateWorkflowDefinitionCommand(writer: SerializationWr
         writer.writeStringValue("name", updateWorkflowDefinitionCommand.name);
         writer.writeCollectionOfObjectValues<NodeDesign>("nodes", updateWorkflowDefinitionCommand.nodes, serializeNodeDesign);
         writer.writeNumberValue("teamId", updateWorkflowDefinitionCommand.teamId);
-        writer.writeObjectValue<UiDesign>("uiDesignDraft", updateWorkflowDefinitionCommand.uiDesignDraft, serializeUiDesign);
+        writer.writeStringValue("uiDesignDraft", updateWorkflowDefinitionCommand.uiDesignDraft);
     }
 }
 /**
@@ -18299,41 +18208,6 @@ export interface TransferTeamOwnerCommand extends Parsable {
      * 团队ID.
      */
     teamId?: number | null;
-}
-/**
- * UI 设计模型，用于前端可视化设计器的布局和样式信息.
- */
-export interface UiDesign extends Parsable {
-    /**
-     * 其他自定义 UI 配置（扩展字段）.
-     */
-    customSettings?: UiDesign_customSettings | null;
-    /**
-     * 节点位置信息，键为节点键，值为位置配置.
-     */
-    nodePositions?: UiDesign_nodePositions | null;
-    /**
-     * 画布偏移量 X.
-     */
-    offsetX?: number | null;
-    /**
-     * 画布偏移量 Y.
-     */
-    offsetY?: number | null;
-    /**
-     * 画布缩放比例.
-     */
-    zoom?: number | null;
-}
-/**
- * 其他自定义 UI 配置（扩展字段）.
- */
-export interface UiDesign_customSettings extends Parsable {
-}
-/**
- * 节点位置信息，键为节点键，值为位置配置.
- */
-export interface UiDesign_nodePositions extends Parsable {
 }
 /**
  * 解绑第三方账号.
@@ -19058,7 +18932,7 @@ export interface UpdateWorkflowDefinitionCommand extends Parsable {
     /**
      * UI 设计草稿，用于前端可视化设计器.保存草稿不会影响已发布的版本.
      */
-    uiDesignDraft?: UiDesign | null;
+    uiDesignDraft?: string | null;
 }
 /**
  * QueryUserListCommandResponseItem.

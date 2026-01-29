@@ -1,13 +1,15 @@
+/**
+ * 工作流节点面板组件
+ * 显示可拖拽的节点模板库
+ */
+
 import { useState } from 'react';
 import { Collapse, Input, Badge } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { nodeTemplates, NodeCategory, categoryNames, NodeTemplate } from './nodeTemplates';
+import { nodeTemplates, categoryNames } from './nodeTemplates';
+import { NodeCategory, NodeTemplate } from './types';
 import './NodePanel.css';
 
-/**
- * 节点面板组件
- * 显示所有可用的节点模板，支持搜索和拖拽
- */
 export function NodePanel() {
   const [searchText, setSearchText] = useState('');
   
@@ -29,13 +31,23 @@ export function NodePanel() {
     )
   })).filter(group => group.nodes.length > 0);
   
-  /**
-   * 处理拖拽开始事件
-   * 将节点模板数据传递给拖拽事件
-   */
+  // 拖拽开始事件
   const handleDragStart = (e: React.DragEvent, template: NodeTemplate) => {
     e.dataTransfer.setData('application/json', JSON.stringify(template));
     e.dataTransfer.effectAllowed = 'copy';
+    
+    // 添加拖拽样式类
+    const target = e.currentTarget as HTMLElement;
+    target.classList.add('dragging');
+    
+    // 设置节点颜色（通过 CSS 变量）
+    target.style.setProperty('--node-border-color', template.color);
+  };
+  
+  // 拖拽结束事件
+  const handleDragEnd = (e: React.DragEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.classList.remove('dragging');
   };
   
   return (
@@ -48,6 +60,7 @@ export function NodePanel() {
           value={searchText}
           onChange={e => setSearchText(e.target.value)}
           allowClear
+          size="small"
         />
       </div>
       
@@ -60,7 +73,7 @@ export function NodePanel() {
             label: (
               <span className="node-category-label">
                 {categoryNames[category]}
-                <Badge count={nodes.length} />
+                <Badge count={nodes.length} className="category-badge" />
               </span>
             ),
             children: (
@@ -71,7 +84,13 @@ export function NodePanel() {
                     className="node-template-card"
                     draggable
                     onDragStart={e => handleDragStart(e, template)}
-                    style={{ ['--node-color' as string]: template.color } as React.CSSProperties}
+                    onDragEnd={handleDragEnd}
+                    title={template.description}
+                    ref={(el) => {
+                      if (el) {
+                        el.style.setProperty('--node-border-color', template.color);
+                      }
+                    }}
                   >
                     <div className="node-template-icon">{template.icon}</div>
                     <div className="node-template-info">

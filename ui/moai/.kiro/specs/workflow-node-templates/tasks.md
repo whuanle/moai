@@ -5,18 +5,18 @@
   - 定义 NodeTemplate 接口
   - 定义 NodeCategory 枚举
   - 导出 nodeTemplates 数组
-- [ ] 1.2 定义控制流节点模板
+- [x] 1.2 定义控制流节点模板
   - Start 节点
   - End 节点
   - Condition 节点
   - Fork 节点
   - ForEach 节点
-- [ ] 1.3 定义 AI 节点模板
+- [x] 1.3 定义 AI 节点模板
   - AiChat 节点
-- [ ] 1.4 定义数据处理节点模板
+- [x] 1.4 定义数据处理节点模板
   - DataProcess 节点
   - JavaScript 节点
-- [ ] 1.5 定义集成节点模板
+- [x] 1.5 定义集成节点模板
   - Plugin 节点
   - Wiki 节点
 
@@ -44,11 +44,11 @@
   - 添加拖拽视觉反馈
 
 ## 3. 画布集成
-- [ ] 3.1 修改 WorkflowConfig 布局
+- [x] 3.1 修改 WorkflowConfig 布局
   - 调整 CSS 布局支持左侧面板
   - 添加 NodePanel 组件到布局
   - 确保画布区域正确调整大小
-- [ ] 3.2 实现画布拖放处理
+- [x] 3.2 实现画布拖放处理
   - 添加 onDragOver 事件处理
   - 添加 onDrop 事件处理
   - 将鼠标位置转换为画布坐标

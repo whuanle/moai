@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface Query_defineRequestBuilder extends BaseRequestBuilder<Query_defineRequestBuilder> {
     /**
-     * 查询单个节点定义.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.对于 Plugin 节点，需要提供 PluginId 以获取特定插件的定义.
+     * 查询节点定义.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.
      * @param body 查询节点定义命令（批量查询）.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.支持批量查询多个节点定义，例如多个插件、知识库或 AI 模型.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryNodeDefineCommandResponse>}
@@ -23,7 +23,7 @@ export interface Query_defineRequestBuilder extends BaseRequestBuilder<Query_def
      */
      post(body: QueryNodeDefineCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryNodeDefineCommandResponse | undefined>;
     /**
-     * 查询单个节点定义.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.对于 Plugin 节点，需要提供 PluginId 以获取特定插件的定义.
+     * 查询节点定义.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.
      * @param body 查询节点定义命令（批量查询）.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.支持批量查询多个节点定义，例如多个插件、知识库或 AI 模型.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

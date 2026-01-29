@@ -174,7 +174,7 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
       },
       // 内容变更回调
       onContentChange(_ctx, event) {
-        console.log('工作流数据变更: ', event);
+        // 工作流数据变更
       },
       // 启用节点表单引擎
       nodeEngine: {
@@ -187,7 +187,7 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
       },
       // 初始化回调
       onInit: (_ctx) => {
-        console.log('编辑器初始化完成');
+        // 编辑器初始化完成
       },
       // 渲染完成回调
       onAllLayersRendered(ctx) {
@@ -196,7 +196,7 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
       },
       // 销毁回调
       onDispose() {
-        console.log('编辑器已销毁');
+        // 编辑器已销毁
       },
       // 插件配置
       plugins: () => [

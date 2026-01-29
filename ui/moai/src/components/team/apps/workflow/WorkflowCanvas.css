@@ -1,0 +1,151 @@
+/**
+ * 工作流画布样式
+ */
+
+.workflow-canvas {
+  flex: 1;
+  position: relative;
+  background: var(--color-bg-layout);
+  background-image: 
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  overflow: auto;
+  min-height: 600px;
+}
+
+/* 空状态 */
+.canvas-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 16px;
+  max-width: 300px;
+}
+
+/* 工作流节点 */
+.workflow-node {
+  --node-color: var(--color-border);
+  position: absolute;
+  width: 200px;
+  background: var(--color-bg-container);
+  border: 2px solid var(--node-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  cursor: move;
+}
+
+.workflow-node:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  z-index: 10;
+}
+
+/* 节点头部 */
+.node-header {
+  --header-bg: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  color: white;
+  background: var(--header-bg);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  font-weight: 500;
+}
+
+.node-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.node-title {
+  flex: 1;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-delete {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.node-delete:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 节点主体 */
+.node-body {
+  padding: var(--spacing-sm);
+  font-size: 12px;
+}
+
+.node-type {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+}
+
+/* 端口信息 */
+.node-ports {
+  margin-top: var(--spacing-sm);
+}
+
+.port-label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.port-item {
+  color: var(--color-text-secondary);
+  padding: 2px 0;
+  padding-left: var(--spacing-sm);
+}
+
+/* 拖拽时的样式 */
+.workflow-canvas.drag-over {
+  background-color: rgba(22, 119, 255, 0.05);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .workflow-node {
+    width: 180px;
+  }
+  
+  .node-header {
+    padding: 8px;
+  }
+  
+  .node-body {
+    padding: 8px;
+  }
+}
