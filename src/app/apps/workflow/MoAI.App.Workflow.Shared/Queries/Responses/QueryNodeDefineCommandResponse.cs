@@ -4,9 +4,20 @@ using MoAI.Workflow.Models;
 namespace MoAI.Workflow.Queries.Responses;
 
 /// <summary>
-/// 查询节点定义响应.
+/// 查询节点定义响应（批量查询）.
 /// </summary>
 public class QueryNodeDefineCommandResponse
+{
+    /// <summary>
+    /// 节点定义列表.
+    /// </summary>
+    public IReadOnlyList<NodeDefineItem> Nodes { get; init; } = Array.Empty<NodeDefineItem>();
+}
+
+/// <summary>
+/// 节点定义项.
+/// </summary>
+public class NodeDefineItem
 {
     /// <summary>
     /// 节点类型.

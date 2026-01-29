@@ -1,10 +1,15 @@
 /* 流程编排配置页面样式 */
 
 .workflow-config-container {
-  height: 100vh;
+  /* 高度：视口高度 - App header 高度 */
+  height: calc(100vh - var(--header-height));
+  width: calc(100% + var(--spacing-lg) * 2);
   display: flex;
   flex-direction: column;
   background: var(--color-bg-layout);
+  overflow: hidden;
+  /* 抵消 app-content 的 padding，让画布占满整个区域 */
+  margin: calc(var(--spacing-lg) * -1);
 }
 
 .workflow-config-header {
@@ -14,25 +19,146 @@
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   box-shadow: var(--shadow-sm);
+  z-index: 10;
+  flex-shrink: 0;
 }
 
-.workflow-config-content {
+.workflow-canvas-container {
   flex: 1;
-  overflow: auto;
-  padding: var(--spacing-lg);
+  overflow: hidden;
+  position: relative;
+  background: #fafafa;
+  display: flex;
 }
 
-.workflow-empty-state {
+.workflow-editor {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 小地图 - 左下角 */
+.workflow-minimap {
+  position: absolute !important;
+  left: var(--spacing-lg) !important;
+  right: auto !important;
+  bottom: var(--spacing-lg) !important;
+  top: auto !important;
+  width: 198px;
+  z-index: 100;
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* 覆盖 MinimapRender 内部可能的定位样式 */
+.workflow-minimap > * {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  top: auto !important;
+}
+
+/* 工具栏 - 右下角 */
+.workflow-tools {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  display: flex;
+  gap: 8px;
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 8px 12px;
+  z-index: 100;
+}
+
+.workflow-tools button {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
-  background: var(--color-bg-container);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
 }
 
-.workflow-empty-state .ant-empty-description {
-  margin-top: var(--spacing-md);
+.workflow-tools button:hover:not(:disabled) {
+  background: var(--color-bg-layout);
+  color: var(--color-primary);
 }
+
+.workflow-zoom-level {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  min-width: 45px;
+  justify-content: center;
+}
+
+/* FlowGram 编辑器样式 */
+
+/* 节点样式 */
+.workflow-node {
+  display: flex;
+  min-width: 240px;
+  min-height: 80px;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-container);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.workflow-node::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  background-color: var(--color-bg-container);
+  border-radius: var(--radius-md);
+}
+
+.workflow-node:hover::before {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.1));
+}
+
+.workflow-node.activated::before,
+.workflow-node.selected::before {
+  outline: 2px solid var(--color-primary);
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.1));
+}
+
+.workflow-node-title {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: #fff;
+  width: 100%;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.workflow-node-content {
+  padding: 8px 12px;
+  flex-grow: 1;
+  width: 100%;
+}
+
+.workflow-node-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+

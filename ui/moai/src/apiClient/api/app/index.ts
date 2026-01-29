@@ -12,8 +12,6 @@ import { StoreRequestBuilderNavigationMetadata, type StoreRequestBuilder } from 
 // @ts-ignore
 import { TeamRequestBuilderNavigationMetadata, type TeamRequestBuilder } from './team/index.js';
 // @ts-ignore
-import { type WorkflowRequestBuilder, WorkflowRequestBuilderNavigationMetadata } from './workflow/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -40,10 +38,6 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The team property
      */
     get team(): TeamRequestBuilder;
-    /**
-     * The workflow property
-     */
-    get workflow(): WorkflowRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -68,9 +62,6 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
     },
     team: {
         navigationMetadata: TeamRequestBuilderNavigationMetadata,
-    },
-    workflow: {
-        navigationMetadata: WorkflowRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

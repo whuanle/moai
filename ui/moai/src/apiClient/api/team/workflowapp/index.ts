@@ -6,6 +6,8 @@ import { ConfigRequestBuilderRequestsMetadata, type ConfigRequestBuilder } from 
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { Query_defineRequestBuilderRequestsMetadata, type Query_defineRequestBuilder } from './query_define/index.js';
+// @ts-ignore
 import { type UpdateRequestBuilder, UpdateRequestBuilderRequestsMetadata } from './update/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -22,6 +24,10 @@ export interface WorkflowappRequestBuilder extends BaseRequestBuilder<Workflowap
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The query_define property
+     */
+    get query_define(): Query_defineRequestBuilder;
     /**
      * The update property
      */
@@ -40,6 +46,9 @@ export const WorkflowappRequestBuilderNavigationMetadata: Record<Exclude<keyof W
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    query_define: {
+        requestsMetadata: Query_defineRequestBuilderRequestsMetadata,
     },
     update: {
         requestsMetadata: UpdateRequestBuilderRequestsMetadata,

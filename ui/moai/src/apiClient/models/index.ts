@@ -1932,6 +1932,15 @@ export function createKeyValueOfLongAndStringFromDiscriminatorValue(parseNode: P
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KeyValueOfNodeTypeAndIReadOnlyCollectionOfString}
+ */
+// @ts-ignore
+export function createKeyValueOfNodeTypeAndIReadOnlyCollectionOfStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKeyValueOfNodeTypeAndIReadOnlyCollectionOfString;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {KeyValueOfStringAndBoolean}
  */
 // @ts-ignore
@@ -2091,29 +2100,11 @@ export function createNativePluginTemplateInfoFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {NodeDefineErrorItem}
+ * @returns {NodeDefineItem}
  */
 // @ts-ignore
-export function createNodeDefineErrorItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoNodeDefineErrorItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {NodeDefineRequest}
- */
-// @ts-ignore
-export function createNodeDefineRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoNodeDefineRequest;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {NodeDefineResponseItem}
- */
-// @ts-ignore
-export function createNodeDefineResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoNodeDefineResponseItem;
+export function createNodeDefineItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoNodeDefineItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2676,24 +2667,6 @@ export function createQueryAppClassifyListCommandResponseFromDiscriminatorValue(
 // @ts-ignore
 export function createQueryAppListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAppListCommandResponseItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryBatchNodeDefineCommand}
- */
-// @ts-ignore
-export function createQueryBatchNodeDefineCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryBatchNodeDefineCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryBatchNodeDefineCommandResponse}
- */
-// @ts-ignore
-export function createQueryBatchNodeDefineCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryBatchNodeDefineCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -6043,6 +6016,17 @@ export function deserializeIntoKeyValueOfLongAndString(keyValueOfLongAndString: 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoKeyValueOfNodeTypeAndIReadOnlyCollectionOfString(keyValueOfNodeTypeAndIReadOnlyCollectionOfString: Partial<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "key": n => { keyValueOfNodeTypeAndIReadOnlyCollectionOfString.key = n.getEnumValue<NodeType>(NodeTypeObject); },
+        "value": n => { keyValueOfNodeTypeAndIReadOnlyCollectionOfString.value = n.getCollectionOfPrimitiveValues<string>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoKeyValueOfStringAndBoolean(keyValueOfStringAndBoolean: Partial<KeyValueOfStringAndBoolean> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "key": n => { keyValueOfStringAndBoolean.key = n.getStringValue(); },
@@ -6237,37 +6221,22 @@ export function deserializeIntoNativePluginTemplateInfo(nativePluginTemplateInfo
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoNodeDefineErrorItem(nodeDefineErrorItem: Partial<NodeDefineErrorItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoNodeDefineItem(nodeDefineItem: Partial<NodeDefineItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "errorCode": n => { nodeDefineErrorItem.errorCode = n.getStringValue(); },
-        "errorMessage": n => { nodeDefineErrorItem.errorMessage = n.getStringValue(); },
-        "nodeType": n => { nodeDefineErrorItem.nodeType = n.getStringValue(); },
-        "requestId": n => { nodeDefineErrorItem.requestId = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoNodeDefineRequest(nodeDefineRequest: Partial<NodeDefineRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "modelId": n => { nodeDefineRequest.modelId = n.getNumberValue(); },
-        "nodeType": n => { nodeDefineRequest.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
-        "pluginId": n => { nodeDefineRequest.pluginId = n.getNumberValue(); },
-        "requestId": n => { nodeDefineRequest.requestId = n.getStringValue(); },
-        "wikiId": n => { nodeDefineRequest.wikiId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoNodeDefineResponseItem(nodeDefineResponseItem: Partial<NodeDefineResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        ...deserializeIntoQueryNodeDefineCommandResponse(nodeDefineResponseItem),
-        "requestId": n => { nodeDefineResponseItem.requestId = n.getStringValue(); },
+        "color": n => { nodeDefineItem.color = n.getStringValue(); },
+        "description": n => { nodeDefineItem.description = n.getStringValue(); },
+        "icon": n => { nodeDefineItem.icon = n.getStringValue(); },
+        "inputFields": n => { nodeDefineItem.inputFields = n.getCollectionOfObjectValues<FieldDefine>(createFieldDefineFromDiscriminatorValue); },
+        "modelId": n => { nodeDefineItem.modelId = n.getNumberValue(); },
+        "modelName": n => { nodeDefineItem.modelName = n.getStringValue(); },
+        "nodeType": n => { nodeDefineItem.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
+        "nodeTypeName": n => { nodeDefineItem.nodeTypeName = n.getStringValue(); },
+        "outputFields": n => { nodeDefineItem.outputFields = n.getCollectionOfObjectValues<FieldDefine>(createFieldDefineFromDiscriminatorValue); },
+        "pluginId": n => { nodeDefineItem.pluginId = n.getNumberValue(); },
+        "pluginName": n => { nodeDefineItem.pluginName = n.getStringValue(); },
+        "supportsStreaming": n => { nodeDefineItem.supportsStreaming = n.getBooleanValue(); },
+        "wikiId": n => { nodeDefineItem.wikiId = n.getNumberValue(); },
+        "wikiName": n => { nodeDefineItem.wikiName = n.getStringValue(); },
     }
 }
 /**
@@ -6975,27 +6944,6 @@ export function deserializeIntoQueryAppListCommandResponseItem(queryAppListComma
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryBatchNodeDefineCommand(queryBatchNodeDefineCommand: Partial<QueryBatchNodeDefineCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "requests": n => { queryBatchNodeDefineCommand.requests = n.getCollectionOfObjectValues<NodeDefineRequest>(createNodeDefineRequestFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryBatchNodeDefineCommandResponse(queryBatchNodeDefineCommandResponse: Partial<QueryBatchNodeDefineCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "errors": n => { queryBatchNodeDefineCommandResponse.errors = n.getCollectionOfObjectValues<NodeDefineErrorItem>(createNodeDefineErrorItemFromDiscriminatorValue); },
-        "nodeDefines": n => { queryBatchNodeDefineCommandResponse.nodeDefines = n.getCollectionOfObjectValues<NodeDefineResponseItem>(createNodeDefineResponseItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoQueryChatAppConfigCommand(queryChatAppConfigCommand: Partial<QueryChatAppConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { queryChatAppConfigCommand.appId = n.getGuidValue(); },
@@ -7296,10 +7244,8 @@ export function deserializeIntoQueryNativePluginTemplateParamsCommandResponse(qu
 // @ts-ignore
 export function deserializeIntoQueryNodeDefineCommand(queryNodeDefineCommand: Partial<QueryNodeDefineCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "modelId": n => { queryNodeDefineCommand.modelId = n.getNumberValue(); },
-        "nodeType": n => { queryNodeDefineCommand.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
-        "pluginId": n => { queryNodeDefineCommand.pluginId = n.getNumberValue(); },
-        "wikiId": n => { queryNodeDefineCommand.wikiId = n.getNumberValue(); },
+        "nodes": n => { queryNodeDefineCommand.nodes = n.getCollectionOfObjectValues<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString>(createKeyValueOfNodeTypeAndIReadOnlyCollectionOfStringFromDiscriminatorValue); },
+        "teamId": n => { queryNodeDefineCommand.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -7309,20 +7255,7 @@ export function deserializeIntoQueryNodeDefineCommand(queryNodeDefineCommand: Pa
 // @ts-ignore
 export function deserializeIntoQueryNodeDefineCommandResponse(queryNodeDefineCommandResponse: Partial<QueryNodeDefineCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "color": n => { queryNodeDefineCommandResponse.color = n.getStringValue(); },
-        "description": n => { queryNodeDefineCommandResponse.description = n.getStringValue(); },
-        "icon": n => { queryNodeDefineCommandResponse.icon = n.getStringValue(); },
-        "inputFields": n => { queryNodeDefineCommandResponse.inputFields = n.getCollectionOfObjectValues<FieldDefine>(createFieldDefineFromDiscriminatorValue); },
-        "modelId": n => { queryNodeDefineCommandResponse.modelId = n.getNumberValue(); },
-        "modelName": n => { queryNodeDefineCommandResponse.modelName = n.getStringValue(); },
-        "nodeType": n => { queryNodeDefineCommandResponse.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
-        "nodeTypeName": n => { queryNodeDefineCommandResponse.nodeTypeName = n.getStringValue(); },
-        "outputFields": n => { queryNodeDefineCommandResponse.outputFields = n.getCollectionOfObjectValues<FieldDefine>(createFieldDefineFromDiscriminatorValue); },
-        "pluginId": n => { queryNodeDefineCommandResponse.pluginId = n.getNumberValue(); },
-        "pluginName": n => { queryNodeDefineCommandResponse.pluginName = n.getStringValue(); },
-        "supportsStreaming": n => { queryNodeDefineCommandResponse.supportsStreaming = n.getBooleanValue(); },
-        "wikiId": n => { queryNodeDefineCommandResponse.wikiId = n.getNumberValue(); },
-        "wikiName": n => { queryNodeDefineCommandResponse.wikiName = n.getStringValue(); },
+        "nodes": n => { queryNodeDefineCommandResponse.nodes = n.getCollectionOfObjectValues<NodeDefineItem>(createNodeDefineItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -9913,6 +9846,19 @@ export interface KeyValueOfLongAndString extends Parsable {
 /**
  * kv.
  */
+export interface KeyValueOfNodeTypeAndIReadOnlyCollectionOfString extends Parsable {
+    /**
+     * Key.
+     */
+    key?: NodeType | null;
+    /**
+     * Value.
+     */
+    value?: string[] | null;
+}
+/**
+ * kv.
+ */
 export interface KeyValueOfStringAndBoolean extends Parsable {
     /**
      * Key.
@@ -10239,59 +10185,65 @@ export interface NativePluginTemplateInfo extends Parsable {
     pluginType?: PluginType | null;
 }
 /**
- * 节点定义错误项.
+ * 节点定义项.
  */
-export interface NodeDefineErrorItem extends Parsable {
+export interface NodeDefineItem extends Parsable {
     /**
-     * 错误代码.
+     * 节点颜色（可选，用于 UI 显示）.
      */
-    errorCode?: string | null;
+    color?: string | null;
     /**
-     * 错误消息.
+     * 节点描述信息.
      */
-    errorMessage?: string | null;
+    description?: string | null;
     /**
-     * 节点类型.
+     * 节点图标（可选）.
      */
-    nodeType?: string | null;
+    icon?: string | null;
     /**
-     * 请求标识符.
+     * 输入字段定义列表.
      */
-    requestId?: string | null;
-}
-/**
- * 节点定义请求项.
- */
-export interface NodeDefineRequest extends Parsable {
+    inputFields?: FieldDefine[] | null;
     /**
-     * AI 模型 ID（仅当 NodeType 为 AiChat 时可选）.
+     * AI 模型 ID（仅 AiChat 节点）.
      */
     modelId?: number | null;
+    /**
+     * AI 模型名称（仅 AiChat 节点）.
+     */
+    modelName?: string | null;
     /**
      * 节点类型.
      */
     nodeType?: NodeType | null;
     /**
-     * 插件 ID（仅当 NodeType 为 Plugin 时需要）.
+     * 节点类型名称.
+     */
+    nodeTypeName?: string | null;
+    /**
+     * 输出字段定义列表.
+     */
+    outputFields?: FieldDefine[] | null;
+    /**
+     * 插件 ID（仅 Plugin 节点）.
      */
     pluginId?: number | null;
     /**
-     * 请求标识符（可选，用于客户端关联请求和响应）.
+     * 插件名称（仅 Plugin 节点）.
      */
-    requestId?: string | null;
+    pluginName?: string | null;
     /**
-     * 知识库 ID（仅当 NodeType 为 Wiki 时可选）.
+     * 是否支持流式输出.
+     */
+    supportsStreaming?: boolean | null;
+    /**
+     * 知识库 ID（仅 Wiki 节点）.
      */
     wikiId?: number | null;
-}
-/**
- * 节点定义响应项.
- */
-export interface NodeDefineResponseItem extends Parsable, QueryNodeDefineCommandResponse {
     /**
-     * 请求标识符（与请求中的 RequestId 对应）.
+     * 知识库名称（仅 Wiki 节点）.
      */
-    requestId?: string | null;
+    wikiName?: string | null;
 }
 /**
  * 节点设计模型，表示用户对工作流中节点的配置.
@@ -11384,28 +11336,6 @@ export interface QueryAppListCommandResponseItem extends AuditsInfo, Parsable {
     name?: string | null;
 }
 /**
- * 批量查询节点定义命令（聚合 API）.用于一次性获取多个节点类型的定义信息，减少 API 调用次数.支持混合查询不同类型的节点，包括需要额外参数的 Plugin、AiChat、Wiki 节点.
- */
-export interface QueryBatchNodeDefineCommand extends Parsable {
-    /**
-     * 节点定义请求列表.
-     */
-    requests?: NodeDefineRequest[] | null;
-}
-/**
- * 批量查询节点定义响应.
- */
-export interface QueryBatchNodeDefineCommandResponse extends Parsable {
-    /**
-     * 失败的请求列表.
-     */
-    errors?: NodeDefineErrorItem[] | null;
-    /**
-     * 节点定义列表.
-     */
-    nodeDefines?: NodeDefineResponseItem[] | null;
-}
-/**
  * 查询应用详细信息.
  */
 export interface QueryChatAppConfigCommand extends Parsable {
@@ -11834,86 +11764,26 @@ export interface QueryNativePluginTemplateParamsCommand extends Parsable {
 export interface QueryNativePluginTemplateParamsCommandResponse extends NativePluginTemplateInfo, Parsable {
 }
 /**
- * 查询单个节点定义命令.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.对于 Plugin 节点，需要提供 PluginId 以获取特定插件的定义.
+ * 查询节点定义命令（批量查询）.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.支持批量查询多个节点定义，例如多个插件、知识库或 AI 模型.
  */
 export interface QueryNodeDefineCommand extends Parsable {
     /**
-     * AI 模型 ID（仅当 NodeType 为 AiChat 时可选，用于获取特定模型的配置）.
+     * 节点查询列表.Key: 节点类型Value: 节点实例标识列表（插件 ID、知识库 ID、模型 ID 等，转换为字符串）对于不需要实例标识的节点类型（如 Start、End、Condition 等），Value 可以为空集合.
      */
-    modelId?: number | null;
+    nodes?: KeyValueOfNodeTypeAndIReadOnlyCollectionOfString[] | null;
     /**
-     * 节点类型.
+     * 团队 id.
      */
-    nodeType?: NodeType | null;
-    /**
-     * 插件 ID（仅当 NodeType 为 Plugin 时需要）.
-     */
-    pluginId?: number | null;
-    /**
-     * 知识库 ID（仅当 NodeType 为 Wiki 时可选，用于获取特定知识库的配置）.
-     */
-    wikiId?: number | null;
+    teamId?: number | null;
 }
 /**
- * 查询节点定义响应.
+ * 查询节点定义响应（批量查询）.
  */
 export interface QueryNodeDefineCommandResponse extends Parsable {
     /**
-     * 节点颜色（可选，用于 UI 显示）.
+     * 节点定义列表.
      */
-    color?: string | null;
-    /**
-     * 节点描述信息.
-     */
-    description?: string | null;
-    /**
-     * 节点图标（可选）.
-     */
-    icon?: string | null;
-    /**
-     * 输入字段定义列表.
-     */
-    inputFields?: FieldDefine[] | null;
-    /**
-     * AI 模型 ID（仅 AiChat 节点）.
-     */
-    modelId?: number | null;
-    /**
-     * AI 模型名称（仅 AiChat 节点）.
-     */
-    modelName?: string | null;
-    /**
-     * 节点类型.
-     */
-    nodeType?: NodeType | null;
-    /**
-     * 节点类型名称.
-     */
-    nodeTypeName?: string | null;
-    /**
-     * 输出字段定义列表.
-     */
-    outputFields?: FieldDefine[] | null;
-    /**
-     * 插件 ID（仅 Plugin 节点）.
-     */
-    pluginId?: number | null;
-    /**
-     * 插件名称（仅 Plugin 节点）.
-     */
-    pluginName?: string | null;
-    /**
-     * 是否支持流式输出.
-     */
-    supportsStreaming?: boolean | null;
-    /**
-     * 知识库 ID（仅 Wiki 节点）.
-     */
-    wikiId?: number | null;
-    /**
-     * 知识库名称（仅 Wiki 节点）.
-     */
-    wikiName?: string | null;
+    nodes?: NodeDefineItem[] | null;
 }
 /**
  * 查询可用的飞桨 OCR 插件列表 (公开或被授权的 paddleocr_ocr、paddleocr_vl、paddleocr_structure_v3 插件).
@@ -14837,6 +14707,17 @@ export function serializeKeyValueOfLongAndString(writer: SerializationWriter, ke
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeKeyValueOfNodeTypeAndIReadOnlyCollectionOfString(writer: SerializationWriter, keyValueOfNodeTypeAndIReadOnlyCollectionOfString: Partial<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString> | undefined | null = {}) : void {
+    if (keyValueOfNodeTypeAndIReadOnlyCollectionOfString) {
+        writer.writeEnumValue<NodeType>("key", keyValueOfNodeTypeAndIReadOnlyCollectionOfString.key);
+        writer.writeCollectionOfPrimitiveValues<string>("value", keyValueOfNodeTypeAndIReadOnlyCollectionOfString.value);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeKeyValueOfStringAndBoolean(writer: SerializationWriter, keyValueOfStringAndBoolean: Partial<KeyValueOfStringAndBoolean> | undefined | null = {}) : void {
     if (keyValueOfStringAndBoolean) {
         writer.writeStringValue("key", keyValueOfStringAndBoolean.key);
@@ -15031,37 +14912,22 @@ export function serializeNativePluginTemplateInfo(writer: SerializationWriter, n
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeNodeDefineErrorItem(writer: SerializationWriter, nodeDefineErrorItem: Partial<NodeDefineErrorItem> | undefined | null = {}) : void {
-    if (nodeDefineErrorItem) {
-        writer.writeStringValue("errorCode", nodeDefineErrorItem.errorCode);
-        writer.writeStringValue("errorMessage", nodeDefineErrorItem.errorMessage);
-        writer.writeStringValue("nodeType", nodeDefineErrorItem.nodeType);
-        writer.writeStringValue("requestId", nodeDefineErrorItem.requestId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeNodeDefineRequest(writer: SerializationWriter, nodeDefineRequest: Partial<NodeDefineRequest> | undefined | null = {}) : void {
-    if (nodeDefineRequest) {
-        writer.writeNumberValue("modelId", nodeDefineRequest.modelId);
-        writer.writeEnumValue<NodeType>("nodeType", nodeDefineRequest.nodeType);
-        writer.writeNumberValue("pluginId", nodeDefineRequest.pluginId);
-        writer.writeStringValue("requestId", nodeDefineRequest.requestId);
-        writer.writeNumberValue("wikiId", nodeDefineRequest.wikiId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeNodeDefineResponseItem(writer: SerializationWriter, nodeDefineResponseItem: Partial<NodeDefineResponseItem> | undefined | null = {}) : void {
-    if (nodeDefineResponseItem) {
-        serializeQueryNodeDefineCommandResponse(writer, nodeDefineResponseItem)
-        writer.writeStringValue("requestId", nodeDefineResponseItem.requestId);
+export function serializeNodeDefineItem(writer: SerializationWriter, nodeDefineItem: Partial<NodeDefineItem> | undefined | null = {}) : void {
+    if (nodeDefineItem) {
+        writer.writeStringValue("color", nodeDefineItem.color);
+        writer.writeStringValue("description", nodeDefineItem.description);
+        writer.writeStringValue("icon", nodeDefineItem.icon);
+        writer.writeCollectionOfObjectValues<FieldDefine>("inputFields", nodeDefineItem.inputFields, serializeFieldDefine);
+        writer.writeNumberValue("modelId", nodeDefineItem.modelId);
+        writer.writeStringValue("modelName", nodeDefineItem.modelName);
+        writer.writeEnumValue<NodeType>("nodeType", nodeDefineItem.nodeType);
+        writer.writeStringValue("nodeTypeName", nodeDefineItem.nodeTypeName);
+        writer.writeCollectionOfObjectValues<FieldDefine>("outputFields", nodeDefineItem.outputFields, serializeFieldDefine);
+        writer.writeNumberValue("pluginId", nodeDefineItem.pluginId);
+        writer.writeStringValue("pluginName", nodeDefineItem.pluginName);
+        writer.writeBooleanValue("supportsStreaming", nodeDefineItem.supportsStreaming);
+        writer.writeNumberValue("wikiId", nodeDefineItem.wikiId);
+        writer.writeStringValue("wikiName", nodeDefineItem.wikiName);
     }
 }
 /**
@@ -15769,27 +15635,6 @@ export function serializeQueryAppListCommandResponseItem(writer: SerializationWr
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryBatchNodeDefineCommand(writer: SerializationWriter, queryBatchNodeDefineCommand: Partial<QueryBatchNodeDefineCommand> | undefined | null = {}) : void {
-    if (queryBatchNodeDefineCommand) {
-        writer.writeCollectionOfObjectValues<NodeDefineRequest>("requests", queryBatchNodeDefineCommand.requests, serializeNodeDefineRequest);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryBatchNodeDefineCommandResponse(writer: SerializationWriter, queryBatchNodeDefineCommandResponse: Partial<QueryBatchNodeDefineCommandResponse> | undefined | null = {}) : void {
-    if (queryBatchNodeDefineCommandResponse) {
-        writer.writeCollectionOfObjectValues<NodeDefineErrorItem>("errors", queryBatchNodeDefineCommandResponse.errors, serializeNodeDefineErrorItem);
-        writer.writeCollectionOfObjectValues<NodeDefineResponseItem>("nodeDefines", queryBatchNodeDefineCommandResponse.nodeDefines, serializeNodeDefineResponseItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeQueryChatAppConfigCommand(writer: SerializationWriter, queryChatAppConfigCommand: Partial<QueryChatAppConfigCommand> | undefined | null = {}) : void {
     if (queryChatAppConfigCommand) {
         writer.writeGuidValue("appId", queryChatAppConfigCommand.appId);
@@ -16090,10 +15935,8 @@ export function serializeQueryNativePluginTemplateParamsCommandResponse(writer: 
 // @ts-ignore
 export function serializeQueryNodeDefineCommand(writer: SerializationWriter, queryNodeDefineCommand: Partial<QueryNodeDefineCommand> | undefined | null = {}) : void {
     if (queryNodeDefineCommand) {
-        writer.writeNumberValue("modelId", queryNodeDefineCommand.modelId);
-        writer.writeEnumValue<NodeType>("nodeType", queryNodeDefineCommand.nodeType);
-        writer.writeNumberValue("pluginId", queryNodeDefineCommand.pluginId);
-        writer.writeNumberValue("wikiId", queryNodeDefineCommand.wikiId);
+        writer.writeCollectionOfObjectValues<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString>("nodes", queryNodeDefineCommand.nodes, serializeKeyValueOfNodeTypeAndIReadOnlyCollectionOfString);
+        writer.writeNumberValue("teamId", queryNodeDefineCommand.teamId);
     }
 }
 /**
@@ -16103,20 +15946,7 @@ export function serializeQueryNodeDefineCommand(writer: SerializationWriter, que
 // @ts-ignore
 export function serializeQueryNodeDefineCommandResponse(writer: SerializationWriter, queryNodeDefineCommandResponse: Partial<QueryNodeDefineCommandResponse> | undefined | null = {}) : void {
     if (queryNodeDefineCommandResponse) {
-        writer.writeStringValue("color", queryNodeDefineCommandResponse.color);
-        writer.writeStringValue("description", queryNodeDefineCommandResponse.description);
-        writer.writeStringValue("icon", queryNodeDefineCommandResponse.icon);
-        writer.writeCollectionOfObjectValues<FieldDefine>("inputFields", queryNodeDefineCommandResponse.inputFields, serializeFieldDefine);
-        writer.writeNumberValue("modelId", queryNodeDefineCommandResponse.modelId);
-        writer.writeStringValue("modelName", queryNodeDefineCommandResponse.modelName);
-        writer.writeEnumValue<NodeType>("nodeType", queryNodeDefineCommandResponse.nodeType);
-        writer.writeStringValue("nodeTypeName", queryNodeDefineCommandResponse.nodeTypeName);
-        writer.writeCollectionOfObjectValues<FieldDefine>("outputFields", queryNodeDefineCommandResponse.outputFields, serializeFieldDefine);
-        writer.writeNumberValue("pluginId", queryNodeDefineCommandResponse.pluginId);
-        writer.writeStringValue("pluginName", queryNodeDefineCommandResponse.pluginName);
-        writer.writeBooleanValue("supportsStreaming", queryNodeDefineCommandResponse.supportsStreaming);
-        writer.writeNumberValue("wikiId", queryNodeDefineCommandResponse.wikiId);
-        writer.writeStringValue("wikiName", queryNodeDefineCommandResponse.wikiName);
+        writer.writeCollectionOfObjectValues<NodeDefineItem>("nodes", queryNodeDefineCommandResponse.nodes, serializeNodeDefineItem);
     }
 }
 /**

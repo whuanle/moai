@@ -1,0 +1,119 @@
+.workflow-node-panel {
+  width: 280px;
+  height: 100%;
+  background: var(--color-bg-container);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.node-panel-header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.node-panel-header h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.node-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+}
+
+.node-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.node-template-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  border-left-color: var(--node-color, var(--color-primary));
+  border-radius: var(--radius-sm);
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.node-template-card:hover {
+  background: var(--color-bg-layout);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.node-template-card:active {
+  cursor: grabbing;
+  transform: translateY(0);
+}
+
+.node-template-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.node-template-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.node-template-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.node-template-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 滚动条样式 */
+.node-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.node-panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.node-panel-content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.node-panel-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* 分类标签样式 */
+.node-category-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 节点右键菜单样式 */
+.workflow-node {
+  cursor: pointer;
+  user-select: none;
+}
+
+.workflow-node:hover {
+  box-shadow: var(--shadow-md);
+}
