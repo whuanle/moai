@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.App.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
+using MoAI.Workflow.Models;
 using MoAI.Workflow.Queries;
 using MoAI.Workflow.Queries.Responses;
 
@@ -62,10 +64,8 @@ public class QueryWorkflowDefinitionCommandHandler : IRequestHandler<QueryWorkfl
             Name = appEntity.Name,
             Description = appEntity.Description,
             Avatar = appEntity.Avatar,
-            UiDesign = workflowDesign.UiDesign,
-            FunctionDesign = workflowDesign.FunctionDesgin,
             UiDesignDraft = workflowDesign.UiDesignDraft,
-            FunctionDesignDraft = workflowDesign.FunctionDesignDraft,
+            FunctionDesignDraft = workflowDesign.FunctionDesignDraft.JsonToObject<IReadOnlyCollection<NodeDesign>>()!,
             IsPublish = workflowDesign.IsPublish,
             CreateTime = appEntity.CreateTime,
             UpdateTime = appEntity.UpdateTime,

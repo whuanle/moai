@@ -142,7 +142,7 @@ public class AiClientBuilder : IDisposable, IAiClientBuilder
             var url = endpoint.Endpoint;
             var httpClient = _httpClientFactory.CreateClient(name: "ai_stream");
 
-            var openAIClientCredential = new ApiKeyCredential("sk-fbe37ba0d2e546479c09353dc7386034");
+            var openAIClientCredential = new ApiKeyCredential(endpoint.Key);
             var openAIClientOption = new OpenAIClientOptions
             {
                 Endpoint = new Uri(endpoint.Endpoint),

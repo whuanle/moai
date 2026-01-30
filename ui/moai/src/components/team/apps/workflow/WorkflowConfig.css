@@ -12,6 +12,15 @@
   margin: calc(var(--spacing-lg) * -1);
 }
 
+/* 加载和错误状态容器 */
+.workflow-loading-container,
+.workflow-error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
 .workflow-config-header {
   height: 60px;
   padding: 0 var(--spacing-lg);
@@ -25,12 +34,65 @@
   flex-shrink: 0;
 }
 
+.workflow-config-title {
+  margin: 0 !important;
+}
+
 .workflow-canvas-container {
   flex: 1;
   overflow: hidden;
   position: relative;
   background: #fafafa;
   display: flex;
+}
+
+/* 右侧配置边栏 */
+.workflow-config-sidebar {
+  width: 400px;
+  background: var(--color-bg-container);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+}
+
+.config-sidebar-header {
+  height: 60px;
+  padding: 0 var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.config-sidebar-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.config-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 调整节点配置面板在边栏中的样式 */
+.workflow-config-sidebar .node-config-panel {
+  height: 100%;
+  border: none;
+}
+
+.workflow-config-sidebar .node-config-header {
+  border-bottom: none;
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.workflow-config-sidebar .node-config-footer {
+  border-top: 1px solid var(--color-border);
 }
 
 .workflow-editor {
@@ -160,5 +222,72 @@
   font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.5;
+  margin-bottom: 8px;
 }
 
+/* 节点字段显示 */
+.workflow-node-fields {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.workflow-node-fields-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.workflow-node-field-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.workflow-node-field-item .field-name {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  flex: 1;
+}
+
+.workflow-node-field-item .field-type {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  background: var(--color-bg-layout);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.workflow-node-field-item .field-required {
+  color: #ff4d4f;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* 子字段样式 */
+.workflow-node-subfields {
+  margin-left: 16px;
+  margin-top: 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-border);
+}
+
+.workflow-node-field-item.subfield {
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.workflow-node-field-item.subfield .field-name {
+  font-size: 11px;
+}
+
+.workflow-node-field-item.subfield .field-type {
+  font-size: 10px;
+  padding: 1px 4px;
+}

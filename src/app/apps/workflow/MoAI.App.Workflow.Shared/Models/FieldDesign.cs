@@ -20,10 +20,11 @@ public class FieldDesign
     /// <summary>
     /// 字段值或表达式.
     /// 根据 ExpressionType 的不同，可以是：
+    /// - Run: 运行时传入的值（不允许手动设置，此选项只能在开始节点使用）
     /// - Fixed: 固定的常数值
     /// - Variable: 变量引用（如 sys.userId, input.name, nodeKey.output）
-    /// - JsonPath: JSON 路径表达式（如 nodeA.result[0].name）
-    /// - StringInterpolation: 字符串插值模板（如 "Hello {input.name}"）
+    /// - Jsonpath: JSON 路径表达式（如 nodeA.result[0].name）
+    /// - Interpolation: 字符串插值模板（如 "Hello {input.name}"）
     /// </summary>
     public string Value { get; set; } = string.Empty;
 }

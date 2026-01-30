@@ -813,23 +813,6 @@ export interface ComplateUploadWikiDocumentCommand extends Parsable {
     wikiId?: number | null;
 }
 /**
- * 工作流节点连接模型，表示两个节点之间的连接关系.
- */
-export interface Connection extends Parsable {
-    /**
-     * 连接标签，可选，用于条件分支标签（如 "true", "false"）.
-     */
-    label?: string | null;
-    /**
-     * 源节点的唯一标识符.
-     */
-    sourceNodeKey?: string | null;
-    /**
-     * 目标节点的唯一标识符.
-     */
-    targetNodeKey?: string | null;
-}
-/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AccessibleAppItem}
@@ -1340,15 +1323,6 @@ export function createComplateUploadWikiDocumentCommandFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {Connection}
- */
-// @ts-ignore
-export function createConnectionFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoConnection;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateAiAssistantChatCommand}
  */
 // @ts-ignore
@@ -1833,11 +1807,11 @@ export function createExternalUserLoginCommandResponseFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {FieldDefine}
+ * @returns {FieldDesign}
  */
 // @ts-ignore
-export function createFieldDefineFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoFieldDefine;
+export function createFieldDesignFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoFieldDesign;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1932,20 +1906,20 @@ export function createKeyValueOfLongAndStringFromDiscriminatorValue(parseNode: P
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {KeyValueOfNodeTypeAndIReadOnlyCollectionOfString}
- */
-// @ts-ignore
-export function createKeyValueOfNodeTypeAndIReadOnlyCollectionOfStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoKeyValueOfNodeTypeAndIReadOnlyCollectionOfString;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {KeyValueOfStringAndBoolean}
  */
 // @ts-ignore
 export function createKeyValueOfStringAndBooleanFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoKeyValueOfStringAndBoolean;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KeyValueOfStringAndFieldDesign}
+ */
+// @ts-ignore
+export function createKeyValueOfStringAndFieldDesignFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKeyValueOfStringAndFieldDesign;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2096,24 +2070,6 @@ export function createNativePluginInfoFromDiscriminatorValue(parseNode: ParseNod
 // @ts-ignore
 export function createNativePluginTemplateInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoNativePluginTemplateInfo;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {NodeDefineItem}
- */
-// @ts-ignore
-export function createNodeDefineItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoNodeDefineItem;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {NodeDesign_fieldDesigns}
- */
-// @ts-ignore
-export function createNodeDesign_fieldDesignsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoNodeDesign_fieldDesigns;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2883,24 +2839,6 @@ export function createQueryNativePluginTemplateParamsCommandFromDiscriminatorVal
 // @ts-ignore
 export function createQueryNativePluginTemplateParamsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryNativePluginTemplateParamsCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryNodeDefineCommand}
- */
-// @ts-ignore
-export function createQueryNodeDefineCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryNodeDefineCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryNodeDefineCommandResponse}
- */
-// @ts-ignore
-export function createQueryNodeDefineCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryNodeDefineCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -5235,18 +5173,6 @@ export function deserializeIntoComplateUploadWikiDocumentCommand(complateUploadW
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoConnection(connection: Partial<Connection> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "label": n => { connection.label = n.getStringValue(); },
-        "sourceNodeKey": n => { connection.sourceNodeKey = n.getStringValue(); },
-        "targetNodeKey": n => { connection.targetNodeKey = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoCreateAiAssistantChatCommand(createAiAssistantChatCommand: Partial<CreateAiAssistantChatCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { createAiAssistantChatCommand.avatar = n.getStringValue(); },
@@ -5851,12 +5777,11 @@ export function deserializeIntoExternalUserLoginCommandResponse(externalUserLogi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoFieldDefine(fieldDefine: Partial<FieldDefine> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoFieldDesign(fieldDesign: Partial<FieldDesign> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "description": n => { fieldDefine.description = n.getStringValue(); },
-        "fieldName": n => { fieldDefine.fieldName = n.getStringValue(); },
-        "fieldType": n => { fieldDefine.fieldType = n.getEnumValue<FieldType>(FieldTypeObject); },
-        "isRequired": n => { fieldDefine.isRequired = n.getBooleanValue(); },
+        "expressionType": n => { fieldDesign.expressionType = n.getEnumValue<FieldExpressionType>(FieldExpressionTypeObject); },
+        "fieldName": n => { fieldDesign.fieldName = n.getStringValue(); },
+        "value": n => { fieldDesign.value = n.getStringValue(); },
     }
 }
 /**
@@ -5989,10 +5914,10 @@ export function deserializeIntoKeyValueOfLongAndString(keyValueOfLongAndString: 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoKeyValueOfNodeTypeAndIReadOnlyCollectionOfString(keyValueOfNodeTypeAndIReadOnlyCollectionOfString: Partial<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoKeyValueOfStringAndBoolean(keyValueOfStringAndBoolean: Partial<KeyValueOfStringAndBoolean> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "key": n => { keyValueOfNodeTypeAndIReadOnlyCollectionOfString.key = n.getEnumValue<NodeType>(NodeTypeObject); },
-        "value": n => { keyValueOfNodeTypeAndIReadOnlyCollectionOfString.value = n.getCollectionOfPrimitiveValues<string>(); },
+        "key": n => { keyValueOfStringAndBoolean.key = n.getStringValue(); },
+        "value": n => { keyValueOfStringAndBoolean.value = n.getBooleanValue(); },
     }
 }
 /**
@@ -6000,10 +5925,10 @@ export function deserializeIntoKeyValueOfNodeTypeAndIReadOnlyCollectionOfString(
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoKeyValueOfStringAndBoolean(keyValueOfStringAndBoolean: Partial<KeyValueOfStringAndBoolean> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoKeyValueOfStringAndFieldDesign(keyValueOfStringAndFieldDesign: Partial<KeyValueOfStringAndFieldDesign> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "key": n => { keyValueOfStringAndBoolean.key = n.getStringValue(); },
-        "value": n => { keyValueOfStringAndBoolean.value = n.getBooleanValue(); },
+        "key": n => { keyValueOfStringAndFieldDesign.key = n.getStringValue(); },
+        "value": n => { keyValueOfStringAndFieldDesign.value = n.getObjectValue<FieldDesign>(createFieldDesignFromDiscriminatorValue); },
     }
 }
 /**
@@ -6194,46 +6119,14 @@ export function deserializeIntoNativePluginTemplateInfo(nativePluginTemplateInfo
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoNodeDefineItem(nodeDefineItem: Partial<NodeDefineItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "color": n => { nodeDefineItem.color = n.getStringValue(); },
-        "description": n => { nodeDefineItem.description = n.getStringValue(); },
-        "icon": n => { nodeDefineItem.icon = n.getStringValue(); },
-        "inputFields": n => { nodeDefineItem.inputFields = n.getCollectionOfObjectValues<FieldDefine>(createFieldDefineFromDiscriminatorValue); },
-        "modelId": n => { nodeDefineItem.modelId = n.getNumberValue(); },
-        "modelName": n => { nodeDefineItem.modelName = n.getStringValue(); },
-        "nodeType": n => { nodeDefineItem.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
-        "nodeTypeName": n => { nodeDefineItem.nodeTypeName = n.getStringValue(); },
-        "outputFields": n => { nodeDefineItem.outputFields = n.getCollectionOfObjectValues<FieldDefine>(createFieldDefineFromDiscriminatorValue); },
-        "pluginId": n => { nodeDefineItem.pluginId = n.getNumberValue(); },
-        "pluginName": n => { nodeDefineItem.pluginName = n.getStringValue(); },
-        "supportsStreaming": n => { nodeDefineItem.supportsStreaming = n.getBooleanValue(); },
-        "wikiId": n => { nodeDefineItem.wikiId = n.getNumberValue(); },
-        "wikiName": n => { nodeDefineItem.wikiName = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoNodeDesign(nodeDesign: Partial<NodeDesign> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { nodeDesign.description = n.getStringValue(); },
-        "fieldDesigns": n => { nodeDesign.fieldDesigns = n.getObjectValue<NodeDesign_fieldDesigns>(createNodeDesign_fieldDesignsFromDiscriminatorValue); },
+        "fieldDesigns": n => { nodeDesign.fieldDesigns = n.getCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>(createKeyValueOfStringAndFieldDesignFromDiscriminatorValue); },
         "name": n => { nodeDesign.name = n.getStringValue(); },
-        "nextNodeKey": n => { nodeDesign.nextNodeKey = n.getStringValue(); },
+        "nextNodeKeys": n => { nodeDesign.nextNodeKeys = n.getCollectionOfPrimitiveValues<string>(); },
         "nodeKey": n => { nodeDesign.nodeKey = n.getStringValue(); },
         "nodeType": n => { nodeDesign.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoNodeDesign_fieldDesigns(nodeDesign_fieldDesigns: Partial<NodeDesign_fieldDesigns> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
     }
 }
 /**
@@ -7215,27 +7108,6 @@ export function deserializeIntoQueryNativePluginTemplateParamsCommandResponse(qu
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryNodeDefineCommand(queryNodeDefineCommand: Partial<QueryNodeDefineCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "nodes": n => { queryNodeDefineCommand.nodes = n.getCollectionOfObjectValues<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString>(createKeyValueOfNodeTypeAndIReadOnlyCollectionOfStringFromDiscriminatorValue); },
-        "teamId": n => { queryNodeDefineCommand.teamId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoQueryNodeDefineCommandResponse(queryNodeDefineCommandResponse: Partial<QueryNodeDefineCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "nodes": n => { queryNodeDefineCommandResponse.nodes = n.getCollectionOfObjectValues<NodeDefineItem>(createNodeDefineItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoQueryPaddleocrPluginListCommand(queryPaddleocrPluginListCommand: Partial<QueryPaddleocrPluginListCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "wikiId": n => { queryPaddleocrPluginListCommand.wikiId = n.getNumberValue(); },
@@ -8105,13 +7977,11 @@ export function deserializeIntoQueryWorkflowDefinitionCommandResponse(queryWorkf
         "createTime": n => { queryWorkflowDefinitionCommandResponse.createTime = n.getStringValue(); },
         "createUserId": n => { queryWorkflowDefinitionCommandResponse.createUserId = n.getNumberValue(); },
         "description": n => { queryWorkflowDefinitionCommandResponse.description = n.getStringValue(); },
-        "functionDesign": n => { queryWorkflowDefinitionCommandResponse.functionDesign = n.getStringValue(); },
-        "functionDesignDraft": n => { queryWorkflowDefinitionCommandResponse.functionDesignDraft = n.getStringValue(); },
+        "functionDesignDraft": n => { queryWorkflowDefinitionCommandResponse.functionDesignDraft = n.getCollectionOfObjectValues<NodeDesign>(createNodeDesignFromDiscriminatorValue); },
         "id": n => { queryWorkflowDefinitionCommandResponse.id = n.getGuidValue(); },
         "isPublish": n => { queryWorkflowDefinitionCommandResponse.isPublish = n.getBooleanValue(); },
         "name": n => { queryWorkflowDefinitionCommandResponse.name = n.getStringValue(); },
         "teamId": n => { queryWorkflowDefinitionCommandResponse.teamId = n.getNumberValue(); },
-        "uiDesign": n => { queryWorkflowDefinitionCommandResponse.uiDesign = n.getStringValue(); },
         "uiDesignDraft": n => { queryWorkflowDefinitionCommandResponse.uiDesignDraft = n.getStringValue(); },
         "updateTime": n => { queryWorkflowDefinitionCommandResponse.updateTime = n.getStringValue(); },
         "updateUserId": n => { queryWorkflowDefinitionCommandResponse.updateUserId = n.getNumberValue(); },
@@ -8968,7 +8838,6 @@ export function deserializeIntoUpdateWorkflowDefinitionCommand(updateWorkflowDef
     return {
         "appId": n => { updateWorkflowDefinitionCommand.appId = n.getGuidValue(); },
         "avatar": n => { updateWorkflowDefinitionCommand.avatar = n.getStringValue(); },
-        "connections": n => { updateWorkflowDefinitionCommand.connections = n.getCollectionOfObjectValues<Connection>(createConnectionFromDiscriminatorValue); },
         "description": n => { updateWorkflowDefinitionCommand.description = n.getStringValue(); },
         "name": n => { updateWorkflowDefinitionCommand.name = n.getStringValue(); },
         "nodes": n => { updateWorkflowDefinitionCommand.nodes = n.getCollectionOfObjectValues<NodeDesign>(createNodeDesignFromDiscriminatorValue); },
@@ -9585,27 +9454,23 @@ export interface ExternalUserLoginCommandResponse extends Parsable {
     userName?: string | null;
 }
 /**
- * 字段定义模型，描述节点输入或输出字段的结构.
+ * 字段设计模型，定义节点输入字段的配置方式.
  */
-export interface FieldDefine extends Parsable {
+export interface FieldDesign extends Parsable {
     /**
-     * 字段描述信息.
+     * 表达式类型，定义如何为字段分配值.
      */
-    description?: string | null;
+    expressionType?: FieldExpressionType | null;
     /**
      * 字段名称.
      */
     fieldName?: string | null;
     /**
-     * 字段数据类型.
+     * 字段值或表达式.根据 ExpressionType 的不同，可以是：- Run: 运行时传入的值（不允许手动设置，此选项只能在开始节点使用）- Fixed: 固定的常数值- Variable: 变量引用（如 sys.userId, input.name, nodeKey.output）- Jsonpath: JSON 路径表达式（如 nodeA.result[0].name）- Interpolation: 字符串插值模板（如 "Hello {input.name}"）
      */
-    fieldType?: FieldType | null;
-    /**
-     * 是否为必需字段.
-     */
-    isRequired?: boolean | null;
+    value?: string | null;
 }
-export type FieldType = (typeof FieldTypeObject)[keyof typeof FieldTypeObject];
+export type FieldExpressionType = (typeof FieldExpressionTypeObject)[keyof typeof FieldExpressionTypeObject];
 /**
  * 导入 mcp 服务，导入时会访问 mcp 服务器，可能会导致导入比较慢.
  */
@@ -9787,19 +9652,6 @@ export interface KeyValueOfLongAndString extends Parsable {
 /**
  * kv.
  */
-export interface KeyValueOfNodeTypeAndIReadOnlyCollectionOfString extends Parsable {
-    /**
-     * Key.
-     */
-    key?: NodeType | null;
-    /**
-     * Value.
-     */
-    value?: string[] | null;
-}
-/**
- * kv.
- */
 export interface KeyValueOfStringAndBoolean extends Parsable {
     /**
      * Key.
@@ -9809,6 +9661,19 @@ export interface KeyValueOfStringAndBoolean extends Parsable {
      * Value.
      */
     value?: boolean | null;
+}
+/**
+ * kv.
+ */
+export interface KeyValueOfStringAndFieldDesign extends Parsable {
+    /**
+     * Key.
+     */
+    key?: string | null;
+    /**
+     * Value.
+     */
+    value?: FieldDesign | null;
 }
 /**
  * kv.
@@ -10126,67 +9991,6 @@ export interface NativePluginTemplateInfo extends Parsable {
     pluginType?: PluginType | null;
 }
 /**
- * 节点定义项.
- */
-export interface NodeDefineItem extends Parsable {
-    /**
-     * 节点颜色（可选，用于 UI 显示）.
-     */
-    color?: string | null;
-    /**
-     * 节点描述信息.
-     */
-    description?: string | null;
-    /**
-     * 节点图标（可选）.
-     */
-    icon?: string | null;
-    /**
-     * 输入字段定义列表.
-     */
-    inputFields?: FieldDefine[] | null;
-    /**
-     * AI 模型 ID（仅 AiChat 节点）.
-     */
-    modelId?: number | null;
-    /**
-     * AI 模型名称（仅 AiChat 节点）.
-     */
-    modelName?: string | null;
-    /**
-     * 节点类型.
-     */
-    nodeType?: NodeType | null;
-    /**
-     * 节点类型名称.
-     */
-    nodeTypeName?: string | null;
-    /**
-     * 输出字段定义列表.
-     */
-    outputFields?: FieldDefine[] | null;
-    /**
-     * 插件 ID（仅 Plugin 节点）.
-     */
-    pluginId?: number | null;
-    /**
-     * 插件名称（仅 Plugin 节点）.
-     */
-    pluginName?: string | null;
-    /**
-     * 是否支持流式输出.
-     */
-    supportsStreaming?: boolean | null;
-    /**
-     * 知识库 ID（仅 Wiki 节点）.
-     */
-    wikiId?: number | null;
-    /**
-     * 知识库名称（仅 Wiki 节点）.
-     */
-    wikiName?: string | null;
-}
-/**
  * 节点设计模型，表示用户对工作流中节点的配置.
  */
 export interface NodeDesign extends Parsable {
@@ -10197,15 +10001,15 @@ export interface NodeDesign extends Parsable {
     /**
      * 字段设计映射，键为字段名称，值为字段设计配置.
      */
-    fieldDesigns?: NodeDesign_fieldDesigns | null;
+    fieldDesigns?: KeyValueOfStringAndFieldDesign[] | null;
     /**
      * 节点名称.
      */
     name?: string | null;
     /**
-     * 下一个节点的标识符（用于定义节点连接）.
+     * 下游节点的标识符列表，用于流程流转.一般节点只有一个下游节点，但是条件判断节点等特殊节点可以配置多个下游节点.
      */
-    nextNodeKey?: string | null;
+    nextNodeKeys?: string[] | null;
     /**
      * 节点唯一标识符.
      */
@@ -10214,11 +10018,6 @@ export interface NodeDesign extends Parsable {
      * 节点类型.
      */
     nodeType?: NodeType | null;
-}
-/**
- * 字段设计映射，键为字段名称，值为字段设计配置.
- */
-export interface NodeDesign_fieldDesigns extends Parsable {
 }
 export type NodeState = (typeof NodeStateObject)[keyof typeof NodeStateObject];
 export type NodeType = (typeof NodeTypeObject)[keyof typeof NodeTypeObject];
@@ -11705,28 +11504,6 @@ export interface QueryNativePluginTemplateParamsCommand extends Parsable {
 export interface QueryNativePluginTemplateParamsCommandResponse extends NativePluginTemplateInfo, Parsable {
 }
 /**
- * 查询节点定义命令（批量查询）.用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.支持批量查询多个节点定义，例如多个插件、知识库或 AI 模型.
- */
-export interface QueryNodeDefineCommand extends Parsable {
-    /**
-     * 节点查询列表.Key: 节点类型Value: 节点实例标识列表（插件 ID、知识库 ID、模型 ID 等，转换为字符串）对于不需要实例标识的节点类型（如 Start、End、Condition 等），Value 可以为空集合.
-     */
-    nodes?: KeyValueOfNodeTypeAndIReadOnlyCollectionOfString[] | null;
-    /**
-     * 团队 id.
-     */
-    teamId?: number | null;
-}
-/**
- * 查询节点定义响应（批量查询）.
- */
-export interface QueryNodeDefineCommandResponse extends Parsable {
-    /**
-     * 节点定义列表.
-     */
-    nodes?: NodeDefineItem[] | null;
-}
-/**
  * 查询可用的飞桨 OCR 插件列表 (公开或被授权的 paddleocr_ocr、paddleocr_vl、paddleocr_structure_v3 插件).
  */
 export interface QueryPaddleocrPluginListCommand extends Parsable {
@@ -12883,13 +12660,9 @@ export interface QueryWorkflowDefinitionCommandResponse extends Parsable {
      */
     description?: string | null;
     /**
-     * 功能设计数据（JSON 格式），包含所有节点定义和连接.
-     */
-    functionDesign?: string | null;
-    /**
      * 功能设计草稿数据（仅当 IncludeDraft 为 true 时返回）.
      */
-    functionDesignDraft?: string | null;
+    functionDesignDraft?: NodeDesign[] | null;
     /**
      * 工作流设计 ID（AppWorkflowDesignEntity.Id）.
      */
@@ -12906,10 +12679,6 @@ export interface QueryWorkflowDefinitionCommandResponse extends Parsable {
      * 团队 ID.
      */
     teamId?: number | null;
-    /**
-     * UI 设计数据（JSON 格式），用于前端可视化设计器.
-     */
-    uiDesign?: string | null;
     /**
      * UI 设计草稿数据（仅当 IncludeDraft 为 true 时返回）.
      */
@@ -13894,18 +13663,6 @@ export function serializeComplateUploadWikiDocumentCommand(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeConnection(writer: SerializationWriter, connection: Partial<Connection> | undefined | null = {}) : void {
-    if (connection) {
-        writer.writeStringValue("label", connection.label);
-        writer.writeStringValue("sourceNodeKey", connection.sourceNodeKey);
-        writer.writeStringValue("targetNodeKey", connection.targetNodeKey);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeCreateAiAssistantChatCommand(writer: SerializationWriter, createAiAssistantChatCommand: Partial<CreateAiAssistantChatCommand> | undefined | null = {}) : void {
     if (createAiAssistantChatCommand) {
         writer.writeStringValue("avatar", createAiAssistantChatCommand.avatar);
@@ -14510,12 +14267,11 @@ export function serializeExternalUserLoginCommandResponse(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeFieldDefine(writer: SerializationWriter, fieldDefine: Partial<FieldDefine> | undefined | null = {}) : void {
-    if (fieldDefine) {
-        writer.writeStringValue("description", fieldDefine.description);
-        writer.writeStringValue("fieldName", fieldDefine.fieldName);
-        writer.writeEnumValue<FieldType>("fieldType", fieldDefine.fieldType);
-        writer.writeBooleanValue("isRequired", fieldDefine.isRequired);
+export function serializeFieldDesign(writer: SerializationWriter, fieldDesign: Partial<FieldDesign> | undefined | null = {}) : void {
+    if (fieldDesign) {
+        writer.writeEnumValue<FieldExpressionType>("expressionType", fieldDesign.expressionType);
+        writer.writeStringValue("fieldName", fieldDesign.fieldName);
+        writer.writeStringValue("value", fieldDesign.value);
     }
 }
 /**
@@ -14648,10 +14404,10 @@ export function serializeKeyValueOfLongAndString(writer: SerializationWriter, ke
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeKeyValueOfNodeTypeAndIReadOnlyCollectionOfString(writer: SerializationWriter, keyValueOfNodeTypeAndIReadOnlyCollectionOfString: Partial<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString> | undefined | null = {}) : void {
-    if (keyValueOfNodeTypeAndIReadOnlyCollectionOfString) {
-        writer.writeEnumValue<NodeType>("key", keyValueOfNodeTypeAndIReadOnlyCollectionOfString.key);
-        writer.writeCollectionOfPrimitiveValues<string>("value", keyValueOfNodeTypeAndIReadOnlyCollectionOfString.value);
+export function serializeKeyValueOfStringAndBoolean(writer: SerializationWriter, keyValueOfStringAndBoolean: Partial<KeyValueOfStringAndBoolean> | undefined | null = {}) : void {
+    if (keyValueOfStringAndBoolean) {
+        writer.writeStringValue("key", keyValueOfStringAndBoolean.key);
+        writer.writeBooleanValue("value", keyValueOfStringAndBoolean.value);
     }
 }
 /**
@@ -14659,10 +14415,10 @@ export function serializeKeyValueOfNodeTypeAndIReadOnlyCollectionOfString(writer
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeKeyValueOfStringAndBoolean(writer: SerializationWriter, keyValueOfStringAndBoolean: Partial<KeyValueOfStringAndBoolean> | undefined | null = {}) : void {
-    if (keyValueOfStringAndBoolean) {
-        writer.writeStringValue("key", keyValueOfStringAndBoolean.key);
-        writer.writeBooleanValue("value", keyValueOfStringAndBoolean.value);
+export function serializeKeyValueOfStringAndFieldDesign(writer: SerializationWriter, keyValueOfStringAndFieldDesign: Partial<KeyValueOfStringAndFieldDesign> | undefined | null = {}) : void {
+    if (keyValueOfStringAndFieldDesign) {
+        writer.writeStringValue("key", keyValueOfStringAndFieldDesign.key);
+        writer.writeObjectValue<FieldDesign>("value", keyValueOfStringAndFieldDesign.value, serializeFieldDesign);
     }
 }
 /**
@@ -14853,46 +14609,14 @@ export function serializeNativePluginTemplateInfo(writer: SerializationWriter, n
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeNodeDefineItem(writer: SerializationWriter, nodeDefineItem: Partial<NodeDefineItem> | undefined | null = {}) : void {
-    if (nodeDefineItem) {
-        writer.writeStringValue("color", nodeDefineItem.color);
-        writer.writeStringValue("description", nodeDefineItem.description);
-        writer.writeStringValue("icon", nodeDefineItem.icon);
-        writer.writeCollectionOfObjectValues<FieldDefine>("inputFields", nodeDefineItem.inputFields, serializeFieldDefine);
-        writer.writeNumberValue("modelId", nodeDefineItem.modelId);
-        writer.writeStringValue("modelName", nodeDefineItem.modelName);
-        writer.writeEnumValue<NodeType>("nodeType", nodeDefineItem.nodeType);
-        writer.writeStringValue("nodeTypeName", nodeDefineItem.nodeTypeName);
-        writer.writeCollectionOfObjectValues<FieldDefine>("outputFields", nodeDefineItem.outputFields, serializeFieldDefine);
-        writer.writeNumberValue("pluginId", nodeDefineItem.pluginId);
-        writer.writeStringValue("pluginName", nodeDefineItem.pluginName);
-        writer.writeBooleanValue("supportsStreaming", nodeDefineItem.supportsStreaming);
-        writer.writeNumberValue("wikiId", nodeDefineItem.wikiId);
-        writer.writeStringValue("wikiName", nodeDefineItem.wikiName);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeNodeDesign(writer: SerializationWriter, nodeDesign: Partial<NodeDesign> | undefined | null = {}) : void {
     if (nodeDesign) {
         writer.writeStringValue("description", nodeDesign.description);
-        writer.writeObjectValue<NodeDesign_fieldDesigns>("fieldDesigns", nodeDesign.fieldDesigns, serializeNodeDesign_fieldDesigns);
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>("fieldDesigns", nodeDesign.fieldDesigns, serializeKeyValueOfStringAndFieldDesign);
         writer.writeStringValue("name", nodeDesign.name);
-        writer.writeStringValue("nextNodeKey", nodeDesign.nextNodeKey);
+        writer.writeCollectionOfPrimitiveValues<string>("nextNodeKeys", nodeDesign.nextNodeKeys);
         writer.writeStringValue("nodeKey", nodeDesign.nodeKey);
         writer.writeEnumValue<NodeType>("nodeType", nodeDesign.nodeType);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeNodeDesign_fieldDesigns(writer: SerializationWriter, nodeDesign_fieldDesigns: Partial<NodeDesign_fieldDesigns> | undefined | null = {}) : void {
-    if (nodeDesign_fieldDesigns) {
     }
 }
 /**
@@ -15874,27 +15598,6 @@ export function serializeQueryNativePluginTemplateParamsCommandResponse(writer: 
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryNodeDefineCommand(writer: SerializationWriter, queryNodeDefineCommand: Partial<QueryNodeDefineCommand> | undefined | null = {}) : void {
-    if (queryNodeDefineCommand) {
-        writer.writeCollectionOfObjectValues<KeyValueOfNodeTypeAndIReadOnlyCollectionOfString>("nodes", queryNodeDefineCommand.nodes, serializeKeyValueOfNodeTypeAndIReadOnlyCollectionOfString);
-        writer.writeNumberValue("teamId", queryNodeDefineCommand.teamId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeQueryNodeDefineCommandResponse(writer: SerializationWriter, queryNodeDefineCommandResponse: Partial<QueryNodeDefineCommandResponse> | undefined | null = {}) : void {
-    if (queryNodeDefineCommandResponse) {
-        writer.writeCollectionOfObjectValues<NodeDefineItem>("nodes", queryNodeDefineCommandResponse.nodes, serializeNodeDefineItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeQueryPaddleocrPluginListCommand(writer: SerializationWriter, queryPaddleocrPluginListCommand: Partial<QueryPaddleocrPluginListCommand> | undefined | null = {}) : void {
     if (queryPaddleocrPluginListCommand) {
         writer.writeNumberValue("wikiId", queryPaddleocrPluginListCommand.wikiId);
@@ -16764,13 +16467,11 @@ export function serializeQueryWorkflowDefinitionCommandResponse(writer: Serializ
         writer.writeStringValue("createTime", queryWorkflowDefinitionCommandResponse.createTime);
         writer.writeNumberValue("createUserId", queryWorkflowDefinitionCommandResponse.createUserId);
         writer.writeStringValue("description", queryWorkflowDefinitionCommandResponse.description);
-        writer.writeStringValue("functionDesign", queryWorkflowDefinitionCommandResponse.functionDesign);
-        writer.writeStringValue("functionDesignDraft", queryWorkflowDefinitionCommandResponse.functionDesignDraft);
+        writer.writeCollectionOfObjectValues<NodeDesign>("functionDesignDraft", queryWorkflowDefinitionCommandResponse.functionDesignDraft, serializeNodeDesign);
         writer.writeGuidValue("id", queryWorkflowDefinitionCommandResponse.id);
         writer.writeBooleanValue("isPublish", queryWorkflowDefinitionCommandResponse.isPublish);
         writer.writeStringValue("name", queryWorkflowDefinitionCommandResponse.name);
         writer.writeNumberValue("teamId", queryWorkflowDefinitionCommandResponse.teamId);
-        writer.writeStringValue("uiDesign", queryWorkflowDefinitionCommandResponse.uiDesign);
         writer.writeStringValue("uiDesignDraft", queryWorkflowDefinitionCommandResponse.uiDesignDraft);
         writer.writeStringValue("updateTime", queryWorkflowDefinitionCommandResponse.updateTime);
         writer.writeNumberValue("updateUserId", queryWorkflowDefinitionCommandResponse.updateUserId);
@@ -17627,7 +17328,6 @@ export function serializeUpdateWorkflowDefinitionCommand(writer: SerializationWr
     if (updateWorkflowDefinitionCommand) {
         writer.writeGuidValue("appId", updateWorkflowDefinitionCommand.appId);
         writer.writeStringValue("avatar", updateWorkflowDefinitionCommand.avatar);
-        writer.writeCollectionOfObjectValues<Connection>("connections", updateWorkflowDefinitionCommand.connections, serializeConnection);
         writer.writeStringValue("description", updateWorkflowDefinitionCommand.description);
         writer.writeStringValue("name", updateWorkflowDefinitionCommand.name);
         writer.writeCollectionOfObjectValues<NodeDesign>("nodes", updateWorkflowDefinitionCommand.nodes, serializeNodeDesign);
@@ -18910,10 +18610,6 @@ export interface UpdateWorkflowDefinitionCommand extends Parsable {
      */
     avatar?: string | null;
     /**
-     * 连接列表.定义节点之间的连接关系.
-     */
-    connections?: Connection[] | null;
-    /**
      * 工作流描述信息.
      */
     description?: string | null;
@@ -18922,7 +18618,7 @@ export interface UpdateWorkflowDefinitionCommand extends Parsable {
      */
     name?: string | null;
     /**
-     * 节点设计列表.包含工作流中所有节点的配置信息.
+     * 节点设计列表.包含工作流中所有节点的配置信息.节点之间的连接关系通过 NodeDesign.NextNodeKeys 定义.
      */
     nodes?: NodeDesign[] | null;
     /**
@@ -18930,7 +18626,7 @@ export interface UpdateWorkflowDefinitionCommand extends Parsable {
      */
     teamId?: number | null;
     /**
-     * UI 设计草稿，用于前端可视化设计器.保存草稿不会影响已发布的版本.
+     * UI 设计草稿，用于前端可视化设计器，只存储 flowgram.ai 的数据.保存草稿不会影响已发布的版本.
      */
     uiDesignDraft?: string | null;
 }
@@ -19640,16 +19336,14 @@ export const AppTypeObject = {
     Workflow: "workflow",
 } as const;
 /**
- * 字段数据类型枚举.
+ * 字段表达式类型枚举 - 定义如何为节点输入分配值.
  */
-export const FieldTypeObject = {
-    Empty: "empty",
-    String: "string",
-    Number: "number",
-    Boolean: "boolean",
-    Object: "object",
-    Array: "array",
-    Dynamic: "dynamic",
+export const FieldExpressionTypeObject = {
+    Run: "run",
+    Fixed: "fixed",
+    Variable: "variable",
+    Jsonpath: "jsonpath",
+    Interpolation: "interpolation",
 } as const;
 /**
  * 内置插件分类.

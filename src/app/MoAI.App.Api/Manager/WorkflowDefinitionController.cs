@@ -50,20 +50,6 @@ public partial class WorkflowDefinitionController : ControllerBase
     }
 
     /// <summary>
-    /// 查询节点定义.
-    /// 用于获取指定节点类型的定义信息，包括输入输出字段、参数要求等.
-    /// </summary>
-    /// <param name="req">查询请求.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>节点定义信息.</returns>
-    [HttpPost("query_define")]
-    public async Task<QueryNodeDefineCommandResponse> QueryNodeDefine([FromBody] QueryNodeDefineCommand req, CancellationToken ct = default)
-    {
-        await CheckIsAdminAsync(req.TeamId, ct);
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
     /// 更新工作流定义.
     /// 更新现有工作流定义的配置信息，包括节点、连接和元数据.
     /// 更新时会创建版本快照以维护历史记录.

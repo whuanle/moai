@@ -22,11 +22,7 @@ public class WorkflowDefinition
 
     /// <summary>
     /// 节点列表，包含所有节点的配置信息.
+    /// 节点之间的连接关系通过 NodeDesign.NextNodeKeys 定义.
     /// </summary>
     public IReadOnlyCollection<NodeDesign> Nodes { get; set; } = Array.Empty<NodeDesign>();
-
-    /// <summary>
-    /// 连接列表，定义节点之间的连接关系.
-    /// </summary>
-    public IReadOnlyCollection<Connection> Connections { get; set; } = Array.Empty<Connection>();
 }

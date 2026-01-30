@@ -28,6 +28,8 @@ export function toEditorFormat(
       data: {
         title: canvasNode?.title || backendNode.name,
         content: canvasNode?.content || backendNode.description,
+        inputFields: backendNode.config.inputFields,
+        outputFields: backendNode.config.outputFields,
         // 存储后端配置
         _backendConfig: backendNode.config,
         _execution: backendNode.execution,
@@ -43,8 +45,7 @@ export function toEditorFormat(
     return {
       sourceNodeID: backendEdge.sourceNodeId,
       targetNodeID: backendEdge.targetNodeId,
-      // 存储后端配置
-      meta: {
+      data: {
         _backendConfig: {
           sourceField: backendEdge.sourceField,
           targetField: backendEdge.targetField,
@@ -91,8 +92,8 @@ export function fromEditorFormat(editorData: WorkflowJSON): {
   });
   
   const backendEdges = editorData.edges.map((edge, index) => {
-    const meta = edge.meta as Record<string, unknown> | undefined;
-    const backendConfig = meta?._backendConfig as Record<string, unknown> | undefined;
+    const data = edge.data as Record<string, unknown> | undefined;
+    const backendConfig = data?._backendConfig as Record<string, unknown> | undefined;
     
     return {
       id: `edge_${index}`,
@@ -125,8 +126,8 @@ export function fromEditorFormat(editorData: WorkflowJSON): {
   });
   
   const canvasEdges = editorData.edges.map((edge, index) => {
-    const meta = edge.meta as Record<string, unknown> | undefined;
-    const uiConfig = meta?._uiConfig as CanvasNodeData['ui'] | undefined;
+    const data = edge.data as Record<string, unknown> | undefined;
+    const uiConfig = data?._uiConfig as CanvasNodeData['ui'] | undefined;
     
     return {
       id: `edge_${index}`,
@@ -204,13 +205,200 @@ export function syncEditorChanges(
 }
 
 /**
- * 验证数据一致性
+ * 将后端 FunctionDesign 转换为 BackendWorkflowData
+ * 支持两种格式：
+ * 1. 字符串格式（旧格式）：包含 nodes 和 connections 的对象
+ * 2. 数组格式（新格式）：直接是节点数组
+ */
+export function parseFunctionDesign(
+  functionDesign: string | any[]
+): Partial<BackendWorkflowData> {
+  try {
+    let data: any;
+    
+    // 如果是字符串，解析为对象
+    if (typeof functionDesign === 'string') {
+      data = JSON.parse(functionDesign);
+    } else {
+      data = functionDesign;
+    }
+    
+    // 如果是数组格式（新格式）
+    if (Array.isArray(data)) {
+      const nodes = data.map((node: any) => ({
+        id: node.nodeKey,
+        type: node.nodeType,
+        name: node.name,
+        description: node.description,
+        config: {
+          inputFields: (node.inputFields || []) as any[],
+          outputFields: (node.outputFields || []) as any[],
+          settings: node.fieldDesigns || {}
+        },
+        execution: {
+          timeout: 30000,
+          retryCount: 0,
+          errorHandling: 'stop' as const,
+        }
+      }));
+      
+      // 从 nextNodeKeys 构建连接
+      const edges: any[] = [];
+      data.forEach((node: any) => {
+        if (node.nextNodeKeys && Array.isArray(node.nextNodeKeys)) {
+          node.nextNodeKeys.forEach((targetKey: string) => {
+            edges.push({
+              id: `edge_${node.nodeKey}_${targetKey}`,
+              sourceNodeId: node.nodeKey,
+              targetNodeId: targetKey,
+            });
+          });
+        }
+      });
+      
+      return { nodes, edges };
+    }
+    
+    // 如果是对象格式（旧格式）
+    return {
+      nodes: data.nodes?.map((node: any) => ({
+        id: node.nodeKey,
+        type: node.nodeType,
+        name: node.name,
+        description: node.description,
+        config: {
+          inputFields: (node.inputFields || []) as any[],
+          outputFields: (node.outputFields || []) as any[],
+          settings: node.fieldDesigns || {}
+        },
+        execution: {
+          timeout: 30000,
+          retryCount: 0,
+          errorHandling: 'stop' as const,
+        }
+      })) || [],
+      edges: data.connections?.map((conn: any, index: number) => ({
+        id: `edge_${index}`,
+        sourceNodeId: conn.sourceNodeKey,
+        targetNodeId: conn.targetNodeKey,
+        sourceField: conn.sourceField,
+        targetField: conn.targetField,
+        condition: conn.condition,
+        label: conn.label
+      })) || []
+    };
+  } catch (error) {
+    console.error('解析 FunctionDesign 失败:', error);
+    return { nodes: [], edges: [] };
+  }
+}
+
+/**
+ * 将 BackendWorkflowData 转换为后端 FunctionDesign
+ */
+export function toFunctionDesign(
+  backend: BackendWorkflowData
+): string {
+  const data = {
+    nodes: backend.nodes.map(node => ({
+      nodeKey: node.id,
+      nodeType: node.type,
+      name: node.name,
+      description: node.description,
+      inputFields: node.config.inputFields,
+      outputFields: node.config.outputFields,
+      fieldDesigns: node.config.settings
+    })),
+    connections: backend.edges.map(edge => ({
+      sourceNodeKey: edge.sourceNodeId,
+      targetNodeKey: edge.targetNodeId,
+      sourceField: edge.sourceField,
+      targetField: edge.targetField,
+      condition: edge.condition,
+      label: edge.label
+    }))
+  };
+  
+  return JSON.stringify(data);
+}
+
+/**
+ * 解析后端 UiDesign 为 CanvasWorkflowData
+ */
+export function parseUiDesign(uiDesign: string): Partial<CanvasWorkflowData> {
+  try {
+    const data = JSON.parse(uiDesign);
+    
+    return {
+      nodes: data.nodes?.map((node: any) => ({
+        id: node.id,
+        type: node.type || NodeType.Start,
+        position: node.position || { x: 0, y: 0 },
+        ui: node.ui || {
+          expanded: true,
+          selected: false,
+          highlighted: false
+        },
+        title: node.title || '',
+        content: node.content || ''
+      })) || [],
+      edges: data.edges?.map((edge: any) => ({
+        id: edge.id,
+        sourceNodeId: edge.sourceNodeId,
+        targetNodeId: edge.targetNodeId,
+        ui: edge.ui || {
+          selected: false,
+          style: 'solid' as const
+        }
+      })) || [],
+      viewport: data.viewport || {
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0
+      }
+    };
+  } catch (error) {
+    console.error('解析 UiDesign 失败:', error);
+    return {
+      nodes: [],
+      edges: [],
+      viewport: { zoom: 1, offsetX: 0, offsetY: 0 }
+    };
+  }
+}
+
+/**
+ * 将 CanvasWorkflowData 转换为后端 UiDesign
+ */
+export function toUiDesign(canvas: CanvasWorkflowData): string {
+  return JSON.stringify({
+    nodes: canvas.nodes.map(node => ({
+      id: node.id,
+      type: node.type,
+      position: node.position,
+      ui: node.ui,
+      title: node.title,
+      content: node.content
+    })),
+    edges: canvas.edges.map(edge => ({
+      id: edge.id,
+      sourceNodeId: edge.sourceNodeId,
+      targetNodeId: edge.targetNodeId,
+      ui: edge.ui
+    })),
+    viewport: canvas.viewport
+  });
+}
+
+/**
+ * 验证数据一致性（增强版本，支持自动修复）
  */
 export function validateDataConsistency(
   backend: BackendWorkflowData,
   canvas: CanvasWorkflowData
-): { valid: boolean; errors: string[] } {
+): { valid: boolean; errors: string[]; fixed: boolean } {
   const errors: string[] = [];
+  let fixed = false;
   
   // 检查节点数量是否一致
   if (backend.nodes.length !== canvas.nodes.length) {
@@ -238,18 +426,32 @@ export function validateDataConsistency(
     }
   });
   
-  // 检查连接引用的节点是否存在
-  backend.edges.forEach(edge => {
-    if (!backendNodeIds.has(edge.sourceNodeId)) {
-      errors.push(`连接 ${edge.id} 的源节点 ${edge.sourceNodeId} 不存在`);
+  // 检查并移除无效连接
+  const validBackendEdges = backend.edges.filter(edge => {
+    const isValid = backendNodeIds.has(edge.sourceNodeId) && backendNodeIds.has(edge.targetNodeId);
+    if (!isValid) {
+      errors.push(`移除无效连接 ${edge.id}: 源节点 ${edge.sourceNodeId} 或目标节点 ${edge.targetNodeId} 不存在`);
+      fixed = true;
     }
-    if (!backendNodeIds.has(edge.targetNodeId)) {
-      errors.push(`连接 ${edge.id} 的目标节点 ${edge.targetNodeId} 不存在`);
-    }
+    return isValid;
   });
+  
+  if (validBackendEdges.length !== backend.edges.length) {
+    backend.edges = validBackendEdges;
+  }
+  
+  const validCanvasEdges = canvas.edges.filter(edge => {
+    const isValid = canvasNodeIds.has(edge.sourceNodeId) && canvasNodeIds.has(edge.targetNodeId);
+    return isValid;
+  });
+  
+  if (validCanvasEdges.length !== canvas.edges.length) {
+    canvas.edges = validCanvasEdges;
+  }
   
   return {
     valid: errors.length === 0,
     errors,
+    fixed,
   };
 }

@@ -47,8 +47,8 @@ public class ExpressionEvaluationService
         {
             FieldExpressionType.Fixed => EvaluateFixed(expression),
             FieldExpressionType.Variable => EvaluateVariable(expression, context),
-            FieldExpressionType.JsonPath => EvaluateJsonPath(expression, context),
-            FieldExpressionType.StringInterpolation => EvaluateStringInterpolation(expression, context),
+            FieldExpressionType.Jsonpath => EvaluateJsonPath(expression, context),
+            FieldExpressionType.Interpolation => EvaluateStringInterpolation(expression, context),
             _ => throw new BusinessException($"不支持的表达式类型: {expressionType}") { StatusCode = 400 },
         };
     }

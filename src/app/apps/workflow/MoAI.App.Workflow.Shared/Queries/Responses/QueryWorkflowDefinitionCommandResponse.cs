@@ -1,3 +1,4 @@
+using MoAI.Workflow.Models;
 using MoAI.Workflow.Queries;
 
 namespace MoAI.Workflow.Queries.Responses;
@@ -38,24 +39,14 @@ public class QueryWorkflowDefinitionCommandResponse
     public string Avatar { get; init; } = string.Empty;
 
     /// <summary>
-    /// UI 设计数据（JSON 格式），用于前端可视化设计器.
-    /// </summary>
-    public string UiDesign { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 功能设计数据（JSON 格式），包含所有节点定义和连接.
-    /// </summary>
-    public string FunctionDesign { get; init; } = string.Empty;
-
-    /// <summary>
     /// UI 设计草稿数据（仅当 IncludeDraft 为 true 时返回）.
     /// </summary>
-    public string? UiDesignDraft { get; init; }
+    public string UiDesignDraft { get; init; } = string.Empty;
 
     /// <summary>
     /// 功能设计草稿数据（仅当 IncludeDraft 为 true 时返回）.
     /// </summary>
-    public string? FunctionDesignDraft { get; init; }
+    public IReadOnlyCollection<NodeDesign> FunctionDesignDraft { get; init; } = Array.Empty<NodeDesign>();
 
     /// <summary>
     /// 是否已发布.

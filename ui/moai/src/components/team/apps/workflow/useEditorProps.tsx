@@ -14,12 +14,26 @@ import { WorkflowJSON } from '@flowgram.ai/free-layout-editor';
 import { Dropdown, message } from 'antd';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, CopyOutlined, EditOutlined } from '@ant-design/icons';
+import { NodeType } from './types';
 
 // 节点渲染组件
-function NodeRenderer(props: WorkflowNodeProps) {
+function NodeRenderer(
+  props: WorkflowNodeProps,
+  onEditNode: (nodeId: string, nodeType: NodeType) => void
+) {
   const { form } = useNodeRender();
   const { document } = useClientContext();
   const [messageApi] = message.useMessage();
+
+  // 获取节点数据
+  const nodeData = props.node.toJSON?.() || props.node;
+  const nodeType = nodeData.type as NodeType;
+  const nodeId = nodeData.id;
+
+  // 双击打开配置
+  const handleDoubleClick = useCallback(() => {
+    onEditNode(nodeId, nodeType);
+  }, [nodeId, nodeType, onEditNode]);
 
   // 复制节点处理函数
   const handleCopy = useCallback(() => {
@@ -83,7 +97,7 @@ function NodeRenderer(props: WorkflowNodeProps) {
       label: '编辑节点',
       icon: <EditOutlined />,
       onClick: () => {
-        messageApi.info('编辑功能开发中');
+        onEditNode(nodeId, nodeType);
       },
     },
     {
@@ -106,7 +120,7 @@ function NodeRenderer(props: WorkflowNodeProps) {
 
   return (
     <Dropdown menu={{ items: menuItems }} trigger={['contextMenu']}>
-      <div>
+      <div onDoubleClick={handleDoubleClick}>
         <WorkflowNodeRenderer className="workflow-node" node={props.node}>
           {form?.render()}
         </WorkflowNodeRenderer>
@@ -115,12 +129,17 @@ function NodeRenderer(props: WorkflowNodeProps) {
   );
 }
 
-export const useEditorProps = (initialData: WorkflowJSON) =>
+export const useEditorProps = (
+  initialData: WorkflowJSON,
+  onSelectNode: (nodeId: string) => void,
+  onSelectNodeType: (nodeType: NodeType) => void,
+  onContentChange?: (data: WorkflowJSON) => void
+) =>
   useMemo<FreeLayoutProps>(
     () => ({
       // 启用背景网格
       background: true,
-      // 非只读模式
+      // 非只读模式 - 允许拖动和连接
       readonly: false,
       // 初始数据
       initialData,
@@ -144,6 +163,8 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
           type,
           meta: {
             defaultExpanded: true,
+            // 禁用节点内容的直接编辑
+            editable: false,
           },
           formMeta: {
             // 节点表单渲染
@@ -157,7 +178,69 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
                 <div className="workflow-node-content">
                   <Field<string> name="content">
                     {({ field }) => (
-                      <div className="workflow-node-desc">{field.value}</div>
+                      field.value && <div className="workflow-node-desc">{field.value}</div>
+                    )}
+                  </Field>
+                  
+                  {/* 输入字段 */}
+                  <Field<any[]> name="inputFields">
+                    {({ field }) => (
+                      field.value && field.value.length > 0 && (
+                        <div className="workflow-node-fields">
+                          <div className="workflow-node-fields-title">输入</div>
+                          {field.value.map((f: any, idx: number) => (
+                            <div key={idx}>
+                              <div className="workflow-node-field-item">
+                                <span className="field-name">{f.fieldName}</span>
+                                <span className="field-type">{f.fieldType}</span>
+                                {f.isRequired && <span className="field-required">*</span>}
+                              </div>
+                              {/* 如果是 Map 类型且有子字段，显示子字段 */}
+                              {f.fieldType === 'map' && f.children && f.children.length > 0 && (
+                                <div className="workflow-node-subfields">
+                                  {f.children.map((child: any, childIdx: number) => (
+                                    <div key={childIdx} className="workflow-node-field-item subfield">
+                                      <span className="field-name">{child.fieldName}</span>
+                                      <span className="field-type">{child.fieldType}</span>
+                                      {child.isRequired && <span className="field-required">*</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </Field>
+                  
+                  {/* 输出字段 */}
+                  <Field<any[]> name="outputFields">
+                    {({ field }) => (
+                      field.value && field.value.length > 0 && (
+                        <div className="workflow-node-fields">
+                          <div className="workflow-node-fields-title">输出</div>
+                          {field.value.map((f: any, idx: number) => (
+                            <div key={idx}>
+                              <div className="workflow-node-field-item">
+                                <span className="field-name">{f.fieldName}</span>
+                                <span className="field-type">{f.fieldType}</span>
+                              </div>
+                              {/* 如果是 Map 类型且有子字段，显示子字段 */}
+                              {f.fieldType === 'map' && f.children && f.children.length > 0 && (
+                                <div className="workflow-node-subfields">
+                                  {f.children.map((child: any, childIdx: number) => (
+                                    <div key={childIdx} className="workflow-node-field-item subfield">
+                                      <span className="field-name">{child.fieldName}</span>
+                                      <span className="field-type">{child.fieldType}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )
                     )}
                   </Field>
                 </div>
@@ -169,12 +252,19 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
       // 节点渲染
       materials: {
         renderDefaultNode: (props: WorkflowNodeProps) => {
-          return <NodeRenderer {...props} />;
+          return NodeRenderer(props, (nodeId: string, nodeType: NodeType) => {
+            onSelectNode(nodeId);
+            onSelectNodeType(nodeType);
+          });
         },
       },
       // 内容变更回调
-      onContentChange(_ctx, event) {
-        // 工作流数据变更
+      onContentChange(ctx, event) {
+        // 工作流数据变更，通知外部
+        if (onContentChange) {
+          const currentData = ctx.document.toJSON();
+          onContentChange(currentData);
+        }
       },
       // 启用节点表单引擎
       nodeEngine: {
@@ -231,5 +321,5 @@ export const useEditorProps = (initialData: WorkflowJSON) =>
         }),
       ],
     }),
-    [initialData]
+    [initialData, onSelectNode, onSelectNodeType, onContentChange]
   );

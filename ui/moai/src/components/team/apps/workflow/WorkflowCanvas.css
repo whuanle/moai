@@ -2,6 +2,15 @@
  * 工作流画布样式
  */
 
+/* 加载和错误状态容器 */
+.workflow-loading-container,
+.workflow-error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
 .workflow-canvas {
   flex: 1;
   position: relative;
@@ -46,6 +55,44 @@
   box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
   cursor: move;
+}
+
+/* 空画布提示 */
+.workflow-empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  pointer-events: none;
+  text-align: center;
+}
+
+.empty-hint-content {
+  background: var(--color-bg-container);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-hint-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-hint-content h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.empty-hint-content p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
 }
 
 .workflow-node:hover {

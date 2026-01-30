@@ -16,10 +16,10 @@ public class WorkflowDefinitionService
     /// 1. 恰好有一个 Start 节点
     /// 2. 至少有一个 End 节点
     /// 3. 所有节点类型有效
-    /// 4. 所有连接的源节点和目标节点都存在
-    /// 5. 所有连接形成有效的有向图（无孤立节点）
+    /// 4. 所有节点的下游节点都存在
+    /// 5. 所有节点形成有效的有向图（无孤立节点）
     /// </summary>
-    /// <param name="definition">工作流定义对象，包含节点和连接信息.</param>
+    /// <param name="definition">工作流定义对象，包含节点信息.</param>
     /// <exception cref="BusinessException">当工作流定义无效时抛出，包含详细的验证错误信息.</exception>
     public void ValidateWorkflowDefinition(WorkflowDefinition definition)
     {
@@ -30,13 +30,7 @@ public class WorkflowDefinitionService
             throw new BusinessException(400, "工作流定义必须包含至少一个节点");
         }
 
-        if (definition.Connections == null)
-        {
-            throw new BusinessException(400, "工作流定义必须包含连接列表");
-        }
-
         var nodeDesigns = definition.Nodes.ToList();
-        var connections = definition.Connections.ToList();
 
         // 验证 1: 恰好有一个 Start 节点
         var startNodes = nodeDesigns.Where(n => n.NodeType == NodeType.Start).ToList();
@@ -80,87 +74,85 @@ public class WorkflowDefinitionService
             throw new BusinessException(400, $"工作流定义包含重复的节点 Key: {duplicateKeyList}");
         }
 
-        // 验证 5: 验证连接
-        ValidateConnections(nodeDesigns, connections);
+        // 验证 5: 验证节点连接
+        ValidateNodeConnections(nodeDesigns);
 
         // 验证 6: 检查图的连通性（从 Start 节点可达所有非 End 节点）
-        ValidateGraphConnectivity(nodeDesigns, connections, startNodes[0]);
+        ValidateGraphConnectivity(nodeDesigns, startNodes[0]);
 
         // 验证 7: 检查是否存在循环（可选，但建议检查以避免无限循环）
-        DetectCycles(nodeDesigns, connections, startNodes[0]);
+        DetectCycles(nodeDesigns, startNodes[0]);
     }
 
     /// <summary>
-    /// 验证连接的有效性.
-    /// 确保连接满足以下条件：
-    /// 1. 每个连接的源节点和目标节点都存在
-    /// 2. Start 节点有出边
-    /// 3. End 节点没有出边
-    /// 4. 所有非 End 节点都有至少一个出边
+    /// 验证节点连接的有效性.
+    /// 确保节点连接满足以下条件：
+    /// 1. 所有下游节点都存在
+    /// 2. Start 节点有下游节点
+    /// 3. End 节点没有下游节点
+    /// 4. 所有非 End 节点都有至少一个下游节点
     /// </summary>
     /// <param name="nodes">节点列表.</param>
-    /// <param name="connections">连接列表.</param>
-    /// <exception cref="BusinessException">当连接无效时抛出.</exception>
-    private static void ValidateConnections(List<NodeDesign> nodes, List<Connection> connections)
+    /// <exception cref="BusinessException">当节点连接无效时抛出.</exception>
+    private static void ValidateNodeConnections(List<NodeDesign> nodes)
     {
         var nodeKeys = nodes.Select(n => n.NodeKey).ToHashSet();
 
-        // 验证 1: 每个连接的源节点和目标节点都存在
-        var invalidSourceConnections = connections
-            .Where(c => !nodeKeys.Contains(c.SourceNodeKey))
-            .Select(c => $"{c.SourceNodeKey} -> {c.TargetNodeKey}")
-            .ToList();
-
-        if (invalidSourceConnections.Count != 0)
+        // 验证 1: 所有下游节点都存在
+        var invalidConnections = new List<string>();
+        foreach (var node in nodes)
         {
-            var invalidList = string.Join(", ", invalidSourceConnections);
-            throw new BusinessException(400, $"连接的源节点不存在: {invalidList}");
+            if (node.NextNodeKeys == null)
+            {
+                continue;
+            }
+
+            foreach (var nextKey in node.NextNodeKeys)
+            {
+                if (!nodeKeys.Contains(nextKey))
+                {
+                    invalidConnections.Add($"{node.NodeKey} -> {nextKey}");
+                }
+            }
         }
 
-        var invalidTargetConnections = connections
-            .Where(c => !nodeKeys.Contains(c.TargetNodeKey))
-            .Select(c => $"{c.SourceNodeKey} -> {c.TargetNodeKey}")
-            .ToList();
-
-        if (invalidTargetConnections.Count != 0)
+        if (invalidConnections.Count != 0)
         {
-            var invalidList = string.Join(", ", invalidTargetConnections);
-            throw new BusinessException(400, $"连接的目标节点不存在: {invalidList}");
+            var invalidList = string.Join(", ", invalidConnections);
+            throw new BusinessException(400, $"以下节点的下游节点不存在: {invalidList}");
         }
 
-        // 验证 2: Start 节点有出边
+        // 验证 2: Start 节点有下游节点
         var startNode = nodes.FirstOrDefault(n => n.NodeType == NodeType.Start);
         if (startNode != null)
         {
-            var hasOutgoingEdge = connections.Any(c => c.SourceNodeKey == startNode.NodeKey);
-            if (!hasOutgoingEdge)
+            if (startNode.NextNodeKeys == null || startNode.NextNodeKeys.Count == 0)
             {
-                throw new BusinessException(400, "Start 节点必须有至少一个出边");
+                throw new BusinessException(400, "Start 节点必须有至少一个下游节点");
             }
         }
 
-        // 验证 3: End 节点没有出边
+        // 验证 3: End 节点没有下游节点
         var endNodes = nodes.Where(n => n.NodeType == NodeType.End).ToList();
         foreach (var endNode in endNodes)
         {
-            var hasOutgoingEdge = connections.Any(c => c.SourceNodeKey == endNode.NodeKey);
-            if (hasOutgoingEdge)
+            if (endNode.NextNodeKeys != null && endNode.NextNodeKeys.Count > 0)
             {
-                throw new BusinessException(400, $"End 节点 '{endNode.NodeKey}' 不能有出边");
+                throw new BusinessException(400, $"End 节点 '{endNode.NodeKey}' 不能有下游节点");
             }
         }
 
-        // 验证 4: 所有非 End 节点都有至少一个出边（避免孤立节点）
+        // 验证 4: 所有非 End 节点都有至少一个下游节点（避免孤立节点）
         var nonEndNodes = nodes.Where(n => n.NodeType != NodeType.End).ToList();
         var orphanedNodes = nonEndNodes
-            .Where(n => !connections.Any(c => c.SourceNodeKey == n.NodeKey))
+            .Where(n => n.NextNodeKeys == null || n.NextNodeKeys.Count == 0)
             .Select(n => n.NodeKey)
             .ToList();
 
         if (orphanedNodes.Count != 0)
         {
             var orphanedList = string.Join(", ", orphanedNodes);
-            throw new BusinessException(400, $"以下节点没有出边（孤立节点）: {orphanedList}");
+            throw new BusinessException(400, $"以下节点没有下游节点（孤立节点）: {orphanedList}");
         }
     }
 
@@ -190,7 +182,7 @@ public class WorkflowDefinitionService
 
         // 验证所有必需的输入字段都已配置
         var requiredFields = nodeDefine.InputFields.Where(f => f.IsRequired).ToList();
-        var configuredFields = nodeDesign.FieldDesigns.Keys.ToHashSet();
+        var configuredFields = nodeDesign.FieldDesigns.Select(kvp => kvp.Key).ToHashSet();
 
         var missingFields = requiredFields
             .Where(f => !configuredFields.Contains(f.FieldName))
@@ -259,23 +251,11 @@ public class WorkflowDefinitionService
     /// 验证工作流图的连通性.
     /// 确保从 Start 节点可以到达所有非 End 节点.
     /// </summary>
-    private static void ValidateGraphConnectivity(List<NodeDesign> nodeDesigns, List<Connection> connections, NodeDesign startNode)
+    private static void ValidateGraphConnectivity(List<NodeDesign> nodeDesigns, NodeDesign startNode)
     {
         var nodeMap = nodeDesigns.ToDictionary(n => n.NodeKey);
         var visited = new HashSet<string>();
         var queue = new Queue<string>();
-
-        // 构建邻接表
-        var adjacencyList = new Dictionary<string, List<string>>();
-        foreach (var node in nodeDesigns)
-        {
-            adjacencyList[node.NodeKey] = new List<string>();
-        }
-
-        foreach (var connection in connections)
-        {
-            adjacencyList[connection.SourceNodeKey].Add(connection.TargetNodeKey);
-        }
 
         queue.Enqueue(startNode.NodeKey);
         visited.Add(startNode.NodeKey);
@@ -283,14 +263,18 @@ public class WorkflowDefinitionService
         while (queue.Count > 0)
         {
             var currentKey = queue.Dequeue();
+            var currentNode = nodeMap[currentKey];
 
-            // 遍历所有出边
-            foreach (var nextKey in adjacencyList[currentKey])
+            // 遍历所有下游节点
+            if (currentNode.NextNodeKeys != null)
             {
-                if (!visited.Contains(nextKey))
+                foreach (var nextKey in currentNode.NextNodeKeys)
                 {
-                    visited.Add(nextKey);
-                    queue.Enqueue(nextKey);
+                    if (!visited.Contains(nextKey))
+                    {
+                        visited.Add(nextKey);
+                        queue.Enqueue(nextKey);
+                    }
                 }
             }
         }
@@ -314,23 +298,11 @@ public class WorkflowDefinitionService
     /// 检测工作流图中的循环.
     /// 使用深度优先搜索检测是否存在循环依赖.
     /// </summary>
-    private static void DetectCycles(List<NodeDesign> nodeDesigns, List<Connection> connections, NodeDesign startNode)
+    private static void DetectCycles(List<NodeDesign> nodeDesigns, NodeDesign startNode)
     {
         var nodeMap = nodeDesigns.ToDictionary(n => n.NodeKey);
         var visited = new HashSet<string>();
         var recursionStack = new HashSet<string>();
-
-        // 构建邻接表
-        var adjacencyList = new Dictionary<string, List<string>>();
-        foreach (var node in nodeDesigns)
-        {
-            adjacencyList[node.NodeKey] = new List<string>();
-        }
-
-        foreach (var connection in connections)
-        {
-            adjacencyList[connection.SourceNodeKey].Add(connection.TargetNodeKey);
-        }
 
         bool HasCycle(string nodeKey, List<string> path)
         {
@@ -351,12 +323,16 @@ public class WorkflowDefinitionService
             recursionStack.Add(nodeKey);
             path.Add(nodeKey);
 
-            // 检查所有出边
-            foreach (var nextKey in adjacencyList[nodeKey])
+            // 检查所有下游节点
+            var currentNode = nodeMap[nodeKey];
+            if (currentNode.NextNodeKeys != null)
             {
-                if (HasCycle(nextKey, path))
+                foreach (var nextKey in currentNode.NextNodeKeys)
                 {
-                    return true;
+                    if (HasCycle(nextKey, path))
+                    {
+                        return true;
+                    }
                 }
             }
 

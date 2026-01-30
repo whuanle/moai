@@ -9,18 +9,27 @@ export const nodeTemplates: NodeTemplate[] = [
   {
     type: NodeType.Start,
     name: '开始',
-    description: '工作流的起始节点',
+    description: '工作流的入口点，初始化工作流上下文并传递启动参数',
     icon: '▶️',
     color: '#52c41a',
     category: NodeCategory.Control,
     defaultData: {
-      title: '开始',
+      title: '开始节点',
+      content: '工作流的入口点，初始化工作流上下文并传递启动参数',
+      inputFields: [
+        { 
+          fieldName: 'parameters', 
+          fieldType: FieldType.Map, 
+          isRequired: false,
+          description: '启动参数（Map 类型，可配置子字段）'
+        }
+      ],
       outputFields: [
         { 
-          fieldName: 'trigger', 
-          fieldType: FieldType.Object, 
-          isRequired: false,
-          description: '触发器数据'
+          fieldName: 'parameters', 
+          fieldType: FieldType.Map, 
+          isRequired: true,
+          description: '传递给下一个节点的参数（Map 类型）'
         }
       ]
     }
@@ -28,12 +37,13 @@ export const nodeTemplates: NodeTemplate[] = [
   {
     type: NodeType.End,
     name: '结束',
-    description: '工作流的结束节点',
+    description: '工作流的结束节点，输出最终结果',
     icon: '⏹️',
     color: '#ff4d4f',
     category: NodeCategory.Control,
     defaultData: {
-      title: '结束',
+      title: '结束节点',
+      content: '工作流的结束节点，输出最终结果',
       inputFields: [
         { 
           fieldName: 'result', 

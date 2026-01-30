@@ -1,118 +1,160 @@
-# 工作流编排器
+# 工作流配置模块
 
-## 开发进度
+## 概述
 
-### ✅ 已完成：第一步 - 节点类型定义和拖拽功能
+工作流配置模块用于可视化编辑和配置工作流，基于 `@flowgram.ai/free-layout-editor` 实现。
 
-1. **节点类型定义** (`types.ts`)
-   - 定义了 10 种节点类型
-   - 定义了 4 种节点分类
-   - 定义了字段类型系统
+## 数据结构
 
-2. **节点模板配置** (`nodeTemplates.ts`)
-   - 为每个节点类型配置了默认数据、图标、颜色
-   - 提供了节点查询工具函数
+### 后端 API 响应
 
-3. **节点面板组件** (`NodePanel.tsx`)
-   - 左侧节点库面板，按分类展示
-   - 支持搜索功能
-   - 节点卡片可拖拽
+```typescript
+interface QueryWorkflowDefinitionCommandResponse {
+  appId: string;
+  name: string;
+  description: string;
+  
+  // 功能设计草稿 - NodeDesign[] 数组
+  functionDesignDraft: NodeDesign[];
+  
+  // UI 设计草稿 - JSON 字符串
+  uiDesignDraft: string;
+  
+  isPublish: boolean;
+  // ... 其他字段
+}
 
-4. **工作流画布** (`WorkflowCanvas.tsx`)
-   - 接收拖拽节点并创建实例
-   - 显示节点输入输出端口
-   - 支持删除节点
+interface NodeDesign {
+  nodeKey: string;           // 节点唯一标识
+  nodeType: NodeType;        // 节点类型
+  name: string;              // 节点名称
+  description: string;       // 节点描述
+  fieldDesigns: KeyValueOfStringAndFieldDesign[];  // 字段设计
+  nextNodeKeys: string[];    // 下游节点列表
+}
 
-5. **工作流编辑器** (`WorkflowEditor.tsx`)
-   - 整合节点面板和画布
-
-## 功能说明
-
-### 节点操作
-
-#### 添加节点
-1. 从左侧节点面板拖拽节点到画布
-2. 节点会自动创建唯一 ID
-3. 支持搜索节点类型
-
-#### 右键菜单
-在画布上的任意节点上右键点击，可以：
-
-- **编辑节点**：编辑节点配置（开发中）
-- **复制节点**：复制当前节点到偏移位置
-- **删除节点**：删除当前节点
-
-#### 节点类型
-
-**控制流节点**
-- 开始：工作流起始节点
-- 结束：工作流结束节点
-- 条件判断：根据条件分支执行
-- 并行分支：同时执行多个分支
-- 循环遍历：遍历数组元素
-
-**AI 节点**
-- AI 对话：调用 AI 模型进行对话
-
-**数据处理节点**
-- 数据处理：处理和转换数据
-- JavaScript：执行 JavaScript 代码
-
-**集成节点**
-- 插件调用：调用已配置的插件
-- Wiki 查询：从知识库检索信息
-
-### 画布操作
-
-- **拖拽画布**：按住鼠标左键拖动
-- **缩放**：鼠标滚轮或使用右下角缩放控制器
-- **适应视图**：点击缩放控制器的适应按钮
-
-### 快捷键
-
-- `Ctrl +`：放大
-- `Ctrl -`：缩小
-- `右键`：打开节点菜单
-
-## 技术实现
-
-### 核心文件
-
-- `nodeTemplates.ts`：节点模板定义
-- `NodePanel.tsx`：节点面板组件
-- `WorkflowConfig.tsx`：主配置页面
-- `useEditorProps.tsx`：编辑器配置和右键菜单
-- `nodeRegistries.tsx`：节点注册表
-
-### 右键菜单实现
-
-使用 Ant Design 的 `Dropdown` 组件实现右键菜单：
-
-```tsx
-<Dropdown menu={{ items: menuItems }} trigger={['contextMenu']}>
-  <WorkflowNodeRenderer node={props.node}>
-    {form?.render()}
-  </WorkflowNodeRenderer>
-</Dropdown>
-```
-
-菜单项包括：
-- 编辑节点
-- 复制节点
-- 删除节点（红色危险按钮）
-
-### 删除节点
-
-由于 `@flowgram.ai/free-layout-editor` 库的 API 可能有不同版本，删除功能尝试多种方法：
-
-```tsx
-if (typeof (document as any).deleteNode === 'function') {
-  (document as any).deleteNode(props.node.id);
-} else if (typeof (document as any).removeNode === 'function') {
-  (document as any).removeNode(props.node.id);
-} else if (typeof (props.node as any).remove === 'function') {
-  (props.node as any).remove();
+interface FieldDesign {
+  fieldName: string;         // 字段名称
+  expressionType: FieldExpressionType;  // 表达式类型
+  value: string;             // 字段值或表达式
 }
 ```
 
-这确保了在不同版本的库中都能正常工作。
+### 内部数据结构
+
+#### BackendWorkflowData
+存储工作流的业务逻辑数据：
+- nodes: 节点配置（输入/输出字段、执行设置等）
+- edges: 节点连接关系
+- variables: 全局变量
+- metadata: 元数据
+
+#### CanvasWorkflowData
+存储画布的 UI 展示数据：
+- nodes: 节点位置、UI 状态
+- edges: 连接的 UI 样式
+- viewport: 画布视图状态（缩放、偏移）
+
+## 核心文件
+
+### useWorkflowStore.tsx
+Zustand 状态管理，负责：
+- 从 API 加载工作流数据
+- 将 NodeDesign[] 转换为内部 BackendNodeData
+- 将 uiDesignDraft JSON 解析为 CanvasWorkflowData
+- 保存工作流到后端
+- 节点配置更新
+
+### workflowConverter.ts
+数据转换工具：
+- `toEditorFormat`: 内部格式 → FlowGram 编辑器格式
+- `fromEditorFormat`: FlowGram 编辑器格式 → 内部格式
+- `parseUiDesign`: JSON 字符串 → CanvasWorkflowData
+- `toUiDesign`: CanvasWorkflowData → JSON 字符串
+
+### WorkflowConfig.tsx
+主配置页面组件：
+- 加载工作流数据
+- 渲染 FlowGram 编辑器
+- 处理节点拖放
+- 显示节点配置面板
+
+### useEditorProps.tsx
+FlowGram 编辑器配置：
+- 节点渲染逻辑
+- 右键菜单
+- 插件配置（缩略图、对齐）
+
+## 使用流程
+
+1. **加载工作流**
+   ```typescript
+   await store.loadFromApi(appId, teamId);
+   ```
+   - 调用 `/api/team/workflowapp/config` POST 接口
+   - 解析 `functionDesignDraft` (NodeDesign[])
+   - 解析 `uiDesignDraft` (JSON 字符串)
+   - 转换为内部数据结构
+   
+   **三种情况：**
+   - 有 uiDesignDraft：直接使用
+   - 无 uiDesignDraft 但有节点：生成默认布局
+   - 都为空（新建工作流）：显示空画布
+
+2. **渲染画布**
+   ```typescript
+   const initialDocument = toEditorFormat(store.backend, store.canvas);
+   const editorProps = useEditorProps(initialDocument, ...);
+   ```
+   - 合并后端数据和画布数据
+   - 生成 FlowGram 编辑器所需格式
+
+3. **节点配置**
+   - 双击节点打开配置面板
+   - 修改节点的 inputFields、outputFields、settings
+   - 调用 `store.updateNodeConfig()` 更新
+
+4. **保存工作流**
+   ```typescript
+   await store.saveToApi();
+   ```
+   - 将内部数据转换为 API 格式
+   - 调用保存接口（待实现）
+
+## 节点类型
+
+- **start**: 开始节点（唯一）
+- **end**: 结束节点（唯一）
+- **condition**: 条件判断
+- **fork**: 并行分支
+- **forEach**: 循环遍历
+- **aiChat**: AI 对话
+- **dataProcess**: 数据处理
+- **javaScript**: JavaScript 脚本
+- **plugin**: 插件调用
+- **wiki**: 知识库查询
+
+## 字段表达式类型
+
+- **Constant**: 常量值
+- **Variable**: 变量引用
+- **Expression**: 表达式
+- **NodeOutput**: 节点输出
+- **Context**: 上下文
+
+## 注意事项
+
+1. **数据一致性**: backend 和 canvas 的节点 ID 必须一致
+2. **节点约束**: 开始/结束节点只能有一个
+3. **连接关系**: 从 nextNodeKeys 推导边的连接
+4. **字段类型**: 需要根据实际业务推断字段类型（默认 String）
+5. **子字段支持**: Map 类型字段可以包含 children 子字段数组
+6. **空画布处理**: 新建工作流时，functionDesignDraft 和 uiDesignDraft 都为空，显示空画布和提示信息
+
+## 待实现功能
+
+- [ ] 保存工作流 API 调用
+- [ ] 其他节点类型的配置组件
+- [ ] 节点验证逻辑
+- [ ] 工作流执行功能
+- [ ] 版本管理

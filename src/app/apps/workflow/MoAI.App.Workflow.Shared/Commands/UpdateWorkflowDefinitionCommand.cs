@@ -41,7 +41,7 @@ public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, I
     public string? Avatar { get; set; }
 
     /// <summary>
-    /// UI 设计草稿，用于前端可视化设计器.
+    /// UI 设计草稿，用于前端可视化设计器，只存储 flowgram.ai 的数据.
     /// 保存草稿不会影响已发布的版本.
     /// </summary>
     public string UiDesignDraft { get; set; } = default!;
@@ -49,14 +49,9 @@ public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, I
     /// <summary>
     /// 节点设计列表.
     /// 包含工作流中所有节点的配置信息.
+    /// 节点之间的连接关系通过 NodeDesign.NextNodeKeys 定义.
     /// </summary>
-    public IReadOnlyCollection<NodeDesign>? Nodes { get; set; }
-
-    /// <summary>
-    /// 连接列表.
-    /// 定义节点之间的连接关系.
-    /// </summary>
-    public IReadOnlyCollection<Connection>? Connections { get; set; }
+    public IReadOnlyCollection<NodeDesign> Nodes { get; set; } = Array.Empty<NodeDesign>();
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateWorkflowDefinitionCommand> validate)
@@ -78,5 +73,8 @@ public class UpdateWorkflowDefinitionCommand : IRequest<EmptyCommandResponse>, I
         validate.RuleFor(x => x.Avatar)
             .MaximumLength(200).WithMessage("头像路径不能超过200个字符")
             .When(x => !string.IsNullOrEmpty(x.Avatar));
+
+        validate.RuleFor(x => x.Nodes)
+            .NotEmpty().WithMessage("节点设计列表不能为空");
     }
 }

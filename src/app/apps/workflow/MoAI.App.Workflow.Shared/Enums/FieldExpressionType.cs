@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace MoAI.Workflow.Enums;
 
 /// <summary>
@@ -6,22 +8,32 @@ namespace MoAI.Workflow.Enums;
 public enum FieldExpressionType
 {
     /// <summary>
+    /// 运行时传入，也就是不能手动设置.
+    /// </summary>
+    [JsonPropertyName("run")]
+    Run,
+
+    /// <summary>
     /// 固定值 - 常数值，不进行任何解析.
     /// </summary>
+    [JsonPropertyName("fixed")]
     Fixed,
 
     /// <summary>
     /// 变量引用 - 引用工作流上下文中的变量（sys.*、input.*、nodeKey.*）.
     /// </summary>
+    [JsonPropertyName("variable")]
     Variable,
 
     /// <summary>
     /// JSON 路径表达式 - 使用点符号访问嵌套对象（例如：nodeA.result[0].name）.
     /// </summary>
-    JsonPath,
+    [JsonPropertyName("jsonpath")]
+    Jsonpath,
 
     /// <summary>
     /// 字符串插值 - 模板字符串，支持变量替换（例如：Hello {input.name}）.
     /// </summary>
-    StringInterpolation,
+    [JsonPropertyName("interpolation")]
+    Interpolation,
 }

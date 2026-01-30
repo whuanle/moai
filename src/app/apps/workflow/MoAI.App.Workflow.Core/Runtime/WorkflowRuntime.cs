@@ -265,18 +265,14 @@ public class WorkflowRuntime
 
     /// <summary>
     /// 确定下一个要执行的节点.
+    /// 对于一般节点，返回第一个下游节点.
+    /// 对于条件节点等特殊节点，根据执行结果选择对应的下游节点.
     /// </summary>
     /// <param name="nodeDesign">当前节点设计.</param>
     /// <param name="context">工作流上下文.</param>
     /// <returns>下一个节点的 Key，如果没有则返回 null.</returns>
     private static string? DetermineNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
-        // 对于大多数节点，直接返回 NextNodeKey
-        if (!string.IsNullOrEmpty(nodeDesign.NextNodeKey))
-        {
-            return nodeDesign.NextNodeKey;
-        }
-
         // 对于 Condition 节点，需要根据条件结果确定下一个节点
         if (nodeDesign.NodeType == NodeType.Condition)
         {
@@ -295,12 +291,20 @@ public class WorkflowRuntime
             return DetermineForkNextNode(nodeDesign, context);
         }
 
+        // 对于一般节点，返回第一个下游节点
+        if (nodeDesign.NextNodeKeys != null && nodeDesign.NextNodeKeys.Count > 0)
+        {
+            return nodeDesign.NextNodeKeys.First();
+        }
+
         // 没有下一个节点
         return null;
     }
 
     /// <summary>
     /// 确定 Condition 节点的下一个节点.
+    /// 根据条件结果从 NextNodeKeys 中选择对应的分支节点.
+    /// 约定：NextNodeKeys[0] 为 true 分支，NextNodeKeys[1] 为 false 分支.
     /// </summary>
     private static string? DetermineConditionNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
@@ -310,18 +314,21 @@ public class WorkflowRuntime
             if (pipeline.OutputJsonMap.TryGetValue("result", out var resultObj) && resultObj is bool result)
             {
                 // 根据条件结果选择分支
-                var trueKey = nodeDesign.FieldDesigns.TryGetValue("trueNodeKey", out var trueDesign)
-                    ? trueDesign.Value
-                    : null;
-                var falseKey = nodeDesign.FieldDesigns.TryGetValue("falseNodeKey", out var falseDesign)
-                    ? falseDesign.Value
-                    : null;
-
-                return result ? trueKey : falseKey;
+                // 约定：NextNodeKeys[0] 为 true 分支，NextNodeKeys[1] 为 false 分支
+                if (nodeDesign.NextNodeKeys != null && nodeDesign.NextNodeKeys.Count >= 2)
+                {
+                    return result ? nodeDesign.NextNodeKeys.ElementAt(0) : nodeDesign.NextNodeKeys.ElementAt(1);
+                }
+                else if (nodeDesign.NextNodeKeys != null && nodeDesign.NextNodeKeys.Count == 1)
+                {
+                    // 如果只有一个下游节点，无论结果如何都执行
+                    return nodeDesign.NextNodeKeys.First();
+                }
             }
         }
 
-        return nodeDesign.NextNodeKey;
+        // 如果无法确定，返回第一个下游节点（如果有）
+        return nodeDesign.NextNodeKeys?.FirstOrDefault();
     }
 
     /// <summary>
@@ -329,8 +336,8 @@ public class WorkflowRuntime
     /// </summary>
     private static string? DetermineForEachNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
-        // ForEach 节点执行完成后，继续下一个节点
-        return nodeDesign.NextNodeKey;
+        // ForEach 节点执行完成后，继续第一个下游节点
+        return nodeDesign.NextNodeKeys?.FirstOrDefault();
     }
 
     /// <summary>
@@ -338,8 +345,8 @@ public class WorkflowRuntime
     /// </summary>
     private static string? DetermineForkNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
-        // Fork 节点执行完成后，继续下一个节点
-        return nodeDesign.NextNodeKey;
+        // Fork 节点执行完成后，继续第一个下游节点
+        return nodeDesign.NextNodeKeys?.FirstOrDefault();
     }
 
     /// <summary>

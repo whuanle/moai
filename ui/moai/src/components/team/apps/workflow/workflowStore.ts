@@ -272,6 +272,12 @@ export interface WorkflowState {
   // 工作流 ID
   workflowId: string;
   
+  // 应用 ID
+  appId: string;
+  
+  // 团队 ID
+  teamId: number;
+  
   // 后端逻辑数据
   backend: BackendWorkflowData;
   
@@ -286,6 +292,15 @@ export interface WorkflowState {
   
   // 是否正在保存
   isSaving: boolean;
+  
+  // 是否正在加载
+  isLoading: boolean;
+  
+  // 加载错误
+  loadError: string | null;
+  
+  // 是否为草稿版本
+  isDraft: boolean;
 }
 
 /**
@@ -429,4 +444,32 @@ export interface WorkflowActions {
    * 重置修改状态
    */
   resetDirty: () => void;
+  
+  // ==================== API 集成操作 ====================
+  
+  /**
+   * 从后端加载工作流
+   */
+  loadFromApi: (appId: string, teamId: number) => Promise<void>;
+  
+  /**
+   * 保存工作流到后端
+   */
+  saveToApi: () => Promise<boolean>;
+  
+  /**
+   * 查询节点定义并更新节点
+   */
+  queryAndUpdateNodeDefinition: (
+    nodeId: string,
+    nodeType: NodeType,
+    instanceId?: string
+  ) => Promise<void>;
+  
+  /**
+   * 批量查询节点定义
+   */
+  batchQueryNodeDefinitions: (
+    nodeQueries: Array<{ nodeId: string; nodeType: NodeType; instanceId?: string }>
+  ) => Promise<void>;
 }

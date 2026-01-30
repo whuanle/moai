@@ -72,29 +72,23 @@ public class UpdateWorkflowDefinitionCommandHandler : IRequestHandler<UpdateWork
         // 更新草稿字段（不影响已发布版本）
         if (request.UiDesignDraft != null)
         {
-            workflowDesignEntity.UiDesignDraft = JsonSerializer.Serialize(
-                request.UiDesignDraft,
-                JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
+            workflowDesignEntity.UiDesignDraft = request.UiDesignDraft;
         }
 
-        // 如果提供了 Nodes 和 Connections，则验证并更新功能设计草稿
-        if (request.Nodes != null && request.Connections != null)
-        {
-            // 构建 WorkflowDefinition 对象用于验证
-            var workflowDefinition = new WorkflowDefinition
-            {
-                Nodes = request.Nodes,
-                Connections = request.Connections
-            };
+        //// 构建工作流定义对象用于验证
+        //var workflowDefinition = new WorkflowDefinition
+        //{
+        //    Id = request.AppId.ToString(),
+        //    Name = request.Name ?? appEntity.Name,
+        //    Description = request.Description ?? appEntity.Description,
+        //    Nodes = request.Nodes
+        //};
 
-            // 验证工作流定义的有效性（节点类型、连接、图结构等）
-            _workflowDefinitionService.ValidateWorkflowDefinition(workflowDefinition);
+        //// 验证工作流定义的有效性（节点类型、连接、图结构等）
+        //_workflowDefinitionService.ValidateWorkflowDefinition(workflowDefinition);
 
-            // 验证通过后，序列化并保存到草稿字段
-            workflowDesignEntity.FunctionDesignDraft = JsonSerializer.Serialize(
-                workflowDefinition,
-                JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
-        }
+        // 验证通过后，序列化并保存到草稿字段
+        workflowDesignEntity.FunctionDesignDraft = JsonSerializer.Serialize(request.Nodes, JsonSerializerOptionValues.UnsafeRelaxedJsonEscaping);
 
         // 保存更改（审计字段会自动更新）
         await _databaseContext.SaveChangesAsync(cancellationToken);

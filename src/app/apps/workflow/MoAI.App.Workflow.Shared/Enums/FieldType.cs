@@ -31,6 +31,11 @@ public enum FieldType
     Object,
 
     /// <summary>
+    /// 字典 - 不确定里面的字段.
+    /// </summary>
+    Map,
+
+    /// <summary>
     /// 数组类型 - 元素集合.
     /// </summary>
     Array,

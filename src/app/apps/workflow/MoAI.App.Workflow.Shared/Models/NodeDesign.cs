@@ -1,3 +1,4 @@
+using MoAI.Infra.Models;
 using MoAI.Workflow.Enums;
 
 namespace MoAI.Workflow.Models;
@@ -28,12 +29,13 @@ public class NodeDesign
     public NodeType NodeType { get; set; }
 
     /// <summary>
-    /// 下一个节点的标识符（用于定义节点连接）.
+    /// 下游节点的标识符列表，用于流程流转.
+    /// 一般节点只有一个下游节点，但是条件判断节点等特殊节点可以配置多个下游节点.
     /// </summary>
-    public string NextNodeKey { get; set; } = string.Empty;
+    public IReadOnlyCollection<string> NextNodeKeys { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// 字段设计映射，键为字段名称，值为字段设计配置.
     /// </summary>
-    public Dictionary<string, FieldDesign> FieldDesigns { get; set; } = new();
+    public IReadOnlyCollection<KeyValue<string, FieldDesign>> FieldDesigns { get; set; } = Array.Empty<KeyValue<string, FieldDesign>>();
 }

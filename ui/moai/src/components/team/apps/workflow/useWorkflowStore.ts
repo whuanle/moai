@@ -18,6 +18,8 @@ import {
   DEFAULT_NODE_CONSTRAINTS,
 } from './workflowStore';
 import { getNodeTemplate } from './nodeTemplates';
+import { WorkflowApiService } from './workflowApiService';
+import { parseFunctionDesign, parseUiDesign, toFunctionDesign, toUiDesign } from './workflowConverter';
 
 /**
  * 生成唯一 ID
@@ -27,11 +29,18 @@ function generateId(prefix: string): string {
 }
 
 /**
+ * 创建 API 服务实例
+ */
+const apiService = new WorkflowApiService();
+
+/**
  * 创建工作流 Store
  */
 export const useWorkflowStore = create<WorkflowState & WorkflowActions>((set, get) => ({
   // ==================== 初始状态 ====================
   workflowId: '',
+  appId: '',
+  teamId: 0,
   backend: {
     id: '',
     name: '未命名工作流',
@@ -51,6 +60,9 @@ export const useWorkflowStore = create<WorkflowState & WorkflowActions>((set, ge
   validationErrors: [],
   isDirty: false,
   isSaving: false,
+  isLoading: false,
+  loadError: null,
+  isDraft: false,
 
   // ==================== 节点操作 ====================
 
@@ -621,5 +633,218 @@ export const useWorkflowStore = create<WorkflowState & WorkflowActions>((set, ge
 
   resetDirty: () => {
     set({ isDirty: false });
+  },
+  
+  // ==================== API 集成操作 ====================
+  
+  loadFromApi: async (appId: string, teamId: number) => {
+    set({ isLoading: true, loadError: null, appId, teamId });
+    
+    try {
+      // 调用 API 加载工作流
+      const workflowData = await apiService.loadWorkflow(appId, teamId);
+      
+      console.log('加载的工作流数据:', workflowData);
+      
+      // 解析后端数据 - functionDesign 现在可能是数组或对象
+      const backendData = parseFunctionDesign(workflowData.functionDesign);
+      
+      // 解析画布数据 - uiDesign 是对象
+      const uiDesignStr = typeof workflowData.uiDesign === 'string' 
+        ? workflowData.uiDesign 
+        : JSON.stringify(workflowData.uiDesign);
+      const canvasData = parseUiDesign(uiDesignStr);
+      
+      console.log('解析后的后端数据:', backendData);
+      console.log('解析后的画布数据:', canvasData);
+      
+      // 更新状态
+      set({
+        workflowId: workflowData.id,
+        appId: workflowData.appId,
+        backend: {
+          id: workflowData.id,
+          name: workflowData.name,
+          description: workflowData.description,
+          version: '1.0.0',
+          nodes: backendData.nodes || [],
+          edges: backendData.edges || [],
+        },
+        canvas: {
+          nodes: canvasData.nodes || [],
+          edges: canvasData.edges || [],
+          viewport: canvasData.viewport || { zoom: 1, offsetX: 0, offsetY: 0 },
+        },
+        isDraft: workflowData.isDraft,
+        isDirty: false,
+        isLoading: false,
+      });
+      
+      console.log('工作流加载完成');
+      
+      // 验证工作流
+      get().validate();
+    } catch (error) {
+      console.error('加载工作流失败:', error);
+      set({
+        isLoading: false,
+        loadError: '加载工作流失败，请重试',
+      });
+      throw error;
+    }
+  },
+  
+  saveToApi: async () => {
+    const state = get();
+    
+    // 验证工作流
+    const errors = state.validate();
+    if (errors.length > 0) {
+      console.error('工作流验证失败:', errors);
+      return false;
+    }
+    
+    set({ isSaving: true });
+    
+    try {
+      // 转换为后端格式
+      const functionDesign = toFunctionDesign(state.backend);
+      const uiDesign = toUiDesign(state.canvas);
+      
+      // 调用 API 保存
+      await apiService.saveWorkflow(
+        state.appId,
+        state.teamId,
+        state.backend,
+        uiDesign
+      );
+      
+      set({ isDirty: false, isSaving: false });
+      return true;
+    } catch (error) {
+      console.error('保存工作流失败:', error);
+      set({ isSaving: false });
+      throw error;
+    }
+  },
+  
+  queryAndUpdateNodeDefinition: async (
+    nodeId: string,
+    nodeType: NodeType,
+    instanceId?: string
+  ) => {
+    const state = get();
+    
+    // 如果有旧实例，清除缓存
+    const node = state.backend.nodes.find(n => n.id === nodeId);
+    if (node) {
+      const oldInstanceId = node.config.settings.instanceId as string | undefined;
+      if (oldInstanceId && oldInstanceId !== instanceId) {
+        apiService.clearNodeCache(nodeType, oldInstanceId);
+      }
+    }
+    
+    try {
+      // 查询节点定义
+      const definition = await apiService.queryNodeDefinition(
+        state.teamId,
+        nodeType,
+        instanceId
+      );
+      
+      if (!definition) {
+        console.warn(`未找到节点定义: ${nodeType}, ${instanceId}`);
+        return;
+      }
+      
+      // 更新节点配置
+      const newBackendNodes = state.backend.nodes.map(node =>
+        node.id === nodeId
+          ? {
+              ...node,
+              config: {
+                ...node.config,
+                inputFields: (definition.inputFields || []) as any,
+                outputFields: (definition.outputFields || []) as any,
+                settings: {
+                  ...node.config.settings,
+                  instanceId,
+                },
+              },
+            }
+          : node
+      );
+      
+      set({
+        backend: {
+          ...state.backend,
+          nodes: newBackendNodes,
+        },
+        isDirty: true,
+      });
+    } catch (error) {
+      console.error('查询节点定义失败:', error);
+      throw error;
+    }
+  },
+  
+  batchQueryNodeDefinitions: async (
+    nodeQueries: Array<{ nodeId: string; nodeType: NodeType; instanceId?: string }>
+  ) => {
+    const state = get();
+    
+    try {
+      // 构建查询 Map
+      const queryMap = new Map<NodeType, string[]>();
+      nodeQueries.forEach(query => {
+        if (query.instanceId) {
+          const ids = queryMap.get(query.nodeType) || [];
+          ids.push(query.instanceId);
+          queryMap.set(query.nodeType, ids);
+        }
+      });
+      
+      // 批量查询
+      const definitions = await apiService.queryNodeDefinitions(
+        state.teamId,
+        queryMap
+      );
+      
+      // 更新节点配置
+      const newBackendNodes = state.backend.nodes.map(node => {
+        const query = nodeQueries.find(q => q.nodeId === node.id);
+        if (!query) return node;
+        
+        const definition = definitions.find(
+          d => d.nodeType === query.nodeType &&
+               (query.instanceId ? 
+                 (d.pluginId?.toString() === query.instanceId ||
+                  d.wikiId?.toString() === query.instanceId ||
+                  d.modelId?.toString() === query.instanceId) : true)
+        );
+        
+        if (!definition) return node;
+        
+        return {
+          ...node,
+          config: {
+            ...node.config,
+            inputFields: (definition.inputFields || []) as any,
+            outputFields: (definition.outputFields || []) as any,
+          },
+        };
+      });
+      
+      set({
+        backend: {
+          ...state.backend,
+          nodes: newBackendNodes,
+        },
+        isDirty: true,
+      });
+    } catch (error) {
+      console.error('批量查询节点定义失败:', error);
+      throw error;
+    }
   },
 }));
