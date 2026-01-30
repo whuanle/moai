@@ -1,0 +1,15 @@
+/**
+ * 缩略图样式
+ */
+
+.workflow-minimap {
+  position: absolute;
+  left: var(--spacing-lg);
+  bottom: var(--spacing-lg);
+  width: 198px;
+  z-index: 10;
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-sm);
+}

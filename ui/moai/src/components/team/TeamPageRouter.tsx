@@ -7,7 +7,7 @@ import TeamWikiWrapper from "./TeamWikiWrapper";
 import TeamApps from "./apps/TeamApps";
 import TeamApplicationListPage from "./apps/TeamApplicationListPage";
 import AppConfigCommon from "./apps/chatapp/ChatAppConfig";
-import WorkflowConfig from "./apps/workflow/WorkflowConfig";
+import { WorkflowEditor } from "./apps/workflow";
 import TeamIntegration from "./TeamIntegration";
 
 export const TeamPageRouters: RouteObject[] = [
@@ -48,7 +48,7 @@ export const TeamPageRouters: RouteObject[] = [
           },
           {
             path: "apps/:appId/workflow",
-            Component: WorkflowConfig,
+            Component: WorkflowEditor,
           },
           {
             path: "integration",

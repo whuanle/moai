@@ -1,9 +1,26 @@
 /**
- * 工作流模块导出
+ * 工作流模块导出 - 重构版
  */
 
-export { WorkflowEditor } from './WorkflowEditor';
+// 主组件
+export { default as WorkflowEditor } from './WorkflowEditor';
+
+// 子组件
 export { NodePanel } from './NodePanel';
-export { WorkflowCanvas } from './WorkflowCanvas';
-export { nodeTemplates, categoryNames, getNodeTemplate, getNodeTemplatesByCategory } from './nodeTemplates';
-export type { NodeTemplate, NodeType, NodeCategory, FieldDefine, FieldType } from './types';
+export { Toolbar } from './Toolbar';
+export { ConfigPanel } from './ConfigPanel';
+
+// Store
+export { useWorkflowStore } from './store';
+
+// 类型
+export * from './types';
+
+// 常量
+export * from './constants';
+
+// 工具函数
+export * from './utils';
+
+// API
+export { workflowApi } from './api';

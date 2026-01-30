@@ -1,23 +1,10 @@
 /**
- * 工作流节点类型定义
+ * 工作流类型定义 - 重构版
+ * 统一的数据模型，不再分离 Backend 和 Canvas
  */
 
-import type { FieldDefine as ApiFieldDefine } from '../../../apiClient/models';
+// ==================== 基础类型 ====================
 
-// 使用 API 的 FieldDefine 类型作为基础
-export type FieldDefine = ApiFieldDefine;
-
-// 扩展的字段定义（用于工作流配置）
-export interface ExtendedFieldDefine extends ApiFieldDefine {
-  // 字段表达式类型（字段来源）
-  expressionType?: FieldExpressionType;
-  // 字段值（根据 expressionType 不同，值的含义不同）
-  value?: any;
-  // 子字段（当 fieldType 为 Map 或 Object 时）
-  children?: ExtendedFieldDefine[];
-}
-
-// 节点类型枚举
 export enum NodeType {
   Start = 'start',
   End = 'end',
@@ -31,15 +18,13 @@ export enum NodeType {
   Wiki = 'wiki'
 }
 
-// 节点分类
 export enum NodeCategory {
-  Control = 'control',      // 控制流
-  AI = 'ai',               // AI 节点
-  Data = 'data',           // 数据处理
-  Integration = 'integration' // 集成
+  Control = 'control',
+  AI = 'ai',
+  Data = 'data',
+  Integration = 'integration'
 }
 
-// 字段类型
 export enum FieldType {
   Empty = 'empty',
   String = 'string',
@@ -51,16 +36,99 @@ export enum FieldType {
   Dynamic = 'dynamic'
 }
 
-// 字段表达式类型（字段来源）
 export enum FieldExpressionType {
-  Constant = 'constant',      // 常量值
-  Variable = 'variable',      // 变量引用
-  Expression = 'expression',  // 表达式
-  NodeOutput = 'nodeOutput',  // 节点输出
-  Context = 'context'         // 上下文
+  Constant = 'constant',
+  Variable = 'variable',
+  Expression = 'expression',
+  NodeOutput = 'nodeOutput',
+  Context = 'context'
 }
 
-// 节点模板接口
+// ==================== 字段定义 ====================
+
+export interface FieldDefine {
+  fieldName: string;
+  fieldType: FieldType;
+  isRequired?: boolean;
+  description?: string;
+  defaultValue?: any;
+  children?: FieldDefine[];
+}
+
+export interface FieldValue {
+  fieldName: string;
+  expressionType: FieldExpressionType;
+  value: any;
+}
+
+// ==================== 节点数据（统一模型）====================
+
+export interface WorkflowNode {
+  // 基础信息
+  id: string;
+  type: NodeType;
+  name: string;
+  description?: string;
+  
+  // 位置信息（直接包含，不分离）
+  position: {
+    x: number;
+    y: number;
+  };
+  
+  // 配置信息
+  config: {
+    inputFields: FieldDefine[];
+    outputFields: FieldDefine[];
+    settings: Record<string, any>;
+  };
+  
+  // UI 状态（最小化，可选）
+  ui?: {
+    selected?: boolean;
+    expanded?: boolean;
+    width?: number;
+    height?: number;
+  };
+}
+
+// ==================== 连接数据 ====================
+
+export interface WorkflowEdge {
+  id: string;
+  source: string;  // 源节点 ID
+  target: string;  // 目标节点 ID
+  sourceHandle?: string;  // 源端口
+  targetHandle?: string;  // 目标端口
+  data?: {
+    label?: string;
+    condition?: string;
+  };
+}
+
+// ==================== 工作流数据 ====================
+
+export interface WorkflowData {
+  id: string;
+  name: string;
+  description?: string;
+  version?: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  viewport?: {
+    zoom: number;
+    x: number;
+    y: number;
+  };
+  metadata?: {
+    createdAt?: string;
+    updatedAt?: string;
+    author?: string;
+  };
+}
+
+// ==================== 节点模板 ====================
+
 export interface NodeTemplate {
   type: NodeType;
   name: string;
@@ -69,9 +137,69 @@ export interface NodeTemplate {
   color: string;
   category: NodeCategory;
   defaultData: {
-    title: string;
-    content?: string;
-    inputFields?: FieldDefine[];
-    outputFields?: FieldDefine[];
+    inputFields: FieldDefine[];
+    outputFields: FieldDefine[];
+    settings?: Record<string, any>;
   };
+}
+
+// ==================== 验证 ====================
+
+export enum ValidationErrorType {
+  MissingStartNode = 'missing_start_node',
+  MissingEndNode = 'missing_end_node',
+  MultipleStartNodes = 'multiple_start_nodes',
+  MultipleEndNodes = 'multiple_end_nodes',
+  DisconnectedNode = 'disconnected_node',
+  CyclicDependency = 'cyclic_dependency',
+  InvalidConnection = 'invalid_connection',
+  MissingRequiredField = 'missing_required_field',
+  InvalidFieldType = 'invalid_field_type',
+}
+
+export interface ValidationError {
+  type: ValidationErrorType;
+  message: string;
+  nodeId?: string;
+  edgeId?: string;
+  field?: string;
+}
+
+// ==================== 节点约束 ====================
+
+export interface NodeConstraints {
+  minCount: number;
+  maxCount: number;  // -1 表示无限制
+  deletable: boolean;
+  copyable: boolean;
+  requiresInput: boolean;
+  requiresOutput: boolean;
+}
+
+// ==================== API 数据格式 ====================
+
+// 后端 API 返回的节点设计格式
+export interface ApiNodeDesign {
+  nodeKey: string;
+  nodeType: NodeType;
+  name: string;
+  description?: string;
+  inputFields?: FieldDefine[];
+  outputFields?: FieldDefine[];
+  fieldDesigns?: Record<string, any>;
+  nextNodeKeys?: string[];
+}
+
+// 后端 API 返回的工作流配置
+export interface ApiWorkflowConfig {
+  id: string;
+  appId: string;
+  name: string;
+  description?: string;
+  functionDesign?: ApiNodeDesign[] | string;  // 已发布版本（可能是数组或 JSON 字符串）
+  functionDesignDraft?: ApiNodeDesign[];  // 草稿版本
+  uiDesign?: string | object;  // JSON 字符串或对象（已发布版本）
+  uiDesignDraft?: string | object;  // JSON 字符串或对象（草稿版本）
+  isDraft?: boolean;
+  isPublish?: boolean;
 }

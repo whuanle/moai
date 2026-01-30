@@ -202,7 +202,11 @@ export default function TeamApps() {
       sorter: (a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'zh-CN'),
       render: (_: unknown, record: QueryAppListCommandResponseItem) => (
         <Space>
-          <Avatar src={record.avatar} icon={<AppstoreOutlined />} size="small" />
+          <Avatar 
+            src={record.avatar || null} 
+            icon={<AppstoreOutlined />} 
+            size="small" 
+          />
           <span>{record.name}</span>
         </Space>
       ),

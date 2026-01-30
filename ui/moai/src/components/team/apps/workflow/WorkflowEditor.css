@@ -1,54 +1,127 @@
 /**
- * 工作流编辑器容器样式
+ * 工作流编辑器样式 - 重构版
  */
 
 .workflow-editor-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background: var(--color-bg-container);
-}
-
-.workflow-editor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-container);
-}
-
-.workflow-editor-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.status-text {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.workflow-editor-content {
-  flex: 1;
-  display: flex;
+  background: var(--color-bg-layout);
   overflow: hidden;
 }
 
-/* 响应式调整 */
+/* 头部 */
+.workflow-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-container);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* 主内容区 */
+.workflow-editor-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 画布 */
+.workflow-canvas {
+  flex: 1;
+  position: relative;
+  background: var(--color-bg-layout);
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 空状态提示 */
+.workflow-empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.empty-hint-content {
+  padding: var(--spacing-xl);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.empty-hint-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-hint-content h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-primary);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.empty-hint-content p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* 加载状态 */
+.workflow-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: var(--color-bg-layout);
+}
+
+/* 节点样式 */
+.workflow-node {
+  min-width: 200px;
+  min-height: 80px;
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.workflow-node:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.workflow-node.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+}
+
+/* 响应式 */
 @media (max-width: 768px) {
   .workflow-editor-header {
-    padding: var(--spacing-sm) var(--spacing-md);
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: flex-start;
   }
   
-  .workflow-editor-header h2 {
-    font-size: 16px;
+  .workflow-editor-content {
+    flex-direction: column;
   }
 }

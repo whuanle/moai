@@ -1,27 +1,28 @@
 /**
- * 工作流节点面板样式
+ * 节点面板样式 - 重构版
  */
 
-.workflow-node-panel {
+.node-panel {
   width: 280px;
-  height: 100%;
   background: var(--color-bg-container);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex-shrink: 0;
+  height: 100%;
 }
 
 .node-panel-header {
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-container);
+  flex-shrink: 0;
 }
 
 .node-panel-header h3 {
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-md) 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-primary);
 }
 
@@ -29,15 +30,103 @@
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-sm);
+  min-height: 0;
+}
+
+/* 分类头部 */
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: 500;
+}
+
+.category-icon {
+  font-size: 18px;
+}
+
+.category-name {
+  flex: 1;
+}
+
+/* 节点列表 */
+.node-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) 0;
+}
+
+/* 节点项 */
+.node-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: grab;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.node-item-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--node-color, var(--color-primary));
+}
+
+.node-item:hover {
+  background: var(--color-bg-layout);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.node-item:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.node-item-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.node-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.node-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.node-item-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 空状态 */
+.node-panel-empty {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
 }
 
 /* 滚动条样式 */
 .node-panel-content::-webkit-scrollbar {
   width: 6px;
-}
-
-.node-panel-content::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 .node-panel-content::-webkit-scrollbar-thumb {
@@ -46,118 +135,15 @@
 }
 
 .node-panel-content::-webkit-scrollbar-thumb:hover {
-  background: #bbb;
+  background: var(--color-text-secondary);
 }
 
-/* 分类标签 */
-.node-category-label {
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.category-badge {
-  margin-left: 8px;
-}
-
-/* 节点模板列表 */
-.node-template-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) 0;
-}
-
-/* 节点模板卡片 */
-.node-template-card {
-  --node-border-color: var(--color-border);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background: var(--color-bg-container);
-  border: 1px solid var(--color-border);
-  border-left-width: 3px;
-  border-left-color: var(--node-border-color);
-  border-radius: var(--radius-sm);
-  cursor: grab;
-  transition: all 0.2s ease;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-.node-template-card:hover {
-  background: var(--color-bg-layout);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
-}
-
-.node-template-card:active {
-  cursor: grabbing;
-  transform: translateY(0);
-}
-
-.node-template-card.dragging {
-  opacity: 0.5;
-}
-
-/* 节点图标 */
-.node-template-icon {
-  font-size: 24px;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 节点信息 */
-.node-template-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.node-template-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  margin-bottom: 2px;
-  line-height: 1.4;
-}
-
-.node-template-desc {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
-}
-
-/* 空状态 */
-.node-panel-empty {
-  padding: var(--spacing-lg);
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-/* 响应式调整 */
+/* 响应式 */
 @media (max-width: 768px) {
-  .workflow-node-panel {
-    width: 240px;
-  }
-  
-  .node-template-card {
-    padding: 8px;
-  }
-  
-  .node-template-icon {
-    font-size: 20px;
-    width: 28px;
-    height: 28px;
+  .node-panel {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
   }
 }

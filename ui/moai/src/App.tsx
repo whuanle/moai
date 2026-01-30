@@ -57,8 +57,7 @@ import NativePluginPage from "./components/admin/plugin/builtin/NativePluginPage
 import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage";
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
 import AppConfigCommon from "./components/team/apps/chatapp/ChatAppConfig";
-import WorkflowConfig from "./components/team/apps/workflow/WorkflowConfig";
-import ChatAppConfig from "./components/team/apps/chatapp/ChatAppConfig";
+import { WorkflowEditor } from "./components/team/apps/workflow";
 
 const { Content } = Layout;
 
@@ -147,7 +146,7 @@ function App() {
               <Route path="list" element={<TeamListPage />} />
               {/* 应用配置调试页面 - 独立路由，不显示团队菜单 */}
               <Route path=":id/manage_app/chat/:appId" element={<AppConfigCommon />} />
-              <Route path=":id/manage_app/workflow/:appId" element={<WorkflowConfig />} />
+              <Route path=":id/manage_app/workflow/:appId" element={<WorkflowEditor />} />
               <Route path=":id" element={<TeamLayout />}>
                 <Route index element={<TeamWikiWrapper />} />
                 <Route path="wiki" element={<TeamWikiWrapper />} />

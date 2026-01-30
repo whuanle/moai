@@ -1,0 +1,65 @@
+/**
+ * 工具栏样式
+ */
+
+.workflow-toolbar {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+.workflow-toolbar button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.workflow-toolbar button:hover:not(:disabled) {
+  background: var(--color-bg-layout);
+}
+
+.workflow-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 保存按钮特殊样式 */
+.workflow-toolbar button.ant-btn-primary {
+  width: auto;
+  padding: 0 12px;
+  height: 32px;
+}
+
+.workflow-toolbar button.ant-btn-primary:hover:not(:disabled) {
+  background: var(--color-primary);
+  opacity: 0.9;
+}
+
+.workflow-toolbar .ant-divider-vertical {
+  height: 20px;
+  border-color: var(--color-border);
+}
+
+.workflow-toolbar-zoom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
