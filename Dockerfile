@@ -15,10 +15,13 @@ RUN npm ci
 
 COPY ui/moai/ .
 
+# 设置构建时环境变量（同源部署，使用空字符串）
+ENV VITE_ServerUrl=""
+
 # 重新安装依赖以解决 Rollup 可选依赖项问题
 RUN rm -rf node_modules package-lock.json && npm install
 
-# 前端构建，不需要设置 VITE_ServerUrl（同源部署）
+# 构建应用
 RUN npm run build
 
 # ==================== 后端构建阶段 ====================
