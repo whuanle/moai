@@ -11,7 +11,14 @@
       "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public"
     },
     "RabbitMQ": "amqp://guest:guest@127.0.0.1:5672",
-    "FilePath": "E:\\configs\\maomi"
+    "Storage": {
+      "LocalPath": "E:\\configs\\maomi"
+    },
+    "OTLP": {
+      "Trace": "http://127.0.0.1:4012/v1/traces",
+      "Metrics": "http://127.0.0.1:4012/v1/metrics",
+      "Protocol": 0
+    }
   },
   "Serilog": {
     "Using": [

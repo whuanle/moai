@@ -10,23 +10,23 @@ public static partial class MainExtensions
     // 初始化目录
     private static void InitConfigurationDirectory()
     {
-        if (!Directory.Exists(AppConst.ConfigsTemplate))
-        {
-            throw new DirectoryNotFoundException("Configuration template directory not found: " + AppConst.ConfigsTemplate);
-        }
+        //if (!Directory.Exists(AppConst.ConfigsTemplate))
+        //{
+        //    throw new DirectoryNotFoundException("Configuration template directory not found: " + AppConst.ConfigsTemplate);
+        //}
 
-        Directory.CreateDirectory(AppConst.ConfigsPath);
+        //Directory.CreateDirectory(AppConst.ConfigsPath);
 
-        var configTemplateSystemPath = Path.Combine(AppConst.ConfigsTemplate, "system.json");
+        //var configTemplateSystemPath = Path.Combine(AppConst.ConfigsTemplate, "system.json");
 
-        var systemConfigPath = Path.Combine(AppConst.ConfigsPath, "system.json");
+        //var systemConfigPath = Path.Combine(AppConst.ConfigsPath, "system.json");
 
-        if (!File.Exists(configTemplateSystemPath))
-        {
-            throw new FileNotFoundException("Default system configuration file not found.", configTemplateSystemPath);
-        }
+        //if (!File.Exists(configTemplateSystemPath))
+        //{
+        //    throw new FileNotFoundException("Default system configuration file not found.", configTemplateSystemPath);
+        //}
 
-        File.Copy(configTemplateSystemPath, systemConfigPath, overwrite: true);
+        //File.Copy(configTemplateSystemPath, systemConfigPath, overwrite: true);
     }
 
     // 导入系统配置.

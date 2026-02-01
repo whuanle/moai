@@ -11,7 +11,14 @@
       "Database": "Database=${POSTGRES_DB};Host=postgres;Password=${POSTGRES_PASSWORD};Port=5432;Username=${POSTGRES_USER};Search Path=public"
     },
     "RabbitMQ": "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672",
-    "FilePath": "/app/files"
+    "Storage": {
+      "LocalPath": "/app/files"
+    },
+    "OTLP": {
+      "Trace": "http://127.0.0.1:4012/v1/traces",
+      "Metrics": "http://127.0.0.1:4012/v1/metrics",
+      "Protocol": 0
+    }
   },
   "Serilog": {
     "Using": [

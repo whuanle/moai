@@ -15,10 +15,4 @@
 		<ProjectReference Include="..\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <None Update="configs_template\system.json">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	</ItemGroup>
-
 </Project>

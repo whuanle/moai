@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+# 构建 OTLP 配置（如果设置了端点）
+OTLP_CONFIG=""
+if [ -n "$OTLP_TRACE_ENDPOINT" ] || [ -n "$OTLP_METRICS_ENDPOINT" ]; then
+  OTLP_CONFIG=",
+    \"OTLP\": {
+      \"Trace\": \"${OTLP_TRACE_ENDPOINT:-}\",
+      \"Metrics\": \"${OTLP_METRICS_ENDPOINT:-}\",
+      \"Protocol\": ${OTLP_PROTOCOL:-0}
+    }"
+fi
+
 # 生成配置文件
 cat > /app/configs/system.json << EOF
 {
@@ -16,7 +27,9 @@ cat > /app/configs/system.json << EOF
       "Database": "Database=${POSTGRES_DB:-moai};Host=${POSTGRES_HOST:-postgres};Password=${POSTGRES_PASSWORD:-moai123456};Port=${POSTGRES_PORT:-5432};Username=${POSTGRES_USER:-postgres};Search Path=public"
     },
     "RabbitMQ": "amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@${RABBITMQ_HOST:-rabbitmq}:${RABBITMQ_PORT:-5672}",
-    "FilePath": "/app/files"
+    "Storage": {
+      "LocalPath": "/app/files"
+    }${OTLP_CONFIG}
   },
   "Serilog": {
     "Using": [
