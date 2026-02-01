@@ -1,2 +1,3 @@
--- 初始化 pgvector 向量扩展
+-- 初始化 PostgreSQL 扩展
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
