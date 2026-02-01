@@ -24,6 +24,10 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
 
         entity.ToTable("file", tb => tb.HasComment("文件列表"));
 
+        entity.HasIndex(e => e.FileMd5, "file_file_md5_index");
+
+        entity.HasIndex(e => e.ObjectKey, "file_object_key_index").HasAnnotation("MySql:IndexPrefixLength", new[] { 768 });
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")

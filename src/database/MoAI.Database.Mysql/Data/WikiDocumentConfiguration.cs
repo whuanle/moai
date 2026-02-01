@@ -24,6 +24,8 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
 
         entity.ToTable("wiki_document", tb => tb.HasComment("知识库文档"));
 
+        entity.HasIndex(e => e.ObjectKey, "wiki_document_object_key_index");
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnType("int(11)")

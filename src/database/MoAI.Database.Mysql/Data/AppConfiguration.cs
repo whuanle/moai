@@ -24,6 +24,10 @@ public partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
 
         entity.ToTable("app", tb => tb.HasComment("应用"));
 
+        entity.HasIndex(e => e.Name, "app_name_index");
+
+        entity.HasIndex(e => e.TeamId, "app_team_id_index");
+
         entity.Property(e => e.Id)
             .HasDefaultValueSql("unhex(replace(uuid(),'-',''))")
             .HasComment("id")
