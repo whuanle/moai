@@ -1,14 +1,16 @@
-using System.Text.Json;
+using Maomi;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
 using MoAI.Workflow.Services;
+using System.Text.Json;
 
 namespace MoAI.Workflow.Runtime;
 
 /// <summary>
 /// 工作流上下文管理器，负责管理工作流执行期间的上下文状态.
-/// 包括上下文初始化、更新和变量映射维护.
+/// 包括上下文初始化、节点管道创建和上下文更新.
 /// </summary>
+[InjectOnScoped]
 public class WorkflowContextManager
 {
     private readonly VariableResolutionService _variableResolutionService;
@@ -40,28 +42,74 @@ public class WorkflowContextManager
         {
             InstanceId = instanceId,
             DefinitionId = definitionId,
+            SystemVariables = systemVariables != null
+                ? new Dictionary<string, object>(systemVariables)
+                : new Dictionary<string, object>(),
             RuntimeParameters = new Dictionary<string, object>(startupParameters),
             ExecutedNodeKeys = new HashSet<string>(),
-            NodePipelines = new Dictionary<string, INodePipeline>(),
-            FlattenedVariables = new Dictionary<string, object>()
+            NodePipelines = new Dictionary<string, INodePipeline>()
         };
 
-        // 添加系统变量到扁平化变量映射
-        if (systemVariables != null)
+        return context;
+    }
+
+    /// <summary>
+    /// 为节点执行创建节点管道.
+    /// 节点管道包含节点执行所需的所有参数上下文.
+    /// </summary>
+    /// <param name="context">工作流上下文.</param>
+    /// <returns>节点管道.</returns>
+    public NodePipeline CreateNodePipeline(WorkflowContext context)
+    {
+        // 构建扁平化变量映射
+        var flattenedVariables = new Dictionary<string, object>();
+
+        // 1. 添加系统变量 (sys.*)
+        foreach (var kvp in context.SystemVariables)
         {
-            foreach (var kvp in systemVariables)
+            flattenedVariables[$"sys.{kvp.Key}"] = kvp.Value;
+        }
+
+        // 2. 添加启动参数 (input.*)
+        foreach (var kvp in context.RuntimeParameters)
+        {
+            flattenedVariables[$"input.{kvp.Key}"] = kvp.Value;
+        }
+
+        // 3. 添加已执行节点的输出 (nodeKey.*)
+        var nodeOutputs = new Dictionary<string, Dictionary<string, object>>();
+        foreach (var nodeKey in context.ExecutedNodeKeys)
+        {
+            if (context.NodePipelines.TryGetValue(nodeKey, out var executedPipeline))
             {
-                context.FlattenedVariables[$"sys.{kvp.Key}"] = kvp.Value;
+                // 复制节点输出
+                nodeOutputs[nodeKey] = new Dictionary<string, object>(executedPipeline.OutputJsonMap);
+
+                // 扁平化节点输出到变量映射
+                var flattenedOutput = _variableResolutionService.FlattenJson(
+                    nodeKey,
+                    executedPipeline.OutputJsonElement);
+
+                foreach (var kvp in flattenedOutput)
+                {
+                    flattenedVariables[kvp.Key] = kvp.Value;
+                }
             }
         }
 
-        // 添加启动参数到扁平化变量映射
-        foreach (var kvp in startupParameters)
+        return new NodePipeline
         {
-            context.FlattenedVariables[$"input.{kvp.Key}"] = kvp.Value;
-        }
-
-        return context;
+            State = NodeState.Pending,
+            InputJsonElement = default,
+            InputJsonMap = new Dictionary<string, object>(),
+            OutputJsonElement = default,
+            OutputJsonMap = new Dictionary<string, object>(),
+            ErrorMessage = string.Empty,
+            FlattenedVariables = flattenedVariables,
+            SystemVariables = new Dictionary<string, object>(context.SystemVariables),
+            RuntimeParameters = new Dictionary<string, object>(context.RuntimeParameters),
+            NodeOutputs = nodeOutputs
+        };
     }
 
     /// <summary>
@@ -69,68 +117,52 @@ public class WorkflowContextManager
     /// </summary>
     /// <param name="context">工作流上下文.</param>
     /// <param name="nodeKey">节点键.</param>
-    /// <param name="nodeDefine">节点定义.</param>
+    /// <param name="pipeline">节点管道（包含执行结果）.</param>
+    public void UpdateContext(
+        WorkflowContext context,
+        string nodeKey,
+        NodePipeline pipeline)
+    {
+        // 标记节点已执行
+        context.ExecutedNodeKeys.Add(nodeKey);
+
+        // 添加到节点管道映射
+        context.NodePipelines[nodeKey] = pipeline;
+    }
+
+    /// <summary>
+    /// 更新节点管道的执行结果.
+    /// </summary>
+    /// <param name="pipeline">节点管道.</param>
     /// <param name="inputs">节点输入.</param>
     /// <param name="outputs">节点输出.</param>
     /// <param name="state">节点状态.</param>
     /// <param name="errorMessage">错误消息（可选）.</param>
-    public void UpdateContext(
-        WorkflowContext context,
-        string nodeKey,
-        INodeDefine nodeDefine,
+    /// <returns>更新后的节点管道.</returns>
+    public NodePipeline UpdatePipelineResult(
+        NodePipeline pipeline,
         Dictionary<string, object> inputs,
         Dictionary<string, object> outputs,
         NodeState state,
         string? errorMessage = null)
     {
-        // 标记节点已执行
-        context.ExecutedNodeKeys.Add(nodeKey);
-
         // 将输入和输出转换为 JsonElement
         var inputJsonElement = JsonSerializer.SerializeToElement(inputs);
         var outputJsonElement = JsonSerializer.SerializeToElement(outputs);
 
-        // 创建节点管道
-        var pipeline = new NodePipeline
+        return new NodePipeline
         {
-            NodeDefine = nodeDefine,
             State = state,
             InputJsonElement = inputJsonElement,
             InputJsonMap = inputs,
             OutputJsonElement = outputJsonElement,
             OutputJsonMap = outputs,
-            ErrorMessage = errorMessage ?? string.Empty
+            ErrorMessage = errorMessage ?? string.Empty,
+            FlattenedVariables = pipeline.FlattenedVariables,
+            SystemVariables = pipeline.SystemVariables,
+            RuntimeParameters = pipeline.RuntimeParameters,
+            NodeOutputs = pipeline.NodeOutputs
         };
-
-        // 添加到节点管道映射
-        context.NodePipelines[nodeKey] = pipeline;
-
-        // 更新扁平化变量映射（仅在节点成功完成时）
-        if (state == NodeState.Completed)
-        {
-            UpdateFlattenedVariables(context, nodeKey, outputJsonElement);
-        }
-    }
-
-    /// <summary>
-    /// 更新扁平化变量映射，将节点输出添加到上下文.
-    /// </summary>
-    /// <param name="context">工作流上下文.</param>
-    /// <param name="nodeKey">节点键.</param>
-    /// <param name="outputJsonElement">节点输出的 JSON 元素.</param>
-    private void UpdateFlattenedVariables(
-        WorkflowContext context,
-        string nodeKey,
-        JsonElement outputJsonElement)
-    {
-        // 使用 VariableResolutionService 扁平化输出
-        var flattenedOutput = _variableResolutionService.FlattenJson(nodeKey, outputJsonElement);
-
-        // 将扁平化的输出添加到上下文的扁平化变量映射
-        foreach (var kvp in flattenedOutput)
-        {
-            context.FlattenedVariables[kvp.Key] = kvp.Value;
-        }
     }
 
     /// <summary>
@@ -140,7 +172,33 @@ public class WorkflowContextManager
     /// <returns>所有可用的变量键列表.</returns>
     public List<string> GetAvailableVariableKeys(WorkflowContext context)
     {
-        return context.FlattenedVariables.Keys.ToList();
+        var keys = new List<string>();
+
+        // 系统变量
+        foreach (var kvp in context.SystemVariables)
+        {
+            keys.Add($"sys.{kvp.Key}");
+        }
+
+        // 启动参数
+        foreach (var kvp in context.RuntimeParameters)
+        {
+            keys.Add($"input.{kvp.Key}");
+        }
+
+        // 节点输出
+        foreach (var nodeKey in context.ExecutedNodeKeys)
+        {
+            if (context.NodePipelines.TryGetValue(nodeKey, out var pipeline))
+            {
+                foreach (var outputKey in pipeline.OutputJsonMap.Keys)
+                {
+                    keys.Add($"{nodeKey}.{outputKey}");
+                }
+            }
+        }
+
+        return keys;
     }
 
     /// <summary>
@@ -155,16 +213,6 @@ public class WorkflowContextManager
 
         // 从节点管道映射中移除
         context.NodePipelines.Remove(nodeKey);
-
-        // 从扁平化变量映射中移除该节点的所有变量
-        var keysToRemove = context.FlattenedVariables.Keys
-            .Where(k => k.StartsWith($"{nodeKey}."))
-            .ToList();
-
-        foreach (var key in keysToRemove)
-        {
-            context.FlattenedVariables.Remove(key);
-        }
     }
 }
 
@@ -180,6 +228,9 @@ public class WorkflowContext : IWorkflowContext
     public string DefinitionId { get; set; } = string.Empty;
 
     /// <inheritdoc/>
+    public Dictionary<string, object> SystemVariables { get; set; } = new();
+
+    /// <inheritdoc/>
     public Dictionary<string, object> RuntimeParameters { get; set; } = new();
 
     /// <inheritdoc/>
@@ -187,19 +238,13 @@ public class WorkflowContext : IWorkflowContext
 
     /// <inheritdoc/>
     public Dictionary<string, INodePipeline> NodePipelines { get; set; } = new();
-
-    /// <inheritdoc/>
-    public Dictionary<string, object> FlattenedVariables { get; set; } = new();
 }
 
 /// <summary>
 /// 节点管道实现类.
 /// </summary>
-internal class NodePipeline : INodePipeline
+public class NodePipeline : INodePipeline
 {
-    /// <inheritdoc/>
-    public required INodeDefine NodeDefine { get; init; }
-
     /// <inheritdoc/>
     public NodeState State { get; init; }
 
@@ -217,4 +262,16 @@ internal class NodePipeline : INodePipeline
 
     /// <inheritdoc/>
     public string ErrorMessage { get; init; } = string.Empty;
+
+    /// <inheritdoc/>
+    public Dictionary<string, object> FlattenedVariables { get; init; } = new();
+
+    /// <inheritdoc/>
+    public Dictionary<string, object> SystemVariables { get; init; } = new();
+
+    /// <inheritdoc/>
+    public Dictionary<string, object> RuntimeParameters { get; init; } = new();
+
+    /// <inheritdoc/>
+    public Dictionary<string, Dictionary<string, object>> NodeOutputs { get; init; } = new();
 }

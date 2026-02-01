@@ -115,7 +115,7 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                     openAIChatCompletionsObject = new OpenAIChatCompletionsObject
                     {
                         Model = request.Endpoint.Name,
-                        Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        Created = DateTimeOffset.Now.ToUnixTimeSeconds(),
                         SystemFingerprint = streamingChatCompletionUpdate.SystemFingerprint,
                         Id = completionId,
                         Choices = new List<OpenAIChatCompletionsChoice>
@@ -143,7 +143,7 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                 yield return new OpenAIChatCompletionsChunk
                 {
                     Model = request.Endpoint.Name,
-                    Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    Created = DateTimeOffset.Now.ToUnixTimeSeconds(),
                     SystemFingerprint = streamingChatCompletionUpdate.SystemFingerprint,
                     Id = completionId,
                     Choices = new List<OpenAIChatCompletionsChoice>
@@ -188,7 +188,7 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                 yield return new OpenAIChatCompletionsChunk
                 {
                     Model = request.Endpoint.Name,
-                    Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    Created = DateTimeOffset.Now.ToUnixTimeSeconds(),
 
                     SystemFingerprint = systemFingerprint,
                     Id = completionId,
@@ -226,7 +226,7 @@ public class ChatCompletionsCommandHandler : IStreamRequestHandler<ChatCompletio
                 yield return new OpenAIChatCompletionsChunk
                 {
                     Model = request.Endpoint.Name,
-                    Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    Created = DateTimeOffset.Now.ToUnixTimeSeconds(),
                     SystemFingerprint = systemFingerprint,
                     Id = completionId,
                     Choices = new List<OpenAIChatCompletionsChoice>

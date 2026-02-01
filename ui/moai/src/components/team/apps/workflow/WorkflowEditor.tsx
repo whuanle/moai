@@ -48,6 +48,8 @@ const { Title } = Typography;
 function DefaultNodeRenderer(props: WorkflowNodeProps) {
   const { form } = useNodeRender();
   const template = getNodeTemplate(props.node.type as NodeType);
+  const store = useWorkflowStore();
+  const node = store.getNode(props.node.id);
   
   return (
     <WorkflowNodeRenderer 
@@ -55,7 +57,42 @@ function DefaultNodeRenderer(props: WorkflowNodeProps) {
       node={props.node}
       data-node-id={props.node.id}
     >
-      {form?.render()}
+      <div className="workflow-node-content">
+        {form?.render()}
+        
+        {/* 显示输入输出参数 */}
+        {node && (
+          <div className="workflow-node-params">
+            {node.config.inputFields.length > 0 && (
+              <div className="workflow-node-params-section">
+                <div className="workflow-node-params-title">输入</div>
+                <div className="workflow-node-params-list">
+                  {node.config.inputFields.map((field, index) => (
+                    <div key={index} className="workflow-node-param">
+                      <span className="workflow-node-param-name">{field.fieldName}</span>
+                      <span className="workflow-node-param-type">{field.fieldType}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {node.config.outputFields.length > 0 && (
+              <div className="workflow-node-params-section">
+                <div className="workflow-node-params-title">输出</div>
+                <div className="workflow-node-params-list">
+                  {node.config.outputFields.map((field, index) => (
+                    <div key={index} className="workflow-node-param">
+                      <span className="workflow-node-param-name">{field.fieldName}</span>
+                      <span className="workflow-node-param-type">{field.fieldType}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </WorkflowNodeRenderer>
   );
 }
@@ -139,7 +176,7 @@ function Canvas({ onNodeDoubleClick, onNodeRightClick }: CanvasProps) {
           } else {
             canDeleteNodes.push(id);
           }
-        });
+        });                
         
         if (cannotDeleteNodes.length > 0 && canDeleteNodes.length === 0) {
           messageApi.warning('选中的节点不允许删除');

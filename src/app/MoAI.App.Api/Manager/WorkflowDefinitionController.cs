@@ -1,11 +1,16 @@
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Team.Models;
 using MoAI.Team.Queries;
 using MoAI.Workflow.Commands;
+using MoAI.Workflow.Enums;
+using MoAI.Workflow.Models;
 using MoAI.Workflow.Queries;
 using MoAI.Workflow.Queries.Responses;
 
@@ -22,16 +27,22 @@ public partial class WorkflowDefinitionController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly UserContext _userContext;
+    private readonly ILogger<WorkflowDefinitionController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WorkflowDefinitionController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 中介者.</param>
     /// <param name="userContext">用户上下文.</param>
-    public WorkflowDefinitionController(IMediator mediator, UserContext userContext)
+    /// <param name="logger">日志记录器.</param>
+    public WorkflowDefinitionController(
+        IMediator mediator,
+        UserContext userContext,
+        ILogger<WorkflowDefinitionController> logger)
     {
         _mediator = mediator;
         _userContext = userContext;
+        _logger = logger;
     }
 
     /// <summary>
@@ -95,6 +106,82 @@ public partial class WorkflowDefinitionController : ControllerBase
     public async Task<QueryWorkflowDefinitionListCommandResponse> GetWorkflowDefinitionList([FromBody] QueryWorkflowDefinitionListCommand req, CancellationToken ct = default)
     {
         return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 调试执行工作流.
+    /// 在设计工作流时执行调试，通过服务器发送事件（SSE）流式传输实时返回节点执行结果.
+    /// </summary>
+    /// <param name="command">执行工作流命令.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>无返回值，通过 SSE 流式传输结果.</returns>
+    [HttpPost("debug")]
+    [Produces("text/event-stream")]
+    [ProducesDefaultResponseType(typeof(WorkflowProcessingItem))]
+    public async Task DebugExecute([FromBody] ExecuteWorkflowCommand command, CancellationToken cancellationToken = default)
+    {
+        Response.ContentType = "text/event-stream; charset=utf-8";
+        Response.Headers["Cache-Control"] = "no-cache";
+        Response.Headers["Connection"] = "keep-alive";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        try
+        {
+            await foreach (var item in _mediator.CreateStream(command, cancellationToken))
+            {
+                await WriteSseDataAsync(item, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation(
+                "Workflow debug execution cancelled. WorkflowDefinitionId: {WorkflowDefinitionId}",
+                command.WorkflowDefinitionId);
+            await WriteErrorAsync("工作流调试执行已被中止", cancellationToken);
+        }
+        catch (BusinessException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Business failure in workflow debug execution. WorkflowDefinitionId: {WorkflowDefinitionId}",
+                command.WorkflowDefinitionId);
+            await WriteErrorAsync(ex.Message, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Unexpected workflow debug execution failure. WorkflowDefinitionId: {WorkflowDefinitionId}",
+                command.WorkflowDefinitionId);
+            await WriteErrorAsync("工作流调试执行失败，请稍后再试。", cancellationToken);
+        }
+    }
+
+    private async Task WriteSseDataAsync(object payload, CancellationToken cancellationToken)
+    {
+        if (HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await HttpContext.Response
+            .WriteAsync($"data: {payload.ToJsonString()}\n\n", cancellationToken);
+
+        await Response.Body.FlushAsync(cancellationToken);
+    }
+
+    private Task WriteErrorAsync(string message, CancellationToken cancellationToken)
+    {
+        var errorPayload = new WorkflowProcessingItem
+        {
+            NodeType = "Error",
+            NodeKey = "error",
+            State = NodeState.Failed,
+            ErrorMessage = message,
+            ExecutedTime = DateTimeOffset.Now
+        };
+
+        return WriteSseDataAsync(errorPayload, cancellationToken);
     }
 
     private async Task CheckIsAdminAsync(int teamId, CancellationToken ct)

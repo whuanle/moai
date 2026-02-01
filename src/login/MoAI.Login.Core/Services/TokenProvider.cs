@@ -61,9 +61,9 @@ public class TokenProvider : ITokenProvider
             Issuer = _systemOptions.Server,
             Audience = _systemOptions.Server,
 #if DEBUG
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.Now.AddDays(7),
 #else
-            Expires = DateTime.UtcNow.AddMinutes(30),
+            Expires = DateTime.Now.AddMinutes(30),
 #endif
             SigningCredentials = new SigningCredentials(rsaKey, SecurityAlgorithms.RsaSha256),
             TokenType = "access_token",
@@ -86,7 +86,7 @@ public class TokenProvider : ITokenProvider
             Subject = new ClaimsIdentity(resfrshTokenClaims),
             Issuer = _systemOptions.Server,
             Audience = _systemOptions.Server,
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.Now.AddDays(7),
             SigningCredentials = new SigningCredentials(rsaKey, SecurityAlgorithms.RsaSha256),
             TokenType = "refresh_token",
         };

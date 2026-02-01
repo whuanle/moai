@@ -4,7 +4,8 @@ namespace MoAI.Workflow.Models;
 
 /// <summary>
 /// 工作流上下文接口，提供只读的运行时上下文信息.
-/// 包含执行状态、变量和节点输出等信息.
+/// 包含执行状态、系统变量和启动参数.
+/// 注意：不包含节点输出的扁平化变量，节点参数解析应通过 INodePipeline 进行.
 /// </summary>
 public interface IWorkflowContext
 {
@@ -19,7 +20,14 @@ public interface IWorkflowContext
     string DefinitionId { get; }
 
     /// <summary>
+    /// 系统变量，包含工作流运行时的系统级信息.
+    /// 如 sys.userId、sys.timestamp 等.
+    /// </summary>
+    Dictionary<string, object> SystemVariables { get; }
+
+    /// <summary>
     /// 运行时参数，包含工作流启动时传入的参数.
+    /// 可通过 input.* 格式访问.
     /// </summary>
     Dictionary<string, object> RuntimeParameters { get; }
 
@@ -33,11 +41,4 @@ public interface IWorkflowContext
     /// 包含每个已执行节点的输入、输出和状态信息.
     /// </summary>
     Dictionary<string, INodePipeline> NodePipelines { get; }
-
-    /// <summary>
-    /// 扁平化的变量映射，用于快速访问上下文中的所有变量.
-    /// 包括系统变量（sys.*）、启动参数（input.*）和节点输出（nodeKey.*）.
-    /// 嵌套 JSON 对象被扁平化为点符号格式（如 nodeA.result.name）.
-    /// </summary>
-    Dictionary<string, object> FlattenedVariables { get; }
 }

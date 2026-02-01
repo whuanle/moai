@@ -5779,8 +5779,10 @@ export function deserializeIntoExternalUserLoginCommandResponse(externalUserLogi
 // @ts-ignore
 export function deserializeIntoFieldDesign(fieldDesign: Partial<FieldDesign> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "description": n => { fieldDesign.description = n.getStringValue(); },
         "expressionType": n => { fieldDesign.expressionType = n.getEnumValue<FieldExpressionType>(FieldExpressionTypeObject); },
         "fieldName": n => { fieldDesign.fieldName = n.getStringValue(); },
+        "fieldType": n => { fieldDesign.fieldType = n.getEnumValue<FieldType>(FieldTypeObject); },
         "value": n => { fieldDesign.value = n.getStringValue(); },
     }
 }
@@ -6122,11 +6124,12 @@ export function deserializeIntoNativePluginTemplateInfo(nativePluginTemplateInfo
 export function deserializeIntoNodeDesign(nodeDesign: Partial<NodeDesign> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { nodeDesign.description = n.getStringValue(); },
-        "fieldDesigns": n => { nodeDesign.fieldDesigns = n.getCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>(createKeyValueOfStringAndFieldDesignFromDiscriminatorValue); },
+        "inputFieldDesigns": n => { nodeDesign.inputFieldDesigns = n.getCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>(createKeyValueOfStringAndFieldDesignFromDiscriminatorValue); },
         "name": n => { nodeDesign.name = n.getStringValue(); },
         "nextNodeKeys": n => { nodeDesign.nextNodeKeys = n.getCollectionOfPrimitiveValues<string>(); },
         "nodeKey": n => { nodeDesign.nodeKey = n.getStringValue(); },
         "nodeType": n => { nodeDesign.nodeType = n.getEnumValue<NodeType>(NodeTypeObject); },
+        "outputFieldDesigns": n => { nodeDesign.outputFieldDesigns = n.getCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>(createKeyValueOfStringAndFieldDesignFromDiscriminatorValue); },
     }
 }
 /**
@@ -9458,6 +9461,10 @@ export interface ExternalUserLoginCommandResponse extends Parsable {
  */
 export interface FieldDesign extends Parsable {
     /**
+     * 字段描述.
+     */
+    description?: string | null;
+    /**
      * 表达式类型，定义如何为字段分配值.
      */
     expressionType?: FieldExpressionType | null;
@@ -9466,11 +9473,16 @@ export interface FieldDesign extends Parsable {
      */
     fieldName?: string | null;
     /**
+     * 字段数据类型.
+     */
+    fieldType?: FieldType | null;
+    /**
      * 字段值或表达式.根据 ExpressionType 的不同，可以是：- Run: 运行时传入的值（不允许手动设置，此选项只能在开始节点使用）- Fixed: 固定的常数值- Variable: 变量引用（如 sys.userId, input.name, nodeKey.output）- Jsonpath: JSON 路径表达式（如 nodeA.result[0].name）- Interpolation: 字符串插值模板（如 "Hello {input.name}"）
      */
     value?: string | null;
 }
 export type FieldExpressionType = (typeof FieldExpressionTypeObject)[keyof typeof FieldExpressionTypeObject];
+export type FieldType = (typeof FieldTypeObject)[keyof typeof FieldTypeObject];
 /**
  * 导入 mcp 服务，导入时会访问 mcp 服务器，可能会导致导入比较慢.
  */
@@ -9999,9 +10011,9 @@ export interface NodeDesign extends Parsable {
      */
     description?: string | null;
     /**
-     * 字段设计映射，键为字段名称，值为字段设计配置.
+     * 输入参数，字段设计映射，键为字段名称，值为字段设计配置.
      */
-    fieldDesigns?: KeyValueOfStringAndFieldDesign[] | null;
+    inputFieldDesigns?: KeyValueOfStringAndFieldDesign[] | null;
     /**
      * 节点名称.
      */
@@ -10018,6 +10030,10 @@ export interface NodeDesign extends Parsable {
      * 节点类型.
      */
     nodeType?: NodeType | null;
+    /**
+     * 输出参数，字段设计映射，键为字段名称，值为字段设计配置.
+     */
+    outputFieldDesigns?: KeyValueOfStringAndFieldDesign[] | null;
 }
 export type NodeState = (typeof NodeStateObject)[keyof typeof NodeStateObject];
 export type NodeType = (typeof NodeTypeObject)[keyof typeof NodeTypeObject];
@@ -14269,8 +14285,10 @@ export function serializeExternalUserLoginCommandResponse(writer: SerializationW
 // @ts-ignore
 export function serializeFieldDesign(writer: SerializationWriter, fieldDesign: Partial<FieldDesign> | undefined | null = {}) : void {
     if (fieldDesign) {
+        writer.writeStringValue("description", fieldDesign.description);
         writer.writeEnumValue<FieldExpressionType>("expressionType", fieldDesign.expressionType);
         writer.writeStringValue("fieldName", fieldDesign.fieldName);
+        writer.writeEnumValue<FieldType>("fieldType", fieldDesign.fieldType);
         writer.writeStringValue("value", fieldDesign.value);
     }
 }
@@ -14612,11 +14630,12 @@ export function serializeNativePluginTemplateInfo(writer: SerializationWriter, n
 export function serializeNodeDesign(writer: SerializationWriter, nodeDesign: Partial<NodeDesign> | undefined | null = {}) : void {
     if (nodeDesign) {
         writer.writeStringValue("description", nodeDesign.description);
-        writer.writeCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>("fieldDesigns", nodeDesign.fieldDesigns, serializeKeyValueOfStringAndFieldDesign);
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>("inputFieldDesigns", nodeDesign.inputFieldDesigns, serializeKeyValueOfStringAndFieldDesign);
         writer.writeStringValue("name", nodeDesign.name);
         writer.writeCollectionOfPrimitiveValues<string>("nextNodeKeys", nodeDesign.nextNodeKeys);
         writer.writeStringValue("nodeKey", nodeDesign.nodeKey);
         writer.writeEnumValue<NodeType>("nodeType", nodeDesign.nodeType);
+        writer.writeCollectionOfObjectValues<KeyValueOfStringAndFieldDesign>("outputFieldDesigns", nodeDesign.outputFieldDesigns, serializeKeyValueOfStringAndFieldDesign);
     }
 }
 /**
@@ -19344,6 +19363,19 @@ export const FieldExpressionTypeObject = {
     Variable: "variable",
     Jsonpath: "jsonpath",
     Interpolation: "interpolation",
+} as const;
+/**
+ * 字段数据类型枚举.
+ */
+export const FieldTypeObject = {
+    Empty: "empty",
+    String: "string",
+    Number: "number",
+    Boolean: "boolean",
+    Object: "object",
+    Map: "map",
+    Array: "array",
+    Dynamic: "dynamic",
 } as const;
 /**
  * 内置插件分类.

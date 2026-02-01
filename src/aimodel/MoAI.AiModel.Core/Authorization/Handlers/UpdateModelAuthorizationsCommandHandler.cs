@@ -57,7 +57,7 @@ public class UpdateModelAuthorizationsCommandHandler : IRequestHandler<UpdateMod
                 .Select(x => x.Id)
                 .ToListAsync(cancellationToken);
 
-            var now = DateTimeOffset.UtcNow;
+            var now = DateTimeOffset.Now;
             var newAuths = validTeams.Select(teamId => new AiModelAuthorizationEntity
             {
                 AiModelId = request.ModelId,

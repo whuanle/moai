@@ -1,3 +1,4 @@
+using Maomi;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
 
@@ -7,6 +8,7 @@ namespace MoAI.Workflow.Runtime;
 /// End 节点运行时实现.
 /// End 节点是工作流的终止点，负责终止工作流执行并返回最终输出.
 /// </summary>
+[InjectOnTransient(ServiceKey = NodeType.End)]
 public class EndNodeRuntime : INodeRuntime
 {
     /// <inheritdoc/>
@@ -16,15 +18,13 @@ public class EndNodeRuntime : INodeRuntime
     /// 执行 End 节点逻辑.
     /// End 节点接收输入数据作为工作流的最终输出，并标记工作流执行完成.
     /// </summary>
-    /// <param name="nodeDefine">节点定义.</param>
     /// <param name="inputs">节点输入数据，将作为工作流的最终输出.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>包含最终输出的执行结果.</returns>
     public Task<NodeExecutionResult> ExecuteAsync(
-        INodeDefine nodeDefine,
         Dictionary<string, object> inputs,
-        IWorkflowContext context,
+        INodePipeline pipeline,
         CancellationToken cancellationToken)
     {
         try

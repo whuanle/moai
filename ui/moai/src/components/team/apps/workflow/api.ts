@@ -3,9 +3,49 @@
  * 简化的 API 调用层
  */
 
-import { WorkflowData, ApiWorkflowConfig } from './types';
+import { WorkflowData, ApiWorkflowConfig, FieldDefine } from './types';
 import { fromApiFormat, toApiFormat } from './utils';
 import { GetApiClient } from '../../../ServiceClient';
+import type { NodeDesign, KeyValueOfStringAndFieldDesign, FieldDesign, FieldExpressionType, FieldType } from '../../../../apiClient/models';
+
+/**
+ * 将内部字段定义转换为 API 的 KeyValueOfStringAndFieldDesign 格式
+ * 包含 fieldName, fieldType, expressionType, value
+ */
+function convertFieldsToApiFormat(
+  fields: FieldDefine[],
+  settings: Record<string, any>
+): KeyValueOfStringAndFieldDesign[] {
+  return fields.map(field => {
+    // 从 settings 中获取字段的配置值（如果有）
+    const fieldSetting = settings[field.fieldName];
+    
+    // 优先使用字段自身的 expressionType，其次使用 settings 中的，最后默认 Fixed
+    const expressionType = field.expressionType 
+      || fieldSetting?.expressionType 
+      || 'Fixed';
+    
+    // 优先使用字段自身的 value，其次使用 settings 中的，最后使用 defaultValue
+    const value = field.value !== undefined 
+      ? (typeof field.value === 'string' ? field.value : JSON.stringify(field.value))
+      : (fieldSetting?.value !== undefined 
+        ? (typeof fieldSetting.value === 'string' ? fieldSetting.value : JSON.stringify(fieldSetting.value))
+        : (field.defaultValue !== undefined ? String(field.defaultValue) : undefined));
+    
+    const fieldDesign: FieldDesign = {
+      fieldName: field.fieldName,
+      fieldType: field.fieldType as FieldType,
+      expressionType: expressionType as FieldExpressionType,
+      value: value,
+      description: field.description || '',
+    };
+    
+    return {
+      key: field.fieldName,
+      value: fieldDesign,
+    };
+  });
+}
 
 /**
  * 工作流 API 服务
@@ -58,22 +98,35 @@ class WorkflowApiService {
     // 使用编辑器原始数据作为 uiDesignDraft
     const uiDesignDraft = editorRawData ? JSON.stringify(editorRawData) : undefined;
     
+    console.log('🔍 API save - functionDesign:', functionDesign);
     console.log('🔍 API save - uiDesignDraft:', uiDesignDraft);
     
-    // 转换 ApiNodeDesign[] 到 API 需要的格式
-    const nodes = functionDesign.map(node => ({
-      nodeKey: node.nodeKey,
-      nodeType: node.nodeType,
-      name: node.name,
-      description: node.description,
-      nextNodeKeys: node.nextNodeKeys,
-      fieldDesigns: node.fieldDesigns 
-        ? Object.entries(node.fieldDesigns).map(([key, value]) => ({
-            key,
-            value,
-          }))
-        : undefined,
-    }));
+    // 转换 ApiNodeDesign[] 到 API 需要的 NodeDesign[] 格式
+    const nodes: NodeDesign[] = functionDesign.map(node => {
+      // 转换输入字段为 KeyValueOfStringAndFieldDesign[] 格式
+      const inputFieldDesigns = convertFieldsToApiFormat(
+        node.inputFields || [],
+        node.fieldDesigns || {}
+      );
+      
+      // 转换输出字段为 KeyValueOfStringAndFieldDesign[] 格式
+      const outputFieldDesigns = convertFieldsToApiFormat(
+        node.outputFields || [],
+        node.fieldDesigns || {}
+      );
+      
+      return {
+        nodeKey: node.nodeKey,
+        nodeType: node.nodeType,
+        name: node.name,
+        description: node.description,
+        nextNodeKeys: node.nextNodeKeys || [],
+        inputFieldDesigns,
+        outputFieldDesigns,
+      };
+    });
+    
+    console.log('🔍 API save - nodes:', JSON.stringify(nodes, null, 2));
     
     await client.api.team.workflowapp.update.put({
       appId,

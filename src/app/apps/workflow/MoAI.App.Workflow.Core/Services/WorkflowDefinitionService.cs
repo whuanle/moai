@@ -1,3 +1,4 @@
+using Maomi;
 using MoAI.Infra.Exceptions;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
@@ -8,6 +9,7 @@ namespace MoAI.Workflow.Services;
 /// 工作流定义服务，负责工作流定义的验证和管理.
 /// 提供工作流图结构验证、节点类型验证、连接验证和节点设计验证功能.
 /// </summary>
+[InjectOnScoped]
 public class WorkflowDefinitionService
 {
     /// <summary>
@@ -153,97 +155,6 @@ public class WorkflowDefinitionService
         {
             var orphanedList = string.Join(", ", orphanedNodes);
             throw new BusinessException(400, $"以下节点没有下游节点（孤立节点）: {orphanedList}");
-        }
-    }
-
-    /// <summary>
-    /// 验证节点设计的有效性.
-    /// 确保节点设计满足以下条件：
-    /// 1. 所有必需的输入字段都已配置
-    /// 2. 字段类型兼容
-    /// 3. 表达式有效
-    /// </summary>
-    /// <param name="nodeDesign">节点设计配置.</param>
-    /// <param name="nodeDefine">节点定义，包含输入输出字段定义.</param>
-    /// <exception cref="BusinessException">当节点设计无效时抛出，包含详细的验证错误信息.</exception>
-    public static void ValidateNodeDesign(NodeDesign nodeDesign, INodeDefine nodeDefine)
-    {
-        ArgumentNullException.ThrowIfNull(nodeDesign);
-
-        ArgumentNullException.ThrowIfNull(nodeDefine);
-
-        // 验证节点类型匹配
-        if (nodeDesign.NodeType != nodeDefine.NodeType)
-        {
-            throw new BusinessException(
-                400,
-                $"节点 {nodeDesign.NodeKey} 的类型不匹配: 设计类型为 {nodeDesign.NodeType}，定义类型为 {nodeDefine.NodeType}");
-        }
-
-        // 验证所有必需的输入字段都已配置
-        var requiredFields = nodeDefine.InputFields.Where(f => f.IsRequired).ToList();
-        var configuredFields = nodeDesign.FieldDesigns.Select(kvp => kvp.Key).ToHashSet();
-
-        var missingFields = requiredFields
-            .Where(f => !configuredFields.Contains(f.FieldName))
-            .Select(f => f.FieldName)
-            .ToList();
-
-        if (missingFields.Count != 0)
-        {
-            var missingFieldList = string.Join(", ", missingFields);
-            throw new BusinessException(
-                400,
-                $"节点 {nodeDesign.NodeKey} 缺少必需的输入字段: {missingFieldList}");
-        }
-
-        // 验证配置的字段是否在定义中存在
-        var definedFieldNames = nodeDefine.InputFields.Select(f => f.FieldName).ToHashSet();
-        var undefinedFields = configuredFields
-            .Where(f => !definedFieldNames.Contains(f))
-            .ToList();
-
-        if (undefinedFields.Count != 0)
-        {
-            var undefinedFieldList = string.Join(", ", undefinedFields);
-            throw new BusinessException(
-                400,
-                $"节点 {nodeDesign.NodeKey} 包含未定义的字段: {undefinedFieldList}");
-        }
-
-        // 验证字段表达式类型有效
-        var validExpressionTypes = Enum.GetValues<FieldExpressionType>().ToHashSet();
-        var invalidExpressions = nodeDesign.FieldDesigns
-            .Where(kvp => !validExpressionTypes.Contains(kvp.Value.ExpressionType))
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        if (invalidExpressions.Count != 0)
-        {
-            var invalidExpressionList = string.Join(", ", invalidExpressions);
-            throw new BusinessException(
-                400,
-                $"节点 {nodeDesign.NodeKey} 包含无效的表达式类型: {invalidExpressionList}");
-        }
-
-        // 验证字段值不为空（除非是 Empty 类型）
-        var emptyValueFields = nodeDesign.FieldDesigns
-            .Where(kvp =>
-            {
-                var fieldDefine = nodeDefine.InputFields.FirstOrDefault(f => f.FieldName == kvp.Key);
-                return fieldDefine != null &&
-                       fieldDefine.FieldType != FieldType.Empty &&
-                       string.IsNullOrWhiteSpace(kvp.Value.Value);
-            })
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        if (emptyValueFields.Count != 0)
-        {
-            var emptyValueFieldList = string.Join(", ", emptyValueFields);
-            throw new BusinessException(
-                400,
-                $"节点 {nodeDesign.NodeKey} 的以下字段值不能为空: {emptyValueFieldList}");
         }
     }
 

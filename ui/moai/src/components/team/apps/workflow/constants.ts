@@ -108,12 +108,20 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     color: '#52c41a',
     category: NodeCategory.Control,
     defaultData: {
-      inputFields: [],
+      inputFields: [
+        { 
+          fieldName: 'input', 
+          fieldType: FieldType.Map,
+          expressionType: 'Run',  // 运行时传入，不可修改
+          description: '工作流输入参数（固定）'
+        }
+      ],
       outputFields: [
         { 
-          fieldName: 'parameters', 
-          fieldType: FieldType.Map, 
-          description: '启动参数'
+          fieldName: 'output', 
+          fieldType: FieldType.Map,
+          expressionType: 'Run',  // 运行时传入
+          description: '工作流输出参数'
         }
       ],
     }
@@ -128,12 +136,20 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     defaultData: {
       inputFields: [
         { 
-          fieldName: 'result', 
-          fieldType: FieldType.Dynamic, 
-          description: '执行结果'
+          fieldName: 'input', 
+          fieldType: FieldType.Map,
+          expressionType: 'Run',  // 从其他节点获取
+          description: '工作流输入参数'
         }
       ],
-      outputFields: [],
+      outputFields: [
+        { 
+          fieldName: 'output', 
+          fieldType: FieldType.Map,
+          expressionType: 'Run',
+          description: '工作流输出结果'
+        }
+      ],
     }
   },
   {
@@ -402,6 +418,13 @@ export function getAllCategories(): NodeCategory[] {
  * 生成节点 ID
  */
 export function generateNodeId(type: NodeType): string {
+  // 开始节点和结束节点使用固定的 key
+  if (type === NodeType.Start) {
+    return 'start';
+  }
+  if (type === NodeType.End) {
+    return 'end';
+  }
   return `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 

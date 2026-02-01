@@ -43,7 +43,7 @@ public class FeishuWebHookRequest<T>
         再进行 Base64 编码。其中，timestamp是指距当前时间不超过 1 小时（3600 秒）的时间戳，时间单位：s。例如，1599360473。
          */
 
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
         this.Timestamp = timestamp;
 
         // 签名密钥.

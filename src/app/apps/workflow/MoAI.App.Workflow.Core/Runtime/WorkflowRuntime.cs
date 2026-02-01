@@ -1,9 +1,11 @@
-using System.Runtime.CompilerServices;
-using System.Text.Json;
+using Maomi;
+using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra.Exceptions;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
 using MoAI.Workflow.Services;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace MoAI.Workflow.Runtime;
 
@@ -11,9 +13,10 @@ namespace MoAI.Workflow.Runtime;
 /// 工作流运行时，负责编排和执行工作流.
 /// 实现节点顺序执行、流式传输结果和错误处理.
 /// </summary>
+[InjectOnTransient]
 public class WorkflowRuntime
 {
-    private readonly NodeRuntimeFactory _nodeRuntimeFactory;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly WorkflowContextManager _contextManager;
     private readonly ExpressionEvaluationService _expressionEvaluationService;
     private readonly WorkflowDefinitionService _workflowDefinitionService;
@@ -21,17 +24,13 @@ public class WorkflowRuntime
     /// <summary>
     /// Initializes a new instance of the <see cref="WorkflowRuntime"/> class.
     /// </summary>
-    /// <param name="nodeRuntimeFactory"></param>
-    /// <param name="contextManager"></param>
-    /// <param name="expressionEvaluationService"></param>
-    /// <param name="workflowDefinitionService"></param>
     public WorkflowRuntime(
-        NodeRuntimeFactory nodeRuntimeFactory,
+        IServiceScopeFactory serviceScopeFactory,
         WorkflowContextManager contextManager,
         ExpressionEvaluationService expressionEvaluationService,
         WorkflowDefinitionService workflowDefinitionService)
     {
-        _nodeRuntimeFactory = nodeRuntimeFactory;
+        _serviceScopeFactory = serviceScopeFactory;
         _contextManager = contextManager;
         _expressionEvaluationService = expressionEvaluationService;
         _workflowDefinitionService = workflowDefinitionService;
@@ -44,7 +43,6 @@ public class WorkflowRuntime
     /// <param name="definition">工作流定义对象.</param>
     /// <param name="startupParameters">启动参数.</param>
     /// <param name="instanceId">工作流实例 ID.</param>
-    /// <param name="definitionId">工作流定义 ID.</param>
     /// <param name="systemVariables">系统变量（可选）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步流，产生 WorkflowProcessingItem 对象.</returns>
@@ -52,7 +50,6 @@ public class WorkflowRuntime
         WorkflowDefinition definition,
         Dictionary<string, object> startupParameters,
         string instanceId,
-        string definitionId,
         Dictionary<string, object>? systemVariables = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -65,7 +62,7 @@ public class WorkflowRuntime
         // 3. 初始化工作流上下文
         var context = _contextManager.InitializeContext(
             instanceId,
-            definitionId,
+            definition.Id,
             startupParameters,
             systemVariables);
 
@@ -116,10 +113,6 @@ public class WorkflowRuntime
     /// <summary>
     /// 执行单个节点.
     /// </summary>
-    /// <param name="nodeDesign">节点设计.</param>
-    /// <param name="context">工作流上下文.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>异步流，产生 WorkflowProcessingItem 对象.</returns>
     private async IAsyncEnumerable<WorkflowProcessingItem> ExecuteNodeAsync(
         NodeDesign nodeDesign,
         WorkflowContext context,
@@ -128,8 +121,8 @@ public class WorkflowRuntime
         var nodeKey = nodeDesign.NodeKey;
         var nodeType = nodeDesign.NodeType;
 
-        // 创建节点定义
-        var nodeDefine = CreateNodeDefine(nodeDesign);
+        // 创建节点管道（包含参数上下文）
+        var pipeline = _contextManager.CreateNodePipeline(context);
 
         Dictionary<string, object> inputs = new();
         NodeExecutionResult? result = null;
@@ -144,44 +137,52 @@ public class WorkflowRuntime
             Output = new Dictionary<string, object>(),
             State = NodeState.Running,
             ErrorMessage = string.Empty,
-            ExecutedTime = DateTimeOffset.UtcNow
+            ExecutedTime = DateTimeOffset.Now
         };
+
+        // 3. 获取节点运行时（每次创建新的作用域）
+        using var scope = _serviceScopeFactory.CreateScope();
+        var nodeRuntime = scope.ServiceProvider.GetKeyedService<INodeRuntime>(nodeType);
 
         try
         {
-            // 2. 解析节点输入
-            inputs = await ResolveNodeInputsAsync(nodeDesign, nodeDefine, context, cancellationToken);
+            // 2. 解析节点输入（从节点管道获取参数）
+            inputs = ResolveNodeInputs(nodeDesign, pipeline);
 
-            // 3. 获取节点运行时
-            var nodeRuntime = _nodeRuntimeFactory.GetRuntime(nodeType);
+            if (nodeRuntime == null)
+            {
+                throw new InvalidOperationException($"No runtime registered for node type: {nodeType}");
+            }
 
-            // 4. 执行节点
-            result = await nodeRuntime.ExecuteAsync(nodeDefine, inputs, context, cancellationToken);
+            // 4. 执行节点（传递节点管道而不是工作流上下文）
+            result = await nodeRuntime.ExecuteAsync(inputs, pipeline, cancellationToken);
 
-            // 5. 更新上下文
-            _contextManager.UpdateContext(
-                context,
-                nodeKey,
-                nodeDefine,
+            // 5. 更新节点管道结果
+            pipeline = _contextManager.UpdatePipelineResult(
+                pipeline,
                 inputs,
                 result.Output,
                 result.State,
                 result.ErrorMessage);
+
+            // 6. 更新工作流上下文
+            _contextManager.UpdateContext(context, nodeKey, pipeline);
         }
         catch (Exception ex)
         {
             // 捕获异常并准备错误信息
             var errorMessage = $"{ex.Message}\n{ex.StackTrace}";
 
-            // 更新上下文为失败状态
-            _contextManager.UpdateContext(
-                context,
-                nodeKey,
-                nodeDefine,
+            // 更新节点管道为失败状态
+            pipeline = _contextManager.UpdatePipelineResult(
+                pipeline,
                 inputs,
                 new Dictionary<string, object>(),
                 NodeState.Failed,
                 errorMessage);
+
+            // 更新工作流上下文
+            _contextManager.UpdateContext(context, nodeKey, pipeline);
 
             // 准备错误项
             errorItem = new WorkflowProcessingItem
@@ -192,11 +193,11 @@ public class WorkflowRuntime
                 Output = new Dictionary<string, object>(),
                 State = NodeState.Failed,
                 ErrorMessage = errorMessage,
-                ExecutedTime = DateTimeOffset.UtcNow
+                ExecutedTime = DateTimeOffset.Now
             };
         }
 
-        // 6. 流式传输节点完成状态（在 try-catch 外部）
+        // 7. 流式传输节点完成状态
         if (errorItem != null)
         {
             yield return errorItem;
@@ -211,7 +212,7 @@ public class WorkflowRuntime
                 Output = result.Output,
                 State = result.State,
                 ErrorMessage = result.ErrorMessage ?? string.Empty,
-                ExecutedTime = DateTimeOffset.UtcNow
+                ExecutedTime = DateTimeOffset.Now
             };
         }
     }
@@ -219,31 +220,24 @@ public class WorkflowRuntime
     /// <summary>
     /// 解析节点输入，评估所有字段表达式.
     /// </summary>
-    /// <param name="nodeDesign">节点设计.</param>
-    /// <param name="nodeDefine">节点定义.</param>
-    /// <param name="context">工作流上下文.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>解析后的输入字典.</returns>
-    private async Task<Dictionary<string, object>> ResolveNodeInputsAsync(
+    private Dictionary<string, object> ResolveNodeInputs(
         NodeDesign nodeDesign,
-        INodeDefine nodeDefine,
-        IWorkflowContext context,
-        CancellationToken cancellationToken)
+        INodePipeline pipeline)
     {
         var inputs = new Dictionary<string, object>();
 
-        foreach (var fieldDesign in nodeDesign.FieldDesigns)
+        foreach (var fieldDesign in nodeDesign.InputFieldDesigns)
         {
             var fieldName = fieldDesign.Key;
             var fieldConfig = fieldDesign.Value;
 
             try
             {
-                // 评估字段表达式
+                // 评估字段表达式（从节点管道获取参数）
                 var value = _expressionEvaluationService.EvaluateExpression(
                     fieldConfig.Value,
                     fieldConfig.ExpressionType,
-                    context);
+                    pipeline);
 
                 inputs[fieldName] = value;
             }
@@ -257,20 +251,12 @@ public class WorkflowRuntime
             }
         }
 
-        // 验证节点设计
-        WorkflowDefinitionService.ValidateNodeDesign(nodeDesign, nodeDefine);
-
-        return await Task.FromResult(inputs);
+        return inputs;
     }
 
     /// <summary>
     /// 确定下一个要执行的节点.
-    /// 对于一般节点，返回第一个下游节点.
-    /// 对于条件节点等特殊节点，根据执行结果选择对应的下游节点.
     /// </summary>
-    /// <param name="nodeDesign">当前节点设计.</param>
-    /// <param name="context">工作流上下文.</param>
-    /// <returns>下一个节点的 Key，如果没有则返回 null.</returns>
     private static string? DetermineNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
         // 对于 Condition 节点，需要根据条件结果确定下一个节点
@@ -303,8 +289,6 @@ public class WorkflowRuntime
 
     /// <summary>
     /// 确定 Condition 节点的下一个节点.
-    /// 根据条件结果从 NextNodeKeys 中选择对应的分支节点.
-    /// 约定：NextNodeKeys[0] 为 true 分支，NextNodeKeys[1] 为 false 分支.
     /// </summary>
     private static string? DetermineConditionNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
@@ -314,20 +298,17 @@ public class WorkflowRuntime
             if (pipeline.OutputJsonMap.TryGetValue("result", out var resultObj) && resultObj is bool result)
             {
                 // 根据条件结果选择分支
-                // 约定：NextNodeKeys[0] 为 true 分支，NextNodeKeys[1] 为 false 分支
                 if (nodeDesign.NextNodeKeys != null && nodeDesign.NextNodeKeys.Count >= 2)
                 {
                     return result ? nodeDesign.NextNodeKeys.ElementAt(0) : nodeDesign.NextNodeKeys.ElementAt(1);
                 }
                 else if (nodeDesign.NextNodeKeys != null && nodeDesign.NextNodeKeys.Count == 1)
                 {
-                    // 如果只有一个下游节点，无论结果如何都执行
                     return nodeDesign.NextNodeKeys.First();
                 }
             }
         }
 
-        // 如果无法确定，返回第一个下游节点（如果有）
         return nodeDesign.NextNodeKeys?.FirstOrDefault();
     }
 
@@ -336,7 +317,6 @@ public class WorkflowRuntime
     /// </summary>
     private static string? DetermineForEachNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
-        // ForEach 节点执行完成后，继续第一个下游节点
         return nodeDesign.NextNodeKeys?.FirstOrDefault();
     }
 
@@ -345,57 +325,6 @@ public class WorkflowRuntime
     /// </summary>
     private static string? DetermineForkNextNode(NodeDesign nodeDesign, IWorkflowContext context)
     {
-        // Fork 节点执行完成后，继续第一个下游节点
         return nodeDesign.NextNodeKeys?.FirstOrDefault();
-    }
-
-    /// <summary>
-    /// 解析节点设计 JSON.
-    /// </summary>
-    private static List<NodeDesign> ParseNodeDesigns(string functionDesignJson)
-    {
-        try
-        {
-            var nodeDesigns = JsonSerializer.Deserialize<List<NodeDesign>>(functionDesignJson);
-            if (nodeDesigns == null || nodeDesigns.Count == 0)
-            {
-                throw new BusinessException("工作流定义不能为空") { StatusCode = 400 };
-            }
-
-            return nodeDesigns;
-        }
-        catch (JsonException ex)
-        {
-            throw new BusinessException($"工作流定义 JSON 解析失败: {ex.Message}") { StatusCode = 400 };
-        }
-    }
-
-    /// <summary>
-    /// 创建节点定义.
-    /// </summary>
-    private static SimpleNodeDefine CreateNodeDefine(NodeDesign nodeDesign)
-    {
-        // 创建一个简单的节点定义实现
-        return new SimpleNodeDefine
-        {
-            NodeKey = nodeDesign.NodeKey,
-            NodeType = nodeDesign.NodeType,
-            InputFields = new List<FieldDefine>(),
-            OutputFields = new List<FieldDefine>()
-        };
-    }
-
-    /// <summary>
-    /// 简单的节点定义实现.
-    /// </summary>
-    private class SimpleNodeDefine : INodeDefine
-    {
-        public required string NodeKey { get; init; }
-
-        public required NodeType NodeType { get; init; }
-
-        public required IReadOnlyList<FieldDefine> InputFields { get; init; }
-
-        public required IReadOnlyList<FieldDefine> OutputFields { get; init; }
     }
 }

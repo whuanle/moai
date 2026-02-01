@@ -1,3 +1,4 @@
+using Maomi;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
 
@@ -7,6 +8,7 @@ namespace MoAI.Workflow.Runtime;
 /// Fork 节点运行时实现.
 /// Fork 节点负责并行执行多个分支并等待所有分支完成后再继续.
 /// </summary>
+[InjectOnTransient(ServiceKey = NodeType.Fork)]
 public class ForkNodeRuntime : INodeRuntime
 {
     /// <inheritdoc/>
@@ -14,35 +16,25 @@ public class ForkNodeRuntime : INodeRuntime
 
     /// <summary>
     /// 执行 Fork 节点逻辑.
-    /// 并行执行多个分支，等待所有分支完成，并收集所有分支的结果.
     /// </summary>
-    /// <param name="nodeDefine">节点定义.</param>
-    /// <param name="inputs">节点输入数据，应包含 branches 字段.</param>
-    /// <param name="context">工作流上下文.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>包含所有分支执行结果的执行结果.</returns>
     public async Task<NodeExecutionResult> ExecuteAsync(
-        INodeDefine nodeDefine,
         Dictionary<string, object> inputs,
-        IWorkflowContext context,
+        INodePipeline pipeline,
         CancellationToken cancellationToken)
     {
         try
         {
-            // 1. 验证必需的输入字段
             if (!inputs.TryGetValue("branches", out var branchesObj))
             {
                 return NodeExecutionResult.Failure("缺少必需的输入字段: branches");
             }
 
-            // 2. 将输入转换为分支集合
             var branches = ConvertToBranches(branchesObj);
             if (branches == null || branches.Count == 0)
             {
                 return NodeExecutionResult.Failure("branches 字段必须包含至少一个分支");
             }
 
-            // 3. 并行执行所有分支
             var branchTasks = new List<Task<BranchResult>>();
             
             for (int i = 0; i < branches.Count; i++)
@@ -50,12 +42,10 @@ public class ForkNodeRuntime : INodeRuntime
                 var branchIndex = i;
                 var branch = branches[i];
                 
-                // 为每个分支创建异步任务
                 var branchTask = Task.Run(async () =>
                 {
                     try
                     {
-                        // 检查取消令牌
                         if (cancellationToken.IsCancellationRequested)
                         {
                             return new BranchResult
@@ -67,9 +57,7 @@ public class ForkNodeRuntime : INodeRuntime
                             };
                         }
 
-                        // 执行分支逻辑（这里只是标记分支已准备好执行）
-                        // 实际的分支节点执行由工作流引擎处理
-                        await Task.Delay(1, cancellationToken); // 模拟异步操作
+                        await Task.Delay(1, cancellationToken);
 
                         return new BranchResult
                         {
@@ -105,7 +93,6 @@ public class ForkNodeRuntime : INodeRuntime
                 branchTasks.Add(branchTask);
             }
 
-            // 4. 等待所有分支完成
             BranchResult[] branchResults;
             try
             {
@@ -116,7 +103,6 @@ public class ForkNodeRuntime : INodeRuntime
                 return NodeExecutionResult.Failure($"等待分支完成时发生错误: {ex.Message}");
             }
 
-            // 5. 检查是否有分支失败
             var failedBranches = branchResults.Where(r => !r.Success).ToList();
             if (failedBranches.Any())
             {
@@ -124,7 +110,6 @@ public class ForkNodeRuntime : INodeRuntime
                 return NodeExecutionResult.Failure($"部分分支执行失败: {errorMessages}");
             }
 
-            // 6. 构建输出
             var output = new Dictionary<string, object>
             {
                 ["branches"] = branchResults.Select(r => new Dictionary<string, object>
@@ -146,11 +131,6 @@ public class ForkNodeRuntime : INodeRuntime
         }
     }
 
-    /// <summary>
-    /// 将对象转换为分支集合.
-    /// </summary>
-    /// <param name="obj">要转换的对象.</param>
-    /// <returns>分支集合，如果无法转换则返回 null.</returns>
     private List<BranchInfo>? ConvertToBranches(object obj)
     {
         if (obj == null)
@@ -160,7 +140,6 @@ public class ForkNodeRuntime : INodeRuntime
 
         var branches = new List<BranchInfo>();
 
-        // 如果是字符串，尝试解析为 JSON
         if (obj is string jsonStr)
         {
             try
@@ -177,13 +156,11 @@ public class ForkNodeRuntime : INodeRuntime
             }
             catch
             {
-                // 如果解析失败，将字符串视为单个分支名称
                 branches.Add(new BranchInfo { Name = jsonStr });
                 return branches;
             }
         }
 
-        // 如果是集合类型
         if (obj is System.Collections.IEnumerable enumerable and not string)
         {
             foreach (var item in enumerable)
@@ -198,7 +175,6 @@ public class ForkNodeRuntime : INodeRuntime
                 }
                 else
                 {
-                    // 尝试将对象转换为字典
                     var itemDict = ConvertObjectToDictionary(item);
                     if (itemDict != null)
                     {
@@ -209,7 +185,6 @@ public class ForkNodeRuntime : INodeRuntime
             return branches;
         }
 
-        // 如果是单个字典对象
         if (obj is Dictionary<string, object> singleDict)
         {
             branches.Add(ParseBranchInfo(singleDict));
@@ -219,11 +194,6 @@ public class ForkNodeRuntime : INodeRuntime
         return null;
     }
 
-    /// <summary>
-    /// 从字典解析分支信息.
-    /// </summary>
-    /// <param name="dict">包含分支信息的字典.</param>
-    /// <returns>分支信息对象.</returns>
     private BranchInfo ParseBranchInfo(Dictionary<string, object> dict)
     {
         var branchInfo = new BranchInfo();
@@ -253,11 +223,6 @@ public class ForkNodeRuntime : INodeRuntime
         return branchInfo;
     }
 
-    /// <summary>
-    /// 将对象转换为字典.
-    /// </summary>
-    /// <param name="obj">要转换的对象.</param>
-    /// <returns>字典对象，如果无法转换则返回 null.</returns>
     private Dictionary<string, object>? ConvertObjectToDictionary(object obj)
     {
         if (obj == null)
@@ -276,9 +241,6 @@ public class ForkNodeRuntime : INodeRuntime
         }
     }
 
-    /// <summary>
-    /// 分支信息类.
-    /// </summary>
     private class BranchInfo
     {
         public string Name { get; set; } = string.Empty;
@@ -286,9 +248,6 @@ public class ForkNodeRuntime : INodeRuntime
         public Dictionary<string, object>? Data { get; set; }
     }
 
-    /// <summary>
-    /// 分支执行结果类.
-    /// </summary>
     private class BranchResult
     {
         public int Index { get; set; }

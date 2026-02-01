@@ -68,7 +68,8 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
             var predicate = PredicateBuilder.New<WikiEntity>(true);
             predicate = predicate.And(x => x.TeamId != 0);
             predicate = predicate.And(x => _databaseContext.TeamUsers.Where(a => a.UserId == request.ContextUserId && x.TeamId == a.TeamId).Any());
-            responses = await query.Where(predicate).DynamicOrder(request.OrderByFields)
+            responses = await query.Where(predicate)
+                .DynamicOrder(request.OrderByFields)
                 .LeftJoin(_databaseContext.Teams, a => a.TeamId, b => b.Id, (x, y) => new QueryWikiInfoResponse
                 {
                     WikiId = x.Id,
@@ -94,7 +95,8 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
             predicate = predicate.Or(x => x.TeamId == 0 && x.CreateUserId == request.ContextUserId);
             predicate = predicate.Or(x => x.TeamId != 0 && _databaseContext.TeamUsers.Where(a => a.UserId == request.ContextUserId && x.TeamId == a.TeamId).Any());
 
-            responses = await query.Where(predicate).DynamicOrder(request.OrderByFields)
+            responses = await query.Where(predicate)
+                .DynamicOrder(request.OrderByFields)
                 .LeftJoin(_databaseContext.Teams, a => a.TeamId, b => b.Id, (x, y) => new QueryWikiInfoResponse
                 {
                     WikiId = x.Id,
@@ -115,6 +117,7 @@ public class QueryWikiBaseListCommandHandler : IRequestHandler<QueryWikiBaseList
                 .ToListAsync(cancellationToken);
         }
 
+        responses = responses.DistinctBy(x => x.WikiId).ToList();
         await _mediator.Send(new QueryAvatarUrlCommand { Items = responses });
         await _mediator.Send(new FillUserInfoCommand { Items = responses });
 

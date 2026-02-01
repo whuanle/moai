@@ -1,3 +1,4 @@
+using Maomi;
 using MediatR;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -16,6 +17,7 @@ namespace MoAI.Workflow.Runtime;
 /// AiChat 节点运行时实现.
 /// AiChat 节点负责调用 AI 模型进行对话，支持配置提示词、对话历史和执行参数.
 /// </summary>
+[InjectOnTransient(ServiceKey = NodeType.AiChat)]
 public class AiChatNodeRuntime : INodeRuntime
 {
     private readonly IMediator _mediator;
@@ -36,15 +38,13 @@ public class AiChatNodeRuntime : INodeRuntime
     /// 执行 AiChat 节点逻辑.
     /// 调用 AI 模型服务，使用配置的提示词和参数进行对话.
     /// </summary>
-    /// <param name="nodeDefine">节点定义.</param>
     /// <param name="inputs">节点输入数据，应包含 modelId、prompt 等字段.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>包含 AI 模型响应的执行结果.</returns>
     public async Task<NodeExecutionResult> ExecuteAsync(
-        INodeDefine nodeDefine,
         Dictionary<string, object> inputs,
-        IWorkflowContext context,
+        INodePipeline pipeline,
         CancellationToken cancellationToken)
     {
         try
@@ -203,17 +203,13 @@ public class AiChatNodeRuntime : INodeRuntime
 
     /// <summary>
     /// 解析消息列表.
-    /// 支持多种格式：JSON 字符串、对象数组等.
     /// </summary>
-    /// <param name="messagesObj">消息对象.</param>
-    /// <returns>ChatMessageContent 列表.</returns>
     private List<ChatMessageContent> ParseMessages(object messagesObj)
     {
         var messages = new List<ChatMessageContent>();
 
         try
         {
-            // 如果是字符串，尝试解析为 JSON
             if (messagesObj is string messagesJson)
             {
                 var messageList = messagesJson.JsonToObject<List<Dictionary<string, string>>>();
@@ -229,7 +225,6 @@ public class AiChatNodeRuntime : INodeRuntime
                     }
                 }
             }
-            // 如果是集合类型
             else if (messagesObj is System.Collections.IEnumerable enumerable)
             {
                 foreach (var item in enumerable)
@@ -256,8 +251,6 @@ public class AiChatNodeRuntime : INodeRuntime
     /// <summary>
     /// 解析角色字符串为 AuthorRole.
     /// </summary>
-    /// <param name="roleStr">角色字符串.</param>
-    /// <returns>AuthorRole 对象.</returns>
     private AuthorRole ParseRole(string roleStr)
     {
         return roleStr?.ToLowerInvariant() switch
@@ -272,15 +265,12 @@ public class AiChatNodeRuntime : INodeRuntime
     /// <summary>
     /// 解析执行设置.
     /// </summary>
-    /// <param name="settingsObj">设置对象.</param>
-    /// <returns>KeyValueString 列表.</returns>
     private List<KeyValueString> ParseExecutionSettings(object settingsObj)
     {
         var settings = new List<KeyValueString>();
 
         try
         {
-            // 如果是字符串，尝试解析为 JSON
             if (settingsObj is string settingsJson)
             {
                 var settingsList = settingsJson.JsonToObject<List<KeyValueString>>();
@@ -289,7 +279,6 @@ public class AiChatNodeRuntime : INodeRuntime
                     settings.AddRange(settingsList);
                 }
             }
-            // 如果是字典类型
             else if (settingsObj is Dictionary<string, object> dict)
             {
                 foreach (var kvp in dict)
@@ -301,7 +290,6 @@ public class AiChatNodeRuntime : INodeRuntime
                     });
                 }
             }
-            // 如果是集合类型
             else if (settingsObj is System.Collections.IEnumerable enumerable)
             {
                 foreach (var item in enumerable)

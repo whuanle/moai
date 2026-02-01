@@ -1,0 +1,272 @@
+.parameter-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.parameter-config-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.parameter-config-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.parameter-config-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.parameter-config-empty {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-border);
+}
+
+/* Collapse 折叠面板样式 */
+.parameter-collapse {
+  background: transparent;
+  border: none;
+}
+
+.parameter-collapse .ant-collapse-item {
+  margin-bottom: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+}
+
+.parameter-collapse .ant-collapse-item:last-child {
+  margin-bottom: 0;
+}
+
+.parameter-collapse .ant-collapse-header {
+  background: var(--color-bg-layout);
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  align-items: center !important;
+}
+
+.parameter-collapse .ant-collapse-header:hover {
+  background: var(--color-bg-container);
+}
+
+.parameter-collapse .ant-collapse-content {
+  border-top: 1px solid var(--color-border);
+}
+
+.parameter-collapse .ant-collapse-content-box {
+  padding: var(--spacing-md) !important;
+}
+
+.parameter-collapse-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.parameter-collapse-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.parameter-collapse-type {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-container);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.parameter-field-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.parameter-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.parameter-field {
+  padding: var(--spacing-md);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.3s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.parameter-field:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.parameter-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.parameter-field-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.parameter-field-name-input {
+  flex: 2;
+  min-width: 120px;
+  max-width: 300px;
+}
+
+.parameter-field-type-select {
+  flex: 1;
+  min-width: 120px;
+  max-width: 300px;
+}
+
+.parameter-field-expr-select {
+  flex: 1;
+  min-width: 120px;
+  max-width: 300px;
+}
+
+.parameter-field-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.parameter-field-actions .ant-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.parameter-field-value {
+  margin-top: var(--spacing-sm);
+  width: 100%;
+}
+
+.parameter-field-value:disabled {
+  background: var(--color-bg-layout);
+  cursor: not-allowed;
+}
+
+.parameter-field-hint {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-primary);
+}
+
+.parameter-field-children {
+  margin-top: var(--spacing-md);
+  padding-left: var(--spacing-md);
+  border-left: 2px solid var(--color-primary);
+}
+
+.parameter-child-field {
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s;
+}
+
+.parameter-child-field:hover {
+  background: var(--color-bg-container);
+  border-color: var(--color-primary);
+}
+
+.parameter-child-field:last-child {
+  margin-bottom: 0;
+}
+
+.parameter-child-field .parameter-field-inputs {
+  flex-wrap: nowrap;
+}
+
+.parameter-child-field .parameter-field-name-input {
+  max-width: 140px;
+}
+
+.parameter-field-path {
+  font-size: 11px;
+  color: var(--color-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 按钮样式优化 */
+.parameter-config-header .ant-btn-dashed {
+  border-style: dashed;
+  border-width: 2px;
+  height: 36px;
+  font-weight: 500;
+}
+
+.parameter-config-header .ant-btn-dashed:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* 输入框样式优化 */
+.parameter-field input,
+.parameter-field textarea,
+.parameter-child-field input,
+.parameter-child-field textarea {
+  border-radius: var(--radius-sm);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .parameter-field-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .parameter-field-inputs {
+    flex-wrap: wrap;
+  }
+  
+  .parameter-field-name-input {
+    max-width: none;
+  }
+  
+  .parameter-field-children {
+    padding-left: var(--spacing-sm);
+  }
+}

@@ -76,7 +76,7 @@ public class ExternalAppLoginCommandHandler : IRequestHandler<ExternalAppLoginCo
             TeamId = externalApp.TeamId,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            ExpiresIn = DateTimeOffset.UtcNow.AddHours(ExternalTokenExpirationHours).ToUnixTimeMilliseconds(),
+            ExpiresIn = DateTimeOffset.Now.AddHours(ExternalTokenExpirationHours).ToUnixTimeMilliseconds(),
         };
     }
 }

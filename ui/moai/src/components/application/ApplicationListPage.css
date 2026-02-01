@@ -226,3 +226,20 @@
   align-items: center;
   gap: var(--spacing-md);
 }
+
+
+/* 禁用状态的应用卡片（流程应用开发中） */
+.app-card-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.app-card-disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: var(--color-border);
+}
+
+.app-card-disabled .app-card-body {
+  cursor: not-allowed;
+}

@@ -48,7 +48,7 @@ public class S3Storage : IStorage, IDisposable
         {
             BucketName = _storageOption.Bucket,
             Key = fileObject.ObjectKey,
-            Expires = DateTime.UtcNow.Add(fileObject.ExpiryDuration),
+            Expires = DateTime.Now.Add(fileObject.ExpiryDuration),
             Verb = HttpVerb.PUT,
         };
 

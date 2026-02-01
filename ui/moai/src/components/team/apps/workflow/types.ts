@@ -49,10 +49,13 @@ export enum FieldExpressionType {
 export interface FieldDefine {
   fieldName: string;
   fieldType: FieldType;
+  expressionType?: string;  // 表达式类型：Run, Fixed, Variable, Jsonpath, Interpolation
   isRequired?: boolean;
   description?: string;
   defaultValue?: any;
+  value?: any;  // 字段值
   children?: FieldDefine[];
+  isArrayIndex?: boolean;  // 是否是数组索引（数组子字段）
 }
 
 export interface FieldValue {

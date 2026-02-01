@@ -1,4 +1,5 @@
 using Jint;
+using Maomi;
 using MoAI.Infra.Exceptions;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
@@ -9,6 +10,7 @@ namespace MoAI.Workflow.Runtime;
 /// DataProcess 节点运行时实现.
 /// DataProcess 节点负责对输入数据执行数据转换操作（map、filter、aggregate）.
 /// </summary>
+[InjectOnTransient(ServiceKey = NodeType.DataProcess)]
 public class DataProcessNodeRuntime : INodeRuntime
 {
     /// <inheritdoc/>
@@ -16,22 +18,14 @@ public class DataProcessNodeRuntime : INodeRuntime
 
     /// <summary>
     /// 执行 DataProcess 节点逻辑.
-    /// 根据操作类型（map、filter、aggregate）对输入数据执行相应的转换操作.
     /// </summary>
-    /// <param name="nodeDefine">节点定义.</param>
-    /// <param name="inputs">节点输入数据，应包含 operation、data 和 expression 字段.</param>
-    /// <param name="context">工作流上下文.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>包含数据处理结果的执行结果.</returns>
     public Task<NodeExecutionResult> ExecuteAsync(
-        INodeDefine nodeDefine,
         Dictionary<string, object> inputs,
-        IWorkflowContext context,
+        INodePipeline pipeline,
         CancellationToken cancellationToken)
     {
         try
         {
-            // 1. 验证必需的输入字段
             if (!inputs.TryGetValue("operation", out var operationObj))
             {
                 return Task.FromResult(NodeExecutionResult.Failure("缺少必需的输入字段: operation"));
@@ -60,14 +54,12 @@ public class DataProcessNodeRuntime : INodeRuntime
                 return Task.FromResult(NodeExecutionResult.Failure("expression 字段不能为空"));
             }
 
-            // 2. 将数据转换为可枚举集合
             var dataCollection = ConvertToEnumerable(dataObj);
             if (dataCollection == null)
             {
                 return Task.FromResult(NodeExecutionResult.Failure("data 字段必须是可枚举的集合类型"));
             }
 
-            // 3. 根据操作类型执行相应的处理
             object? result;
             try
             {
@@ -88,7 +80,6 @@ public class DataProcessNodeRuntime : INodeRuntime
                 return Task.FromResult(NodeExecutionResult.Failure($"数据处理异常: {ex.Message}"));
             }
 
-            // 4. 构建输出
             var output = new Dictionary<string, object>
             {
                 ["result"] = result ?? new List<object>(),
@@ -104,13 +95,6 @@ public class DataProcessNodeRuntime : INodeRuntime
         }
     }
 
-    /// <summary>
-    /// 执行 map 操作，对集合中的每个元素应用转换函数.
-    /// </summary>
-    /// <param name="data">输入数据集合.</param>
-    /// <param name="expression">JavaScript 转换表达式.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>转换后的集合.</returns>
     private List<object> ExecuteMap(
         IEnumerable<object> data,
         string expression,
@@ -134,13 +118,6 @@ public class DataProcessNodeRuntime : INodeRuntime
         return results;
     }
 
-    /// <summary>
-    /// 执行 filter 操作，根据条件过滤集合中的元素.
-    /// </summary>
-    /// <param name="data">输入数据集合.</param>
-    /// <param name="expression">JavaScript 过滤表达式.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>过滤后的集合.</returns>
     private List<object> ExecuteFilter(
         IEnumerable<object> data,
         string expression,
@@ -158,7 +135,6 @@ public class DataProcessNodeRuntime : INodeRuntime
 
             var filterResult = ExecuteJavaScriptExpression(expression, item, index, cancellationToken);
             
-            // 将结果转换为布尔值
             if (ConvertToBoolean(filterResult))
             {
                 results.Add(item);
@@ -170,21 +146,12 @@ public class DataProcessNodeRuntime : INodeRuntime
         return results;
     }
 
-    /// <summary>
-    /// 执行 aggregate 操作，将集合归约为单个值.
-    /// </summary>
-    /// <param name="data">输入数据集合.</param>
-    /// <param name="expression">JavaScript 归约表达式.</param>
-    /// <param name="inputs">输入参数，可能包含 initialValue.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>归约后的值.</returns>
     private object ExecuteAggregate(
         IEnumerable<object> data,
         string expression,
         Dictionary<string, object> inputs,
         CancellationToken cancellationToken)
     {
-        // 获取初始值（如果提供）
         object? accumulator = inputs.TryGetValue("initialValue", out var initialValueObj) 
             ? initialValueObj 
             : null;
@@ -192,7 +159,6 @@ public class DataProcessNodeRuntime : INodeRuntime
         var dataList = data.ToList();
         var startIndex = 0;
 
-        // 如果没有提供初始值，使用第一个元素作为初始值
         if (accumulator == null)
         {
             if (dataList.Count == 0)
@@ -204,7 +170,6 @@ public class DataProcessNodeRuntime : INodeRuntime
             startIndex = 1;
         }
 
-        // 对剩余元素执行归约
         for (int i = startIndex; i < dataList.Count; i++)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -223,14 +188,6 @@ public class DataProcessNodeRuntime : INodeRuntime
         return accumulator ?? new object();
     }
 
-    /// <summary>
-    /// 执行 JavaScript 表达式（用于 map 和 filter）.
-    /// </summary>
-    /// <param name="expression">JavaScript 表达式.</param>
-    /// <param name="item">当前项.</param>
-    /// <param name="index">当前索引.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>表达式执行结果.</returns>
     private object? ExecuteJavaScriptExpression(
         string expression,
         object item,
@@ -248,11 +205,9 @@ public class DataProcessNodeRuntime : INodeRuntime
                 options.CancellationToken(cancellationToken);
             });
 
-            // 注入变量
             engine.SetValue("item", item);
             engine.SetValue("index", index);
 
-            // 执行表达式
             var completionValue = engine.Evaluate(expression);
 
             if (completionValue.IsNull() || completionValue.IsUndefined())
@@ -272,15 +227,6 @@ public class DataProcessNodeRuntime : INodeRuntime
         }
     }
 
-    /// <summary>
-    /// 执行 JavaScript 归约表达式（用于 aggregate）.
-    /// </summary>
-    /// <param name="expression">JavaScript 表达式.</param>
-    /// <param name="accumulator">累加器值.</param>
-    /// <param name="currentItem">当前项.</param>
-    /// <param name="index">当前索引.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>表达式执行结果.</returns>
     private object? ExecuteJavaScriptAggregateExpression(
         string expression,
         object accumulator,
@@ -299,14 +245,12 @@ public class DataProcessNodeRuntime : INodeRuntime
                 options.CancellationToken(cancellationToken);
             });
 
-            // 注入变量
             engine.SetValue("accumulator", accumulator);
-            engine.SetValue("acc", accumulator); // 别名
+            engine.SetValue("acc", accumulator);
             engine.SetValue("item", currentItem);
-            engine.SetValue("current", currentItem); // 别名
+            engine.SetValue("current", currentItem);
             engine.SetValue("index", index);
 
-            // 执行表达式
             var completionValue = engine.Evaluate(expression);
 
             if (completionValue.IsNull() || completionValue.IsUndefined())
@@ -326,11 +270,6 @@ public class DataProcessNodeRuntime : INodeRuntime
         }
     }
 
-    /// <summary>
-    /// 将对象转换为可枚举集合.
-    /// </summary>
-    /// <param name="obj">要转换的对象.</param>
-    /// <returns>可枚举集合，如果无法转换则返回 null.</returns>
     private IEnumerable<object>? ConvertToEnumerable(object obj)
     {
         if (obj == null)
@@ -338,19 +277,16 @@ public class DataProcessNodeRuntime : INodeRuntime
             return null;
         }
 
-        // 如果已经是 IEnumerable<object>，直接返回
         if (obj is IEnumerable<object> enumerable)
         {
             return enumerable;
         }
 
-        // 如果是字符串，不要将其视为字符集合，而是单个项目
         if (obj is string str)
         {
             return new[] { str };
         }
 
-        // 如果是其他 IEnumerable 类型，转换为 object 集合
         if (obj is System.Collections.IEnumerable collection)
         {
             var list = new List<object>();
@@ -361,15 +297,9 @@ public class DataProcessNodeRuntime : INodeRuntime
             return list;
         }
 
-        // 如果是单个对象，包装为单元素集合
         return new[] { obj };
     }
 
-    /// <summary>
-    /// 将对象转换为布尔值.
-    /// </summary>
-    /// <param name="value">要转换的值.</param>
-    /// <returns>布尔值.</returns>
     private bool ConvertToBoolean(object? value)
     {
         if (value == null)
@@ -417,7 +347,6 @@ public class DataProcessNodeRuntime : INodeRuntime
             return decimalValue != 0;
         }
 
-        // 对于集合类型，非空集合视为 true
         if (value is System.Collections.ICollection collection)
         {
             return collection.Count > 0;
@@ -428,7 +357,6 @@ public class DataProcessNodeRuntime : INodeRuntime
             return enumerable.Cast<object>().Any();
         }
 
-        // 其他非 null 对象视为 true
         return true;
     }
 }

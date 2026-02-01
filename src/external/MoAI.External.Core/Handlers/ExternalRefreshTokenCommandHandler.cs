@@ -130,7 +130,7 @@ public class ExternalRefreshTokenCommandHandler : IRequestHandler<ExternalRefres
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            ExpiresIn = DateTimeOffset.UtcNow.AddHours(ExternalTokenExpirationHours).ToUnixTimeMilliseconds(),
+            ExpiresIn = DateTimeOffset.Now.AddHours(ExternalTokenExpirationHours).ToUnixTimeMilliseconds(),
         };
     }
 }

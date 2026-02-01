@@ -35,7 +35,12 @@ public class NodeDesign
     public IReadOnlyCollection<string> NextNodeKeys { get; set; } = Array.Empty<string>();
 
     /// <summary>
-    /// 字段设计映射，键为字段名称，值为字段设计配置.
+    /// 输入参数，字段设计映射，键为字段名称，值为字段设计配置.
     /// </summary>
-    public IReadOnlyCollection<KeyValue<string, FieldDesign>> FieldDesigns { get; set; } = Array.Empty<KeyValue<string, FieldDesign>>();
+    public IReadOnlyCollection<KeyValue<string, FieldDesign>> InputFieldDesigns { get; set; } = Array.Empty<KeyValue<string, FieldDesign>>();
+
+    /// <summary>
+    /// 输出参数，字段设计映射，键为字段名称，值为字段设计配置.
+    /// </summary>
+    public IReadOnlyCollection<KeyValue<string, FieldDesign>> OutputFieldDesigns { get; set; } = Array.Empty<KeyValue<string, FieldDesign>>();
 }

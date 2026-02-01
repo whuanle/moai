@@ -1,24 +1,26 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Maomi;
 using MoAI.Infra.Exceptions;
 using MoAI.Workflow.Models;
 
 namespace MoAI.Workflow.Services;
 
 /// <summary>
-/// 变量解析服务，负责从工作流上下文中解析变量引用.
+/// 变量解析服务，负责从节点管道中解析变量引用.
 /// 支持系统变量（sys.*）、输入参数（input.*）、节点输出（nodeKey.*）和数组访问（[0]、[*]）.
 /// </summary>
+[InjectOnScoped]
 public class VariableResolutionService
 {
     /// <summary>
-    /// 从工作流上下文中解析变量引用.
+    /// 从节点管道中解析变量引用.
     /// </summary>
     /// <param name="variableReference">变量引用字符串（如 sys.userId、input.name、nodeA.output[0]）.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道，包含参数解析所需的变量映射.</param>
     /// <returns>解析后的变量值.</returns>
     /// <exception cref="BusinessException">当变量引用无效或不存在时抛出.</exception>
-    public object ResolveVariable(string variableReference, IWorkflowContext context)
+    public object ResolveVariable(string variableReference, INodePipeline pipeline)
     {
         if (string.IsNullOrWhiteSpace(variableReference))
         {
@@ -34,7 +36,7 @@ public class VariableResolutionService
             var remainingPath = arrayMatch.Groups[3].Value;
 
             // 先解析基础路径
-            var baseValue = ResolveVariableInternal(basePath, context);
+            var baseValue = ResolveVariableInternal(basePath, pipeline);
 
             // 处理数组访问
             if (baseValue is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
@@ -137,7 +139,7 @@ public class VariableResolutionService
         }
 
         // 普通变量引用（无数组访问）
-        return ResolveVariableInternal(variableReference, context);
+        return ResolveVariableInternal(variableReference, pipeline);
     }
 
     /// <summary>
@@ -193,10 +195,10 @@ public class VariableResolutionService
     /// <summary>
     /// 内部方法：解析变量引用（不处理数组访问）.
     /// </summary>
-    private object ResolveVariableInternal(string variableReference, IWorkflowContext context)
+    private object ResolveVariableInternal(string variableReference, INodePipeline pipeline)
     {
         // 首先尝试从扁平化变量映射中直接获取
-        if (context.FlattenedVariables.TryGetValue(variableReference, out var value))
+        if (pipeline.FlattenedVariables.TryGetValue(variableReference, out var value))
         {
             return value;
         }
@@ -215,27 +217,33 @@ public class VariableResolutionService
         {
             case "sys":
                 // 系统变量
-                return ResolveSystemVariable(fieldPath, context);
+                return ResolveSystemVariable(fieldPath, pipeline);
 
             case "input":
                 // 输入参数
-                return ResolveInputParameter(fieldPath, context);
+                return ResolveInputParameter(fieldPath, pipeline);
 
             default:
                 // 节点输出（nodeKey.*）
-                return ResolveNodeOutput(prefix, fieldPath, context);
+                return ResolveNodeOutput(prefix, fieldPath, pipeline);
         }
     }
 
     /// <summary>
     /// 解析系统变量.
     /// </summary>
-    private object ResolveSystemVariable(string fieldPath, IWorkflowContext context)
+    private object ResolveSystemVariable(string fieldPath, INodePipeline pipeline)
     {
         var key = $"sys.{fieldPath}";
-        if (context.FlattenedVariables.TryGetValue(key, out var value))
+        if (pipeline.FlattenedVariables.TryGetValue(key, out var value))
         {
             return value;
+        }
+
+        // 尝试从 SystemVariables 中获取
+        if (pipeline.SystemVariables.TryGetValue(fieldPath, out var sysValue))
+        {
+            return sysValue;
         }
 
         throw new BusinessException($"系统变量不存在: {key}") { StatusCode = 404 };
@@ -244,16 +252,16 @@ public class VariableResolutionService
     /// <summary>
     /// 解析输入参数.
     /// </summary>
-    private object ResolveInputParameter(string fieldPath, IWorkflowContext context)
+    private object ResolveInputParameter(string fieldPath, INodePipeline pipeline)
     {
         var key = $"input.{fieldPath}";
-        if (context.FlattenedVariables.TryGetValue(key, out var value))
+        if (pipeline.FlattenedVariables.TryGetValue(key, out var value))
         {
             return value;
         }
 
         // 尝试从 RuntimeParameters 中获取
-        if (context.RuntimeParameters.TryGetValue(fieldPath, out var paramValue))
+        if (pipeline.RuntimeParameters.TryGetValue(fieldPath, out var paramValue))
         {
             return paramValue;
         }
@@ -264,42 +272,36 @@ public class VariableResolutionService
     /// <summary>
     /// 解析节点输出.
     /// </summary>
-    private object ResolveNodeOutput(string nodeKey, string fieldPath, IWorkflowContext context)
+    private object ResolveNodeOutput(string nodeKey, string fieldPath, INodePipeline pipeline)
     {
-        // 检查节点是否已执行
-        if (!context.ExecutedNodeKeys.Contains(nodeKey))
-        {
-            throw new BusinessException($"节点 {nodeKey} 尚未执行") { StatusCode = 400 };
-        }
-
-        // 获取节点管道
-        if (!context.NodePipelines.TryGetValue(nodeKey, out var pipeline))
-        {
-            throw new BusinessException($"节点 {nodeKey} 的执行记录不存在") { StatusCode = 404 };
-        }
-
         // 尝试从扁平化变量映射中获取
         var key = $"{nodeKey}.{fieldPath}";
-        if (context.FlattenedVariables.TryGetValue(key, out var value))
+        if (pipeline.FlattenedVariables.TryGetValue(key, out var value))
         {
             return value;
         }
 
         // 尝试从节点输出映射中获取
-        if (pipeline.OutputJsonMap.TryGetValue(fieldPath, out var outputValue))
+        if (pipeline.NodeOutputs.TryGetValue(nodeKey, out var nodeOutput))
         {
-            return outputValue;
+            if (nodeOutput.TryGetValue(fieldPath, out var outputValue))
+            {
+                return outputValue;
+            }
+
+            // 尝试访问嵌套属性
+            try
+            {
+                var jsonElement = JsonSerializer.SerializeToElement(nodeOutput);
+                return AccessNestedProperty(jsonElement, fieldPath);
+            }
+            catch
+            {
+                // 忽略，继续抛出未找到异常
+            }
         }
 
-        // 尝试从 OutputJsonElement 中访问嵌套属性
-        try
-        {
-            return AccessNestedProperty(pipeline.OutputJsonElement, fieldPath);
-        }
-        catch
-        {
-            throw new BusinessException($"节点输出字段不存在: {key}") { StatusCode = 404 };
-        }
+        throw new BusinessException($"节点输出字段不存在: {key}，节点 {nodeKey} 可能尚未执行") { StatusCode = 404 };
     }
 
     /// <summary>

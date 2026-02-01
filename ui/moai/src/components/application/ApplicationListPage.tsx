@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router";
 import { GetApiClient } from "../ServiceClient";
-import { AppClassifyItem, AccessibleAppItem, QueryAccessibleAppListCommand } from "../../apiClient/models";
+import { AppClassifyItem, AccessibleAppItem, QueryAccessibleAppListCommand, AppTypeObject } from "../../apiClient/models";
 import { proxyRequestError } from "../../helper/RequestError";
 import "./ApplicationListPage.css";
 
@@ -100,9 +100,14 @@ export default function ApplicationListPage({ teamId }: ApplicationListPageProps
     }
   };
 
-  const handleViewApp = (appId: string | null | undefined) => {
-    if (appId) {
-      navigate(`/app/appstore/${appId}`);
+  const handleViewApp = (app: AccessibleAppItem) => {
+    if (app.id) {
+      // 流程应用暂不支持进入
+      if (app.appType === AppTypeObject.Workflow) {
+        messageApi.info("流程应用功能正在开发中，敬请期待");
+        return;
+      }
+      navigate(`/app/appstore/${app.id}`);
     }
   };
 
@@ -140,14 +145,16 @@ export default function ApplicationListPage({ teamId }: ApplicationListPageProps
 
   // 渲染应用卡片
   const renderAppCard = (app: AccessibleAppItem) => {
+    const isWorkflow = app.appType === AppTypeObject.Workflow;
+    
     return (
-      <div key={app.id || ""} className="app-card">
+      <div key={app.id || ""} className={`app-card ${isWorkflow ? 'app-card-disabled' : ''}`}>
         {app.avatar && (
           <div className="app-card-icon">
             <img src={app.avatar} alt={app.name || "应用"} />
           </div>
         )}
-        <div className="app-card-body" onClick={() => handleViewApp(app.id)}>
+        <div className="app-card-body" onClick={() => handleViewApp(app)}>
           <div className="app-card-title">{app.name}</div>
           <div className="app-card-desc">{app.description || "暂无描述"}</div>
           <div className="app-card-meta">
@@ -155,11 +162,12 @@ export default function ApplicationListPage({ teamId }: ApplicationListPageProps
             <Tag color={app.isPublic ? "green" : "orange"}>
               {app.isPublic ? "公开" : "私有"}
             </Tag>
+            {isWorkflow && <Tag color="purple">开发中</Tag>}
           </div>
         </div>
         <div className="app-card-footer">
-          <Button type="text" size="small" onClick={() => handleViewApp(app.id)}>
-            使用应用
+          <Button type="text" size="small" onClick={() => handleViewApp(app)} disabled={isWorkflow}>
+            {isWorkflow ? "敬请期待" : "使用应用"}
           </Button>
         </div>
       </div>

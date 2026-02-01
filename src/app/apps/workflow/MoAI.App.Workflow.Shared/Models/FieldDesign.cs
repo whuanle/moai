@@ -13,6 +13,16 @@ public class FieldDesign
     public string FieldName { get; set; } = string.Empty;
 
     /// <summary>
+    /// 字段描述.
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 字段数据类型.
+    /// </summary>
+    public FieldType FieldType { get; set; }
+
+    /// <summary>
     /// 表达式类型，定义如何为字段分配值.
     /// </summary>
     public FieldExpressionType ExpressionType { get; set; }

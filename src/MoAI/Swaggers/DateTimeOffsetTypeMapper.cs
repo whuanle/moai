@@ -8,7 +8,7 @@ namespace MoAI.Swaggers;
 /// </summary>
 public class DateTimeOffsetTypeMapper : ITypeMapper
 {
-    private static readonly string _example = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+    private static readonly string _example = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
 
     /// <inheritdoc/>
     Type ITypeMapper.MappedType => typeof(DateTimeOffset);

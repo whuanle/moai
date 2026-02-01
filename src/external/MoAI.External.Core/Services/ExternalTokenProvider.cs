@@ -87,7 +87,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
             Subject = new ClaimsIdentity(claims),
             Issuer = _systemOptions.Server,
             Audience = _systemOptions.Server,
-            Expires = DateTime.UtcNow.AddHours(ExternalTokenExpirationHours),
+            Expires = DateTime.Now.AddHours(ExternalTokenExpirationHours),
             SigningCredentials = new SigningCredentials(rsaKey, SecurityAlgorithms.RsaSha256),
             TokenType = "access_token",
         };
@@ -118,7 +118,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
             Subject = new ClaimsIdentity(refreshClaims),
             Issuer = _systemOptions.Server,
             Audience = _systemOptions.Server,
-            Expires = DateTime.UtcNow.AddDays(ExternalRefreshTokenExpirationDays),
+            Expires = DateTime.Now.AddDays(ExternalRefreshTokenExpirationDays),
             SigningCredentials = new SigningCredentials(rsaKey, SecurityAlgorithms.RsaSha256),
             TokenType = "refresh_token",
         };

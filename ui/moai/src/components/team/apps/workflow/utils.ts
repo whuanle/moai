@@ -12,11 +12,48 @@ import {
   ValidationError,
   ValidationErrorType,
   NodeType,
-  FieldType
+  FieldType,
+  FieldDefine
 } from './types';
-import { NODE_CONSTRAINTS } from './constants';
+import { NODE_CONSTRAINTS, getNodeTemplate } from './constants';
 
 // ==================== API 数据转换 ====================
+
+/**
+ * 将 API 的 KeyValueOfStringAndFieldDesign[] 格式转换为内部的 FieldDefine[] 格式
+ */
+function convertApiFieldsToInternal(apiFields: any[] | undefined | null): FieldDefine[] {
+  if (!apiFields || !Array.isArray(apiFields)) {
+    return [];
+  }
+  
+  return apiFields.map(item => {
+    // API 格式: { key: string, value: FieldDesign }
+    // FieldDesign: { fieldName, fieldType, expressionType, value }
+    const fieldDesign = item.value || {};
+    
+    // 将 API 的 fieldType 转换为内部的 FieldType 枚举
+    const apiFieldType = fieldDesign.fieldType?.toLowerCase() || 'string';
+    const fieldTypeMap: Record<string, FieldType> = {
+      'empty': FieldType.Empty,
+      'string': FieldType.String,
+      'number': FieldType.Number,
+      'boolean': FieldType.Boolean,
+      'object': FieldType.Object,
+      'map': FieldType.Map,
+      'array': FieldType.Array,
+      'dynamic': FieldType.Dynamic,
+    };
+    
+    return {
+      fieldName: fieldDesign.fieldName || item.key || '',
+      fieldType: fieldTypeMap[apiFieldType] || FieldType.String,
+      expressionType: fieldDesign.expressionType || undefined,
+      value: fieldDesign.value || undefined,
+      description: fieldDesign.description || '',
+    };
+  });
+}
 
 /**
  * 将 API 数据转换为内部格式
@@ -25,7 +62,7 @@ export function fromApiFormat(apiData: ApiWorkflowConfig): WorkflowData {
   console.log('🔍 fromApiFormat - API 数据:', apiData);
   
   // 解析节点数据 - 优先使用 functionDesignDraft（草稿），其次使用 functionDesign（已发布版本）
-  let nodeDesigns: ApiNodeDesign[] = [];
+  let nodeDesigns: any[] = [];
   const functionSource = apiData.functionDesignDraft || apiData.functionDesign;
   
   if (typeof functionSource === 'string') {
@@ -42,6 +79,14 @@ export function fromApiFormat(apiData: ApiWorkflowConfig): WorkflowData {
   }
   
   console.log('🔍 fromApiFormat - 节点设计数量:', nodeDesigns.length);
+  console.log('🔍 fromApiFormat - 节点设计详情:', nodeDesigns.map(n => ({
+    nodeKey: n.nodeKey,
+    nodeType: n.nodeType,
+    hasInputFieldDesigns: !!n.inputFieldDesigns,
+    hasOutputFieldDesigns: !!n.outputFieldDesigns,
+    inputFieldDesignsCount: n.inputFieldDesigns?.length || 0,
+    outputFieldDesignsCount: n.outputFieldDesigns?.length || 0,
+  })));
   
   // 解析 UI 数据 - 优先使用 uiDesignDraft（草稿），其次使用 uiDesign（已发布版本）
   let uiData: any = {};
@@ -71,6 +116,49 @@ export function fromApiFormat(apiData: ApiWorkflowConfig): WorkflowData {
   const nodes: WorkflowNode[] = nodeDesigns.map((design, index) => {
     const uiNode = uiData.nodes?.find((n: any) => n.id === design.nodeKey);
     
+    // 获取节点模板，用于补充默认的输入输出参数
+    const template = getNodeTemplate(design.nodeType as NodeType);
+    
+    // 从 API 格式转换字段
+    // API 使用 inputFieldDesigns/outputFieldDesigns (KeyValueOfStringAndFieldDesign[])
+    // 内部使用 inputFields/outputFields (FieldDefine[])
+    let inputFields = convertApiFieldsToInternal(design.inputFieldDesigns);
+    let outputFields = convertApiFieldsToInternal(design.outputFieldDesigns);
+    
+    console.log(`🔍 fromApiFormat - 节点 ${design.nodeKey} 字段转换:`, {
+      inputFieldDesigns: design.inputFieldDesigns,
+      outputFieldDesigns: design.outputFieldDesigns,
+      inputFields,
+      outputFields,
+    });
+    
+    // 对于开始节点和结束节点，如果没有字段则使用默认配置
+    if (design.nodeType === NodeType.Start) {
+      // 开始节点：输入参数 input (map, 不可修改)，输出参数 output (map, 可修改)
+      if (!inputFields || inputFields.length === 0) {
+        inputFields = template?.defaultData.inputFields || [
+          { fieldName: 'input', fieldType: FieldType.Map, description: '工作流输入参数（固定）', expressionType: 'Run' }
+        ];
+      }
+      if (!outputFields || outputFields.length === 0) {
+        outputFields = template?.defaultData.outputFields || [
+          { fieldName: 'output', fieldType: FieldType.Map, description: '工作流输出参数', expressionType: 'Run' }
+        ];
+      }
+    } else if (design.nodeType === NodeType.End) {
+      // 结束节点：输入参数 input (map, 可修改)，输出参数 output (map, 赋值类型默认 Run)
+      if (!inputFields || inputFields.length === 0) {
+        inputFields = template?.defaultData.inputFields || [
+          { fieldName: 'input', fieldType: FieldType.Map, description: '工作流输入参数', expressionType: 'Variable' }
+        ];
+      }
+      if (!outputFields || outputFields.length === 0) {
+        outputFields = template?.defaultData.outputFields || [
+          { fieldName: 'output', fieldType: FieldType.Map, description: '工作流输出结果', expressionType: 'Run' }
+        ];
+      }
+    }
+    
     return {
       id: design.nodeKey,
       type: design.nodeType,
@@ -81,9 +169,9 @@ export function fromApiFormat(apiData: ApiWorkflowConfig): WorkflowData {
         y: 200 
       },
       config: {
-        inputFields: design.inputFields || [],
-        outputFields: design.outputFields || [],
-        settings: design.fieldDesigns || {},
+        inputFields,
+        outputFields,
+        settings: {},  // settings 不再从 fieldDesigns 读取，字段值已经在 inputFields/outputFields 中
       },
       ui: uiNode?.ui,
     };
@@ -105,9 +193,9 @@ export function fromApiFormat(apiData: ApiWorkflowConfig): WorkflowData {
   } else {
     // 从 nextNodeKeys 构建 edges（向后兼容）
     console.log('🔍 fromApiFormat - 从 nextNodeKeys 构建连接');
-    nodeDesigns.forEach(design => {
+    nodeDesigns.forEach((design: any) => {
       if (design.nextNodeKeys && Array.isArray(design.nextNodeKeys)) {
-        design.nextNodeKeys.forEach(targetKey => {
+        design.nextNodeKeys.forEach((targetKey: string) => {
           edges.push({
             id: `edge_${design.nodeKey}_${targetKey}`,
             source: design.nodeKey,
@@ -323,7 +411,7 @@ export function fromEditorFormat(editorData: any, currentWorkflow: WorkflowData)
 // ==================== 验证逻辑 ====================
 
 /**
- * 验证工作流
+ * 验证工作流（完整验证，包括连接检查）
  */
 export function validateWorkflow(workflow: WorkflowData): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -395,6 +483,54 @@ export function validateWorkflow(workflow: WorkflowData): ValidationError[] {
       }
     });
   });
+  
+  // 检查环路
+  const cycles = detectCycles(workflow);
+  if (cycles.length > 0) {
+    errors.push({
+      type: ValidationErrorType.CyclicDependency,
+      message: `工作流存在环路: ${cycles.join(' -> ')}`,
+    });
+  }
+  
+  return errors;
+}
+
+/**
+ * 验证工作流（宽松验证，用于调试执行，不检查连接）
+ */
+export function validateWorkflowForDebug(workflow: WorkflowData): ValidationError[] {
+  const errors: ValidationError[] = [];
+  
+  // 检查开始节点
+  const startNodes = workflow.nodes.filter(n => n.type === NodeType.Start);
+  if (startNodes.length === 0) {
+    errors.push({
+      type: ValidationErrorType.MissingStartNode,
+      message: '工作流必须包含一个开始节点',
+    });
+  } else if (startNodes.length > 1) {
+    errors.push({
+      type: ValidationErrorType.MultipleStartNodes,
+      message: '工作流只能包含一个开始节点',
+    });
+  }
+  
+  // 检查结束节点
+  const endNodes = workflow.nodes.filter(n => n.type === NodeType.End);
+  if (endNodes.length === 0) {
+    errors.push({
+      type: ValidationErrorType.MissingEndNode,
+      message: '工作流必须包含一个结束节点',
+    });
+  } else if (endNodes.length > 1) {
+    errors.push({
+      type: ValidationErrorType.MultipleEndNodes,
+      message: '工作流只能包含一个结束节点',
+    });
+  }
+  
+  // 调试模式不检查连接，允许单独测试节点
   
   // 检查环路
   const cycles = detectCycles(workflow);

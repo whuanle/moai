@@ -164,7 +164,7 @@ public partial class WorkflowExecutionController : ControllerBase
             NodeKey = "error",
             State = Enums.NodeState.Failed,
             ErrorMessage = message,
-            ExecutedTime = DateTimeOffset.UtcNow
+            ExecutedTime = DateTimeOffset.Now
         };
 
         return WriteSseDataAsync(errorPayload, cancellationToken);

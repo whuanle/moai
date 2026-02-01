@@ -19,6 +19,7 @@ import {
 } from './constants';
 import { 
   validateWorkflow,
+  validateWorkflowForDebug,
   canAddNode as checkCanAddNode,
   canDeleteNode as checkCanDeleteNode,
   canAddEdge as checkCanAddEdge,
@@ -226,25 +227,57 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     if (nodeIndex === -1) return;
     
     const updatedNodes = [...workflow.nodes];
+    const oldNode = updatedNodes[nodeIndex];
+    
+    // 如果 key 改变了，需要更新所有引用
+    const newNodeId = updates.id || oldNode.id;
+    const keyChanged = newNodeId !== oldNode.id;
+    
     updatedNodes[nodeIndex] = {
-      ...updatedNodes[nodeIndex],
+      ...oldNode,
       ...updates,
       // 深度合并 config
       config: updates.config ? {
-        ...updatedNodes[nodeIndex].config,
+        ...oldNode.config,
         ...updates.config,
-      } : updatedNodes[nodeIndex].config,
+        inputFields: updates.config.inputFields || oldNode.config.inputFields,
+        outputFields: updates.config.outputFields || oldNode.config.outputFields,
+        settings: updates.config.settings ? {
+          ...oldNode.config.settings,
+          ...updates.config.settings,
+        } : oldNode.config.settings,
+      } : oldNode.config,
       // 深度合并 ui
       ui: updates.ui ? {
-        ...updatedNodes[nodeIndex].ui,
+        ...oldNode.ui,
         ...updates.ui,
-      } : updatedNodes[nodeIndex].ui,
+      } : oldNode.ui,
     };
+    
+    // 如果 key 改变了，更新所有 edges 中的引用
+    let updatedEdges = workflow.edges;
+    if (keyChanged) {
+      updatedEdges = workflow.edges.map(edge => {
+        const newSource = edge.source === oldNode.id ? newNodeId : edge.source;
+        const newTarget = edge.target === oldNode.id ? newNodeId : edge.target;
+        const newId = edge.id 
+          ? edge.id.replace(oldNode.id, newNodeId)
+          : `edge_${newSource}_${newTarget}`;
+        
+        return {
+          ...edge,
+          id: newId,
+          source: newSource,
+          target: newTarget,
+        };
+      });
+    }
     
     set({
       workflow: {
         ...workflow,
         nodes: updatedNodes,
+        edges: updatedEdges,
       },
       dirty: true,
     });
@@ -437,8 +470,8 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     const { workflow } = get();
     if (!workflow) return [];
     
-    // 运行前进行完整验证（包括连接检查）
-    const errors = validateWorkflow(workflow);
+    // 运行前进行宽松验证（不检查连接，允许调试单独节点）
+    const errors = validateWorkflowForDebug(workflow);
     return errors;
   },
   

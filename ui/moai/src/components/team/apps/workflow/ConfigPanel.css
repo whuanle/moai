@@ -1,28 +1,214 @@
-/**
- * 配置面板样式
- */
-
-.ant-drawer-body {
-  padding: var(--spacing-lg);
+/* 配置面板头部 */
+.config-panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
-.ant-drawer-footer {
-  border-top: 1px solid var(--color-border);
-  padding: var(--spacing-md) var(--spacing-lg);
+.config-panel-header-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  color: white;
+  flex-shrink: 0;
 }
 
-/* 表单样式优化 */
-.ant-form-item {
-  margin-bottom: var(--spacing-lg);
+/* 动态背景色 */
+.config-panel-icon[data-color="#52c41a"] { background: #52c41a; }
+.config-panel-icon[data-color="#ff4d4f"] { background: #ff4d4f; }
+.config-panel-icon[data-color="#faad14"] { background: #faad14; }
+.config-panel-icon[data-color="#722ed1"] { background: #722ed1; }
+.config-panel-icon[data-color="#13c2c2"] { background: #13c2c2; }
+.config-panel-icon[data-color="#1677ff"] { background: #1677ff; }
+.config-panel-icon[data-color="#2f54eb"] { background: #2f54eb; }
+.config-panel-icon[data-color="#f5222d"] { background: #f5222d; }
+.config-panel-icon[data-color="#eb2f96"] { background: #eb2f96; }
+
+.config-panel-header-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.ant-form-item-label > label {
-  font-weight: 500;
+.config-panel-header-title {
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
-/* 代码编辑器样式 */
-textarea[style*="monospace"] {
+.config-panel-header-subtitle {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* 拖动调整宽度的手柄 */
+.config-panel-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background 0.2s;
+  z-index: 1000;
+}
+
+.config-panel-resize-handle:hover,
+.config-panel-resize-handle.resizing {
+  background: var(--color-primary);
+}
+
+.config-panel-resize-handle::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+}
+
+/* 配置面板底部 */
+.config-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+}
+
+/* 配置区块 */
+.config-section {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-md);
+}
+
+.config-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+/* 空状态 */
+.config-panel-empty {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-layout);
+  border-radius: var(--radius-md);
+}
+
+/* 代码编辑器 */
+.code-textarea {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+/* 标签页样式优化 */
+:global(.ant-tabs-nav) {
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+:global(.ant-tabs-tab) {
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  font-weight: 500;
+}
+
+:global(.ant-tabs-tab-active) {
+  font-weight: 600;
+}
+
+/* 表单项间距优化 */
+:global(.ant-form-item) {
+  margin-bottom: var(--spacing-md);
+}
+
+:global(.ant-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+/* Drawer 内容区域 */
+:global(.ant-drawer-body) {
+  padding: var(--spacing-lg);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Drawer 宽度限制 */
+:global(.ant-drawer-content-wrapper) {
+  max-width: calc(100vw - 100px) !important;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .config-panel-resize-handle {
+    display: none;
+  }
+  
+  :global(.ant-drawer-content-wrapper) {
+    max-width: 100vw !important;
+    width: 100vw !important;
+  }
+}
+
+/* 固定参数显示 */
+.config-panel-fixed-params {
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.fixed-param-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  flex-wrap: wrap;
+}
+
+.fixed-param-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  background: var(--color-bg-layout);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.fixed-param-type {
+  font-size: 12px;
+  color: white;
+  background: var(--color-primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.fixed-param-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.config-panel-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  line-height: 1.6;
 }

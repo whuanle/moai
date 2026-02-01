@@ -1,17 +1,20 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Json.Path;
+using Maomi;
 using MoAI.Infra.Exceptions;
 using MoAI.Workflow.Enums;
 using MoAI.Workflow.Models;
 using SmartFormat;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace MoAI.Workflow.Services;
 
 /// <summary>
 /// 表达式评估服务，负责评估不同类型的字段表达式.
 /// 支持 Fixed（固定值）、Variable（变量引用）、JsonPath（JSON 路径）和 StringInterpolation（字符串插值）.
+/// 注意：表达式评估从 INodePipeline 获取参数，而不是直接从 IWorkflowContext 获取.
 /// </summary>
+[InjectOnScoped]
 public class ExpressionEvaluationService
 {
     private readonly VariableResolutionService _variableResolutionService;
@@ -30,13 +33,13 @@ public class ExpressionEvaluationService
     /// </summary>
     /// <param name="expression">表达式字符串.</param>
     /// <param name="expressionType">表达式类型.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道，包含参数解析所需的变量映射.</param>
     /// <returns>评估后的值.</returns>
     /// <exception cref="BusinessException">当表达式评估失败时抛出.</exception>
     public object EvaluateExpression(
         string expression,
         FieldExpressionType expressionType,
-        IWorkflowContext context)
+        INodePipeline pipeline)
     {
         if (string.IsNullOrWhiteSpace(expression))
         {
@@ -46,9 +49,9 @@ public class ExpressionEvaluationService
         return expressionType switch
         {
             FieldExpressionType.Fixed => EvaluateFixed(expression),
-            FieldExpressionType.Variable => EvaluateVariable(expression, context),
-            FieldExpressionType.Jsonpath => EvaluateJsonPath(expression, context),
-            FieldExpressionType.Interpolation => EvaluateStringInterpolation(expression, context),
+            FieldExpressionType.Variable => EvaluateVariable(expression, pipeline),
+            FieldExpressionType.Jsonpath => EvaluateJsonPath(expression, pipeline),
+            FieldExpressionType.Interpolation => EvaluateStringInterpolation(expression, pipeline),
             _ => throw new BusinessException($"不支持的表达式类型: {expressionType}") { StatusCode = 400 },
         };
     }
@@ -64,16 +67,16 @@ public class ExpressionEvaluationService
     }
 
     /// <summary>
-    /// 评估 Variable 表达式 - 从工作流上下文中解析变量引用.
+    /// 评估 Variable 表达式 - 从节点管道中解析变量引用.
     /// </summary>
     /// <param name="expression">变量引用（如 sys.userId、input.name、nodeKey.output）.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道.</param>
     /// <returns>变量值.</returns>
-    private object EvaluateVariable(string expression, IWorkflowContext context)
+    private object EvaluateVariable(string expression, INodePipeline pipeline)
     {
         try
         {
-            return _variableResolutionService.ResolveVariable(expression, context);
+            return _variableResolutionService.ResolveVariable(expression, pipeline);
         }
         catch (BusinessException)
         {
@@ -89,28 +92,28 @@ public class ExpressionEvaluationService
     /// 评估 JsonPath 表达式 - 使用 JsonPath.Net 解析 JSON 路径.
     /// </summary>
     /// <param name="expression">JsonPath 表达式（如 $.nodeA.result[0].name）.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道.</param>
     /// <returns>JsonPath 查询结果.</returns>
-    private object EvaluateJsonPath(string expression, IWorkflowContext context)
+    private object EvaluateJsonPath(string expression, INodePipeline pipeline)
     {
         try
         {
             // 解析 JsonPath 表达式
             var jsonPath = Json.Path.JsonPath.Parse(expression);
 
-            // 将工作流上下文转换为 JsonElement 然后转为 JsonNode
+            // 将节点管道的变量转换为 JsonElement 然后转为 JsonNode
             var contextJson = JsonSerializer.SerializeToElement(new
             {
-                sys = GetSystemVariables(context),
-                input = context.RuntimeParameters,
-                nodes = GetNodeOutputs(context),
+                sys = pipeline.SystemVariables,
+                input = pipeline.RuntimeParameters,
+                nodes = pipeline.NodeOutputs,
             });
 
             // 转换为 JsonNode
             var contextNode = JsonNode.Parse(contextJson.GetRawText());
             if (contextNode == null)
             {
-                throw new BusinessException($"无法解析工作流上下文为 JSON: {expression}") { StatusCode = 400 };
+                throw new BusinessException($"无法解析节点管道上下文为 JSON: {expression}") { StatusCode = 400 };
             }
 
             // 执行 JsonPath 查询
@@ -144,26 +147,23 @@ public class ExpressionEvaluationService
     /// 评估 StringInterpolation 表达式 - 使用 SmartFormat.NET 进行字符串插值.
     /// </summary>
     /// <param name="expression">字符串插值模板（如 "Hello {input.name}, your ID is {sys.userId}"）.</param>
-    /// <param name="context">工作流上下文.</param>
+    /// <param name="pipeline">节点管道.</param>
     /// <returns>插值后的字符串.</returns>
-    private object EvaluateStringInterpolation(string expression, IWorkflowContext context)
+    private object EvaluateStringInterpolation(string expression, INodePipeline pipeline)
     {
         try
         {
             // 构建数据对象供 SmartFormat 使用
             var data = new Dictionary<string, object>
             {
-                ["sys"] = GetSystemVariables(context),
-                ["input"] = context.RuntimeParameters,
+                ["sys"] = pipeline.SystemVariables,
+                ["input"] = pipeline.RuntimeParameters,
             };
 
             // 添加节点输出
-            foreach (var nodeKey in context.ExecutedNodeKeys)
+            foreach (var kvp in pipeline.NodeOutputs)
             {
-                if (context.NodePipelines.TryGetValue(nodeKey, out var pipeline))
-                {
-                    data[nodeKey] = pipeline.OutputJsonMap;
-                }
+                data[kvp.Key] = kvp.Value;
             }
 
             // 使用 SmartFormat 进行字符串插值
@@ -174,47 +174,6 @@ public class ExpressionEvaluationService
         {
             throw new BusinessException($"字符串插值失败: {expression}, 错误: {ex.Message}") { StatusCode = 400 };
         }
-    }
-
-    /// <summary>
-    /// 从工作流上下文中提取系统变量.
-    /// </summary>
-    /// <param name="context">工作流上下文.</param>
-    /// <returns>系统变量字典.</returns>
-    private Dictionary<string, object> GetSystemVariables(IWorkflowContext context)
-    {
-        var sysVars = new Dictionary<string, object>();
-
-        foreach (var kvp in context.FlattenedVariables)
-        {
-            if (kvp.Key.StartsWith("sys."))
-            {
-                var key = kvp.Key.Substring(4); // 移除 "sys." 前缀
-                sysVars[key] = kvp.Value;
-            }
-        }
-
-        return sysVars;
-    }
-
-    /// <summary>
-    /// 从工作流上下文中提取所有节点输出.
-    /// </summary>
-    /// <param name="context">工作流上下文.</param>
-    /// <returns>节点输出字典.</returns>
-    private Dictionary<string, object> GetNodeOutputs(IWorkflowContext context)
-    {
-        var nodeOutputs = new Dictionary<string, object>();
-
-        foreach (var nodeKey in context.ExecutedNodeKeys)
-        {
-            if (context.NodePipelines.TryGetValue(nodeKey, out var pipeline))
-            {
-                nodeOutputs[nodeKey] = pipeline.OutputJsonMap;
-            }
-        }
-
-        return nodeOutputs;
     }
 
     /// <summary>
