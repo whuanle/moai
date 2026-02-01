@@ -5,6 +5,7 @@ set -e
 cat > /app/configs/system.json << EOF
 {
   "MoAI": {
+    "Port": ${MOAI_PORT},
     "Server": "${MOAI_SERVER_URL:-http://localhost:8080}",
     "WebUI": "${MOAI_WEBUI_URL:-http://localhost:8080}",
     "AES": "${MOAI_AES_KEY:-moai_aes_key_2024}",

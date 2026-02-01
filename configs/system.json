@@ -1,5 +1,6 @@
 {
   "MoAI": {
+    "Port": 5000,
     "Server": "http://127.0.0.1:5000",
     "WebUI": "http://127.0.0.1:4000",
     "AES": "abcdef1234",
