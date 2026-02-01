@@ -68,7 +68,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: moai
+    container_name: moai-api
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
@@ -87,7 +87,6 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-guest}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
       # MoAI 配置 - 用户需要在 .env 中配置外部访问地址
-      - MOAI_PORT=${MOAI_PORT:-8080}
       - MOAI_SERVER_URL=${MOAI_SERVER_URL:-http://localhost:8080}
       - MOAI_WEBUI_URL=${MOAI_WEBUI_URL:-http://localhost:8080}
       - MOAI_AES_KEY=${MOAI_AES_KEY:-moai_aes_key_2024}
@@ -98,7 +97,7 @@ services:
     volumes:
       - moai_files:/app/files
     ports:
-      - "${MOAI_PORT:-8080}:${MOAI_PORT:-8080}"
+      - "${MOAI_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
