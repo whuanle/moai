@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  # PostgreSQL 数据库
+  # PostgreSQL 数据库 (带 pgvector 向量扩展)
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: moai-postgres
     restart: unless-stopped
     environment:
@@ -12,6 +12,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-moai}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql:ro
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
