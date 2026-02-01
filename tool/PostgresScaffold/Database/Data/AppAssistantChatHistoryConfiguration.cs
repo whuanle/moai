@@ -27,7 +27,6 @@ internal partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigu
         entity.HasIndex(e => e.ChatId, "chat_history_pk_2");
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ChatId)

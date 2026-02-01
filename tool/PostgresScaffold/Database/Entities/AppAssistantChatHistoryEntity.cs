@@ -17,7 +17,7 @@ public partial class AppAssistantChatHistoryEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public Guid Id { get; set; }
+    public long Id { get; set; }
 
     /// <summary>
     /// 对话id.
