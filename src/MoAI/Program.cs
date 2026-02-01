@@ -28,7 +28,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowSpecificOrigins");
 
+// 配置静态文件服务（支持 SPA）
+app.UseDefaultFiles();
 app.UseStaticFiles();
+
+// SPA 回退：未匹配的路由返回 index.html
+app.MapFallbackToFile("index.html");
 
 #if DEBUG
 
