@@ -68,7 +68,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: moai-api
+    container_name: moai
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
