@@ -1,17 +1,17 @@
-﻿{
+{
   "MoAI": {
-    "Server": "http://127.0.0.1:5000",
-    "WebUI": "http://127.0.0.1:4000",
-    "AES": "abcdef1234",
+    "Server": "${MOAI_SERVER_URL}",
+    "WebUI": "${MOAI_WEBUI_URL}",
+    "AES": "${MOAI_AES_KEY}",
     "DBType": "postgres",
-    "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public",
-    "Redis": "192.168.50.199:6379",
+    "Database": "Database=${POSTGRES_DB};Host=postgres;Password=${POSTGRES_PASSWORD};Port=5432;Username=${POSTGRES_USER};Search Path=public",
+    "Redis": "redis:6379",
     "Wiki": {
       "DBType": "postgres",
-      "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public"
+      "Database": "Database=${POSTGRES_DB};Host=postgres;Password=${POSTGRES_PASSWORD};Port=5432;Username=${POSTGRES_USER};Search Path=public"
     },
-    "RabbitMQ": "amqp://guest:guest@127.0.0.1:5672",
-    "FilePath": "E:\\configs\\maomi"
+    "RabbitMQ": "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672",
+    "FilePath": "/app/files"
   },
   "Serilog": {
     "Using": [
@@ -22,21 +22,21 @@
       "Override": {
         "Microsoft.AspNetCore.HttpLogging": "Information",
         "ProtoBuf.Grpc.Server.ServicesExtensions.CodeFirstServiceMethodProvider": "Warning",
-        "Microsoft.EntityFrameworkCore": "Information",
+        "Microsoft.EntityFrameworkCore": "Warning",
         "Microsoft.AspNetCore": "Warning",
         "System.Net.Http.HttpClient.TenantManagerClient.LogicalHandler": "Warning",
         "Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted": "Warning",
         "System": "Information",
-        "Microsoft": "Information",
+        "Microsoft": "Warning",
         "Grpc": "Information",
-        "MySqlConnector": "Information"
+        "MySqlConnector": "Warning"
       }
     },
     "WriteTo": [
       {
         "Name": "Console",
         "Args": {
-          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Message:lj} {Exception}{NewLine}"
         }
       }
     ],

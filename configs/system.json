@@ -1,18 +1,17 @@
 {
   "MoAI": {
-    "Name": "MoAI",
     "Server": "http://127.0.0.1:5000",
     "WebUI": "http://127.0.0.1:4000",
     "AES": "abcdef1234",
-    "DBType": "mysql",
-    "Database": "Database=moai;Host=127.0.0.1;Password=123456;Port=3306;Username=root",
-    "Redis": "127.0.0.1:6379",
+    "DBType": "postgres",
+    "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public",
+    "Redis": "192.168.50.199:6379",
     "Wiki": {
-      "DBType": "Porstgres",
-      "ConnectionString": "Database=moai_document;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public"
+      "DBType": "postgres",
+      "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public"
     },
     "RabbitMQ": "amqp://guest:guest@127.0.0.1:5672",
-    "FilePath": "/data/moai/files"
+    "FilePath": "E:\\configs\\maomi"
   },
   "Serilog": {
     "Using": [
