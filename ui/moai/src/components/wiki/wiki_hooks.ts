@@ -15,9 +15,10 @@ export interface AiModelItem {
 
 /**
  * 获取 AI 模型列表
- * @param wikiId 知识库ID，用于获取该知识库可用的模型列表
+ * @param teamId 团队ID，如果为 0 或 undefined 则获取个人可用的模型列表
+ * @param aiModelType 模型类型
  */
-export function useAiModelList(wikiId: number, aiModelType: AiModelType) {
+export function useAiModelList(teamId?: number, aiModelType?: AiModelType) {
   const [modelList, setModelList] = useState<AiModelItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
@@ -26,10 +27,20 @@ export function useAiModelList(wikiId: number, aiModelType: AiModelType) {
     try {
       setLoading(true);
       const apiClient = GetApiClient();
-      const response = await apiClient.api.wiki.team_modellist.post({
-        aiModelType: aiModelType,
-        wikiId: wikiId,
-      });
+      
+      let response;
+      if (teamId && teamId > 0) {
+        // 团队知识库：获取团队可用的模型列表
+        response = await apiClient.api.team.common.team_modellist.post({
+          aiModelType: aiModelType,
+          teamId: teamId,
+        });
+      } else {
+        // 个人知识库：获取个人可用的模型列表
+        response = await apiClient.api.aimodel.modellist.post({
+          aiModelType: aiModelType,
+        });
+      }
 
       if (response?.aiModels && Array.isArray(response.aiModels)) {
         const models = response.aiModels
@@ -48,7 +59,7 @@ export function useAiModelList(wikiId: number, aiModelType: AiModelType) {
     } finally {
       setLoading(false);
     }
-  }, [messageApi, wikiId]);
+  }, [messageApi, teamId, aiModelType]);
 
   return {
     modelList,

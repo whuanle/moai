@@ -95,7 +95,8 @@ public partial class DatabaseContext
                 Password = hashPassword,
                 PasswordSalt = salt,
                 Phone = "12345678901",
-                IsAdmin = true
+                IsAdmin = true,
+                AvatarPath = string.Empty
             });
 
         // 优化 ClassifyEntity 种子数据插入
@@ -113,7 +114,7 @@ public partial class DatabaseContext
         {
             foreach (var name in classifyNames)
             {
-                classifyEntities.Add(new ClassifyEntity { Id = classifyId++, Type = type, Name = name });
+                classifyEntities.Add(new ClassifyEntity { Id = classifyId++, Type = type, Name = name, Description = name });
             }
         }
 

@@ -19,6 +19,7 @@ import type {
   WikiDocumentAiTextPartionCommand,
 } from "../../../../apiClient/models";
 import { useAiModelList } from "../../wiki_hooks";
+import { GetApiClient } from "../../../ServiceClient";
 import CronBuilder from "../../../common/CronBuilder";
 
 const { TextArea } = Input;
@@ -61,16 +62,39 @@ export default function ScheduledTaskConfigModal({
   const [partitionType, setPartitionType] = useState<"normal" | "ai">("normal");
   const [isEmbedding, setIsEmbedding] = useState(false);
   const [hasPreprocessStrategy, setHasPreprocessStrategy] = useState(false);
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
+  const [wikiInfoLoaded, setWikiInfoLoaded] = useState(false);
 
   // 使用共享 hook 获取 AI 模型列表
-  const { modelList, loading: modelListLoading, contextHolder, fetchModelList } = useAiModelList(wikiId, "chat");
+  const { modelList, loading: modelListLoading, contextHolder, fetchModelList } = useAiModelList(teamId, "chat");
 
-  // 获取 AI 模型列表
+  // 获取 wiki 信息以获取 teamId
   useEffect(() => {
+    const fetchWikiInfo = async () => {
+      if (!wikiId || !open) return;
+      try {
+        const apiClient = GetApiClient();
+        const response = await apiClient.api.wiki.query_wiki_info.post({
+          wikiId,
+        });
+        setTeamId(response?.teamId ?? undefined);
+        setWikiInfoLoaded(true);
+      } catch (error) {
+        console.error("获取知识库信息失败:", error);
+        setWikiInfoLoaded(true);
+      }
+    };
     if (open) {
+      fetchWikiInfo();
+    }
+  }, [wikiId, open]);
+
+  // 当 wikiInfo 加载完成后获取模型列表
+  useEffect(() => {
+    if (open && wikiInfoLoaded) {
       fetchModelList();
     }
-  }, [open, fetchModelList]);
+  }, [open, wikiInfoLoaded, fetchModelList]);
 
   // 重置表单
   const handleCancel = () => {

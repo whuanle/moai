@@ -48,19 +48,46 @@ export default function DocumentPartition({
   const [aiPartitionForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const [activeTab, setActiveTab] = useState<string>("normal");
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
+  const [wikiInfoLoaded, setWikiInfoLoaded] = useState(false);
 
   // 使用共享 hooks
   const { documentInfo, loading: docLoading, fetchDocumentInfo } = useDocumentInfo(wikiId, documentId);
-  const { modelList, loading: modelListLoading, fetchModelList } = useAiModelList(parseInt(wikiId), "chat");
+  const { modelList, loading: modelListLoading, fetchModelList } = useAiModelList(teamId, "chat");
 
   // 切割状态
   const [partitionLoading, setPartitionLoading] = useState(false);
   const [aiPartitionLoading, setAiPartitionLoading] = useState(false);
 
+  // 获取 wiki 信息以获取 teamId
+  useEffect(() => {
+    const fetchWikiInfo = async () => {
+      if (!wikiId) return;
+      try {
+        const apiClient = GetApiClient();
+        const response = await apiClient.api.wiki.query_wiki_info.post({
+          wikiId: parseInt(wikiId),
+        });
+        setTeamId(response?.teamId ?? undefined);
+        setWikiInfoLoaded(true);
+      } catch (error) {
+        console.error("获取知识库信息失败:", error);
+        setWikiInfoLoaded(true);
+      }
+    };
+    fetchWikiInfo();
+  }, [wikiId]);
+
   useEffect(() => {
     fetchDocumentInfo();
-    fetchModelList();
-  }, [fetchDocumentInfo, fetchModelList]);
+  }, [fetchDocumentInfo]);
+
+  // 当 wikiInfo 加载完成后获取模型列表
+  useEffect(() => {
+    if (wikiInfoLoaded) {
+      fetchModelList();
+    }
+  }, [wikiInfoLoaded, fetchModelList]);
 
   // 当获取到文档信息后，更新表单默认值
   useEffect(() => {

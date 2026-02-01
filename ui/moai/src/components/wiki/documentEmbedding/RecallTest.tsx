@@ -43,9 +43,11 @@ interface RecallTestProps {
 export default function RecallTest({ wikiId, documentId }: RecallTestProps) {
   const [recallForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
+  const [wikiInfoLoaded, setWikiInfoLoaded] = useState(false);
 
   // 使用共享 hook
-  const { modelList, loading: modelListLoading, fetchModelList }  = useAiModelList(parseInt(wikiId), "chat");
+  const { modelList, loading: modelListLoading, fetchModelList }  = useAiModelList(teamId, "chat");
 
   // 召回状态
   const [recallLoading, setRecallLoading] = useState(false);
@@ -58,9 +60,31 @@ export default function RecallTest({ wikiId, documentId }: RecallTestProps) {
   const isAnswer = Form.useWatch("isAnswer", recallForm);
   const isAiModelRequired = isOptimizeQuery || isAnswer;
 
+  // 获取 wiki 信息以获取 teamId
   useEffect(() => {
-    fetchModelList();
-  }, [fetchModelList]);
+    const fetchWikiInfo = async () => {
+      if (!wikiId) return;
+      try {
+        const apiClient = GetApiClient();
+        const response = await apiClient.api.wiki.query_wiki_info.post({
+          wikiId: parseInt(wikiId),
+        });
+        setTeamId(response?.teamId ?? undefined);
+        setWikiInfoLoaded(true);
+      } catch (error) {
+        console.error("获取知识库信息失败:", error);
+        setWikiInfoLoaded(true);
+      }
+    };
+    fetchWikiInfo();
+  }, [wikiId]);
+
+  // 当 wikiInfo 加载完成后获取模型列表
+  useEffect(() => {
+    if (wikiInfoLoaded) {
+      fetchModelList();
+    }
+  }, [wikiInfoLoaded, fetchModelList]);
 
   /**
    * 召回测试搜索

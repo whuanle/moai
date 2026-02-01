@@ -8,6 +8,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\MoAI.Database.Mysql\MoAI.Database.Mysql.csproj" />
+		<ProjectReference Include="..\MoAI.Database.Postgres\MoAI.Database.Postgres.csproj" />
 	</ItemGroup>
 
 </Project>

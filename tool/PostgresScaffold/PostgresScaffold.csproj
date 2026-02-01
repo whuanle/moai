@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<!-- 引入审计属性 -->
+	<ItemGroup>
+		<Compile Include="..\..\src\database\MoAI.Database.Shared\Audits\**\*.cs">
+			<Link>Audits\%(RecursiveDir)%(FileName)%(Extension)</Link>
+		</Compile>
+	</ItemGroup>
+
+	<!-- 排除 Database 目录不参与编译 -->
+	<!--<ItemGroup>
+		<Compile Remove="Database\**\*.cs" />
+		<None Include="Database\**\*.cs" />
+	</ItemGroup>-->
+
+	<!-- t4模板，自定义实体和配置 -->
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Extensions.Configuration.Ini" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+		<PackageReference Include="NetEscapades.Configuration.Yaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="CodeTemplates\EFCore\DbContext.t4">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="CodeTemplates\EFCore\EntityType.t4">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="CodeTemplates\EFCore\EntityTypeConfiguration.t4">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+</Project>

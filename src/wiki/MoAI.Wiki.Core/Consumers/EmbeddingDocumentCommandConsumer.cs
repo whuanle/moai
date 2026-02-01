@@ -218,7 +218,7 @@ public class EmbeddingDocumentCommandConsumer : IConsumer<EmbeddingDocumentTaskM
                         { "chunk_id", item.ChunkId.ToString() },
                         { "embedding_id", item.Id.ToString() },
                         { "file_id", documenEntity.ObjectKey },
-                        { "file_type", documenEntity.FileType },
+                        { "file_type", documenEntity.FileType }
                     },
 
                     Vector = embedding

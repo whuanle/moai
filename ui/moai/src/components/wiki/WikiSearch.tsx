@@ -90,10 +90,12 @@ export default function WikiSearch() {
 
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
+  const [wikiInfoLoaded, setWikiInfoLoaded] = useState(false);
 
   // 使用共享 hooks
   const { documents, loading: documentsLoading, contextHolder: docContextHolder, fetchDocuments } = useDocumentList(wikiId);
-  const { modelList, loading: modelListLoading, fetchModelList } = useAiModelList(wikiId, "chat");
+  const { modelList, loading: modelListLoading, fetchModelList } = useAiModelList(teamId, "chat");
 
   // 搜索状态
   const [searchLoading, setSearchLoading] = useState(false);
@@ -101,12 +103,37 @@ export default function WikiSearch() {
   const [searchAnswer, setSearchAnswer] = useState<string | null>(null);
   const [answerVisible, setAnswerVisible] = useState(false);
 
+  // 获取 wiki 信息以获取 teamId
+  useEffect(() => {
+    const fetchWikiInfo = async () => {
+      if (!wikiId) return;
+      try {
+        const apiClient = GetApiClient();
+        const response = await apiClient.api.wiki.query_wiki_info.post({
+          wikiId,
+        });
+        setTeamId(response?.teamId ?? undefined);
+        setWikiInfoLoaded(true);
+      } catch (error) {
+        console.error("获取知识库信息失败:", error);
+        setWikiInfoLoaded(true);
+      }
+    };
+    fetchWikiInfo();
+  }, [wikiId]);
+
   useEffect(() => {
     if (wikiId) {
       fetchDocuments();
+    }
+  }, [wikiId, fetchDocuments]);
+
+  // 当 wikiInfo 加载完成后获取模型列表
+  useEffect(() => {
+    if (wikiInfoLoaded) {
       fetchModelList();
     }
-  }, [wikiId, fetchDocuments, fetchModelList]);
+  }, [wikiInfoLoaded, fetchModelList]);
 
   /**
    * 执行搜索

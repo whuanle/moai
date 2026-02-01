@@ -119,9 +119,10 @@ export default function WikiSettings() {
   const [originalWikiInfo, setOriginalWikiInfo] = useState<OriginalWikiInfo | null>(null);
   const [wikiRole, setWikiRole] = useState<TeamRole | null>(null);
   const [isTeamWiki, setIsTeamWiki] = useState(false);
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
 
   // 使用共享 hook 获取向量化模型列表
-  const { modelList: embeddingModels, loading: modelsLoading, fetchModelList: fetchEmbeddingModels } = useAiModelList(parseInt(id || "0"), "embedding");
+  const { modelList: embeddingModels, loading: modelsLoading, fetchModelList: fetchEmbeddingModels } = useAiModelList(teamId, "embedding");
 
   // 获取知识库信息
   const fetchWikiInfo = async () => {
@@ -141,6 +142,7 @@ export default function WikiSettings() {
         setAvatarUrl(response.avatar ?? undefined);
         setWikiRole(response.role ?? null);
         setIsTeamWiki(!!response.teamId);
+        setTeamId(response.teamId ?? undefined);
         setOriginalWikiInfo({
           name: response.name ?? "",
           description: response.description ?? "",
@@ -166,9 +168,16 @@ export default function WikiSettings() {
 
   useEffect(() => {
     fetchWikiInfo();
-    fetchEmbeddingModels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // 当 teamId 状态更新后获取模型列表
+  useEffect(() => {
+    if (teamId !== undefined || originalWikiInfo) {
+      fetchEmbeddingModels();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId]);
 
   // 处理头像上传
   const handleAvatarUpload = async (file: File) => {

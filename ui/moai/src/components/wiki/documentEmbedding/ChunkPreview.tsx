@@ -336,6 +336,8 @@ const ChunkPreview = forwardRef<ChunkPreviewRef, ChunkPreviewProps>(({ wikiId, d
   const [expandedMetadatas, setExpandedMetadatas] = useState<Set<string>>(new Set());
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
+  const [wikiInfoLoaded, setWikiInfoLoaded] = useState(false);
 
   // 编辑模态框状态
   const [chunkEditModalVisible, setChunkEditModalVisible] = useState(false);
@@ -352,9 +354,28 @@ const ChunkPreview = forwardRef<ChunkPreviewRef, ChunkPreviewProps>(({ wikiId, d
   const [batchGenerateResults, setBatchGenerateResults] = useState<Map<string, WikiDocumentMetadataItem[]>>(new Map());
 
   // 使用共享 hook
-  const { modelList, loading: modelListLoading, fetchModelList } = useAiModelList();
+  const { modelList, loading: modelListLoading, fetchModelList } = useAiModelList(teamId, "chat");
 
   useEffect(() => { previewDataRef.current = previewData; }, [previewData]);
+
+  // 获取 wiki 信息以获取 teamId
+  useEffect(() => {
+    const fetchWikiInfo = async () => {
+      if (!wikiId) return;
+      try {
+        const apiClient = GetApiClient();
+        const response = await apiClient.api.wiki.query_wiki_info.post({
+          wikiId: parseInt(wikiId),
+        });
+        setTeamId(response?.teamId ?? undefined);
+        setWikiInfoLoaded(true);
+      } catch (error) {
+        console.error("获取知识库信息失败:", error);
+        setWikiInfoLoaded(true);
+      }
+    };
+    fetchWikiInfo();
+  }, [wikiId]);
 
   // 获取切割预览数据
   const fetchPartitionPreview = useCallback(async () => {
@@ -387,8 +408,14 @@ const ChunkPreview = forwardRef<ChunkPreviewRef, ChunkPreviewProps>(({ wikiId, d
 
   useEffect(() => {
     fetchPartitionPreview();
-    fetchModelList();
-  }, [fetchPartitionPreview, fetchModelList]);
+  }, [fetchPartitionPreview]);
+
+  // 当 wikiInfo 加载完成后获取模型列表
+  useEffect(() => {
+    if (wikiInfoLoaded) {
+      fetchModelList();
+    }
+  }, [wikiInfoLoaded, fetchModelList]);
 
   // 暴露刷新方法给父组件
   useImperativeHandle(ref, () => ({
