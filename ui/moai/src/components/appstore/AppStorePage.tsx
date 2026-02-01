@@ -4,7 +4,7 @@ import { Spin, Empty, Avatar, message } from "antd";
 import { AppstoreOutlined, RightOutlined } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import { proxyRequestError } from "../../helper/RequestError";
-import type { TeamAppItem } from "../../apiClient/models";
+import type { AccessibleAppItem, AppType } from "../../apiClient/models";
 import "./AppStorePage.css";
 
 export default function AppStorePage() {
@@ -12,7 +12,7 @@ export default function AppStorePage() {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(true);
-  const [apps, setApps] = useState<TeamAppItem[]>([]);
+  const [apps, setApps] = useState<AccessibleAppItem[]>([]);
 
   const id = parseInt(teamId || "0");
 
@@ -26,8 +26,8 @@ export default function AppStorePage() {
     try {
       setLoading(true);
       const client = GetApiClient();
-      const response = await client.api.app.common.app_list.get({
-        queryParameters: { teamId: id },
+      const response = await client.api.app.store.accessible_list.post({
+        teamId: id,
       });
       setApps(response?.items || []);
     } catch (error) {
@@ -38,20 +38,22 @@ export default function AppStorePage() {
     }
   };
 
-  const getAppTypeName = (appType: number | null | undefined) => {
+  const getAppTypeName = (appType: AppType | null | undefined) => {
     switch (appType) {
-      case 0:
+      case "chat":
         return "普通应用";
-      case 1:
+      case "workflow":
         return "流程编排";
+      case "agent":
+        return "智能体";
       default:
         return "应用";
     }
   };
 
-  const handleAppClick = (app: TeamAppItem) => {
-    // 目前只支持普通应用 (appType === 0)
-    if (app.appType === 0) {
+  const handleAppClick = (app: AccessibleAppItem) => {
+    // 目前只支持普通应用 (appType === "chat")
+    if (app.appType === "chat") {
       navigate(`/app/appstore/${app.id}`, { state: { teamId: id } });
     } else {
       messageApi.info("该应用类型暂不支持");

@@ -13,12 +13,10 @@ import {
 import { BookOutlined, SearchOutlined, TeamOutlined } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import {
-  QueryWikiBaseListCommand,
   QueryWikiInfoResponse,
-  WikiQueryTypeObject,
 } from "../../apiClient/models";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface WikiSelectorProps {
   visible: boolean;
@@ -42,10 +40,7 @@ const WikiSelector: React.FC<WikiSelectorProps> = ({
     setLoading(true);
     try {
       const client = GetApiClient();
-      const command: QueryWikiBaseListCommand = {
-        queryType: WikiQueryTypeObject.User, // 只显示用户有权限的知识库
-      };
-      const response = await client.api.wiki.query_wiki_list.post(command);
+      const response = await client.api.wiki.query_wiki_list.post({});
 
       if (response) {
         setWikis(response);
