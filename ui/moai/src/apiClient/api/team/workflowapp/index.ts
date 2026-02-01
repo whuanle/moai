@@ -4,7 +4,7 @@
 // @ts-ignore
 import { ConfigRequestBuilderRequestsMetadata, type ConfigRequestBuilder } from './config/index.js';
 // @ts-ignore
-import { DebugRequestBuilderRequestsMetadata, type DebugRequestBuilder } from './debug/index.js';
+import { Debug_workflowRequestBuilderRequestsMetadata, type Debug_workflowRequestBuilder } from './debug_workflow/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -21,9 +21,9 @@ export interface WorkflowappRequestBuilder extends BaseRequestBuilder<Workflowap
      */
     get config(): ConfigRequestBuilder;
     /**
-     * The debug property
+     * The debug_workflow property
      */
-    get debug(): DebugRequestBuilder;
+    get debug_workflow(): Debug_workflowRequestBuilder;
     /**
      * The list property
      */
@@ -44,8 +44,8 @@ export const WorkflowappRequestBuilderNavigationMetadata: Record<Exclude<keyof W
     config: {
         requestsMetadata: ConfigRequestBuilderRequestsMetadata,
     },
-    debug: {
-        requestsMetadata: DebugRequestBuilderRequestsMetadata,
+    debug_workflow: {
+        requestsMetadata: Debug_workflowRequestBuilderRequestsMetadata,
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,

@@ -115,7 +115,7 @@ public partial class WorkflowDefinitionController : ControllerBase
     /// <param name="command">执行工作流命令.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>无返回值，通过 SSE 流式传输结果.</returns>
-    [HttpPost("debug")]
+    [HttpPost("debug_workflow")]
     [Produces("text/event-stream")]
     [ProducesDefaultResponseType(typeof(WorkflowProcessingItem))]
     public async Task DebugExecute([FromBody] ExecuteWorkflowCommand command, CancellationToken cancellationToken = default)
