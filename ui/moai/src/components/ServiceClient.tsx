@@ -98,8 +98,7 @@ export const GetApiClient = function (): MoAIClient {
     serializationRegistry,
     httpClient
   );
-  // 设置 baseUrl：有值时使用配置，无值时使用空字符串（相对路径）
-  adapter.baseUrl = EnvOptions.ServerUrl || "";
+  adapter.baseUrl = EnvOptions.ServerUrl;
   return createMoAIClient(adapter);
 };
 
@@ -107,7 +106,7 @@ export const GetAllowApiClient = function (): MoAIClient {
   const authProvider = new AnonymousAuthenticationProvider();
   const adapter = new FetchRequestAdapter(authProvider);
   // 设置 baseUrl：有值时使用配置，无值时使用空字符串（相对路径）
-  adapter.baseUrl = EnvOptions.ServerUrl || "";
+  adapter.baseUrl = EnvOptions.ServerUrl;
   return createMoAIClient(adapter);
 };
 
