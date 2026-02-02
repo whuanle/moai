@@ -9,10 +9,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# 复制 package.json 和 package-lock.json
 COPY ui/moai/package*.json ./
 
+# 安装所有依赖
 RUN npm ci
 
+# 复制源代码
 COPY ui/moai/ .
 
 # 重新安装依赖以解决 Rollup 可选依赖项问题
