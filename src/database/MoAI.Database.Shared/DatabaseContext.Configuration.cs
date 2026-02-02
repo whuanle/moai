@@ -126,7 +126,7 @@ public partial class DatabaseContext
             {
                 Id = 1,
                 Key = "root",
-                Value = "root",
+                Value = "1",
                 Description = "超级管理员"
             });
     }
