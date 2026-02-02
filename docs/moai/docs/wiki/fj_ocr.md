@@ -1,5 +1,0 @@
-# 飞桨OCR
-
-![fca125ffd2a42ee21a489cb7758c1288](images/fca125ffd2a42ee21a489cb7758c1288.png)
-
-![b969112660449dedbba75fcc09c65059](images/b969112660449dedbba75fcc09c65059.png)

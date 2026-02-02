@@ -1,0 +1,8 @@
+{
+  "label": "知识库",
+  "position": 6,
+  "link": {
+    "type": "generated-index",
+    "description": "知识库模块帮助用户高效管理和利用信息资源，提升工作效率。"
+  }
+}

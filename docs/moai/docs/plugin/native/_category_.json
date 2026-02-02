@@ -1,8 +1,0 @@
-{
-  "label": "插件系统",
-  "position": 2,
-  "link": {
-    "type": "generated-index",
-    "description": "内置插件是 MoAI 提供的一系列功能丰富强大的组件."
-  }
-}
