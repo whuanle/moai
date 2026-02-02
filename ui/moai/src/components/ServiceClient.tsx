@@ -98,14 +98,18 @@ export const GetApiClient = function (): MoAIClient {
     serializationRegistry,
     httpClient
   );
-  adapter.baseUrl = EnvOptions.ServerUrl;
+  if (EnvOptions.ServerUrl) {
+    adapter.baseUrl = EnvOptions.ServerUrl;
+  }
   return createMoAIClient(adapter);
 };
 
 export const GetAllowApiClient = function (): MoAIClient {
   const authProvider = new AnonymousAuthenticationProvider();
   const adapter = new FetchRequestAdapter(authProvider);
-  adapter.baseUrl = EnvOptions.ServerUrl;
+  if (EnvOptions.ServerUrl) {
+    adapter.baseUrl = EnvOptions.ServerUrl;
+  }
   return createMoAIClient(adapter);
 };
 
