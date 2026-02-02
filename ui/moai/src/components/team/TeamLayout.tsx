@@ -9,6 +9,7 @@ import {
   BookOutlined,
   AppstoreOutlined,
   ApiOutlined,
+  ToolOutlined,
 } from "@ant-design/icons";
 import { GetApiClient } from "../ServiceClient";
 import type { QueryTeamInfoCommandResponse, TeamRole } from "../../apiClient/models";
@@ -66,6 +67,7 @@ export default function TeamLayout() {
     if (path.includes("/applist")) return "applist";
     if (path.includes("/manage_apps")) return "manage_apps";
     if (path.includes("/integration")) return "integration";
+    if (path.includes("/plugins")) return "plugins";
     return "wiki";
   };
 
@@ -93,6 +95,11 @@ export default function TeamLayout() {
           key: "manage_apps",
           icon: <SettingOutlined />,
           label: "应用管理",
+        },
+        {
+          key: "plugins",
+          icon: <ToolOutlined />,
+          label: "自定义插件",
         },
         {
           key: "integration",

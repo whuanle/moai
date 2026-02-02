@@ -81,11 +81,19 @@ public partial class ProcessingAiAssistantChatCommandHandler
                 uriBuilder.Query = query.ToString();
             }
 
+            HttpTransportMode transportMode = HttpTransportMode.AutoDetect;
+            var headerTransportMode = headers.FirstOrDefault(x => x.Key == ".HttpTransportMode");
+            if (headerTransportMode != null)
+            {
+                transportMode = headerTransportMode.Value.JsonToObject<HttpTransportMode>();
+            }
+
             var serverUrl = uriBuilder.Uri;
             var defaultConfig = new HttpClientTransportOptions
             {
                 Endpoint = serverUrl,
-                AdditionalHeaders = headers.ToDictionary(x => x.Key, x => x.Value),
+                TransportMode = transportMode,
+                AdditionalHeaders = headers.Where(x => !x.Key.StartsWith('.')).ToDictionary(x => x.Key, x => x.Value),
             };
 
             // 这里不能使用 using，因为要给插件插件使用

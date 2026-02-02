@@ -1,15 +1,15 @@
 /**
- * 插件相关模态框组件
+ * 团队插件相关模态框组件
  */
 import { useState, useEffect, useCallback } from "react";
-import { Modal, Form, Input, Switch, Row, Col, Select, Divider, Button, Spin, Upload, Progress, Alert, Table, Typography, Empty, message } from "antd";
+import { Modal, Form, Input, Row, Col, Select, Divider, Button, Spin, Upload, Progress, Alert, Table, Typography, Empty, message } from "antd";
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
-import type { PluginClassifyItem, PluginFunctionItem, PluginBaseInfoItem, KeyValueString } from "../../../../../apiClient/models";
-import { PluginTypeObject } from "../../../../../apiClient/models";
-import { GetApiClient } from "../../../../ServiceClient";
-import { proxyFormRequestError } from "../../../../../helper/RequestError";
-import { GetFileMd5 } from "../../../../../helper/Md5Helper";
-import { FileTypeHelper } from "../../../../../helper/FileTypeHelper";
+import type { PluginClassifyItem, PluginFunctionItem, PluginBaseInfoItem, KeyValueString } from "../../../../apiClient/models";
+import { PluginTypeObject } from "../../../../apiClient/models";
+import { GetApiClient } from "../../../ServiceClient";
+import { proxyFormRequestError } from "../../../../helper/RequestError";
+import { GetFileMd5 } from "../../../../helper/Md5Helper";
+import { FileTypeHelper } from "../../../../helper/FileTypeHelper";
 
 const { TextArea } = Input;
 
@@ -18,7 +18,6 @@ interface KeyValueItem {
   value: string;
 }
 
-// 获取分类列表的 Hook
 function useClassifyList(open: boolean) {
   const [classifyList, setClassifyList] = useState<PluginClassifyItem[]>([]);
 
@@ -40,7 +39,6 @@ function useClassifyList(open: boolean) {
   return { classifyList };
 }
 
-// 工具函数
 const processKeyValueArray = (values: KeyValueItem[]): KeyValueString[] => {
   return values?.filter((item) => item.key && item.value).map((item) => ({ key: item.key, value: item.value })) || [];
 };
@@ -50,7 +48,6 @@ interface KeyValueConfigProps {
   title: string;
 }
 
-// 键值对配置组件
 function KeyValueConfig({ name, title }: KeyValueConfigProps) {
   return (
     <>
@@ -87,15 +84,13 @@ function KeyValueConfig({ name, title }: KeyValueConfigProps) {
   );
 }
 
-// 基础表单字段组件
 interface BaseFormFieldsProps {
   classifyList: PluginClassifyItem[];
   showServerUrl?: boolean;
   serverUrlLabel?: string;
-  showIsPublic?: boolean;
 }
 
-function BaseFormFields({ classifyList, showServerUrl = true, serverUrlLabel = "服务器地址", showIsPublic = true }: BaseFormFieldsProps) {
+function BaseFormFields({ classifyList, showServerUrl = true, serverUrlLabel = "服务器地址" }: BaseFormFieldsProps) {
   return (
     <>
       <Row gutter={16}>
@@ -139,23 +134,16 @@ function BaseFormFields({ classifyList, showServerUrl = true, serverUrlLabel = "
       <Form.Item name="description" label="描述">
         <TextArea placeholder="请输入插件描述" rows={3} />
       </Form.Item>
-      {showIsPublic && (
-        <Form.Item name="isPublic" label="是否公开" valuePropName="checked" initialValue={false}>
-          <Switch checkedChildren="公开" unCheckedChildren="私有" />
-        </Form.Item>
-      )}
     </>
   );
 }
 
-// HTTP 通讯方式选项
 const HTTP_TRANSPORT_MODE_OPTIONS = [
   { value: "AutoDetect", label: "自动检测 (AutoDetect)" },
   { value: "StreamableHttp", label: "仅 Streamable HTTP (StreamableHttp)" },
   { value: "Sse", label: "仅 HTTP with SSE (Sse)" },
 ];
 
-// MCP 插件模态框
 interface McpModalProps {
   open: boolean;
   loading: boolean;
@@ -165,7 +153,7 @@ interface McpModalProps {
   isEdit?: boolean;
 }
 
-export function McpPluginModal({ open, loading, form, onOk, onCancel, isEdit = false }: McpModalProps) {
+export function TeamMcpPluginModal({ open, loading, form, onOk, onCancel, isEdit = false }: McpModalProps) {
   const { classifyList } = useClassifyList(open);
 
   return (
@@ -183,16 +171,11 @@ export function McpPluginModal({ open, loading, form, onOk, onCancel, isEdit = f
     >
       <Spin spinning={isEdit && loading} tip="正在获取插件详情...">
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <BaseFormFields classifyList={classifyList} showServerUrl serverUrlLabel="MCP服务地址" showIsPublic={false} />
+          <BaseFormFields classifyList={classifyList} showServerUrl serverUrlLabel="MCP服务地址" />
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item name="httpTransportMode" label="通讯方式">
                 <Select placeholder="请选择通讯方式（可选）" allowClear options={HTTP_TRANSPORT_MODE_OPTIONS} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="isPublic" label="是否公开" valuePropName="checked" initialValue={false}>
-                <Switch checkedChildren="公开" unCheckedChildren="私有" />
               </Form.Item>
             </Col>
           </Row>
@@ -204,11 +187,11 @@ export function McpPluginModal({ open, loading, form, onOk, onCancel, isEdit = f
   );
 }
 
-// 文件上传工具函数
-async function uploadOpenApiFile(file: File) {
+async function uploadTeamOpenApiFile(file: File, teamId: number) {
   const client = GetApiClient();
   const md5 = await GetFileMd5(file);
-  const preUploadResponse = await client.api.admin.custom_plugin.pre_upload_openapi.post({
+  const preUploadResponse = await client.api.team.plugin.pre_upload_openapi.post({
+    teamId,
     contentType: FileTypeHelper.getFileType(file),
     fileName: file.name,
     fileSize: file.size,
@@ -234,14 +217,14 @@ async function uploadOpenApiFile(file: File) {
   return preUploadResponse;
 }
 
-// OpenAPI 插件模态框 - 导入
 interface OpenApiImportModalProps {
   open: boolean;
+  teamId: number | undefined;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function OpenApiImportModal({ open, onSuccess, onCancel }: OpenApiImportModalProps) {
+export function TeamOpenApiImportModal({ open, teamId, onSuccess, onCancel }: OpenApiImportModalProps) {
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const { classifyList } = useClassifyList(open);
@@ -249,7 +232,6 @@ export function OpenApiImportModal({ open, onSuccess, onCancel }: OpenApiImportM
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState({ uploading: false, progress: 0, error: "" });
 
-  // 关闭时重置状态
   const handleCancel = useCallback(() => {
     form.resetFields();
     setSelectedFile(null);
@@ -258,6 +240,7 @@ export function OpenApiImportModal({ open, onSuccess, onCancel }: OpenApiImportM
   }, [form, onCancel]);
 
   const handleSubmit = useCallback(async () => {
+    if (!teamId) return;
     try {
       const values = await form.validateFields();
       if (!selectedFile) {
@@ -268,17 +251,17 @@ export function OpenApiImportModal({ open, onSuccess, onCancel }: OpenApiImportM
       setLoading(true);
       setUploadStatus({ uploading: true, progress: 10, error: "" });
 
-      const uploadResult = await uploadOpenApiFile(selectedFile);
+      const uploadResult = await uploadTeamOpenApiFile(selectedFile, teamId);
       if (!uploadResult?.fileId) throw new Error("文件上传失败");
 
       setUploadStatus({ uploading: true, progress: 80, error: "" });
 
       const client = GetApiClient();
-      await client.api.admin.custom_plugin.import_openapi.post({
+      await client.api.team.plugin.import_openapi.post({
+        teamId,
         name: values.name,
         title: values.title,
         description: values.description,
-        isPublic: values.isPublic,
         fileId: uploadResult.fileId,
         fileName: selectedFile.name,
         classifyId: values.classifyId,
@@ -295,7 +278,7 @@ export function OpenApiImportModal({ open, onSuccess, onCancel }: OpenApiImportM
     } finally {
       setLoading(false);
     }
-  }, [form, selectedFile, messageApi, handleCancel, onSuccess]);
+  }, [teamId, form, selectedFile, messageApi, handleCancel, onSuccess]);
 
   return (
     <>
@@ -337,15 +320,15 @@ export function OpenApiImportModal({ open, onSuccess, onCancel }: OpenApiImportM
   );
 }
 
-// OpenAPI 插件模态框 - 编辑
 interface OpenApiEditModalProps {
   open: boolean;
+  teamId: number | undefined;
   plugin: PluginBaseInfoItem | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiEditModalProps) {
+export function TeamOpenApiEditModal({ open, teamId, plugin, onSuccess, onCancel }: OpenApiEditModalProps) {
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const { classifyList } = useClassifyList(open);
@@ -355,21 +338,19 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
   const [currentFileName, setCurrentFileName] = useState<string | undefined>();
   const [uploadStatus, setUploadStatus] = useState({ uploading: false, progress: 0, error: "" });
 
-  // 打开时获取详情
   useEffect(() => {
-    if (open && plugin?.pluginId) {
+    if (open && plugin?.pluginId && teamId) {
       const fetchDetail = async () => {
         setDetailLoading(true);
         try {
           const client = GetApiClient();
-          const response = await client.api.admin.custom_plugin.plugin_detail.post({ pluginId: plugin.pluginId });
+          const response = await client.api.team.plugin.detail.post({ teamId, pluginId: plugin.pluginId });
           if (response) {
             form.setFieldsValue({
               name: response.pluginName,
               title: response.title,
               serverUrl: response.server,
               description: response.description,
-              isPublic: response.isPublic,
               classifyId: response.classifyId,
               header: response.header?.map((item) => ({ key: item.key, value: item.value })) || [],
             });
@@ -383,9 +364,8 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
       };
       fetchDetail();
     }
-  }, [open, plugin?.pluginId, form]);
+  }, [open, plugin?.pluginId, teamId, form]);
 
-  // 关闭时重置状态
   const handleCancel = useCallback(() => {
     form.resetFields();
     setSelectedFile(null);
@@ -395,6 +375,7 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
   }, [form, onCancel]);
 
   const handleSubmit = useCallback(async () => {
+    if (!teamId) return;
     try {
       const values = await form.validateFields();
       setLoading(true);
@@ -404,7 +385,7 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
 
       if (selectedFile) {
         setUploadStatus({ uploading: true, progress: 10, error: "" });
-        const uploadResult = await uploadOpenApiFile(selectedFile);
+        const uploadResult = await uploadTeamOpenApiFile(selectedFile, teamId);
         if (!uploadResult?.fileId) throw new Error("文件上传失败");
         fileId = uploadResult.fileId;
         fileName = selectedFile.name;
@@ -412,13 +393,13 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
       }
 
       const client = GetApiClient();
-      await client.api.admin.custom_plugin.update_openapi.post({
+      await client.api.team.plugin.update_openapi.post({
+        teamId,
         pluginId: plugin?.pluginId,
         name: values.name,
         title: values.title,
         serverUrl: values.serverUrl,
         description: values.description,
-        isPublic: values.isPublic,
         header: processKeyValueArray(values.header),
         fileId,
         fileName,
@@ -436,7 +417,7 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
     } finally {
       setLoading(false);
     }
-  }, [form, selectedFile, plugin, messageApi, handleCancel, onSuccess]);
+  }, [teamId, form, selectedFile, plugin, messageApi, handleCancel, onSuccess]);
 
   return (
     <>
@@ -484,24 +465,24 @@ export function OpenApiEditModal({ open, plugin, onSuccess, onCancel }: OpenApiE
   );
 }
 
-// 函数列表模态框
 interface FunctionListModalProps {
   open: boolean;
+  teamId: number | undefined;
   plugin: PluginBaseInfoItem | null;
   onCancel: () => void;
 }
 
-export function FunctionListModal({ open, plugin, onCancel }: FunctionListModalProps) {
+export function TeamFunctionListModal({ open, teamId, plugin, onCancel }: FunctionListModalProps) {
   const [functionList, setFunctionList] = useState<PluginFunctionItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && plugin?.pluginId) {
+    if (open && plugin?.pluginId && teamId) {
       const fetchFunctionList = async () => {
         setLoading(true);
         try {
           const client = GetApiClient();
-          const response = await client.api.admin.custom_plugin.function_list.post({ pluginId: plugin.pluginId });
+          const response = await client.api.team.plugin.function_list.post({ teamId, pluginId: plugin.pluginId });
           setFunctionList(response?.items || []);
         } catch (error) {
           console.error("获取函数列表失败:", error);
@@ -512,7 +493,7 @@ export function FunctionListModal({ open, plugin, onCancel }: FunctionListModalP
       };
       fetchFunctionList();
     }
-  }, [open, plugin?.pluginId]);
+  }, [open, plugin?.pluginId, teamId]);
 
   const handleCancel = () => {
     setFunctionList([]);

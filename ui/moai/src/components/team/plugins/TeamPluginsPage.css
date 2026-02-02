@@ -1,0 +1,213 @@
+/* ============================================
+   团队自定义插件管理页面样式
+   ============================================ */
+
+.team-plugin-layout {
+  display: flex;
+  min-height: 400px;
+  background: #fff;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border-secondary, #f0f0f0);
+}
+
+/* 左侧分类侧边栏 */
+.team-plugin-classify-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 100%);
+  border-right: 1px solid var(--color-border-secondary, #f0f0f0);
+  padding: var(--spacing-md, 16px);
+  border-radius: var(--radius-lg, 12px) 0 0 var(--radius-lg, 12px);
+}
+
+.team-plugin-classify-sidebar .classify-sidebar-header {
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  margin-bottom: var(--spacing-md, 16px);
+}
+
+.team-plugin-classify-sidebar .classify-sidebar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.team-plugin-classify-sidebar .ant-list-item {
+  cursor: pointer;
+  border-radius: var(--radius-md, 8px);
+  padding: 10px var(--spacing-md, 16px);
+  margin-bottom: var(--spacing-xs, 4px);
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.team-plugin-classify-sidebar .ant-list-item:hover {
+  background: var(--color-bg-container, #fff);
+  border-color: var(--color-border-secondary, #f0f0f0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.team-plugin-classify-sidebar .ant-list-item.selected {
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.08) 0%, rgba(22, 119, 255, 0.04) 100%);
+  border-color: var(--color-primary-border);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.1);
+}
+
+.team-plugin-classify-sidebar .ant-list-item.selected .ant-typography {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.team-plugin-classify-sidebar .classify-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.team-plugin-classify-sidebar .classify-item-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.team-plugin-classify-sidebar .classify-item-icon {
+  font-size: 16px;
+  color: var(--color-text-tertiary);
+}
+
+.team-plugin-classify-sidebar .ant-list-item.selected .classify-item-icon {
+  color: var(--color-primary);
+}
+
+/* 右侧内容区域 */
+.team-plugin-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md, 16px);
+  background: var(--color-bg-container, #fff);
+  border-radius: 0 var(--radius-lg, 12px) var(--radius-lg, 12px) 0;
+}
+
+/* 工具栏 */
+.team-plugin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md, 16px);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border-secondary, #f0f0f0);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+}
+
+.team-plugin-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.team-plugin-search-input {
+  width: 240px;
+}
+
+.team-plugin-search-input .ant-input-affix-wrapper {
+  border-radius: var(--radius-md) !important;
+  border-color: var(--color-border);
+  background: var(--color-bg-container);
+  transition: all var(--transition-normal);
+}
+
+.team-plugin-search-input .ant-input-affix-wrapper:hover,
+.team-plugin-search-input .ant-input-affix-wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1);
+}
+
+/* 表格样式 */
+.team-plugin-content .ant-table {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border-secondary);
+}
+
+.team-plugin-content .ant-table-thead > tr > th {
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 100%) !important;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.team-plugin-content .ant-table-tbody > tr > td {
+  padding: 14px 16px;
+  transition: background var(--transition-fast);
+}
+
+.team-plugin-content .ant-table-tbody > tr:hover > td {
+  background: rgba(22, 119, 255, 0.02);
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+  .team-plugin-layout {
+    flex-direction: column;
+  }
+
+  .team-plugin-classify-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-secondary);
+    padding-bottom: var(--spacing-md);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .team-plugin-classify-sidebar .ant-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .team-plugin-classify-sidebar .ant-list-item {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+  }
+
+  .team-plugin-content {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  .team-plugin-search-input {
+    width: 100%;
+    max-width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .team-plugin-content {
+    padding: var(--spacing-sm);
+  }
+
+  .team-plugin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--spacing-sm);
+  }
+
+  .team-plugin-toolbar-left {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .team-plugin-search-input {
+    width: 100%;
+    max-width: none;
+  }
+}

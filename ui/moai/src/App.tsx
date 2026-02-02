@@ -58,6 +58,7 @@ import CreatePluginPage from "./components/admin/plugin/builtin/CreatePluginPage
 import PluginCustomPage from "./components/admin/plugin/custom/PluginCustomPage";
 import AppConfigCommon from "./components/team/apps/chatapp/ChatAppConfig";
 import { WorkflowEditor } from "./components/team/apps/workflow";
+import { TeamPluginsPage } from "./components/team/plugins";
 
 const { Content } = Layout;
 
@@ -155,6 +156,7 @@ function App() {
                 <Route path="integration" element={<TeamIntegration />} />
                 <Route path="members" element={<TeamMembers />} />
                 <Route path="settings" element={<TeamSettings />} />
+                <Route path="plugins" element={ <TeamPluginsPage />} />
               </Route>
             </Route>
             

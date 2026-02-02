@@ -128,12 +128,20 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
             uriBuilder.Query = query.ToString();
         }
 
+        HttpTransportMode transportMode = HttpTransportMode.AutoDetect;
+        var headerTransportMode = request.Header.FirstOrDefault(x => x.Key == ".HttpTransportMode");
+        if (headerTransportMode != null)
+        {
+            transportMode = headerTransportMode.Value.JsonToObject<HttpTransportMode>();
+        }
+
         var serverUrl = uriBuilder.Uri;
         var defaultConfig = new HttpClientTransportOptions
         {
             Endpoint = serverUrl,
             Name = request.Name,
-            AdditionalHeaders = request.Header.ToDictionary(x => x.Key, x => x.Value),
+            TransportMode = transportMode,
+            AdditionalHeaders = request.Header.Where(x => !x.Key.StartsWith('.')).ToDictionary(x => x.Key, x => x.Value),
         };
 
         await using var sseTransport = new HttpClientTransport(defaultConfig);
