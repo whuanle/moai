@@ -352,7 +352,7 @@ export function TeamOpenApiEditModal({ open, teamId, plugin, onSuccess, onCancel
               serverUrl: response.server,
               description: response.description,
               classifyId: response.classifyId,
-              header: response.header?.map((item) => ({ key: item.key, value: item.value })) || [],
+              header: response.headers?.map((item: { key?: string | null; value?: string | null }) => ({ key: item.key || "", value: item.value || "" })) || [],
             });
             setCurrentFileName(response.openapiFileName || undefined);
           }

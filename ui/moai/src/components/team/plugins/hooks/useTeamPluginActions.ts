@@ -107,7 +107,7 @@ export function useTeamPluginActions(teamId: number | undefined, onSuccess: () =
         const response = await client.api.team.plugin.detail.post({ teamId, pluginId: record.pluginId });
 
         if (response) {
-          const { transportMode, filteredHeaders } = extractTransportModeFromHeader(response.header || []);
+          const { transportMode, filteredHeaders } = extractTransportModeFromHeader(response.headers || []);
           editMcpForm.setFieldsValue({
             name: response.pluginName,
             title: response.title,
@@ -116,7 +116,7 @@ export function useTeamPluginActions(teamId: number | undefined, onSuccess: () =
             classifyId: response.classifyId,
             httpTransportMode: transportMode,
             header: filteredHeaders,
-            query: response.query?.map((item) => ({ key: item.key, value: item.value })) || [],
+            query: response.queries?.map((item: { key?: string | null; value?: string | null }) => ({ key: item.key || "", value: item.value || "" })) || [],
           });
           setEditMcpModalVisible(true);
         }
