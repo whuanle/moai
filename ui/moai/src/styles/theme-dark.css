@@ -128,8 +128,8 @@
 }
 
 html {
-  /* 强制显示滚动条，防止模态框打开时页面抖动 */
-  overflow-y: scroll;
+  /* 强制始终显示滚动条，防止 Modal 打开时页面抖动 */
+  overflow-y: scroll !important;
 }
 
 body {
@@ -143,17 +143,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-}
-
-/* 防止 Ant Design Modal 导致的页面抖动 */
-body.ant-scrolling-effect {
+  /* 强制 body 宽度始终为 100% */
   width: 100% !important;
-  overflow: hidden !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
 }
 
-/* 为 body 添加 padding 来补偿滚动条宽度 */
+/* 阻止 Ant Design Modal 修改 body 的样式 */
 body.ant-scrolling-effect {
+  overflow: visible !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
   padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* 选中文本样式 */
@@ -162,7 +165,7 @@ body.ant-scrolling-effect {
   color: var(--color-text-primary);
 }
 
-/* 滚动条美化 */
+/* 滚动条美化 - 始终显示轨道 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
