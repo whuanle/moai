@@ -35,8 +35,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e6f4ff 0%, #bae0ff 100%);
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.2) 0%, rgba(74, 158, 255, 0.1) 100%);
   border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 .classify-card-info {
@@ -79,12 +80,15 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--color-bg-layout);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
   transition: all 0.3s ease;
 }
 
 .moai-card-interactive:hover .classify-card-action {
   background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 15px var(--glow-primary);
 }
 
 .moai-card-interactive:hover .classify-card-action .anticon {
@@ -101,19 +105,19 @@
 /* 应用卡片 - 大气渐变设计 */
 .app-card {
   position: relative;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  background: var(--color-bg-elevated);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   transition: all 0.3s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .app-card:hover {
-  border-color: rgba(22, 119, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(22, 119, 255, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 24px var(--glow-primary);
   transform: translateY(-2px);
 }
 
@@ -124,8 +128,9 @@
   align-items: center;
   width: 100%;
   height: 120px;
-  background: linear-gradient(135deg, #f0f2f5 0%, #e6e8eb 100%);
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, rgba(74, 158, 255, 0.05) 100%);
   overflow: hidden;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-card-icon img {
@@ -180,7 +185,7 @@
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-lg);
   border-top: 1px solid var(--color-border);
-  background: linear-gradient(180deg, #fafbfc 0%, #f5f7f9 100%);
+  background: var(--color-bg-container);
   gap: var(--spacing-sm);
 }
 
@@ -230,13 +235,13 @@
 
 /* 禁用状态的应用卡片（流程应用开发中） */
 .app-card-disabled {
-  opacity: 0.7;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .app-card-disabled:hover {
   transform: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-color: var(--color-border);
 }
 
