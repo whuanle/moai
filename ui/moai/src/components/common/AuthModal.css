@@ -1,0 +1,276 @@
+/* 认证弹窗样式 - 深空探索主题 */
+.auth-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 0;
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-modal .ant-modal-body {
+  padding: 32px 40px 40px;
+  background: var(--color-bg-container);
+}
+
+.auth-modal .ant-modal-close {
+  top: 16px;
+  right: 16px;
+}
+
+.auth-modal .ant-modal-close-x {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  transition: all 0.3s ease;
+}
+
+.auth-modal .ant-modal-close-x:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
+  border-radius: 8px;
+}
+
+/* 内容区域 */
+.auth-modal-content {
+  width: 100%;
+}
+
+/* Tabs 样式优化 */
+.auth-tabs .ant-tabs-nav {
+  margin-bottom: 32px;
+}
+
+.auth-tabs .ant-tabs-tab {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  color: var(--color-text-secondary);
+  transition: all 0.3s ease;
+}
+
+.auth-tabs .ant-tabs-tab:hover {
+  color: var(--color-primary);
+}
+
+.auth-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.auth-tabs .ant-tabs-ink-bar {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+/* 表单样式 */
+.auth-input {
+  height: 44px;
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: all 0.3s ease;
+}
+
+.auth-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.auth-input:hover {
+  border-color: var(--color-primary);
+  background: var(--color-bg-container);
+}
+
+.auth-input:focus,
+.auth-input-focused {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
+  background: var(--color-bg-container);
+}
+
+.auth-input .ant-input-prefix {
+  color: var(--color-text-tertiary);
+  margin-right: 12px;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.auth-input:focus .ant-input-prefix,
+.auth-input:hover .ant-input-prefix {
+  color: var(--color-primary);
+}
+
+/* 按钮样式 */
+.auth-button {
+  height: 44px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.auth-button:hover {
+  transform: translateY(-1px);
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: var(--glow-primary);
+}
+
+.auth-button:active {
+  transform: translateY(0);
+  background: var(--color-primary-active);
+  border-color: var(--color-primary-active);
+}
+
+/* 第三方登录区域 */
+.oauth-providers {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.oauth-provider-button {
+  height: 40px;
+  min-width: 40px;
+  max-width: 90px;
+  width: auto;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: var(--color-bg-elevated);
+}
+
+.oauth-provider-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+  border-color: var(--color-primary);
+  background: var(--color-bg-container);
+}
+
+.oauth-provider-button:active {
+  transform: translateY(0);
+}
+
+.oauth-provider-icon {
+  height: 24px;
+  max-height: 32px;
+  width: auto;
+  max-width: 70px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.oauth-provider-button:hover .oauth-provider-icon {
+  transform: scale(1.05);
+}
+
+.oauth-provider-fallback {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition: color 0.3s ease;
+}
+
+.oauth-provider-button:hover .oauth-provider-fallback {
+  color: var(--color-primary);
+}
+
+/* 表单标签样式 */
+.auth-modal .ant-form-item-label > label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* 表单项间距 */
+.auth-modal .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.auth-modal .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 错误提示样式 */
+.auth-modal .ant-form-item-explain-error {
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--color-error);
+}
+
+/* 分割线 */
+.auth-modal .ant-divider {
+  border-color: var(--color-border);
+}
+
+.auth-modal .ant-divider-inner-text {
+  color: var(--color-text-tertiary);
+}
+
+/* 响应式设计 */
+@media (max-width: 576px) {
+  .auth-modal {
+    width: calc(100vw - 32px) !important;
+    max-width: 100%;
+  }
+  
+  .auth-modal .ant-modal-body {
+    padding: 24px 20px 32px;
+  }
+  
+  .auth-tabs .ant-tabs-tab {
+    font-size: 15px;
+    padding: 10px 20px;
+  }
+  
+  .auth-input {
+    height: 42px;
+  }
+  
+  .auth-button {
+    height: 42px;
+    font-size: 14px;
+  }
+  
+  .oauth-provider-button {
+    height: 36px;
+    min-width: 36px;
+    max-width: 80px;
+  }
+  
+  .oauth-provider-icon {
+    height: 20px;
+    max-height: 28px;
+    max-width: 60px;
+  }
+}
+
+/* 动画效果 */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.auth-modal .ant-modal-content {
+  animation: modalFadeIn 0.3s ease-out;
+}

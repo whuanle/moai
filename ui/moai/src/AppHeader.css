@@ -1,7 +1,7 @@
-/* AppHeader.css - 顶部导航栏样式 */
+/* AppHeader.css - 顶部导航栏样式 - 深空探索主题 */
 
 /* ============================================
-   顶部导航栏
+   顶部导航栏 - 科技感透明设计
    ============================================ */
 .app-header {
   display: flex;
@@ -9,22 +9,35 @@
   justify-content: space-between;
   padding: 0 var(--spacing-lg);
   height: var(--header-height);
-  background: var(--color-bg-container);
-  border-bottom: 1px solid var(--color-border-secondary);
+  background: rgba(15, 20, 25, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(74, 158, 255, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.95);
+  transition: all var(--transition-normal);
 }
 
-/* 暗色主题适配 */
-:global(.dark) .app-header,
-[data-theme="dark"] .app-header {
-  background: rgba(20, 20, 20, 0.95);
-  border-bottom-color: var(--color-border-secondary);
+/* 添加微妙的发光效果 */
+.app-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(74, 158, 255, 0.3) 50%, 
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.app-header:hover::after {
+  opacity: 1;
 }
 
 /* ============================================
@@ -44,28 +57,32 @@
   cursor: pointer;
   margin-right: var(--spacing-xl);
   padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  transition: background-color var(--transition-fast);
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
 }
 
 .logo-container:hover {
-  background-color: var(--color-bg-spotlight);
+  background-color: rgba(74, 158, 255, 0.08);
+  border-color: rgba(74, 158, 255, 0.2);
 }
 
 .logo-container img {
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
+  filter: drop-shadow(0 0 6px rgba(74, 158, 255, 0.4));
 }
 
 .logo-text {
   margin-left: var(--spacing-sm);
   font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #722ed1 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, rgba(74, 158, 255, 0.8) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.5px;
+  filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.3));
 }
 
 /* ============================================
@@ -83,40 +100,68 @@
 .main-menu .ant-menu-submenu-title {
   padding: 0 var(--spacing-md) !important;
   margin: 0 var(--spacing-xs) !important;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   font-weight: 500;
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
+  border: 1px solid transparent;
 }
 
 .main-menu .ant-menu-item:hover,
 .main-menu .ant-menu-submenu-title:hover {
   color: var(--color-primary) !important;
-  background-color: var(--color-primary-bg) !important;
+  background-color: rgba(74, 158, 255, 0.08) !important;
+  border-color: rgba(74, 158, 255, 0.2) !important;
 }
 
 .main-menu .ant-menu-item-selected {
   color: var(--color-primary) !important;
-  background-color: var(--color-primary-bg) !important;
+  background-color: rgba(74, 158, 255, 0.12) !important;
+  border-color: rgba(74, 158, 255, 0.3) !important;
   font-weight: 600;
+  position: relative;
+}
+
+/* 选中项发光效果 */
+.main-menu .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: var(--color-primary);
+  opacity: 0.05;
+  filter: blur(8px);
 }
 
 .main-menu .ant-menu-item-selected::after,
 .main-menu .ant-menu-submenu-selected::after {
   border-bottom-color: var(--color-primary) !important;
   border-bottom-width: 2px !important;
+  box-shadow: 0 0 8px var(--color-primary);
 }
 
 /* 子菜单样式 */
 .main-menu .ant-menu-submenu-popup .ant-menu {
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  background: rgba(26, 31, 46, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(74, 158, 255, 0.2);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(74, 158, 255, 0.1);
   padding: var(--spacing-xs);
 }
 
 .main-menu .ant-menu-submenu-popup .ant-menu-item {
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   margin: var(--spacing-xs) 0 !important;
+  color: var(--color-text-primary);
+  border: 1px solid transparent;
+}
+
+.main-menu .ant-menu-submenu-popup .ant-menu-item:hover {
+  background: rgba(74, 158, 255, 0.12);
+  border-color: rgba(74, 158, 255, 0.3);
+  color: var(--color-primary) !important;
 }
 
 /* ============================================
@@ -134,18 +179,22 @@
   align-items: center;
   cursor: pointer;
   padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-lg);
+  border-radius: 4px;
   transition: all var(--transition-fast);
   border: 1px solid transparent;
+  background: rgba(26, 31, 46, 0.3);
+  backdrop-filter: blur(10px);
 }
 
 .user-dropdown:hover {
-  background-color: var(--color-bg-spotlight);
-  border-color: var(--color-border);
+  background-color: rgba(74, 158, 255, 0.1);
+  border-color: rgba(74, 158, 255, 0.3);
+  box-shadow: 0 0 15px rgba(74, 158, 255, 0.2);
 }
 
 .user-dropdown .ant-avatar {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+  border: 2px solid rgba(74, 158, 255, 0.3);
 }
 
 .user-name {
@@ -167,6 +216,7 @@
 
 .user-dropdown:hover .dropdown-icon {
   transform: translateY(1px);
+  color: var(--color-primary);
 }
 
 /* ============================================
