@@ -24,6 +24,8 @@ public class PostgresDatabaseContext : DatabaseContext
             .ApplyConfigurationsFromAssembly(typeof(PostgresDatabaseContext).Assembly)
             .ApplyConfigurationsFromAssembly(typeof(DatabaseContext).Assembly);
 
+        modelBuilder.HasPostgresExtension("vector");
+
         // postgres 需要开启此扩展，以便支持 uuid_generate_v4()
         modelBuilder.HasPostgresExtension("uuid-ossp");
 

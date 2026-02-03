@@ -1,4 +1,4 @@
-create table moai.ai_model
+create table ai_model
 (
     id                    int auto_increment comment 'id'
         primary key,
@@ -21,18 +21,18 @@ create table moai.ai_model
     create_user_id        int                                not null comment '创建人',
     create_time           datetime   default utc_timestamp() not null comment '创建时间',
     update_user_id        int                                not null comment '最后修改人',
-    update_time           datetime   default utc_timestamp() not null comment '最后更新时间',
-    is_deleted            bigint                             not null comment '软删除'
+    update_time           datetime   default utc_timestamp() not null comment '更新时间',
+    is_deleted            bigint     default 0               not null comment '软删除'
 )
     comment 'ai模型';
 
 create index ai_model_ai_model_type_index
-    on moai.ai_model (ai_model_type);
+    on ai_model (ai_model_type);
 
 create index ai_model_ai_provider_index
-    on moai.ai_model (ai_provider);
+    on ai_model (ai_provider);
 
-create table moai.ai_model_authorization
+create table ai_model_authorization
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -41,12 +41,12 @@ create table moai.ai_model_authorization
     create_user_id int      default 0                   not null comment '创建人',
     create_time    datetime default current_timestamp() not null comment '创建时间',
     update_user_id int      default 0                   not null comment '更新人',
-    update_time    datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint   default 0                   not null comment '软删除'
 )
     comment '授权模型给哪些团队使用';
 
-create table moai.ai_model_limit
+create table ai_model_limit
 (
     id              int auto_increment comment 'id'
         primary key,
@@ -58,12 +58,12 @@ create table moai.ai_model_limit
     create_user_id  int      default 0                   not null comment '创建人',
     create_time     datetime default current_timestamp() not null comment '创建时间',
     update_user_id  int      default 0                   not null comment '更新人',
-    update_time     datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time     datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted      bigint   default 0                   not null comment '软删除'
 )
     comment 'ai模型使用量限制，只能用于系统模型';
 
-create table moai.ai_model_token_audit
+create table ai_model_token_audit
 (
     id                int auto_increment comment 'id'
         primary key,
@@ -76,12 +76,12 @@ create table moai.ai_model_token_audit
     create_user_id    int      default 0                   not null comment '创建人',
     create_time       datetime default current_timestamp() not null comment '创建时间',
     update_user_id    int      default 0                   not null comment '更新人',
-    update_time       datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time       datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted        bigint   default 0                   not null comment '软删除'
 )
     comment '统计不同模型的token使用量，该表不是实时刷新的';
 
-create table moai.ai_model_useage_log
+create table ai_model_useage_log
 (
     id                int auto_increment comment 'id'
         primary key,
@@ -94,15 +94,15 @@ create table moai.ai_model_useage_log
     create_user_id    int         default 0                   not null comment '创建人',
     create_time       datetime    default current_timestamp() not null comment '创建时间',
     update_user_id    int         default 0                   not null comment '更新人',
-    update_time       datetime    default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time       datetime    default utc_timestamp()     not null comment '更新时间',
     is_deleted        bigint      default 0                   not null comment '软删除'
 )
     comment '模型使用日志,记录每次请求使用记录';
 
 create index ai_model_useage_log_channel_index
-    on moai.ai_model_useage_log (channel);
+    on ai_model_useage_log (channel);
 
-create table moai.app
+create table app
 (
     id             binary(16)   default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -119,18 +119,18 @@ create table moai.app
     create_user_id int          default 0                               not null comment '创建人',
     create_time    datetime     default current_timestamp()             not null comment '创建时间',
     update_user_id int          default 0                               not null comment '更新人',
-    update_time    datetime     default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time    datetime     default utc_timestamp()                 not null comment '更新时间',
     is_deleted     bigint       default 0                               not null comment '软删除'
 )
     comment '应用';
 
 create index app_name_index
-    on moai.app (name);
+    on app (name);
 
 create index app_team_id_index
-    on moai.app (team_id);
+    on app (team_id);
 
-create table moai.app_assistant_chat
+create table app_assistant_chat
 (
     id                 binary(16)                   default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -147,12 +147,12 @@ create table moai.app_assistant_chat
     create_user_id     int                          default 0                               not null comment '创建人',
     create_time        datetime                     default current_timestamp()             not null comment '创建时间',
     update_user_id     int                          default 0                               not null comment '更新人',
-    update_time        datetime                     default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time        datetime                     default utc_timestamp()                 not null comment '更新时间',
     is_deleted         bigint                       default 0                               not null comment '软删除'
 )
     comment 'ai助手表';
 
-create table moai.app_assistant_chat_history
+create table app_assistant_chat_history
 (
     id             bigint auto_increment comment 'id'
         primary key,
@@ -163,15 +163,15 @@ create table moai.app_assistant_chat_history
     create_user_id int      default 0                   not null comment '创建人',
     create_time    datetime default current_timestamp() not null comment '创建时间',
     update_user_id int      default 0                   not null comment '更新人',
-    update_time    datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint   default 0                   not null comment '软删除'
 )
     comment '对话历史，不保存实际历史记录';
 
 create index chat_history_pk_2
-    on moai.app_assistant_chat_history (chat_id);
+    on app_assistant_chat_history (chat_id);
 
-create table moai.app_chatapp
+create table app_chatapp
 (
     id                 binary(16)                   default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -187,12 +187,12 @@ create table moai.app_chatapp
     create_user_id     int                          default 0                               not null comment '创建人',
     create_time        datetime                     default current_timestamp()             not null comment '创建时间',
     update_user_id     int                          default 0                               not null comment '更新人',
-    update_time        datetime                     default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time        datetime                     default utc_timestamp()                 not null comment '更新时间',
     is_deleted         bigint                       default 0                               not null comment '软删除'
 )
     comment '普通应用';
 
-create table moai.app_chatapp_chat
+create table app_chatapp_chat
 (
     id             binary(16)   default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -205,12 +205,12 @@ create table moai.app_chatapp_chat
     create_user_id int          default 0                               not null comment '创建人',
     create_time    datetime     default current_timestamp()             not null comment '创建时间',
     update_user_id int          default 0                               not null comment '更新人',
-    update_time    datetime     default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time    datetime     default utc_timestamp()                 not null comment '更新时间',
     is_deleted     bigint       default 0                               not null comment '软删除'
 )
     comment '普通应用对话表';
 
-create table moai.app_chatapp_chat_history
+create table app_chatapp_chat_history
 (
     id             bigint auto_increment comment 'id'
         primary key,
@@ -221,15 +221,15 @@ create table moai.app_chatapp_chat_history
     create_user_id int      default 0                   not null comment '创建人',
     create_time    datetime default current_timestamp() not null comment '创建时间',
     update_user_id int      default 0                   not null comment '更新人',
-    update_time    datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint   default 0                   not null comment '软删除'
 )
     comment '对话历史，不保存实际历史记录';
 
 create index chat_history_pk_2
-    on moai.app_chatapp_chat_history (chat_id);
+    on app_chatapp_chat_history (chat_id);
 
-create table moai.app_workflow_design
+create table app_workflow_design
 (
     id                    varbinary(16) default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -243,12 +243,12 @@ create table moai.app_workflow_design
     create_user_id        int           default 0                               not null comment '创建人',
     create_time           datetime      default current_timestamp()             not null comment '创建时间',
     update_user_id        int           default 0                               not null comment '更新人',
-    update_time           datetime      default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time           datetime      default utc_timestamp()                 not null comment '更新时间',
     is_deleted            bigint        default 0                               not null comment '软删除'
 )
     comment '流程设计实例表';
 
-create table moai.app_workflow_history
+create table app_workflow_history
 (
     id                 varbinary(16)                default unhex(replace(uuid(), '-', '')) not null comment 'varbinary(16)'
         primary key,
@@ -265,12 +265,12 @@ create table moai.app_workflow_history
     create_user_id     int                          default 0                               not null comment '创建人',
     create_time        datetime                     default current_timestamp()             not null comment '创建时间',
     update_user_id     int                          default 0                               not null comment '更新人',
-    update_time        datetime                     default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time        datetime                     default utc_timestamp()                 not null comment '更新时间',
     is_deleted         bigint                       default 0                               not null comment '软删除'
 )
     comment '流程执行记录';
 
-create table moai.classify
+create table classify
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -280,18 +280,18 @@ create table moai.classify
     create_user_id int          default 0                   not null comment '创建人',
     create_time    datetime     default current_timestamp() not null comment '创建时间',
     update_user_id int          default 0                   not null comment '更新人',
-    update_time    datetime     default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime     default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint       default 0                   not null comment '软删除'
 )
     comment '分类';
 
 create index classify_name_index
-    on moai.classify (name);
+    on classify (name);
 
 create index classify_type_index
-    on moai.classify (type);
+    on classify (type);
 
-create table moai.external_app
+create table external_app
 (
     id             binary(16)   default unhex(replace(uuid(), '-', '')) not null comment 'app_id'
         primary key,
@@ -304,26 +304,26 @@ create table moai.external_app
     create_user_id int          default 0                               not null comment '创建人',
     create_time    datetime     default current_timestamp()             not null comment '创建时间',
     update_user_id int          default 0                               not null comment '更新人',
-    update_time    datetime     default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time    datetime     default utc_timestamp()                 not null comment '更新时间',
     is_deleted     bigint       default 0                               not null comment '软删除'
 )
     comment '系统接入';
 
-create table moai.external_user
+create table external_user
 (
     id              int auto_increment comment '用户ID'
         primary key,
     external_app_id int                              not null comment '所属的外部应用id',
     user_uid        varchar(50)                      not null comment '外部用户标识',
-    is_deleted      bigint                           not null comment '软删除',
+    is_deleted      bigint   default 0               not null comment '软删除',
     create_user_id  int                              not null comment '创建人',
     create_time     datetime default utc_timestamp() not null comment '创建时间',
     update_user_id  int                              not null comment '最后修改人',
-    update_time     datetime default utc_timestamp() not null comment '最后更新时间'
+    update_time     datetime default utc_timestamp() not null comment '更新时间'
 )
     comment '外部系统的用户';
 
-create table moai.file
+create table file
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -336,18 +336,18 @@ create table moai.file
     create_user_id int                                 not null comment '创建人',
     create_time    datetime    default utc_timestamp() not null comment '创建时间',
     update_user_id int                                 not null comment '最后修改人',
-    update_time    datetime    default utc_timestamp() not null comment '最后更新时间',
-    is_deleted     bigint                              not null comment '软删除'
+    update_time    datetime    default utc_timestamp() not null comment '更新时间',
+    is_deleted     bigint      default 0               not null comment '软删除'
 )
     comment '文件列表';
 
 create index file_file_md5_index
-    on moai.file (file_md5);
+    on file (file_md5);
 
 create index file_object_key_index
-    on moai.file (object_key(768));
+    on file (object_key(768));
 
-create table moai.oauth_connection
+create table oauth_connection
 (
     id             binary(16) default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -360,13 +360,13 @@ create table moai.oauth_connection
     well_known     varchar(1000)                                      not null comment '发现端口',
     is_deleted     bigint     default 0                               not null comment '软删除',
     create_time    datetime   default current_timestamp()             not null comment '创建时间',
-    update_time    datetime   default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time    datetime   default utc_timestamp()                 not null comment '更新时间',
     create_user_id int        default 0                               not null comment '创建人',
     update_user_id int        default 0                               not null comment '更新人'
 )
     comment 'oauth2.0系统';
 
-create table moai.plugin
+create table plugin
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -382,18 +382,18 @@ create table moai.plugin
     create_user_id int                                  not null comment '创建人',
     create_time    datetime     default utc_timestamp() not null comment '创建时间',
     update_user_id int                                  not null comment '最后修改人',
-    update_time    datetime     default utc_timestamp() not null comment '最后更新时间',
-    is_deleted     bigint                               not null comment '软删除'
+    update_time    datetime     default utc_timestamp() not null comment '更新时间',
+    is_deleted     bigint       default 0               not null comment '软删除'
 )
     comment '插件';
 
 create index plugin_plugin_name_index
-    on moai.plugin (plugin_name);
+    on plugin (plugin_name);
 
 create index plugin_title_index
-    on moai.plugin (title);
+    on plugin (title);
 
-create table moai.plugin_authorization
+create table plugin_authorization
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -402,12 +402,12 @@ create table moai.plugin_authorization
     create_user_id int      default 0                   not null comment '创建人',
     create_time    datetime default current_timestamp() not null comment '创建时间',
     update_user_id int      default 0                   not null comment '更新人',
-    update_time    datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint   default 0                   not null comment '软删除'
 )
     comment '授权私有插件给哪些团队使用';
 
-create table moai.plugin_custom
+create table plugin_custom
 (
     id                int auto_increment comment 'id'
         primary key,
@@ -420,12 +420,12 @@ create table moai.plugin_custom
     create_user_id    int                              not null comment '创建人',
     create_time       datetime default utc_timestamp() not null comment '创建时间',
     update_user_id    int                              not null comment '最后修改人',
-    update_time       datetime default utc_timestamp() not null comment '最后更新时间',
-    is_deleted        bigint                           not null comment '软删除'
+    update_time       datetime default utc_timestamp() not null comment '更新时间',
+    is_deleted        bigint   default 0               not null comment '软删除'
 )
     comment '自定义插件';
 
-create table moai.plugin_function
+create table plugin_function
 (
     id               int auto_increment comment 'id'
         primary key,
@@ -436,12 +436,12 @@ create table moai.plugin_function
     create_user_id   int                                   not null comment '创建人',
     create_time      datetime      default utc_timestamp() not null comment '创建时间',
     update_user_id   int                                   not null comment '最后修改人',
-    update_time      datetime      default utc_timestamp() not null comment '最后更新时间',
-    is_deleted       bigint                                not null comment '软删除'
+    update_time      datetime      default utc_timestamp() not null comment '更新时间',
+    is_deleted       bigint        default 0               not null comment '软删除'
 )
     comment '插件函数';
 
-create table moai.plugin_limit
+create table plugin_limit
 (
     id              int auto_increment comment 'id'
         primary key,
@@ -453,12 +453,12 @@ create table moai.plugin_limit
     create_user_id  int      default 0                   not null comment '创建人',
     create_time     datetime default current_timestamp() not null comment '创建时间',
     update_user_id  int      default 0                   not null comment '更新人',
-    update_time     datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time     datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted      bigint   default 0                   not null comment '软删除'
 )
     comment '插件使用量限制';
 
-create table moai.plugin_log
+create table plugin_log
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -468,15 +468,15 @@ create table moai.plugin_log
     create_user_id int         default 0                   not null comment '创建人',
     create_time    datetime    default current_timestamp() not null comment '创建时间',
     update_user_id int         default 0                   not null comment '更新人',
-    update_time    datetime    default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime    default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint      default 0                   not null comment '软删除'
 )
     comment '插件使用日志';
 
 create index plugin_log_channel_index
-    on moai.plugin_log (channel);
+    on plugin_log (channel);
 
-create table moai.plugin_native
+create table plugin_native
 (
     id                       int auto_increment comment 'id'
         primary key,
@@ -487,12 +487,12 @@ create table moai.plugin_native
     create_user_id           int                                                  not null comment '创建人',
     create_time              datetime                     default utc_timestamp() not null comment '创建时间',
     update_user_id           int                                                  not null comment '最后修改人',
-    update_time              datetime                     default utc_timestamp() not null comment '最后更新时间',
-    is_deleted               bigint                                               not null comment '软删除'
+    update_time              datetime                     default utc_timestamp() not null comment '更新时间',
+    is_deleted               bigint                       default 0               not null comment '软删除'
 )
     comment '内置插件';
 
-create table moai.plugin_tool
+create table plugin_tool
 (
     id                       int auto_increment comment 'id'
         primary key,
@@ -501,12 +501,12 @@ create table moai.plugin_tool
     create_user_id           int                              not null comment '创建人',
     create_time              datetime default utc_timestamp() not null comment '创建时间',
     update_user_id           int                              not null comment '最后修改人',
-    update_time              datetime default utc_timestamp() not null comment '最后更新时间',
-    is_deleted               bigint                           not null comment '软删除'
+    update_time              datetime default utc_timestamp() not null comment '更新时间',
+    is_deleted               bigint   default 0               not null comment '软删除'
 )
     comment '内置插件';
 
-create table moai.prompt
+create table prompt
 (
     id              int auto_increment comment 'id'
         primary key,
@@ -519,12 +519,12 @@ create table moai.prompt
     create_user_id  int        default 0                   not null comment '创建人',
     create_time     datetime   default current_timestamp() not null comment '创建时间',
     update_user_id  int        default 0                   not null comment '更新人',
-    update_time     datetime   default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time     datetime   default utc_timestamp()     not null comment '更新时间',
     is_deleted      bigint     default 0                   not null comment '软删除'
 )
     comment '提示词';
 
-create table moai.setting
+create table setting
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -534,14 +534,14 @@ create table moai.setting
     create_user_id int                                  not null comment '创建人',
     create_time    datetime     default utc_timestamp() not null comment '创建时间',
     update_user_id int                                  not null comment '最后修改人',
-    update_time    datetime     default utc_timestamp() not null comment '最后更新时间',
-    is_deleted     bigint                               not null comment '软删除',
+    update_time    datetime     default utc_timestamp() not null comment '更新时间',
+    is_deleted     bigint       default 0               not null comment '软删除',
     constraint setting_key_is_deleted_uindex
         unique (`key`, is_deleted) comment 'key唯一'
 )
     comment '系统设置';
 
-create table moai.team
+create table team
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -551,12 +551,12 @@ create table moai.team
     create_user_id int          default 0                   not null comment '创建人',
     create_time    datetime     default current_timestamp() not null comment '创建时间',
     update_user_id int          default 0                   not null comment '更新人',
-    update_time    datetime     default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime     default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint       default 0                   not null comment '软删除'
 )
     comment '团队';
 
-create table moai.team_user
+create table team_user
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -566,12 +566,12 @@ create table moai.team_user
     create_user_id int      default 0                   not null comment '创建人',
     create_time    datetime default current_timestamp() not null comment '创建时间',
     update_user_id int      default 0                   not null comment '更新人',
-    update_time    datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint   default 0                   not null comment '软删除'
 )
     comment '团队成员';
 
-create table moai.user
+create table user
 (
     id             int auto_increment comment '用户ID'
         primary key,
@@ -584,11 +584,11 @@ create table moai.user
     is_disable     tinyint(1)                           not null comment '禁用',
     is_admin       tinyint(1)                           not null comment '是否管理员',
     password_salt  varchar(255)                         not null comment '计算密码值的salt',
-    is_deleted     bigint                               not null comment '软删除',
+    is_deleted     bigint       default 0               not null comment '软删除',
     create_user_id int                                  not null comment '创建人',
     create_time    datetime     default utc_timestamp() not null comment '创建时间',
     update_user_id int                                  not null comment '最后修改人',
-    update_time    datetime     default utc_timestamp() not null comment '最后更新时间',
+    update_time    datetime     default utc_timestamp() not null comment '更新时间',
     constraint users_email_is_deleted_uindex
         unique (email, is_deleted),
     constraint users_phone_is_deleted_uindex
@@ -599,15 +599,15 @@ create table moai.user
     comment '用户';
 
 create index idx_users_email
-    on moai.user (email);
+    on user (email);
 
 create index idx_users_phone
-    on moai.user (phone);
+    on user (phone);
 
 create index idx_users_user_name
-    on moai.user (user_name);
+    on user (user_name);
 
-create table moai.user_oauth
+create table user_oauth
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -617,14 +617,14 @@ create table moai.user_oauth
     create_user_id int                              not null comment '创建人',
     create_time    datetime default utc_timestamp() not null comment '创建时间',
     update_user_id int                              not null comment '最后修改人',
-    update_time    datetime default utc_timestamp() not null comment '最后更新时间',
-    is_deleted     bigint                           not null comment '软删除',
+    update_time    datetime default utc_timestamp() not null comment '更新时间',
+    is_deleted     bigint   default 0               not null comment '软删除',
     constraint user_oauth_provider_id_sub_is_deleted_uindex
         unique (provider_id, sub, is_deleted) comment '一个sub不能关联不同的用户'
 )
     comment 'oauth2.0对接';
 
-create table moai.wiki
+create table wiki
 (
     id                   int auto_increment comment 'id'
         primary key,
@@ -640,12 +640,12 @@ create table moai.wiki
     create_user_id       int                                  not null comment '创建人',
     create_time          datetime     default utc_timestamp() not null comment '创建时间',
     update_user_id       int                                  not null comment '最后修改人',
-    update_time          datetime     default utc_timestamp() not null comment '最后更新时间',
-    is_deleted           bigint                               not null comment '软删除'
+    update_time          datetime     default utc_timestamp() not null comment '更新时间',
+    is_deleted           bigint       default 0               not null comment '软删除'
 )
     comment '知识库';
 
-create table moai.wiki_document
+create table wiki_document
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -662,15 +662,15 @@ create table moai.wiki_document
     create_user_id int                                                  not null comment '创建人',
     create_time    datetime                     default utc_timestamp() not null comment '创建时间',
     update_user_id int                                                  not null comment '最后修改人',
-    update_time    datetime                     default utc_timestamp() not null comment '最后更新时间',
-    is_deleted     bigint                                               not null comment '软删除'
+    update_time    datetime                     default utc_timestamp() not null comment '更新时间',
+    is_deleted     bigint                       default 0               not null comment '软删除'
 )
     comment '知识库文档';
 
 create index wiki_document_object_key_index
-    on moai.wiki_document (object_key);
+    on wiki_document (object_key);
 
-create table moai.wiki_document_chunk_content_preview
+create table wiki_document_chunk_content_preview
 (
     id             bigint auto_increment comment '切片唯一ID（slice_id）'
         primary key,
@@ -682,20 +682,20 @@ create table moai.wiki_document_chunk_content_preview
     create_user_id int      default 0                   not null comment '创建人',
     create_time    datetime default current_timestamp() not null comment '创建时间',
     update_user_id int      default 0                   not null comment '更新人',
-    update_time    datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint   default 0                   not null comment '软删除'
 )
     comment '文档切片预览';
 
 create index idx_doc_slice
-    on moai.wiki_document_chunk_content_preview (document_id, id)
+    on wiki_document_chunk_content_preview (document_id, id)
     comment '文档+切片ID关联索引';
 
 create index idx_wiki_slice
-    on moai.wiki_document_chunk_content_preview (wiki_id)
+    on wiki_document_chunk_content_preview (wiki_id)
     comment '按知识库筛选切片索引';
 
-create table moai.wiki_document_chunk_embedding
+create table wiki_document_chunk_embedding
 (
     id               binary(16) default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -708,24 +708,24 @@ create table moai.wiki_document_chunk_embedding
     create_user_id   int        default 0                               not null comment '创建人',
     create_time      datetime   default current_timestamp()             not null comment '创建时间',
     update_user_id   int        default 0                               not null comment '更新人',
-    update_time      datetime   default current_timestamp()             not null on update current_timestamp() comment '更新时间',
+    update_time      datetime   default utc_timestamp()                 not null comment '更新时间',
     is_deleted       bigint     default 0                               not null comment '软删除'
 )
     comment '切片向量化内容';
 
 create index idx_deriv_type
-    on moai.wiki_document_chunk_embedding (metadata_type)
+    on wiki_document_chunk_embedding (metadata_type)
     comment '按衍生类型筛选索引';
 
 create index idx_doc_deriv
-    on moai.wiki_document_chunk_embedding (document_id, metadata_type)
+    on wiki_document_chunk_embedding (document_id, metadata_type)
     comment '文档+衍生类型筛选索引';
 
 create index idx_slice_deriv
-    on moai.wiki_document_chunk_embedding (id)
+    on wiki_document_chunk_embedding (id)
     comment '切片+衍生内容关联索引';
 
-create table moai.wiki_document_chunk_metadata_preview
+create table wiki_document_chunk_metadata_preview
 (
     id               bigint auto_increment comment 'id'
         primary key,
@@ -737,24 +737,24 @@ create table moai.wiki_document_chunk_metadata_preview
     create_user_id   int      default 0                   not null comment '创建人',
     create_time      datetime default current_timestamp() not null comment '创建时间',
     update_user_id   int      default 0                   not null comment '更新人',
-    update_time      datetime default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time      datetime default utc_timestamp()     not null comment '更新时间',
     is_deleted       bigint   default 0                   not null comment '软删除'
 )
     comment '切片元数据内容表（提问/提纲/摘要）';
 
 create index idx_deriv_type
-    on moai.wiki_document_chunk_metadata_preview (metadata_type)
+    on wiki_document_chunk_metadata_preview (metadata_type)
     comment '按衍生类型筛选索引';
 
 create index idx_doc_deriv
-    on moai.wiki_document_chunk_metadata_preview (document_id, metadata_type)
+    on wiki_document_chunk_metadata_preview (document_id, metadata_type)
     comment '文档+衍生类型筛选索引';
 
 create index idx_slice_deriv
-    on moai.wiki_document_chunk_metadata_preview (chunk_id, id)
+    on wiki_document_chunk_metadata_preview (chunk_id, id)
     comment '切片+衍生内容关联索引';
 
-create table moai.wiki_plugin_config
+create table wiki_plugin_config
 (
     id             int auto_increment comment 'id'
         primary key,
@@ -768,12 +768,12 @@ create table moai.wiki_plugin_config
     create_user_id int                          default 0                   not null comment '创建人',
     create_time    datetime                     default current_timestamp() not null comment '创建时间',
     update_user_id int                          default 0                   not null comment '更新人',
-    update_time    datetime                     default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time    datetime                     default utc_timestamp()     not null comment '更新时间',
     is_deleted     bigint                       default 0                   not null comment '软删除'
 )
     comment '知识库插件配置';
 
-create table moai.wiki_plugin_config_document
+create table wiki_plugin_config_document
 (
     id               int auto_increment comment 'id'
         primary key,
@@ -785,12 +785,12 @@ create table moai.wiki_plugin_config_document
     create_user_id   int           default 0                   not null comment '创建人',
     create_time      datetime      default current_timestamp() not null comment '创建时间',
     update_user_id   int           default 0                   not null comment '更新人',
-    update_time      datetime      default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time      datetime      default utc_timestamp()     not null comment '更新时间',
     is_deleted       bigint        default 0                   not null comment '软删除'
 )
     comment '知识库文档关联任务，这里的任务都是成功的';
 
-create table moai.wiki_plugin_config_document_state
+create table wiki_plugin_config_document_state
 (
     id              int auto_increment comment 'id'
         primary key,
@@ -803,12 +803,12 @@ create table moai.wiki_plugin_config_document_state
     create_user_id  int           default 0                   not null comment '创建人',
     create_time     datetime      default current_timestamp() not null comment '创建时间',
     update_user_id  int           default 0                   not null comment '更新人',
-    update_time     datetime      default current_timestamp() not null on update current_timestamp() comment '更新时间',
+    update_time     datetime      default utc_timestamp()     not null comment '更新时间',
     is_deleted      bigint        default 0                   not null comment '软删除'
 )
     comment '知识库文档关联任务';
 
-create table moai.worker_task
+create table worker_task
 (
     id             binary(16)                   default unhex(replace(uuid(), '-', '')) not null comment 'id'
         primary key,
@@ -821,8 +821,8 @@ create table moai.worker_task
     create_user_id int                                                                  not null comment '创建人',
     create_time    datetime                     default utc_timestamp()                 not null comment '创建时间',
     update_user_id int                                                                  not null comment '最后修改人',
-    update_time    datetime                     default utc_timestamp()                 not null comment '最后更新时间',
-    is_deleted     bigint                                                               not null comment '软删除'
+    update_time    datetime                     default utc_timestamp()                 not null comment '更新时间',
+    is_deleted     bigint                       default 0                               not null comment '软删除'
 )
     comment '工作任务';
 
