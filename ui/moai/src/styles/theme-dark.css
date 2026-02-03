@@ -1,0 +1,749 @@
+/* ============================================
+   MoAI 深空探索主题 - Dark Theme
+   ============================================
+   设计理念：科技感、专业、神秘
+   - 深空灰背景营造沉浸感
+   - 星云蓝主色调体现 AI 科技感
+   - 高对比度保证可读性
+   - 柔和的发光效果增加未来感
+   ============================================ */
+
+/* ============================================
+   CSS 变量 - 深空探索配色
+   ============================================ */
+:root {
+  /* 主色调 - 星云蓝 */
+  --color-primary: #4A9EFF;
+  --color-primary-hover: #6BB0FF;
+  --color-primary-active: #2E8AFF;
+  --color-primary-bg: rgba(74, 158, 255, 0.12);
+  --color-primary-bg-hover: rgba(74, 158, 255, 0.18);
+  --color-primary-border: rgba(74, 158, 255, 0.35);
+  
+  /* 辅助色 */
+  --color-secondary: #7B61FF;
+  --color-secondary-hover: #9580FF;
+  --color-secondary-bg: rgba(123, 97, 255, 0.12);
+  
+  --color-accent: #00E5CC;
+  --color-accent-hover: #00FFF0;
+  --color-accent-bg: rgba(0, 229, 204, 0.12);
+  
+  /* 功能色 */
+  --color-success: #00E676;
+  --color-success-bg: rgba(0, 230, 118, 0.12);
+  --color-warning: #FFB300;
+  --color-warning-bg: rgba(255, 179, 0, 0.12);
+  --color-error: #FF5252;
+  --color-error-bg: rgba(255, 82, 82, 0.12);
+  --color-info: #4A9EFF;
+  --color-info-bg: rgba(74, 158, 255, 0.12);
+
+  /* 背景色 - 深空灰 */
+  --color-bg-base: #0F1419;           /* 最深背景 */
+  --color-bg-layout: #0F1419;         /* 布局背景 */
+  --color-bg-elevated: #1A1F2E;       /* 次级背景 */
+  --color-bg-container: #242B3D;      /* 卡片/容器背景 */
+  --color-bg-spotlight: #2D3548;      /* 高亮背景 */
+  --color-bg-hover: rgba(74, 158, 255, 0.08);
+  --color-bg-active: rgba(74, 158, 255, 0.15);
+  --color-bg-mask: rgba(0, 0, 0, 0.65);
+
+  /* 文字颜色 - 提高对比度 */
+  --color-text-primary: #F5F5F7;      /* 主要文字 - 更亮 */
+  --color-text-secondary: #B8BFC8;    /* 次要文字 - 更亮 */
+  --color-text-tertiary: #7A8290;     /* 三级文字 - 更亮 */
+  --color-text-quaternary: #5A6270;   /* 四级文字 */
+  --color-text-disabled: #3D4451;     /* 禁用文字 */
+  --color-text-inverse: #0F1419;      /* 反色文字 */
+
+  /* 边框色 */
+  --color-border: #2D3548;
+  --color-border-secondary: #242B3D;
+  --color-border-hover: #3D4758;
+
+  /* 阴影 - 增强深度感 */
+  --shadow-sm: 0 2px 8px 0 rgba(0, 0, 0, 0.4),
+               0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px 0 rgba(0, 0, 0, 0.5),
+               0 2px 8px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px 0 rgba(0, 0, 0, 0.6),
+               0 4px 12px 0 rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 8px 32px 0 rgba(74, 158, 255, 0.25),
+                  0 4px 16px 0 rgba(0, 0, 0, 0.5);
+  
+  /* 发光效果 */
+  --glow-primary: 0 0 20px rgba(74, 158, 255, 0.4);
+  --glow-secondary: 0 0 20px rgba(123, 97, 255, 0.4);
+  --glow-accent: 0 0 20px rgba(0, 229, 204, 0.4);
+
+  /* 圆角 - 硬朗科技感 */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-xxl: 8px;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* 布局尺寸 */
+  --header-height: 64px;
+  --content-max-width: 1400px;
+  --sidebar-width: 240px;
+
+  /* 过渡动画 */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 字体 */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-family-code: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
+                      Consolas, 'Courier New', monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-xxl: 20px;
+  
+  /* 行高 */
+  --line-height-base: 1.5714;
+  --line-height-heading: 1.35;
+}
+
+/* ============================================
+   全局基础样式
+   ============================================ */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* 强制显示滚动条，防止模态框打开时页面抖动 */
+  overflow-y: scroll;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 防止 Ant Design Modal 导致的页面抖动 */
+body.ant-scrolling-effect {
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* 为 body 添加 padding 来补偿滚动条宽度 */
+body.ant-scrolling-effect {
+  padding-right: 0 !important;
+}
+
+/* 选中文本样式 */
+::selection {
+  background-color: var(--color-primary-bg);
+  color: var(--color-text-primary);
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-elevated);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+/* ============================================
+   布局容器样式
+   ============================================ */
+
+/* 主布局 */
+.moai-layout {
+  min-height: 100vh;
+  background-color: var(--color-bg-base);
+}
+
+/* 内容区域 */
+.moai-content {
+  min-height: calc(100vh - var(--header-height));
+  padding: var(--spacing-lg);
+  background: transparent;
+}
+
+/* 页面容器 */
+.moai-page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.moai-page:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* 页面容器 - 全宽版本 */
+.moai-page-full {
+  padding: var(--spacing-lg);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  min-height: calc(100vh - var(--header-height) - var(--spacing-lg) * 2);
+}
+
+/* 页面容器 - 无背景版本 */
+.moai-page-transparent {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+/* ============================================
+   卡片样式
+   ============================================ */
+.moai-card {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.moai-card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.moai-card-interactive {
+  cursor: pointer;
+}
+
+.moai-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-hover);
+}
+
+.moai-card-interactive:active {
+  transform: translateY(0);
+}
+
+/* 发光卡片效果 */
+.moai-card-glow {
+  position: relative;
+}
+
+.moai-card-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-lg);
+  padding: 1px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.moai-card-glow:hover::before {
+  opacity: 1;
+}
+
+/* ============================================
+   页面标题区域
+   ============================================ */
+.moai-page-header {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.moai-page-title {
+  font-size: var(--font-size-xxl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: var(--line-height-heading);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.moai-page-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: var(--line-height-base);
+}
+
+/* ============================================
+   工具栏样式
+   ============================================ */
+.moai-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.moai-toolbar-left,
+.moai-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* ============================================
+   列表样式
+   ============================================ */
+.moai-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.moai-list-item {
+  padding: var(--spacing-md);
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-normal);
+}
+
+.moai-list-item:hover {
+  border-color: var(--color-primary-border);
+  background: var(--color-bg-spotlight);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   网格布局
+   ============================================ */
+.moai-grid {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.moai-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.moai-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.moai-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.moai-grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* ============================================
+   空状态样式
+   ============================================ */
+.moai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xxl);
+  color: var(--color-text-tertiary);
+}
+
+.moai-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.4;
+  color: var(--color-text-quaternary);
+}
+
+.moai-empty-text {
+  font-size: var(--font-size-base);
+}
+
+/* ============================================
+   加载状态样式
+   ============================================ */
+.moai-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* ============================================
+   Ant Design 组件深色主题适配
+   ============================================ */
+
+/* 全局覆盖 */
+.ant-layout {
+  background: var(--color-bg-base);
+}
+
+/* 表格 */
+.ant-table {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+}
+
+.ant-table-thead > tr > th {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--color-border-secondary);
+  color: var(--color-text-primary);
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--color-bg-hover);
+}
+
+/* 按钮 */
+.ant-btn {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.ant-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.ant-btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: var(--glow-primary);
+}
+
+.ant-btn-primary:active {
+  background: var(--color-primary-active);
+  border-color: var(--color-primary-active);
+}
+
+.ant-btn-default {
+  background: var(--color-bg-container);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.ant-btn-default:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+/* 输入框 */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-select-selector,
+.ant-picker {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.ant-input::placeholder,
+.ant-input-affix-wrapper input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover,
+.ant-select-selector:hover {
+  border-color: var(--color-primary);
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
+  background: var(--color-bg-container);
+}
+
+/* 卡片 */
+.ant-card {
+  background: var(--color-bg-container);
+  border-color: var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.ant-card-head {
+  border-bottom-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.ant-card-hoverable:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* 模态框 */
+.ant-modal-content {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.ant-modal-header {
+  background: var(--color-bg-container);
+  border-bottom-color: var(--color-border);
+}
+
+.ant-modal-title {
+  color: var(--color-text-primary);
+}
+
+.ant-modal-close-x {
+  color: var(--color-text-secondary);
+}
+
+.ant-modal-close-x:hover {
+  color: var(--color-text-primary);
+}
+
+/* 标签页 */
+.ant-tabs-nav::before {
+  border-bottom-color: var(--color-border);
+}
+
+.ant-tabs-tab {
+  color: var(--color-text-secondary);
+}
+
+.ant-tabs-tab:hover {
+  color: var(--color-primary);
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-primary);
+}
+
+.ant-tabs-ink-bar {
+  background: var(--color-primary);
+}
+
+/* 下拉菜单 */
+.ant-dropdown-menu {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.ant-dropdown-menu-item {
+  color: var(--color-text-primary);
+}
+
+.ant-dropdown-menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+/* 消息提示 */
+.ant-message-notice-content {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text-primary);
+}
+
+/* 标签 */
+.ant-tag {
+  border-radius: var(--radius-sm);
+}
+
+/* 分割线 */
+.ant-divider {
+  border-color: var(--color-border);
+}
+
+/* ============================================
+   响应式设计
+   ============================================ */
+@media (max-width: 1200px) {
+  .moai-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .moai-grid-3,
+  .moai-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  :root {
+    --header-height: 56px;
+  }
+}
+
+@media (max-width: 768px) {
+  .moai-grid-2,
+  .moai-grid-3,
+  .moai-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .moai-content {
+    padding: var(--spacing-md);
+  }
+  
+  .moai-page,
+  .moai-page-full {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+  }
+  
+  .moai-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .moai-toolbar-left,
+  .moai-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ============================================
+   性能优化
+   ============================================ */
+
+/* 减少重绘 */
+.moai-card,
+.moai-list-item,
+.ant-btn {
+  will-change: transform, box-shadow;
+}
+
+/* 硬件加速 */
+.moai-card-interactive:hover {
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* 减少动画复杂度 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   特殊效果 - AI 科技感
+   ============================================ */
+
+/* 渐变文字效果 */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 发光按钮效果 */
+.glow-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: width 0.6s, height 0.6s, opacity 0.6s;
+}
+
+.glow-button:hover::before {
+  width: 300px;
+  height: 300px;
+  opacity: 0.3;
+}
+
+/* 扫描线效果 */
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.scan-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--color-primary), 
+    transparent
+  );
+  animation: scan 3s linear infinite;
+  opacity: 0.5;
+}
