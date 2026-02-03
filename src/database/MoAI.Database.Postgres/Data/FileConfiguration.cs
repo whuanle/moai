@@ -20,13 +20,13 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
     public void Configure(EntityTypeBuilder<FileEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("file_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63161_primary");
 
         entity.ToTable("file", tb => tb.HasComment("文件列表"));
 
-        entity.HasIndex(e => e.FileMd5, "file_file_md5_index");
+        entity.HasIndex(e => e.FileMd5, "idx_63161_file_file_md5_index");
 
-        entity.HasIndex(e => e.ObjectKey, "file_object_key_index");
+        entity.HasIndex(e => e.ObjectKey, "idx_63161_file_object_key_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -36,15 +36,15 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("文件类型")
             .HasColumnName("content_type");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.FileExtension)
             .HasMaxLength(10)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("文件扩展名")
             .HasColumnName("file_extension");
         entity.Property(e => e.FileMd5)
@@ -55,7 +55,7 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("文件大小")
             .HasColumnName("file_size");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsUploaded)
@@ -66,11 +66,10 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("文件路径")
             .HasColumnName("object_key");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
-            .HasComment("最后更新时间")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
 

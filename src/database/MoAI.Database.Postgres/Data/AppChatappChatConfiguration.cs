@@ -20,19 +20,19 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
     public void Configure(EntityTypeBuilder<AppChatappChatEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("app_chatapp_chat_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63077_primary");
 
         entity.ToTable("app_chatapp_chat", tb => tb.HasComment("普通应用对话表"));
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("uuid_generate_v4()")
+            .ValueGeneratedNever()
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AppId)
             .HasComment("appid")
             .HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -40,24 +40,28 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.InputTokens)
+            .HasDefaultValue(0)
             .HasComment("输入token统计")
             .HasColumnName("input_tokens");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.OutTokens)
+            .HasDefaultValue(0)
             .HasComment("输出token统计")
             .HasColumnName("out_tokens");
         entity.Property(e => e.Title)
             .HasMaxLength(100)
+            .HasDefaultValueSql("'未命名标题'::character varying")
             .HasComment("对话标题")
             .HasColumnName("title");
         entity.Property(e => e.TotalTokens)
+            .HasDefaultValue(0)
             .HasComment("使用的 token 总数")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
@@ -65,6 +69,7 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserType)
+            .HasDefaultValue(0)
             .HasComment("用户类型")
             .HasColumnName("user_type");
 

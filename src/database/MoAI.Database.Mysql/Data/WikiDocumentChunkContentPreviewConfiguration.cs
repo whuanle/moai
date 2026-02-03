@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 文档切片预览.
 /// </summary>
-public partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTypeConfiguration<WikiDocumentChunkContentPreviewEntity>
+internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTypeConfiguration<WikiDocumentChunkContentPreviewEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiDocumentChunkContentPreviewEntity> builder)
@@ -62,8 +62,7 @@ public partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTypeC
             .HasColumnType("int(11)")
             .HasColumnName("slice_order");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

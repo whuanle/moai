@@ -17,7 +17,7 @@ public partial class AppWorkflowHistoryEntity : IFullAudited
     /// <summary>
     /// varbinary(16).
     /// </summary>
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = default!;
 
     /// <summary>
     /// 团队id.
@@ -27,12 +27,12 @@ public partial class AppWorkflowHistoryEntity : IFullAudited
     /// <summary>
     /// 应用id.
     /// </summary>
-    public Guid AppId { get; set; }
+    public Guid AppId { get; set; } = default!;
 
     /// <summary>
     /// 流程设计id.
     /// </summary>
-    public Guid WorkflowDesignId { get; set; }
+    public Guid WorkflowDesignId { get; set; } = default!;
 
     /// <summary>
     /// 工作状态.

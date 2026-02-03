@@ -20,20 +20,21 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
     public void Configure(EntityTypeBuilder<ExternalAppEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("external_app_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63140_primary");
 
         entity.ToTable("external_app", tb => tb.HasComment("系统接入"));
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("uuid_generate_v4()")
+            .ValueGeneratedNever()
             .HasComment("app_id")
             .HasColumnName("id");
         entity.Property(e => e.Avatar)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("头像objectKey")
             .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -45,10 +46,11 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
             .HasComment("描述")
             .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsDsiable)
+            .HasDefaultValue(false)
             .HasComment("禁用")
             .HasColumnName("is_dsiable");
         entity.Property(e => e.Key)
@@ -63,7 +65,7 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
             .HasComment("团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

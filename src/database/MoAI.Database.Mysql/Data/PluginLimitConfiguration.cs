@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 插件使用量限制.
 /// </summary>
-public partial class PluginLimitConfiguration : IEntityTypeConfiguration<PluginLimitEntity>
+internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<PluginLimitEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<PluginLimitEntity> builder)
@@ -59,8 +59,7 @@ public partial class PluginLimitConfiguration : IEntityTypeConfiguration<PluginL
             .HasColumnType("int(11)")
             .HasColumnName("rule_type");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 知识库文档.
 /// </summary>
-public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDocumentEntity>
+internal partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDocumentEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiDocumentEntity> builder)
@@ -72,7 +72,7 @@ public partial class WikiDocumentConfiguration : IEntityTypeConfiguration<WikiDo
             .HasColumnName("slice_config");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

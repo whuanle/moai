@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 文件列表.
 /// </summary>
-public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
+internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<FileEntity> builder)
@@ -71,7 +71,7 @@ public partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasColumnName("object_key");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

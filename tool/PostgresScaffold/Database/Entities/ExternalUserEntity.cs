@@ -30,6 +30,11 @@ public partial class ExternalUserEntity : IFullAudited
     public string UserUid { get; set; } = default!;
 
     /// <summary>
+    /// 软删除.
+    /// </summary>
+    public long IsDeleted { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public int CreateUserId { get; set; }
@@ -45,12 +50,7 @@ public partial class ExternalUserEntity : IFullAudited
     public int UpdateUserId { get; set; }
 
     /// <summary>
-    /// 最后更新时间.
+    /// 更新时间.
     /// </summary>
     public DateTimeOffset UpdateTime { get; set; }
-
-    /// <summary>
-    /// 软删除.
-    /// </summary>
-    public long IsDeleted { get; set; }
 }

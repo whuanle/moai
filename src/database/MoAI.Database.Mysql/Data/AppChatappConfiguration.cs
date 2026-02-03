@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 普通应用.
 /// </summary>
-public partial class AppChatappConfiguration : IEntityTypeConfiguration<AppChatappEntity>
+internal partial class AppChatappConfiguration : IEntityTypeConfiguration<AppChatappEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AppChatappEntity> builder)
@@ -68,8 +68,7 @@ public partial class AppChatappConfiguration : IEntityTypeConfiguration<AppChata
             .HasColumnType("int(11)")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

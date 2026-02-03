@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 统计不同模型的token使用量，该表不是实时刷新的.
 /// </summary>
-public partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration<AiModelTokenAuditEntity>
+internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration<AiModelTokenAuditEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AiModelTokenAuditEntity> builder)
@@ -62,8 +62,7 @@ public partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration<A
             .HasColumnType("int(11)")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

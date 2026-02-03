@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 工作任务.
 /// </summary>
-public partial class WorkerTaskConfiguration : IEntityTypeConfiguration<WorkerTaskEntity>
+internal partial class WorkerTaskConfiguration : IEntityTypeConfiguration<WorkerTaskEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WorkerTaskEntity> builder)
@@ -64,7 +64,7 @@ public partial class WorkerTaskConfiguration : IEntityTypeConfiguration<WorkerTa
             .HasColumnName("state");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

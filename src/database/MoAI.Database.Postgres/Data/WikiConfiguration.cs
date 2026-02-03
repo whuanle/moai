@@ -20,7 +20,7 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
     public void Configure(EntityTypeBuilder<WikiEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("wiki_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63338_primary");
 
         entity.ToTable("wiki", tb => tb.HasComment("知识库"));
 
@@ -29,17 +29,18 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasColumnName("id");
         entity.Property(e => e.Avatar)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("团队头像")
             .HasColumnName("avatar");
         entity.Property(e => e.Counter)
+            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
@@ -47,13 +48,14 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("知识库描述")
             .HasColumnName("description");
         entity.Property(e => e.EmbeddingDimensions)
+            .HasDefaultValue(1024)
             .HasComment("知识库向量维度")
             .HasColumnName("embedding_dimensions");
         entity.Property(e => e.EmbeddingModelId)
             .HasComment("向量化模型的id")
             .HasColumnName("embedding_model_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsLock)
@@ -67,15 +69,14 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("知识库名称")
             .HasColumnName("name");
         entity.Property(e => e.TeamId)
-            .ValueGeneratedOnAdd()
+            .HasDefaultValue(0)
             .HasComment("团队id，不填则是个人知识库")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
-            .HasComment("最后更新时间")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
 

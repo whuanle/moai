@@ -20,21 +20,22 @@ internal partial class PluginLogConfiguration : IEntityTypeConfiguration<PluginL
     public void Configure(EntityTypeBuilder<PluginLogEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("plugin_log_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63239_primary");
 
         entity.ToTable("plugin_log", tb => tb.HasComment("插件使用日志"));
 
-        entity.HasIndex(e => e.Channel, "plugin_log_channel_index");
+        entity.HasIndex(e => e.Channel, "idx_63239_plugin_log_channel_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.Channel)
             .HasMaxLength(10)
+            .HasDefaultValueSql("'0'::character varying")
             .HasComment("渠道")
             .HasColumnName("channel");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -42,14 +43,14 @@ internal partial class PluginLogConfiguration : IEntityTypeConfiguration<PluginL
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.PluginId)
             .HasComment("插件id")
             .HasColumnName("plugin_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

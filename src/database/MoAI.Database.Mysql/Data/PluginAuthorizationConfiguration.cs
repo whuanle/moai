@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 授权私有插件给哪些团队使用.
 /// </summary>
-public partial class PluginAuthorizationConfiguration : IEntityTypeConfiguration<PluginAuthorizationEntity>
+internal partial class PluginAuthorizationConfiguration : IEntityTypeConfiguration<PluginAuthorizationEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<PluginAuthorizationEntity> builder)
@@ -50,8 +50,7 @@ public partial class PluginAuthorizationConfiguration : IEntityTypeConfiguration
             .HasColumnType("int(11)")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

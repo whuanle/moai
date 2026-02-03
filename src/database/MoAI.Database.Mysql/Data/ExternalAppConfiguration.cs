@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 系统接入.
 /// </summary>
-public partial class ExternalAppConfiguration : IEntityTypeConfiguration<ExternalAppEntity>
+internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<ExternalAppEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<ExternalAppEntity> builder)
@@ -66,8 +66,7 @@ public partial class ExternalAppConfiguration : IEntityTypeConfiguration<Externa
             .HasColumnType("int(11)")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

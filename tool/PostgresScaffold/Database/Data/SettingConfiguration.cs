@@ -20,29 +20,29 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
     public void Configure(EntityTypeBuilder<SettingEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("setting_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63283_primary");
 
         entity.ToTable("setting", tb => tb.HasComment("系统设置"));
 
-        entity.HasIndex(e => new { e.Key, e.IsDeleted }, "setting_key_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.Key, e.IsDeleted }, "idx_63283_setting_key_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("描述")
             .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Key)
@@ -50,11 +50,10 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
             .HasComment("配置名称")
             .HasColumnName("key");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
-            .HasComment("最后更新时间")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.Value)

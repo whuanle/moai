@@ -20,7 +20,7 @@ internal partial class ExternalUserConfiguration : IEntityTypeConfiguration<Exte
     public void Configure(EntityTypeBuilder<ExternalUserEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("external_user_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63153_primary");
 
         entity.ToTable("external_user", tb => tb.HasComment("外部系统的用户"));
 
@@ -28,26 +28,24 @@ internal partial class ExternalUserConfiguration : IEntityTypeConfiguration<Exte
             .HasComment("用户ID")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.ExternalAppId)
             .HasComment("所属的外部应用id")
             .HasColumnName("external_app_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
-            .HasComment("最后更新时间")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserUid)

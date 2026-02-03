@@ -20,13 +20,13 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
     public void Configure(EntityTypeBuilder<AiModelEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("ai_model_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_62951_primary");
 
         entity.ToTable("ai_model", tb => tb.HasComment("ai模型"));
 
-        entity.HasIndex(e => e.AiModelType, "ai_model_ai_model_type_index");
+        entity.HasIndex(e => e.AiModelType, "idx_62951_ai_model_ai_model_type_index");
 
-        entity.HasIndex(e => e.AiProvider, "ai_model_ai_provider_index");
+        entity.HasIndex(e => e.AiProvider, "idx_62951_ai_model_ai_provider_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -40,17 +40,18 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
             .HasComment("模型供应商")
             .HasColumnName("ai_provider");
         entity.Property(e => e.ContextWindowTokens)
+            .HasDefaultValue(8192)
             .HasComment("上下文最大token数量")
             .HasColumnName("context_window_tokens");
         entity.Property(e => e.Counter)
+            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.DeploymentName)
@@ -71,13 +72,15 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
             .HasComment("支持图片输出")
             .HasColumnName("image_output");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
+            .HasDefaultValue(false)
             .HasComment("是否开放给大家使用")
             .HasColumnName("is_public");
         entity.Property(e => e.IsVision)
+            .HasDefaultValue(false)
             .HasComment("支持计算机视觉")
             .HasColumnName("is_vision");
         entity.Property(e => e.Key)
@@ -92,6 +95,7 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
             .HasComment("模型名称,gpt-4o")
             .HasColumnName("name");
         entity.Property(e => e.TextOutput)
+            .HasDefaultValue(8192)
             .HasComment("最大文本输出token")
             .HasColumnName("text_output");
         entity.Property(e => e.Title)
@@ -99,11 +103,10 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
             .HasComment("自定义名模型名称，便于用户选择")
             .HasColumnName("title");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
-            .HasComment("最后更新时间")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
 

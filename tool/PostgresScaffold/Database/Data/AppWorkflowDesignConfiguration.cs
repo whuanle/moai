@@ -20,19 +20,18 @@ internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<AppWorkflowDesignEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("app_workflow_design_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63102_primary");
 
         entity.ToTable("app_workflow_design", tb => tb.HasComment("流程设计实例表"));
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AppId)
             .HasComment("应用id")
             .HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -40,30 +39,34 @@ internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.FunctionDesgin)
+            .HasDefaultValueSql("'{}'::text")
             .HasComment("功能设计，存储的是发布版本")
             .HasColumnName("function_desgin");
         entity.Property(e => e.FunctionDesignDraft)
+            .HasDefaultValueSql("'{}'::text")
             .HasComment("功能设计草稿")
             .HasColumnName("function_design_draft");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublish)
+            .HasDefaultValue(false)
             .HasComment("是否发布")
             .HasColumnName("is_publish");
         entity.Property(e => e.TeamId)
-            .ValueGeneratedOnAdd()
             .HasComment("团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UiDesign)
+            .HasDefaultValueSql("'{}'::text")
             .HasComment("ui设计，存储的是发布版本")
             .HasColumnName("ui_design");
         entity.Property(e => e.UiDesignDraft)
+            .HasDefaultValueSql("'{}'::text")
             .HasComment("ui设计草稿")
             .HasColumnName("ui_design_draft");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

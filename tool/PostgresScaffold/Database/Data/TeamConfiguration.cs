@@ -20,7 +20,7 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
     public void Configure(EntityTypeBuilder<TeamEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("team_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63294_primary");
 
         entity.ToTable("team", tb => tb.HasComment("团队"));
 
@@ -29,10 +29,11 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasColumnName("id");
         entity.Property(e => e.Avatar)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("团队头像,objectkey")
             .HasColumnName("avatar");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -41,10 +42,11 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("团队描述")
             .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Name)
@@ -52,7 +54,7 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasComment("团队名称")
             .HasColumnName("name");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

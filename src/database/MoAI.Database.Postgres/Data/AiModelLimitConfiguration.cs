@@ -20,7 +20,7 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
     public void Configure(EntityTypeBuilder<AiModelLimitEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("ai_model_limit_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_62976_primary");
 
         entity.ToTable("ai_model_limit", tb => tb.HasComment("ai模型使用量限制，只能用于系统模型"));
 
@@ -28,7 +28,7 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -36,11 +36,11 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.ExpirationTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("过期时间")
             .HasColumnName("expiration_time");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.LimitValue)
@@ -50,10 +50,11 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
             .HasComment("模型id")
             .HasColumnName("model_id");
         entity.Property(e => e.RuleType)
+            .HasDefaultValue(0)
             .HasComment("限制的规则类型,每天/总额/有效期")
             .HasColumnName("rule_type");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

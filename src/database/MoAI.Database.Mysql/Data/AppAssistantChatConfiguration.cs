@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// ai助手表.
 /// </summary>
-public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<AppAssistantChatEntity>
+internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<AppAssistantChatEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AppAssistantChatEntity> builder)
@@ -45,8 +45,8 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
         entity.Property(e => e.ExecutionSettings)
             .HasDefaultValueSql("'[]'")
             .HasComment("对话影响参数")
-            .HasColumnType("json")
-            .HasColumnName("execution_settings");
+            .HasColumnName("execution_settings")
+            .UseCollation("utf8mb4_bin");
         entity.Property(e => e.InputTokens)
             .HasComment("输入token统计")
             .HasColumnType("int(11)")
@@ -66,8 +66,8 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
         entity.Property(e => e.Plugins)
             .HasDefaultValueSql("'[]'")
             .HasComment("要使用的插件")
-            .HasColumnType("json")
-            .HasColumnName("plugins");
+            .HasColumnName("plugins")
+            .UseCollation("utf8mb4_bin");
         entity.Property(e => e.Prompt)
             .HasMaxLength(4000)
             .HasDefaultValueSql("''")
@@ -83,8 +83,7 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
             .HasColumnType("int(11)")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
@@ -95,8 +94,8 @@ public partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<Ap
         entity.Property(e => e.WikiIds)
             .HasDefaultValueSql("'0'")
             .HasComment("要使用的知识库id")
-            .HasColumnType("json")
-            .HasColumnName("wiki_ids");
+            .HasColumnName("wiki_ids")
+            .UseCollation("utf8mb4_bin");
 
         OnConfigurePartial(entity);
     }

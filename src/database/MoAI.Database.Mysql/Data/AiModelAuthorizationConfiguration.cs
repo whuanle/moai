@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 授权模型给哪些团队使用.
 /// </summary>
-public partial class AiModelAuthorizationConfiguration : IEntityTypeConfiguration<AiModelAuthorizationEntity>
+internal partial class AiModelAuthorizationConfiguration : IEntityTypeConfiguration<AiModelAuthorizationEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AiModelAuthorizationEntity> builder)
@@ -50,8 +50,7 @@ public partial class AiModelAuthorizationConfiguration : IEntityTypeConfiguratio
             .HasColumnType("int(11)")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

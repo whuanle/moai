@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 切片向量化内容.
 /// </summary>
-public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfiguration<WikiDocumentChunkEmbeddingEntity>
+internal partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfiguration<WikiDocumentChunkEmbeddingEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiDocumentChunkEmbeddingEntity> builder)
@@ -66,8 +66,7 @@ public partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConfig
             .HasColumnType("int(11)")
             .HasColumnName("metadata_type");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

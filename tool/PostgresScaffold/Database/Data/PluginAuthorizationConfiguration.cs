@@ -20,7 +20,7 @@ internal partial class PluginAuthorizationConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<PluginAuthorizationEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("plugin_authorization_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63195_primary");
 
         entity.ToTable("plugin_authorization", tb => tb.HasComment("授权私有插件给哪些团队使用"));
 
@@ -28,7 +28,7 @@ internal partial class PluginAuthorizationConfiguration : IEntityTypeConfigurati
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -36,7 +36,7 @@ internal partial class PluginAuthorizationConfiguration : IEntityTypeConfigurati
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.PluginId)
@@ -46,7 +46,7 @@ internal partial class PluginAuthorizationConfiguration : IEntityTypeConfigurati
             .HasComment("授权团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

@@ -20,19 +20,19 @@ internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTyp
     public void Configure(EntityTypeBuilder<WikiDocumentChunkContentPreviewEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("wiki_document_chunk_content_preview_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63366_primary");
 
         entity.ToTable("wiki_document_chunk_content_preview", tb => tb.HasComment("文档切片预览"));
 
-        entity.HasIndex(e => new { e.DocumentId, e.Id }, "idx_doc_slice");
+        entity.HasIndex(e => new { e.DocumentId, e.Id }, "idx_63366_idx_doc_slice");
 
-        entity.HasIndex(e => e.WikiId, "idx_wiki_slice");
+        entity.HasIndex(e => e.WikiId, "idx_63366_idx_wiki_slice");
 
         entity.Property(e => e.Id)
             .HasComment("切片唯一ID（slice_id）")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -43,7 +43,7 @@ internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTyp
             .HasComment("关联文档唯一标识")
             .HasColumnName("document_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.SliceContent)
@@ -56,7 +56,7 @@ internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTyp
             .HasComment("切片在文档中的顺序")
             .HasColumnName("slice_order");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

@@ -20,7 +20,7 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<AiModelTokenAuditEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("ai_model_token_audit_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_62988_primary");
 
         entity.ToTable("ai_model_token_audit", tb => tb.HasComment("统计不同模型的token使用量，该表不是实时刷新的"));
 
@@ -28,13 +28,15 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CompletionTokens)
+            .HasDefaultValue(0)
             .HasComment("完成数量")
             .HasColumnName("completion_tokens");
         entity.Property(e => e.Count)
+            .HasDefaultValue(0)
             .HasComment("调用次数")
             .HasColumnName("count");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -42,20 +44,22 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.ModelId)
             .HasComment("模型id")
             .HasColumnName("model_id");
         entity.Property(e => e.PromptTokens)
+            .HasDefaultValue(0)
             .HasComment("输入数量")
             .HasColumnName("prompt_tokens");
         entity.Property(e => e.TotalTokens)
+            .HasDefaultValue(0)
             .HasComment("总数量")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

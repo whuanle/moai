@@ -20,25 +20,25 @@ internal partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConf
     public void Configure(EntityTypeBuilder<WikiDocumentChunkEmbeddingEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("wiki_document_chunk_embedding_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_63377_primary");
 
         entity.ToTable("wiki_document_chunk_embedding", tb => tb.HasComment("切片向量化内容"));
 
-        entity.HasIndex(e => e.MetadataType, "idx_deriv_type");
+        entity.HasIndex(e => e.MetadataType, "idx_63377_idx_deriv_type");
 
-        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_doc_deriv");
+        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_63377_idx_doc_deriv");
 
-        entity.HasIndex(e => e.Id, "idx_slice_deriv");
+        entity.HasIndex(e => e.Id, "idx_63377_idx_slice_deriv");
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("uuid_generate_v4()")
+            .ValueGeneratedNever()
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)
             .HasComment("源id，关联自身")
             .HasColumnName("chunk_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -49,10 +49,11 @@ internal partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConf
             .HasComment("关联文档唯一标识（冗余字段）")
             .HasColumnName("document_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsEmbedding)
+            .HasDefaultValue(false)
             .HasComment("是否被向量化")
             .HasColumnName("is_embedding");
         entity.Property(e => e.MetadataContent)
@@ -62,7 +63,7 @@ internal partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConf
             .HasComment("元数据类型：0=原文，1=大纲，2=问题，3=关键词，4=摘要，5=聚合的段")
             .HasColumnName("metadata_type");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

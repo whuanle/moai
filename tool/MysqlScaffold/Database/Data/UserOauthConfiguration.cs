@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// oauth2.0对接.
 /// </summary>
-public partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauthEntity>
+internal partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauthEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<UserOauthEntity> builder)
@@ -52,7 +52,7 @@ public partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOauth
             .HasColumnName("sub");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 知识库文档关联任务，这里的任务都是成功的.
 /// </summary>
-public partial class WikiPluginConfigDocumentConfiguration : IEntityTypeConfiguration<WikiPluginConfigDocumentEntity>
+internal partial class WikiPluginConfigDocumentConfiguration : IEntityTypeConfiguration<WikiPluginConfigDocumentEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiPluginConfigDocumentEntity> builder)
@@ -55,8 +55,7 @@ public partial class WikiPluginConfigDocumentConfiguration : IEntityTypeConfigur
             .HasComment("关联值")
             .HasColumnName("relevance_value");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

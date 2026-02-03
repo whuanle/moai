@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 流程执行记录.
 /// </summary>
-public partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguration<AppWorkflowHistoryEntity>
+internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguration<AppWorkflowHistoryEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AppWorkflowHistoryEntity> builder)
@@ -68,8 +68,7 @@ public partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguration<
             .HasColumnType("int(11)")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
