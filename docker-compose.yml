@@ -62,7 +62,7 @@ services:
 
   # MoAI 后端服务
   moai:
-    image: moai
+    image: registry.cn-hangzhou.aliyuncs.com/whuanle/moai:latest
     build:
       context: .
       dockerfile: Dockerfile

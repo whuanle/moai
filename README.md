@@ -1,181 +1,203 @@
+<p align="center">
+  <img src="moai_docs/static/img/logo.png" width="120" alt="MoAI Logo">
+</p>
 
+<h1 align="center">MoAI</h1>
 
-## 开发说明
+<p align="center">
+  <strong>开源 AI 应用平台 - 构建你的智能助手</strong>
+</p>
 
-在项目的 `configs` 目录提供各类配置模板，可参考该目录下的文件。
+<p align="center">
+  <a href="https://moai.anyai.wiki">📖 文档</a> •
+  <a href="#快速开始">🚀 快速开始</a> •
+  <a href="#功能特性">✨ 功能特性</a>
+</p>
 
-### 配置
+---
 
-项目支持环境变量和文件注入配置，建议统一 configs 目录统一管理配置文件。
+## 简介
 
-创建环境变量，`MAI_CONFIG`，设置变量值为配置文件路径，配置文件支持 `.json`、`.yaml`、`.conf` 等类型。
+MoAI 是一个功能丰富的开源 AI 应用平台，支持多种主流 AI 模型接入，提供知识库管理、插件扩展、工作流自动化等能力，帮助你快速构建企业级 AI 应用。
 
-如：
+## 功能特性
 
-```
-MAI_CONFIG = E:/configs/maiconfigs.json
-```
+🤖 **多模型支持**
+- OpenAI、Anthropic、HuggingFace、Mistral 等主流模型
+- 统一的模型管理和调用接口
+- 支持自定义模型接入
 
-![image-20250309210715585](images/image-20250309210715585.png)
+📚 **知识库管理**
+- 文档向量化与语义搜索
+- 支持多种文档格式 (PDF、Word、Markdown 等)
+- 基于 pgvector 的高效向量存储
 
+🔌 **插件系统**
+- 原生插件、自定义插件、工具插件
+- 灵活的插件开发框架
+- 支持 MCP 协议
 
+💬 **AI 对话**
+- 多轮对话上下文管理
+- 提示词模板管理
+- 流式响应支持
 
-使用 docker 启动时，可以通过 `docker -v /data/config:/app/configs ` 的形式向服务提供配置文件。
-如果不单独配置 MAI_CONFIG，那么会自动使用 `configs/system.yaml` 作为默认配置文件。
+👥 **团队协作**
+- 多用户权限管理
+- OAuth2.0 登录 (飞书、钉钉、企业微信)
+- 团队资源共享
 
-```
--e MAI_CONFIG=/app/configs/system.json
-```
+📁 **文件存储**
+- 本地存储、S3、MinIO
+- 阿里云 OSS、腾讯云 COS
+- 统一的存储抽象层
 
-### 指定端口
-默认服务使用 8080 端口启动服务，如果需要改变，可以添加环境变量。
+⚙️ **工作流自动化**
+- 可视化工作流编排
+- 丰富的节点类型
+- 定时任务支持
 
-```
-ASPNETCORE_HTTP_PORTS=80;8080
-ASPNETCORE_HTTPS_PORTS=443;8081
-```
+## 技术栈
 
-或者
+| 后端 | 前端 |
+|------|------|
+| .NET 9 / ASP.NET Core | React 19 / TypeScript |
+| Entity Framework Core | Ant Design / LobeHub UI |
+| MediatR (CQRS) | Redux Toolkit / Zustand |
+| Semantic Kernel | Vite 6 |
 
-```
-ASPNETCORE_URLS=http://*:80/;http://*:8080/;https://*:443/;https://*:8081/
-```
+## 快速开始
 
-### 配置
-#### 服务端配置
+### Docker Compose 一键部署
 
-服务端配置用于正确生成前端跳转地址、文件访问地址、swagger 访问。
+1. 克隆项目
 
-```
-"Server": "http://127.0.0.1:5000"
-```
-
-#### AES 
-
-AES 加密配置用于加密敏感数据，如 ai key 等。
-
-```
-  "AES": "abcdef1234",
-```
-
-#### 数据库
-
-数据库配置用于连接数据库，支持 MySQL、PostgreSQL、SQLite 等。
-
-Mysql 示例:
-
-```
-  "DBType": "mysql",
-  "Database": "Database=moai;Host=127.0.0.1;Password=aaa;Port=3306;Username=root",
-```
-
-#### Redis
-
-```
-  "Redis": "192.168.50.199:6379",
-```
-
-#### 向量化
-
-向量化配置用于连接向量化服务，支持 postgres、 Pinecone、Weaviate、Milvus 等。
-```
-  "Wiki": {
-    "DBType": "postgres",
-    "Database": "Database=document;Host=192.168.50.199;Password=19971120;Port=5432;Username=postgres;Search Path=public"
-  },
+```bash
+git clone https://github.com/AIDotNet/MoAI.git
+cd MoAI
 ```
 
-#### 消息传递
+2. 创建环境配置文件
 
-用于传递消息或后台处理任务，支持 RabbitMQ 和本地消息。
-
-使用 RabbitMQ 时，需要安装 RabbitMQ 服务并配置连接信息。
-```
-  "Message": {
-    "RabbitMQ": "amqp://guest:guest@127.0.0.1:5672"
-    }
+```bash
+cp .env.example .env
 ```
 
-如果不使用 RabbitMQ，可以使用本地消息传递，配置留空即可。
+3. 编辑 `.env` 文件，配置必要参数
 
-```
-  "Message": {
-  }
-```
+```env
+# 数据库配置
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=moai123456
+POSTGRES_DB=moai
 
-#### 文件存储
-支持 S3、MinIO、阿里云 OSS、腾讯云 COS 等文件存储服务，或者使用本地存储。
+# Redis 配置 (使用默认即可)
 
-使用对象存储时，不支持自定义域名，只能使用原生存储桶名称。
+# RabbitMQ 配置
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
 
-```
-  "Storage": {
-    "Type": "S3",
-      "Public": {
-        "Endpoint": "https://cos.ap-guangzhou.myqcloud.com",
-        "ForcePathStyle": false,
-        "Bucket": "MoAI-00000",
-        "AccessKeyId": "xxx",
-        "AccessKeySecret": "xxx"
-      },
-      "Private": {
-        "Endpoint": "https://cos.ap-guangzhou.myqcloud.com",
-        "ForcePathStyle": false,
-        "Bucket": "maomiprivate-00001",
-        "AccessKeyId": "xxx",
-        "AccessKeySecret": "xxx"
-      }
-    }
+# MoAI 服务配置 - 修改为你的实际访问地址
+MOAI_SERVER_URL=http://your-domain:8080
+MOAI_WEBUI_URL=http://your-domain:8080
+MOAI_AES_KEY=your_aes_key_here
+
+# MoAI 服务端口，容器暴露的端口
+MOAI_PORT=8080
 ```
 
-如果使用本地存储，则需要在 configs/system.yaml 中配置存储路径。
-```
-  "Storage": {
-    "Type": "local",
-    "FilePath": "E:\\configs\\maomi\\files",
-  }
+4. 启动服务
+
+```bash
+docker-compose up -d
 ```
 
-### 日志
+5. 访问服务
 
-你可以在 configs 目录下创建一个 logger.json 文件，MoAI 启动时会读取该文件作为日志配置，如果文件不存在则会自动创建一个默认的。
+- 后端 API: `http://localhost:8080`
 
-默认配置如下：
 
+
+### 服务组件
+
+Docker Compose 包含以下服务：
+
+| 服务 | 说明 | 默认端口 |
+|------|------|----------|
+| moai | MoAI 后端服务 | 8080 |
+| postgres | PostgreSQL + pgvector | 5432 |
+| redis | Redis 缓存 | 6379 |
+| rabbitmq | RabbitMQ 消息队列 | 5672 / 15672 |
+
+### 自定义配置
+
+如需自定义配置，可挂载配置文件：
+
+```bash
+docker run -d \
+  -v /your/config/path:/app/configs \
+  -e MAI_CONFIG=/app/configs/system.yaml \
+  -p 8080:8080 \
+  registry.cn-hangzhou.aliyuncs.com/whuanle/moai:latest
 ```
-{
-  "Serilog": {
-    "Using": [
-      "Serilog.Sinks.Console"
-    ],
-    "MinimumLevel": {
-      "Default": "Information",
-      "Override": {
-        "Microsoft.AspNetCore.HttpLogging": "Information",
-        "ProtoBuf.Grpc.Server.ServicesExtensions.CodeFirstServiceMethodProvider": "Warning",
-        "Microsoft.EntityFrameworkCore": "Information",
-        "Microsoft.AspNetCore": "Warning",
-        "System.Net.Http.HttpClient.TenantManagerClient.LogicalHandler": "Warning",
-        "Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted": "Warning",
-        "System": "Information",
-        "Microsoft": "Information",
-        "Grpc": "Information",
-        "MySqlConnector": "Information"
-      }
-    },
-    "WriteTo": [
-      {
-        "Name": "Console",
-        "Args": {
-          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
-        }
-      }
-    ],
-    "Enrich": [
-      "FromLogContext",
-      "WithMachineName",
-      "WithThreadId"
-    ]
-  }
-}
+
+## 文档
+
+完整文档请访问：**https://moai.anyai.wiki**
+
+文档包含：
+- 快速入门指南
+- Docker 部署教程
+- AI 模型配置
+- 插件开发指南
+- 知识库使用说明
+- API 参考
+
+## 本地开发
+
+### 后端
+
+```bash
+# 构建
+dotnet build MoAI.sln
+
+# 运行
+dotnet run --project src/MoAI/MoAI.csproj
 ```
+
+### 前端
+
+```bash
+cd ui/moai
+
+# 安装依赖
+npm install
+
+# 开发模式
+npm run dev
+
+# 构建
+npm run build
+```
+
+## 配置说明
+
+详细配置请参考 `configs/` 目录下的模板文件，主要配置项：
+
+- **Server**: 服务端访问地址
+- **AES**: 敏感数据加密密钥
+- **Database**: 数据库连接配置
+- **Redis**: 缓存服务配置
+- **Wiki**: 向量数据库配置
+- **Message**: 消息队列配置
+- **Storage**: 文件存储配置
+
+## License
+
+[MIT License](LICENSE.txt)
+
+---
+
+<p align="center">
+  如果这个项目对你有帮助，欢迎 ⭐ Star 支持！
+</p>
