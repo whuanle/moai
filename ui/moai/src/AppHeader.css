@@ -59,18 +59,24 @@
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: 4px;
   transition: all var(--transition-fast);
-  border: 1px solid transparent;
+  border: none;
+  background: transparent;
 }
 
 .logo-container:hover {
-  background-color: rgba(74, 158, 255, 0.08);
-  border-color: rgba(74, 158, 255, 0.2);
+  background: transparent;
+  transform: translateY(-1px);
 }
 
 .logo-container img {
   object-fit: contain;
   border-radius: 4px;
   filter: drop-shadow(0 0 6px rgba(74, 158, 255, 0.4));
+  transition: filter var(--transition-fast);
+}
+
+.logo-container:hover img {
+  filter: drop-shadow(0 0 10px rgba(74, 158, 255, 0.6));
 }
 
 .logo-text {
@@ -83,84 +89,105 @@
   background-clip: text;
   letter-spacing: -0.5px;
   filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.3));
+  transition: filter var(--transition-fast);
+}
+
+.logo-container:hover .logo-text {
+  filter: drop-shadow(0 0 12px rgba(74, 158, 255, 0.5));
 }
 
 /* ============================================
-   主导航菜单
+   主导航菜单 - 滑动指示器设计
    ============================================ */
-.main-menu {
+.menu-wrapper {
+  position: relative;
   flex: 1;
+  height: 100%;
+}
+
+.main-menu {
   border-bottom: none !important;
   background: transparent !important;
   line-height: calc(var(--header-height) - 2px);
   height: 100%;
 }
 
+/* 菜单项基础样式 - 简洁无背景 */
 .main-menu .ant-menu-item,
 .main-menu .ant-menu-submenu-title {
   padding: 0 var(--spacing-md) !important;
   margin: 0 var(--spacing-xs) !important;
-  border-radius: 4px;
+  border-radius: 0;
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
-  border: 1px solid transparent;
-}
-
-.main-menu .ant-menu-item:hover,
-.main-menu .ant-menu-submenu-title:hover {
-  color: var(--color-primary) !important;
-  background-color: rgba(74, 158, 255, 0.08) !important;
-  border-color: rgba(74, 158, 255, 0.2) !important;
-}
-
-.main-menu .ant-menu-item-selected {
-  color: var(--color-primary) !important;
-  background-color: rgba(74, 158, 255, 0.12) !important;
-  border-color: rgba(74, 158, 255, 0.3) !important;
-  font-weight: 600;
+  transition: color var(--transition-fast);
+  border: none !important;
+  background: transparent !important;
   position: relative;
 }
 
-/* 选中项发光效果 */
-.main-menu .ant-menu-item-selected::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 4px;
-  background: var(--color-primary);
-  opacity: 0.05;
-  filter: blur(8px);
+/* 悬停状态 - 改变文字颜色 */
+.main-menu .ant-menu-item:hover,
+.main-menu .ant-menu-submenu-title:hover {
+  color: var(--color-primary) !important;
+  background: transparent !important;
 }
 
-.main-menu .ant-menu-item-selected::after,
-.main-menu .ant-menu-submenu-selected::after {
-  border-bottom-color: var(--color-primary) !important;
-  border-bottom-width: 2px !important;
+/* GSAP 字符闪光动画 - 由 JavaScript 控制 */
+.main-menu .ant-menu-item .ant-menu-title-content,
+.main-menu .ant-menu-submenu-title .ant-menu-title-content {
+  display: inline-block;
+}
+
+/* 选中状态 - 只改变文字颜色和字重 */
+.main-menu .ant-menu-item-selected {
+  color: var(--color-primary) !important;
+  background: transparent !important;
+  font-weight: 600;
+}
+
+/* 移除 Ant Design 默认的所有伪元素 */
+.main-menu .ant-menu-item::after,
+.main-menu .ant-menu-item::before,
+.main-menu .ant-menu-submenu-title::after,
+.main-menu .ant-menu-submenu-title::before {
+  display: none !important;
+}
+
+/* 滑动指示器 - 底部横线 */
+.menu-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--color-primary);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 8px var(--color-primary);
+  border-radius: 2px 2px 0 0;
+  z-index: 1;
 }
 
 /* 子菜单样式 */
 .main-menu .ant-menu-submenu-popup .ant-menu {
-  background: rgba(26, 31, 46, 0.95);
+  background: var(--color-bg-elevated);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(74, 158, 255, 0.2);
-  border-radius: 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(74, 158, 255, 0.1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   padding: var(--spacing-xs);
 }
 
 .main-menu .ant-menu-submenu-popup .ant-menu-item {
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin: var(--spacing-xs) 0 !important;
   color: var(--color-text-primary);
-  border: 1px solid transparent;
+  background: transparent !important;
 }
 
 .main-menu .ant-menu-submenu-popup .ant-menu-item:hover {
-  background: rgba(74, 158, 255, 0.12);
-  border-color: rgba(74, 158, 255, 0.3);
+  background: var(--color-bg-hover) !important;
   color: var(--color-primary) !important;
 }
 
@@ -170,10 +197,10 @@
 .header-right {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
-/* 用户下拉菜单触发器 */
+/* 用户下拉菜单触发器 - 简洁无边框设计 */
 .user-dropdown {
   display: flex;
   align-items: center;
@@ -181,20 +208,24 @@
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: 4px;
   transition: all var(--transition-fast);
-  border: 1px solid transparent;
-  background: rgba(26, 31, 46, 0.3);
-  backdrop-filter: blur(10px);
+  border: none;
+  background: transparent;
 }
 
 .user-dropdown:hover {
-  background-color: rgba(74, 158, 255, 0.1);
-  border-color: rgba(74, 158, 255, 0.3);
-  box-shadow: 0 0 15px rgba(74, 158, 255, 0.2);
+  background: transparent;
+  transform: translateY(-1px);
 }
 
 .user-dropdown .ant-avatar {
-  box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
-  border: 2px solid rgba(74, 158, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(74, 158, 255, 0.2);
+  transition: all var(--transition-fast);
+}
+
+.user-dropdown:hover .ant-avatar {
+  box-shadow: 0 0 12px rgba(74, 158, 255, 0.5);
+  border-color: rgba(74, 158, 255, 0.4);
 }
 
 .user-name {
@@ -217,6 +248,50 @@
 .user-dropdown:hover .dropdown-icon {
   transform: translateY(1px);
   color: var(--color-primary);
+}
+
+/* ============================================
+   用户下拉菜单 - 增强文字对比度
+   ============================================ */
+/* 覆盖 Ant Design 下拉菜单样式 */
+.ant-dropdown-menu {
+  background: var(--color-bg-elevated) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: var(--spacing-xs) !important;
+}
+
+/* 菜单项文字 - 增强对比度 */
+.ant-dropdown-menu-item {
+  color: var(--color-text-primary) !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-sm) !important;
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+  margin: 2px 0 !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-primary) !important;
+}
+
+/* 菜单项图标 */
+.ant-dropdown-menu-item .anticon {
+  color: var(--color-text-secondary) !important;
+  margin-right: var(--spacing-sm) !important;
+}
+
+.ant-dropdown-menu-item:hover .anticon {
+  color: var(--color-primary) !important;
+}
+
+/* 分割线 */
+.ant-dropdown-menu-item-divider {
+  background-color: var(--color-border) !important;
+  margin: var(--spacing-xs) 0 !important;
 }
 
 /* ============================================
@@ -249,4 +324,132 @@
   .user-dropdown {
     padding: var(--spacing-xs);
   }
+}
+
+/* ============================================
+   亮色主题适配 - Light Theme
+   ============================================ */
+[data-theme="light"] .app-header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+[data-theme="light"] .app-header::after {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 132, 255, 0.2) 50%, 
+    transparent 100%
+  );
+}
+
+/* Logo 容器 - 亮色主题 */
+[data-theme="light"] .logo-container {
+  border: none;
+  background: transparent;
+}
+
+[data-theme="light"] .logo-container:hover {
+  background: transparent;
+}
+
+[data-theme="light"] .logo-container img {
+  filter: drop-shadow(0 0 4px rgba(0, 132, 255, 0.3));
+}
+
+[data-theme="light"] .logo-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, rgba(0, 132, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 6px rgba(0, 132, 255, 0.2));
+}
+
+/* 菜单项 - 亮色主题 */
+[data-theme="light"] .main-menu .ant-menu-item,
+[data-theme="light"] .main-menu .ant-menu-submenu-title {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="light"] .main-menu .ant-menu-item:hover,
+[data-theme="light"] .main-menu .ant-menu-submenu-title:hover {
+  color: var(--color-primary);
+}
+
+[data-theme="light"] .main-menu .ant-menu-item-selected {
+  color: var(--color-primary);
+}
+
+/* 滑动指示器 - 亮色主题 */
+[data-theme="light"] .menu-indicator {
+  background: var(--color-primary);
+  box-shadow: 0 0 6px var(--color-primary);
+}
+
+/* 子菜单 - 亮色主题 */
+[data-theme="light"] .main-menu .ant-menu-submenu-popup .ant-menu {
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="light"] .main-menu .ant-menu-submenu-popup .ant-menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .main-menu .ant-menu-submenu-popup .ant-menu-item:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-primary);
+}
+
+/* 用户下拉菜单 - 亮色主题 */
+[data-theme="light"] .user-dropdown .ant-avatar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(0, 132, 255, 0.15);
+}
+
+[data-theme="light"] .user-dropdown:hover .ant-avatar {
+  box-shadow: 0 0 12px rgba(0, 132, 255, 0.3);
+  border-color: rgba(0, 132, 255, 0.3);
+}
+
+[data-theme="light"] .user-name {
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .dropdown-icon {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme="light"] .user-dropdown:hover .dropdown-icon {
+  color: var(--color-primary);
+}
+
+/* 下拉菜单 - 亮色主题 */
+[data-theme="light"] .ant-dropdown-menu {
+  background: var(--color-bg-container) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+[data-theme="light"] .ant-dropdown-menu-item {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="light"] .ant-dropdown-menu-item:hover {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-primary) !important;
+}
+
+[data-theme="light"] .ant-dropdown-menu-item .anticon {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="light"] .ant-dropdown-menu-item:hover .anticon {
+  color: var(--color-primary) !important;
+}
+
+[data-theme="light"] .ant-dropdown-menu-item-divider {
+  background-color: var(--color-border) !important;
 }

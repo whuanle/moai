@@ -43,6 +43,22 @@ const Home: React.FC = () => {
   const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
   const userInfo = useAppStore((state) => state.getUserInfo());
 
+  // 强制首页使用暗色主题
+  useEffect(() => {
+    // 保存当前主题
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    
+    // 强制设置为暗色主题
+    document.documentElement.setAttribute('data-theme', 'dark');
+    
+    // 组件卸载时恢复之前的主题
+    return () => {
+      if (currentTheme) {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     // 检查登录状态
     const checkLoginStatus = () => {
