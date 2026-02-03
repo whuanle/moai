@@ -30,6 +30,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router";
 import useAppStore from "./stateshare/store";
+import AuthModal from "./components/common/AuthModal";
 import "./Home.css";
 
 const { Title, Paragraph, Text } = Typography;
@@ -38,6 +39,8 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
   const userInfo = useAppStore((state) => state.getUserInfo());
 
   useEffect(() => {
@@ -52,14 +55,21 @@ const Home: React.FC = () => {
   }, []);
 
   const handleLogin = () => {
-    navigate("/login");
+    setAuthModalTab("login");
+    setAuthModalOpen(true);
   };
 
   const handleRegister = () => {
-    navigate("/register");
+    setAuthModalTab("register");
+    setAuthModalOpen(true);
   };
 
   const handleEnterDashboard = () => {
+    navigate("/app");
+  };
+
+  const handleAuthSuccess = () => {
+    setIsLoggedIn(true);
     navigate("/app");
   };
 
@@ -134,6 +144,13 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-container">
+      {/* 认证弹窗 */}
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab={authModalTab}
+        onSuccess={handleAuthSuccess}
+      />
       {/* 导航栏 */}
       <header className="header">
         <div className="header-content">

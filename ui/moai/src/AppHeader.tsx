@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router";
 import { Layout, Menu, Avatar, Dropdown, message } from "antd";
 import type { MenuProps } from "antd";
+import { useState } from "react";
 import {
   AppstoreOutlined,
   BookOutlined,
@@ -15,6 +16,7 @@ import {
   LinkOutlined,
 } from "@ant-design/icons";
 import useAppStore from "./stateshare/store";
+import AuthModal from "./components/common/AuthModal";
 import "./AppHeader.css";
 
 const { Header } = Layout;
@@ -27,6 +29,8 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [messageApi, contextHolder] = message.useMessage();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
   const userDetailInfo = useAppStore((state) => state.userDetailInfo);
 
   // 获取当前选中的菜单项
@@ -220,6 +224,13 @@ export default function AppHeader({ isAdmin }: AppHeaderProps) {
   return (
     <>
       {contextHolder}
+      {/* 认证弹窗 */}
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab={authModalTab}
+        onSuccess={() => window.location.reload()}
+      />
       <Header className="app-header">
         <div className="header-left">
           <div className="logo-container" onClick={() => navigate("/app/application")}>
