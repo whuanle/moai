@@ -11,7 +11,8 @@
 /* ============================================
    CSS 变量 - 深空探索配色
    ============================================ */
-:root {
+:root,
+[data-theme="dark"] {
   /* 主色调 - 星云蓝 */
   --color-primary: #4A9EFF;
   --color-primary-hover: #6BB0FF;
@@ -130,6 +131,22 @@
 html {
   /* 强制始终显示滚动条，防止 Modal 打开时页面抖动 */
   overflow-y: scroll !important;
+  /* 默认主题为亮色 */
+  transition: background-color var(--transition-normal),
+              color var(--transition-normal);
+}
+
+/* 初始化默认主题为亮色 */
+html:not([data-theme]) {
+  background-color: #FFFFFF;
+}
+
+html[data-theme="light"] {
+  background-color: #FFFFFF;
+}
+
+html[data-theme="dark"] {
+  background-color: #0F1419;
 }
 
 body {
@@ -590,10 +607,39 @@ body.ant-scrolling-effect {
 
 /* 消息提示 */
 .ant-message-notice-content {
-  background: var(--color-bg-container);
+  background: var(--color-bg-container) !important;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  color: var(--color-text-primary);
+  color: var(--color-text-primary) !important;
+}
+
+.ant-message-success .anticon {
+  color: var(--color-success) !important;
+}
+
+.ant-message-error .anticon {
+  color: var(--color-error) !important;
+}
+
+.ant-message-warning .anticon {
+  color: var(--color-warning) !important;
+}
+
+.ant-message-info .anticon {
+  color: var(--color-info) !important;
+}
+
+/* Message 文字内容 */
+.ant-message-notice-content span {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-message-custom-content {
+  color: var(--color-text-primary) !important;
+}
+
+.ant-message-custom-content > span {
+  color: var(--color-text-primary) !important;
 }
 
 /* 标签 */

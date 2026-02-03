@@ -1,0 +1,331 @@
+/* ============================================
+   MoAI 亮色主题 - Light Theme (Notion 风格)
+   ============================================
+   设计理念：简洁、明亮、舒适
+   - 纯白背景减少视觉疲劳
+   - 天空蓝主色调温和清爽
+   - 高对比度保证可读性
+   - 柔和的阴影增加层次感
+   ============================================ */
+
+/* ============================================
+   CSS 变量 - 亮色主题配色
+   ============================================ */
+[data-theme="light"] {
+  /* 主色调 - 天空蓝 (更温和的蓝色) */
+  --color-primary: #0084FF;
+  --color-primary-hover: #0073E6;
+  --color-primary-active: #0062CC;
+  --color-primary-bg: rgba(0, 132, 255, 0.08);
+  --color-primary-bg-hover: rgba(0, 132, 255, 0.12);
+  --color-primary-border: rgba(0, 132, 255, 0.3);
+  
+  /* 辅助色 */
+  --color-secondary: #7C3AED;
+  --color-secondary-hover: #6D28D9;
+  --color-secondary-bg: rgba(124, 58, 237, 0.08);
+  
+  --color-accent: #06B6D4;
+  --color-accent-hover: #0891B2;
+  --color-accent-bg: rgba(6, 182, 212, 0.08);
+  
+  /* 功能色 */
+  --color-success: #10B981;
+  --color-success-bg: rgba(16, 185, 129, 0.08);
+  --color-warning: #F59E0B;
+  --color-warning-bg: rgba(245, 158, 11, 0.08);
+  --color-error: #EF4444;
+  --color-error-bg: rgba(239, 68, 68, 0.08);
+  --color-info: #0084FF;
+  --color-info-bg: rgba(0, 132, 255, 0.08);
+
+  /* 背景色 - Notion 风格 */
+  --color-bg-base: #FFFFFF;           /* 纯白背景 */
+  --color-bg-layout: #FFFFFF;         /* 布局背景 */
+  --color-bg-elevated: #F7F8FA;       /* 次级背景 */
+  --color-bg-container: #FFFFFF;      /* 卡片/容器背景 */
+  --color-bg-spotlight: #F7F8FA;      /* 高亮背景 */
+  --color-bg-hover: rgba(0, 132, 255, 0.04);
+  --color-bg-active: rgba(0, 132, 255, 0.08);
+  --color-bg-mask: rgba(0, 0, 0, 0.45);
+
+  /* 文字颜色 - 柔和但清晰 */
+  --color-text-primary: #1F2937;      /* 主要文字 - 深灰而非纯黑 */
+  --color-text-secondary: #6B7280;    /* 次要文字 */
+  --color-text-tertiary: #9CA3AF;     /* 三级文字 */
+  --color-text-quaternary: #D1D5DB;   /* 四级文字 */
+  --color-text-disabled: #E5E7EB;     /* 禁用文字 */
+  --color-text-inverse: #FFFFFF;      /* 反色文字 */
+
+  /* 边框色 */
+  --color-border: #E8EAED;
+  --color-border-secondary: #F3F4F6;
+  --color-border-hover: #D1D5DB;
+
+  /* 阴影 - 柔和的层次感 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+               0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+               0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 10px 20px -5px rgba(0, 132, 255, 0.15),
+                  0 4px 8px -2px rgba(0, 0, 0, 0.08);
+  
+  /* 发光效果 - 更柔和 */
+  --glow-primary: 0 0 15px rgba(0, 132, 255, 0.2);
+  --glow-secondary: 0 0 15px rgba(124, 58, 237, 0.2);
+  --glow-accent: 0 0 15px rgba(6, 182, 212, 0.2);
+
+  /* 圆角 - 保持一致 */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-xxl: 16px;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* 布局尺寸 */
+  --header-height: 64px;
+  --content-max-width: 1400px;
+  --sidebar-width: 240px;
+
+  /* 过渡动画 */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 字体 */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-family-code: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
+                      Consolas, 'Courier New', monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-xxl: 20px;
+  
+  /* 行高 */
+  --line-height-base: 1.5714;
+  --line-height-heading: 1.35;
+}
+
+/* ============================================
+   亮色主题特定样式覆盖
+   ============================================ */
+
+/* 滚动条美化 - 亮色版本 */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #F7F8FA;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Ant Design 组件亮色主题适配 */
+[data-theme="light"] .ant-layout {
+  background: var(--color-bg-base);
+}
+
+/* 表格 */
+[data-theme="light"] .ant-table {
+  background: var(--color-bg-container);
+}
+
+[data-theme="light"] .ant-table-thead > tr > th {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+[data-theme="light"] .ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--color-border-secondary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .ant-table-tbody > tr:hover > td {
+  background: var(--color-bg-hover);
+}
+
+/* 按钮 */
+[data-theme="light"] .ant-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="light"] .ant-btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+[data-theme="light"] .ant-btn-primary:active {
+  background: var(--color-primary-active);
+  border-color: var(--color-primary-active);
+}
+
+[data-theme="light"] .ant-btn-default {
+  background: var(--color-bg-container);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .ant-btn-default:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+/* 输入框 */
+[data-theme="light"] .ant-input,
+[data-theme="light"] .ant-input-affix-wrapper,
+[data-theme="light"] .ant-select-selector,
+[data-theme="light"] .ant-picker {
+  background: var(--color-bg-container);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .ant-input::placeholder,
+[data-theme="light"] .ant-input-affix-wrapper input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme="light"] .ant-input:hover,
+[data-theme="light"] .ant-input-affix-wrapper:hover,
+[data-theme="light"] .ant-select-selector:hover {
+  border-color: var(--color-primary);
+}
+
+[data-theme="light"] .ant-input:focus,
+[data-theme="light"] .ant-input-affix-wrapper:focus,
+[data-theme="light"] .ant-input-affix-wrapper-focused {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
+}
+
+/* 卡片 */
+[data-theme="light"] .ant-card {
+  background: var(--color-bg-container);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .ant-card-head {
+  border-bottom-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .ant-card-hoverable:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* 模态框 */
+[data-theme="light"] .ant-modal-content {
+  background: var(--color-bg-container);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="light"] .ant-modal-header {
+  background: var(--color-bg-container);
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="light"] .ant-modal-title {
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .ant-modal-close-x {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="light"] .ant-modal-close-x:hover {
+  color: var(--color-text-primary);
+}
+
+/* 标签页 */
+[data-theme="light"] .ant-tabs-nav::before {
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="light"] .ant-tabs-tab {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="light"] .ant-tabs-tab:hover {
+  color: var(--color-primary);
+}
+
+[data-theme="light"] .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-primary);
+}
+
+[data-theme="light"] .ant-tabs-ink-bar {
+  background: var(--color-primary);
+}
+
+/* 下拉菜单 */
+[data-theme="light"] .ant-dropdown-menu {
+  background: var(--color-bg-container);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="light"] .ant-dropdown-menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .ant-dropdown-menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+/* 消息提示 */
+[data-theme="light"] .ant-message-notice-content {
+  background: var(--color-bg-container);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text-primary);
+}
+
+/* 分割线 */
+[data-theme="light"] .ant-divider {
+  border-color: var(--color-border);
+}
+
+/* ============================================
+   主题切换过渡动画
+   ============================================ */
+html {
+  transition: background-color var(--transition-normal),
+              color var(--transition-normal);
+}
+
+body {
+  transition: background-color var(--transition-normal),
+              color var(--transition-normal);
+}
+
+* {
+  transition: background-color var(--transition-normal),
+              border-color var(--transition-normal),
+              color var(--transition-normal),
+              box-shadow var(--transition-normal);
+}
+
+/* 保持某些元素不参与过渡 */
+*:not(.no-transition) {
+  transition-property: background-color, border-color, color, box-shadow;
+}
