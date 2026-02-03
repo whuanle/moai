@@ -1,0 +1,41 @@
+/* 主题切换按钮样式 */
+.theme-toggle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.theme-toggle-button:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary-border);
+}
+
+.theme-toggle-button:active {
+  transform: scale(0.95);
+}
+
+/* 图标旋转动画 */
+.theme-toggle-button .anticon {
+  transition: transform var(--transition-normal);
+}
+
+.theme-toggle-button:hover .anticon {
+  transform: rotate(20deg);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .theme-toggle-button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}

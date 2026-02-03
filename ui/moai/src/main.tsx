@@ -6,6 +6,7 @@ import zhCN from "antd/locale/zh_CN";
 
 import "./index.css";
 import "./styles/theme-dark.css";
+import "./styles/theme-light.css";
 import { PageRouterProvider } from "./PageRouter";
 import { message } from "antd";
 import useAppStore from "./stateshare/store";

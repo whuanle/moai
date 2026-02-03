@@ -85,6 +85,38 @@ export default function AuthModal({
     }
   }, [open, defaultTab, loginForm, registerForm]);
 
+  // 防止 Modal 打开时页面抖动 - 监听 body 样式变化
+  useEffect(() => {
+    if (!open) return;
+
+    // 重置 body 样式的函数
+    const resetBodyStyles = () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.style.width = '';
+      document.body.style.minWidth = '';
+      document.body.style.maxWidth = '';
+      document.body.style.marginRight = '';
+    };
+
+    // Modal 打开时立即重置一次
+    resetBodyStyles();
+
+    // 使用 MutationObserver 监听 body 的样式变化
+    // 只在样式真正变化时才触发，性能开销很小
+    const observer = new MutationObserver(resetBodyStyles);
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['style', 'class'],
+    });
+
+    return () => {
+      observer.disconnect();
+      resetBodyStyles();
+    };
+  }, [open]);
+
   // 获取第三方登录列表
   const fetchOAuthProviders = async () => {
     try {
@@ -442,8 +474,8 @@ export default function AuthModal({
         centered
         className="auth-modal"
         destroyOnClose
-        getContainer={false}
         maskClosable={true}
+        zIndex={1001}
       >
         <div className="auth-modal-content">
           <Tabs
