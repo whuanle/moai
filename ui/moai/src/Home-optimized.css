@@ -1,0 +1,523 @@
+/* ============================================
+   优化后的首页样式
+   - 简化动画效果
+   - 提高性能
+   - 更好的可读性
+   ============================================ */
+
+/* 全局样式 */
+.home-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* ============================================
+   加载动画 - 简化
+   ============================================ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   导航栏 - 优化
+   ============================================ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(102, 126, 234, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-title {
+  margin: 0 !important;
+  color: white !important;
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* ============================================
+   主横幅区域 - 简化
+   ============================================ */
+.hero-section {
+  padding: 80px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-text {
+  color: white;
+}
+
+.hero-title {
+  font-size: 3rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin-bottom: 24px !important;
+  color: white !important;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffd93d 0%, #ff6b6b 50%, #4ecdc4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-description {
+  font-size: 1.125rem !important;
+  line-height: 1.6 !important;
+  margin-bottom: 32px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  animation: fadeInUp 0.6s ease-out 0.1s both;
+}
+
+.hero-actions {
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+.cta-button {
+  height: 48px !important;
+  padding: 0 32px !important;
+  font-size: 16px !important;
+  border-radius: 24px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.cta-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+.cta-button:active {
+  transform: translateY(0) !important;
+}
+
+/* ============================================
+   浮动卡片 - 简化版（只保留4个）
+   ============================================ */
+.hero-visual {
+  position: relative;
+  height: 400px;
+}
+
+.floating-cards {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.floating-card {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  animation: fadeInFloat 0.8s ease-out both;
+}
+
+.floating-card:hover {
+  transform: translateY(-8px);
+}
+
+.floating-card svg {
+  font-size: 2rem;
+}
+
+/* 简化的浮动动画 - 只有4个卡片 */
+.card-1 {
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.card-2 {
+  top: 15%;
+  right: 15%;
+  animation-delay: 0.2s;
+}
+
+.card-3 {
+  bottom: 25%;
+  left: 5%;
+  animation-delay: 0.4s;
+}
+
+.card-4 {
+  bottom: 20%;
+  right: 10%;
+  animation-delay: 0.6s;
+}
+
+@keyframes fadeInFloat {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   统计数据区域
+   ============================================ */
+.stats-section {
+  padding: 60px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.stats-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .ant-statistic-title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
+.stat-card .ant-statistic-content {
+  color: white;
+}
+
+/* ============================================
+   功能特性区域
+   ============================================ */
+.features-section {
+  padding: 80px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.features-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-title {
+  color: white !important;
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 16px !important;
+}
+
+.section-description {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 1.125rem !important;
+  max-width: 600px;
+  margin: 0 auto !important;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.feature-icon-wrapper {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.feature-title {
+  color: white !important;
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+  font-size: 1.125rem !important;
+}
+
+.feature-description {
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+/* ============================================
+   优势特点区域
+   ============================================ */
+.advantages-section {
+  padding: 80px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.advantages-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.advantage-item {
+  text-align: center;
+  padding: 24px;
+  transition: transform 0.3s ease;
+}
+
+.advantage-item:hover {
+  transform: translateY(-4px);
+}
+
+.advantage-icon {
+  font-size: 2.5rem;
+  color: #ffd93d;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.advantage-title {
+  color: white !important;
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+  font-size: 1.125rem !important;
+}
+
+.advantage-description {
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+/* ============================================
+   页脚
+   ============================================ */
+.footer {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 40px 24px 24px;
+}
+
+.footer-bottom {
+  text-align: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   动画效果 - 简化
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   响应式设计
+   ============================================ */
+@media (max-width: 992px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem !important;
+  }
+  
+  .hero-visual {
+    height: 300px;
+  }
+  
+  .floating-card {
+    padding: 20px;
+    font-size: 0.875rem;
+  }
+  
+  .floating-card svg {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    height: 56px;
+    padding: 0 16px;
+  }
+  
+  .logo-title {
+    font-size: 20px !important;
+  }
+  
+  .hero-section {
+    padding: 60px 16px;
+  }
+  
+  .hero-title {
+    font-size: 2rem !important;
+  }
+  
+  .hero-description {
+    font-size: 1rem !important;
+  }
+  
+  .stats-section,
+  .features-section,
+  .advantages-section {
+    padding: 60px 16px;
+  }
+  
+  .section-title {
+    font-size: 2rem !important;
+  }
+  
+  .footer {
+    padding: 32px 16px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.75rem !important;
+  }
+  
+  .section-title {
+    font-size: 1.75rem !important;
+  }
+  
+  .floating-cards {
+    display: none;
+  }
+  
+  .hero-visual {
+    display: none;
+  }
+}
+
+/* ============================================
+   性能优化
+   ============================================ */
+
+/* 减少重绘 */
+.feature-card,
+.stat-card,
+.advantage-item {
+  will-change: transform;
+}
+
+/* 硬件加速 */
+.feature-card:hover,
+.stat-card:hover,
+.advantage-item:hover {
+  transform: translateY(-4px) translateZ(0);
+}
+
+/* 减少动画复杂度 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
