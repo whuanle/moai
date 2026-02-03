@@ -41,13 +41,15 @@ public class ApiApplicationModelConvention : IApplicationModelConvention
             }
 
             // 如果不是免登录的接口
-            if (!selector.EndpointMetadata.Any(x => x.GetType() == typeof(AllowAnonymousAttribute)))
+            if (selector.EndpointMetadata.Any(x => x.GetType() == typeof(AllowAnonymousAttribute)))
             {
-                if (!selector.EndpointMetadata.Any(x => x.GetType() == typeof(AuthorizeAttribute)))
-                {
-                    // 添加授权特性
-                    selector.EndpointMetadata.Add(new AuthorizeAttribute());
-                }
+                continue;
+            }
+
+            if (selector.EndpointMetadata.All(x => x.GetType() != typeof(AuthorizeAttribute)))
+            {
+                // 添加授权特性
+                selector.EndpointMetadata.Add(new AuthorizeAttribute());
             }
         }
     }
