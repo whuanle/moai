@@ -83,7 +83,7 @@ export default function AuthModal({
       // 设置默认 tab
       setActiveTab(defaultTab);
     }
-  }, [open, defaultTab]);
+  }, [open, defaultTab, loginForm, registerForm]);
 
   // 获取第三方登录列表
   const fetchOAuthProviders = async () => {
@@ -442,6 +442,8 @@ export default function AuthModal({
         centered
         className="auth-modal"
         destroyOnClose
+        getContainer={false}
+        maskClosable={true}
       >
         <div className="auth-modal-content">
           <Tabs

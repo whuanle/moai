@@ -1,4 +1,10 @@
 /* 认证弹窗样式 - 深空探索主题 */
+
+/* 防止模态框打开时页面抖动 - 关键修复 */
+.auth-modal .ant-modal-wrap {
+  overflow: auto !important;
+}
+
 .auth-modal .ant-modal-content {
   border-radius: 16px;
   overflow: hidden;

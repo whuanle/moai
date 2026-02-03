@@ -127,6 +127,11 @@
   box-sizing: border-box;
 }
 
+html {
+  /* 强制显示滚动条，防止模态框打开时页面抖动 */
+  overflow-y: scroll;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -138,6 +143,17 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* 防止 Ant Design Modal 导致的页面抖动 */
+body.ant-scrolling-effect {
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* 为 body 添加 padding 来补偿滚动条宽度 */
+body.ant-scrolling-effect {
+  padding-right: 0 !important;
 }
 
 /* 选中文本样式 */
