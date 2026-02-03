@@ -38,6 +38,13 @@ public class InfraConfigurationModule : IModule
     {
         if (!File.Exists(AppConst.PrivateRSA))
         {
+            // 确保目录存在
+            var directory = Path.GetDirectoryName(AppConst.PrivateRSA);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             using RSA? rsa = RSA.Create(2048);
             string rsaPrivate = rsa.ExportPkcs8PrivateKeyPem();
             File.WriteAllText(AppConst.PrivateRSA, rsaPrivate);
