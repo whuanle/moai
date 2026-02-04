@@ -20,7 +20,7 @@ internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<Plugi
     public void Configure(EntityTypeBuilder<PluginLimitEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("plugin_limit_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65828_primary");
 
         entity.ToTable("plugin_limit", tb => tb.HasComment("插件使用量限制"));
 
@@ -28,7 +28,7 @@ internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<Plugi
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -36,11 +36,11 @@ internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<Plugi
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.ExpirationTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("过期时间")
             .HasColumnName("expiration_time");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.LimitValue)
@@ -50,10 +50,11 @@ internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<Plugi
             .HasComment("插件id")
             .HasColumnName("plugin_id");
         entity.Property(e => e.RuleType)
+            .HasDefaultValue(0)
             .HasComment("限制的规则类型,每天/总额/有效期")
             .HasColumnName("rule_type");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

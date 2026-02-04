@@ -55,9 +55,9 @@ public partial class OauthConnectionEntity : IFullAudited
     public string WellKnown { get; set; } = default!;
 
     /// <summary>
-    /// 创建人.
+    /// 软删除.
     /// </summary>
-    public int CreateUserId { get; set; }
+    public long IsDeleted { get; set; }
 
     /// <summary>
     /// 创建时间.
@@ -65,17 +65,17 @@ public partial class OauthConnectionEntity : IFullAudited
     public DateTimeOffset CreateTime { get; set; }
 
     /// <summary>
-    /// 更新人.
-    /// </summary>
-    public int UpdateUserId { get; set; }
-
-    /// <summary>
     /// 更新时间.
     /// </summary>
     public DateTimeOffset UpdateTime { get; set; }
 
     /// <summary>
-    /// 软删除.
+    /// 创建人.
     /// </summary>
-    public long IsDeleted { get; set; }
+    public int CreateUserId { get; set; }
+
+    /// <summary>
+    /// 更新人.
+    /// </summary>
+    public int UpdateUserId { get; set; }
 }

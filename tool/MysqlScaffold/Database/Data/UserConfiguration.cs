@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 用户.
 /// </summary>
-public partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
+internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<UserEntity> builder)
@@ -85,7 +85,7 @@ public partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
             .HasColumnName("phone");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

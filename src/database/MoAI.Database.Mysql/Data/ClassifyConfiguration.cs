@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 分类.
 /// </summary>
-public partial class ClassifyConfiguration : IEntityTypeConfiguration<ClassifyEntity>
+internal partial class ClassifyConfiguration : IEntityTypeConfiguration<ClassifyEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<ClassifyEntity> builder)
@@ -59,8 +59,7 @@ public partial class ClassifyConfiguration : IEntityTypeConfiguration<ClassifyEn
             .HasComment("分类类型")
             .HasColumnName("type");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

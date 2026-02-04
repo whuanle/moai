@@ -20,19 +20,18 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
     public void Configure(EntityTypeBuilder<AppWorkflowHistoryEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("app_workflow_history_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65716_primary");
 
         entity.ToTable("app_workflow_history", tb => tb.HasComment("流程执行记录"));
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("varbinary(16)")
             .HasColumnName("id");
         entity.Property(e => e.AppId)
             .HasComment("应用id")
             .HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -40,16 +39,18 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Data)
+            .HasDefaultValueSql("'{}'::text")
             .HasComment("数据内容")
             .HasColumnName("data");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.RunParamters)
             .HasComment("运行参数")
             .HasColumnName("run_paramters");
         entity.Property(e => e.State)
+            .HasDefaultValue(0)
             .HasComment("工作状态")
             .HasColumnName("state");
         entity.Property(e => e.SystemParamters)
@@ -59,7 +60,7 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
             .HasComment("团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

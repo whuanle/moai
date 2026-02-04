@@ -1,5 +1,5 @@
 /* ============================================
-   MoAI 全局样式 - 深空探索主题
+   MoAI 全局样式 - 支持主题切换
    ============================================ */
 
 :root {
@@ -8,11 +8,6 @@
                'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   line-height: 1.5714;
   font-weight: 400;
-
-  /* 深色主题 */
-  color-scheme: dark;
-  color: #E3E8EF;
-  background-color: #0F1419;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,13 +21,13 @@
 
 a {
   font-weight: 500;
-  color: #4A9EFF;
+  color: var(--color-primary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 a:hover {
-  color: #6BB0FF;
+  color: var(--color-primary-hover);
 }
 
 body {
@@ -40,19 +35,23 @@ body {
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #0F1419;
-  color: #E3E8EF;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-normal),
+              color var(--transition-normal);
 }
 
 #root {
   min-height: 100vh;
-  background-color: #0F1419;
+  background-color: var(--color-bg-base);
+  transition: background-color var(--transition-normal);
 }
 
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
   font-weight: 600;
-  color: #E3E8EF;
+  color: var(--color-text-primary);
+  transition: color var(--transition-normal);
 }
 
 h1 {
@@ -72,11 +71,12 @@ h3 {
 
 p {
   margin: 0;
-  color: #E3E8EF;
+  color: var(--color-text-primary);
+  transition: color var(--transition-normal);
 }
 
 /* 选中文本样式 */
 ::selection {
-  background-color: rgba(74, 158, 255, 0.25);
-  color: #E3E8EF;
+  background-color: var(--color-primary-bg);
+  color: var(--color-text-primary);
 }

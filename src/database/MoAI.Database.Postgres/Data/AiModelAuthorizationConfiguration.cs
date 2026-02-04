@@ -20,7 +20,7 @@ internal partial class AiModelAuthorizationConfiguration : IEntityTypeConfigurat
     public void Configure(EntityTypeBuilder<AiModelAuthorizationEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("ai_model_authorization_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65557_primary");
 
         entity.ToTable("ai_model_authorization", tb => tb.HasComment("授权模型给哪些团队使用"));
 
@@ -31,7 +31,7 @@ internal partial class AiModelAuthorizationConfiguration : IEntityTypeConfigurat
             .HasComment("ai模型的id")
             .HasColumnName("ai_model_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -39,14 +39,14 @@ internal partial class AiModelAuthorizationConfiguration : IEntityTypeConfigurat
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.TeamId)
             .HasComment("授权团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

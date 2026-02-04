@@ -3,40 +3,87 @@
 /* 防止模态框打开时页面抖动 - 关键修复 */
 .auth-modal .ant-modal-wrap {
   overflow: auto !important;
+  z-index: 1001 !important;
+  /* 强制蒙层占满整个视口 */
+  width: 100vw !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* 蒙层也要占满整个视口 */
+.auth-modal .ant-modal-mask {
+  width: 100vw !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* 模态框容器 - 确保不被导航栏遮挡 */
+.auth-modal {
+  top: 20px;
+  z-index: 1001 !important;
+}
+
+.auth-modal .ant-modal {
+  max-height: calc(100vh - 40px);
+  margin: 0 auto;
+  padding-bottom: 0;
 }
 
 .auth-modal .ant-modal-content {
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
   padding: 0;
-  background: var(--color-bg-container);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
+  background: rgba(26, 31, 46, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(74, 158, 255, 0.1);
+  position: relative;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 渐变边框效果 */
+.auth-modal .ant-modal-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.4), rgba(123, 97, 255, 0.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .auth-modal .ant-modal-body {
   padding: 32px 40px 40px;
-  background: var(--color-bg-container);
+  background: transparent;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
 }
 
 .auth-modal .ant-modal-close {
   top: 16px;
   right: 16px;
+  z-index: 10;
 }
 
 .auth-modal .ant-modal-close-x {
-  width: 40px;
-  height: 40px;
-  line-height: 40px;
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
   font-size: 16px;
   color: var(--color-text-secondary);
   transition: all 0.3s ease;
+  border-radius: 4px;
 }
 
 .auth-modal .ant-modal-close-x:hover {
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-hover);
-  border-radius: 8px;
+  color: var(--color-primary);
+  background-color: rgba(74, 158, 255, 0.1);
 }
 
 /* 内容区域 */
@@ -44,7 +91,7 @@
   width: 100%;
 }
 
-/* Tabs 样式优化 */
+/* Tabs 样式优化 - 简洁设计 */
 .auth-tabs .ant-tabs-nav {
   margin-bottom: 32px;
 }
@@ -67,76 +114,114 @@
 }
 
 .auth-tabs .ant-tabs-ink-bar {
-  height: 3px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  box-shadow: 0 0 8px var(--color-primary);
+  height: 2px;
+  background: var(--color-primary);
 }
 
-/* 表单样式 */
+/* 表单样式 - 6:3:1 配色原则 */
 .auth-input {
   height: 44px;
-  border-radius: 8px;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-  transition: all 0.3s ease;
+  border-radius: 4px;
+  /* 30% 衬托色 - 比背景稍亮 */
+  background: rgba(42, 47, 62, 0.8) !important;
+  border: 1px solid rgba(74, 158, 255, 0.2);
+  color: #F5F5F7 !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 强制输入文字为亮白色 */
+.auth-input input {
+  background: transparent !important;
+  color: #F5F5F7 !important;
 }
 
 .auth-input::placeholder {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-tertiary) !important;
 }
 
+/* 悬停状态 - 只改变边框 */
 .auth-input:hover {
-  border-color: var(--color-primary);
-  background: var(--color-bg-container);
+  border-color: rgba(74, 158, 255, 0.4) !important;
+  background: rgba(42, 47, 62, 0.8) !important;
 }
 
+/* 焦点状态 - 10% 点缀色边框，背景保持不变 */
 .auth-input:focus,
-.auth-input-focused {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-bg);
-  background: var(--color-bg-container);
+.auth-input-focused,
+.auth-input.ant-input-affix-wrapper-focused {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 1px rgba(74, 158, 255, 0.3) !important;
+  background: rgba(42, 47, 62, 0.8) !important;
 }
 
+/* 图标颜色 */
 .auth-input .ant-input-prefix {
   color: var(--color-text-tertiary);
   margin-right: 12px;
   font-size: 16px;
-  transition: color 0.3s ease;
 }
 
 .auth-input:focus .ant-input-prefix,
-.auth-input:hover .ant-input-prefix {
+.auth-input-focused .ant-input-prefix,
+.auth-input.ant-input-affix-wrapper-focused .ant-input-prefix {
   color: var(--color-primary);
 }
 
-/* 按钮样式 */
+/* 确保 Ant Design 的 input 元素文字颜色和背景 */
+.auth-input .ant-input {
+  color: #F5F5F7 !important;
+  background: transparent !important;
+  font-size: 14px;
+}
+
+.auth-input .ant-input::placeholder {
+  color: var(--color-text-tertiary) !important;
+  opacity: 0.6;
+}
+
+/* 覆盖 Ant Design 的所有可能状态 */
+.auth-input.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):hover {
+  background: rgba(42, 47, 62, 0.8) !important;
+}
+
+.auth-input.ant-input-affix-wrapper-status-error {
+  background: rgba(42, 47, 62, 0.8) !important;
+}
+
+.auth-input.ant-input-affix-wrapper-status-error:focus,
+.auth-input.ant-input-affix-wrapper-status-error.ant-input-affix-wrapper-focused {
+  background: rgba(42, 47, 62, 0.8) !important;
+}
+
+/* 确保密码输入框的文字也是亮色 */
+.auth-input input[type="password"] {
+  color: #F5F5F7 !important;
+}
+
+/* 按钮样式 - 简洁设计 */
 .auth-button {
   height: 44px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 15px;
   font-weight: 600;
   transition: all 0.3s ease;
   background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  border: 1px solid var(--color-primary);
+  color: white;
 }
 
 .auth-button:hover {
-  transform: translateY(-1px);
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
-  box-shadow: var(--glow-primary);
+  color: white;
 }
 
 .auth-button:active {
-  transform: translateY(0);
   background: var(--color-primary-active);
   border-color: var(--color-primary-active);
 }
 
-/* 第三方登录区域 */
+/* 第三方登录区域 - 简洁线框 */
 .oauth-providers {
   display: flex;
   justify-content: center;
@@ -154,21 +239,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border: 1px solid rgba(74, 158, 255, 0.25);
+  border-radius: 4px;
   transition: all 0.3s ease;
-  background: var(--color-bg-elevated);
+  background: transparent;
 }
 
 .oauth-provider-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
   border-color: var(--color-primary);
-  background: var(--color-bg-container);
+  background: rgba(74, 158, 255, 0.08);
 }
 
 .oauth-provider-button:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .oauth-provider-icon {
@@ -177,18 +260,12 @@
   width: auto;
   max-width: 70px;
   object-fit: contain;
-  transition: transform 0.3s ease;
-}
-
-.oauth-provider-button:hover .oauth-provider-icon {
-  transform: scale(1.05);
 }
 
 .oauth-provider-fallback {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-secondary);
-  transition: color 0.3s ease;
 }
 
 .oauth-provider-button:hover .oauth-provider-fallback {
@@ -202,20 +279,32 @@
   color: var(--color-text-primary);
 }
 
-/* 表单项间距 */
+/* 表单项间距 - 预留错误提示空间 */
 .auth-modal .ant-form-item {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .auth-modal .ant-form-item:last-child {
   margin-bottom: 0;
 }
 
-/* 错误提示样式 */
+/* 错误提示样式 - 固定高度避免页面跳动 */
+.auth-modal .ant-form-item-explain {
+  min-height: 22px;
+  transition: opacity 0.3s ease;
+}
+
 .auth-modal .ant-form-item-explain-error {
   font-size: 12px;
   margin-top: 4px;
   color: var(--color-error);
+  line-height: 1.5;
+}
+
+/* 当没有错误时，保持空间但隐藏内容 */
+.auth-modal .ant-form-item-explain:empty {
+  min-height: 22px;
+  opacity: 0;
 }
 
 /* 分割线 */
@@ -232,10 +321,20 @@
   .auth-modal {
     width: calc(100vw - 32px) !important;
     max-width: 100%;
+    top: 10px;
+  }
+  
+  .auth-modal .ant-modal {
+    max-height: calc(100vh - 20px);
+  }
+  
+  .auth-modal .ant-modal-content {
+    max-height: calc(100vh - 20px);
   }
   
   .auth-modal .ant-modal-body {
     padding: 24px 20px 32px;
+    max-height: calc(100vh - 100px);
   }
   
   .auth-tabs .ant-tabs-tab {

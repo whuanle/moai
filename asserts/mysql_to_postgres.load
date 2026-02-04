@@ -1,0 +1,30 @@
+LOAD DATABASE
+    FROM mysql://root:123456@127.0.0.1:3306/moai
+    INTO postgresql://postgres:123456@127.0.0.1:5432/moai
+
+ WITH include drop, create tables, create indexes, reset sequences,
+      workers = 8, concurrency = 1,
+      multiple readers per thread, rows per range = 50000
+
+  SET PostgreSQL PARAMETERS
+      maintenance_work_mem to '128MB',
+      work_mem to '12MB',
+      search_path to 'moai, public, "$user"'
+
+  SET MySQL PARAMETERS
+      net_read_timeout  = '120',
+      net_write_timeout = '120'
+
+ CAST type int with extra auto_increment to serial drop typemod,  
+      type int to integer drop typemod,
+      type bigint to bigint drop typemod,
+      type date drop not null drop default using zero-dates-to-null,
+      type tinyint to boolean drop typemod using tinyint-to-boolean,
+      type year to integer,
+      type datetime when default 'utc_timestamp()' to "timestamptz default timezone('utc', now())" drop default,
+      type binary when (= precision 16) to "uuid default uuid_generate_v4()" drop typemod drop default
+
+ALTER SCHEMA 'moai' RENAME TO 'public'
+
+ BEFORE LOAD DO
+   $$ create schema if not exists public; $$;

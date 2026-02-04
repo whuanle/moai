@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 提示词.
 /// </summary>
-public partial class PromptConfiguration : IEntityTypeConfiguration<PromptEntity>
+internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<PromptEntity> builder)
@@ -65,8 +65,7 @@ public partial class PromptConfiguration : IEntityTypeConfiguration<PromptEntity
             .HasColumnType("int(11)")
             .HasColumnName("prompt_class_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

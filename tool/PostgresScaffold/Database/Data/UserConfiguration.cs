@@ -20,35 +20,35 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
     public void Configure(EntityTypeBuilder<UserEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("user_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65920_primary");
 
         entity.ToTable("user", tb => tb.HasComment("用户"));
 
-        entity.HasIndex(e => e.Email, "idx_users_email");
+        entity.HasIndex(e => e.Email, "idx_65920_idx_users_email");
 
-        entity.HasIndex(e => e.Phone, "idx_users_phone");
+        entity.HasIndex(e => e.Phone, "idx_65920_idx_users_phone");
 
-        entity.HasIndex(e => e.UserName, "idx_users_user_name");
+        entity.HasIndex(e => e.UserName, "idx_65920_idx_users_user_name");
 
-        entity.HasIndex(e => new { e.Email, e.IsDeleted }, "users_email_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.Email, e.IsDeleted }, "idx_65920_users_email_is_deleted_uindex").IsUnique();
 
-        entity.HasIndex(e => new { e.Phone, e.IsDeleted }, "users_phone_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.Phone, e.IsDeleted }, "idx_65920_users_phone_is_deleted_uindex").IsUnique();
 
-        entity.HasIndex(e => new { e.UserName, e.IsDeleted }, "users_user_name_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.UserName, e.IsDeleted }, "idx_65920_users_user_name_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
             .HasComment("用户ID")
             .HasColumnName("id");
         entity.Property(e => e.AvatarPath)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("头像路径")
             .HasColumnName("avatar_path");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Email)
@@ -59,7 +59,7 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
             .HasComment("是否管理员")
             .HasColumnName("is_admin");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsDisable)
@@ -82,11 +82,10 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
             .HasComment("手机号")
             .HasColumnName("phone");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
-            .HasComment("最后更新时间")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserName)

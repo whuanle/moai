@@ -20,19 +20,19 @@ internal partial class ClassifyConfiguration : IEntityTypeConfiguration<Classify
     public void Configure(EntityTypeBuilder<ClassifyEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("classify_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65729_primary");
 
         entity.ToTable("classify", tb => tb.HasComment("分类"));
 
-        entity.HasIndex(e => e.Name, "classify_name_index");
+        entity.HasIndex(e => e.Name, "idx_65729_classify_name_index");
 
-        entity.HasIndex(e => e.Type, "classify_type_index");
+        entity.HasIndex(e => e.Type, "idx_65729_classify_type_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -41,10 +41,11 @@ internal partial class ClassifyConfiguration : IEntityTypeConfiguration<Classify
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("分类描述")
             .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Name)
@@ -56,7 +57,7 @@ internal partial class ClassifyConfiguration : IEntityTypeConfiguration<Classify
             .HasComment("分类类型")
             .HasColumnName("type");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

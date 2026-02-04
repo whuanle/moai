@@ -20,24 +20,26 @@ internal partial class AiModelUseageLogConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<AiModelUseageLogEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("ai_model_useage_log_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65593_primary");
 
         entity.ToTable("ai_model_useage_log", tb => tb.HasComment("模型使用日志,记录每次请求使用记录"));
 
-        entity.HasIndex(e => e.Channel, "ai_model_useage_log_channel_index");
+        entity.HasIndex(e => e.Channel, "idx_65593_ai_model_useage_log_channel_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.Channel)
             .HasMaxLength(30)
+            .HasDefaultValueSql("'-'::character varying")
             .HasComment("渠道")
             .HasColumnName("channel");
         entity.Property(e => e.CompletionTokens)
+            .HasDefaultValue(0)
             .HasComment("完成数量")
             .HasColumnName("completion_tokens");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -45,20 +47,22 @@ internal partial class AiModelUseageLogConfiguration : IEntityTypeConfiguration<
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.ModelId)
             .HasComment("模型id")
             .HasColumnName("model_id");
         entity.Property(e => e.PromptTokens)
+            .HasDefaultValue(0)
             .HasComment("输入数量")
             .HasColumnName("prompt_tokens");
         entity.Property(e => e.TotalTokens)
+            .HasDefaultValue(0)
             .HasComment("总数量")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

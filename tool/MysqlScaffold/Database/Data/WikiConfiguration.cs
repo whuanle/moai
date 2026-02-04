@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 知识库.
 /// </summary>
-public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
+internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiEntity> builder)
@@ -79,7 +79,7 @@ public partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

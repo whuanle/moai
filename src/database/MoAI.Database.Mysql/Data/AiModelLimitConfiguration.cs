@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// ai模型使用量限制，只能用于系统模型.
 /// </summary>
-public partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiModelLimitEntity>
+internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiModelLimitEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AiModelLimitEntity> builder)
@@ -59,8 +59,7 @@ public partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMode
             .HasColumnType("int(11)")
             .HasColumnName("rule_type");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

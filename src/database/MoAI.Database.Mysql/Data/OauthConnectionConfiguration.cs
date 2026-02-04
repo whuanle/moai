@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// oauth2.0系统.
 /// </summary>
-public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<OauthConnectionEntity>
+internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<OauthConnectionEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<OauthConnectionEntity> builder)
@@ -66,8 +66,7 @@ public partial class OauthConnectionConfiguration : IEntityTypeConfiguration<Oau
             .HasComment("密钥")
             .HasColumnName("secret");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 自定义插件.
 /// </summary>
-public partial class PluginCustomConfiguration : IEntityTypeConfiguration<PluginCustomEntity>
+internal partial class PluginCustomConfiguration : IEntityTypeConfiguration<PluginCustomEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<PluginCustomEntity> builder)
@@ -67,7 +67,7 @@ public partial class PluginCustomConfiguration : IEntityTypeConfiguration<Plugin
             .HasColumnName("type");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

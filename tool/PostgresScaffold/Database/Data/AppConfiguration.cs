@@ -20,30 +20,33 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
     public void Configure(EntityTypeBuilder<AppEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("app_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65606_primary");
 
         entity.ToTable("app", tb => tb.HasComment("应用"));
 
-        entity.HasIndex(e => e.Name, "app_name_index");
+        entity.HasIndex(e => e.Name, "idx_65606_app_name_index");
 
-        entity.HasIndex(e => e.TeamId, "app_team_id_index");
+        entity.HasIndex(e => e.TeamId, "idx_65606_app_team_id_index");
 
         entity.Property(e => e.Id)
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AppType)
+            .HasDefaultValue(0)
             .HasComment("应用类型，普通应用=0,流程编排=1")
             .HasColumnName("app_type");
         entity.Property(e => e.Avatar)
             .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("头像 objectKey")
             .HasColumnName("avatar");
         entity.Property(e => e.ClassifyId)
+            .HasDefaultValue(0)
             .HasComment("分类id")
             .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -55,19 +58,23 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("描述")
             .HasColumnName("description");
         entity.Property(e => e.IsAuth)
+            .HasDefaultValue(false)
             .HasComment("是否开启授权才能使用，只有外部应用可以设置")
             .HasColumnName("is_auth");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsDisable)
+            .HasDefaultValue(false)
             .HasComment("禁用")
             .HasColumnName("is_disable");
         entity.Property(e => e.IsForeign)
+            .HasDefaultValue(false)
             .HasComment("是否外部应用")
             .HasColumnName("is_foreign");
         entity.Property(e => e.IsPublic)
+            .HasDefaultValue(false)
             .HasComment("公开到团队外使用")
             .HasColumnName("is_public");
         entity.Property(e => e.Name)
@@ -78,7 +85,7 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

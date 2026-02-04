@@ -17,7 +17,7 @@ public partial class AppWorkflowDesignEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = default!;
 
     /// <summary>
     /// 团队id.
@@ -27,7 +27,7 @@ public partial class AppWorkflowDesignEntity : IFullAudited
     /// <summary>
     /// 应用id.
     /// </summary>
-    public Guid AppId { get; set; }
+    public Guid AppId { get; set; } = default!;
 
     /// <summary>
     /// ui设计，存储的是发布版本.

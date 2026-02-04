@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 团队.
 /// </summary>
-public partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
+internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<TeamEntity> builder)
@@ -56,8 +56,7 @@ public partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasComment("团队名称")
             .HasColumnName("name");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 流程设计实例表.
 /// </summary>
-public partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration<AppWorkflowDesignEntity>
+internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration<AppWorkflowDesignEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AppWorkflowDesignEntity> builder)
@@ -70,8 +70,7 @@ public partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration<A
             .HasComment("ui设计草稿")
             .HasColumnName("ui_design_draft");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 系统设置.
 /// </summary>
-public partial class SettingConfiguration : IEntityTypeConfiguration<SettingEntity>
+internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<SettingEntity> builder)
@@ -54,7 +54,7 @@ public partial class SettingConfiguration : IEntityTypeConfiguration<SettingEnti
             .HasColumnName("key");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

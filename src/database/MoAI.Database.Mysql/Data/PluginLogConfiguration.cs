@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 插件使用日志.
 /// </summary>
-public partial class PluginLogConfiguration : IEntityTypeConfiguration<PluginLogEntity>
+internal partial class PluginLogConfiguration : IEntityTypeConfiguration<PluginLogEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<PluginLogEntity> builder)
@@ -53,8 +53,7 @@ public partial class PluginLogConfiguration : IEntityTypeConfiguration<PluginLog
             .HasColumnType("int(11)")
             .HasColumnName("plugin_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

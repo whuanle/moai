@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 团队成员.
 /// </summary>
-public partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUserEntity>
+internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUserEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<TeamUserEntity> builder)
@@ -50,8 +50,7 @@ public partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUserEn
             .HasColumnType("int(11)")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

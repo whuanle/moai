@@ -20,7 +20,7 @@ internal partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeC
     public void Configure(EntityTypeBuilder<WikiPluginConfigDocumentStateEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("wiki_plugin_config_document_state_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_66034_primary");
 
         entity.ToTable("wiki_plugin_config_document_state", tb => tb.HasComment("知识库文档关联任务"));
 
@@ -31,7 +31,7 @@ internal partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeC
             .HasComment("爬虫id")
             .HasColumnName("config_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -39,11 +39,12 @@ internal partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeC
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Message)
             .HasMaxLength(1000)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("信息")
             .HasColumnName("message");
         entity.Property(e => e.RelevanceKey)
@@ -52,13 +53,15 @@ internal partial class WikiPluginConfigDocumentStateConfiguration : IEntityTypeC
             .HasColumnName("relevance_key");
         entity.Property(e => e.RelevanceValue)
             .HasMaxLength(1000)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("关联值")
             .HasColumnName("relevance_value");
         entity.Property(e => e.State)
+            .HasDefaultValue(0)
             .HasComment("状态")
             .HasColumnName("state");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

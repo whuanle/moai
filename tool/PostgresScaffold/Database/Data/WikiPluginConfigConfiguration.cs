@@ -20,7 +20,7 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<WikiPluginConfigEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("wiki_plugin_config_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_66005_primary");
 
         entity.ToTable("wiki_plugin_config", tb => tb.HasComment("知识库插件配置"));
 
@@ -28,10 +28,11 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.Config)
+            .HasDefaultValueSql("'{}'::text")
             .HasComment("配置")
             .HasColumnName("config");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -39,7 +40,7 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.PluginType)
@@ -51,7 +52,7 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasComment("插件标题")
             .HasColumnName("title");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
@@ -63,9 +64,11 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasColumnName("wiki_id");
         entity.Property(e => e.WorkMessage)
             .HasMaxLength(1000)
+            .HasDefaultValueSql("''::character varying")
             .HasComment("运行信息")
             .HasColumnName("work_message");
         entity.Property(e => e.WorkState)
+            .HasDefaultValue(0)
             .HasComment("状态")
             .HasColumnName("work_state");
 

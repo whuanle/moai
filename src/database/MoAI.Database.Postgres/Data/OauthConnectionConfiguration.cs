@@ -20,12 +20,12 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
     public void Configure(EntityTypeBuilder<OauthConnectionEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("oauth_connection_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65771_primary");
 
         entity.ToTable("oauth_connection", tb => tb.HasComment("oauth2.0系统"));
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AuthorizeUrl)
@@ -33,7 +33,7 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
             .HasComment("登录跳转地址")
             .HasColumnName("authorize_url");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -45,7 +45,7 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
             .HasComment("图标地址")
             .HasColumnName("icon_url");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Key)
@@ -65,7 +65,7 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
             .HasComment("密钥")
             .HasColumnName("secret");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

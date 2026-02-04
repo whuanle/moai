@@ -115,7 +115,7 @@ public partial class AiModelEntity : IFullAudited
     public int UpdateUserId { get; set; }
 
     /// <summary>
-    /// 最后更新时间.
+    /// 更新时间.
     /// </summary>
     public DateTimeOffset UpdateTime { get; set; }
 

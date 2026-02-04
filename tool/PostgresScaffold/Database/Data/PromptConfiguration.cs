@@ -20,7 +20,7 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
     public void Configure(EntityTypeBuilder<PromptEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("prompt_pkey");
+        entity.HasKey(e => e.Id).HasName("idx_65870_primary");
 
         entity.ToTable("prompt", tb => tb.HasComment("提示词"));
 
@@ -31,10 +31,11 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("提示词内容")
             .HasColumnName("content");
         entity.Property(e => e.Counter)
+            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -46,10 +47,11 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("描述")
             .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
-            .HasDefaultValue(0L)
+            .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
+            .HasDefaultValue(false)
             .HasComment("是否公开")
             .HasColumnName("is_public");
         entity.Property(e => e.Name)
@@ -60,7 +62,7 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("分类id")
             .HasColumnName("prompt_class_id");
         entity.Property(e => e.UpdateTime)
-            .HasDefaultValueSql("now()")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

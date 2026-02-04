@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 外部系统的用户.
 /// </summary>
-public partial class ExternalUserConfiguration : IEntityTypeConfiguration<ExternalUserEntity>
+internal partial class ExternalUserConfiguration : IEntityTypeConfiguration<ExternalUserEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<ExternalUserEntity> builder)
@@ -47,7 +47,7 @@ public partial class ExternalUserConfiguration : IEntityTypeConfiguration<Extern
             .HasColumnName("is_deleted");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)

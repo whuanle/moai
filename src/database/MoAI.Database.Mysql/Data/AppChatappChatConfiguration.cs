@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 普通应用对话表.
 /// </summary>
-public partial class AppChatappChatConfiguration : IEntityTypeConfiguration<AppChatappChatEntity>
+internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<AppChatappChatEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AppChatappChatEntity> builder)
@@ -62,8 +62,7 @@ public partial class AppChatappChatConfiguration : IEntityTypeConfiguration<AppC
             .HasColumnType("int(11)")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

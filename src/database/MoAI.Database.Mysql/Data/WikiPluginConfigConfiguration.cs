@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 知识库插件配置.
 /// </summary>
-public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<WikiPluginConfigEntity>
+internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<WikiPluginConfigEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiPluginConfigEntity> builder)
@@ -55,8 +55,7 @@ public partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<Wi
             .HasComment("插件标题")
             .HasColumnName("title");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

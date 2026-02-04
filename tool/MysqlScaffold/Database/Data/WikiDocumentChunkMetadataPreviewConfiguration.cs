@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 切片元数据内容表（提问/提纲/摘要）.
 /// </summary>
-public partial class WikiDocumentChunkMetadataPreviewConfiguration : IEntityTypeConfiguration<WikiDocumentChunkMetadataPreviewEntity>
+internal partial class WikiDocumentChunkMetadataPreviewConfiguration : IEntityTypeConfiguration<WikiDocumentChunkMetadataPreviewEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<WikiDocumentChunkMetadataPreviewEntity> builder)
@@ -64,8 +64,7 @@ public partial class WikiDocumentChunkMetadataPreviewConfiguration : IEntityType
             .HasColumnType("int(11)")
             .HasColumnName("metadata_type");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

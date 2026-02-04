@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 对话历史，不保存实际历史记录.
 /// </summary>
-public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfiguration<AppAssistantChatHistoryEntity>
+internal partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfiguration<AppAssistantChatHistoryEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<AppAssistantChatHistoryEntity> builder)
@@ -59,8 +59,7 @@ public partial class AppAssistantChatHistoryConfiguration : IEntityTypeConfigura
             .HasComment("角色")
             .HasColumnName("role");
         entity.Property(e => e.UpdateTime)
-            .ValueGeneratedOnAddOrUpdate()
-            .HasDefaultValueSql("current_timestamp()")
+            .HasDefaultValueSql("utc_timestamp()")
             .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");

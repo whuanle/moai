@@ -14,7 +14,7 @@ namespace MoAI.Database;
 /// <summary>
 /// 插件函数.
 /// </summary>
-public partial class PluginFunctionConfiguration : IEntityTypeConfiguration<PluginFunctionEntity>
+internal partial class PluginFunctionConfiguration : IEntityTypeConfiguration<PluginFunctionEntity>
 {
     /// <inheritdoc/>
     public void Configure(EntityTypeBuilder<PluginFunctionEntity> builder)
@@ -61,7 +61,7 @@ public partial class PluginFunctionConfiguration : IEntityTypeConfiguration<Plug
             .HasColumnName("summary");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("utc_timestamp()")
-            .HasComment("最后更新时间")
+            .HasComment("更新时间")
             .HasColumnType("datetime")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
