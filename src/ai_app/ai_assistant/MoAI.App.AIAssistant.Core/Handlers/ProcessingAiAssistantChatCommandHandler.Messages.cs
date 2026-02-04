@@ -19,10 +19,11 @@ namespace MoAI.App.AIAssistant.Handlers;
 /// </summary>
 public partial class ProcessingAiAssistantChatCommandHandler
 {
-    private async Task<IReadOnlyCollection<DefaultAiProcessingChoice>> GenerateQuestion(ProcessingAiAssistantChatCommand request, ChatHistory chatMessages)
+    private async Task<IReadOnlyCollection<DefaultAiProcessingChoice>> GenerateQuestion(
+        ProcessingAiAssistantChatCommand request, ChatHistory chatMessages)
     {
-        ChatMessageContentItemCollection contents = new();
-        List<DefaultAiProcessingChoice> choices = new();
+        ChatMessageContentItemCollection contents = [];
+        List<DefaultAiProcessingChoice> choices = [];
 
         if (!string.IsNullOrEmpty(request.Content))
         {
@@ -44,18 +45,19 @@ public partial class ProcessingAiAssistantChatCommandHandler
             var mimeType = FileStoreHelper.GetMimeType(request.FileKey);
 
             var streamResult = await _mediator.Send(new ReadFileStreamCommand { ObjectKey = ossObjectKey });
-            using var stream = streamResult.FileStream;
+            await using var stream = streamResult.FileStream;
             var memory = await stream.ToReadOnlyMemoryAsync();
 
             // 判断是不是图片
-            if (FileStoreHelper.ImageExtensions.Any(x => request.FileKey.EndsWith(x, StringComparison.OrdinalIgnoreCase)))
+            if (FileStoreHelper.ImageExtensions.Any(
+                    x => request.FileKey.EndsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
                 // 图片
                 contents.Add(new ImageContent(memory, mimeType));
             }
             else
             {
-                //                 contents.Add(new ImageContent(memory, mimeType));
+                // contents.Add(new ImageContent(memory, mimeType));
             }
 
             choices.Add(new DefaultAiProcessingChoice
@@ -82,7 +84,7 @@ public partial class ProcessingAiAssistantChatCommandHandler
     // 还原对话历史记录
     private static ChatHistory RestoreChatHistory(List<AppAssistantChatHistoryEntity> history, string? prompt)
     {
-        ChatHistory chatMessages = new();
+        ChatHistory chatMessages = [];
 
         // 添加提示词.
         if (!string.IsNullOrEmpty(prompt))
@@ -94,6 +96,11 @@ public partial class ProcessingAiAssistantChatCommandHandler
         foreach (var item in history)
         {
             var contents = item.Content.JsonToObject<IReadOnlyCollection<DefaultAiProcessingChoice>>();
+
+            if (contents is null)
+            {
+                continue;
+            }
 
             if (item.Role == AuthorRole.User.Label)
             {
@@ -112,66 +119,68 @@ public partial class ProcessingAiAssistantChatCommandHandler
             {
                 foreach (var content in contents)
                 {
-                    if (content.StreamType == AiProcessingChatStreamType.Text && content.TextCall != null)
+                    switch (content.StreamType)
                     {
-                        chatMessages.AddAssistantMessage(content.TextCall.Content);
-                    }
-
-                    // todo： 要考虑失败的插件调用
-                    else if (content.StreamType == AiProcessingChatStreamType.Plugin && content.PluginCall != null)
-                    {
-                        var arguments = new KernelArguments();
-
-                        foreach (var argument in content.PluginCall.Params)
+                        case AiProcessingChatStreamType.Text when content.TextCall != null:
+                            chatMessages.AddAssistantMessage(content.TextCall.Content);
+                            break;
+                        // todo： 要考虑失败的插件调用
+                        case AiProcessingChatStreamType.Plugin when content.PluginCall != null:
                         {
-                            arguments.Add(argument.Key, argument.Value);
+                            var arguments = new KernelArguments();
+
+                            foreach (var argument in content.PluginCall.Params)
+                            {
+                                arguments.Add(argument.Key, argument.Value);
+                            }
+
+                            var funcCallContent = new FunctionCallContent(
+                                functionName: content.PluginCall.FunctionName,
+                                pluginName: content.PluginCall.PluginName,
+                                id: content.PluginCall.ToolCallId,
+                                arguments: arguments)
+                            {
+                            };
+
+                            chatMessages.Add(new ChatMessageContent
+                            {
+                                Role = AuthorRole.Assistant,
+                                Items =
+                                [
+                                    new FunctionCallContent(
+                                        functionName: content.PluginCall.FunctionName,
+                                        pluginName: content.PluginCall.PluginName,
+                                        id: content.PluginCall.ToolCallId,
+                                        arguments: arguments)
+                                ]
+                            });
+
+                            chatMessages.Add(new ChatMessageContent
+                            {
+                                Role = AuthorRole.Tool,
+                                Items =
+                                [
+                                    new FunctionResultContent(
+                                        functionName: content.PluginCall.FunctionName,
+                                        pluginName: content.PluginCall.PluginName,
+                                        callId: content.PluginCall.ToolCallId,
+                                        result: content.PluginCall.Result)
+                                ]
+                            });
+
+                            //chatMessages.Add(new ChatMessageContent
+                            //{
+                            //    Role = AuthorRole.System,
+                            //    AuthorName = AuthorRole.System.Label,
+                            //    Content = $"""
+                            //    插件名称：{content.PluginCall.PluginName}
+                            //    调用函数：{content.PluginCall.FunctionName}
+                            //    参数：{string.Join(',', content.PluginCall.Params.Select(x => $"{x.Key}={x.Value}"))}
+                            //    结果：{content.PluginCall.Result}
+                            //    """
+                            //});
+                            break;
                         }
-
-                        var funcCallContent = new FunctionCallContent(
-                            functionName: content.PluginCall.FunctionName,
-                            pluginName: content.PluginCall.PluginName,
-                            id: content.PluginCall.ToolCallId,
-                            arguments: arguments)
-                        {
-                        };
-
-                        chatMessages.Add(new ChatMessageContent
-                        {
-                            Role = AuthorRole.Assistant,
-                            Items = new ChatMessageContentItemCollection
-                            {
-                                new FunctionCallContent(
-                                    functionName: content.PluginCall.FunctionName,
-                                    pluginName: content.PluginCall.PluginName,
-                                    id: content.PluginCall.ToolCallId,
-                                    arguments: arguments)
-                            }
-                        });
-
-                        chatMessages.Add(new()
-                        {
-                            Role = AuthorRole.Tool,
-                            Items = new ChatMessageContentItemCollection
-                            {
-                                new FunctionResultContent(
-                                    functionName: content.PluginCall.FunctionName,
-                                    pluginName: content.PluginCall.PluginName,
-                                    callId: content.PluginCall.ToolCallId,
-                                    result: content.PluginCall.Result)
-                            }
-                        });
-
-                        //chatMessages.Add(new ChatMessageContent
-                        //{
-                        //    Role = AuthorRole.System,
-                        //    AuthorName = AuthorRole.System.Label,
-                        //    Content = $"""
-                        //    插件名称：{content.PluginCall.PluginName}
-                        //    调用函数：{content.PluginCall.FunctionName}
-                        //    参数：{string.Join(',', content.PluginCall.Params.Select(x => $"{x.Key}={x.Value}"))}
-                        //    结果：{content.PluginCall.Result}
-                        //    """
-                        //});
                     }
                 }
             }
@@ -183,54 +192,55 @@ public partial class ProcessingAiAssistantChatCommandHandler
             {
                 foreach (var content in contents)
                 {
-                    if (content.StreamType == AiProcessingChatStreamType.Text && content.TextCall != null)
+                    switch (content.StreamType)
                     {
-                        chatMessages.AddAssistantMessage(content.TextCall.Content);
-                    }
+                        case AiProcessingChatStreamType.Text when content.TextCall != null:
+                            chatMessages.AddAssistantMessage(content.TextCall.Content);
+                            break;
 
-                    // todo： 要考虑失败的插件调用
-                    else if (content.StreamType == AiProcessingChatStreamType.Plugin && content.PluginCall != null)
-                    {
-                        var arguments = new KernelArguments();
-
-                        foreach (var argument in content.PluginCall.Params)
+                        // todo： 要考虑失败的插件调用
+                        case AiProcessingChatStreamType.Plugin when content.PluginCall != null:
                         {
-                            arguments.Add(argument.Key, argument.Value);
+                            var arguments = new KernelArguments();
+
+                            foreach (var argument in content.PluginCall.Params)
+                            {
+                                arguments.Add(argument.Key, argument.Value);
+                            }
+
+                            var funcCallContent = new FunctionCallContent(
+                                functionName: content.PluginCall.FunctionName,
+                                pluginName: content.PluginCall.PluginName,
+                                id: content.PluginCall.ToolCallId,
+                                arguments: arguments);
+
+                            chatMessages.Add(new ChatMessageContent
+                            {
+                                Role = AuthorRole.Assistant,
+                                Items =
+                                [
+                                    new FunctionCallContent(
+                                        functionName: content.PluginCall.FunctionName,
+                                        pluginName: content.PluginCall.PluginName,
+                                        id: content.PluginCall.ToolCallId,
+                                        arguments: arguments)
+                                ]
+                            });
+
+                            chatMessages.Add(new ChatMessageContent
+                            {
+                                Role = AuthorRole.Tool,
+                                Items =
+                                [
+                                    new FunctionResultContent(
+                                        functionName: content.PluginCall.FunctionName,
+                                        pluginName: content.PluginCall.PluginName,
+                                        callId: content.PluginCall.ToolCallId,
+                                        result: content.PluginCall.Result)
+                                ]
+                            });
+                            break;
                         }
-
-                        var funcCallContent = new FunctionCallContent(
-                            functionName: content.PluginCall.FunctionName,
-                            pluginName: content.PluginCall.PluginName,
-                            id: content.PluginCall.ToolCallId,
-                            arguments: arguments)
-                        {
-                        };
-
-                        chatMessages.Add(new ChatMessageContent
-                        {
-                            Role = AuthorRole.Assistant,
-                            Items = new ChatMessageContentItemCollection
-                            {
-                                new FunctionCallContent(
-                                    functionName: content.PluginCall.FunctionName,
-                                    pluginName: content.PluginCall.PluginName,
-                                    id: content.PluginCall.ToolCallId,
-                                    arguments: arguments)
-                            }
-                        });
-
-                        chatMessages.Add(new()
-                        {
-                            Role = AuthorRole.Tool,
-                            Items = new ChatMessageContentItemCollection
-                            {
-                                new FunctionResultContent(
-                                    functionName: content.PluginCall.FunctionName,
-                                    pluginName: content.PluginCall.PluginName,
-                                    callId: content.PluginCall.ToolCallId,
-                                    result: content.PluginCall.Result)
-                            }
-                        });
                     }
                 }
             }
