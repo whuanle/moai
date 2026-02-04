@@ -20,21 +20,22 @@ internal partial class WikiDocumentChunkEmbeddingConfiguration : IEntityTypeConf
     public void Configure(EntityTypeBuilder<WikiDocumentChunkEmbeddingEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63377_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65979_primary");
 
         entity.ToTable("wiki_document_chunk_embedding", tb => tb.HasComment("切片向量化内容"));
 
-        entity.HasIndex(e => e.MetadataType, "idx_63377_idx_deriv_type");
+        entity.HasIndex(e => e.MetadataType, "idx_65979_idx_deriv_type");
 
-        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_63377_idx_doc_deriv");
+        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_65979_idx_doc_deriv");
 
-        entity.HasIndex(e => e.Id, "idx_63377_idx_slice_deriv");
+        entity.HasIndex(e => e.Id, "idx_65979_idx_slice_deriv");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ChunkId)
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("源id，关联自身")
             .HasColumnName("chunk_id");
         entity.Property(e => e.CreateTime)

@@ -20,7 +20,7 @@ internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<AppWorkflowDesignEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63102_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65701_primary");
 
         entity.ToTable("app_workflow_design", tb => tb.HasComment("流程设计实例表"));
 

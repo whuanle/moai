@@ -20,7 +20,7 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<AiModelTokenAuditEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_62988_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65579_primary");
 
         entity.ToTable("ai_model_token_audit", tb => tb.HasComment("统计不同模型的token使用量，该表不是实时刷新的"));
 

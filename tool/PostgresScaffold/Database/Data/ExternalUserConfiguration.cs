@@ -20,7 +20,7 @@ internal partial class ExternalUserConfiguration : IEntityTypeConfiguration<Exte
     public void Configure(EntityTypeBuilder<ExternalUserEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63153_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65753_primary");
 
         entity.ToTable("external_user", tb => tb.HasComment("外部系统的用户"));
 

@@ -20,12 +20,12 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
     public void Configure(EntityTypeBuilder<OauthConnectionEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63171_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65771_primary");
 
         entity.ToTable("oauth_connection", tb => tb.HasComment("oauth2.0系统"));
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AuthorizeUrl)

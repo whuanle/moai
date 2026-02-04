@@ -20,7 +20,7 @@ internal partial class WikiPluginConfigDocumentConfiguration : IEntityTypeConfig
     public void Configure(EntityTypeBuilder<WikiPluginConfigDocumentEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63416_primary");
+        entity.HasKey(e => e.Id).HasName("idx_66020_primary");
 
         entity.ToTable("wiki_plugin_config_document", tb => tb.HasComment("知识库文档关联任务，这里的任务都是成功的"));
 

@@ -20,16 +20,17 @@ internal partial class AppChatappChatHistoryConfiguration : IEntityTypeConfigura
     public void Configure(EntityTypeBuilder<AppChatappChatHistoryEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63091_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65689_primary");
 
         entity.ToTable("app_chatapp_chat_history", tb => tb.HasComment("对话历史，不保存实际历史记录"));
 
-        entity.HasIndex(e => e.ChatId, "idx_63091_chat_history_pk_2");
+        entity.HasIndex(e => e.ChatId, "idx_65689_chat_history_pk_2");
 
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ChatId)
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("对话id")
             .HasColumnName("chat_id");
         entity.Property(e => e.CompletionsId)

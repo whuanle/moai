@@ -20,11 +20,11 @@ internal partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOau
     public void Configure(EntityTypeBuilder<UserOauthEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63330_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65931_primary");
 
         entity.ToTable("user_oauth", tb => tb.HasComment("oauth2.0对接"));
 
-        entity.HasIndex(e => new { e.ProviderId, e.Sub, e.IsDeleted }, "idx_63330_user_oauth_provider_id_sub_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.ProviderId, e.Sub, e.IsDeleted }, "idx_65931_user_oauth_provider_id_sub_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -41,6 +41,7 @@ internal partial class UserOauthConfiguration : IEntityTypeConfiguration<UserOau
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.ProviderId)
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("供应商id,对应oauth_connection表")
             .HasColumnName("provider_id");
         entity.Property(e => e.Sub)

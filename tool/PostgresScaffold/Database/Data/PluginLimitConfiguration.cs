@@ -20,7 +20,7 @@ internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<Plugi
     public void Configure(EntityTypeBuilder<PluginLimitEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63227_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65828_primary");
 
         entity.ToTable("plugin_limit", tb => tb.HasComment("插件使用量限制"));
 

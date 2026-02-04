@@ -20,13 +20,13 @@ internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTyp
     public void Configure(EntityTypeBuilder<WikiDocumentChunkContentPreviewEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63366_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65968_primary");
 
         entity.ToTable("wiki_document_chunk_content_preview", tb => tb.HasComment("文档切片预览"));
 
-        entity.HasIndex(e => new { e.DocumentId, e.Id }, "idx_63366_idx_doc_slice");
+        entity.HasIndex(e => new { e.DocumentId, e.Id }, "idx_65968_idx_doc_slice");
 
-        entity.HasIndex(e => e.WikiId, "idx_63366_idx_wiki_slice");
+        entity.HasIndex(e => e.WikiId, "idx_65968_idx_wiki_slice");
 
         entity.Property(e => e.Id)
             .HasComment("切片唯一ID（slice_id）")

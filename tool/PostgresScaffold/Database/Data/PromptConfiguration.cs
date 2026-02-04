@@ -20,7 +20,7 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
     public void Configure(EntityTypeBuilder<PromptEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63269_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65870_primary");
 
         entity.ToTable("prompt", tb => tb.HasComment("提示词"));
 

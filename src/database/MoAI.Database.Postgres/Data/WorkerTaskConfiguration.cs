@@ -20,12 +20,12 @@ internal partial class WorkerTaskConfiguration : IEntityTypeConfiguration<Worker
     public void Configure(EntityTypeBuilder<WorkerTaskEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63444_primary");
+        entity.HasKey(e => e.Id).HasName("idx_66048_primary");
 
         entity.ToTable("worker_task", tb => tb.HasComment("工作任务"));
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.BindId)

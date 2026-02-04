@@ -20,15 +20,15 @@ internal partial class WikiDocumentChunkMetadataPreviewConfiguration : IEntityTy
     public void Configure(EntityTypeBuilder<WikiDocumentChunkMetadataPreviewEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63389_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65993_primary");
 
         entity.ToTable("wiki_document_chunk_metadata_preview", tb => tb.HasComment("切片元数据内容表（提问/提纲/摘要）"));
 
-        entity.HasIndex(e => e.MetadataType, "idx_63389_idx_deriv_type");
+        entity.HasIndex(e => e.MetadataType, "idx_65993_idx_deriv_type");
 
-        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_63389_idx_doc_deriv");
+        entity.HasIndex(e => new { e.DocumentId, e.MetadataType }, "idx_65993_idx_doc_deriv");
 
-        entity.HasIndex(e => new { e.ChunkId, e.Id }, "idx_63389_idx_slice_deriv");
+        entity.HasIndex(e => new { e.ChunkId, e.Id }, "idx_65993_idx_slice_deriv");
 
         entity.Property(e => e.Id)
             .HasComment("id")

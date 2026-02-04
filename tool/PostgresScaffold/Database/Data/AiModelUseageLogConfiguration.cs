@@ -20,11 +20,11 @@ internal partial class AiModelUseageLogConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<AiModelUseageLogEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63002_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65593_primary");
 
         entity.ToTable("ai_model_useage_log", tb => tb.HasComment("模型使用日志,记录每次请求使用记录"));
 
-        entity.HasIndex(e => e.Channel, "idx_63002_ai_model_useage_log_channel_index");
+        entity.HasIndex(e => e.Channel, "idx_65593_ai_model_useage_log_channel_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

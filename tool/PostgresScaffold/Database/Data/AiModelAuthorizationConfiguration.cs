@@ -20,7 +20,7 @@ internal partial class AiModelAuthorizationConfiguration : IEntityTypeConfigurat
     public void Configure(EntityTypeBuilder<AiModelAuthorizationEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_62966_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65557_primary");
 
         entity.ToTable("ai_model_authorization", tb => tb.HasComment("授权模型给哪些团队使用"));
 

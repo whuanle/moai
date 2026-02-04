@@ -20,11 +20,11 @@ internal partial class PluginLogConfiguration : IEntityTypeConfiguration<PluginL
     public void Configure(EntityTypeBuilder<PluginLogEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63239_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65840_primary");
 
         entity.ToTable("plugin_log", tb => tb.HasComment("插件使用日志"));
 
-        entity.HasIndex(e => e.Channel, "idx_63239_plugin_log_channel_index");
+        entity.HasIndex(e => e.Channel, "idx_65840_plugin_log_channel_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

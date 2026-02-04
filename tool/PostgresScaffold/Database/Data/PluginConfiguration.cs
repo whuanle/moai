@@ -20,13 +20,13 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
     public void Configure(EntityTypeBuilder<PluginEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63182_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65783_primary");
 
         entity.ToTable("plugin", tb => tb.HasComment("插件"));
 
-        entity.HasIndex(e => e.PluginName, "idx_63182_plugin_plugin_name_index");
+        entity.HasIndex(e => e.PluginName, "idx_65783_plugin_plugin_name_index");
 
-        entity.HasIndex(e => e.Title, "idx_63182_plugin_title_index");
+        entity.HasIndex(e => e.Title, "idx_65783_plugin_title_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

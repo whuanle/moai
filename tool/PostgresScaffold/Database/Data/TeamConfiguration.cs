@@ -20,7 +20,7 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
     public void Configure(EntityTypeBuilder<TeamEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63294_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65895_primary");
 
         entity.ToTable("team", tb => tb.HasComment("团队"));
 

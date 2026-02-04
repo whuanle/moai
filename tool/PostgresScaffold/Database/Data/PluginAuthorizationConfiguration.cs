@@ -20,7 +20,7 @@ internal partial class PluginAuthorizationConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<PluginAuthorizationEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63195_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65796_primary");
 
         entity.ToTable("plugin_authorization", tb => tb.HasComment("授权私有插件给哪些团队使用"));
 

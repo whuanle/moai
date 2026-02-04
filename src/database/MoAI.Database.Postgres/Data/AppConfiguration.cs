@@ -20,16 +20,16 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
     public void Configure(EntityTypeBuilder<AppEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63015_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65606_primary");
 
         entity.ToTable("app", tb => tb.HasComment("应用"));
 
-        entity.HasIndex(e => e.Name, "idx_63015_app_name_index");
+        entity.HasIndex(e => e.Name, "idx_65606_app_name_index");
 
-        entity.HasIndex(e => e.TeamId, "idx_63015_app_team_id_index");
+        entity.HasIndex(e => e.TeamId, "idx_65606_app_team_id_index");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AppType)

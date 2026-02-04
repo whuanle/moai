@@ -20,11 +20,11 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
     public void Configure(EntityTypeBuilder<SettingEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63283_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65884_primary");
 
         entity.ToTable("setting", tb => tb.HasComment("系统设置"));
 
-        entity.HasIndex(e => new { e.Key, e.IsDeleted }, "idx_63283_setting_key_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.Key, e.IsDeleted }, "idx_65884_setting_key_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
             .HasComment("id")

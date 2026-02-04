@@ -20,7 +20,7 @@ internal partial class PluginNativeConfiguration : IEntityTypeConfiguration<Plug
     public void Configure(EntityTypeBuilder<PluginNativeEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63250_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65851_primary");
 
         entity.ToTable("plugin_native", tb => tb.HasComment("内置插件"));
 

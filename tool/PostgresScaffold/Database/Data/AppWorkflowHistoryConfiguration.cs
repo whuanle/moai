@@ -20,7 +20,7 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
     public void Configure(EntityTypeBuilder<AppWorkflowHistoryEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63117_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65716_primary");
 
         entity.ToTable("app_workflow_history", tb => tb.HasComment("流程执行记录"));
 

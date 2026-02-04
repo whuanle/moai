@@ -20,13 +20,13 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
     public void Configure(EntityTypeBuilder<FileEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63161_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65761_primary");
 
         entity.ToTable("file", tb => tb.HasComment("文件列表"));
 
-        entity.HasIndex(e => e.FileMd5, "idx_63161_file_file_md5_index");
+        entity.HasIndex(e => e.FileMd5, "idx_65761_file_file_md5_index");
 
-        entity.HasIndex(e => e.ObjectKey, "idx_63161_file_object_key_index");
+        entity.HasIndex(e => e.ObjectKey, "idx_65761_file_object_key_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

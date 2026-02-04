@@ -20,13 +20,13 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
     public void Configure(EntityTypeBuilder<AiModelEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_62951_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65542_primary");
 
         entity.ToTable("ai_model", tb => tb.HasComment("ai模型"));
 
-        entity.HasIndex(e => e.AiModelType, "idx_62951_ai_model_ai_model_type_index");
+        entity.HasIndex(e => e.AiModelType, "idx_65542_ai_model_ai_model_type_index");
 
-        entity.HasIndex(e => e.AiProvider, "idx_62951_ai_model_ai_provider_index");
+        entity.HasIndex(e => e.AiProvider, "idx_65542_ai_model_ai_provider_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

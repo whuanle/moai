@@ -20,7 +20,7 @@ internal partial class PluginCustomConfiguration : IEntityTypeConfiguration<Plug
     public void Configure(EntityTypeBuilder<PluginCustomEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63205_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65806_primary");
 
         entity.ToTable("plugin_custom", tb => tb.HasComment("自定义插件"));
 

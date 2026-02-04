@@ -20,21 +20,21 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
     public void Configure(EntityTypeBuilder<UserEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63319_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65920_primary");
 
         entity.ToTable("user", tb => tb.HasComment("用户"));
 
-        entity.HasIndex(e => e.Email, "idx_63319_idx_users_email");
+        entity.HasIndex(e => e.Email, "idx_65920_idx_users_email");
 
-        entity.HasIndex(e => e.Phone, "idx_63319_idx_users_phone");
+        entity.HasIndex(e => e.Phone, "idx_65920_idx_users_phone");
 
-        entity.HasIndex(e => e.UserName, "idx_63319_idx_users_user_name");
+        entity.HasIndex(e => e.UserName, "idx_65920_idx_users_user_name");
 
-        entity.HasIndex(e => new { e.Email, e.IsDeleted }, "idx_63319_users_email_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.Email, e.IsDeleted }, "idx_65920_users_email_is_deleted_uindex").IsUnique();
 
-        entity.HasIndex(e => new { e.Phone, e.IsDeleted }, "idx_63319_users_phone_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.Phone, e.IsDeleted }, "idx_65920_users_phone_is_deleted_uindex").IsUnique();
 
-        entity.HasIndex(e => new { e.UserName, e.IsDeleted }, "idx_63319_users_user_name_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => new { e.UserName, e.IsDeleted }, "idx_65920_users_user_name_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
             .HasComment("用户ID")

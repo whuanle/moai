@@ -20,12 +20,12 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
     public void Configure(EntityTypeBuilder<ExternalAppEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63140_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65739_primary");
 
         entity.ToTable("external_app", tb => tb.HasComment("系统接入"));
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("app_id")
             .HasColumnName("id");
         entity.Property(e => e.Avatar)

@@ -20,11 +20,11 @@ internal partial class WikiDocumentConfiguration : IEntityTypeConfiguration<Wiki
     public void Configure(EntityTypeBuilder<WikiDocumentEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63352_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65954_primary");
 
         entity.ToTable("wiki_document", tb => tb.HasComment("知识库文档"));
 
-        entity.HasIndex(e => e.ObjectKey, "idx_63352_wiki_document_object_key_index");
+        entity.HasIndex(e => e.ObjectKey, "idx_65954_wiki_document_object_key_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

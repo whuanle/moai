@@ -22,7 +22,7 @@ LOAD DATABASE
       type tinyint to boolean drop typemod using tinyint-to-boolean,
       type year to integer,
       type datetime when default 'utc_timestamp()' to "timestamptz default timezone('utc', now())" drop default,
-      type binary when (= precision 16) to uuid drop typemod drop default using sql-server-uniqueidentifier-to-uuid
+      type binary when (= precision 16) to "uuid default uuid_generate_v4()" drop typemod drop default
 
 ALTER SCHEMA 'moai' RENAME TO 'public'
 

@@ -20,7 +20,7 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
     public void Configure(EntityTypeBuilder<WikiEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63338_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65940_primary");
 
         entity.ToTable("wiki", tb => tb.HasComment("知识库"));
 

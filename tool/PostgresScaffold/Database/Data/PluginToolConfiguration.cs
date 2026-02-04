@@ -20,7 +20,7 @@ internal partial class PluginToolConfiguration : IEntityTypeConfiguration<Plugin
     public void Configure(EntityTypeBuilder<PluginToolEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63261_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65862_primary");
 
         entity.ToTable("plugin_tool", tb => tb.HasComment("内置插件"));
 

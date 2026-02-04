@@ -20,7 +20,7 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
     public void Configure(EntityTypeBuilder<AiModelLimitEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_62976_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65567_primary");
 
         entity.ToTable("ai_model_limit", tb => tb.HasComment("ai模型使用量限制，只能用于系统模型"));
 

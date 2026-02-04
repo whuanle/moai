@@ -20,15 +20,16 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
     public void Configure(EntityTypeBuilder<AppChatappChatEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63077_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65673_primary");
 
         entity.ToTable("app_chatapp_chat", tb => tb.HasComment("普通应用对话表"));
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AppId)
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("appid")
             .HasColumnName("app_id");
         entity.Property(e => e.CreateTime)

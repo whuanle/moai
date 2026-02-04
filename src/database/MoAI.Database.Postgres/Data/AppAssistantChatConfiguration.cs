@@ -20,12 +20,12 @@ internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<AppAssistantChatEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_63032_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65624_primary");
 
         entity.ToTable("app_assistant_chat", tb => tb.HasComment("ai助手表"));
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.Avatar)
