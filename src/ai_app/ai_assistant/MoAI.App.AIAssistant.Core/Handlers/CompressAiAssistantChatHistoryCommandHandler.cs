@@ -8,7 +8,6 @@ using MoAI.AI.ChatCompletion;
 using MoAI.AI.Models;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Constants;
-using MoAI.App.AIAssistant.Core.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -26,7 +25,6 @@ public class
     EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IChatHistoryCacheService _cacheService;
     private readonly IAiClientBuilder _aiClientBuilder;
     private readonly ILogger<CompressAiAssistantChatHistoryCommandHandler> _logger;
 
@@ -35,12 +33,10 @@ public class
     /// </summary>
     public CompressAiAssistantChatHistoryCommandHandler(
         DatabaseContext databaseContext,
-        IChatHistoryCacheService cacheService,
         IAiClientBuilder aiClientBuilder,
         ILogger<CompressAiAssistantChatHistoryCommandHandler> logger)
     {
         _databaseContext = databaseContext;
-        _cacheService = cacheService;
         _aiClientBuilder = aiClientBuilder;
         _logger = logger;
     }
@@ -59,8 +55,11 @@ public class
             throw new BusinessException("对话不存在或无权访问") { StatusCode = 404 };
         }
 
-        // 2. Load chat history using cache service
-        var history = await _cacheService.LoadChatHistoryAsync(chatObjectEntity.Id, cancellationToken);
+        // 2. Load chat history from database
+        var history = await _databaseContext.AppAssistantChatHistories
+            .Where(x => x.ChatId == chatObjectEntity.Id)
+            .OrderBy(x => x.CreateTime)
+            .ToListAsync(cancellationToken);
 
         // 3. Check if compression is needed
         if (history.Count < ChatCacheConstants.MaxCacheMessages)
@@ -105,12 +104,8 @@ public class
         var compressedHistory =
             await CompressChatHistoryAsync(history, chatObjectEntity.Prompt, aiEndpoint, cancellationToken);
 
-        // 6. Update Redis cache with compressed history
-        await _cacheService.UpdateCacheWithCompressedHistoryAsync(
-            chatObjectEntity.Id,
-            compressedHistory,
-            chatObjectEntity.Prompt,
-            cancellationToken);
+        _logger.LogInformation("Compression completed for chat {ChatId}, new count: {Count}",
+            chatObjectEntity.Id, compressedHistory.Count);
 
         return EmptyCommandResponse.Default;
     }

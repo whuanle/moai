@@ -17,7 +17,6 @@ using MoAI.AI.Models;
 using MoAI.AiModel.Events;
 using MoAI.App.AIAssistant.Commands;
 using MoAI.App.AIAssistant.Constants;
-using MoAI.App.AIAssistant.Core.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -45,7 +44,6 @@ public partial class
     private readonly IAiClientBuilder _aiClientBuilder;
     private readonly ILogger<ProcessingAiAssistantChatCommandHandler> _logger;
     private readonly IMessagePublisher _messagePublisher;
-    private readonly IChatHistoryCacheService _cacheService;
 
     private readonly List<IDisposable> _disposables = [];
     private readonly List<IAsyncDisposable> _asyncDisposables = [];
@@ -70,8 +68,7 @@ public partial class
         IHttpClientFactory httpClientFactory,
         INativePluginFactory nativePluginFactory,
         IAiClientBuilder aiClientBuilder,
-        IMessagePublisher messagePublisher,
-        IChatHistoryCacheService cacheService)
+        IMessagePublisher messagePublisher)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
@@ -82,7 +79,6 @@ public partial class
         _aiClientBuilder = aiClientBuilder;
         _logger = loggerFactory.CreateLogger<ProcessingAiAssistantChatCommandHandler>();
         _messagePublisher = messagePublisher;
-        _cacheService = cacheService;
     }
 
     /// <inheritdoc/>
@@ -99,8 +95,11 @@ public partial class
             throw new BusinessException("对话不存在或无权访问") { StatusCode = 404 };
         }
 
-        // Load chat history using cache service
-        var history = await _cacheService.LoadChatHistoryAsync(chatObjectEntity.Id, cancellationToken);
+        // Load chat history from database
+        var history = await _databaseContext.AppAssistantChatHistories
+            .Where(x => x.ChatId == chatObjectEntity.Id)
+            .OrderBy(x => x.CreateTime)
+            .ToListAsync(cancellationToken);
 
         string completionId = $"chatcmpl-" + Guid.CreateVersion7().ToString("N");
 
@@ -151,7 +150,10 @@ public partial class
                 }, cancellationToken: cancellationToken);
 
             // Reload history after compression
-            history = await _cacheService.LoadChatHistoryAsync(chatObjectEntity.Id, cancellationToken);
+            history = await _databaseContext.AppAssistantChatHistories
+                .Where(x => x.ChatId == chatObjectEntity.Id)
+                .OrderBy(x => x.CreateTime)
+                .ToListAsync(cancellationToken);
             _logger.LogInformation("Reloaded compressed history, new count: {Count}", history.Count);
         }
 
@@ -184,10 +186,6 @@ public partial class
 
         await _databaseContext.AppAssistantChatHistories.AddAsync(userChatRecord, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
-
-        // Update Redis cache with user message
-        await _cacheService.UpdateCacheAsync(chatObjectEntity.Id, history, userChatRecord, chatObjectEntity.Prompt,
-            cancellationToken: cancellationToken);
 
         var kernelBuilder = Kernel.CreateBuilder();
         foreach (var plugin in plugins)
@@ -319,11 +317,6 @@ public partial class
 
         await _databaseContext.AppAssistantChatHistories.AddAsync(aiChatRecord, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
-
-        // Update Redis cache with AI response (history now includes user message)
-        var historyWithUser = new List<AppAssistantChatHistoryEntity>(history) { userChatRecord };
-        await _cacheService.UpdateCacheAsync(chatObjectEntity.Id, historyWithUser, aiChatRecord,
-            chatObjectEntity.Prompt, cancellationToken);
 
         // 模型用量统计
         await _messagePublisher.AutoPublishAsync(

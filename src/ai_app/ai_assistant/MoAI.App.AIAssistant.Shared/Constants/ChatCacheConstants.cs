@@ -17,14 +17,4 @@ public static class ChatCacheConstants
     /// Example: 1 summary + 4 recent = 5 total messages.
     /// </summary>
     public const int CompressToMessages = 4;
-
-    /// <summary>
-    /// Redis key prefix for chat context.
-    /// </summary>
-    public const string RedisKeyPrefix = "chat:context:";
-
-    /// <summary>
-    /// Cache TTL in hours.
-    /// </summary>
-    public const int CacheTtlHours = 24;
 }
