@@ -53,20 +53,20 @@ const { TextArea } = Input;
 // 从 ChatContentItem 中提取文本消息内容（不包含插件调用）
 const extractTextContent = (item: ChatContentItem): string => {
   const choices = item.choices;
-  
+
   if (!choices || choices.length === 0) {
     console.log("Empty choices for item:", item);
     return "";
   }
-  
+
   const contents: string[] = [];
-  
+
   for (const choice of choices) {
     if (choice.textCall?.content) {
       contents.push(choice.textCall.content);
     }
   }
-  
+
   return contents.join("");
 };
 
@@ -74,7 +74,7 @@ const extractTextContent = (item: ChatContentItem): string => {
 const extractPluginCalls = (item: ChatContentItem): AiProcessingPluginCall[] => {
   const choices = item.choices;
   if (!choices || choices.length === 0) return [];
-  
+
   return choices
     .filter((choice) => choice.pluginCall != null)
     .map((choice) => choice.pluginCall!);
@@ -90,7 +90,7 @@ const hasPluginCall = (item: ChatContentItem): boolean => {
 const extractFileCalls = (item: ChatContentItem): AiProcessingFileCall[] => {
   const choices = item.choices;
   if (!choices || choices.length === 0) return [];
-  
+
   return choices
     .filter((choice) => choice.streamType === AiProcessingChatStreamTypeObject.File && choice.fileCall != null)
     .map((choice) => choice.fileCall!);
@@ -146,7 +146,7 @@ const PluginCallDisplay: React.FC<{ pluginCall: AiProcessingPluginCall }> = ({ p
               </div>
             </div>
           )}
-          
+
           {/* 输出结果 */}
           {pluginCall.result && (
             <div className="plugin-detail-section">
@@ -382,7 +382,7 @@ const AiAssistant: React.FC = () => {
         fileName: file.name,
         isSuccess: true,
       });
-      
+
       viewUrl = completeResponse?.viewUrl || null;
 
       return { fileKey: fileKey || null, viewUrl, isImage };
@@ -433,19 +433,19 @@ const AiAssistant: React.FC = () => {
       setHistoryLoading(true);
       try {
         const client = GetApiClient();
-        const response: QueryAiAssistantChatHistoryCommandResponse | undefined = 
+        const response: QueryAiAssistantChatHistoryCommandResponse | undefined =
           await client.api.app.assistant.chat_history.get({
             queryParameters: { chatId },
           });
-        
+
         if (response) {
           // 调试：打印响应数据
           console.log("Chat history response:", response);
           console.log("Chat history items:", response.chatHistory);
-          
+
           // 设置聊天历史
           setChatHistory(response.chatHistory || []);
-          
+
           // 从响应中提取配置并更新
           const executionSettings = response.executionSettings || [];
           const getSettingValue = (key: string, defaultValue: number): number => {
@@ -499,7 +499,12 @@ const AiAssistant: React.FC = () => {
   // 打开新建对话模态窗口
   const handleOpenCreateModal = () => {
     setNewChatTitle("新对话");
-    setSelectedModelId(undefined);
+    // 默认选择第一个模型
+    if (models.length > 0) {
+      setSelectedModelId(models[0].id);
+    } else {
+      setSelectedModelId(undefined);
+    }
     setCreateModalOpen(true);
     if (models.length === 0) {
       loadModels();
@@ -582,7 +587,7 @@ const AiAssistant: React.FC = () => {
   // 发送消息 - 流式对话
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !currentChatId || sending) return;
-    
+
     if (!assistantConfig.modelId) {
       messageApi.warning("请先选择AI模型");
       return;
@@ -590,13 +595,13 @@ const AiAssistant: React.FC = () => {
 
     const userMessage = inputValue.trim();
     const imageToUpload = pendingImage;
-    
+
     setInputValue("");
     setSending(true);
     setIsStreaming(true);
     setStreamingContent("");
     setImageUploading(!!imageToUpload);
-    
+
     // 清除待上传的图片预览（但保留文件引用用于上传）
     setPendingImage(null);
 
@@ -634,7 +639,7 @@ const AiAssistant: React.FC = () => {
         try {
           const uploadResult = await uploadFileToServer(imageToUpload.file, currentChatId);
           fileKey = uploadResult.fileKey;
-          
+
           // 上传完成后，更新为服务器 URL
           if (uploadResult.viewUrl) {
             setMessageAttachments((prev) => {
@@ -647,7 +652,7 @@ const AiAssistant: React.FC = () => {
               return newMap;
             });
           }
-          
+
           // 释放本地预览 URL
           URL.revokeObjectURL(imageToUpload.preview);
         } catch (uploadError) {
@@ -667,9 +672,9 @@ const AiAssistant: React.FC = () => {
         }
       }
       setImageUploading(false);
-      
+
       const token = localStorage.getItem("userinfo.accessToken");
-      
+
       // 构建请求体
       const requestBody: { chatId: string; content: string; fileKey?: string } = {
         chatId: currentChatId,
@@ -678,7 +683,7 @@ const AiAssistant: React.FC = () => {
       if (fileKey) {
         requestBody.fileKey = fileKey;
       }
-      
+
       const response = await fetch(`${EnvOptions.ServerUrl}/api/app/assistant/completions`, {
         method: "POST",
         headers: {
@@ -708,7 +713,7 @@ const AiAssistant: React.FC = () => {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        
+
         // 处理 SSE 格式的数据
         const lines = buffer.split("\n");
         buffer = lines.pop() || ""; // 保留未完成的行
@@ -719,12 +724,16 @@ const AiAssistant: React.FC = () => {
             if (jsonStr === "[DONE]") {
               continue;
             }
-            
+
             try {
               const data = JSON.parse(jsonStr);
-              
-              // 处理流式内容
-              if (data.choices && data.choices.length > 0) {
+
+              // 先检查是否结束
+              const isFinished = data.finish_reason === "stop" || data.finishReason === "stop";
+              const isError = data.finish_reason === "error" || data.finishReason === "error";
+
+              // 只有非结束状态才处理流式内容
+              if (!isFinished && !isError && data.choices && data.choices.length > 0) {
                 for (const choice of data.choices) {
                   if (choice.textCall?.content) {
                     accumulatedContent += choice.textCall.content;
@@ -733,12 +742,12 @@ const AiAssistant: React.FC = () => {
                   }
                 }
               }
-              
+
               // 检查是否完成
-              if (data.finish_reason === "stop" || data.finishReason === "stop") {
+              if (isFinished) {
                 // 流式完成，将累积的内容添加到聊天历史
                 setIsStreaming(false);
-                
+
                 // 将流式内容作为助手消息添加到历史
                 if (accumulatedContent && !messageAdded) {
                   const assistantMessage: ChatContentItem = {
@@ -749,24 +758,24 @@ const AiAssistant: React.FC = () => {
                   messageAdded = true;
                 }
                 setStreamingContent("");
-                
+
                 // 更新 Token 统计
                 if (data.usage) {
                   setTokenStats((prev) => ({
-                    total: prev.total + (data.usage.prompt_tokens || data.usage.promptTokens || 0) + 
-                           (data.usage.completion_tokens || data.usage.completionTokens || 0),
+                    total: prev.total + (data.usage.prompt_tokens || data.usage.promptTokens || 0) +
+                      (data.usage.completion_tokens || data.usage.completionTokens || 0),
                     input: prev.input + (data.usage.prompt_tokens || data.usage.promptTokens || 0),
                     output: prev.output + (data.usage.completion_tokens || data.usage.completionTokens || 0),
                   }));
                 }
               }
-              
+
               // 检查是否出错
               if (data.finish_reason === "error" || data.finishReason === "error") {
                 setIsStreaming(false);
                 setStreamingContent("");
                 messageAdded = true; // 错误时也标记为已处理，避免重复添加
-                
+
                 // 从 choices 中提取错误信息
                 let errorMessage = "AI 处理出错";
                 if (data.choices && data.choices.length > 0) {
@@ -781,7 +790,7 @@ const AiAssistant: React.FC = () => {
                     }
                   }
                 }
-                
+
                 messageApi.error(errorMessage);
                 // 错误时不再请求历史，保持当前状态
               }
@@ -833,12 +842,12 @@ const AiAssistant: React.FC = () => {
   const handleAvatarChange = async (emoji: string) => {
     const newConfig = { ...assistantConfig, avatar: emoji };
     setAssistantConfig(newConfig);
-    
+
     // 自动保存头像到服务器（带上完整配置）
     if (currentChatId) {
       try {
         const client = GetApiClient();
-        
+
         // 构建 executionSettings
         const executionSettings = [
           { key: "temperature", value: String(newConfig.temperature) },
@@ -924,6 +933,13 @@ const AiAssistant: React.FC = () => {
     }
   }, [urlChatId]); // 移除 currentChatId 和 loadChatHistory 依赖，避免删除后重复请求
 
+  // 当模型列表加载完成且新建对话模态窗口打开时，自动选择第一个模型
+  useEffect(() => {
+    if (createModalOpen && models.length > 0 && !selectedModelId) {
+      setSelectedModelId(models[0].id);
+    }
+  }, [createModalOpen, models, selectedModelId]);
+
   return (
     <Layout className="ai-assistant-layout">
       {contextHolder}
@@ -958,9 +974,8 @@ const AiAssistant: React.FC = () => {
                 dataSource={topics}
                 renderItem={(topic) => (
                   <List.Item
-                    className={`topic-item ${
-                      currentChatId === topic.chatId ? "topic-item-active" : ""
-                    }`}
+                    className={`topic-item ${currentChatId === topic.chatId ? "topic-item-active" : ""
+                      }`}
                     onClick={() => handleSelectTopic(topic.chatId!)}
                     actions={[
                       <Popconfirm
@@ -1021,7 +1036,7 @@ const AiAssistant: React.FC = () => {
               </Title>
             </div>
           )}
-          
+
           {/* 聊天历史区域 */}
           <div className="chat-history-area" ref={chatContainerRef}>
             <Spin spinning={historyLoading}>
@@ -1036,10 +1051,10 @@ const AiAssistant: React.FC = () => {
                     const pluginCalls = extractPluginCalls(item);
                     const fileCalls = extractFileCalls(item);
                     const isPluginCall = hasPluginCall(item);
-                    
+
                     // 跳过完全空的消息
                     if (!textContent && pluginCalls.length === 0 && fileCalls.length === 0) return null;
-                    
+
                     return (
                       <div
                         key={item.recordId || index}
@@ -1144,7 +1159,7 @@ const AiAssistant: React.FC = () => {
                       </div>
                     );
                   })}
-                  
+
                   {/* 流式消息显示 */}
                   {isStreaming && (
                     <div className="chat-message chat-message-assistant chat-message-streaming">

@@ -16,9 +16,9 @@ using MoAI.AI.Commands;
 using MoAI.AI.Models;
 using MoAI.AiModel.Events;
 using MoAI.App.AIAssistant.Commands;
+using MoAI.App.AIAssistant.Constants;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Hangfire.Services;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
@@ -30,7 +30,10 @@ namespace MoAI.App.AIAssistant.Handlers;
 /// <summary>
 /// <inheritdoc cref="ProcessingAiAssistantChatCommand"/>
 /// </summary>
-public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHandler<ProcessingAiAssistantChatCommand, AiProcessingChatItem>, IAsyncDisposable
+public partial class
+    ProcessingAiAssistantChatCommandHandler :
+    IStreamRequestHandler<ProcessingAiAssistantChatCommand, AiProcessingChatItem>,
+    IAsyncDisposable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly DatabaseContext _databaseContext;
@@ -42,8 +45,8 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
     private readonly ILogger<ProcessingAiAssistantChatCommandHandler> _logger;
     private readonly IMessagePublisher _messagePublisher;
 
-    private readonly List<IDisposable> _disposables = new();
-    private readonly List<IAsyncDisposable> _asyncDisposables = new();
+    private readonly List<IDisposable> _disposables = [];
+    private readonly List<IAsyncDisposable> _asyncDisposables = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ProcessingAiAssistantChatCommandHandler"/> class.
@@ -56,7 +59,16 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
     /// <param name="nativePluginFactory"></param>
     /// <param name="aiClientBuilder"></param>
     /// <param name="messagePublisher"></param>
-    public ProcessingAiAssistantChatCommandHandler(IServiceProvider serviceProvider, DatabaseContext databaseContext, IMediator mediator, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory, INativePluginFactory nativePluginFactory, IAiClientBuilder aiClientBuilder, IMessagePublisher messagePublisher)
+    /// <param name="cacheService"></param>
+    public ProcessingAiAssistantChatCommandHandler(
+        IServiceProvider serviceProvider,
+        DatabaseContext databaseContext,
+        IMediator mediator,
+        ILoggerFactory loggerFactory,
+        IHttpClientFactory httpClientFactory,
+        INativePluginFactory nativePluginFactory,
+        IAiClientBuilder aiClientBuilder,
+        IMessagePublisher messagePublisher)
     {
         _serviceProvider = serviceProvider;
         _databaseContext = databaseContext;
@@ -70,7 +82,9 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<AiProcessingChatItem> Handle(ProcessingAiAssistantChatCommand request, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<AiProcessingChatItem> Handle(
+        ProcessingAiAssistantChatCommand request,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var chatObjectEntity = await _databaseContext.AppAssistantChats
             .Where(x => x.Id == request.ChatId && x.CreateUserId == request.ContextUserId)
@@ -81,9 +95,9 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             throw new BusinessException("对话不存在或无权访问") { StatusCode = 404 };
         }
 
-        // 补全对话上下文
+        // Load chat history from database
         var history = await _databaseContext.AppAssistantChatHistories
-            .Where(x => x.ChatId == request.ChatId)
+            .Where(x => x.ChatId == chatObjectEntity.Id)
             .OrderBy(x => x.CreateTime)
             .ToListAsync(cancellationToken);
 
@@ -123,10 +137,31 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             throw new BusinessException("该模型不支持对话") { StatusCode = 400 };
         }
 
+        // Check if compression is needed BEFORE sending to AI
+        if (history.Count >= ChatCacheConstants.MaxCacheMessages)
+        {
+            // Trigger compression command
+            await _mediator.Send(
+                new CompressAiAssistantChatHistoryCommand
+                {
+                    ChatId = chatObjectEntity.Id,
+                    ContextUserId = request.ContextUserId,
+                    ContextUserType = request.ContextUserType
+                }, cancellationToken: cancellationToken);
+
+            // Reload history after compression
+            history = await _databaseContext.AppAssistantChatHistories
+                .Where(x => x.ChatId == chatObjectEntity.Id)
+                .OrderBy(x => x.CreateTime)
+                .ToListAsync(cancellationToken);
+            _logger.LogInformation("Reloaded compressed history, new count: {Count}", history.Count);
+        }
+
         var pluginKeys = chatObjectEntity.Plugins.JsonToObject<IReadOnlyCollection<string>>()!;
+
         var wikiId = chatObjectEntity.WikiIds.JsonToObject<IReadOnlyCollection<int>>()!;
 
-        List<OpenAIChatCompletionsUsage> useages = new List<OpenAIChatCompletionsUsage>();
+        List<OpenAIChatCompletionsUsage> useages = [];
         Dictionary<string, string> pluginKeyNames = new();
         ProcessingAiAssistantChatContext chatContext = new()
         {
@@ -149,7 +184,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             Role = AuthorRole.User.Label,
         };
 
-        await _databaseContext.AppAssistantChatHistories.AddAsync(userChatRecord);
+        await _databaseContext.AppAssistantChatHistories.AddAsync(userChatRecord, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         var kernelBuilder = Kernel.CreateBuilder();
@@ -172,10 +207,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
         };
 
-        if (executionSettings.ExtensionData == null)
-        {
-            executionSettings.ExtensionData = new Dictionary<string, object>();
-        }
+        executionSettings.ExtensionData ??= new Dictionary<string, object>();
 
         // 添加影响因素
         foreach (var item in chatObjectEntity.ExecutionSettings.JsonToObject<IReadOnlyCollection<KeyValueString>>()!)
@@ -197,9 +229,10 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
         };
 
         // 统一对话处理，适配各家的模型
-        AiProcessingChatItem lastChunk = default!;
+        AiProcessingChatItem lastChunk = null!;
         bool isException = false;
-        var unifyStream = _mediator.CreateStream(unifyedStream, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        var unifyStream = _mediator.CreateStream(unifyedStream, cancellationToken)
+            .GetAsyncEnumerator(cancellationToken);
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -227,7 +260,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
         }
 
         // 可能因为报错或取消导致流式提前结束
-        if (lastChunk == null || string.IsNullOrEmpty(lastChunk.FinishReason))
+        if (lastChunk is null || string.IsNullOrEmpty(lastChunk.FinishReason))
         {
             var choices = new List<AiProcessingChoice>
             {
@@ -282,8 +315,8 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
             Role = AuthorRole.Assistant.Label
         };
 
-        await _databaseContext.AppAssistantChatHistories.AddAsync(aiChatRecord);
-        await _databaseContext.SaveChangesAsync();
+        await _databaseContext.AppAssistantChatHistories.AddAsync(aiChatRecord, cancellationToken);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         // 模型用量统计
         await _messagePublisher.AutoPublishAsync(
@@ -297,7 +330,7 @@ public partial class ProcessingAiAssistantChatCommandHandler : IStreamRequestHan
                 PluginUsage = chatContext.Choices.Where(x => x.PluginCall != null)
                     .GroupBy(x => x.PluginCall!.PluginKey)
                     .ToDictionary(x => x.Key, x => x.Count()),
-            });
+            }, cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc/>
