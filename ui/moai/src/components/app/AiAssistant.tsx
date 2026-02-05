@@ -499,7 +499,12 @@ const AiAssistant: React.FC = () => {
   // 打开新建对话模态窗口
   const handleOpenCreateModal = () => {
     setNewChatTitle("新对话");
-    setSelectedModelId(undefined);
+    // 默认选择第一个模型
+    if (models.length > 0) {
+      setSelectedModelId(models[0].id);
+    } else {
+      setSelectedModelId(undefined);
+    }
     setCreateModalOpen(true);
     if (models.length === 0) {
       loadModels();
@@ -927,6 +932,13 @@ const AiAssistant: React.FC = () => {
       // 不需要做任何操作，状态已在 handleDeleteTopic 中处理
     }
   }, [urlChatId]); // 移除 currentChatId 和 loadChatHistory 依赖，避免删除后重复请求
+
+  // 当模型列表加载完成且新建对话模态窗口打开时，自动选择第一个模型
+  useEffect(() => {
+    if (createModalOpen && models.length > 0 && !selectedModelId) {
+      setSelectedModelId(models[0].id);
+    }
+  }, [createModalOpen, models, selectedModelId]);
 
   return (
     <Layout className="ai-assistant-layout">

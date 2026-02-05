@@ -178,30 +178,6 @@ public partial class AiAssistantController : ControllerBase
     }
 
     /// <summary>
-    /// 压缩聊天历史记录.
-    /// </summary>
-    /// <param name="req">包含 ChatId 的命令对象</param>
-    /// <param name="ct">取消令牌</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/></returns>
-    [HttpPost("compress_history")]
-    public async Task<EmptyCommandResponse> CompressHistory([FromBody] CompressAiAssistantChatHistoryCommand req, CancellationToken ct = default)
-    {
-        var creatorId = await _mediator.Send(
-            new QueryAiAssistantCreatorCommand
-            {
-                ChatId = req.ChatId
-            },
-            ct);
-
-        if (creatorId != _userContext.UserId)
-        {
-            throw new BusinessException("未找到对话") { StatusCode = 404 };
-        }
-
-        return await _mediator.Send(req, ct);
-    }
-
-    /// <summary>
     /// 预上传文档.
     /// </summary>
     /// <param name="req">预上传文档的命令对象.</param>
