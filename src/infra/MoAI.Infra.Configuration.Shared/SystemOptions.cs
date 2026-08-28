@@ -34,11 +34,6 @@ public class SystemOptions
     public string WebUI { get; init; } = string.Empty;
 
     /// <summary>
-    /// 系统数据库类型.
-    /// </summary>
-    public string DBType { get; init; } = string.Empty;
-
-    /// <summary>
     /// 系统数据库连接字符串.
     /// </summary>
     public string Database { get; init; } = string.Empty;
@@ -54,11 +49,6 @@ public class SystemOptions
     public string RabbitMQ { get; init; } = string.Empty;
 
     /// <summary>
-    /// 文档向量化存储.
-    /// </summary>
-    public DatabaseStorage Wiki { get; init; } = new DatabaseStorage();
-
-    /// <summary>
     /// Storage.
     /// </summary>
     public required SystemOptionStorage Storage { get; init; }
@@ -72,49 +62,4 @@ public class SystemOptions
     /// 可观察性.
     /// </summary>
     public OpenTelemetryOptions OTLP { get; init; } = new();
-}
-
-public class SystemOptionStorage
-{
-    /// <summary>
-    /// 存储类型，S3、Local，不填写默认 Local
-    /// </summary>
-    public string Type { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 本地路径.
-    /// </summary>
-    public string LocalPath { get; init; } = string.Empty;
-
-    /// <summary>
-    /// S3 服务器地址.
-    /// </summary>
-    public string Endpoint { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 强制使用后缀路径样式.
-    /// </summary>
-    public bool ForcePathStyle { get; init; } = true;
-
-    /// <summary>
-    /// 存储桶名称.
-    /// </summary>
-    public string Bucket { get; init; } = string.Empty;
-
-    /// <summary>
-    /// id.
-    /// </summary>
-    public string AccessKeyId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// key.
-    /// </summary>
-    public string AccessKeySecret { get; init; } = string.Empty;
-}
-
-public class OpenTelemetryOptions
-{
-    public string Trace { get; init; } = string.Empty;
-    public string Metrics { get; init; } = string.Empty;
-    public int Protocol { get; init; }
 }

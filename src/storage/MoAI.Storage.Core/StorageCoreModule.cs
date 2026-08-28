@@ -9,7 +9,6 @@ namespace MoAI.Storage;
 /// StorageCoreModule.
 /// </summary>
 [InjectModule<StorageSharedModule>]
-[InjectModule<StorageLocalModule>]
 [InjectModule<StorageApiModule>]
 public class StorageCoreModule : IModule
 {
@@ -27,13 +26,6 @@ public class StorageCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        if (!string.IsNullOrEmpty(_systemOptions.Storage.Type) && "S3".Equals(_systemOptions!.Storage.Type, StringComparison.OrdinalIgnoreCase))
-        {
-            context.Services.AddScoped<IStorage, S3Storage>();
-        }
-        else
-        {
-            context.Services.AddScoped<IStorage, LocalStorage>();
-        }
+        context.Services.AddScoped<IStorage, S3Storage>();
     }
 }

@@ -24,9 +24,6 @@ public class StorageS3Module : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        if ("S3".Equals(_systemOptions!.Storage.Type, StringComparison.OrdinalIgnoreCase))
-        {
-            context.Services.AddScoped<IStorage, S3Storage>();
-        }
+        context.Services.AddScoped<IStorage, S3Storage>();
     }
 }

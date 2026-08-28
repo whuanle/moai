@@ -1,12 +1,14 @@
-﻿#pragma warning disable CA1051
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using MoAI.Database.Entities;
+
+#pragma warning disable CA1051
 #pragma warning disable SA1401
 #pragma warning disable SA1600
 #pragma warning disable SA1601
 #pragma warning disable SA1204
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using MoAI.Database.Entities;
 
 namespace MoAI.Database;
 

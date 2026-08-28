@@ -31,11 +31,6 @@ public class DatabasPostgresModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        if (!"postgres".Equals(_systemOptions.DBType, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
 

@@ -98,6 +98,6 @@ public class ConfigureMVCModule : IModule
             }
         }
 
-        builder.AddApplicationPart(typeof(StorageLocalModule).Assembly);
+        //builder.AddApplicationPart(typeof(StorageApiModule).Assembly);
     }
 }

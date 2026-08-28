@@ -57,7 +57,7 @@ public struct SizeInfo : IEquatable<SizeInfo>
     }
 
     /// <inheritdoc/>
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj == null)
         {

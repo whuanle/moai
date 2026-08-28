@@ -18,7 +18,6 @@ namespace MoAI.Database;
 /// DatabaseCoreModule.
 /// </summary>
 [InjectModule<DatabasPostgresModule>]
-[InjectModule<DatabaseMysqlModule>]
 public class DatabaseCoreModule : IModule
 {
     private readonly SystemOptions _systemOptions;

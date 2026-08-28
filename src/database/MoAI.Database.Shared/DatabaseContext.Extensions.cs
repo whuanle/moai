@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database.Audits;
 using MoAI.Infra.Services;
-using System.Linq.Expressions;
 
 namespace MoAI.Database;
 
@@ -35,21 +34,22 @@ public partial class DatabaseContext
     /// <returns></returns>
     public async Task<int> WhereUpdateAsync<TSource>(
         IQueryable<TSource> source,
-        Expression<Func<SetPropertyCalls<TSource>, SetPropertyCalls<TSource>>> setPropertyCalls)
+        Action<UpdateSettersBuilder<TSource>> setPropertyCalls)
         where TSource : IModificationAudited
     {
         var userProvider = _serviceProvider.GetRequiredService<IUserContextProvider>();
         var userContext = userProvider.GetUserContext();
 
-        Expression<Func<SetPropertyCalls<TSource>, SetPropertyCalls<TSource>>> auditSetters =
+        Action<UpdateSettersBuilder<TSource>> auditSetters =
             x => x.SetProperty(a => a.UpdateUserId, userContext.UserId)
                   .SetProperty(a => a.UpdateTime, DateTimeOffset.Now);
 
-        var combinedBody = Expression.Invoke(auditSetters, setPropertyCalls.Body);
-        var combinedExpression = Expression.Lambda<Func<SetPropertyCalls<TSource>, SetPropertyCalls<TSource>>>(
-            combinedBody,
-            setPropertyCalls.Parameters);
+        var combinedSetters = new Action<UpdateSettersBuilder<TSource>>(setter =>
+        {
+            setPropertyCalls(setter);
+            auditSetters(setter);
+        });
 
-        return await source.ExecuteUpdateAsync(combinedExpression);
+        return await source.ExecuteUpdateAsync(combinedSetters);
     }
 }

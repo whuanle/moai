@@ -57,8 +57,8 @@ app.Use(async (HttpContext context, RequestDelegate next) =>
 
 app.UseHttpLogging();
 
-// MCP 服务器，需要放在授权之前
-app.MapMcp("/mcp/wiki/{wikiId}");
+//// MCP 服务器，需要放在授权之前
+//app.MapMcp("/mcp/wiki/{wikiId}");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -228,5 +228,5 @@ public partial class DatabaseContext : DbContext
         OnModelCreatingPartial(modelBuilder);
     }
 
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

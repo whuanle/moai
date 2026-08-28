@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using MoAI.Infra.Models;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Results;
@@ -11,7 +13,7 @@ namespace MoAI.Filters;
 public class CustomResultFactory : IFluentValidationAutoValidationResultFactory
 {
     /// <inheritdoc/>
-    public IActionResult CreateActionResult(ActionExecutingContext context, ValidationProblemDetails? validationProblemDetails)
+    public Task<IActionResult?> CreateActionResult(ActionExecutingContext context, ValidationProblemDetails validationProblemDetails, IDictionary<IValidationContext, ValidationResult> validationResults)
     {
         List<BusinessExceptionError> errors = new();
         Dictionary<string, object?> extensions = new();
@@ -25,7 +27,7 @@ public class CustomResultFactory : IFluentValidationAutoValidationResultFactory
 
         if (validationProblemDetails == null)
         {
-            return new BadRequestObjectResult(validationResult);
+            return Task.FromResult<IActionResult?>(new BadRequestObjectResult(validationResult));
         }
 
         foreach (var item in validationProblemDetails.Errors)
@@ -37,19 +39,6 @@ public class CustomResultFactory : IFluentValidationAutoValidationResultFactory
             });
         }
 
-        return new BadRequestObjectResult(validationResult);
+        return Task.FromResult<IActionResult?>(new BadRequestObjectResult(validationResult));
     }
 }
-
-//public class LowerCaseValidationInterceptor : IGlobalValidationInterceptor
-//{
-//    public ValidationResult? AfterValidation(ActionExecutingContext actionExecutingContext, IValidationContext validationContext)
-//    {
-//        throw new NotImplementedException();
-//    }
-
-//    public IValidationContext? BeforeValidation(ActionExecutingContext actionExecutingContext, IValidationContext validationContext)
-//    {
-//        return validationContext;
-//    }
-//}

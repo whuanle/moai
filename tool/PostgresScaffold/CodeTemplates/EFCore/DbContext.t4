@@ -326,7 +326,7 @@ public partial class <#= Options.ContextName #> : DbContext
 #>
     }
 
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
 <#
     mainEnvironment = GenerationEnvironment;

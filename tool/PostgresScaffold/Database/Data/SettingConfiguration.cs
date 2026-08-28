@@ -57,7 +57,7 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.Value)
-            .HasMaxLength(255)
+            .HasMaxLength(2000)
             .HasComment("配置值,json")
             .HasColumnName("value");
 

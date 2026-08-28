@@ -8,24 +8,24 @@
     <PackageVersion Include="AngleSharp" Version="1.4.1-beta.502" />
     <PackageVersion Include="AngleSharp.Js" Version="1.0.0-beta.45" />
     <PackageVersion Include="Anthropic" Version="12.0.1" />
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.2.1" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.102.4" />
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.1.2" />
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageVersion Include="Azure.Identity" Version="1.17.1" />
-    <PackageVersion Include="FluentValidation" Version="12.0.0" />
-    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
-    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.22" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.24" />
     <PackageVersion Include="Hangfire.Redis.StackExchange" Version="1.12.0" />
     <PackageVersion Include="Jint" Version="4.5.0" />
     <PackageVersion Include="JsonPath.Net" Version="2.2.0" />
-    <PackageVersion Include="LinqKit.Core" Version="1.2.8" />
+    <PackageVersion Include="LinqKit.Core" Version="1.2.11" />
     <PackageVersion Include="Maomi.MQ.Instrumentation" Version="2.1.0" />
     <PackageVersion Include="Maomi.MQ.RabbitMQ" Version="2.1.0" />
     <PackageVersion Include="Markdig" Version="0.43.0" />
-    <PackageVersion Include="MediatR" Version="12.5.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.6" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.6" />
-    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.12.1" />
+    <PackageVersion Include="MediatR" Version="14.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.22.0" />
     <PackageVersion Include="Microsoft.KernelMemory.Abstractions" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.AI.Anthropic" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.AI.AzureOpenAI" Version="0.98.250508.3" />
@@ -48,63 +48,63 @@
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.68.0-alpha" />
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.68.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Plugins.OpenApi" Version="1.68.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="ModelContextProtocol" Version="0.6.0-preview.1" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="0.6.0-preview.1" />
     <PackageVersion Include="MySqlConnector" Version="2.5.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Npgsql" Version="10.0.0-rc.1" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="9.0.4" />
-    <PackageVersion Include="NSwag.AspNetCore" Version="14.6.3" />
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.14.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
+    <PackageVersion Include="NSwag.AspNetCore" Version="14.7.1" />
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.14.0-beta.2" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.14.0-beta.1" />
     <PackageVersion Include="PdfPig" Version="0.1.13-alpha-20251203-c70b3" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
     <PackageVersion Include="FastEndpoints" Version="6.2.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
     <PackageVersion Include="LinqKit" Version="1.3.8" />
-    <PackageVersion Include="Maomi.Core" Version="2.2.0" />
+    <PackageVersion Include="Maomi.Core" Version="2.3.0" />
     <PackageVersion Include="Maomi.I18n" Version="2.2.1" />
     <PackageVersion Include="Maomi.MQ.RabbitMQ.MediatR" Version="2.0.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
-    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.12.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
     <PackageVersion Include="RecursiveTextSplitter" Version="1.0.2" />
     <PackageVersion Include="Refit" Version="8.0.0" />
-    <PackageVersion Include="Refit.HttpClientFactory" Version="8.0.0" />
+    <PackageVersion Include="Refit.HttpClientFactory" Version="15.2.0" />
     <PackageVersion Include="RulesEngine" Version="6.0.0" />
-    <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="1.5.0" />
+    <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="2.0.0" />
     <PackageVersion Include="SmartFormat.NET" Version="3.6.0" />
-    <PackageVersion Include="StackExchange.Redis" Version="2.10.1" />
+    <PackageVersion Include="StackExchange.Redis" Version="3.1.31" />
     <PackageVersion Include="Stef.ModelContextProtocol.SemanticKernel" Version="0.6.1" />
     <PackageVersion Include="System.Linq.Async" Version="7.0.0" />
     <PackageVersion Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
-    <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="11.0.0" />
-    <PackageVersion Include="StackExchange.Redis.Extensions.System.Text.Json" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.6" />
+    <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="13.0.1" />
+    <PackageVersion Include="StackExchange.Redis.Extensions.System.Text.Json" Version="13.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="10.0.11" />
     <PackageVersion Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.12" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.11" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="FastEndpoints.Swagger" Version="6.2.0" />
-    <PackageVersion Include="Maomi.I18n.AspNetCore" Version="2.2.2" />
+    <PackageVersion Include="Maomi.I18n.AspNetCore" Version="2.3.0" />
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="9.0.6" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.5.0" />
-    <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.17.1" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
-    <PackageVersion Include="MimeKit" Version="4.12.0" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageVersion Include="MimeKit" Version="4.17.0" />
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
     <PackageVersion Include="AlibabaCloud.SDK.Bailian20231229" Version="2.2.0" />
     <PackageVersion Include="xunit" Version="2.9.2" />

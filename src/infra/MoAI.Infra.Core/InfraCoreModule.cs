@@ -31,12 +31,9 @@ public class InfraCoreModule : ModuleCore
         _logger = logger;
     }
 
-    private ServiceContext _serviceContext;
-
     /// <inheritdoc/>
     public override void ConfigureServices(ServiceContext context)
     {
-        _serviceContext = context;
         var systemOptions = _configurationManager.GetSection("MoAI").Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");
 
         context.Services.AddSingleton<IIdProvider>(new DefaultIdProvider(0));
@@ -49,7 +46,7 @@ public class InfraCoreModule : ModuleCore
     }
 
     /// <inheritdoc/>
-    public override void TypeFilter(Type type)
+    public override void TypeFilter(ServiceContext context, Type type)
     {
         if (type.IsClass)
         {
@@ -65,8 +62,8 @@ public class InfraCoreModule : ModuleCore
                 return;
             }
 
-            _serviceContext.Services.AddScoped(typeof(IValidator<>).MakeGenericType(type), typeof(AutoValidator<>).MakeGenericType(type));
-            _serviceContext.Services.AddScoped(type);
+            context.Services.AddScoped(typeof(IValidator<>).MakeGenericType(type), typeof(AutoValidator<>).MakeGenericType(type));
+            context.Services.AddScoped(type);
         }
     }
 }
