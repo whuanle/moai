@@ -37,11 +37,9 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.InputTokens)
-            .HasDefaultValue(0)
             .HasComment("输入token统计")
             .HasColumnName("input_tokens");
         entity.Property(e => e.IsDeleted)
@@ -49,7 +47,6 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.OutTokens)
-            .HasDefaultValue(0)
             .HasComment("输出token统计")
             .HasColumnName("out_tokens");
         entity.Property(e => e.Title)
@@ -58,7 +55,6 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("对话标题")
             .HasColumnName("title");
         entity.Property(e => e.TotalTokens)
-            .HasDefaultValue(0)
             .HasComment("使用的 token 总数")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
@@ -66,11 +62,9 @@ internal partial class AppChatappChatConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserType)
-            .HasDefaultValue(0)
             .HasComment("用户类型")
             .HasColumnName("user_type");
 

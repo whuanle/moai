@@ -36,7 +36,6 @@ internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTyp
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.DocumentId)
@@ -60,7 +59,6 @@ internal partial class WikiDocumentChunkContentPreviewConfiguration : IEntityTyp
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.WikiId)

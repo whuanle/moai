@@ -35,7 +35,6 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Data)
@@ -50,7 +49,6 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
             .HasComment("运行参数")
             .HasColumnName("run_paramters");
         entity.Property(e => e.State)
-            .HasDefaultValue(0)
             .HasComment("工作状态")
             .HasColumnName("state");
         entity.Property(e => e.SystemParamters)
@@ -64,7 +62,6 @@ internal partial class AppWorkflowHistoryConfiguration : IEntityTypeConfiguratio
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.WorkflowDesignId)

@@ -24,7 +24,7 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
 
         entity.ToTable("file", tb => tb.HasComment("文件列表"));
 
-        entity.HasIndex(e => e.FileMd5, "idx_65761_file_file_md5_index");
+        entity.HasIndex(e => e.FileSha256, "idx_65761_file_file_md5_index");
 
         entity.HasIndex(e => e.ObjectKey, "idx_65761_file_object_key_index");
 
@@ -47,10 +47,9 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasDefaultValueSql("''::character varying")
             .HasComment("文件扩展名")
             .HasColumnName("file_extension");
-        entity.Property(e => e.FileMd5)
-            .HasMaxLength(50)
-            .HasComment("md5")
-            .HasColumnName("file_md5");
+        entity.Property(e => e.FileSha256)
+            .HasComment("sha256")
+            .HasColumnName("file_sha256");
         entity.Property(e => e.FileSize)
             .HasComment("文件大小")
             .HasColumnName("file_size");

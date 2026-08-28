@@ -1,14 +1,14 @@
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.Storage.Commands.Response;
+using MoAI.Storage.Models;
 
 namespace MoAI.Storage.Commands;
 
 /// <summary>
 /// 临时文件预上传命令，生成预签名上传地址.
 /// </summary>
-public class PreUploadTempFileCommand : IRequest<PreUploadTempFileCommandResponse>, IModelValidator<PreUploadTempFileCommand>
+public class PreUploadTempFileCommand : IRequest<PreUploadFileCommandResponse>, IModelValidator<PreUploadTempFileCommand>
 {
     /// <summary>
     /// 文件名称.
@@ -26,9 +26,9 @@ public class PreUploadTempFileCommand : IRequest<PreUploadTempFileCommandRespons
     public int FileSize { get; init; }
 
     /// <summary>
-    /// 文件 MD5.
+    /// 文件 SHA-256.
     /// </summary>
-    public string MD5 { get; init; } = default!;
+    public string SHA256 { get; init; } = default!;
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<PreUploadTempFileCommand> validate)
@@ -42,7 +42,7 @@ public class PreUploadTempFileCommand : IRequest<PreUploadTempFileCommandRespons
         validate.RuleFor(x => x.FileSize)
             .GreaterThan(0).WithMessage("文件大小必须大于0");
 
-        validate.RuleFor(x => x.MD5)
-            .NotEmpty().WithMessage("文件MD5不能为空");
+        validate.RuleFor(x => x.SHA256)
+            .NotEmpty().WithMessage("文件SHA256不能为空");
     }
 }

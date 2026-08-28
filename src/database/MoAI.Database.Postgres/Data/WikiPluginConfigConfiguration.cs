@@ -36,7 +36,6 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
@@ -56,7 +55,6 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.WikiId)
@@ -68,7 +66,6 @@ internal partial class WikiPluginConfigConfiguration : IEntityTypeConfiguration<
             .HasComment("运行信息")
             .HasColumnName("work_message");
         entity.Property(e => e.WorkState)
-            .HasDefaultValue(0)
             .HasComment("状态")
             .HasColumnName("work_state");
 

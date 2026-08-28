@@ -32,6 +32,9 @@ app.UseCors("AllowSpecificOrigins");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// 静态资源中转：/static/{objectKey} => OSS（免登录、静态地址）
+app.UseMiddleware<MoAI.Storage.Middlewares.StorageStaticFilesMiddleware>();
+
 // SPA 回退：未匹配的路由返回 index.html
 app.MapFallbackToFile("index.html");
 

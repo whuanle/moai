@@ -30,9 +30,9 @@ public partial class FileEntity : IFullAudited
     public string FileExtension { get; set; } = default!;
 
     /// <summary>
-    /// md5.
+    /// sha256.
     /// </summary>
-    public string FileMd5 { get; set; } = default!;
+    public Guid FileSha256 { get; set; } = default!;
 
     /// <summary>
     /// 文件大小.

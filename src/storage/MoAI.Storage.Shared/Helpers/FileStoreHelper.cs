@@ -1,6 +1,6 @@
-﻿#pragma warning disable CA1054 // 类 URI 参数不应为字符串
+#pragma warning disable CA1054 // 类 URI 参数不应为字符串
 using MimeKit;
-using System.IO;
+using System.Security.Cryptography;
 
 namespace MoAI.Storage.Helpers;
 
@@ -9,6 +9,15 @@ namespace MoAI.Storage.Helpers;
 /// </summary>
 public static class FileStoreHelper
 {
+    /// <summary>
+    /// 公开访问目录前缀.
+    /// <para>
+    /// 允许通过 web 服务直接中转访问（免登录、静态地址，经 /static 中间件）的文件，
+    /// 必须存储在该目录下。ObjectKey 约定为 <c>public/...</c>.
+    /// </para>
+    /// </summary>
+    public const string PublicPrefix = "public";
+
     /// <summary>
     /// 常用的图片扩展名.
     /// </summary>
@@ -26,7 +35,7 @@ public static class FileStoreHelper
     };
 
     /// <summary>
-    /// 常用文档格式.
+    /// 常用的文档格式.
     /// </summary>
     public static readonly IReadOnlyCollection<string> DocumentFormats = new string[]
     {
@@ -63,28 +72,18 @@ public static class FileStoreHelper
     };
 
     /// <summary>
-    /// 常用的 OpenAPI 格式.
-    /// </summary>
-    public static readonly IReadOnlyCollection<string> OpenApiFormats = new string[]
-    {
-        ".json",
-        ".yaml",
-        ".yml"
-    };
-
-    /// <summary>
     /// 生成文件 ObjectKey.
     /// </summary>
-    /// <param name="md5"></param>
+    /// <param name="sha256">文件 sha256.</param>
     /// <param name="fileName">文件名称.</param>
-    /// <param name="prefix"></param>
+    /// <param name="prefix">前缀目录.</param>
     /// <returns>ObjectKey.</returns>
-    public static string GetObjectKey(string md5, string fileName, string? prefix = "")
+    public static string GetObjectKey(string sha256, string fileName, string? prefix = "")
     {
         var fileExtensions = Path.GetExtension(fileName);
         fileExtensions = fileExtensions.TrimStart('.');
 
-        var objectKey = $"{md5}.{fileExtensions}";
+        var objectKey = $"{sha256}.{fileExtensions}";
         if (!string.IsNullOrEmpty(prefix))
         {
             return $"{prefix}/{objectKey}";
@@ -94,68 +93,79 @@ public static class FileStoreHelper
     }
 
     /// <summary>
-    /// 拼接 URL 地址.
+    /// 为 ObjectKey 拼接公开访问目录前缀（固定规则：公开文件存储在 public 目录下）.
     /// </summary>
-    /// <param name="baseUrl">前缀地址.</param>
-    /// <param name="relativePath">后缀地址.</param>
-    /// <returns>拼接后的完整 URL 地址.</returns>
-    public static Uri CombineUrl(string baseUrl, string relativePath)
+    /// <param name="objectKey">对象 key.</param>
+    /// <returns>添加 public 前缀后的对象 key.</returns>
+    public static string ToPublicObjectKey(string objectKey)
     {
-        if (string.IsNullOrWhiteSpace(baseUrl))
+        var key = objectKey.TrimStart('/');
+        if (string.IsNullOrEmpty(key))
         {
-            throw new ArgumentException("Base URL 不能为空.", nameof(baseUrl));
+            throw new ArgumentException("ObjectKey 不能为空.", nameof(objectKey));
         }
 
-        if (string.IsNullOrWhiteSpace(relativePath))
+        if (IsPublicObjectKey(key))
         {
-            throw new ArgumentException("Relative path 不能为空.", nameof(relativePath));
+            return key;
         }
 
-        return new Uri($"{baseUrl.TrimEnd('/')}/{relativePath.TrimStart('/')}");
+        return $"{PublicPrefix}/{key}";
     }
 
     /// <summary>
-    /// 自定义后缀名称，生成随机文件名，存储到系统临时目录下.
+    /// 判断 ObjectKey 是否允许公开访问（即是否位于 public 目录下）.
     /// </summary>
-    /// <param name="suffix"></param>
-    /// <returns></returns>
-    public static string GetTempFilePath(string? suffix = null)
+    /// <param name="objectKey">对象 key.</param>
+    /// <returns>是否允许公开访问.</returns>
+    public static bool IsPublicObjectKey(string objectKey)
     {
-        var tempPath = Path.GetTempPath();
-        var tempFileName = $"{Guid.NewGuid()}{(string.IsNullOrEmpty(suffix) ? string.Empty : $".{suffix}")}";
-        return Path.Combine(tempPath, tempFileName);
+        var key = objectKey.TrimStart('/');
+        return key.StartsWith($"{PublicPrefix}/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(key, PublicPrefix, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
-    /// 计算文件 SHA256 哈希值.
+    /// 计算文件的 SHA-256 哈希值.
     /// </summary>
-    /// <param name="filePath">文件路径.</param>
-    /// <returns>文件的 SHA256 哈希值.</returns>
-    public static string CalculateFileMd5(string filePath)
+    /// <param name="stream">文件流.</param>
+    /// <returns>文件 SHA-256.</returns>
+    public static string CalculateFileSha256(Stream stream)
     {
-#pragma warning disable CA5351 // 不要使用损坏的加密算法
-        using var md5 = System.Security.Cryptography.MD5.Create();
-        using var stream = File.OpenRead(filePath);
-        var hash = md5.ComputeHash(stream);
-        return Convert.ToHexStringLower(hash);
-    }
-
-    /// <summary>
-    /// 计算文件 SHA256 哈希值.
-    /// </summary>
-    /// <param name="stream">文件路径.</param>
-    /// <returns>文件的 SHA256 哈希值.</returns>
-    public static string CalculateFileMd5(Stream stream)
-    {
-#pragma warning disable CA5351 // 不要使用损坏的加密算法
-        using var md5 = System.Security.Cryptography.MD5.Create();
-        var hash = md5.ComputeHash(stream);
+        var hash = SHA256.HashData(stream);
         stream.Seek(0, SeekOrigin.Begin);
         return Convert.ToHexStringLower(hash);
     }
 
+    /// <summary>
+    /// 获取文件的 MIME 类型.
+    /// </summary>
+    /// <param name="filePath">文件路径.</param>
+    /// <returns>MIME 类型.</returns>
     public static string GetMimeType(string filePath)
     {
         return MimeTypes.GetMimeType(filePath);
+    }
+
+    /// <summary>
+    /// 获取文件的 MIME 类型.
+    /// </summary>
+    /// <param name="extension">文件扩展名（含点号）.</param>
+    /// <param name="fallback">无法识别时的兜底类型.</param>
+    /// <returns>MIME 类型.</returns>
+    public static string GetMimeType(string extension, string fallback)
+    {
+        if (string.IsNullOrEmpty(extension))
+        {
+            return fallback;
+        }
+
+        var mime = MimeTypes.GetMimeType(extension);
+        if (string.IsNullOrEmpty(mime) || mime == "application/octet-stream")
+        {
+            return fallback;
+        }
+
+        return mime;
     }
 }

@@ -38,7 +38,6 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
@@ -50,7 +49,6 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsDsiable)
-            .HasDefaultValue(false)
             .HasComment("禁用")
             .HasColumnName("is_dsiable");
         entity.Property(e => e.Key)
@@ -69,7 +67,6 @@ internal partial class ExternalAppConfiguration : IEntityTypeConfiguration<Exter
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
 

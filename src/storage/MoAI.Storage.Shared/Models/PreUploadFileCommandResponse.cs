@@ -1,27 +1,32 @@
-﻿namespace MoAI.Storage.Commands.Response;
+namespace MoAI.Storage.Models;
 
 /// <summary>
-/// 预上传文件.
+/// 文件预上传响应.
 /// </summary>
 public class PreUploadFileCommandResponse
 {
     /// <summary>
-    /// 已存在相同的 objectKey,如果文件已存在则直接使用 FileId，无需再次上传.
+    /// 文件是否已存在，如已存在则无需再次上传.
     /// </summary>
-    public bool IsExist { get; set; }
+    public bool IsExist { get; init; }
 
     /// <summary>
-    /// 文件ID.
+    /// 文件 ID.
     /// </summary>
-    public int FileId { get; set; }
+    public int FileId { get; init; }
 
     /// <summary>
-    /// 预签名上传地址，当 IsExist = true 时字段为空.
+    /// 文件 ObjectKey.
     /// </summary>
-    public Uri? UploadUrl { get; set; } = default!;
+    public string ObjectKey { get; init; } = default!;
 
     /// <summary>
-    /// 签名过期时间，当 IsExist = true 时字段为空.
+    /// 预签名上传地址，当 IsExist = true 时为空.
     /// </summary>
-    public DateTimeOffset? Expiration { get; set; } = default!;
+    public Uri? UploadUrl { get; init; }
+
+    /// <summary>
+    /// 签名过期时间，当 IsExist = true 时为空.
+    /// </summary>
+    public DateTimeOffset? Expiration { get; init; }
 }

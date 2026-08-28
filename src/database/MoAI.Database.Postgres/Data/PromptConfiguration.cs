@@ -31,7 +31,6 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("提示词内容")
             .HasColumnName("content");
         entity.Property(e => e.Counter)
-            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
@@ -39,7 +38,6 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
@@ -51,7 +49,6 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
-            .HasDefaultValue(false)
             .HasComment("是否公开")
             .HasColumnName("is_public");
         entity.Property(e => e.Name)
@@ -66,7 +63,6 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
 

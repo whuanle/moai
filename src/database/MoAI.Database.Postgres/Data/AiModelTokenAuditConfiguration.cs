@@ -28,11 +28,9 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CompletionTokens)
-            .HasDefaultValue(0)
             .HasComment("完成数量")
             .HasColumnName("completion_tokens");
         entity.Property(e => e.Count)
-            .HasDefaultValue(0)
             .HasComment("调用次数")
             .HasColumnName("count");
         entity.Property(e => e.CreateTime)
@@ -40,7 +38,6 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
@@ -51,11 +48,9 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
             .HasComment("模型id")
             .HasColumnName("model_id");
         entity.Property(e => e.PromptTokens)
-            .HasDefaultValue(0)
             .HasComment("输入数量")
             .HasColumnName("prompt_tokens");
         entity.Property(e => e.TotalTokens)
-            .HasDefaultValue(0)
             .HasComment("总数量")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
@@ -63,7 +58,6 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UseriId)

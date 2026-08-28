@@ -98,6 +98,7 @@ public class ConfigureMVCModule : IModule
             }
         }
 
-        //builder.AddApplicationPart(typeof(StorageApiModule).Assembly);
+        // 存储模块的控制器位于 S3 项目（不以 .Api 结尾），需要显式注册
+        builder.AddApplicationPart(typeof(StorageS3Module).Assembly);
     }
 }

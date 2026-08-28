@@ -38,7 +38,6 @@ internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.ExecutionSettings)
@@ -46,7 +45,6 @@ internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<
             .HasComment("对话影响参数")
             .HasColumnName("execution_settings");
         entity.Property(e => e.InputTokens)
-            .HasDefaultValue(0)
             .HasComment("输入token统计")
             .HasColumnName("input_tokens");
         entity.Property(e => e.IsDeleted)
@@ -57,7 +55,6 @@ internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<
             .HasComment("对话使用的模型 id")
             .HasColumnName("model_id");
         entity.Property(e => e.OutTokens)
-            .HasDefaultValue(0)
             .HasComment("输出token统计")
             .HasColumnName("out_tokens");
         entity.Property(e => e.Plugins)
@@ -75,7 +72,6 @@ internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<
             .HasComment("对话标题")
             .HasColumnName("title");
         entity.Property(e => e.TotalTokens)
-            .HasDefaultValue(0)
             .HasComment("使用的 token 总数")
             .HasColumnName("total_tokens");
         entity.Property(e => e.UpdateTime)
@@ -83,7 +79,6 @@ internal partial class AppAssistantChatConfiguration : IEntityTypeConfiguration<
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.WikiIds)

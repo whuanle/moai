@@ -35,7 +35,6 @@ internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.FunctionDesgin)
@@ -51,7 +50,6 @@ internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublish)
-            .HasDefaultValue(false)
             .HasComment("是否发布")
             .HasColumnName("is_publish");
         entity.Property(e => e.TeamId)
@@ -70,7 +68,6 @@ internal partial class AppWorkflowDesignConfiguration : IEntityTypeConfiguration
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
 

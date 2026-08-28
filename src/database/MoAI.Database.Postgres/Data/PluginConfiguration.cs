@@ -32,11 +32,9 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ClassifyId)
-            .HasDefaultValue(0)
             .HasComment("分类id")
             .HasColumnName("classify_id");
         entity.Property(e => e.Counter)
-            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
@@ -56,7 +54,6 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
-            .HasDefaultValue(false)
             .HasComment("公开访问")
             .HasColumnName("is_public");
         entity.Property(e => e.PluginId)
@@ -67,7 +64,6 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
             .HasComment("插件名称")
             .HasColumnName("plugin_name");
         entity.Property(e => e.TeamId)
-            .HasDefaultValue(0)
             .HasComment("某个团队创建的自定义插件")
             .HasColumnName("team_id");
         entity.Property(e => e.Title)

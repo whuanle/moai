@@ -32,7 +32,6 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.ExpirationTime)
@@ -50,7 +49,6 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
             .HasComment("模型id")
             .HasColumnName("model_id");
         entity.Property(e => e.RuleType)
-            .HasDefaultValue(0)
             .HasComment("限制的规则类型,每天/总额/有效期")
             .HasColumnName("rule_type");
         entity.Property(e => e.UpdateTime)
@@ -58,7 +56,6 @@ internal partial class AiModelLimitConfiguration : IEntityTypeConfiguration<AiMo
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserId)

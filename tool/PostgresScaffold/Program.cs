@@ -28,11 +28,11 @@ public class Program
             var db = BuildDatabaseRoute(projectDir);
 
             var connectionString = LoadConnectionString(projectDir);
-            var saved = ScaffoldDatabaseModel(connectionString, db, projectDir);
+            ScaffoldDatabaseModel(connectionString, db, projectDir);
 
-            DistributeToSolution(saved, db, projectDir);
+            DistributeToSolution(db, projectDir);
 
-            PrintSuccess(saved);
+            PrintSuccess(db.DatabaseDir);
         }
         catch (Exception ex)
         {
@@ -44,51 +44,72 @@ public class Program
     }
 
     /// <summary>把生成的实体、配置文件和 DbContext 分发到目标项目。</summary>
-    private static void DistributeToSolution(
-        SavedModelFiles saved,
-        DatabaseRoute db,
-        string projectDir)
+    private static void DistributeToSolution(DatabaseRoute db, string projectDir)
     {
         var slnDir = Directory.GetParent(projectDir)!.Parent!.FullName;
         var sharedDir = Path.Combine(slnDir, "src", "database", "MoAI.Database.Shared");
         var postgresDir = Path.Combine(slnDir, "src", "database", "MoAI.Database.Postgres");
+
         var sharedEntitiesDir = Path.Combine(sharedDir, "Entities");
+        var postgresDataDir = Path.Combine(postgresDir, "Data");
 
         Console.WriteLine();
         Console.WriteLine("正在分发到解决方案...");
 
-        // 1. 清理 Shared/Entities 中不会被重新生成的旧文件
-        ClearStaleEntityFiles(sharedEntitiesDir);
+        // 1. 先清空目标目录，再复制各自的 .cs 文件（实体文件需补 Entity 后缀）
+        CopyDirectory(db.EntitiesDir, sharedEntitiesDir, "实体文件", addEntitySuffix: true);
+        CopyDirectory(db.DataDir, postgresDataDir, "配置文件", addEntitySuffix: false);
 
-        // 2. 重命名实体文件并复制到 Shared/Entities
-        Console.WriteLine("正在重命名实体文件...");
-        foreach (var entityFile in saved.AdditionalFiles)
+        // 2. 复制 DatabaseContext 到 MoAI.Database.Shared
+        var contextFile = Path.Combine(db.DatabaseDir, "DatabaseContext.cs");
+        if (File.Exists(contextFile))
         {
-            var target = RenameEntityFile(entityFile);
-            File.Move(entityFile, target);
-            File.Copy(target, Path.Combine(sharedEntitiesDir, Path.GetFileName(target)), true);
-            PrintInfo($"  {Path.GetFileName(entityFile)} -> {Path.GetFileName(target)}");
-        }
-
-        // 3. 复制配置文件到 MoAI.Database.Postgres\Data
-        var postgresDataDir = Path.Combine(postgresDir, "Data");
-        Directory.CreateDirectory(postgresDataDir);
-        foreach (var configFile in Directory.GetFiles(db.DataDir, "*.cs"))
-        {
-            File.Copy(configFile, Path.Combine(postgresDataDir, Path.GetFileName(configFile)), true);
-            PrintInfo($"  配置文件: {Path.GetFileName(configFile)}");
-        }
-
-        // 4. 复制 DatabaseContext 到 MoAI.Database.Shared
-        if (File.Exists(saved.ContextFile))
-        {
-            File.Copy(saved.ContextFile, Path.Combine(sharedDir, Path.GetFileName(saved.ContextFile)), true);
-            PrintInfo($"  DatabaseContext: {Path.GetFileName(saved.ContextFile)}");
+            File.Copy(contextFile, Path.Combine(sharedDir, Path.GetFileName(contextFile)), true);
+            PrintInfo($"  DatabaseContext: {Path.GetFileName(contextFile)}");
         }
     }
 
+    /// <summary>清空目标目录并将源目录下的 .cs 文件复制到目标目录。</summary>
+    private static void CopyDirectory(string sourceDir, string targetDir, string label, bool addEntitySuffix)
+    {
+        Console.WriteLine($"正在复制{label}...");
+
+        if (Directory.Exists(targetDir))
+        {
+            Directory.Delete(targetDir, true);
+        }
+
+        Directory.CreateDirectory(targetDir);
+
+        foreach (var file in Directory.GetFiles(sourceDir, "*.cs"))
+        {
+            // 需要 Entity 后缀时，先把源目录里的文件本身重命名，再复制
+            var sourcePath = file;
+            if (addEntitySuffix)
+            {
+                var renamed = EnsureEntitySuffix(Path.GetFileName(file));
+                if (renamed != Path.GetFileName(file))
+                {
+                    sourcePath = Path.Combine(sourceDir, renamed);
+                    File.Move(file, sourcePath);
+                }
+            }
+
+            File.Copy(sourcePath, Path.Combine(targetDir, Path.GetFileName(sourcePath)), true);
+            PrintInfo($"  {Path.GetFileName(sourcePath)}");
+        }
+    }
+
+    /// <summary>若文件名不含 Entity 后缀，则在 .cs 前补上。</summary>
+    private static string EnsureEntitySuffix(string fileName)
+    {
+        return fileName.EndsWith("Entity.cs", StringComparison.CurrentCultureIgnoreCase)
+            ? fileName
+            : fileName[..^3] + "Entity.cs";
+    }
+
     /// <summary>通过 EF Core Design 服务连接数据库并生成模型。</summary>
-    private static SavedModelFiles ScaffoldDatabaseModel(
+    private static void ScaffoldDatabaseModel(
         string connectionString,
         DatabaseRoute db,
         string projectDir)
@@ -147,31 +168,9 @@ public class Program
 
         PrintInfo($"DbContext 文件: {savedFiles.ContextFile}");
         PrintInfo($"生成的实体文件数: {savedFiles.AdditionalFiles.Count}");
-
-        return savedFiles;
     }
 
     /// <summary>删除 Shared/Entities 目录中已有的旧实体文件。</summary>
-    private static void ClearStaleEntityFiles(string sharedEntitiesDir)
-    {
-        foreach (var sharedFile in Directory.GetFiles(sharedEntitiesDir))
-        {
-            File.Delete(sharedFile);
-        }
-    }
-
-    /// <summary>若实体文件位于 Entities 目录，则追加 Entity 后缀重命名。</summary>
-    private static string RenameEntityFile(string entityFile)
-    {
-        var directory = Path.GetDirectoryName(entityFile)!;
-        if (directory.EndsWith("Entities", StringComparison.CurrentCultureIgnoreCase))
-        {
-            return Path.Combine(directory, Path.GetFileNameWithoutExtension(entityFile) + "Entity.cs");
-        }
-
-        return entityFile;
-    }
-
     /// <summary>载入数据库连接字符串。</summary>
     private static string LoadConnectionString(string projectDir)
     {
@@ -218,12 +217,12 @@ public class Program
         return dir!.FullName;
     }
 
-    private static void PrintSuccess(SavedModelFiles saved)
+    private static void PrintSuccess(string databaseDir)
     {
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine();
         Console.WriteLine("✓ 代码生成完成!");
-        Console.WriteLine($"  - DbContext: {saved.ContextFile}");
+        Console.WriteLine($"  - 生成目录: {databaseDir}");
         Console.ResetColor();
     }
 

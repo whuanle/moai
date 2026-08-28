@@ -1,6 +1,6 @@
 ﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
-using MoAI.Infra;
+using MoAI.Storage.Middlewares;
 using MoAI.Storage.Services;
 
 namespace MoAI.Storage;
@@ -8,22 +8,15 @@ namespace MoAI.Storage;
 /// <summary>
 /// StorageS3Module.
 /// </summary>
+[InjectModule<StorageSharedModule>]
 public class StorageS3Module : IModule
 {
-    private readonly SystemOptions _systemOptions;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StorageS3Module"/> class.
-    /// </summary>
-    /// <param name="systemOptions"></param>
-    public StorageS3Module(SystemOptions systemOptions)
-    {
-        _systemOptions = systemOptions;
-    }
-
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddScoped<IStorage, S3Storage>();
+        // S3 客户端为线程安全，可全局复用
+        context.Services.AddSingleton<S3Client>();
+        context.Services.AddScoped<IStorageService, StorageService>();
+        context.Services.AddScoped<StorageStaticFilesMiddleware>();
     }
 }

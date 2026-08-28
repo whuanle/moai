@@ -1,7 +1,4 @@
 ﻿using Maomi;
-using Microsoft.Extensions.DependencyInjection;
-using MoAI.Infra;
-using MoAI.Storage.Services;
 
 namespace MoAI.Storage;
 
@@ -9,23 +6,11 @@ namespace MoAI.Storage;
 /// StorageCoreModule.
 /// </summary>
 [InjectModule<StorageSharedModule>]
-[InjectModule<StorageApiModule>]
+[InjectModule<StorageS3Module>]
 public class StorageCoreModule : IModule
 {
-    private readonly SystemOptions _systemOptions;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="StorageCoreModule"/> class.
-    /// </summary>
-    /// <param name="systemOptions"></param>
-    public StorageCoreModule(SystemOptions systemOptions)
-    {
-        _systemOptions = systemOptions;
-    }
-
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddScoped<IStorage, S3Storage>();
     }
 }

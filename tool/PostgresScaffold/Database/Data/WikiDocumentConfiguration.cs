@@ -52,11 +52,9 @@ internal partial class WikiDocumentConfiguration : IEntityTypeConfiguration<Wiki
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsEmbedding)
-            .HasDefaultValue(false)
             .HasComment("是否已经向量化")
             .HasColumnName("is_embedding");
         entity.Property(e => e.IsUpdate)
-            .HasDefaultValue(false)
             .HasComment("是否有更新，需要重新进行向量化")
             .HasColumnName("is_update");
         entity.Property(e => e.ObjectKey)

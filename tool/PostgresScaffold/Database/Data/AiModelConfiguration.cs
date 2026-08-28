@@ -44,7 +44,6 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
             .HasComment("上下文最大token数量")
             .HasColumnName("context_window_tokens");
         entity.Property(e => e.Counter)
-            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
@@ -76,11 +75,9 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsPublic)
-            .HasDefaultValue(false)
             .HasComment("是否开放给大家使用")
             .HasColumnName("is_public");
         entity.Property(e => e.IsVision)
-            .HasDefaultValue(false)
             .HasComment("支持计算机视觉")
             .HasColumnName("is_vision");
         entity.Property(e => e.Key)

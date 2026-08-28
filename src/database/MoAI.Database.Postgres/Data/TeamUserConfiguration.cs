@@ -32,7 +32,6 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
@@ -40,7 +39,6 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Role)
-            .HasDefaultValue(0)
             .HasComment("角色,普通用户=0,协作者=1,管理员=2,所有者=3")
             .HasColumnName("role");
         entity.Property(e => e.TeamId)
@@ -51,7 +49,6 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserId)

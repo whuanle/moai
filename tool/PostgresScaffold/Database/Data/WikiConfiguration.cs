@@ -33,7 +33,6 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("团队头像")
             .HasColumnName("avatar");
         entity.Property(e => e.Counter)
-            .HasDefaultValue(0)
             .HasComment("计数器")
             .HasColumnName("counter");
         entity.Property(e => e.CreateTime)
@@ -69,7 +68,6 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasComment("知识库名称")
             .HasColumnName("name");
         entity.Property(e => e.TeamId)
-            .HasDefaultValue(0)
             .HasComment("团队id，不填则是个人知识库")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)

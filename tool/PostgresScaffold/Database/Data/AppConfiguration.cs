@@ -33,7 +33,6 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.AppType)
-            .HasDefaultValue(0)
             .HasComment("应用类型，普通应用=0,流程编排=1")
             .HasColumnName("app_type");
         entity.Property(e => e.Avatar)
@@ -42,7 +41,6 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("头像 objectKey")
             .HasColumnName("avatar");
         entity.Property(e => e.ClassifyId)
-            .HasDefaultValue(0)
             .HasComment("分类id")
             .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
@@ -50,7 +48,6 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
-            .HasDefaultValue(0)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
@@ -58,7 +55,6 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("描述")
             .HasColumnName("description");
         entity.Property(e => e.IsAuth)
-            .HasDefaultValue(false)
             .HasComment("是否开启授权才能使用，只有外部应用可以设置")
             .HasColumnName("is_auth");
         entity.Property(e => e.IsDeleted)
@@ -66,15 +62,12 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsDisable)
-            .HasDefaultValue(false)
             .HasComment("禁用")
             .HasColumnName("is_disable");
         entity.Property(e => e.IsForeign)
-            .HasDefaultValue(false)
             .HasComment("是否外部应用")
             .HasColumnName("is_foreign");
         entity.Property(e => e.IsPublic)
-            .HasDefaultValue(false)
             .HasComment("公开到团队外使用")
             .HasColumnName("is_public");
         entity.Property(e => e.Name)
@@ -89,7 +82,6 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasDefaultValue(0)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
 

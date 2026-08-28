@@ -4,7 +4,7 @@ using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Login.Commands;
 using MoAI.Login.Queries.Responses;
-using MoAI.Store.Queries;
+using MoAI.Storage.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Login.Handlers;
@@ -16,19 +16,19 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IRedisDatabase _redisDatabase;
-    private readonly IMediator _mediator;
+    private readonly IStorageService _storageService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RefreshUserStateCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="redisDatabase"></param>
-    /// <param name="mediator"></param>
-    public RefreshUserStateCommandHandler(DatabaseContext databaseContext, IRedisDatabase redisDatabase, IMediator mediator)
+    /// <param name="storageService"></param>
+    public RefreshUserStateCommandHandler(DatabaseContext databaseContext, IRedisDatabase redisDatabase, IStorageService storageService)
     {
         _databaseContext = databaseContext;
         _redisDatabase = redisDatabase;
-        _mediator = mediator;
+        _storageService = storageService;
     }
 
     /// <inheritdoc/>
@@ -50,7 +50,9 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
             return userCache;
         }
 
-        var avatars = await _mediator.Send(new QueryFileDownloadUrlCommand { ExpiryDuration = TimeSpan.FromHours(2), ObjectKeys = new[] { new KeyValueString { Key = user.AvatarPath, Value = user.AvatarPath } } }, cancellationToken);
+        var avatar = string.IsNullOrWhiteSpace(user.AvatarPath)
+            ? string.Empty
+            : _storageService.GetPublicFileUrl(user.AvatarPath).ToString();
 
         userCache = new UserStateInfo
         {
@@ -62,7 +64,7 @@ public class RefreshUserStateCommandHandler : IRequestHandler<RefreshUserStateCo
             IsDisable = user.IsDisable,
             IsAdmin = user.IsAdmin,
             IsDeleted = user.IsDeleted > 0,
-            Avatar = avatars.Urls.FirstOrDefault().Value?.ToString() ?? string.Empty
+            Avatar = avatar
         };
 
         var key = $"userstate:{request.UserId}";
