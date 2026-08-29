@@ -16,7 +16,7 @@ namespace MoAI.Login.Handlers;
 /// <summary>
 /// <inheritdoc cref="RegisterUserCommand"/>.
 /// </summary>
-public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, SimpleInt>
+public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, SimpleLong>
 {
     private readonly DatabaseContext _dbContext;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
@@ -36,7 +36,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleInt> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async Task<SimpleLong> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         // 使用 RSA 解密还原密码
         string restorePassword = default!;
@@ -92,7 +92,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
             await _dbContext.Users.AddAsync(userEntity);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return new SimpleInt
+            return new SimpleLong
             {
                 Value = userEntity.Id
             };

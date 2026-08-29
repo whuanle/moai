@@ -15,8 +15,8 @@ public class FullAudited : IFullAudited
     public virtual DateTimeOffset UpdateTime { get; set; }
 
     /// <inheritdoc/>
-    public virtual int CreateUserId { get; set; }
+    public virtual long CreateUserId { get; set; }
 
     /// <inheritdoc/>
-    public virtual int UpdateUserId { get; set; }
+    public virtual long UpdateUserId { get; set; }
 }

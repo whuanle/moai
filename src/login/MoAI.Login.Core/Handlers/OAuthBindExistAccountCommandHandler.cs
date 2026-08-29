@@ -56,7 +56,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
             throw new BusinessException("未找到认证方式") { StatusCode = 404 };
         }
 
-        var userEntity = await _databaseContext.Users.Where(x => _databaseContext.UserOauths.Any(a => a.ProviderId == oauthConnectionEntity.Id && a.UserId == x.Id)).FirstOrDefaultAsync();
+        var userEntity = await _databaseContext.Users.Where(x => _databaseContext.UserOauthConnections.Any(a => a.ProviderId == oauthConnectionEntity.Id && a.UserId == x.Id)).FirstOrDefaultAsync();
 
         if (userEntity != null)
         {
@@ -70,21 +70,21 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
         }
 
         // 用户在同一供应商下不能有多个绑定记录
-        var existProvider = await _databaseContext.UserOauths.FirstOrDefaultAsync(x => x.UserId == _userContext.UserId && x.ProviderId == oauthBindUserProfile.OAuthId);
+        var existProvider = await _databaseContext.UserOauthConnections.FirstOrDefaultAsync(x => x.UserId == _userContext.UserId && x.ProviderId == oauthBindUserProfile.OAuthId);
         if (existProvider != null && existProvider.Sub != oauthBindUserProfile.Profile.Sub)
         {
             throw new BusinessException("用户已绑定过其它账号");
         }
 
         // 绑定账号
-        var oauthEntity = new UserOauthEntity
+        var oauthEntity = new UserOauthConnectionEntity
         {
             UserId = _userContext.UserId,
             ProviderId = oauthConnectionEntity.Id,
             Sub = oauthBindUserProfile.Profile.Sub,
         };
 
-        await _databaseContext.UserOauths.AddAsync(oauthEntity, cancellationToken);
+        await _databaseContext.UserOauthConnections.AddAsync(oauthEntity, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

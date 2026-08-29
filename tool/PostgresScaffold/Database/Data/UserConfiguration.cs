@@ -70,11 +70,11 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
             .HasComment("昵称")
             .HasColumnName("nick_name");
         entity.Property(e => e.Password)
-            .HasMaxLength(255)
+            .HasMaxLength(1000)
             .HasComment("密码")
             .HasColumnName("password");
         entity.Property(e => e.PasswordSalt)
-            .HasMaxLength(255)
+            .HasMaxLength(1000)
             .HasComment("计算密码值的salt")
             .HasColumnName("password_salt");
         entity.Property(e => e.Phone)

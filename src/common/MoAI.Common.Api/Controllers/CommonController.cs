@@ -21,19 +21,16 @@ namespace MoAI.Common.Controllers;
 public class CommonController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IRsaProvider _rsaProvider;
     private readonly UserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CommonController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 实例，用于发送命令/查询.</param>
-    /// <param name="rsaProvider">RSA 服务（用于加密）.</param>
     /// <param name="userContext">当前用户上下文.</param>
-    public CommonController(IMediator mediator, IRsaProvider rsaProvider, UserContext userContext)
+    public CommonController(IMediator mediator, UserContext userContext)
     {
         _mediator = mediator;
-        _rsaProvider = rsaProvider;
         _userContext = userContext;
     }
 
@@ -50,22 +47,6 @@ public class CommonController : ControllerBase
     }
 
     /// <summary>
-    /// 加密接口，通过 RSA 加密传入的字符串.
-    /// </summary>
-    /// <param name="req">要加密的字符串，包装在 <see cref="SimpleString"/> 中.</param>
-    /// <param name="ct">CancellationToken，用于取消操作.</param>
-    /// <returns>返回加密后的 <see cref="SimpleString"/>.</returns>
-    [HttpPost("encryption")]
-    [AllowAnonymous]
-    public Task<SimpleString> Encryption([FromBody] SimpleString req, CancellationToken ct)
-    {
-        return Task.FromResult(new SimpleString
-        {
-            Value = _rsaProvider.Encrypt(req.Value)
-        });
-    }
-
-    /// <summary>
     /// 查询用户基本信息.
     /// </summary>
     /// <param name="ct">CancellationToken，用于取消操作.</param>
@@ -75,18 +56,6 @@ public class CommonController : ControllerBase
     {
         var cmd = new QueryUserViewUserInfoCommand() { ContextUserId = _userContext.UserId };
         return _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 获取用户列表.
-    /// </summary>
-    /// <param name="req"></param>
-    /// <param name="ct">CancellationToken，用于取消操作.</param>
-    /// <returns>返回 <see cref="UserStateInfo"/>，包含用户状态信息.</returns>
-    [HttpPost("userlist")]
-    public Task<QueryUserSelectListCommandResponse> QueryUserList(QueryUserSelectListCommand req, CancellationToken ct)
-    {
-        return _mediator.Send(req, ct);
     }
 
     /// <summary>

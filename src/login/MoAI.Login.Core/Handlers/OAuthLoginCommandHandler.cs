@@ -93,7 +93,7 @@ state=STATE
         }
 
         var userEntity = await _databaseContext.Users
-            .Where(x => x.Id == _databaseContext.UserOauths.Where(a => a.ProviderId == oauthConnectionEntity.Id && a.Sub == oauthUserProfile.Profile.Sub).First().UserId).FirstOrDefaultAsync();
+            .Where(x => x.Id == _databaseContext.UserOauthConnections.Where(a => a.ProviderId == oauthConnectionEntity.Id && a.Sub == oauthUserProfile.Profile.Sub).First().UserId).FirstOrDefaultAsync();
 
         // 没有绑定记录，则拒绝登录
         if (userEntity == null)

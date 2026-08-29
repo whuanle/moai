@@ -65,7 +65,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             throw new BusinessException("未找到对应的 OAuth 认证方式") { StatusCode = 404 };
         }
 
-        var existingOpenIdUser = await _databaseContext.UserOauths.Where(u => u.ProviderId == oauthConnectionEntity.Id && u.Sub == oauthBindUserProfile.Profile.Sub).AnyAsync();
+        var existingOpenIdUser = await _databaseContext.UserOauthConnections.Where(u => u.ProviderId == oauthConnectionEntity.Id && u.Sub == oauthBindUserProfile.Profile.Sub).AnyAsync();
 
         if (existingOpenIdUser)
         {
@@ -98,7 +98,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         _databaseContext.Users.Update(user);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        await _databaseContext.UserOauths.AddAsync(new Database.Entities.UserOauthEntity
+        await _databaseContext.UserOauthConnections.AddAsync(new Database.Entities.UserOauthConnectionEntity
         {
             UserId = userId.Value,
             ProviderId = oauthConnectionEntity.Id,

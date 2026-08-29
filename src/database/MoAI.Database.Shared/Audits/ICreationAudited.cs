@@ -8,7 +8,7 @@ public interface ICreationAudited
     /// <summary>
     /// 创建人的用户名.
     /// </summary>
-    int CreateUserId { get; set; }
+    long CreateUserId { get; set; }
 
     /// <summary>
     /// 创建时间.

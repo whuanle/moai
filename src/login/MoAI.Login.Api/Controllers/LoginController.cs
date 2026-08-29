@@ -115,7 +115,7 @@ public class LoginController : ControllerBase
     /// <returns>返回 <see cref="SimpleInt"/>（新建用户 ID）.</returns>
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<SimpleInt> RegisterUser([FromBody] RegisterUserCommand req, CancellationToken ct)
+    public async Task<SimpleLong> RegisterUser([FromBody] RegisterUserCommand req, CancellationToken ct)
     {
         return await _mediator.Send(req, ct);
     }

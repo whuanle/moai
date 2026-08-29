@@ -14,7 +14,7 @@ public static class UserIdContextExtensions
     /// <typeparam name="T">IUserIdContext.</typeparam>
     /// <param name="obj"></param>
     /// <param name="userId"></param>
-    public static void SetUserId<T>(this T obj, int userId)
+    public static void SetUserId<T>(this T obj, long userId)
         where T : class, IUserIdContext
     {
         obj.SetProperty(o => o.ContextUserId, userId);

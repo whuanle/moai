@@ -169,11 +169,11 @@ public partial class DatabaseContext
 
         if (args.Entry.State == EntityState.Added && args.Entry.Entity is ICreationAudited creationAudited)
         {
-            creationAudited.CreateUserId = userContext?.UserId ?? default(int);
+            creationAudited.CreateUserId = userContext?.UserId ?? default(long);
             creationAudited.CreateTime = DateTimeOffset.Now;
             if (args.Entry.Entity is IModificationAudited modificationAudited)
             {
-                modificationAudited.UpdateUserId = userContext?.UserId ?? default(int);
+                modificationAudited.UpdateUserId = userContext?.UserId ?? default(long);
                 modificationAudited.UpdateTime = DateTimeOffset.Now;
             }
         }

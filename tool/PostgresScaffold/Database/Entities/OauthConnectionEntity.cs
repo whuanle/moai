@@ -72,10 +72,10 @@ public partial class OauthConnectionEntity : IFullAudited
     /// <summary>
     /// 创建人.
     /// </summary>
-    public int CreateUserId { get; set; }
+    public long CreateUserId { get; set; }
 
     /// <summary>
     /// 更新人.
     /// </summary>
-    public int UpdateUserId { get; set; }
+    public long UpdateUserId { get; set; }
 }

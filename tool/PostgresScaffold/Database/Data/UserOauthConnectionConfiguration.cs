@@ -20,14 +20,13 @@ internal partial class UserOauthConnectionConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<UserOauthConnectionEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("user_oauth_pkey");
+        entity.HasKey(e => e.Id).HasName("user_oauth_connection_pkey");
 
         entity.ToTable("user_oauth_connection", tb => tb.HasComment("oauth2.0对接"));
 
         entity.HasIndex(e => new { e.ProviderId, e.Sub, e.IsDeleted }, "idx_user_oauth_provider_id_sub_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
-            .HasDefaultValueSql("nextval('user_oauth_id_seq'::regclass)")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)

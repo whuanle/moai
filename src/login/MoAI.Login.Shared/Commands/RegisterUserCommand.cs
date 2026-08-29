@@ -7,7 +7,7 @@ namespace MoAI.Login.Commands;
 /// <summary>
 /// 注册用户.
 /// </summary>
-public class RegisterUserCommand : IRequest<SimpleInt>, IModelValidator<RegisterUserCommand>
+public class RegisterUserCommand : IRequest<SimpleLong>, IModelValidator<RegisterUserCommand>
 {
     /// <summary>
     /// 用户名.

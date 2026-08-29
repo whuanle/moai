@@ -11,8 +11,8 @@ namespace MoAI.Infra.Helpers;
 public static class PBKDF2Helper
 {
     private const int PBKDF2Itreation = 10000; // 迭代次数
-    private const int SaltLength = 32;
-    private const int OutputLength = 32;
+    private const int SaltLength = 128;
+    private const int OutputLength = 128;
 
     /// <summary>
     /// 计算字符串 PBKDF2 哈希值.
@@ -72,7 +72,7 @@ public static class PBKDF2Helper
             byte[] hashBytes = Convert.FromBase64String(hashBase64Text);
 
             var sourceHashBase64Text = ToHash(sourceText, saltBase64);
-            return string.CompareOrdinal(sourceHashBase64Text, hashBase64Text) == 0;
+            return string.Equals(sourceHashBase64Text, hashBase64Text, StringComparison.OrdinalIgnoreCase);
         }
         catch
         {

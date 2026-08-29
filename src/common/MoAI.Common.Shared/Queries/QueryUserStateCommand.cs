@@ -11,5 +11,5 @@ public class QueryUserStateCommand : IRequest<UserStateInfo>
     /// <summary>
     /// 用户 id.
     /// </summary>
-    public int UserId { get; init; }
+    public long UserId { get; init; }
 }

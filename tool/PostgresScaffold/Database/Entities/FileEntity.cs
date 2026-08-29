@@ -52,7 +52,7 @@ public partial class FileEntity : IFullAudited
     /// <summary>
     /// 创建人.
     /// </summary>
-    public int CreateUserId { get; set; }
+    public long CreateUserId { get; set; }
 
     /// <summary>
     /// 创建时间.
@@ -62,7 +62,7 @@ public partial class FileEntity : IFullAudited
     /// <summary>
     /// 最后修改人.
     /// </summary>
-    public int UpdateUserId { get; set; }
+    public long UpdateUserId { get; set; }
 
     /// <summary>
     /// 更新时间.

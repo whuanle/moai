@@ -18,7 +18,7 @@ public abstract class UserContext
     /// <summary>
     /// 用户ID.
     /// </summary>
-    public virtual int UserId { get; init; }
+    public virtual long UserId { get; init; }
 
     /// <summary>
     /// 用户名.

@@ -10,7 +10,7 @@ namespace MoAI.Common.Queries;
 public class QueryUserViewUserInfoCommand : IRequest<UserStateInfo>, IUserIdContext
 {
     /// <inheritdoc/>
-    public int ContextUserId { get; init; }
+    public long ContextUserId { get; init; }
 
     /// <inheritdoc/>
     public UserType ContextUserType { get; init; }

@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "MoAI",
+    "tagline": "Enterprise AI Application Platform"
+  },
+  "common": {
+    "logout": "Sign out",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "language": "Language",
+    "loading": "Loading",
+    "settings": "Settings"
+  },
+  "nav": {
+    "chat": "AI Assistant",
+    "app": "Applications",
+    "wiki": "Knowledge Base",
+    "team": "Teams",
+    "prompt": "Prompts",
+    "plugin": "Plugins",
+    "model": "Models",
+    "admin": "Admin"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "registerTitle": "Register",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "email": "Email",
+    "nickName": "Nickname",
+    "phone": "Phone",
+    "login": "Sign in",
+    "register": "Register",
+    "loginSuccess": "Signed in successfully",
+    "registerSuccess": "Registered successfully, please sign in",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "goRegister": "Register",
+    "goLogin": "Sign in",
+    "usernamePlaceholder": "Enter your username",
+    "passwordPlaceholder": "Enter your password",
+    "confirmPasswordPlaceholder": "Enter your password again",
+    "emailPlaceholder": "Enter your email",
+    "nickNamePlaceholder": "Enter your nickname (optional)",
+    "phonePlaceholder": "Enter your phone (optional)"
+  },
+  "home": {
+    "welcome": "Welcome to MoAI",
+    "subtitle": "Open Source AI Application Platform",
+    "description": "A unified platform to manage assistants, knowledge bases and workflows.",
+    "getStarted": "Get started",
+    "learnMore": "Learn more",
+    "feature1Title": "Multi-model support",
+    "feature1Desc": "Integrate OpenAI, Anthropic and more mainstream models.",
+    "feature2Title": "Knowledge base",
+    "feature2Desc": "Document vectorization and semantic search with multiple formats.",
+    "feature3Title": "Workflow automation",
+    "feature3Desc": "Visual orchestration, rich node types and scheduled tasks."
+  }
+}

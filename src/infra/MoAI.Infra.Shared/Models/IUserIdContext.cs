@@ -8,7 +8,7 @@ public interface IUserIdContext
     /// <summary>
     /// 通过上下文自动配置id，前端不需要传递.
     /// </summary>
-    public int ContextUserId { get; init; }
+    public long ContextUserId { get; init; }
 
     /// <summary>
     /// 通过上下文自动配置用户了偶像，前端不需要传递.

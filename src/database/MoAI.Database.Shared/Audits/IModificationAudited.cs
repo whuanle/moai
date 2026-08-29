@@ -8,7 +8,7 @@ public interface IModificationAudited
     /// <summary>
     /// 修改人.
     /// </summary>
-    int UpdateUserId { get; set; }
+    long UpdateUserId { get; set; }
 
     /// <summary>
     /// 修改时间.
