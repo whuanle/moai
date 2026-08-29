@@ -8,7 +8,7 @@ public class StorageFileInfo
     /// <summary>
     /// 文件 ID.
     /// </summary>
-    public int FileId { get; init; }
+    public long FileId { get; init; }
 
     /// <summary>
     /// ObjectKey.

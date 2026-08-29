@@ -20,11 +20,11 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
     public void Configure(EntityTypeBuilder<SettingEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_65884_primary");
+        entity.HasKey(e => e.Id).HasName("setting_pkey");
 
         entity.ToTable("setting", tb => tb.HasComment("系统设置"));
 
-        entity.HasIndex(e => new { e.Key, e.IsDeleted }, "idx_65884_setting_key_is_deleted_uindex").IsUnique();
+        entity.HasIndex(e => e.Key, "setting_key_index").HasMethod("hash");
 
         entity.Property(e => e.Id)
             .HasComment("id")
@@ -49,6 +49,10 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
             .HasMaxLength(50)
             .HasComment("配置名称")
             .HasColumnName("key");
+        entity.Property(e => e.Name)
+            .HasMaxLength(20)
+            .HasDefaultValueSql("''::character varying")
+            .HasColumnName("name");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

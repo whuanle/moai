@@ -12,7 +12,7 @@ namespace MoAI.Database.Entities;
 /// <summary>
 /// oauth2.0对接.
 /// </summary>
-public partial class UserOauthEntity : IFullAudited
+public partial class UserOauthConnectionEntity : IFullAudited
 {
     /// <summary>
     /// id.

@@ -12,51 +12,48 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 插件使用量限制.
+/// oauth2.0对接.
 /// </summary>
-internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<PluginLimitEntity>
+internal partial class UserOauthConnectionConfiguration : IEntityTypeConfiguration<UserOauthConnectionEntity>
 {
     /// <inheritdoc/>
-    public void Configure(EntityTypeBuilder<PluginLimitEntity> builder)
+    public void Configure(EntityTypeBuilder<UserOauthConnectionEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_65828_primary");
+        entity.HasKey(e => e.Id).HasName("user_oauth_pkey");
 
-        entity.ToTable("plugin_limit", tb => tb.HasComment("插件使用量限制"));
+        entity.ToTable("user_oauth_connection", tb => tb.HasComment("oauth2.0对接"));
+
+        entity.HasIndex(e => new { e.ProviderId, e.Sub, e.IsDeleted }, "idx_user_oauth_provider_id_sub_is_deleted_uindex").IsUnique();
 
         entity.Property(e => e.Id)
+            .HasDefaultValueSql("nextval('user_oauth_id_seq'::regclass)")
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
-        entity.Property(e => e.ExpirationTime)
-            .HasDefaultValueSql("CURRENT_TIMESTAMP")
-            .HasComment("过期时间")
-            .HasColumnName("expiration_time");
         entity.Property(e => e.IsDeleted)
             .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.LimitValue)
-            .HasComment("限制值")
-            .HasColumnName("limit_value");
-        entity.Property(e => e.PluginId)
-            .HasComment("插件id")
-            .HasColumnName("plugin_id");
-        entity.Property(e => e.RuleType)
-            .HasComment("限制的规则类型,每天/总额/有效期")
-            .HasColumnName("rule_type");
+        entity.Property(e => e.ProviderId)
+            .HasComment("供应商id,对应oauth_connection表")
+            .HasColumnName("provider_id");
+        entity.Property(e => e.Sub)
+            .HasMaxLength(50)
+            .HasComment("用户oauth对应的唯一id")
+            .HasColumnName("sub");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasComment("更新人")
+            .HasComment("最后修改人")
             .HasColumnName("update_user_id");
         entity.Property(e => e.UserId)
             .HasComment("用户id")
@@ -65,5 +62,5 @@ internal partial class PluginLimitConfiguration : IEntityTypeConfiguration<Plugi
         OnConfigurePartial(entity);
     }
 
-    partial void OnConfigurePartial(EntityTypeBuilder<PluginLimitEntity> modelBuilder);
+    partial void OnConfigurePartial(EntityTypeBuilder<UserOauthConnectionEntity> modelBuilder);
 }

@@ -13,7 +13,7 @@ public class PreUploadFileCommandResponse
     /// <summary>
     /// 文件 ID.
     /// </summary>
-    public int FileId { get; init; }
+    public long FileId { get; init; }
 
     /// <summary>
     /// 文件 ObjectKey.

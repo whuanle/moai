@@ -127,9 +127,13 @@ public partial class <#= EntityType.Name #>Entity : IFullAudited
             }
 
         }
-        if(targetTypeName == "byte[]")
+        if(targetTypeName == "byte[]" && property.Name.Contains("md5", StringComparison.OrdinalIgnoreCase))
         {
             targetTypeName = "Guid" + columnType?.Value?.ToString();
+        }
+        if(targetTypeName == "byte[]" && property.Name.Contains("sha256", StringComparison.OrdinalIgnoreCase))
+        {
+            targetTypeName = "string" + columnType?.Value?.ToString();
         }
 
 #>

@@ -20,7 +20,7 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
     public void Configure(EntityTypeBuilder<OauthConnectionEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_65771_primary");
+        entity.HasKey(e => e.Id).HasName("oauth_connection_pkey");
 
         entity.ToTable("oauth_connection", tb => tb.HasComment("oauth2.0系统"));
 

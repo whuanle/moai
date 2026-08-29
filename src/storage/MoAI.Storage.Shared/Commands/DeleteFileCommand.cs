@@ -8,5 +8,5 @@ public class DeleteFileCommand
     /// <summary>
     /// 文件 id 列表.
     /// </summary>
-    public IReadOnlyCollection<int> FileIds { get; init; } = Array.Empty<int>();
+    public IReadOnlyCollection<long> FileIds { get; init; } = Array.Empty<long>();
 }

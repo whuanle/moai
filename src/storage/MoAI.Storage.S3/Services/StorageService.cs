@@ -146,7 +146,7 @@ public class StorageService : IStorageService
     }
 
     /// <inheritdoc/>
-    public async Task CompleteAsync(int fileId, bool isSuccess, CancellationToken cancellationToken = default)
+    public async Task CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default)
     {
         var fileEntity = await _databaseContext.Files.FirstOrDefaultAsync(x => x.Id == fileId, cancellationToken);
 
@@ -203,7 +203,7 @@ public class StorageService : IStorageService
     }
 
     /// <inheritdoc/>
-    public async Task DeleteFilesAsync(IReadOnlyCollection<int> fileIds, CancellationToken cancellationToken = default)
+    public async Task DeleteFilesAsync(IReadOnlyCollection<long> fileIds, CancellationToken cancellationToken = default)
     {
         if (fileIds.Count == 0)
         {

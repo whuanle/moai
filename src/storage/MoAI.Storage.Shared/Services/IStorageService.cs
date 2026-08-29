@@ -34,14 +34,14 @@ public interface IStorageService
     /// <param name="fileId">文件 id.</param>
     /// <param name="isSuccess">上传是否成功.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    Task CompleteAsync(int fileId, bool isSuccess, CancellationToken cancellationToken = default);
+    Task CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除文件（软删除 file 记录并清理 OSS 对象）.
     /// </summary>
     /// <param name="fileIds">文件 id 列表.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    Task DeleteFilesAsync(IReadOnlyCollection<int> fileIds, CancellationToken cancellationToken = default);
+    Task DeleteFilesAsync(IReadOnlyCollection<long> fileIds, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量生成文件下载地址（预签名）.

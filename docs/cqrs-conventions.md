@@ -88,6 +88,8 @@ MoAI.{Domain}.Api/
 
 ### Command 定义
 
+注意请求模型需要继承 `IModelValidator<T>` ，编写验证模型请求参数是否正确，提前拦截无效请求。
+
 ```csharp
 using MediatR;
 using MoAI.Infra.Models;
@@ -113,7 +115,43 @@ public class {Action}{Entity}Command : IRequest<EmptyCommandResponse>, IModelVal
 }
 ```
 
+
+
+示例：
+
+```csharp
+/// <summary>
+/// 完成文件上传.
+/// </summary>
+public class CompleteFileUploadCommand : IRequest<EmptyCommandResponse>, IModelValidator<CompleteFileUploadCommand>
+{
+    /// <summary>
+    /// 上传成功或失败.
+    /// </summary>
+    public bool IsSuccess { get; set; }
+
+    /// <summary>
+    /// 文件 ID.
+    /// </summary>
+    public int FileId { get; set; }
+
+    /// <inheritdoc/>
+    public static void Validate(AbstractValidator<CompleteFileUploadCommand> validate)
+    {
+        validate.RuleFor(x => x.FileId).GreaterThan(0).WithMessage("文件 ID 不存在");
+    }
+}
+```
+
+
+
+
+
 ### Query 定义
+
+注意请求模型需要继承 `IModelValidator<T>` ，编写验证模型请求参数是否正确，提前拦截无效请求。
+
+Query 如果是搜索、模糊查询，则参数可以可为空，但是注意长度等。
 
 ```csharp
 using MediatR;

@@ -17,7 +17,7 @@ public partial class UserEntity : IFullAudited
     /// <summary>
     /// 用户ID.
     /// </summary>
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     /// <summary>
     /// 用户名.

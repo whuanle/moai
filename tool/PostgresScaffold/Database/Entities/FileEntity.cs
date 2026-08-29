@@ -17,7 +17,7 @@ public partial class FileEntity : IFullAudited
     /// <summary>
     /// id.
     /// </summary>
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     /// <summary>
     /// 文件路径.
@@ -32,7 +32,7 @@ public partial class FileEntity : IFullAudited
     /// <summary>
     /// sha256.
     /// </summary>
-    public Guid FileSha256 { get; set; } = default!;
+    public string FileSha256 { get; set; } = default!;
 
     /// <summary>
     /// 文件大小.

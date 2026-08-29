@@ -20,13 +20,13 @@ internal partial class ClassifyConfiguration : IEntityTypeConfiguration<Classify
     public void Configure(EntityTypeBuilder<ClassifyEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_65729_primary");
+        entity.HasKey(e => e.Id).HasName("classify_pkey");
 
         entity.ToTable("classify", tb => tb.HasComment("分类"));
 
-        entity.HasIndex(e => e.Name, "idx_65729_classify_name_index");
+        entity.HasIndex(e => e.Name, "idx_classify_name_index");
 
-        entity.HasIndex(e => e.Type, "idx_65729_classify_type_index");
+        entity.HasIndex(e => e.Type, "idx_classify_type_index");
 
         entity.Property(e => e.Id)
             .HasComment("id")

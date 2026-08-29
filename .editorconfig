@@ -2,6 +2,8 @@
 
 # SA1614: Element parameter documentation should have text
 dotnet_diagnostic.SA1614.severity = none
+dotnet_diagnostic.SA1116.severity = none
+dotnet_diagnostic.SA1117.severity = none
 
 # SA1204: A static element is positioned beneath an instance element of the same type.
 dotnet_diagnostic.SA1204.severity = none

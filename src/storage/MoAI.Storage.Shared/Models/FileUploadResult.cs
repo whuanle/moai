@@ -23,5 +23,5 @@ public class FileUploadResult
     /// <summary>
     /// 文件 ID.
     /// </summary>
-    public int FileId { get; init; }
+    public long FileId { get; init; }
 }
