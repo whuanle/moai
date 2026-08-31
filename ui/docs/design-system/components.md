@@ -10,7 +10,8 @@
 | `DataTable` | 表格 | `columns`, `dataSource` |
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |
-| `Card` / `StatCard` | 卡片/统计卡 | - |
+| `Card` | 通用卡片 | - |
+| `StatCard` | 统计/指标卡 | `title`, `value` |
 | `Chat` | 对话布局 | `messages` |
 
 ## 组合约束矩阵
@@ -27,4 +28,15 @@
 
 ```tsx
 import { Page, QueryBar, DataTable } from '@/design-system'
+
+export function ExampleList() {
+  return (
+    <Page title="列表">
+      <QueryBar onSearch={(v) => console.log(v)} />
+      <DataTable<Item> rowKey="id" columns={columns} dataSource={data} />
+    </Page>
+  )
+}
 ```
+
+完整可运行范例见 `ui/src/design-system/templates/`。

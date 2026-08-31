@@ -12,12 +12,13 @@
 | `brandColors.error` | `#FF3B30` | 错误 |
 | `brandColors.info` | `#4A9EFF` | 信息 |
 
-## 间距（8px 网格）
+## 间距（基步 4px，规则值 8/16/24/32/48）
 | 令牌 | 值 |
 |---|---|
 | `spacing.xxs` | 4 |
 | `spacing.xs` | 8 |
 | `spacing.sm` | 12 |
+| `spacing.md` | 16 |
 | `spacing.md` | 16 |
 | `spacing.lg` | 24 |
 | `spacing.xl` | 32 |
