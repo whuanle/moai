@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Input, Space } from 'antd'
+import { Button, ConfigProvider, Input } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/design-system/theme'
