@@ -84,7 +84,13 @@
       "descValue": "This is a sample read-only detail description text.",
       "createdAt": "Created at"
     },
-    "chat": { "placeholder": "Type a message...", "send": "Send" },
+    "chat": {
+      "placeholder": "Type a message...",
+      "send": "Send",
+      "title": "Chat",
+      "subtitle": "Conversational interaction layout",
+      "empty": "Start a conversation."
+    },
     "dash": {
       "title": "Overview",
       "subtitle": "Statistics overview template",

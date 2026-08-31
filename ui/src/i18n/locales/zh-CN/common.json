@@ -84,7 +84,13 @@
       "descValue": "这里是只读详情展示的示例描述文本。",
       "createdAt": "创建时间"
     },
-    "chat": { "placeholder": "输入消息...", "send": "发送" },
+    "chat": {
+      "placeholder": "输入消息...",
+      "send": "发送",
+      "title": "对话页",
+      "subtitle": "对话交互布局",
+      "empty": "开始一段对话吧。"
+    },
     "dash": {
       "title": "概览",
       "subtitle": "统计概览模板",
