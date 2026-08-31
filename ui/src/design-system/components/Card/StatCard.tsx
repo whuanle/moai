@@ -13,8 +13,6 @@ export interface StatCardProps {
   trend?: number
 }
 
-export type { StatCardProps }
-
 export function StatCard({ title, value, icon, suffix, loading, trend }: StatCardProps) {
   const trendNode =
     typeof trend === 'number' ? (
