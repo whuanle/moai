@@ -8,7 +8,7 @@ function toUserInfo(res: {
   expiresIn?: string | null
   refreshToken?: string | null
   tokenType?: string | null
-  userId?: number | null
+  userId?: string | null | undefined
   userName?: string | null
 }): UserInfo {
   return {
