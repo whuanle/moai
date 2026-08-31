@@ -2,15 +2,14 @@ import { useEffect, type ReactNode } from 'react'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import i18n from '@/i18n'
 import { useAppStore } from '@/store/app'
-import { getAntdLocale } from '@/theme/locale'
-import { getThemeConfig } from '@/theme/config'
+import { getAntdLocale, getThemeConfig } from '@/design-system/theme'
 
 interface AppProvidersProps {
   children: ReactNode
 }
 
 export function AppProviders({ children }: AppProvidersProps) {
-  const themeMode = useAppStore((state) => state.themeMode)
+  const themeKey = useAppStore((state) => state.themeKey)
   const locale = useAppStore((state) => state.locale)
 
   useEffect(() => {
@@ -19,7 +18,7 @@ export function AppProviders({ children }: AppProvidersProps) {
   }, [locale])
 
   return (
-    <ConfigProvider locale={getAntdLocale(locale)} theme={getThemeConfig(themeMode)}>
+    <ConfigProvider locale={getAntdLocale(locale)} theme={getThemeConfig(themeKey)}>
       <AntdApp>{children}</AntdApp>
     </ConfigProvider>
   )

@@ -27,7 +27,7 @@ const localeOptions = [
 export function AppHeader() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const themeMode = useAppStore((state) => state.themeMode)
+  const themeKey = useAppStore((state) => state.themeKey)
   const locale = useAppStore((state) => state.locale)
   const userInfo = useAppStore((state) => state.userInfo)
   const toggleTheme = useAppStore((state) => state.toggleTheme)
@@ -115,11 +115,11 @@ export function AppHeader() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Switch
-          checked={themeMode === 'dark'}
+          checked={themeKey === 'dark'}
           checkedChildren={<MoonOutlined />}
           unCheckedChildren={<SunOutlined />}
           onChange={toggleTheme}
-          aria-label={themeMode === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
+          aria-label={themeKey === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
         />
         <Select
           value={locale}
