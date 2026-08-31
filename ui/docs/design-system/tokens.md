@@ -19,7 +19,6 @@
 | `spacing.xs` | 8 |
 | `spacing.sm` | 12 |
 | `spacing.md` | 16 |
-| `spacing.md` | 16 |
 | `spacing.lg` | 24 |
 | `spacing.xl` | 32 |
 | `spacing.xxl` | 48 |

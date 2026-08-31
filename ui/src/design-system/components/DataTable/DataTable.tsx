@@ -1,11 +1,13 @@
 import { Button, ConfigProvider, Table } from 'antd'
-import type { TableProps } from 'antd'
+import type { TableColumnsType, TableProps } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/design-system/theme'
 
 export interface DataTableProps<RecordType extends object>
-  extends Omit<TableProps<RecordType>, 'pagination'> {
+  extends Omit<TableProps<RecordType>, 'pagination' | 'columns' | 'dataSource'> {
+  columns: TableColumnsType<RecordType>
+  dataSource: TableProps<RecordType>['dataSource']
   pagination?: TableProps<RecordType>['pagination']
   toolbar?: ReactNode
   onRefresh?: () => void

@@ -1,7 +1,7 @@
 import { Button, ConfigProvider, Input } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { spacing } from '@/design-system/theme'
+import { brandColors, neutralColors, radius, spacing } from '@/design-system/theme'
 
 export interface ChatMessage {
   id: string
@@ -21,8 +21,8 @@ export interface ChatProps {
 }
 
 const BUBBLE_COLORS = {
-  user: '#4A9EFF',
-  other: 'rgba(128,128,128,0.1)',
+  user: brandColors.primary,
+  other: neutralColors.background,
 }
 
 export function Chat({ messages, inputValue = '', onInputChange, onSend, sending, empty, height = 480 }: ChatProps) {
@@ -34,13 +34,17 @@ export function Chat({ messages, inputValue = '', onInputChange, onSend, sending
         display: 'flex',
         flexDirection: 'column',
         height,
-        border: '1px solid rgba(128,128,128,0.2)',
-        borderRadius: 8,
+        border: `1px solid ${neutralColors.border}`,
+        borderRadius: radius.default,
       }}
     >
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing.lg }}>
         {messages.length === 0 ? (
-          empty ?? <div style={{ textAlign: 'center', color: '#999', padding: spacing.xl }}>暂无消息</div>
+          empty ?? (
+            <div style={{ textAlign: 'center', color: neutralColors.textTertiary, padding: spacing.xl }}>
+              暂无消息
+            </div>
+          )
         ) : (
           messages.map((m) => (
             <div
@@ -55,7 +59,7 @@ export function Chat({ messages, inputValue = '', onInputChange, onSend, sending
                 style={{
                   maxWidth: '75%',
                   padding: `${spacing.xs}px ${spacing.sm}px`,
-                  borderRadius: 8,
+                  borderRadius: radius.default,
                   background: m.role === 'user' ? BUBBLE_COLORS.user : BUBBLE_COLORS.other,
                   color: m.role === 'user' ? '#fff' : 'inherit',
                   whiteSpace: 'pre-wrap',
@@ -71,7 +75,7 @@ export function Chat({ messages, inputValue = '', onInputChange, onSend, sending
         <div
           style={{
             padding: spacing.md,
-            borderTop: '1px solid rgba(128,128,128,0.2)',
+            borderTop: `1px solid ${neutralColors.border}`,
             display: 'flex',
             gap: spacing.sm,
           }}
