@@ -1,2 +1,2 @@
-export { Page } from './index.tsx'
-export type { PageProps } from './index.tsx'
+export { Page } from './Page'
+export type { PageProps } from './Page'
