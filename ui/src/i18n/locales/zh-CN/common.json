@@ -73,7 +73,17 @@
       "typeGroup": "分组",
       "count": "数量"
     },
-    "detail": { "back": "返回", "edit": "编辑" },
+    "detail": {
+      "back": "返回",
+      "edit": "编辑",
+      "title": "详情页模板",
+      "name": "名称",
+      "status": "状态",
+      "statusActive": "启用",
+      "desc": "描述",
+      "descValue": "这里是只读详情展示的示例描述文本。",
+      "createdAt": "创建时间"
+    },
     "chat": { "placeholder": "输入消息...", "send": "发送" },
     "list": {
       "title": "列表页模板",
