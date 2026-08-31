@@ -85,6 +85,16 @@
       "createdAt": "创建时间"
     },
     "chat": { "placeholder": "输入消息...", "send": "发送" },
+    "dash": {
+      "title": "概览",
+      "subtitle": "统计概览模板",
+      "users": "用户数",
+      "apps": "应用数",
+      "requests": "调用次数",
+      "tickets": "待处理工单",
+      "chart": "趋势图",
+      "chartPlaceholder": "此处放置图表占位。"
+    },
     "list": {
       "title": "列表页模板",
       "subtitle": "演示 Page + QueryBar + DataTable 的标准组合",

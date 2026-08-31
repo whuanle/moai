@@ -85,6 +85,16 @@
       "createdAt": "Created at"
     },
     "chat": { "placeholder": "Type a message...", "send": "Send" },
+    "dash": {
+      "title": "Overview",
+      "subtitle": "Statistics overview template",
+      "users": "Users",
+      "apps": "Applications",
+      "requests": "Requests",
+      "tickets": "Open tickets",
+      "chart": "Trend chart",
+      "chartPlaceholder": "Chart placeholder goes here."
+    },
     "list": {
       "title": "List Template",
       "subtitle": "Demonstrates the standard Page + QueryBar + DataTable composition",
