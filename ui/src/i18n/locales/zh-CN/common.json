@@ -61,7 +61,18 @@
   "ds": {
     "query": { "search": "查询", "reset": "重置" },
     "table": { "refresh": "刷新", "total": "共 {{total}} 条" },
-    "form": { "submit": "提交", "cancel": "取消", "success": "保存成功" },
+    "form": {
+      "submit": "提交",
+      "cancel": "取消",
+      "success": "保存成功",
+      "title": "表单页模板",
+      "nameLabel": "名称",
+      "namePlaceholder": "请输入名称",
+      "type": "类型",
+      "typeSingle": "单条",
+      "typeGroup": "分组",
+      "count": "数量"
+    },
     "detail": { "back": "返回", "edit": "编辑" },
     "chat": { "placeholder": "输入消息...", "send": "发送" },
     "list": {
