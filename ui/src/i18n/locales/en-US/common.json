@@ -115,6 +115,11 @@
       "edit": "Edit",
       "delete": "Delete",
       "create": "Create"
+    },
+    "preview": {
+      "title": "Design System Template Preview",
+      "desc": "Below are the five design system page templates (mock data).",
+      "footer": "Templates are built on the @/design-system components."
     }
   }
 }

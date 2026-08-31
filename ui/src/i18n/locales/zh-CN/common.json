@@ -115,6 +115,11 @@
       "edit": "编辑",
       "delete": "删除",
       "create": "新建"
+    },
+    "preview": {
+      "title": "设计系统模板预览",
+      "desc": "以下为设计系统的五种页面模板示例（mock 数据）。",
+      "footer": "模板均基于 @/design-system 组件构建。"
     }
   }
 }
