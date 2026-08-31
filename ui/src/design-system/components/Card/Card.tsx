@@ -3,5 +3,5 @@ import type { CardProps } from 'antd'
 
 export type { CardProps }
 export function Card(props: CardProps) {
-  return <AntdCard bordered={false} {...props} />
+  return <AntdCard variant="borderless" {...props} />
 }
