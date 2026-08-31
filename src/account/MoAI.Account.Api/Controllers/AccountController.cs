@@ -2,7 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Commands;
+using MoAI.Account.Queries;
+using MoAI.Account.Queries.Responses;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 
 namespace MoAI.Account.Controllers;
 
@@ -14,14 +17,17 @@ namespace MoAI.Account.Controllers;
 public class AccountController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AccountController"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public AccountController(IMediator mediator)
+    /// <param name="userContextProvider"></param>
+    public AccountController(IMediator mediator, IUserContextProvider userContextProvider)
     {
         _mediator = mediator;
+        _userContextProvider = userContextProvider;
     }
 
     /// <summary>
@@ -35,5 +41,18 @@ public class AccountController : ControllerBase
     public async Task<EmptyCommandResponse> OAuthBindExistAccount([FromBody] OAuthBindExistAccountCommand req, CancellationToken ct)
     {
         return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询用户基本信息.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="UserStateInfo"/>，包含用户状态信息.</returns>
+    [HttpGet("userinfo")]
+    public Task<UserStateInfo> QueryUserInfo(CancellationToken ct)
+    {
+        var cmd = new QueryUserViewUserInfoCommand();
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 }

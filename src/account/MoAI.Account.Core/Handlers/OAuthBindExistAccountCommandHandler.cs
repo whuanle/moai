@@ -1,12 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MoAI.Account.Commands;
+using MoAI.Auth.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Account.Commands;
-using MoAI.Auth.Models;
+using MoAI.Infra.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Account.Handlers;
@@ -16,7 +17,7 @@ namespace MoAI.Account.Handlers;
 /// </summary>
 public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExistAccountCommand, EmptyCommandResponse>
 {
-    private readonly UserContext _userContext;
+    private readonly IUserContextProvider _userContextProvider;
     private readonly DatabaseContext _databaseContext;
     private readonly ILogger<OAuthBindExistAccountCommandHandler> _logger;
     private readonly IRedisDatabase _redisDatabase;
@@ -24,13 +25,13 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
     /// <summary>
     /// Initializes a new instance of the <see cref="OAuthBindExistAccountCommandHandler"/> class.
     /// </summary>
-    /// <param name="userContext"></param>
+    /// <param name="userContextProvider"></param>
     /// <param name="databaseContext"></param>
     /// <param name="logger"></param>
     /// <param name="redisDatabase"></param>
-    public OAuthBindExistAccountCommandHandler(UserContext userContext, DatabaseContext databaseContext, ILogger<OAuthBindExistAccountCommandHandler> logger, IRedisDatabase redisDatabase)
+    public OAuthBindExistAccountCommandHandler(IUserContextProvider userContextProvider, DatabaseContext databaseContext, ILogger<OAuthBindExistAccountCommandHandler> logger, IRedisDatabase redisDatabase)
     {
-        _userContext = userContext;
+        _userContextProvider = userContextProvider;
         _databaseContext = databaseContext;
         _logger = logger;
         _redisDatabase = redisDatabase;
@@ -39,6 +40,8 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(OAuthBindExistAccountCommand request, CancellationToken cancellationToken)
     {
+        var userContext = _userContextProvider.GetUserContext();
+
         // 绑定 OAuth 用户信息
         var redisKey = $"oauth:bind:{request.TempOAuthBindId}";
         var oauthBindUserProfile = await _redisDatabase.GetAsync<OAuthBindUserProfile>(redisKey);
@@ -60,7 +63,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
 
         if (userEntity != null)
         {
-            if (userEntity.Id != _userContext.UserId)
+            if (userEntity.Id != userContext.UserId)
             {
                 throw new BusinessException("第三方账号已被其它账号绑定") { StatusCode = 400 };
             }
@@ -70,7 +73,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
         }
 
         // 用户在同一供应商下不能有多个绑定记录
-        var existProvider = await _databaseContext.UserOauthConnections.FirstOrDefaultAsync(x => x.UserId == _userContext.UserId && x.ProviderId == oauthBindUserProfile.OAuthId);
+        var existProvider = await _databaseContext.UserOauthConnections.FirstOrDefaultAsync(x => x.UserId == userContext.UserId && x.ProviderId == oauthBindUserProfile.OAuthId);
         if (existProvider != null && existProvider.Sub != oauthBindUserProfile.Profile.Sub)
         {
             throw new BusinessException("用户已绑定过其它账号");
@@ -79,7 +82,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
         // 绑定账号
         var oauthEntity = new UserOauthConnectionEntity
         {
-            UserId = _userContext.UserId,
+            UserId = userContext.UserId,
             ProviderId = oauthConnectionEntity.Id,
             Sub = oauthBindUserProfile.Profile.Sub,
         };

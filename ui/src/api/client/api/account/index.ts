@@ -4,6 +4,8 @@
 // @ts-ignore
 import { Oauth_bind_accountRequestBuilderRequestsMetadata, type Oauth_bind_accountRequestBuilder } from './oauth_bind_account/index.js';
 // @ts-ignore
+import { type UserinfoRequestBuilder, UserinfoRequestBuilderRequestsMetadata } from './userinfo/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -14,6 +16,10 @@ export interface AccountRequestBuilder extends BaseRequestBuilder<AccountRequest
      * The oauth_bind_account property
      */
     get oauth_bind_account(): Oauth_bind_accountRequestBuilder;
+    /**
+     * The userinfo property
+     */
+    get userinfo(): UserinfoRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -25,6 +31,9 @@ export const AccountRequestBuilderUriTemplate = "{+baseurl}/api/account";
 export const AccountRequestBuilderNavigationMetadata: Record<Exclude<keyof AccountRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     oauth_bind_account: {
         requestsMetadata: Oauth_bind_accountRequestBuilderRequestsMetadata,
+    },
+    userinfo: {
+        requestsMetadata: UserinfoRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

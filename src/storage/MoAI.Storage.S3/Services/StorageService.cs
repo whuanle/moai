@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
 using MoAI.Storage.Models;
@@ -24,7 +26,7 @@ public class StorageService : IStorageService
     private readonly DatabaseContext _databaseContext;
     private readonly S3Client _s3Client;
     private readonly SystemOptions _systemOptions;
-    private readonly UserContext _userContext;
+    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StorageService"/> class.
@@ -32,13 +34,13 @@ public class StorageService : IStorageService
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="s3Client">S3 客户端.</param>
     /// <param name="systemOptions">系统配置.</param>
-    /// <param name="userContext">用户上下文.</param>
-    public StorageService(DatabaseContext databaseContext, S3Client s3Client, SystemOptions systemOptions, UserContext userContext)
+    /// <param name="userContextProvider">用户上下文.</param>
+    public StorageService(DatabaseContext databaseContext, S3Client s3Client, SystemOptions systemOptions, IUserContextProvider userContextProvider)
     {
         _databaseContext = databaseContext;
         _s3Client = s3Client;
         _systemOptions = systemOptions;
-        _userContext = userContext;
+        _userContextProvider = userContextProvider;
     }
 
     /// <inheritdoc/>
@@ -162,7 +164,7 @@ public class StorageService : IStorageService
         }
 
         // 检查该文件是否当前用户上传的，否则无法完成上传
-        if (fileEntity.UpdateUserId != _userContext.UserId)
+        if (fileEntity.UpdateUserId != _userContextProvider.GetUserContext().UserId)
         {
             throw new BusinessException("其他用户正在上传此文件") { StatusCode = 409 };
         }

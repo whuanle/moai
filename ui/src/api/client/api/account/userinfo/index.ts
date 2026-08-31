@@ -7,7 +7,7 @@ import { createBusinessValidationResultFromDiscriminatorValue, createUserStateIn
 import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/auth/userinfo
+ * Builds and executes requests for operations under /api/account/userinfo
  */
 export interface UserinfoRequestBuilder extends BaseRequestBuilder<UserinfoRequestBuilder> {
     /**
@@ -31,7 +31,7 @@ export interface UserinfoRequestBuilder extends BaseRequestBuilder<UserinfoReque
 /**
  * Uri template for the request builder.
  */
-export const UserinfoRequestBuilderUriTemplate = "{+baseurl}/api/auth/userinfo";
+export const UserinfoRequestBuilderUriTemplate = "{+baseurl}/api/account/userinfo";
 /**
  * Metadata for all the requests in the request builder.
  */

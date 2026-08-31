@@ -45,9 +45,6 @@ public class InfraCoreModule : ModuleCore
 
         context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
 
-        // 注册默认服务，会被上层模块覆盖
-        context.Services.AddScoped<UserContext, DefaultUserContext>();
-
         context.Services.AddMaomiMQ(
             (MqOptionsBuilder options) =>
             {

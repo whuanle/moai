@@ -246,6 +246,7 @@ public class Query{Entity}CommandHandler : IRequestHandler<Query{Entity}Command,
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using MoAI.{Domain}.Commands;
 using MoAI.{Domain}.Queries;
 
@@ -259,13 +260,18 @@ namespace MoAI.{Domain}.Controllers;
 public partial class {Entity}Controller : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly UserContext _userContext;
+    private readonly IUserContextProvider _userContextProvider;
 
-    public {Entity}Controller(IMediator mediator, UserContext userContext)
+    public {Entity}Controller(IMediator mediator, IUserContextProvider userContextProvider)
     {
         _mediator = mediator;
-        _userContext = userContext;
+        _userContextProvider = userContextProvider;
     }
+
+    /// <summary>
+    /// 获取当前用户上下文，可通过 userContext、UserContext...
+    /// </summary>
+    private UserContext CurrentUser => _userContextProvider.GetUserContext();
 
     /// <summary>
     /// {接口描述}.
@@ -280,7 +286,29 @@ public partial class {Entity}Controller : ControllerBase
 
 ## 用户信息传递
 
-不允许在 Handler 直接注入 IUserContext，如果需要根据用户 id 查询信息或限制范围，需要在 Command 继承 IUserIdContext，由 Command 传入。
+不允许直接注入 `UserContext`，必须先注入 `IUserContextProvider`，再通过 `GetUserContext()` 获取 `UserContext`：
+
+```csharp
+using MoAI.Infra.Services;
+
+public class {Entity}Controller : ControllerBase
+{
+    private readonly IUserContextProvider _userContextProvider;
+
+    public {Entity}Controller(IUserContextProvider userContextProvider)
+    {
+        _userContextProvider = userContextProvider;
+    }
+
+    public void Demo()
+    {
+        var userContext = _userContextProvider.GetUserContext();
+        var userId = userContext.UserId; // 当前用户 ID
+    }
+}
+```
+
+不允许在 Handler 直接注入 `IUserContextProvider` 或 `UserContext`，如果需要根据用户 id 查询信息或限制范围，需要在 Command 继承 IUserIdContext，由 Command 传入。
 
 ```csharp
 /// <summary>

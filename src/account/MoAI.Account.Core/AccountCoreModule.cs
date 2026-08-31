@@ -17,10 +17,6 @@ public class AccountCoreModule : IModule
     public void ConfigureServices(ServiceContext context)
     {
         context.Services.AddScoped<IUserContextProvider, UserContextProvider>();
-        context.Services.AddScoped<UserContext>(s =>
-        {
-            return s.GetRequiredService<IUserContextProvider>().GetUserContext();
-        });
 
         context.Services.AddScoped<CustomAuthorizaMiddleware>();
         context.Services.AddScoped<IUserAccountService, UserAccountService>();

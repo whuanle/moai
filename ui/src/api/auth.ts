@@ -80,7 +80,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<UserInfo
 
 export async function getUserDetailInfo() {
   const client = getApiClient()
-  return client.api.auth.userinfo.get()
+  return client.api.account.userinfo.get()
 }
 
 export async function refreshUserProfile(): Promise<UserInfo | null> {

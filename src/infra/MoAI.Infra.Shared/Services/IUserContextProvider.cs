@@ -12,4 +12,10 @@ public interface IUserContextProvider
     /// </summary>
     /// <returns><see cref="UserContext"/>.</returns>
     UserContext GetUserContext();
+
+    /// <summary>
+    /// 设置用户上下文.
+    /// </summary>
+    /// <param name="userIdContext"></param>
+    void SetUserContext(IUserIdContext userIdContext);
 }

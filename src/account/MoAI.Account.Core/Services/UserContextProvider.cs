@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using System.Security.Claims;
@@ -36,6 +37,13 @@ public class UserContextProvider : IUserContextProvider
 
     /// <inheritdoc/>
     public UserContext GetUserContext() => _userContext.Value;
+
+    /// <inheritdoc/>
+    public void SetUserContext(IUserIdContext userIdContext)
+    {
+        userIdContext.SetUserId(_userContext.Value.UserId);
+        userIdContext.SetProperty(a => a.ContextUserType, _userContext.Value.UserType);
+    }
 
     private DefaultUserContext Parse()
     {

@@ -4,6 +4,7 @@ namespace MoAI.Infra.Models;
 
 /// <summary>
 /// 用户上下文接口，提供当前用户的信息.
+/// 不要直接注入 UserContext，要使用 IUserContextProvider
 /// </summary>
 public abstract class UserContext
 {

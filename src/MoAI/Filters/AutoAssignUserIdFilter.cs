@@ -12,15 +12,15 @@ namespace MoAI.Filters;
 [InjectOnScoped]
 public class AutoAssignUserIdFilter : IAsyncActionFilter
 {
-    private readonly IUserContextProvider _userContext;
+    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AutoAssignUserIdFilter"/> class.
     /// </summary>
-    /// <param name="userContext"></param>
-    public AutoAssignUserIdFilter(IUserContextProvider userContext)
+    /// <param name="userContextProvider"></param>
+    public AutoAssignUserIdFilter(IUserContextProvider userContextProvider)
     {
-        _userContext = userContext;
+        _userContextProvider = userContextProvider;
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public class AutoAssignUserIdFilter : IAsyncActionFilter
     /// <returns></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var userContext = _userContext.GetUserContext();
+        var userContext = _userContextProvider.GetUserContext();
         foreach (var argument in context.ActionArguments.Values)
         {
             if (argument is IUserIdContext userIdContext)
