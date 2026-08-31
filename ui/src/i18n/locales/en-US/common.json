@@ -119,7 +119,8 @@
     "preview": {
       "title": "Design System Template Preview",
       "desc": "Below are the five design system page templates (mock data).",
-      "footer": "Templates are built on the @/design-system components."
+      "footer": "Templates are built on the @/design-system components.",
+      "themeHint": "Toggle the global theme to check contrast in dark mode."
     }
   }
 }

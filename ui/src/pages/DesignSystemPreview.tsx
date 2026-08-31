@@ -8,6 +8,7 @@ import {
   Col,
   DatePicker,
   Divider,
+  Form,
   Input,
   InputNumber,
   Popconfirm,
@@ -28,7 +29,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Chat, DataTable, StatCard } from '@/design-system'
+import { useAppStore } from '@/store/app'
+import { Chat, DataTable, FormPage, QueryBar, StatCard } from '@/design-system'
 import {
   brandColors,
   neutralColors,
@@ -358,6 +360,102 @@ function ChatSection() {
   )
 }
 
+function ThemeSection() {
+  const { t } = useTranslation()
+  const themeKey = useAppStore((state) => state.themeKey)
+  const toggleTheme = useAppStore((state) => state.toggleTheme)
+  return (
+    <Space direction="vertical" size="middle">
+      <Text type="secondary">当前主题：{themeKey === 'dark' ? '暗色 Dark' : '亮色 Light'}</Text>
+      <Space>
+        <Switch
+          checked={themeKey === 'dark'}
+          checkedChildren="暗色"
+          unCheckedChildren="亮色"
+          onChange={() => toggleTheme()}
+        />
+        <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+          {t('ds.preview.themeHint')}
+        </Text>
+      </Space>
+    </Space>
+  )
+}
+
+function FilterSection() {
+  return (
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <QueryBar onSearch={() => {}} onReset={() => {}}>
+        <Form.Item name="keyword" label="关键字">
+          <Input placeholder="搜索名称" allowClear />
+        </Form.Item>
+        <Form.Item name="status" label="状态">
+          <Select
+            allowClear
+            style={{ width: 160 }}
+            options={[
+              { value: 'active', label: '启用' },
+              { value: 'disabled', label: '停用' },
+            ]}
+          />
+        </Form.Item>
+        <Form.Item name="owner" label="负责人">
+          <Input placeholder="输入负责人" allowClear />
+        </Form.Item>
+      </QueryBar>
+      <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+        上方为 QueryBar 筛选查询区（回车或点「查询」触发 onSearch，「重置」清空字段）。
+      </Text>
+    </Space>
+  )
+}
+
+function FormValidationSection() {
+  const { message } = App.useApp()
+  return (
+    <FormPage
+      title="任务发布"
+      submitting={false}
+      onCancel={() => {}}
+      onFinish={(values) => {
+        message.success(`已提交：${JSON.stringify(values)}`)
+      }}
+    >
+      <Form.Item
+        name="name"
+        label="任务名称"
+        rules={[{ required: true, message: '请输入任务名称' }]}
+      >
+        <Input placeholder="请输入任务名称" />
+      </Form.Item>
+      <Form.Item
+        name="email"
+        label="联系邮箱"
+        rules={[
+          { required: true, message: '请输入邮箱' },
+          { type: 'email', message: '邮箱格式不正确' },
+        ]}
+      >
+        <Input placeholder="请输入邮箱" />
+      </Form.Item>
+      <Form.Item
+        name="priority"
+        label="优先级"
+        rules={[{ required: true, message: '请选择优先级' }]}
+      >
+        <Select
+          placeholder="选择优先级"
+          options={[
+            { value: 'high', label: '高' },
+            { value: 'mid', label: '中' },
+            { value: 'low', label: '低' },
+          ]}
+        />
+      </Form.Item>
+    </FormPage>
+  )
+}
+
 function TemplatesSection() {
   return (
     <div>
@@ -416,6 +514,15 @@ export function DesignSystemPreview() {
       </Section>
       <Section title="统计卡片 StatCard">
         <CardsSection />
+      </Section>
+      <Section title="主题模式 Theme">
+        <ThemeSection />
+      </Section>
+      <Section title="筛选查询 QueryBar">
+        <FilterSection />
+      </Section>
+      <Section title="表单页 FormPage（校验）">
+        <FormValidationSection />
       </Section>
       <Section title="数据表格 DataTable">
         <TableSection />

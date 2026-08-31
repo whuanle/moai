@@ -119,7 +119,8 @@
     "preview": {
       "title": "设计系统模板预览",
       "desc": "以下为设计系统的五种页面模板示例（mock 数据）。",
-      "footer": "模板均基于 @/design-system 组件构建。"
+      "footer": "模板均基于 @/design-system 组件构建。",
+      "themeHint": "切换全局主题模式，观察暗色下的对比度。"
     }
   }
 }
