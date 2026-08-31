@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822 // 将成员标记为 static
+#pragma warning disable CA1822 // 将成员标记为 static
 
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +7,7 @@ using MoAI.Common.Queries;
 using MoAI.Common.Queries.Response;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
-using MoAI.Login.Queries.Responses;
+using MoAI.Auth.Queries.Responses;
 
 #pragma warning disable SA1009
 

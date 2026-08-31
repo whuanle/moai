@@ -1,7 +1,7 @@
-﻿using MediatR;
-using MoAI.Login.Queries.Responses;
+using MediatR;
+using MoAI.Auth.Queries.Responses;
 
-namespace MoAI.Login.Queries;
+namespace MoAI.Auth.Queries;
 
 /// <summary>
 /// 查询用户状态和信息.

@@ -1,0 +1,15 @@
+using MediatR;
+using MoAI.Auth.Commands.Responses;
+
+namespace MoAI.Auth.Commands;
+
+/// <summary>
+/// 第三方账号没有绑定记录时，使用第三方账号一键注册.
+/// </summary>
+public class OAuthRegisterCommand : IRequest<LoginCommandResponse>
+{
+    /// <summary>
+    /// 登录绑定 OAuth 用户 ID.
+    /// </summary>
+    public Guid TempOAuthBindId { get; init; } = default!;
+}

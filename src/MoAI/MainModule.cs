@@ -1,11 +1,12 @@
-﻿using Maomi;
+using Maomi;
 using Maomi.I18n;
+using MoAI.Account;
 using MoAI.Common;
 using MoAI.Database;
 using MoAI.Filters;
 using MoAI.Hangfire;
 using MoAI.Infra;
-using MoAI.Login;
+using MoAI.Auth;
 using MoAI.Modules;
 using MoAI.Storage;
 
@@ -18,7 +19,8 @@ namespace MoAI;
 [InjectModule<DatabaseCoreModule>]
 [InjectModule<StorageCoreModule>]
 [InjectModule<CommonCoreModule>]
-[InjectModule<LoginCoreModule>]
+[InjectModule<AuthCoreModule>]
+[InjectModule<AccountCoreModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

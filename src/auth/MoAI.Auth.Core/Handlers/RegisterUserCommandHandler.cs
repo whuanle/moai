@@ -1,0 +1,106 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using MoAI.Database;
+using MoAI.Database.Entities;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
+using MoAI.Infra.Models;
+using MoAI.Infra.Services;
+using MoAI.Auth.Commands;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+
+namespace MoAI.Auth.Handlers;
+
+/// <summary>
+/// <inheritdoc cref="RegisterUserCommand"/>.
+/// </summary>
+public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, SimpleLong>
+{
+    private readonly DatabaseContext _dbContext;
+    private readonly ILogger<RegisterUserCommandHandler> _logger;
+    private readonly IRsaProvider _rsaProvider;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RegisterUserCommandHandler"/> class.
+    /// </summary>
+    /// <param name="dbContext"></param>
+    /// <param name="logger"></param>
+    /// <param name="rsaProvider"></param>
+    public RegisterUserCommandHandler(DatabaseContext dbContext, ILogger<RegisterUserCommandHandler> logger, IRsaProvider rsaProvider)
+    {
+        _dbContext = dbContext;
+        _logger = logger;
+        _rsaProvider = rsaProvider;
+    }
+
+    /// <inheritdoc/>
+    public async Task<SimpleLong> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    {
+        // 使用 RSA 解密还原密码
+        string restorePassword = default!;
+        try
+        {
+            restorePassword = _rsaProvider.Decrypt(request.Password);
+            Regex regex = new Regex(@"(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$");
+            Match match = regex.Match(restorePassword);
+            if (!match.Success)
+            {
+                throw new BusinessException("密码 8-20 长度，并包含数字+字母.") { StatusCode = 400 };
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            throw new BusinessException("密码 8-20 长度，并包含数字+字母.") { StatusCode = 400 };
+        }
+
+        var existingUser = await _dbContext.Users
+                .Where(u => u.UserName == request.UserName || u.Email == request.Email)
+                .Select(u => new { u.UserName, u.Email })
+                .FirstOrDefaultAsync();
+
+        if (existingUser != null)
+        {
+            if (existingUser.UserName == request.UserName)
+            {
+                throw new BusinessException("用户名 {0} 已被注册", request.UserName) { StatusCode = 409 };
+            }
+
+            if (existingUser.Email == request.Email)
+            {
+                throw new BusinessException("邮箱 {0} 已被注册", request.Email) { StatusCode = 409 };
+            }
+        }
+
+        try
+        {
+            // 使用 PBKDF2 算法生成哈希值
+            var (hashedPassword, saltBase64) = PBKDF2Helper.ToHash(restorePassword);
+            var userEntity = new UserEntity
+            {
+                Email = request.Email,
+                NickName = request.NickName,
+                UserName = request.UserName,
+                Password = hashedPassword,
+                PasswordSalt = saltBase64,
+                AvatarPath = string.Empty,
+                Phone = request.Phone,
+            };
+
+            await _dbContext.Users.AddAsync(userEntity);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return new SimpleLong
+            {
+                Value = userEntity.Id
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Account registration failed.{@Command}", request);
+            throw new BusinessException("账号注册失败");
+        }
+    }
+}

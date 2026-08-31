@@ -1,13 +1,13 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
-using MoAI.Login.Commands;
-using MoAI.Login.Queries.Responses;
+using MoAI.Auth.Commands;
+using MoAI.Auth.Queries.Responses;
 using MoAI.Storage.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
-namespace MoAI.Login.Handlers;
+namespace MoAI.Auth.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="RefreshUserStateCommand"/>

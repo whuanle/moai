@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Auth</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,6 +1,6 @@
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.Login.Queries.Responses;
+using MoAI.Auth.Queries.Responses;
 
 namespace MoAI.Common.Queries;
 

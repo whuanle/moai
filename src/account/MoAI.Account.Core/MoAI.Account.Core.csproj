@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Account</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+	  <ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+	  <ProjectReference Include="..\..\common\MoAI.Common.Shared\MoAI.Common.Shared.csproj" />
+	  <ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+	  <ProjectReference Include="..\..\auth\MoAI.Auth.Shared\MoAI.Auth.Shared.csproj" />
+	  <ProjectReference Include="..\MoAI.Account.Api\MoAI.Account.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Handlers\" />
+	</ItemGroup>
+
+</Project>

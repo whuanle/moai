@@ -1,7 +1,7 @@
-﻿using MediatR;
-using MoAI.Login.Commands;
-using MoAI.Login.Queries;
-using MoAI.Login.Queries.Responses;
+using MediatR;
+using MoAI.Auth.Commands;
+using MoAI.Auth.Queries;
+using MoAI.Auth.Queries.Responses;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Common.Queries;

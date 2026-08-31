@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
 	  <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -34,7 +34,8 @@
 		<ProjectReference Include="..\database\MoAI.Database.Core\MoAI.Database.Core.csproj" />
 		<ProjectReference Include="..\hangfire\MoAI.Hangfire.Core\MoAI.Hangfire.Core.csproj" />
 		<ProjectReference Include="..\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
-		<ProjectReference Include="..\login\MoAI.Login.Core\MoAI.Login.Core.csproj" />
+		<ProjectReference Include="..\auth\MoAI.Auth.Core\MoAI.Auth.Core.csproj" />
+		<ProjectReference Include="..\account\MoAI.Account.Core\MoAI.Account.Core.csproj" />
 		<ProjectReference Include="..\common\MoAI.Common.Core\MoAI.Common.Core.csproj" />
 		<ProjectReference Include="..\storage\MoAI.Storage.Core\MoAI.Storage.Core.csproj" />
 	</ItemGroup>

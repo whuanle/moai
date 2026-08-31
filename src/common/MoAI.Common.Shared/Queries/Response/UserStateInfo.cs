@@ -1,4 +1,4 @@
-﻿namespace MoAI.Login.Queries.Responses;
+namespace MoAI.Auth.Queries.Responses;
 
 /// <summary>
 /// UserStateInfo.

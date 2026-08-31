@@ -1,7 +1,7 @@
-﻿using MediatR;
-using MoAI.Login.Queries.Responses;
+using MediatR;
+using MoAI.Auth.Queries.Responses;
 
-namespace MoAI.Login.Commands;
+namespace MoAI.Auth.Commands;
 
 /// <summary>
 /// 刷新用户状态.

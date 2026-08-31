@@ -43,7 +43,7 @@ export async function login(userName: string, password: string): Promise<UserInf
   const info = await getServerInfo()
   const encryptedPassword = rsaEncrypt(info.rsaPublic, password)
   const client = getAnonymousClient()
-  const res = await client.api.account.login.post({ userName, password: encryptedPassword })
+  const res = await client.api.auth.login.post({ userName, password: encryptedPassword })
   if (!res) return null
   const userInfo = toUserInfo(res)
   useAppStore.getState().setUserInfo(userInfo)
@@ -60,7 +60,7 @@ export async function register(payload: {
   const info = await getServerInfo()
   const encryptedPassword = rsaEncrypt(info.rsaPublic, payload.password)
   const client = getAnonymousClient()
-  await client.api.account.register.post({
+  await client.api.auth.register.post({
     userName: payload.userName,
     email: payload.email,
     nickName: payload.nickName,
