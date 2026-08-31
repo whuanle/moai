@@ -537,7 +537,7 @@ git commit -m "refactor(ui): 主题迁移至设计系统模块并启用 themeKey
 
 ## Phase B：强约束共享组件
 
-> 组件每个目录以「文件夹 + index（barrel）」组织。以下 Task 6-12 均遵循「先失败测试 → 实现 → 通过 → 提交」的 TDD 循环；为省篇幅，各 Task 只给出一个代表性测试用例，实现时请为每个组件补 2-3 个关键用例。
+> **组件文件模式（重要）**：为避免 `index.ts` 桶与组件同名导致循环自导出，组件请按「`<ComponentName>.tsx`（组件）+ `index.ts`（桶，`export { X } from './<ComponentName>'`）」组织，**不要**用 `index.tsx` 作组件文件名。以下 Task 6-12 均遵循「先失败测试 → 实现 → 通过 → 提交」的 TDD 循环；为省篇幅，各 Task 只给出一个代表性测试用例，实现时请为每个组件补 2-3 个关键用例。
 
 ### Task 6：Page（页面容器 + 页头）
 
