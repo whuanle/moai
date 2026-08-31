@@ -1,13 +1,11 @@
-#pragma warning disable ASP0026 // [Authorize] overridden by [AllowAnonymous] from farther away
-
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MoAI.Infra.Models;
 using MoAI.Auth.Commands;
 using MoAI.Auth.Commands.Responses;
 using MoAI.Auth.Queries;
 using MoAI.Auth.Queries.Responses;
+using MoAI.Infra.Models;
 
 namespace MoAI.Auth.Controllers;
 
@@ -16,7 +14,6 @@ namespace MoAI.Auth.Controllers;
 /// </summary>
 [ApiController]
 [Route("/auth")]
-[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;

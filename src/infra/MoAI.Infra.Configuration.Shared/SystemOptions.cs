@@ -19,6 +19,11 @@ public class SystemOptions
     public string Name { get; init; } = "MoAI";
 
     /// <summary>
+    /// 系统加密.
+    /// </summary>
+    public string AES { get; init; }
+
+    /// <summary>
     /// 监听端口.
     /// </summary>
     public int Port { get; init; }

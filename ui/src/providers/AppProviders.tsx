@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import i18n from '@/i18n'
 import { useAppStore } from '@/store/app'
+import { FeedbackBridge } from '@/design-system'
 import { getAntdLocale, getThemeConfig } from '@/design-system/theme'
 
 interface AppProvidersProps {
@@ -19,7 +20,10 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <ConfigProvider locale={getAntdLocale(locale)} theme={getThemeConfig(themeKey)}>
-      <AntdApp>{children}</AntdApp>
+      <AntdApp>
+        <FeedbackBridge />
+        {children}
+      </AntdApp>
     </ConfigProvider>
   )
 }

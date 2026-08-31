@@ -7,6 +7,7 @@
 2. `components.md` —— 组件与组合约束矩阵
 3. `pages.md` —— 页面原型约束与自查清单
 4. `theming.md` —— 主题切换与新增预设
+5. `feedback.md` —— 消息提示与通知（message/notification 路由约定）
 
 ## 目录索引
 - 代码：`ui/src/design-system/`
@@ -15,5 +16,6 @@
 
 ## 核心红线
 - 页面禁止直接 `import { Table } from 'antd'`，必须用 `@/design-system` 的 `DataTable`。
+- 删除、批量删除等危险操作按钮必须用 antd `Popconfirm` 二次确认，禁止裸执行。
 - 颜色/间距一律取 token，禁止魔法值与 `#hex` 硬编码。
 - 文案一律走 `useTranslation()`，禁止硬编码。

@@ -6,8 +6,6 @@ import { Build_guidRequestBuilderRequestsMetadata, type Build_guidRequestBuilder
 // @ts-ignore
 import { ServerinfoRequestBuilderRequestsMetadata, type ServerinfoRequestBuilder } from './serverinfo/index.js';
 // @ts-ignore
-import { type UserinfoRequestBuilder, UserinfoRequestBuilderRequestsMetadata } from './userinfo/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -22,10 +20,6 @@ export interface CommonRequestBuilder extends BaseRequestBuilder<CommonRequestBu
      * The serverinfo property
      */
     get serverinfo(): ServerinfoRequestBuilder;
-    /**
-     * The userinfo property
-     */
-    get userinfo(): UserinfoRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -40,9 +34,6 @@ export const CommonRequestBuilderNavigationMetadata: Record<Exclude<keyof Common
     },
     serverinfo: {
         requestsMetadata: ServerinfoRequestBuilderRequestsMetadata,
-    },
-    userinfo: {
-        requestsMetadata: UserinfoRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

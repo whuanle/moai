@@ -43,22 +43,6 @@ public class DatabaseCoreModule : IModule
             ConnectTimeout = 5000,
             IsDefault = true
         });
-
-        context.Services.AddMaomiMQ(
-            (MqOptionsBuilder options) =>
-            {
-                options.WorkId = 1;
-                options.AutoQueueDeclare = true;
-                options.AppName = _systemOptions.Name;
-                options.Rabbit = (ConnectionFactory options) =>
-                {
-                    options.Uri = new Uri(_systemOptions.RabbitMQ!);
-                    options.ConsumerDispatchConcurrency = 100;
-                    options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
-                };
-            },
-            context.Modules.Select(x => x.Assembly).ToArray(),
-            [new ConsumerTypeFilter(), new EventBusTypeFilter()]);
     }
 
     private static void AddStackExchangeRedis(IServiceCollection services, RedisConfiguration redisConfiguration)

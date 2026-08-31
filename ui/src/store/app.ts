@@ -18,6 +18,13 @@ export interface UserInfo {
   tokenType?: string | null
   userId?: string | null | undefined
   userName?: string | null
+  email?: string | null
+  nickName?: string | null
+  phone?: string | null
+  avatar?: string | null
+  isDisable?: boolean | null
+  isAdmin?: boolean | null
+  isDeleted?: boolean | null
 }
 
 interface AppState {

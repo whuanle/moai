@@ -17,4 +17,5 @@
 - [ ] 颜色/间距取 token，无魔法值。
 - [ ] 文案走 `useTranslation()`，无硬编码。
 - [ ] 暗色模式下对比度可用（经 token 感知）。
-- [ ] 接口错误经 antd `App.useApp()` 的 message/notification 提示。
+- [ ] 接口错误经 `@/design-system` 的 `useFeedback()` 提示（生产错误用 message，严重错误/系统通知用 notification）。
+- [ ] 删除、批量删除等危险操作按钮已用 `Popconfirm` 二次确认，且反馈走 `useFeedback()`。

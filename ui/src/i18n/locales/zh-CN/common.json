@@ -16,8 +16,9 @@
     "app": "应用",
     "wiki": "知识库",
     "team": "团队",
-    "prompt": "提示词",
     "plugin": "插件",
+    "users": "用户",
+    "settings": "设置",
     "model": "模型",
     "admin": "管理"
   },
@@ -34,6 +35,8 @@
     "register": "立即注册",
     "loginSuccess": "登录成功",
     "registerSuccess": "注册成功，请登录",
+    "loginError": "用户名或密码错误",
+    "registerError": "注册失败，请稍后重试",
     "noAccount": "还没有账号？",
     "haveAccount": "已有账号？",
     "goRegister": "去注册",
@@ -57,6 +60,32 @@
     "feature2Desc": "文档向量化与语义搜索，多种格式支持。",
     "feature3Title": "工作流自动化",
     "feature3Desc": "可视化编排、丰富的节点与定时任务。"
+  },
+  "dashboard": {
+    "title": "概览",
+    "subtitle": "你好，{{name}}，欢迎回到 MoAI 管理后台。",
+    "statApps": "应用程序",
+    "statWikis": "知识库",
+    "statTeam": "团队成员",
+    "statRequests": "API 调用",
+    "quickActions": "快捷入口",
+    "quickApp": "新建应用",
+    "quickAppDesc": "创建并发布一个 AI 应用",
+    "quickWiki": "上传文档",
+    "quickWikiDesc": "构建团队知识库",
+    "quickTeam": "邀请成员",
+    "quickTeamDesc": "邀请同事加入团队",
+    "recentTitle": "最近动态",
+    "recentEmpty": "暂无动态",
+    "viewAll": "查看全部"
+  },
+  "feedback": {
+    "businessError": "操作失败，请稍后重试",
+    "serverError": "服务器错误",
+    "serverErrorDesc": "服务器开小差了，请稍后重试",
+    "networkError": "网络异常",
+    "networkErrorDesc": "请检查网络连接后重试",
+    "unknownError": "系统异常，请稍后重试"
   },
   "ds": {
     "query": { "search": "查询", "reset": "重置" },

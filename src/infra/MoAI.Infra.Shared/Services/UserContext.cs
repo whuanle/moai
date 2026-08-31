@@ -1,4 +1,6 @@
-﻿namespace MoAI.Infra.Models;
+﻿using MoAI.Infra.Helpers;
+
+namespace MoAI.Infra.Models;
 
 /// <summary>
 /// 用户上下文接口，提供当前用户的信息.
@@ -39,4 +41,14 @@ public abstract class UserContext
     /// 附加属性.
     /// </summary>
     public virtual IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// 将当前用户上下文设置到指定的用户ID上下文中.
+    /// </summary>
+    /// <param name="userIdContext"></param>
+    public virtual void SetUserContext(IUserIdContext userIdContext)
+    {
+        userIdContext.SetUserId(UserId);
+        userIdContext.SetProperty(a => a.ContextUserType, UserType);
+    }
 }

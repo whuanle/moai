@@ -16,8 +16,9 @@
     "app": "Applications",
     "wiki": "Knowledge Base",
     "team": "Teams",
-    "prompt": "Prompts",
     "plugin": "Plugins",
+    "users": "Users",
+    "settings": "Settings",
     "model": "Models",
     "admin": "Admin"
   },
@@ -34,6 +35,8 @@
     "register": "Register",
     "loginSuccess": "Signed in successfully",
     "registerSuccess": "Registered successfully, please sign in",
+    "loginError": "Invalid username or password",
+    "registerError": "Registration failed, please try again later",
     "noAccount": "Don't have an account?",
     "haveAccount": "Already have an account?",
     "goRegister": "Register",
@@ -57,6 +60,32 @@
     "feature2Desc": "Document vectorization and semantic search with multiple formats.",
     "feature3Title": "Workflow automation",
     "feature3Desc": "Visual orchestration, rich node types and scheduled tasks."
+  },
+  "dashboard": {
+    "title": "Overview",
+    "subtitle": "Hi {{name}}, welcome back to your MoAI admin console.",
+    "statApps": "Applications",
+    "statWikis": "Knowledge Bases",
+    "statTeam": "Team Members",
+    "statRequests": "API Calls",
+    "quickActions": "Quick Actions",
+    "quickApp": "Create Application",
+    "quickAppDesc": "Create and publish an AI application",
+    "quickWiki": "Upload Documents",
+    "quickWikiDesc": "Build your team knowledge base",
+    "quickTeam": "Invite Members",
+    "quickTeamDesc": "Invite your colleagues to join",
+    "recentTitle": "Recent Activity",
+    "recentEmpty": "No recent activity",
+    "viewAll": "View all"
+  },
+  "feedback": {
+    "businessError": "Operation failed, please try again later",
+    "serverError": "Server error",
+    "serverErrorDesc": "The server is unavailable, please try again later",
+    "networkError": "Network error",
+    "networkErrorDesc": "Please check your network connection and try again",
+    "unknownError": "Unexpected error, please try again later"
   },
   "ds": {
     "query": { "search": "Search", "reset": "Reset" },

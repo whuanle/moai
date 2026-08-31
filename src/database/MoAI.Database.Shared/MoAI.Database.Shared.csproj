@@ -12,7 +12,6 @@
 		<PackageReference Include="StackExchange.Redis" />
 		<PackageReference Include="StackExchange.Redis.Extensions.Core" />
 		<PackageReference Include="StackExchange.Redis.Extensions.System.Text.Json" />
-		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 	</ItemGroup>
 
 	<ItemGroup>

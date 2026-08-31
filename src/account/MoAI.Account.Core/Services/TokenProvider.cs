@@ -1,6 +1,7 @@
 using Maomi;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using MoAI.Auth.Services;
 using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
@@ -9,7 +10,7 @@ using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using System.Security.Claims;
 
-namespace MoAI.Auth.Services;
+namespace MoAI.Account.Services;
 
 /// <summary>
 /// 构建 token.

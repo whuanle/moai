@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
+using MoAI.Account.Services;
 using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra.Defaults;
@@ -27,6 +28,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     private readonly IRedisDatabase _redisDatabase;
     private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<OAuthRegisterCommandHandler> _logger;
+    private readonly IUserAccountService _userAccountService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OAuthRegisterCommandHandler"/> class.
@@ -37,7 +39,8 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     /// <param name="redisDatabase"></param>
     /// <param name="tokenProvider"></param>
     /// <param name="logger"></param>
-    public OAuthRegisterCommandHandler(DatabaseContext databaseContext, IMediator mediator, IRsaProvider rsaProvider, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthRegisterCommandHandler> logger)
+    /// <param name="userAccountService"></param>
+    public OAuthRegisterCommandHandler(DatabaseContext databaseContext, IMediator mediator, IRsaProvider rsaProvider, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthRegisterCommandHandler> logger, IUserAccountService userAccountService)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
@@ -45,6 +48,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         _redisDatabase = redisDatabase;
         _tokenProvider = tokenProvider;
         _logger = logger;
+        _userAccountService = userAccountService;
     }
 
     /// <inheritdoc/>
@@ -98,6 +102,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         user.UserName = $"u{user.Id}";
         _databaseContext.Users.Update(user);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+        await _userAccountService.RemoveUserStateAsync(user.Id, cancellationToken);
 
         await _databaseContext.UserOauthConnections.AddAsync(new Database.Entities.UserOauthConnectionEntity
         {

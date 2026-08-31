@@ -71,7 +71,7 @@ export async function register(payload: {
 
 export async function refreshAccessToken(refreshToken: string): Promise<UserInfo | null> {
   const client = getAnonymousClient()
-  const res = await client.api.account.refresh_token.post({ refreshToken })
+  const res = await client.api.auth.refresh_token.post({ refreshToken })
   if (!res) return null
   const userInfo = toUserInfo(res)
   useAppStore.getState().setUserInfo(userInfo)
@@ -80,7 +80,16 @@ export async function refreshAccessToken(refreshToken: string): Promise<UserInfo
 
 export async function getUserDetailInfo() {
   const client = getApiClient()
-  return client.api.common.userinfo.get()
+  return client.api.auth.userinfo.get()
+}
+
+export async function refreshUserProfile(): Promise<UserInfo | null> {
+  const res = await getUserDetailInfo()
+  if (!res) return null
+  const current = useAppStore.getState().userInfo ?? {}
+  const merged: UserInfo = { ...current, ...res }
+  useAppStore.getState().setUserInfo(merged)
+  return merged
 }
 
 export async function checkToken(): Promise<boolean> {

@@ -1,8 +1,8 @@
 using MediatR;
 using MoAI.Infra.Models;
-using MoAI.Auth.Queries.Responses;
+using MoAI.Account.Queries.Responses;
 
-namespace MoAI.Common.Queries;
+namespace MoAI.Account.Queries;
 
 /// <summary>
 /// 查询用户基本信息的请求.

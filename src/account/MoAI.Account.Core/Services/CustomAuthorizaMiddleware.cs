@@ -1,14 +1,14 @@
-
 #pragma warning disable CA1031 // 不捕获常规异常类型
+
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using MoAI.Account.Queries;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Services;
-using MoAI.Auth.Queries;
 
-namespace MoAI.Auth.Services;
+namespace MoAI.Account.Services;
 
 /// <summary>
 /// 鉴权中间件.

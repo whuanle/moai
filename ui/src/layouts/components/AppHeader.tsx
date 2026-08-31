@@ -1,10 +1,9 @@
 import {
+  AppstoreAddOutlined,
   AppstoreOutlined,
   BookOutlined,
-  FileTextOutlined,
   LogoutOutlined,
   MoonOutlined,
-  RobotOutlined,
   SettingOutlined,
   SunOutlined,
   TeamOutlined,
@@ -34,44 +33,27 @@ export function AppHeader() {
   const setLocale = useAppStore((state) => state.setLocale)
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
 
-  const menuItems: MenuProps['items'] = [
-    {
-      key: 'chat',
-      icon: <RobotOutlined />,
-      label: t('nav.chat'),
-      onClick: () => navigate('/chat'),
-    },
-    {
-      key: 'app',
-      icon: <AppstoreOutlined />,
-      label: t('nav.app'),
-      onClick: () => navigate('/app'),
-    },
-    {
-      key: 'wiki',
-      icon: <BookOutlined />,
-      label: t('nav.wiki'),
-      onClick: () => navigate('/wiki'),
-    },
-    {
-      key: 'team',
-      icon: <TeamOutlined />,
-      label: t('nav.team'),
-      onClick: () => navigate('/team'),
-    },
-    {
-      key: 'prompt',
-      icon: <FileTextOutlined />,
-      label: t('nav.prompt'),
-      onClick: () => navigate('/prompt'),
-    },
-    {
-      key: 'plugin',
-      icon: <SettingOutlined />,
-      label: t('nav.plugin'),
-      onClick: () => navigate('/plugin'),
-    },
+  const isAdmin = userInfo?.isAdmin === true
+
+  const navItems = [
+    { key: 'app', icon: <AppstoreOutlined />, label: t('nav.app'), path: '/app' },
+    { key: 'team', icon: <TeamOutlined />, label: t('nav.team'), path: '/team' },
+    { key: 'wiki', icon: <BookOutlined />, label: t('nav.wiki'), path: '/wiki' },
+    ...(isAdmin
+      ? [
+          { key: 'plugin', icon: <AppstoreAddOutlined />, label: t('nav.plugin'), path: '/plugin' },
+          { key: 'users', icon: <UserOutlined />, label: t('nav.users'), path: '/users' },
+          { key: 'settings', icon: <SettingOutlined />, label: t('nav.settings'), path: '/settings' },
+        ]
+      : []),
   ]
+
+  const menuItems: MenuProps['items'] = navItems.map((item) => ({
+    key: item.key,
+    icon: item.icon,
+    label: item.label,
+    onClick: () => navigate(item.path),
+  }))
 
   const userMenuItems: MenuProps['items'] = [
     {

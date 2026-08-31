@@ -1,30 +1,29 @@
 using MediatR;
-using MoAI.Infra.Models;
-using MoAI.Auth.Queries;
-using MoAI.Auth.Queries.Responses;
+using MoAI.Account.Queries;
+using MoAI.Account.Queries.Responses;
+using MoAI.Account.Services;
 
-namespace MoAI.Common.Queries;
+namespace MoAI.Account.Queries;
 
 /// <summary>
 /// 处理查询用户信息的命令.
 /// </summary>
 public class QueryUserViewUserInfoCommandHandler : IRequestHandler<QueryUserViewUserInfoCommand, UserStateInfo>
 {
-    private readonly IMediator _mediator;
+    private readonly IUserAccountService _userAccountService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryUserViewUserInfoCommandHandler"/> class.
     /// </summary>
-    /// <param name="mediator"></param>
-    public QueryUserViewUserInfoCommandHandler(IMediator mediator)
+    /// <param name="userAccountService"></param>
+    public QueryUserViewUserInfoCommandHandler(IUserAccountService userAccountService)
     {
-        _mediator = mediator;
+        _userAccountService = userAccountService;
     }
 
     /// <inheritdoc/>
     public async Task<UserStateInfo> Handle(QueryUserViewUserInfoCommand request, CancellationToken cancellationToken)
     {
-        var queryResult = await _mediator.Send(new QueryUserStateCommand { UserId = request.ContextUserId });
-        return queryResult;
+        return await _userAccountService.GetUserStateAsync(request.ContextUserId, cancellationToken);
     }
 }

@@ -1,11 +1,11 @@
-import { App, Form, Input, Select, InputNumber } from 'antd'
+import { Form, Input, Select, InputNumber } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Page, FormPage } from '@/design-system'
+import { Page, FormPage, useFeedback } from '@/design-system'
 
 export function FormTemplate() {
   const { t } = useTranslation()
-  const { message } = App.useApp()
+  const feedback = useFeedback()
   const [submitting, setSubmitting] = useState(false)
 
   return (
@@ -18,7 +18,7 @@ export function FormTemplate() {
           setSubmitting(true)
           setTimeout(() => {
             setSubmitting(false)
-            message.success(t('ds.form.success'))
+            feedback.success(t('ds.form.success'))
           }, 500)
         }}
       >

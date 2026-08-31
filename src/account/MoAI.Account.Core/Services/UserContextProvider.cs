@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.JsonWebTokens;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace MoAI.Auth.Services;
+namespace MoAI.Account.Services;
 
 /// <summary>
 /// 用户上下文提供者.
@@ -14,14 +14,17 @@ namespace MoAI.Auth.Services;
 public class UserContextProvider : IUserContextProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly Microsoft.Extensions.Logging.ILogger<UserContextProvider> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UserContextProvider"/> class.
     /// </summary>
     /// <param name="httpContextAccessor"></param>
-    public UserContextProvider(IHttpContextAccessor httpContextAccessor)
+    /// <param name="logger"></param>
+    public UserContextProvider(IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.Logging.ILogger<UserContextProvider> logger)
     {
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
 
         _userContext = new Lazy<UserContext>(() =>
         {
@@ -52,7 +55,7 @@ public class UserContextProvider : IUserContextProvider
         }
 
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        var userName = user.FindFirstValue(JwtRegisteredClaimNames.Name);
+        var userName = user.FindFirstValue(ClaimTypes.Name);
         var nickName = user.FindFirstValue(JwtRegisteredClaimNames.Nickname);
         var email = user.FindFirstValue(ClaimTypes.Email);
 

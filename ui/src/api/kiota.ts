@@ -18,6 +18,7 @@ import {
 import { JsonParseNodeFactory, JsonSerializationWriterFactory } from '@microsoft/kiota-serialization-json'
 import { Env } from '@/config/env'
 import { useAppStore } from '@/store/app'
+import { feedback, isNetworkError } from '@/design-system/components/Feedback'
 
 class FilterRequestHandler implements Middleware {
   next: Middleware | undefined
@@ -34,10 +35,17 @@ class FilterRequestHandler implements Middleware {
       if (response.status === 401 && !url.includes('login')) {
         useAppStore.getState().clearUserInfo()
         window.location.href = '/login'
+        return response
+      }
+      if (!response.ok && response.status !== 401) {
+        feedback.handleError(response)
       }
       return response
     } catch (error) {
-      useAppStore.getState().clearUserInfo()
+      feedback.handleError(error)
+      if (!isNetworkError(error)) {
+        useAppStore.getState().clearUserInfo()
+      }
       console.error(error)
       throw error
     }

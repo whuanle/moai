@@ -1,34 +1,120 @@
-import { Card, Col, Row, Typography } from 'antd'
+import { useEffect } from 'react'
+import {
+  ApiOutlined,
+  AppstoreAddOutlined,
+  AppstoreOutlined,
+  BookOutlined,
+  FileAddOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+} from '@ant-design/icons'
+import { Button, Col, Empty, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-
-const { Title, Paragraph } = Typography
+import { useNavigate } from 'react-router'
+import { refreshUserProfile } from '@/api/auth'
+import { useAppStore } from '@/store/app'
+import { Card, Page, StatCard } from '@/design-system'
 
 export function Dashboard() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const userName = useAppStore((state) => state.userInfo?.nickName ?? state.userInfo?.userName)
 
-  const features = [
-    { title: t('home.feature1Title'), desc: t('home.feature1Desc') },
-    { title: t('home.feature2Title'), desc: t('home.feature2Desc') },
-    { title: t('home.feature3Title'), desc: t('home.feature3Desc') },
+  useEffect(() => {
+    void refreshUserProfile().catch(() => undefined)
+  }, [])
+
+  const stats = [
+    { title: t('dashboard.statApps'), value: 12, icon: <AppstoreOutlined />, trend: 8 },
+    { title: t('dashboard.statWikis'), value: 8, icon: <BookOutlined />, trend: 12 },
+    { title: t('dashboard.statTeam'), value: 24, icon: <TeamOutlined />, trend: 4 },
+    { title: t('dashboard.statRequests'), value: 2048, icon: <ApiOutlined />, trend: 22 },
+  ]
+
+  const quickActions = [
+    {
+      icon: <AppstoreAddOutlined />,
+      title: t('dashboard.quickApp'),
+      desc: t('dashboard.quickAppDesc'),
+      path: '/app',
+    },
+    {
+      icon: <FileAddOutlined />,
+      title: t('dashboard.quickWiki'),
+      desc: t('dashboard.quickWikiDesc'),
+      path: '/wiki',
+    },
+    {
+      icon: <UserAddOutlined />,
+      title: t('dashboard.quickTeam'),
+      desc: t('dashboard.quickTeamDesc'),
+      path: '/team',
+    },
   ]
 
   return (
-    <div>
-      <Typography>
-        <Title level={2}>{t('home.welcome')}</Title>
-        <Paragraph type="secondary">{t('home.subtitle')}</Paragraph>
-        <Paragraph>{t('home.description')}</Paragraph>
-      </Typography>
-
-      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-        {features.map((feature) => (
-          <Col xs={24} md={8} key={feature.title}>
-            <Card title={feature.title} hoverable>
-              <Typography.Paragraph type="secondary">{feature.desc}</Typography.Paragraph>
-            </Card>
+    <Page
+      title={t('dashboard.title')}
+      subtitle={t('dashboard.subtitle', { name: userName ?? t('app.name') })}
+      extra={
+        <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => navigate('/app')}>
+          {t('dashboard.quickApp')}
+        </Button>
+      }
+    >
+      <Row gutter={[16, 16]}>
+        {stats.map((stat) => (
+          <Col xs={24} sm={12} lg={6} key={stat.title}>
+            <StatCard title={stat.title} value={stat.value} icon={stat.icon} trend={stat.trend} />
           </Col>
         ))}
       </Row>
-    </div>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={12}>
+          <Card title={t('dashboard.quickActions')}>
+            <Row gutter={[12, 12]}>
+              {quickActions.map((action) => (
+                <Col xs={24} key={action.title}>
+                  <div
+                    onClick={() => navigate(action.path)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      border: '1px solid rgba(128,128,128,0.14)',
+                      transition: 'border-color 0.2s',
+                    }}
+                  >
+                    <span style={{ fontSize: 24 }}>{action.icon}</span>
+                    <div>
+                      <Typography.Text strong>{action.title}</Typography.Text>
+                      <br />
+                      <Typography.Text type="secondary">{action.desc}</Typography.Text>
+                    </div>
+                  </div>
+                </Col>
+              ))}
+            </Row>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Card
+            title={t('dashboard.recentTitle')}
+            extra={
+              <Button type="link" size="small" onClick={() => navigate('/app')}>
+                {t('dashboard.viewAll')}
+              </Button>
+            }
+          >
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('dashboard.recentEmpty')} />
+          </Card>
+        </Col>
+      </Row>
+    </Page>
   )
 }

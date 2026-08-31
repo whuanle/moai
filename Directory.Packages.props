@@ -20,7 +20,7 @@
     <PackageVersion Include="JsonPath.Net" Version="2.2.0" />
     <PackageVersion Include="LinqKit.Core" Version="1.2.11" />
     <PackageVersion Include="Maomi.MQ.Instrumentation" Version="2.1.0" />
-    <PackageVersion Include="Maomi.MQ.RabbitMQ" Version="2.1.0" />
+    <PackageVersion Include="Maomi.MQ.RabbitMQ" Version="2.3.0" />
     <PackageVersion Include="Markdig" Version="0.43.0" />
     <PackageVersion Include="MediatR" Version="14.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.11" />

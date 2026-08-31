@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { App, Button, Card, Form, Input, Typography } from 'antd'
+import { Button, Card, Form, Input, Typography } from 'antd'
 import { IdcardOutlined, LockOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useFeedback } from '@/design-system'
 import { register } from '@/api/auth'
 
 interface RegisterFormValues {
@@ -16,7 +17,7 @@ interface RegisterFormValues {
 
 export function Register() {
   const { t } = useTranslation()
-  const { message } = App.useApp()
+  const feedback = useFeedback()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
@@ -30,12 +31,12 @@ export function Register() {
         phone: values.phone,
         password: values.password,
       })
-      message.success(t('auth.registerSuccess'))
+      feedback.success(t('auth.registerSuccess'))
       navigate('/login', { replace: true })
     } catch (error) {
       console.error('Register failed:', error)
       const detail = (error as { detail?: string }).detail
-      message.error(detail ?? '注册失败')
+      feedback.error(detail ?? t('auth.registerError'))
     } finally {
       setLoading(false)
     }

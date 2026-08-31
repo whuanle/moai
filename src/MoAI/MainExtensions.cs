@@ -1,8 +1,8 @@
 using Maomi;
 using Microsoft.Extensions.Options;
 using MoAI.Infra;
-using MoAI.Auth.Services;
 using Serilog;
+using MoAI.Account.Services;
 
 namespace MoAI;
 
@@ -32,6 +32,7 @@ public static partial class MainExtensions
         builder.Services.AddSingleton<IConfigurationManager>(builder.Configuration);
 
         builder.Logging.ClearProviders();
+
         builder.Services.AddSerilog((services, configuration) =>
         {
             configuration.ReadFrom.Services(services);

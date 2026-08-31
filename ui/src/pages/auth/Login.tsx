@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { App, Button, Card, Form, Input, Typography } from 'antd'
+import { Button, Card, Form, Input, Typography } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useFeedback } from '@/design-system'
 import { login } from '@/api/auth'
 
 interface LoginFormValues {
@@ -12,7 +13,7 @@ interface LoginFormValues {
 
 export function Login() {
   const { t } = useTranslation()
-  const { message } = App.useApp()
+  const feedback = useFeedback()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
@@ -20,12 +21,12 @@ export function Login() {
     setLoading(true)
     try {
       await login(values.username, values.password)
-      message.success(t('auth.loginSuccess'))
+      feedback.success(t('auth.loginSuccess'))
       navigate('/dashboard', { replace: true })
     } catch (error) {
       console.error('Login failed:', error)
       const detail = (error as { detail?: string }).detail
-      message.error(detail ?? '登录失败')
+      feedback.error(detail ?? t('auth.loginError'))
     } finally {
       setLoading(false)
     }

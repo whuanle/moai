@@ -1,12 +1,16 @@
 ﻿using FluentValidation;
 using Maomi;
+using Maomi.MQ;
+using Maomi.MQ.Filters;
+using Maomi.MQ.Models;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Models;
-using MoAI.Infra.Services;
+using MoAI.Infra.Service;
+using RabbitMQ.Client;
 
 namespace MoAI.Infra;
 
@@ -36,13 +40,29 @@ public class InfraCoreModule : ModuleCore
     {
         var systemOptions = _configurationManager.GetSection("MoAI").Get<SystemOptions>() ?? throw new FormatException("The system configuration cannot be loaded.");
 
-        context.Services.AddSingleton<IIdProvider>(new DefaultIdProvider(0));
+        context.Services.AddSingleton<Services.IIdProvider>(new DefaultIdProvider((ushort)0));
         context.Services.AddHttpContextAccessor();
 
-        // context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
+        context.Services.AddSingleton<IAESProvider>(s => { return new AESProvider(systemOptions.AES); });
 
         // 注册默认服务，会被上层模块覆盖
         context.Services.AddScoped<UserContext, DefaultUserContext>();
+
+        context.Services.AddMaomiMQ(
+            (MqOptionsBuilder options) =>
+            {
+                options.WorkId = 1;
+                options.AutoQueueDeclare = true;
+                options.AppName = systemOptions.Name;
+                options.Rabbit = (ConnectionFactory options) =>
+                {
+                    options.Uri = new Uri(systemOptions.RabbitMQ!);
+                    options.ConsumerDispatchConcurrency = 100;
+                    options.ClientProvidedName = "moai";
+                };
+            },
+            context.Modules.Select(x => x.Assembly).ToArray(),
+            [new ConsumerTypeFilter(), new EventBusTypeFilter()]);
     }
 
     /// <inheritdoc/>
