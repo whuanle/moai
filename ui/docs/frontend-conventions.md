@@ -2,6 +2,8 @@
 
 本文描述 `ui/` 前端项目的架构与开发约定。前端项目根目录为 `F:\workspace\moai\ui`（与旧版 `ui/moai` 无关，旧版仅在迁移时作参考，不作为新规范依据）。
 
+> 主题系统与组件约定见 `ui/docs/design-system/`（设计系统）。
+
 ## 技术栈
 
 | 分类 | 选型 |
@@ -40,9 +42,13 @@ ui/
     ├── i18n/
     │   ├── index.ts          # i18next 初始化
     │   └── locales/{zh-CN,en-US}/common.json
-    ├── theme/
-    │   ├── config.ts         # light / dark 的 antd ThemeConfig
-    │   └── locale.ts         # app locale -> antd locale
+    ├── design-system/
+    │   ├── theme/            # 主题（设计系统的一部分）
+    │   │   ├── tokens.ts     # 品牌色/主色/圆角/字体
+    │   │   ├── config.ts     # light / dark 的 antd ThemeConfig
+    │   │   └── locale.ts     # app locale -> antd locale
+    │   ├── components/       # 设计系统组件（Card/Chat/DataTable/...）
+    │   └── templates/        # 页面模板（Dashboard/List/Form/...）
     ├── store/
     │   └── app.ts            # zustand store（theme/locale/serverInfo/userInfo）
     ├── auth/
@@ -114,11 +120,11 @@ function getServerUrl(): string {
 
 `src/store/app.ts` 使用 zustand + persist：
 
-- `themeMode: 'light' | 'dark'`
+- `themeKey: 'light' | 'dark'`
 - `locale: 'zh-CN' | 'en-US'`
 - `serverInfo`：`{ serviceUrl, publicStoreUrl, rsaPublic }`（持久化）
 - `userInfo`：`{ accessToken, expiresIn, refreshToken, tokenType, userId, userName }`（持久化）
-- 提供 `setThemeMode/toggleTheme/setLocale/setServerInfo/clearServerInfo/setUserInfo/clearUserInfo` 动作。
+- 提供 `setThemeKey/toggleTheme/setLocale/setServerInfo/clearServerInfo/setUserInfo/clearUserInfo` 动作。
 
 > theme 与 locale 的选择器通过 `localStorage` 的 `moai-web-theme` / `moai-web-locale` 单独持久化；token 与 serverinfo 通过 persist 存储。
 
@@ -162,12 +168,12 @@ function getServerUrl(): string {
 
 `src/providers/AppProviders.tsx` 统一编排：
 
-- `ConfigProvider`：`locale={getAntdLocale(locale)}`、`theme={getThemeConfig(themeMode)}`。
+- `ConfigProvider`：`locale={getAntdLocale(locale)}`、`theme={getThemeConfig(themeKey)}`。
 - antd `App`：包裹 children，提供 `message/notification/modal` 的上下文用法（页面内使用 `App.useApp()`，而非静态 `message`）。
 
-`src/theme/config.ts` 提供 `getThemeConfig(mode)`（light 用 `defaultAlgorithm`、dark 用 `darkAlgorithm`，主色 `#4A9EFF`）；`src/theme/locale.ts` 将 app locale 映射到 antd locale。
+`src/design-system/theme` 提供 `getThemeConfig(themeKey)`（light 用 `defaultAlgorithm`、dark 用 `darkAlgorithm`，主色 `#4A9EFF`）；`src/design-system/theme/locale.ts` 将 app locale 映射到 antd locale。两者均可通过 `@/design-system` 导入。
 
-> 主题切换的入口统一放在 `AppHeader`（`Switch`），语言切换在 `Select`；两者变更都写回 store。
+> 主题切换入口统一放在 `AppHeader`（`Switch`），语言切换在 `Select`；两者变更都写回 store，主题切换由 store 的 `themeKey` 驱动。
 
 ## 国际化规则
 
@@ -177,4 +183,4 @@ function getServerUrl(): string {
 - 语言自动检测（`localStorage` 键 `moai-web-locale`，其次 `navigator`），fallback `zh-CN`。
 - 语言变化时由 `AppProviders` 调用 `i18n.changeLanguage(locale)` 并同步 `<html lang>` 与 antd locale。
 
-> 文案一律走 `useTranslation()` 的 `t()`，禁止硬编码。新增语言在 `locales/` 增加对应目录并注册到 `i18n/index.ts`，同时补充 `theme/locale.ts` 的 antd 映射。
+> 文案一律走 `useTranslation()` 的 `t()`，禁止硬编码。新增语言在 `locales/` 增加对应目录并注册到 `i18n/index.ts`，同时补充 `design-system/theme/locale.ts` 的 antd 映射。
