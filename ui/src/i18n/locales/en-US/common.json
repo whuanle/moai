@@ -57,5 +57,12 @@
     "feature2Desc": "Document vectorization and semantic search with multiple formats.",
     "feature3Title": "Workflow automation",
     "feature3Desc": "Visual orchestration, rich node types and scheduled tasks."
+  },
+  "ds": {
+    "query": { "search": "Search", "reset": "Reset" },
+    "table": { "refresh": "Refresh", "total": "Total {{total}} items" },
+    "form": { "submit": "Submit", "cancel": "Cancel", "success": "Saved" },
+    "detail": { "back": "Back", "edit": "Edit" },
+    "chat": { "placeholder": "Type a message...", "send": "Send" }
   }
 }
