@@ -63,6 +63,21 @@
     "table": { "refresh": "刷新", "total": "共 {{total}} 条" },
     "form": { "submit": "提交", "cancel": "取消", "success": "保存成功" },
     "detail": { "back": "返回", "edit": "编辑" },
-    "chat": { "placeholder": "输入消息...", "send": "发送" }
+    "chat": { "placeholder": "输入消息...", "send": "发送" },
+    "list": {
+      "title": "列表页模板",
+      "subtitle": "演示 Page + QueryBar + DataTable 的标准组合",
+      "nameLabel": "名称",
+      "namePlaceholder": "请输入名称",
+      "status": "状态",
+      "statusActive": "启用",
+      "statusDisabled": "停用",
+      "name": "名称",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "edit": "编辑",
+      "delete": "删除",
+      "create": "新建"
+    }
   }
 }
