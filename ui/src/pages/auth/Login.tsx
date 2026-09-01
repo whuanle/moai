@@ -5,6 +5,7 @@ import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
 import { getOAuthProviders, login, type OAuthProviderItem } from '@/api/auth'
+import { resolveStorageUrl } from '@/utils/storage'
 
 interface LoginFormValues {
   username: string
@@ -43,9 +44,8 @@ export function Login() {
       feedback.success(t('auth.loginSuccess'))
       navigate('/dashboard', { replace: true })
     } catch (error) {
+      // 错误已由全局请求中间件统一提示
       console.error('Login failed:', error)
-      const detail = (error as { detail?: string }).detail
-      feedback.error(detail ?? t('auth.loginError'))
     } finally {
       setLoading(false)
     }
@@ -114,7 +114,11 @@ export function Login() {
                     }}
                   >
                     {item.iconUrl ? (
-                      <img src={item.iconUrl} alt={item.name ?? ''} style={{ width: 28, height: 28 }} />
+                      <img
+                        src={resolveStorageUrl(item.iconUrl)}
+                        alt={item.name ?? ''}
+                        style={{ width: 28, height: 28 }}
+                      />
                     ) : (
                       <span style={{ fontSize: 14 }}>{item.name}</span>
                     )}

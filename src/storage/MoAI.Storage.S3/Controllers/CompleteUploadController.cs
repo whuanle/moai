@@ -1,8 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using MoAI.Infra.Models;
 using MoAI.Storage.Commands;
+using MoAI.Storage.Models;
 
 namespace MoAI.Storage.Controllers;
 
@@ -30,9 +30,9 @@ public class CompleteUploadController : ControllerBase
     /// </summary>
     /// <param name="req">上传完成请求.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>空响应.</returns>
+    /// <returns>完成响应，包含文件公开访问地址.</returns>
     [HttpPost("complate_url")]
-    public async Task<EmptyCommandResponse> Post([FromBody] CompleteFileUploadCommand req, CancellationToken ct = default)
+    public async Task<CompleteFileUploadCommandResponse> Post([FromBody] CompleteFileUploadCommand req, CancellationToken ct = default)
     {
         return await _mediator.Send(req, ct);
     }

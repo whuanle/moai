@@ -18,19 +18,19 @@ namespace MoAI.OauthConnect.Handlers;
 public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthConnectionCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IOAuthClient _authClient;
+    private readonly IOAuthClientFactory _authClientFactory;
     private readonly ILogger<CreateOAuthConnectionCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateOAuthConnectionCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    /// <param name="authClient"></param>
+    /// <param name="authClientFactory"></param>
     /// <param name="logger"></param>
-    public CreateOAuthConnectionCommandHandler(DatabaseContext databaseContext, IOAuthClient authClient, ILogger<CreateOAuthConnectionCommandHandler> logger)
+    public CreateOAuthConnectionCommandHandler(DatabaseContext databaseContext, IOAuthClientFactory authClientFactory, ILogger<CreateOAuthConnectionCommandHandler> logger)
     {
         _databaseContext = databaseContext;
-        _authClient = authClient;
+        _authClientFactory = authClientFactory;
         _logger = logger;
     }
 
@@ -123,8 +123,8 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         }
 
         // 获取端点信息
-        _authClient.Client.BaseAddress = new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority));
-        var wellKnown = await _authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
+        var authClient = _authClientFactory.Create(new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority)));
+        var wellKnown = await authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
 
         return wellKnown.AuthorizationEndpoint;
     }

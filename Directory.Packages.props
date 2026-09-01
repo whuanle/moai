@@ -74,8 +74,9 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
     <PackageVersion Include="RecursiveTextSplitter" Version="1.0.2" />
-    <PackageVersion Include="Refit" Version="8.0.0" />
+    <PackageVersion Include="Refit" Version="15.2.0" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="15.2.0" />
+    <PackageVersion Include="Refit.Reflection" Version="15.2.0" />
     <PackageVersion Include="RulesEngine" Version="6.0.0" />
     <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="2.0.0" />
     <PackageVersion Include="SmartFormat.NET" Version="3.6.0" />

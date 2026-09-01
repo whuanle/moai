@@ -11,8 +11,6 @@ namespace MoAI.Infra.OAuth;
 
 public interface IOAuthClient
 {
-    public HttpClient Client { get; }
-
     [Get("/{**path}")]
     [QueryUriFormat(UriFormat.Unescaped)]
     Task<OpenIdConfiguration> GetWellKnownAsync(string path);

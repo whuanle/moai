@@ -53,7 +53,8 @@ public class S3Client : IDisposable
             request.ContentType = contentType;
         }
 
-        return await _s3Client.GetPreSignedURLAsync(request);
+        var url = await _s3Client.GetPreSignedURLAsync(request);
+        return ApplyEndpointScheme(url);
     }
 
     /// <summary>
@@ -73,7 +74,7 @@ public class S3Client : IDisposable
         };
 
         var url = await _s3Client.GetPreSignedURLAsync(request);
-        return new Uri(url);
+        return new Uri(ApplyEndpointScheme(url));
     }
 
     /// <summary>
@@ -192,6 +193,39 @@ public class S3Client : IDisposable
         };
 
         await _s3Client.DeleteObjectsAsync(deleteObjectsRequest, cancellationToken);
+    }
+
+    /// <summary>
+    /// 将预签名地址的协议对齐到配置的 Endpoint 协议.
+    /// <para>
+    /// AWS SDK for .NET v4 始终生成 https 预签名地址，即使配置的 Endpoint 为 http；
+    /// 而 SigV4 签名不包含 URL 协议，因此仅改写协议前缀不影响签名有效性。
+    /// </para>
+    /// </summary>
+    /// <param name="url">SDK 生成的预签名地址.</param>
+    /// <returns>协议已对齐的预签名地址.</returns>
+    private string ApplyEndpointScheme(string url)
+    {
+        if (!Uri.TryCreate(_storageOption.Endpoint, UriKind.Absolute, out var endpoint))
+        {
+            return url;
+        }
+
+        var desiredScheme = endpoint.Scheme;
+
+        if (desiredScheme.Equals("http", StringComparison.OrdinalIgnoreCase) &&
+            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "http://" + url["https://".Length..];
+        }
+
+        if (desiredScheme.Equals("https", StringComparison.OrdinalIgnoreCase) &&
+            url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "https://" + url["http://".Length..];
+        }
+
+        return url;
     }
 
     /// <inheritdoc/>

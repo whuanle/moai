@@ -1,13 +1,14 @@
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Storage.Models;
 
 namespace MoAI.Storage.Commands;
 
 /// <summary>
 /// 完成文件上传.
 /// </summary>
-public class CompleteFileUploadCommand : IRequest<EmptyCommandResponse>, IModelValidator<CompleteFileUploadCommand>
+public class CompleteFileUploadCommand : IRequest<CompleteFileUploadCommandResponse>, IModelValidator<CompleteFileUploadCommand>
 {
     /// <summary>
     /// 上传成功或失败.

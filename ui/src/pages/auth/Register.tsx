@@ -34,9 +34,8 @@ export function Register() {
       feedback.success(t('auth.registerSuccess'))
       navigate('/login', { replace: true })
     } catch (error) {
+      // 错误已由全局请求中间件统一提示
       console.error('Register failed:', error)
-      const detail = (error as { detail?: string }).detail
-      feedback.error(detail ?? t('auth.registerError'))
     } finally {
       setLoading(false)
     }

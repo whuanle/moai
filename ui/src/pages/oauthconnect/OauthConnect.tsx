@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography, Upload } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { Page, DataTable, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import type { OAuthPrivider } from '@/api/client/models'
+import { resolveStorageUrl, uploadImage } from '@/utils/storage'
 import {
   createOAuthConnection,
   deleteOAuthConnection,
@@ -35,6 +36,18 @@ const providerTagColor: Record<string, string> = {
   gitHub: 'purple',
 }
 
+// 飞书、钉钉登录没有发现端点，默认图标地址（内置渠道逻辑）
+const providerDefaults: Record<string, { iconUrl?: string }> = {
+  feishu: {
+    iconUrl:
+      'https://lf-package-cn.feishucdn.com/obj/feishu-static/lark/open/website/images/899fa60e60151c73aaea2e25871102dc.svg',
+  },
+  dingTalk: {
+    iconUrl:
+      'https://img.alicdn.com/imgextra/i1/O1CN01SNHEw41ysQFPN5Ql6_!!6000000006634-55-tps-176-31.svg',
+  },
+}
+
 function providerLabel(provider: string | null | undefined): string {
   switch (provider) {
     case 'custom':
@@ -52,10 +65,69 @@ function providerLabel(provider: string | null | undefined): string {
   }
 }
 
+function providerNoDiscovery(provider: string | undefined): boolean {
+  return provider === 'feishu' || provider === 'dingTalk' || provider === 'dingtalk'
+}
+
+interface IconPickerProps {
+  value?: string
+  onChange?: (value: string) => void
+}
+
+function IconPicker({ value, onChange }: IconPickerProps) {
+  const { t } = useTranslation()
+  const [uploading, setUploading] = useState(false)
+  const preview = resolveStorageUrl(value)
+
+  const handleUpload = async (file: File) => {
+    setUploading(true)
+    try {
+      const objectKey = await uploadImage(file)
+      onChange?.(objectKey)
+    } catch {
+      feedback.error(t('oauthconnect.iconUploadFailed'))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Space style={{ width: '100%' }} direction="vertical" size={8}>
+      <Space.Compact block>
+        <Input
+          value={value}
+          placeholder="https://..."
+          onChange={(e) => onChange?.(e.target.value)}
+          aria-label={t('oauthconnect.icon')}
+        />
+        <Upload
+          accept="image/*"
+          showUploadList={false}
+          customRequest={({ file }) => {
+            if (file instanceof File) void handleUpload(file)
+          }}
+        >
+          <Button icon={<UploadOutlined />} loading={uploading}>
+            {t('oauthconnect.uploadIcon')}
+          </Button>
+        </Upload>
+      </Space.Compact>
+      {preview && (
+        <img
+          src={preview}
+          alt={t('oauthconnect.icon')}
+          style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'contain' }}
+        />
+      )}
+    </Space>
+  )
+}
+
 export function OauthConnect() {
   const { t } = useTranslation()
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const [form] = Form.useForm<FormValues>()
+  const provider = Form.useWatch('provider', form)
 
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -98,6 +170,18 @@ export function OauthConnect() {
       secret: '',
     })
     setModalOpen(true)
+  }
+
+  const handleProviderChange = (value: string) => {
+    const defaults = providerDefaults[value]
+    // 飞书、钉钉没有发现端点，清空 wellKnown
+    if (providerNoDiscovery(value)) {
+      form.setFieldValue('wellKnown', undefined)
+    }
+    // 自动填充内置渠道的默认图标（不覆盖已上传/已填写的图标）
+    if (defaults?.iconUrl && !form.getFieldValue('iconUrl')) {
+      form.setFieldValue('iconUrl', defaults.iconUrl)
+    }
   }
 
   const handleOk = async () => {
@@ -165,16 +249,18 @@ export function OauthConnect() {
       title: t('oauthconnect.colIcon'),
       dataIndex: 'iconUrl',
       width: 90,
-      render: (url: string | null) =>
-        url ? (
+      render: (url: string | null) => {
+        const resolved = resolveStorageUrl(url)
+        return resolved ? (
           <img
-            src={url}
+            src={resolved}
             alt="icon"
             style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'contain' }}
           />
         ) : (
           '-'
-        ),
+        )
+      },
     },
     {
       title: t('oauthconnect.colAuthorize'),
@@ -255,7 +341,7 @@ export function OauthConnect() {
             label={t('oauthconnect.provider')}
             rules={[{ required: true }]}
           >
-            <Select options={providerOptions} disabled={Boolean(editing)} />
+            <Select options={providerOptions} disabled={Boolean(editing)} onChange={handleProviderChange} />
           </Form.Item>
           <Form.Item
             name="key"
@@ -277,28 +363,26 @@ export function OauthConnect() {
             label={t('oauthconnect.icon')}
             rules={[{ required: true, message: t('oauthconnect.iconRequired') }]}
           >
-            <Input />
+            <IconPicker />
           </Form.Item>
-          <Form.Item
-            name="wellKnown"
-            label={t('oauthconnect.wellKnown')}
-            rules={[
-              {
-                validator: (_, value) =>
-                  providerRequiresWellKnown(form.getFieldValue('provider') as string) && !value
-                    ? Promise.reject(new Error(t('oauthconnect.wellKnownRequired')))
-                    : Promise.resolve(),
-              },
-            ]}
-          >
-            <Input placeholder="https://..." />
-          </Form.Item>
+          {!providerNoDiscovery(provider) && (
+            <Form.Item
+              name="wellKnown"
+              label={t('oauthconnect.wellKnown')}
+              rules={[
+                {
+                  validator: (_, value) =>
+                    !value
+                      ? Promise.reject(new Error(t('oauthconnect.wellKnownRequired')))
+                      : Promise.resolve(),
+                },
+              ]}
+            >
+              <Input placeholder="https://..." />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
     </Page>
   )
-}
-
-function providerRequiresWellKnown(provider: string): boolean {
-  return provider === 'custom'
 }

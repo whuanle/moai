@@ -16,12 +16,17 @@ namespace MoAI.Storage.Services;
 /// <summary>
 /// 文件存储领域服务实现.
 /// </summary>
-public class StorageService : IStorageService
-{
-    /// <summary>
-    /// 公开静态文件访问路由前缀.
-    /// </summary>
-    public const string StaticRoutePrefix = "/static";
+    public class StorageService : IStorageService
+    {
+        /// <summary>
+        /// 公开静态文件访问路由前缀.
+        /// </summary>
+        public const string StaticRoutePrefix = "/static";
+
+        /// <summary>
+        /// 预上传记录有效期，超过该时长仍未完成上传的记录将被废弃.
+        /// </summary>
+        private static readonly TimeSpan PreUploadTimeout = TimeSpan.FromMinutes(5);
 
     private readonly DatabaseContext _databaseContext;
     private readonly S3Client _s3Client;
@@ -62,16 +67,14 @@ public class StorageService : IStorageService
 
         if (fileEntity == null)
         {
-            fileEntity = new FileEntity
-            {
-                FileExtension = Path.GetExtension(command.ObjectKey) ?? string.Empty,
-                FileSha256 = command.SHA256,
-                FileSize = command.FileSize,
-                ContentType = command.ContentType,
-                IsUploaded = false,
-                ObjectKey = command.ObjectKey
-            };
-
+            fileEntity = CreateFileEntity(command);
+            await _databaseContext.Files.AddAsync(fileEntity, cancellationToken);
+        }
+        else if (IsExpired(fileEntity))
+        {
+            // 预上传记录已过期（长时间未完成上传或上传失败残留），废弃旧记录后重新创建
+            await AbandonFileAsync(fileEntity, cancellationToken);
+            fileEntity = CreateFileEntity(command);
             await _databaseContext.Files.AddAsync(fileEntity, cancellationToken);
         }
         else
@@ -148,7 +151,7 @@ public class StorageService : IStorageService
     }
 
     /// <inheritdoc/>
-    public async Task CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default)
+    public async Task<string> CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default)
     {
         var fileEntity = await _databaseContext.Files.FirstOrDefaultAsync(x => x.Id == fileId, cancellationToken);
 
@@ -160,12 +163,19 @@ public class StorageService : IStorageService
         // 文件早已上传完毕，忽略用户请求
         if (fileEntity.IsUploaded)
         {
-            return;
+            return fileEntity.ObjectKey;
         }
 
         // 检查该文件是否当前用户上传的，否则无法完成上传
         if (fileEntity.UpdateUserId != _userContextProvider.GetUserContext().UserId)
         {
+            // 记录已过期：长时间未完成上传或上传失败残留，废弃该记录，允许重新上传
+            if (IsExpired(fileEntity))
+            {
+                await AbandonFileAsync(fileEntity, cancellationToken);
+                throw new BusinessException("上传已过期，请重新上传") { StatusCode = 409 };
+            }
+
             throw new BusinessException("其他用户正在上传此文件") { StatusCode = 409 };
         }
 
@@ -182,7 +192,7 @@ public class StorageService : IStorageService
 
             _databaseContext.Files.Remove(fileEntity);
             await _databaseContext.SaveChangesAsync(cancellationToken);
-            return;
+            return fileEntity.ObjectKey;
         }
 
         // 上传已损坏：不存在或大小不一致
@@ -202,6 +212,8 @@ public class StorageService : IStorageService
         fileEntity.IsUploaded = true;
         _databaseContext.Update(fileEntity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        return fileEntity.ObjectKey;
     }
 
     /// <inheritdoc/>
@@ -306,6 +318,35 @@ public class StorageService : IStorageService
             FileSize = fileEntity.FileSize,
             ContentType = fileEntity.ContentType
         };
+    }
+
+    private static FileEntity CreateFileEntity(PreUploadFileCommand command)
+    {
+        return new FileEntity
+        {
+            FileExtension = Path.GetExtension(command.ObjectKey) ?? string.Empty,
+            FileSha256 = command.SHA256,
+            FileSize = command.FileSize,
+            ContentType = command.ContentType,
+            IsUploaded = false,
+            ObjectKey = command.ObjectKey
+        };
+    }
+
+    private bool IsExpired(FileEntity fileEntity)
+    {
+        return !fileEntity.IsUploaded && DateTimeOffset.Now - fileEntity.UpdateTime > PreUploadTimeout;
+    }
+
+    private async Task AbandonFileAsync(FileEntity fileEntity, CancellationToken cancellationToken)
+    {
+        if (await _s3Client.FileExistsAsync(fileEntity.ObjectKey, cancellationToken))
+        {
+            await _s3Client.DeleteFilesAsync(new[] { fileEntity.ObjectKey }, cancellationToken);
+        }
+
+        _databaseContext.Files.Remove(fileEntity);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 
     private static async Task<IReadOnlyDictionary<string, Uri>> GetUrlsCoreAsync(IEnumerable<Task<KeyValuePair<string, Uri?>>> tasks, CancellationToken cancellationToken)

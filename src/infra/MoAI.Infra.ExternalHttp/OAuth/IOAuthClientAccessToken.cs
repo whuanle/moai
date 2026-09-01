@@ -5,8 +5,6 @@ namespace MoAI.Infra.OAuth;
 
 public interface IOAuthClientAccessToken
 {
-    public HttpClient Client { get; }
-
     [Post("/{**path}")]
     [QueryUriFormat(UriFormat.Unescaped)]
     Task<OpenIdAuthorizationResponse> GetAccessTokenAsync(string path, [Body] OpenIdAuthorizationRequest request);

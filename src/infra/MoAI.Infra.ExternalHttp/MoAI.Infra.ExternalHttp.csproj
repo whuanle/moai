@@ -7,6 +7,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Refit.HttpClientFactory" />
+		<PackageReference Include="Refit.Reflection" />
 	</ItemGroup>
 
 	<ItemGroup>

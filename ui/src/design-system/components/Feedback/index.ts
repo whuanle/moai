@@ -7,4 +7,11 @@ export type {
   FeedbackNotificationOptions,
 } from './feedback'
 export { FeedbackBridge } from './FeedbackBridge'
-export { extractErrorMessage, getHttpStatus, isNetworkError } from './error'
+export {
+  extractErrorMessage,
+  getHttpStatus,
+  isNetworkError,
+  parseApiErrorResponse,
+  resolveErrorMessage,
+} from './error'
+export type { NormalizedApiError } from './error'

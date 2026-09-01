@@ -6,6 +6,7 @@ using MoAI.Database.Audits;
 using MoAI.Database.Seed;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using System.Linq.Expressions;
 
 namespace MoAI.Database;
@@ -113,7 +114,8 @@ public partial class DatabaseContext
     /// <param name="args"></param>
     protected void AuditFilter(EntityEntryEventArgs args)
     {
-        var userContext = _serviceProvider.GetService<UserContext>();
+        var userContextProvider = _serviceProvider.GetRequiredService<IUserContextProvider>();
+        var userContext = userContextProvider.GetUserContext();
 
         if (args.Entry.State == EntityState.Unchanged)
         {

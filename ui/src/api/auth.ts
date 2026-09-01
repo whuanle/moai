@@ -78,6 +78,33 @@ export async function refreshAccessToken(refreshToken: string): Promise<UserInfo
   return userInfo
 }
 
+export function applyLoginResponse(
+  res: {
+    accessToken?: string | null
+    expiresIn?: string | null
+    refreshToken?: string | null
+    tokenType?: string | null
+    userId?: string | null | undefined
+    userName?: string | null
+  },
+): UserInfo {
+  const userInfo = toUserInfo(res)
+  useAppStore.getState().setUserInfo(userInfo)
+  return userInfo
+}
+
+export async function oauthLogin(payload: { code: string; oAuthId: string }) {
+  const client = getAnonymousClient()
+  return client.api.auth.oauth_login.post({ code: payload.code, oAuthId: payload.oAuthId })
+}
+
+export async function oauthRegister(tempOAuthBindId: string): Promise<UserInfo | null> {
+  const client = getAnonymousClient()
+  const res = await client.api.auth.oauth_register.post({ tempOAuthBindId })
+  if (!res) return null
+  return applyLoginResponse(res)
+}
+
 export interface OAuthProviderItem {
   oAuthId?: string | null
   name?: string | null
@@ -95,6 +122,11 @@ export async function getOAuthProviders(): Promise<OAuthProviderItem[]> {
 export async function getUserDetailInfo() {
   const client = getApiClient()
   return client.api.account.userinfo.get()
+}
+
+export async function oauthBindAccount(tempOAuthBindId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.account.oauth_bind_account.post({ tempOAuthBindId })
 }
 
 export async function refreshUserProfile(): Promise<UserInfo | null> {

@@ -34,7 +34,8 @@ public interface IStorageService
     /// <param name="fileId">文件 id.</param>
     /// <param name="isSuccess">上传是否成功.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    Task CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default);
+    /// <returns>文件 ObjectKey.</returns>
+    Task<string> CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 批量删除文件（软删除 file 记录并清理 OSS 对象）.

@@ -24,10 +24,4 @@ public enum OAuthPrivider
     /// </summary>
     [JsonPropertyName("dingtalk")]
     DingTalk = 2,
-
-    /// <summary>
-    /// GitHub.
-    /// </summary>
-    [JsonPropertyName("github")]
-    GitHub = 3,
 }

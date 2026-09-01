@@ -1,22 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MoAI.Database;
-using MoAI.Database.Enums;
-using MoAI.Infra;
 using MoAI.Infra.Defaults;
-using MoAI.Infra.DingTalk;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Extensions;
-using MoAI.Infra.Feishu;
-using MoAI.Infra.Feishu.Models;
-using MoAI.Infra.OAuth;
-using MoAI.Infra.OAuth.Models;
 using MoAI.Auth.Commands;
 using MoAI.Auth.Commands.Responses;
 using MoAI.Auth.Models;
 using MoAI.Auth.Services;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Auth.Handlers;
@@ -36,38 +27,26 @@ state=STATE
      */
 
     private readonly DatabaseContext _databaseContext;
-    private readonly IMediator _mediator;
-    private readonly IOAuthClient _authClient;
-    private readonly IOAuthClientAccessToken _authClientAccessToken;
+    private readonly IOAuthUserProfileService _profileService;
     private readonly IRedisDatabase _redisDatabase;
     private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<OAuthLoginCommandHandler> _logger;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OAuthLoginCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    /// <param name="mediator"></param>
-    /// <param name="authClient"></param>
-    /// <param name="authClientAccessToken"></param>
+    /// <param name="profileService"></param>
     /// <param name="redisDatabase"></param>
     /// <param name="tokenProvider"></param>
     /// <param name="logger"></param>
-    /// <param name="serviceProvider"></param>
-    /// <param name="systemOptions"></param>
-    public OAuthLoginCommandHandler(DatabaseContext databaseContext, IMediator mediator, IOAuthClient authClient, IOAuthClientAccessToken authClientAccessToken, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthLoginCommandHandler> logger, IServiceProvider serviceProvider, SystemOptions systemOptions)
+    public OAuthLoginCommandHandler(DatabaseContext databaseContext, IOAuthUserProfileService profileService, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthLoginCommandHandler> logger)
     {
         _databaseContext = databaseContext;
-        _mediator = mediator;
-        _authClient = authClient;
-        _authClientAccessToken = authClientAccessToken;
+        _profileService = profileService;
         _redisDatabase = redisDatabase;
         _tokenProvider = tokenProvider;
         _logger = logger;
-        _serviceProvider = serviceProvider;
-        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
@@ -85,7 +64,11 @@ state=STATE
         OAuthBindUserProfile oauthUserProfile = default!;
         try
         {
-            oauthUserProfile = await GetOpenIdUserInfo(request, oauthConnectionEntity);
+            oauthUserProfile = await _profileService.GetProfileAsync(request.OAuthId, request.Code, cancellationToken);
+        }
+        catch (BusinessException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -94,7 +77,7 @@ state=STATE
         }
 
         var userEntity = await _databaseContext.Users
-            .Where(x => x.Id == _databaseContext.UserOauthConnections.Where(a => a.ProviderId == oauthConnectionEntity.Id && a.Sub == oauthUserProfile.Profile.Sub).First().UserId).FirstOrDefaultAsync();
+            .Where(x => x.Id == _databaseContext.UserOauthConnections.Where(a => a.ProviderId == oauthConnectionEntity.Id && a.Sub == oauthUserProfile.Profile.Sub).First().UserId).FirstOrDefaultAsync(cancellationToken);
 
         // 没有绑定记录，则拒绝登录
         if (userEntity == null)
@@ -142,128 +125,6 @@ state=STATE
             LoginCommandResponse = result,
             OAuthId = oauthConnectionEntity.Id,
             Name = oauthUserProfile.Name
-        };
-    }
-
-    private async Task<OAuthBindUserProfile> GetOpenIdUserInfo(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
-    {
-        var oauthPrivider = clientEntity.Provider.JsonToObject<OAuthPrivider>();
-
-        if (oauthPrivider == OAuthPrivider.Feishu)
-        {
-            return await GetOpenIdFromFeishuAsync(request, clientEntity);
-        }
-        else if (oauthPrivider == OAuthPrivider.DingTalk)
-        {
-            return await GetOpenIdFromDingTalkAsync(request, clientEntity);
-        }
-
-        return await GetOpenIdFromCustomAsync(request, clientEntity);
-    }
-
-    private async Task<OAuthBindUserProfile> GetOpenIdFromCustomAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
-    {
-        // 获取端点信息
-        var wellKnownUrl = new Uri(clientEntity.WellKnown);
-        _authClient.Client.BaseAddress = new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority));
-        var wellKnown = await _authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
-
-        // 得到 accessToken 申请地址
-        var accessTokenUrl = new Uri(wellKnown.TokenEndpoint);
-        _authClientAccessToken.Client.BaseAddress = new Uri(accessTokenUrl.GetLeftPart(UriPartial.Authority));
-
-        var openIdAccessToken = await _authClientAccessToken.GetAccessTokenAsync(accessTokenUrl.PathAndQuery.TrimStart('/'), new OpenIdAuthorizationRequest
-        {
-            ClientId = clientEntity.Key,
-            ClientSecret = clientEntity.Secret,
-            Code = request.Code,
-            GrantType = "authorization_code"
-        });
-
-        // 得到用户信息地址
-        var userInfoUrl = new Uri(wellKnown.UserinfoEndpoint);
-        var userProfile = await _authClientAccessToken.GetUserInfoAsync(userInfoUrl.PathAndQuery.TrimStart('/'), openIdAccessToken.AccessToken);
-        return new OAuthBindUserProfile
-        {
-            OAuthId = clientEntity.Id,
-            Name = userProfile.Name,
-            Profile = userProfile,
-            AccessToken = openIdAccessToken.AccessToken
-        };
-    }
-
-    private async Task<OAuthBindUserProfile> GetOpenIdFromDingTalkAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
-    {
-        var dingTalkClient = _serviceProvider.GetRequiredService<IDingTalkClient>();
-        var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-
-        var dingTalkToken = await dingTalkClient.GetUserAccessTokenAsync(new UserAccessTokenRequest
-        {
-            ClientId = clientEntity.Key,
-            ClientSecret = clientEntity.Secret,
-            Code = request.Code,
-        });
-
-        var dingTalkUserInfo = await dingTalkClient.GetContactUserInfoAsync("me", dingTalkToken.AccessToken!);
-
-        return new OAuthBindUserProfile
-        {
-            OAuthId = clientEntity.Id,
-            Name = dingTalkUserInfo.Nick!,
-            Profile = new OpenIdUserProfile
-            {
-                Sub = dingTalkUserInfo.UnionId!,
-                Name = dingTalkUserInfo.Nick!,
-                Audience = clientEntity.Key,
-                Issuer = "https://api.dingtalk.com",
-                Picture = string.Empty,
-                PreferredUsername = dingTalkUserInfo.Nick!,
-            },
-
-            AccessToken = string.Empty
-        };
-    }
-
-    private async Task<OAuthBindUserProfile> GetOpenIdFromFeishuAsync(OAuthLoginCommand request, Database.Entities.OauthConnectionEntity clientEntity)
-    {
-        var feishuClient = _serviceProvider.GetRequiredService<IFeishuAuthClient>();
-        var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
-        {
-            Code = request.Code,
-            GrantType = "authorization_code",
-            ClientId = clientEntity.Key,
-            ClientSecret = clientEntity.Secret,
-            RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login").ToString(),
-            CodeVerifier = request.Code,
-            Scope = string.Empty
-        });
-
-        if (feishuAccessToken.Code != 0)
-        {
-            throw new BusinessException("飞书接口错误");
-        }
-
-        var feishuUserInfo = await feishuClient.UserInfo("Bearer " + feishuAccessToken.AccessToken);
-        if (feishuUserInfo.Code != 0)
-        {
-            throw new BusinessException("飞书接口错误");
-        }
-
-        return new OAuthBindUserProfile
-        {
-            OAuthId = clientEntity.Id,
-            Name = feishuUserInfo.Data.Name,
-            Profile = new OpenIdUserProfile
-            {
-                Sub = feishuUserInfo.Data.OpenId,
-                Name = feishuUserInfo.Data.Name,
-                Audience = clientEntity.Key,
-                Issuer = "https://open.feishu.cn",
-                Picture = feishuUserInfo.Data.AvatarUrl,
-                PreferredUsername = feishuUserInfo.Data.Name,
-            },
-
-            AccessToken = feishuAccessToken.AccessToken
         };
     }
 }

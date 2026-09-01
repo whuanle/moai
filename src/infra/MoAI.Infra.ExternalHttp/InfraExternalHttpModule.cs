@@ -36,13 +36,13 @@ public class InfraExternalHttpModule : IModule
         };
 
         context.Services.AddTransient<ExternalHttpMessageHandler>();
+        context.Services.AddSingleton(settings);
 
-        context.Services.AddRefitClient<IOAuthClient>(settings)
+        // OAuth 发现端点、令牌端点、用户信息端点地址是动态的，无法使用固定的 BaseAddress 注册，
+        // 因此通过工厂在调用时根据实际地址动态创建客户端.
+        context.Services.AddTransient<IOAuthClientFactory, OAuthClientFactory>();
+        context.Services.AddHttpClient(OAuthClientFactory.HttpClientName)
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
-            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
-
-        context.Services.AddRefitClient<IOAuthClientAccessToken>(settings).
-            AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
         context.Services.AddRefitClient<IFeishuAuthClient>(settings)

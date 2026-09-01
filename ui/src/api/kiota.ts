@@ -18,7 +18,7 @@ import {
 import { JsonParseNodeFactory, JsonSerializationWriterFactory } from '@microsoft/kiota-serialization-json'
 import { Env } from '@/config/env'
 import { useAppStore } from '@/store/app'
-import { feedback, isNetworkError } from '@/design-system/components/Feedback'
+import { feedback, isNetworkError, parseApiErrorResponse } from '@/design-system/components/Feedback'
 
 class FilterRequestHandler implements Middleware {
   next: Middleware | undefined
@@ -30,25 +30,32 @@ class FilterRequestHandler implements Middleware {
   ): Promise<Response> {
     if (!this.next) throw new Error('Next middleware is not set')
 
+    let response: Response
     try {
-      const response = await this.next.execute(url, requestInit, requestOptions)
-      if (response.status === 401 && !url.includes('login')) {
-        useAppStore.getState().clearUserInfo()
-        window.location.href = '/login'
-        return response
-      }
-      if (!response.ok && response.status !== 401) {
-        feedback.handleError(response)
-      }
-      return response
+      response = await this.next.execute(url, requestInit, requestOptions)
     } catch (error) {
       feedback.handleError(error)
       if (!isNetworkError(error)) {
         useAppStore.getState().clearUserInfo()
       }
-      console.error(error)
+      console.error('[api] request error:', error)
       throw error
     }
+
+    if (response.status === 401 && !url.includes('login')) {
+      useAppStore.getState().clearUserInfo()
+      window.location.href = '/login'
+      return response
+    }
+
+    if (!response.ok) {
+      const error = await parseApiErrorResponse(response)
+      feedback.handleError(error)
+      console.error('[api] response error:', error)
+      throw error
+    }
+
+    return response
   }
 }
 
@@ -62,8 +69,11 @@ serializationWriterFactoryRegistry.contentTypeAssociatedFactories.set(
   new JsonSerializationWriterFactory(),
 )
 
-const middleware = MiddlewareFactory.getDefaultMiddlewares()
-middleware.unshift(new FilterRequestHandler())
+function createMiddleware(): Middleware[] {
+  const middleware = MiddlewareFactory.getDefaultMiddlewares()
+  middleware.unshift(new FilterRequestHandler())
+  return middleware
+}
 
 function buildAdapter(): FetchRequestAdapter {
   const token = useAppStore.getState().userInfo?.accessToken
@@ -74,7 +84,7 @@ function buildAdapter(): FetchRequestAdapter {
       })
     : new AnonymousAuthenticationProvider()
 
-  const httpClient = KiotaClientFactory.create(undefined, middleware)
+  const httpClient = KiotaClientFactory.create(undefined, createMiddleware())
   const adapter = new FetchRequestAdapter(
     authProvider,
     parseNodeFactoryRegistry,
@@ -90,7 +100,13 @@ export function getApiClient(): MoAIClient {
 }
 
 export function getAnonymousClient(): MoAIClient {
-  const adapter = new FetchRequestAdapter(new AnonymousAuthenticationProvider())
+  const httpClient = KiotaClientFactory.create(undefined, createMiddleware())
+  const adapter = new FetchRequestAdapter(
+    new AnonymousAuthenticationProvider(),
+    parseNodeFactoryRegistry,
+    serializationWriterFactoryRegistry,
+    httpClient,
+  )
   adapter.baseUrl = Env.serverUrl
   return createMoAIClient(adapter)
 }

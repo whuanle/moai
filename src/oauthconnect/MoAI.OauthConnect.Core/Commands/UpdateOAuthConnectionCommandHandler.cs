@@ -16,17 +16,17 @@ namespace MoAI.OauthConnect.Handlers;
 public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthConnectionCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IOAuthClient _authClient;
+    private readonly IOAuthClientFactory _authClientFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOAuthConnectionCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    /// <param name="authClient"></param>
-    public UpdateOAuthConnectionCommandHandler(DatabaseContext databaseContext, IOAuthClient authClient)
+    /// <param name="authClientFactory"></param>
+    public UpdateOAuthConnectionCommandHandler(DatabaseContext databaseContext, IOAuthClientFactory authClientFactory)
     {
         _databaseContext = databaseContext;
-        _authClient = authClient;
+        _authClientFactory = authClientFactory;
     }
 
     /// <inheritdoc/>
@@ -91,8 +91,8 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
             throw new BusinessException("发现端点不能为空.");
         }
 
-        _authClient.Client.BaseAddress = new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority));
-        var wellKnown = await _authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
+        var authClient = _authClientFactory.Create(new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority)));
+        var wellKnown = await authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
 
         return wellKnown.AuthorizationEndpoint;
     }

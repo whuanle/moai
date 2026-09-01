@@ -3,7 +3,7 @@ import type { MessageInstance } from 'antd/es/message/interface'
 import type { NotificationInstance } from 'antd/es/notification/interface'
 import type { NotificationPlacement } from 'antd/es/notification/interface'
 import i18n from '@/i18n'
-import { extractErrorMessage, getHttpStatus, isNetworkError } from './error'
+import { resolveErrorMessage, getHttpStatus, isNetworkError } from './error'
 import { getMessageInstance, getNotificationInstance } from './instances'
 
 /** message（轻量 toast）的可选配置。 */
@@ -139,7 +139,7 @@ export const feedback: Feedback = buildFeedback(getMessageInstance, getNotificat
 
 export function handleApiError(connector: FeedbackConnector, err: unknown): void {
   const status = getHttpStatus(err)
-  const detail = extractErrorMessage(err)
+  const detail = resolveErrorMessage(err)
 
   if (status === undefined) {
     if (isNetworkError(err)) {

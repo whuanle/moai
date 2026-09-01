@@ -84,7 +84,7 @@ export function AppSider() {
       key: 'settings',
       icon: <SettingOutlined />,
       label: t('common.settings'),
-      onClick: () => navigate('/settings'),
+      onClick: () => navigate('/account'),
     },
     { type: 'divider' },
     {
