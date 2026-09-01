@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using MoAI.Database;
 using MoAI.Account.Queries.Responses;
 using MoAI.Account.Services;
+using MoAI.Database;
 using MoAI.Storage.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
@@ -57,6 +57,8 @@ public class UserAccountService : IUserAccountService
                 ? string.Empty
                 : _storageService.GetPublicFileUrl(user.AvatarPath).ToString();
 
+            var isRoot = await _databaseContext.Settings.AnyAsync(s => s.Key == "root" && s.Value == user.Id.ToString(), cancellationToken);
+
             result = new UserStateInfo
             {
                 UserId = user.Id,
@@ -65,7 +67,8 @@ public class UserAccountService : IUserAccountService
                 NickName = user.NickName,
                 Phone = user.Phone,
                 IsDisable = user.IsDisable,
-                IsAdmin = user.IsAdmin,
+                IsAdmin = user.IsAdmin || isRoot,
+                IsRoot = isRoot,
                 IsDeleted = user.IsDeleted > 0,
                 Avatar = avatar
             };

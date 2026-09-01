@@ -1,4 +1,5 @@
 export * from './Page'
+export * from './PageToolbar'
 export * from './QueryBar'
 export * from './DataTable'
 export * from './FormPage'

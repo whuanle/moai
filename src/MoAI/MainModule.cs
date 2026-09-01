@@ -8,6 +8,8 @@ using MoAI.Hangfire;
 using MoAI.Infra;
 using MoAI.Auth;
 using MoAI.Modules;
+using MoAI.OauthConnect;
+using MoAI.Settings;
 using MoAI.Storage;
 
 namespace MoAI;
@@ -21,6 +23,8 @@ namespace MoAI;
 [InjectModule<CommonCoreModule>]
 [InjectModule<AuthCoreModule>]
 [InjectModule<AccountCoreModule>]
+[InjectModule<SettingsCoreModule>]
+[InjectModule<OauthConnectCoreModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

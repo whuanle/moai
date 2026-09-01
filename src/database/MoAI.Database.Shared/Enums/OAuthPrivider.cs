@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace MoAI.Auth.Models;
+namespace MoAI.Database.Enums;
 
 /// <summary>
 /// OAuth 提供商.

@@ -36,8 +36,8 @@ export function DataTable<RecordType extends object>({
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
+            gap: spacing.md,
             marginBottom: spacing.md,
           }}
         >

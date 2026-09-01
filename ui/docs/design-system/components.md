@@ -6,7 +6,8 @@
 | 组件 | 用途 | 必填 props |
 |---|---|---|
 | `Page` | 页面容器+页头 | - |
-| `QueryBar` | 列表筛选区 | - |
+| `PageToolbar` | 页头工具行（筛选左/操作右，无筛选则操作左） | - |
+| `QueryBar` | 独立查询表单 | - |
 | `DataTable` | 表格 | `columns`, `dataSource` |
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |
@@ -23,6 +24,7 @@
 | 组件 | 允许出现的位置 | 禁止出现的位置 |
 |---|---|---|
 | `Page` | 页面根节点 | 嵌套于卡片/表格内 |
+| `PageToolbar` | 页头标题下、工具行位置 | 嵌套于弹窗/表格单元格 |
 | `QueryBar` | 列表页顶部、`Page` 内 | 弹窗、详情页 |
 | `DataTable` | `Page` 内 | 直接嵌套进卡片 |
 | `FormPage` | 表单页根 | 表格内 |
@@ -63,12 +65,18 @@ import { Popconfirm } from 'antd'
 ## 使用示例
 
 ```tsx
-import { Page, QueryBar, DataTable } from '@/design-system'
+import { Page, PageToolbar, DataTable } from '@/design-system'
 
 export function ExampleList() {
   return (
     <Page title="列表">
-      <QueryBar onSearch={(v) => console.log(v)} />
+      {/* 有筛选：筛选在左、操作在右 */}
+      <PageToolbar
+        filters={<><Select /><Input /></>}
+        actions={<Button type="primary">新建</Button>}
+      />
+      {/* 无筛选：操作直接左对齐 */}
+      {/* <PageToolbar actions={<Button type="primary">新建</Button>} /> */}
       <DataTable<Item> rowKey="id" columns={columns} dataSource={data} />
     </Page>
   )

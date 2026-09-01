@@ -16,27 +16,29 @@ export interface PageProps {
 export function Page({ title, subtitle, breadcrumb, extra, children }: PageProps) {
   const hasHeader = Boolean(breadcrumb || title || subtitle || extra)
   return (
-    <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ width: '100%' }}>
       {hasHeader && (
-        <div style={{ marginBottom: spacing.md }}>
-          {breadcrumb && (
-            <Breadcrumb items={breadcrumb} style={{ marginBottom: spacing.sm }} />
-          )}
+        <div style={{ marginBottom: spacing.lg }}>
+          {breadcrumb && <Breadcrumb items={breadcrumb} style={{ marginBottom: spacing.sm }} />}
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: spacing.md,
             }}
           >
-            <div>
+            <div style={{ minWidth: 0 }}>
               {title && (
-                <Title level={3} style={{ margin: 0 }}>
+                <Title level={3} style={{ margin: 0, fontSize: 20 }}>
                   {title}
                 </Title>
               )}
-              {subtitle && <Text type="secondary">{subtitle}</Text>}
+              {subtitle && (
+                <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 14 }}>
+                  {subtitle}
+                </Text>
+              )}
             </div>
             {extra && <div style={{ flexShrink: 0 }}>{extra}</div>}
           </div>

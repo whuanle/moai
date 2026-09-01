@@ -184,3 +184,39 @@ function getServerUrl(): string {
 - 语言变化时由 `AppProviders` 调用 `i18n.changeLanguage(locale)` 并同步 `<html lang>` 与 antd locale。
 
 > 文案一律走 `useTranslation()` 的 `t()`，禁止硬编码。新增语言在 `locales/` 增加对应目录并注册到 `i18n/index.ts`，同时补充 `design-system/theme/locale.ts` 的 antd 映射。
+
+## 页面编写规范
+
+以下规则对所有页面（含设置页）一律生效，新写页面必须遵守。
+
+### 1. 页面头部不重复标题/解释
+
+顶部导航已标识当前页面，页面内不要再渲染冗余的大标题与解释性副标题。设置类页面使用不含标题的 `<Page>`：
+
+```tsx
+// 错误
+<Page title={t('oauthconnect.title')} subtitle={t('oauthconnect.subtitle')}>...</Page>
+
+// 正确
+<Page>...</Page>
+```
+
+`Page`（`design-system/components/Page/Page.tsx`）只有在传了 `title/subtitle/breadcrumb/extra` 时才渲染头部；默认不传即无冗余头部。除非有明确价值（如 Dashboard 的用户个性化问候），否则不要传 `title`/`subtitle`。
+
+### 2. 内容适配宽度
+
+`Page` 容器为 `width: 100%`，**不要**加 `maxWidth` 上限或 `margin: '0 auto'` 居中。页面内容应撑满可用区域，避免在大屏下组件只占一部分、两侧大片留白。
+
+### 3. 表格操作栏从左排列
+
+`DataTable` 头部操作区使用 flex **左对齐 + `gap`**，按钮依次从左开始排列；不要用 `justifyContent: 'space-between'` 让按钮分居两端（避免"新建"在左、"刷新"在右的操作割裂）。
+
+### 4. 模态窗体禁止点击遮罩关闭
+
+所有表单类 `Modal` 一律设置 `maskClosable={false}`，防止用户在输入时误点窗体外部空白导致已填内容丢失：
+
+```tsx
+<Modal open={modalOpen} maskClosable={false} ...>
+```
+
+后续新增其它弹窗（含 `Modal.confirm` 等）也需遵循；建议统一封装一个默认 `maskClosable={false}` 的 Modal 组件，全局固化该行为。

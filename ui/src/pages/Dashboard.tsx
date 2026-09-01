@@ -62,6 +62,29 @@ export function Dashboard() {
         </Button>
       }
     >
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: 12,
+          padding: '32px 32px 28px',
+          marginBottom: 24,
+          background:
+            'linear-gradient(124deg, #2A6FFF 0%, #3D8BFF 45%, #68A9FF 100%)',
+          color: '#FFFFFF',
+        }}
+      >
+        <Typography.Title level={3} style={{ color: '#FFFFFF', marginBottom: 8 }}>
+          {t('dashboard.welcomeTitle')}
+        </Typography.Title>
+        <Typography.Paragraph style={{ color: 'rgba(255,255,255,0.9)', maxWidth: 620, marginBottom: 20 }}>
+          {t('dashboard.welcomeDesc')}
+        </Typography.Paragraph>
+        <Button size="large" style={{ background: '#FFFFFF', color: '#2970FF', fontWeight: 600 }}>
+          {t('home.getStarted')}
+        </Button>
+      </div>
+
       <Row gutter={[16, 16]}>
         {stats.map((stat) => (
           <Col xs={24} sm={12} lg={6} key={stat.title}>
@@ -85,11 +108,12 @@ export function Dashboard() {
                       padding: '12px 16px',
                       borderRadius: 8,
                       cursor: 'pointer',
-                      border: '1px solid rgba(128,128,128,0.14)',
-                      transition: 'border-color 0.2s',
+                      border: '1px solid rgba(16, 24, 40, 0.08)',
+                      background: '#F9FAFB',
+                      transition: 'border-color 0.2s, background 0.2s',
                     }}
                   >
-                    <span style={{ fontSize: 24 }}>{action.icon}</span>
+                    <span style={{ fontSize: 22, color: '#2970FF' }}>{action.icon}</span>
                     <div>
                       <Typography.Text strong>{action.title}</Typography.Text>
                       <br />

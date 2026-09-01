@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.DingTalk;

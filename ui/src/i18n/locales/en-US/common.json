@@ -4,21 +4,26 @@
     "tagline": "Enterprise AI Application Platform"
   },
   "common": {
-    "logout": "Sign out",
+    "logout": "Log out",
     "switchToDark": "Switch to dark mode",
     "switchToLight": "Switch to light mode",
     "language": "Language",
     "loading": "Loading",
-    "settings": "Settings"
+    "settings": "Settings",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark"
   },
   "nav": {
     "chat": "AI Assistant",
+    "overview": "Overview",
     "app": "Applications",
     "wiki": "Knowledge Base",
     "team": "Teams",
     "plugin": "Plugins",
     "users": "Users",
     "settings": "Settings",
+    "oauthconnect": "OAuth Login",
     "model": "Models",
     "admin": "Admin"
   },
@@ -33,6 +38,7 @@
     "phone": "Phone",
     "login": "Sign in",
     "register": "Register",
+    "oauthLogin": "Sign in with",
     "loginSuccess": "Signed in successfully",
     "registerSuccess": "Registered successfully, please sign in",
     "loginError": "Invalid username or password",
@@ -64,6 +70,8 @@
   "dashboard": {
     "title": "Overview",
     "subtitle": "Hi {{name}}, welcome back to your MoAI admin console.",
+    "welcomeTitle": "Build your first agent",
+    "welcomeDesc": "From conversation orchestration to launch, create an AI-powered app without writing code.",
     "statApps": "Applications",
     "statWikis": "Knowledge Bases",
     "statTeam": "Team Members",
@@ -78,6 +86,48 @@
     "recentTitle": "Recent Activity",
     "recentEmpty": "No recent activity",
     "viewAll": "View all"
+  },
+  "settings": {
+    "title": "System Settings",
+    "subtitle": "Manage global configuration items",
+    "generalTitle": "General",
+    "save": "Save",
+    "saveSuccess": "Saved successfully",
+    "oauthAutoRegister": {
+      "name": "Allow third-party login to create account",
+      "desc": "When enabled, third-party sign-in automatically creates an account if not registered."
+    }
+  },
+  "oauthconnect": {
+    "title": "OAuth Connections",
+    "subtitle": "Configure OAuth, Feishu, DingTalk and other third-party sign-in connections",
+    "create": "New connection",
+    "createTitle": "New third-party sign-in connection",
+    "editTitle": "Edit third-party sign-in connection",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveSuccess": "Saved successfully",
+    "deleteSuccess": "Deleted successfully",
+    "deleteConfirm": "Delete this connection?",
+    "edit": "Edit",
+    "delete": "Delete",
+    "colName": "Name",
+    "colProvider": "Provider",
+    "colKey": "App Key",
+    "colIcon": "Icon",
+    "colAuthorize": "Authorize URL",
+    "colActions": "Actions",
+    "provider": "Provider",
+    "key": "App Key",
+    "secret": "Secret",
+    "icon": "Icon URL",
+    "wellKnown": "Discovery Endpoint (WellKnown)",
+    "nameRequired": "Please enter the connection name",
+    "keyRequired": "Please enter the app key",
+    "secretRequired": "Please enter the secret",
+    "iconRequired": "Please enter the icon URL",
+    "wellKnownRequired": "Discovery endpoint is required for custom OAuth",
+    "secretKeep": "Leave blank to keep unchanged"
   },
   "feedback": {
     "businessError": "Operation failed, please try again later",

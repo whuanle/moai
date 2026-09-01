@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Button, Card, Form, Input, Typography } from 'antd'
+import { Button, Card, Form, Input, Space, Tooltip, Typography } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
-import { login } from '@/api/auth'
+import { getOAuthProviders, login, type OAuthProviderItem } from '@/api/auth'
 
 interface LoginFormValues {
   username: string
@@ -16,6 +16,25 @@ export function Login() {
   const feedback = useFeedback()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(true)
+  const [providers, setProviders] = useState<OAuthProviderItem[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const items = await getOAuthProviders()
+        if (!cancelled) setProviders(items)
+      } catch {
+        // 错误已由全局请求中间件统一提示
+      } finally {
+        if (!cancelled) setOauthLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleFinish = async (values: LoginFormValues) => {
     setLoading(true)
@@ -66,6 +85,45 @@ export function Login() {
             </Button>
           </Form.Item>
         </Form>
+        {providers.length > 0 && (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 16,
+                color: 'rgba(128,128,128,0.6)',
+              }}
+            >
+              <div style={{ flex: 1, height: 1, background: 'rgba(128,128,128,0.25)' }} />
+              <Typography.Text type="secondary" style={{ marginInline: 12, fontSize: 12 }}>
+                {t('auth.oauthLogin')}
+              </Typography.Text>
+              <div style={{ flex: 1, height: 1, background: 'rgba(128,128,128,0.25)' }} />
+            </div>
+            <Space size="large" style={{ justifyContent: 'center', width: '100%' }}>
+              {providers.map((item) => (
+                <Tooltip key={item.oAuthId} title={item.name} placement="top">
+                  <Button
+                    type="text"
+                    shape="circle"
+                    size="large"
+                    loading={oauthLoading}
+                    onClick={() => {
+                      if (item.redirectUrl) window.location.href = item.redirectUrl
+                    }}
+                  >
+                    {item.iconUrl ? (
+                      <img src={item.iconUrl} alt={item.name ?? ''} style={{ width: 28, height: 28 }} />
+                    ) : (
+                      <span style={{ fontSize: 14 }}>{item.name}</span>
+                    )}
+                  </Button>
+                </Tooltip>
+              ))}
+            </Space>
+          </>
+        )}
         <Typography.Text type="secondary">
           {t('auth.noAccount')} <Link to="/register">{t('auth.goRegister')}</Link>
         </Typography.Text>

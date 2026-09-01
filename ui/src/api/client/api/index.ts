@@ -8,6 +8,10 @@ import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from '.
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
+import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
+// @ts-ignore
+import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
+// @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -29,6 +33,14 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get common(): CommonRequestBuilder;
     /**
+     * The oauthconnect property
+     */
+    get oauthconnect(): OauthconnectRequestBuilder;
+    /**
+     * The settings property
+     */
+    get settings(): SettingsRequestBuilder;
+    /**
      * The storage property
      */
     get storage(): StorageRequestBuilder;
@@ -49,6 +61,12 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
+    },
+    oauthconnect: {
+        navigationMetadata: OauthconnectRequestBuilderNavigationMetadata,
+    },
+    settings: {
+        requestsMetadata: SettingsRequestBuilderRequestsMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

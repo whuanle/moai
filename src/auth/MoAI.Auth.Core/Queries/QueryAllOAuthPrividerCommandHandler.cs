@@ -4,7 +4,7 @@ using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
-using MoAI.Auth.Models;
+using MoAI.Database.Enums;
 using MoAI.Auth.Queries;
 using MoAI.Auth.Queries.Responses;
 using System.Net;

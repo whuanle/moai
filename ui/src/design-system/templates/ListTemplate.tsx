@@ -1,7 +1,7 @@
-import { Button, Form, Input, Select, Tag, Space } from 'antd'
+import { Button, Input, Select, Space, Tag } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Page, QueryBar, DataTable } from '@/design-system'
+import { Page, PageToolbar, DataTable } from '@/design-system'
 import type { TableColumnsType } from 'antd'
 
 interface Item {
@@ -46,31 +46,32 @@ export function ListTemplate() {
 
   return (
     <Page title={t('ds.list.title')} subtitle={t('ds.list.subtitle')}>
-      <QueryBar
-        loading={loading}
-        onSearch={() => setLoading(true)}
-        onReset={() => setLoading(false)}
-      >
-        <Form.Item name="name" label={t('ds.list.nameLabel')}>
-          <Input placeholder={t('ds.list.namePlaceholder')} />
-        </Form.Item>
-        <Form.Item name="status" label={t('ds.list.status')}>
-          <Select
-            allowClear
-            style={{ width: 160 }}
-            options={[
-              { value: 'active', label: t('ds.list.statusActive') },
-              { value: 'disabled', label: t('ds.list.statusDisabled') },
-            ]}
-          />
-        </Form.Item>
-      </QueryBar>
+      <PageToolbar
+        filters={
+          <>
+            <Select
+              allowClear
+              style={{ width: 120 }}
+              placeholder={t('ds.list.status')}
+              options={[
+                { value: 'active', label: t('ds.list.statusActive') },
+                { value: 'disabled', label: t('ds.list.statusDisabled') },
+              ]}
+            />
+            <Input
+              style={{ width: 240 }}
+              allowClear
+              placeholder={t('ds.list.namePlaceholder')}
+            />
+          </>
+        }
+        actions={<Button type="primary">{t('ds.list.create')}</Button>}
+      />
       <DataTable<Item>
         rowKey="id"
         columns={columns}
         dataSource={mockData}
         loading={loading}
-        toolbar={<Button type="primary">{t('ds.list.create')}</Button>}
         onRefresh={() => setLoading(true)}
         refreshLoading={loading}
       />

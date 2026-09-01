@@ -1,0 +1,304 @@
+import { useEffect, useState } from 'react'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
+import type { TableColumnsType } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
+import { Navigate } from 'react-router'
+import { Page, DataTable, feedback } from '@/design-system'
+import { useAppStore } from '@/store/app'
+import type { OAuthPrivider } from '@/api/client/models'
+import {
+  createOAuthConnection,
+  deleteOAuthConnection,
+  getOAuthConnections,
+  updateOAuthConnection,
+  type OAuthConnectionItem,
+} from '@/api/oauthconnect'
+
+const { Text } = Typography
+
+interface FormValues {
+  name: string
+  provider: string
+  key: string
+  secret?: string
+  iconUrl: string
+  wellKnown?: string
+}
+
+const providerTagColor: Record<string, string> = {
+  custom: 'blue',
+  feishu: 'geekblue',
+  dingtalk: 'cyan',
+  dingTalk: 'cyan',
+  github: 'purple',
+  gitHub: 'purple',
+}
+
+function providerLabel(provider: string | null | undefined): string {
+  switch (provider) {
+    case 'custom':
+      return 'Custom OAuth'
+    case 'feishu':
+      return 'Feishu'
+    case 'dingTalk':
+    case 'dingtalk':
+      return 'DingTalk'
+    case 'gitHub':
+    case 'github':
+      return 'GitHub'
+    default:
+      return provider ?? '-'
+  }
+}
+
+export function OauthConnect() {
+  const { t } = useTranslation()
+  const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
+  const [form] = Form.useForm<FormValues>()
+
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [items, setItems] = useState<OAuthConnectionItem[]>([])
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<OAuthConnectionItem | null>(null)
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const res = await getOAuthConnections()
+      setItems(res)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin) {
+      void load()
+    }
+  }, [isAdmin])
+
+  const openCreate = () => {
+    setEditing(null)
+    form.resetFields()
+    setModalOpen(true)
+  }
+
+  const openEdit = (record: OAuthConnectionItem) => {
+    setEditing(record)
+    form.setFieldsValue({
+      name: record.name ?? '',
+      provider: record.provider ?? '',
+      key: record.key ?? '',
+      iconUrl: record.iconUrl ?? '',
+      wellKnown: record.wellKnown ?? '',
+      secret: '',
+    })
+    setModalOpen(true)
+  }
+
+  const handleOk = async () => {
+    const values = await form.validateFields()
+    setSubmitting(true)
+    try {
+      if (editing?.id) {
+        await updateOAuthConnection(editing.id, {
+          name: values.name,
+          provider: values.provider as OAuthPrivider,
+          key: values.key,
+          secret: values.secret,
+          iconUrl: values.iconUrl,
+          wellKnown: values.wellKnown,
+        })
+      } else {
+        await createOAuthConnection({
+          name: values.name,
+          provider: values.provider as OAuthPrivider,
+          key: values.key,
+          secret: values.secret ?? '',
+          iconUrl: values.iconUrl,
+          wellKnown: values.wellKnown,
+        })
+      }
+      feedback.success(t('oauthconnect.saveSuccess'))
+      setModalOpen(false)
+      void load()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteOAuthConnection(id)
+      feedback.success(t('oauthconnect.deleteSuccess'))
+      void load()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const providerOptions = [
+    { value: 'custom', label: 'Custom OAuth' },
+    { value: 'feishu', label: 'Feishu（飞书）' },
+    { value: 'dingTalk', label: 'DingTalk（钉钉）' },
+    { value: 'gitHub', label: 'GitHub' },
+  ]
+
+  const columns: TableColumnsType<OAuthConnectionItem> = [
+    { title: t('oauthconnect.colName'), dataIndex: 'name', width: 160 },
+    {
+      title: t('oauthconnect.colProvider'),
+      dataIndex: 'provider',
+      width: 140,
+      render: (p: string | null) => (
+        <Tag color={providerTagColor[p ?? '']}>{providerLabel(p)}</Tag>
+      ),
+    },
+    { title: t('oauthconnect.colKey'), dataIndex: 'key', width: 220, ellipsis: true },
+    {
+      title: t('oauthconnect.colIcon'),
+      dataIndex: 'iconUrl',
+      width: 90,
+      render: (url: string | null) =>
+        url ? (
+          <img
+            src={url}
+            alt="icon"
+            style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'contain' }}
+          />
+        ) : (
+          '-'
+        ),
+    },
+    {
+      title: t('oauthconnect.colAuthorize'),
+      dataIndex: 'authorizeUrl',
+      ellipsis: true,
+      render: (url: string | null) =>
+        url ? (
+          <Text style={{ fontSize: 12 }} copyable>
+            {url}
+          </Text>
+        ) : (
+          '-'
+        ),
+    },
+    {
+      title: t('oauthconnect.colActions'),
+      key: 'actions',
+      width: 140,
+      render: (_, record) => (
+        <Space>
+          <Button type="link" size="small" onClick={() => openEdit(record)}>
+            {t('oauthconnect.edit')}
+          </Button>
+          <Popconfirm
+            title={t('oauthconnect.deleteConfirm')}
+            onConfirm={() => record.id && handleDelete(record.id)}
+          >
+            <Button type="link" size="small" danger>
+              {t('oauthconnect.delete')}
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return (
+    <Page>
+      <DataTable<OAuthConnectionItem>
+        rowKey="id"
+        columns={columns}
+        dataSource={items}
+        loading={loading}
+        toolbar={
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            {t('oauthconnect.create')}
+          </Button>
+        }
+        onRefresh={load}
+        refreshLoading={loading}
+        pagination={false}
+      />
+      <Modal
+        open={modalOpen}
+        title={editing ? t('oauthconnect.editTitle') : t('oauthconnect.createTitle')}
+        onOk={handleOk}
+        onCancel={() => setModalOpen(false)}
+        okText={t('oauthconnect.save')}
+        cancelText={t('oauthconnect.cancel')}
+        confirmLoading={submitting}
+        destroyOnClose
+        maskClosable={false}
+      >
+        <Form form={form} layout="vertical" initialValues={{ provider: 'custom' }}>
+          <Form.Item
+            name="name"
+            label={t('oauthconnect.colName')}
+            rules={[{ required: true, message: t('oauthconnect.nameRequired') }]}
+          >
+            <Input maxLength={50} />
+          </Form.Item>
+          <Form.Item
+            name="provider"
+            label={t('oauthconnect.provider')}
+            rules={[{ required: true }]}
+          >
+            <Select options={providerOptions} disabled={Boolean(editing)} />
+          </Form.Item>
+          <Form.Item
+            name="key"
+            label={t('oauthconnect.key')}
+            rules={[{ required: true, message: t('oauthconnect.keyRequired') }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="secret"
+            label={t('oauthconnect.secret')}
+            rules={editing ? [] : [{ required: true, message: t('oauthconnect.secretRequired') }]}
+            extra={editing ? t('oauthconnect.secretKeep') : undefined}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            name="iconUrl"
+            label={t('oauthconnect.icon')}
+            rules={[{ required: true, message: t('oauthconnect.iconRequired') }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="wellKnown"
+            label={t('oauthconnect.wellKnown')}
+            rules={[
+              {
+                validator: (_, value) =>
+                  providerRequiresWellKnown(form.getFieldValue('provider') as string) && !value
+                    ? Promise.reject(new Error(t('oauthconnect.wellKnownRequired')))
+                    : Promise.resolve(),
+              },
+            ]}
+          >
+            <Input placeholder="https://..." />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Page>
+  )
+}
+
+function providerRequiresWellKnown(provider: string): boolean {
+  return provider === 'custom'
+}

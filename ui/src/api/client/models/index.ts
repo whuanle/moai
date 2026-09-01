@@ -5,6 +5,35 @@
 import { type ApiError, type Guid, type Parsable, type ParseNode, type SerializationWriter } from '@microsoft/kiota-abstractions';
 
 /**
+ * 数据子项.
+ */
+export interface AuditsInfo extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 创建人ID.
+     */
+    createUserId?: number | null;
+    /**
+     * 创建者 名字.
+     */
+    createUserName?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 更新人ID.
+     */
+    updateUserId?: number | null;
+    /**
+     * 更新人 名字.
+     */
+    updateUserName?: string | null;
+}
+/**
  * 错误信息.
  */
 export interface BusinessExceptionError extends Parsable {
@@ -63,6 +92,15 @@ export interface CompleteFileUploadCommand extends Parsable {
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AuditsInfo}
+ */
+// @ts-ignore
+export function createAuditsInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAuditsInfo;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {BusinessExceptionError}
  */
 // @ts-ignore
@@ -99,6 +137,15 @@ export function createCompleteFileUploadCommandFromDiscriminatorValue(parseNode:
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateOAuthConnectionCommand}
+ */
+// @ts-ignore
+export function createCreateOAuthConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateOAuthConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {EmptyCommandResponse}
  */
 // @ts-ignore
@@ -131,6 +178,35 @@ export function createLoginCommandResponseFromDiscriminatorValue(parseNode: Pars
 // @ts-ignore
 export function createOAuthBindExistAccountCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoOAuthBindExistAccountCommand;
+}
+/**
+ * 创建第三方登录连接配置.
+ */
+export interface CreateOAuthConnectionCommand extends Parsable {
+    /**
+     * 图标地址.
+     */
+    iconUrl?: string | null;
+    /**
+     * 应用 key.
+     */
+    key?: string | null;
+    /**
+     * 认证名称.
+     */
+    name?: string | null;
+    /**
+     * 提供商.
+     */
+    provider?: OAuthPrivider | null;
+    /**
+     * 密钥.
+     */
+    secret?: string | null;
+    /**
+     * 发现端点.
+     */
+    wellKnown?: string | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -189,6 +265,24 @@ export function createPreUploadTempFileCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAllOAuthConnectionCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAllOAuthConnectionCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAllOAuthConnectionCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAllOAuthConnectionCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryAllOAuthConnectionCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAllOAuthConnectionCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAllOAuthPrividerCommandResponse}
  */
 // @ts-ignore
@@ -216,6 +310,15 @@ export function createQueryServerInfoCommandResponseFromDiscriminatorValue(parse
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySettingsCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySettingsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySettingsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshTokenCommand}
  */
 // @ts-ignore
@@ -239,6 +342,24 @@ export function createRefreshTokenCommandResponseFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createRegisterUserCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoRegisterUserCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveSettingCommand}
+ */
+// @ts-ignore
+export function createSaveSettingCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveSettingCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SettingItemResponse}
+ */
+// @ts-ignore
+export function createSettingItemResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSettingItemResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -279,11 +400,35 @@ export function createSimpleOfLongFromDiscriminatorValue(parseNode: ParseNode | 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateOAuthConnectionCommand}
+ */
+// @ts-ignore
+export function createUpdateOAuthConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateOAuthConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UserStateInfo}
  */
 // @ts-ignore
 export function createUserStateInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUserStateInfo;
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAuditsInfo(auditsInfo: Partial<AuditsInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { auditsInfo.createTime = n.getStringValue(); },
+        "createUserId": n => { auditsInfo.createUserId = n.getNumberValue(); },
+        "createUserName": n => { auditsInfo.createUserName = n.getStringValue(); },
+        "updateTime": n => { auditsInfo.updateTime = n.getStringValue(); },
+        "updateUserId": n => { auditsInfo.updateUserId = n.getNumberValue(); },
+        "updateUserName": n => { auditsInfo.updateUserName = n.getStringValue(); },
+    }
 }
 /**
  * The deserialization information for the current model
@@ -328,6 +473,21 @@ export function deserializeIntoCompleteFileUploadCommand(completeFileUploadComma
     return {
         "fileId": n => { completeFileUploadCommand.fileId = n.getStringValue(); },
         "isSuccess": n => { completeFileUploadCommand.isSuccess = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "iconUrl": n => { createOAuthConnectionCommand.iconUrl = n.getStringValue(); },
+        "key": n => { createOAuthConnectionCommand.key = n.getStringValue(); },
+        "name": n => { createOAuthConnectionCommand.name = n.getStringValue(); },
+        "provider": n => { createOAuthConnectionCommand.provider = n.getEnumValue<OAuthPrivider>(OAuthPrividerObject); },
+        "secret": n => { createOAuthConnectionCommand.secret = n.getStringValue(); },
+        "wellKnown": n => { createOAuthConnectionCommand.wellKnown = n.getStringValue(); },
     }
 }
 /**
@@ -455,6 +615,33 @@ export function deserializeIntoPreUploadTempFileCommand(preUploadTempFileCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAllOAuthConnectionCommandResponse(queryAllOAuthConnectionCommandResponse: Partial<QueryAllOAuthConnectionCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAllOAuthConnectionCommandResponse.items = n.getCollectionOfObjectValues<QueryAllOAuthConnectionCommandResponseItem>(createQueryAllOAuthConnectionCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAllOAuthConnectionCommandResponseItem(queryAllOAuthConnectionCommandResponseItem: Partial<QueryAllOAuthConnectionCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryAllOAuthConnectionCommandResponseItem),
+        "authorizeUrl": n => { queryAllOAuthConnectionCommandResponseItem.authorizeUrl = n.getStringValue(); },
+        "iconUrl": n => { queryAllOAuthConnectionCommandResponseItem.iconUrl = n.getStringValue(); },
+        "id": n => { queryAllOAuthConnectionCommandResponseItem.id = n.getGuidValue(); },
+        "key": n => { queryAllOAuthConnectionCommandResponseItem.key = n.getStringValue(); },
+        "name": n => { queryAllOAuthConnectionCommandResponseItem.name = n.getStringValue(); },
+        "provider": n => { queryAllOAuthConnectionCommandResponseItem.provider = n.getStringValue(); },
+        "wellKnown": n => { queryAllOAuthConnectionCommandResponseItem.wellKnown = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAllOAuthPrividerCommandResponse(queryAllOAuthPrividerCommandResponse: Partial<QueryAllOAuthPrividerCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAllOAuthPrividerCommandResponse.items = n.getCollectionOfObjectValues<QueryAllOAuthPrividerCommandResponseItem>(createQueryAllOAuthPrividerCommandResponseItemFromDiscriminatorValue); },
@@ -486,6 +673,16 @@ export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCom
         "publicStoreUrl": n => { queryServerInfoCommandResponse.publicStoreUrl = n.getStringValue(); },
         "rsaPublic": n => { queryServerInfoCommandResponse.rsaPublic = n.getStringValue(); },
         "serviceUrl": n => { queryServerInfoCommandResponse.serviceUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySettingsCommandResponse(querySettingsCommandResponse: Partial<QuerySettingsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { querySettingsCommandResponse.items = n.getCollectionOfObjectValues<SettingItemResponse>(createSettingItemResponseFromDiscriminatorValue); },
     }
 }
 /**
@@ -525,6 +722,30 @@ export function deserializeIntoRegisterUserCommand(registerUserCommand: Partial<
         "password": n => { registerUserCommand.password = n.getStringValue(); },
         "phone": n => { registerUserCommand.phone = n.getStringValue(); },
         "userName": n => { registerUserCommand.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSaveSettingCommand(saveSettingCommand: Partial<SaveSettingCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "key": n => { saveSettingCommand.key = n.getStringValue(); },
+        "value": n => { saveSettingCommand.value = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSettingItemResponse(settingItemResponse: Partial<SettingItemResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { settingItemResponse.description = n.getStringValue(); },
+        "key": n => { settingItemResponse.key = n.getStringValue(); },
+        "name": n => { settingItemResponse.name = n.getStringValue(); },
+        "value": n => { settingItemResponse.value = n.getStringValue(); },
     }
 }
 /**
@@ -572,6 +793,22 @@ export function deserializeIntoSimpleOfLong(simpleOfLong: Partial<SimpleOfLong> 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "iconUrl": n => { updateOAuthConnectionCommand.iconUrl = n.getStringValue(); },
+        "key": n => { updateOAuthConnectionCommand.key = n.getStringValue(); },
+        "name": n => { updateOAuthConnectionCommand.name = n.getStringValue(); },
+        "oAuthConnectionId": n => { updateOAuthConnectionCommand.oAuthConnectionId = n.getGuidValue(); },
+        "provider": n => { updateOAuthConnectionCommand.provider = n.getEnumValue<OAuthPrivider>(OAuthPrividerObject); },
+        "secret": n => { updateOAuthConnectionCommand.secret = n.getStringValue(); },
+        "wellKnown": n => { updateOAuthConnectionCommand.wellKnown = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { userStateInfo.avatar = n.getStringValue(); },
@@ -579,6 +816,7 @@ export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInf
         "isAdmin": n => { userStateInfo.isAdmin = n.getBooleanValue(); },
         "isDeleted": n => { userStateInfo.isDeleted = n.getBooleanValue(); },
         "isDisable": n => { userStateInfo.isDisable = n.getBooleanValue(); },
+        "isRoot": n => { userStateInfo.isRoot = n.getBooleanValue(); },
         "nickName": n => { userStateInfo.nickName = n.getStringValue(); },
         "phone": n => { userStateInfo.phone = n.getStringValue(); },
         "userId": n => { userStateInfo.userId = n.getStringValue(); },
@@ -679,6 +917,7 @@ export interface OAuthLoginCommandResponse extends Parsable {
      */
     tempOAuthBindId?: Guid | null;
 }
+export type OAuthPrivider = (typeof OAuthPrividerObject)[keyof typeof OAuthPrividerObject];
 /**
  * 第三方账号没有绑定记录时，使用第三方账号一键注册.
  */
@@ -756,6 +995,48 @@ export interface PreUploadTempFileCommand extends Parsable {
     shA256?: string | null;
 }
 /**
+ * QueryAllOAuthConnectionCommandResponse.
+ */
+export interface QueryAllOAuthConnectionCommandResponse extends Parsable {
+    /**
+     * 集合.
+     */
+    items?: QueryAllOAuthConnectionCommandResponseItem[] | null;
+}
+/**
+ * QueryAllOAuthConnectionCommandResponseItem.
+ */
+export interface QueryAllOAuthConnectionCommandResponseItem extends AuditsInfo, Parsable {
+    /**
+     * 登录跳转地址.
+     */
+    authorizeUrl?: string | null;
+    /**
+     * 图标地址.
+     */
+    iconUrl?: string | null;
+    /**
+     * id.
+     */
+    id?: Guid | null;
+    /**
+     * 应用 key.
+     */
+    key?: string | null;
+    /**
+     * 认证名称.
+     */
+    name?: string | null;
+    /**
+     * 提供商标识.
+     */
+    provider?: string | null;
+    /**
+     * 发现端点.
+     */
+    wellKnown?: string | null;
+}
+/**
  * QueryAllOAuthPrividerCommandResponse。
  */
 export interface QueryAllOAuthPrividerCommandResponse extends Parsable {
@@ -813,6 +1094,15 @@ export interface QueryServerInfoCommandResponse extends Parsable {
      * 系统访问地址.
      */
     serviceUrl?: string | null;
+}
+/**
+ * 查询设置项响应.
+ */
+export interface QuerySettingsCommandResponse extends Parsable {
+    /**
+     * 设置项集合.
+     */
+    items?: SettingItemResponse[] | null;
 }
 /**
  * 刷新 token.
@@ -878,6 +1168,34 @@ export interface RegisterUserCommand extends Parsable {
     userName?: string | null;
 }
 /**
+ * 保存设置.
+ */
+export interface SaveSettingCommand extends Parsable {
+    /**
+     * 设置项 key.
+     */
+    key?: string | null;
+    /**
+     * 设置项值.
+     */
+    value?: string | null;
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAuditsInfo(writer: SerializationWriter, auditsInfo: Partial<AuditsInfo> | undefined | null = {}) : void {
+    if (auditsInfo) {
+        writer.writeStringValue("createTime", auditsInfo.createTime);
+        writer.writeNumberValue("createUserId", auditsInfo.createUserId);
+        writer.writeStringValue("createUserName", auditsInfo.createUserName);
+        writer.writeStringValue("updateTime", auditsInfo.updateTime);
+        writer.writeNumberValue("updateUserId", auditsInfo.updateUserId);
+        writer.writeStringValue("updateUserName", auditsInfo.updateUserName);
+    }
+}
+/**
  * Serializes information the current object
  * @param writer Serialization writer to use to serialize this model
  */
@@ -920,6 +1238,21 @@ export function serializeCompleteFileUploadCommand(writer: SerializationWriter, 
     if (completeFileUploadCommand) {
         writer.writeStringValue("fileId", completeFileUploadCommand.fileId);
         writer.writeBooleanValue("isSuccess", completeFileUploadCommand.isSuccess);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateOAuthConnectionCommand(writer: SerializationWriter, createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined | null = {}) : void {
+    if (createOAuthConnectionCommand) {
+        writer.writeStringValue("iconUrl", createOAuthConnectionCommand.iconUrl);
+        writer.writeStringValue("key", createOAuthConnectionCommand.key);
+        writer.writeStringValue("name", createOAuthConnectionCommand.name);
+        writer.writeEnumValue<OAuthPrivider>("provider", createOAuthConnectionCommand.provider);
+        writer.writeStringValue("secret", createOAuthConnectionCommand.secret);
+        writer.writeStringValue("wellKnown", createOAuthConnectionCommand.wellKnown);
     }
 }
 /**
@@ -1047,6 +1380,33 @@ export function serializePreUploadTempFileCommand(writer: SerializationWriter, p
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAllOAuthConnectionCommandResponse(writer: SerializationWriter, queryAllOAuthConnectionCommandResponse: Partial<QueryAllOAuthConnectionCommandResponse> | undefined | null = {}) : void {
+    if (queryAllOAuthConnectionCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryAllOAuthConnectionCommandResponseItem>("items", queryAllOAuthConnectionCommandResponse.items, serializeQueryAllOAuthConnectionCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAllOAuthConnectionCommandResponseItem(writer: SerializationWriter, queryAllOAuthConnectionCommandResponseItem: Partial<QueryAllOAuthConnectionCommandResponseItem> | undefined | null = {}) : void {
+    if (queryAllOAuthConnectionCommandResponseItem) {
+        serializeAuditsInfo(writer, queryAllOAuthConnectionCommandResponseItem)
+        writer.writeStringValue("authorizeUrl", queryAllOAuthConnectionCommandResponseItem.authorizeUrl);
+        writer.writeStringValue("iconUrl", queryAllOAuthConnectionCommandResponseItem.iconUrl);
+        writer.writeGuidValue("id", queryAllOAuthConnectionCommandResponseItem.id);
+        writer.writeStringValue("key", queryAllOAuthConnectionCommandResponseItem.key);
+        writer.writeStringValue("name", queryAllOAuthConnectionCommandResponseItem.name);
+        writer.writeStringValue("provider", queryAllOAuthConnectionCommandResponseItem.provider);
+        writer.writeStringValue("wellKnown", queryAllOAuthConnectionCommandResponseItem.wellKnown);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAllOAuthPrividerCommandResponse(writer: SerializationWriter, queryAllOAuthPrividerCommandResponse: Partial<QueryAllOAuthPrividerCommandResponse> | undefined | null = {}) : void {
     if (queryAllOAuthPrividerCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryAllOAuthPrividerCommandResponseItem>("items", queryAllOAuthPrividerCommandResponse.items, serializeQueryAllOAuthPrividerCommandResponseItem);
@@ -1078,6 +1438,16 @@ export function serializeQueryServerInfoCommandResponse(writer: SerializationWri
         writer.writeStringValue("publicStoreUrl", queryServerInfoCommandResponse.publicStoreUrl);
         writer.writeStringValue("rsaPublic", queryServerInfoCommandResponse.rsaPublic);
         writer.writeStringValue("serviceUrl", queryServerInfoCommandResponse.serviceUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySettingsCommandResponse(writer: SerializationWriter, querySettingsCommandResponse: Partial<QuerySettingsCommandResponse> | undefined | null = {}) : void {
+    if (querySettingsCommandResponse) {
+        writer.writeCollectionOfObjectValues<SettingItemResponse>("items", querySettingsCommandResponse.items, serializeSettingItemResponse);
     }
 }
 /**
@@ -1117,6 +1487,30 @@ export function serializeRegisterUserCommand(writer: SerializationWriter, regist
         writer.writeStringValue("password", registerUserCommand.password);
         writer.writeStringValue("phone", registerUserCommand.phone);
         writer.writeStringValue("userName", registerUserCommand.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSaveSettingCommand(writer: SerializationWriter, saveSettingCommand: Partial<SaveSettingCommand> | undefined | null = {}) : void {
+    if (saveSettingCommand) {
+        writer.writeStringValue("key", saveSettingCommand.key);
+        writer.writeStringValue("value", saveSettingCommand.value);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSettingItemResponse(writer: SerializationWriter, settingItemResponse: Partial<SettingItemResponse> | undefined | null = {}) : void {
+    if (settingItemResponse) {
+        writer.writeStringValue("description", settingItemResponse.description);
+        writer.writeStringValue("key", settingItemResponse.key);
+        writer.writeStringValue("name", settingItemResponse.name);
+        writer.writeStringValue("value", settingItemResponse.value);
     }
 }
 /**
@@ -1164,6 +1558,22 @@ export function serializeSimpleOfLong(writer: SerializationWriter, simpleOfLong:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateOAuthConnectionCommand(writer: SerializationWriter, updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined | null = {}) : void {
+    if (updateOAuthConnectionCommand) {
+        writer.writeStringValue("iconUrl", updateOAuthConnectionCommand.iconUrl);
+        writer.writeStringValue("key", updateOAuthConnectionCommand.key);
+        writer.writeStringValue("name", updateOAuthConnectionCommand.name);
+        writer.writeGuidValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
+        writer.writeEnumValue<OAuthPrivider>("provider", updateOAuthConnectionCommand.provider);
+        writer.writeStringValue("secret", updateOAuthConnectionCommand.secret);
+        writer.writeStringValue("wellKnown", updateOAuthConnectionCommand.wellKnown);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUserStateInfo(writer: SerializationWriter, userStateInfo: Partial<UserStateInfo> | undefined | null = {}) : void {
     if (userStateInfo) {
         writer.writeStringValue("avatar", userStateInfo.avatar);
@@ -1171,11 +1581,33 @@ export function serializeUserStateInfo(writer: SerializationWriter, userStateInf
         writer.writeBooleanValue("isAdmin", userStateInfo.isAdmin);
         writer.writeBooleanValue("isDeleted", userStateInfo.isDeleted);
         writer.writeBooleanValue("isDisable", userStateInfo.isDisable);
+        writer.writeBooleanValue("isRoot", userStateInfo.isRoot);
         writer.writeStringValue("nickName", userStateInfo.nickName);
         writer.writeStringValue("phone", userStateInfo.phone);
         writer.writeStringValue("userId", userStateInfo.userId);
         writer.writeStringValue("userName", userStateInfo.userName);
     }
+}
+/**
+ * 设置项.
+ */
+export interface SettingItemResponse extends Parsable {
+    /**
+     * 设置项描述.
+     */
+    description?: string | null;
+    /**
+     * 设置项 key.
+     */
+    key?: string | null;
+    /**
+     * 设置项名称.
+     */
+    name?: string | null;
+    /**
+     * 设置项当前值.
+     */
+    value?: string | null;
 }
 /**
  * SimpleGuid.
@@ -1206,6 +1638,39 @@ export interface SimpleOfLong extends Parsable {
     value?: string | null;
 }
 /**
+ * 更新第三方登录连接配置.
+ */
+export interface UpdateOAuthConnectionCommand extends Parsable {
+    /**
+     * 图标地址.
+     */
+    iconUrl?: string | null;
+    /**
+     * 应用 key.
+     */
+    key?: string | null;
+    /**
+     * 认证名称.
+     */
+    name?: string | null;
+    /**
+     * 连接 id.
+     */
+    oAuthConnectionId?: Guid | null;
+    /**
+     * 提供商.
+     */
+    provider?: OAuthPrivider | null;
+    /**
+     * 密钥，为空时保持不变.
+     */
+    secret?: string | null;
+    /**
+     * 发现端点.
+     */
+    wellKnown?: string | null;
+}
+/**
  * UserStateInfo.
  */
 export interface UserStateInfo extends Parsable {
@@ -1230,6 +1695,10 @@ export interface UserStateInfo extends Parsable {
      */
     isDisable?: boolean | null;
     /**
+     * 是否超级管理员.
+     */
+    isRoot?: boolean | null;
+    /**
      * 昵称.
      */
     nickName?: string | null;
@@ -1246,5 +1715,14 @@ export interface UserStateInfo extends Parsable {
      */
     userName?: string | null;
 }
+/**
+ * OAuth 提供商.
+ */
+export const OAuthPrividerObject = {
+    Custom: "custom",
+    Feishu: "feishu",
+    DingTalk: "dingTalk",
+    GitHub: "gitHub",
+} as const;
 /* tslint:enable */
 /* eslint-enable */

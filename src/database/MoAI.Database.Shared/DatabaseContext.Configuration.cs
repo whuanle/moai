@@ -3,12 +3,10 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Database.Audits;
-using MoAI.Database.Entities;
+using MoAI.Database.Seed;
 using MoAI.Infra.Extensions;
-using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace MoAI.Database;
 
@@ -104,54 +102,9 @@ public partial class DatabaseContext
     /// <param name="modelBuilder"></param>
     protected static void SeedData(ModelBuilder modelBuilder)
     {
-        const string defaultPassword = "YWJjZDEyMzQ1Ng==";
-        var (hashPassword, salt) = PBKDF2Helper.ToHash(Encoding.UTF8.GetString(Convert.FromBase64String(defaultPassword)));
-
-        // 插入超级管理员
-        modelBuilder.Entity<UserEntity>().HasData(
-            new UserEntity
-            {
-                Id = 1,
-                UserName = "admin",
-                NickName = "admin",
-                Email = "admin@admin.com",
-                Password = hashPassword,
-                PasswordSalt = salt,
-                Phone = "12345678901",
-                IsAdmin = true,
-                AvatarPath = string.Empty
-            });
-
-        // 优化 ClassifyEntity 种子数据插入
-        var classifyNames = new[]
-        {
-            "职业", "商业", "工具", "语言", "办公", "通用", "写作", "精选", "编程", "情感", "教育",
-            "创意", "学术", "设计", "艺术", "娱乐", "生活", "医疗", "游戏", "翻译", "音乐", "点评",
-            "文案", "百科", "健康", "营销", "科学", "分析", "法律", "咨询", "金融", "旅游", "管理"
-        };
-        var classifyTypes = new[] { "prompt", "plugin", "app" };
-        var classifyEntities = new List<ClassifyEntity>();
-
-        int classifyId = 1;
-        foreach (var type in classifyTypes)
-        {
-            foreach (var name in classifyNames)
-            {
-                classifyEntities.Add(new ClassifyEntity { Id = classifyId++, Type = type, Name = name, Description = name });
-            }
-        }
-
-        modelBuilder.Entity<ClassifyEntity>().HasData(classifyEntities);
-
-        // 生成系统初始化配置.
-        modelBuilder.Entity<SettingEntity>().HasData(
-            new SettingEntity
-            {
-                Id = 1,
-                Key = "root",
-                Value = "1",
-                Description = "超级管理员"
-            });
+        UserSeed.Apply(modelBuilder);
+        ClassifySeed.Apply(modelBuilder);
+        SettingSeed.Apply(modelBuilder);
     }
 
     /// <summary>

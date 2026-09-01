@@ -1,28 +1,29 @@
-export const colorPrimary = '#4A9EFF'
+export const colorPrimary = '#2970FF'
 
 export const brandColors = {
   primary: colorPrimary,
-  primaryHover: '#69AFFF',
-  primaryActive: '#1E7BE0',
-  success: '#00B578',
-  warning: '#FF9500',
-  error: '#FF3B30',
-  info: colorPrimary,
+  primaryHover: '#1E5BFF',
+  primaryActive: '#1E53E0',
+  success: '#17B26A',
+  warning: '#F79009',
+  error: '#F04438',
+  info: '#0BA5EC',
 }
 
 export const neutralColors = {
-  textPrimary: '#1F2329',
-  textSecondary: '#51565C',
-  textTertiary: '#8A8F96',
-  border: '#E5E8EC',
-  background: '#F5F7FA',
+  textPrimary: '#101828',
+  textSecondary: '#475467',
+  textTertiary: '#667085',
+  border: '#E5E7EB',
+  background: '#F9FAFB',
   backgroundElevated: '#FFFFFF',
 }
 
 export const radius = {
-  sm: 4,
+  sm: 6,
   default: 8,
   lg: 12,
+  pill: 999,
 }
 
 export const spacing = {
@@ -36,7 +37,7 @@ export const spacing = {
 }
 
 export const fontFamily =
-  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+  "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
 
 export const fontSize = {
   xs: 12,
@@ -47,4 +48,4 @@ export const fontSize = {
   xxl: 24,
 }
 
-export const controlHeight = 32
+export const controlHeight = 36

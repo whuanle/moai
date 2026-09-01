@@ -78,6 +78,20 @@ export async function refreshAccessToken(refreshToken: string): Promise<UserInfo
   return userInfo
 }
 
+export interface OAuthProviderItem {
+  oAuthId?: string | null
+  name?: string | null
+  iconUrl?: string | null
+  provider?: string | null
+  redirectUrl?: string | null
+}
+
+export async function getOAuthProviders(): Promise<OAuthProviderItem[]> {
+  const client = getAnonymousClient()
+  const res = await client.api.auth.oauth_prividers.get()
+  return res?.items ?? []
+}
+
 export async function getUserDetailInfo() {
   const client = getApiClient()
   return client.api.account.userinfo.get()

@@ -46,6 +46,11 @@ public class UserStateInfo
     public bool IsAdmin { get; set; }
 
     /// <summary>
+    /// 是否超级管理员.
+    /// </summary>
+    public bool IsRoot { get; set; }
+
+    /// <summary>
     /// 已被删除.
     /// </summary>
     public bool IsDeleted { get; set; }

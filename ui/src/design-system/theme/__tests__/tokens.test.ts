@@ -3,7 +3,7 @@ import { brandColors, colorPrimary, radius, spacing, fontFamily } from '../token
 
 describe('design tokens', () => {
   it('uses brand blue as the primary color', () => {
-    expect(colorPrimary).toBe('#4A9EFF')
+    expect(colorPrimary).toBe('#2970FF')
     expect(brandColors.primary).toBe(colorPrimary)
   })
   it('exposes a spacing scale on the 8px grid', () => {
