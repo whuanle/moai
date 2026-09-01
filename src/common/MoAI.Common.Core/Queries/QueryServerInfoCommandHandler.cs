@@ -3,6 +3,7 @@ using MoAI.Common.Queries.Response;
 using MoAI.Database;
 using MoAI.Infra;
 using MoAI.Infra.Services;
+using MoAI.Storage.Services;
 
 namespace MoAI.Common.Queries;
 
@@ -31,7 +32,7 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
     /// <inheritdoc/>
     public async Task<QueryServerInfoCommandResponse> Handle(QueryServerInfoCommand request, CancellationToken cancellationToken)
     {
-        var endpoint = new Uri(new Uri(_systemOptions.Server), "statics");
+        var endpoint = new Uri(new Uri(_systemOptions.Server), IStorageService.StaticRoutePrefix.TrimStart('/'));
 
         return new QueryServerInfoCommandResponse
         {

@@ -48,7 +48,7 @@ public class UpdateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateOAuthConnectionCommand> validate)
     {
-        validate.RuleFor(x => x.OAuthConnectionId).NotEmpty().WithMessage("Id 不能为空.");
+        // OAuthConnectionId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("认证名称不能为空.").MaximumLength(50).WithMessage("认证名称最长 50 个字符.");
         validate.RuleFor(x => x.Provider).IsInEnum().WithMessage("提供商不合法.");
         validate.RuleFor(x => x.Key).NotEmpty().WithMessage("应用 Key 不能为空.");

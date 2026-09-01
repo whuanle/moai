@@ -104,7 +104,7 @@ public class TokenProvider : ITokenProvider
 
         if (!jwtSecurityTokenHandler.CanReadToken(token))
         {
-            throw new BusinessException("不是有效的 token 格式.");
+            throw new BusinessException("不是有效的 token 格式.") { StatusCode = 401 };
         }
 
         var rsaKey = _rsaProvider.GetRsaSecurityKey();
@@ -132,7 +132,7 @@ public class TokenProvider : ITokenProvider
 
         if (!jwtSecurityTokenHandler.CanReadToken(token))
         {
-            throw new BusinessException("不是有效的 token 格式.");
+            throw new BusinessException("不是有效的 token 格式.") { StatusCode = 401 };
         }
 
         var checkResult = await jwtSecurityTokenHandler.ValidateTokenAsync(token, new TokenValidationParameters()
@@ -150,7 +150,7 @@ public class TokenProvider : ITokenProvider
 
         if (!checkResult.IsValid)
         {
-            throw new BusinessException("token 验证失败.");
+            throw new BusinessException("token 验证失败.") { StatusCode = 401 };
         }
 
         var jwt = jwtSecurityTokenHandler.ReadJwtToken(token);

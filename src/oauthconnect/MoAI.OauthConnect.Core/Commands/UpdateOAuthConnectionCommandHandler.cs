@@ -37,7 +37,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
 
         if (connection == null)
         {
-            throw new BusinessException("未找到认证方式，请检查名称是否正确.");
+            throw new BusinessException("未找到认证方式，请检查名称是否正确.") { StatusCode = 404 };
         }
 
         if (connection.Name != request.Name)
@@ -47,7 +47,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
 
             if (exist)
             {
-                throw new BusinessException("认证名称已存在，请更换后重试.");
+                throw new BusinessException("认证名称已存在，请更换后重试.") { StatusCode = 409 };
             }
         }
 
@@ -88,12 +88,27 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
     {
         if (wellKnownUrl == null)
         {
-            throw new BusinessException("发现端点不能为空.");
+            throw new BusinessException("发现端点不能为空.") { StatusCode = 400 };
         }
 
         var authClient = _authClientFactory.Create(new Uri(wellKnownUrl.GetLeftPart(UriPartial.Authority)));
-        var wellKnown = await authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
+        try
+        {
+            var wellKnown = await authClient.GetWellKnownAsync(wellKnownUrl.PathAndQuery.TrimStart('/'));
+            if (string.IsNullOrWhiteSpace(wellKnown?.AuthorizationEndpoint))
+            {
+                throw new BusinessException("发现端点未返回授权端点 authorization_endpoint.") { StatusCode = 400 };
+            }
 
-        return wellKnown.AuthorizationEndpoint;
+            return wellKnown.AuthorizationEndpoint;
+        }
+        catch (BusinessException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            throw new BusinessException("无法访问发现端点，请检查地址是否正确.") { StatusCode = 400 };
+        }
     }
 }

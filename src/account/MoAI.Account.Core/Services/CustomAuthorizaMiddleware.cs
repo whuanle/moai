@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Queries;
-using MoAI.Infra.Exceptions;
+using MoAI.Account.Queries.Responses;
+using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
 namespace MoAI.Account.Services;
@@ -49,21 +50,30 @@ public class CustomAuthorizaMiddleware : IMiddleware
 
         if (authorizeData.Count > 0)
         {
+            UserStateInfo? userState = null;
             try
             {
-                var userState = await _mediator.Send(new QueryUserStateCommand
+                userState = await _mediator.Send(new QueryUserStateCommand
                 {
                     UserId = userContext.UserId
                 });
-
-                if (userState.IsDeleted || userState.IsDisable)
-                {
-                    throw new BusinessException("账号已被禁用");
-                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Can't query user state，user id: {UserId}", userContext.UserId);
+            }
+
+            // 禁用/删除的账号立即拦截；用户态查询失败时保持放行，维持原有容错语义.
+            if (userState != null && (userState.IsDeleted || userState.IsDisable))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new BusinessValidationResult
+                {
+                    Code = StatusCodes.Status403Forbidden,
+                    RequestId = context.TraceIdentifier,
+                    Detail = "账号已被禁用",
+                });
+                return;
             }
         }
 

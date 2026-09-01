@@ -233,6 +233,15 @@ export function createLoginCommandResponseFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {OAuthBindAccountByCodeCommand}
+ */
+// @ts-ignore
+export function createOAuthBindAccountByCodeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoOAuthBindAccountByCodeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {OAuthBindExistAccountCommand}
  */
 // @ts-ignore
@@ -388,6 +397,24 @@ export function createQueryUserBoundAccountsCommandResponseFromDiscriminatorValu
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryUserListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryUserListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryUserListCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryUserListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryUserListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshTokenCommand}
  */
 // @ts-ignore
@@ -420,6 +447,15 @@ export function createRegisterUserCommandFromDiscriminatorValue(parseNode: Parse
 // @ts-ignore
 export function createResetPasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoResetPasswordCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ResetUserPasswordCommand}
+ */
+// @ts-ignore
+export function createResetUserPasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoResetUserPasswordCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -510,6 +546,24 @@ export function createUpdateUserAvatarCommandFromDiscriminatorValue(parseNode: P
 // @ts-ignore
 export function createUpdateUserInfoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateUserInfoCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateUserIsAdminCommand}
+ */
+// @ts-ignore
+export function createUpdateUserIsAdminCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateUserIsAdminCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateUserIsDisableCommand}
+ */
+// @ts-ignore
+export function createUpdateUserIsDisableCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateUserIsDisableCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -654,6 +708,19 @@ export function deserializeIntoLoginCommandResponse(loginCommandResponse: Partia
         "tokenType": n => { loginCommandResponse.tokenType = n.getStringValue(); },
         "userId": n => { loginCommandResponse.userId = n.getStringValue(); },
         "userName": n => { loginCommandResponse.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoOAuthBindAccountByCodeCommand(oAuthBindAccountByCodeCommand: Partial<OAuthBindAccountByCodeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "code": n => { oAuthBindAccountByCodeCommand.code = n.getStringValue(); },
+        "contextUserId": n => { oAuthBindAccountByCodeCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { oAuthBindAccountByCodeCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "oAuthId": n => { oAuthBindAccountByCodeCommand.oAuthId = n.getGuidValue(); },
     }
 }
 /**
@@ -831,6 +898,36 @@ export function deserializeIntoQueryUserBoundAccountsCommandResponse(queryUserBo
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryUserListCommandResponse(queryUserListCommandResponse: Partial<QueryUserListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryUserListCommandResponse.items = n.getCollectionOfObjectValues<QueryUserListCommandResponseItem>(createQueryUserListCommandResponseItemFromDiscriminatorValue); },
+        "totalCount": n => { queryUserListCommandResponse.totalCount = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCommandResponseItem: Partial<QueryUserListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { queryUserListCommandResponseItem.avatar = n.getStringValue(); },
+        "createTime": n => { queryUserListCommandResponseItem.createTime = n.getStringValue(); },
+        "email": n => { queryUserListCommandResponseItem.email = n.getStringValue(); },
+        "id": n => { queryUserListCommandResponseItem.id = n.getStringValue(); },
+        "isAdmin": n => { queryUserListCommandResponseItem.isAdmin = n.getBooleanValue(); },
+        "isDisable": n => { queryUserListCommandResponseItem.isDisable = n.getBooleanValue(); },
+        "isRoot": n => { queryUserListCommandResponseItem.isRoot = n.getBooleanValue(); },
+        "nickName": n => { queryUserListCommandResponseItem.nickName = n.getStringValue(); },
+        "phone": n => { queryUserListCommandResponseItem.phone = n.getStringValue(); },
+        "userName": n => { queryUserListCommandResponseItem.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshTokenCommand(refreshTokenCommand: Partial<RefreshTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "refreshToken": n => { refreshTokenCommand.refreshToken = n.getStringValue(); },
@@ -876,6 +973,19 @@ export function deserializeIntoResetPasswordCommand(resetPasswordCommand: Partia
         "contextUserType": n => { resetPasswordCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "newPassword": n => { resetPasswordCommand.newPassword = n.getStringValue(); },
         "oldPassword": n => { resetPasswordCommand.oldPassword = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoResetUserPasswordCommand(resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { resetUserPasswordCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { resetUserPasswordCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "newPassword": n => { resetUserPasswordCommand.newPassword = n.getStringValue(); },
+        "userId": n => { resetUserPasswordCommand.userId = n.getStringValue(); },
     }
 }
 /**
@@ -1000,6 +1110,32 @@ export function deserializeIntoUpdateUserInfoCommand(updateUserInfoCommand: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateUserIsAdminCommand(updateUserIsAdminCommand: Partial<UpdateUserIsAdminCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { updateUserIsAdminCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { updateUserIsAdminCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "isAdmin": n => { updateUserIsAdminCommand.isAdmin = n.getBooleanValue(); },
+        "userId": n => { updateUserIsAdminCommand.userId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateUserIsDisableCommand(updateUserIsDisableCommand: Partial<UpdateUserIsDisableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { updateUserIsDisableCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { updateUserIsDisableCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "isDisable": n => { updateUserIsDisableCommand.isDisable = n.getBooleanValue(); },
+        "userId": n => { updateUserIsDisableCommand.userId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { userStateInfo.avatar = n.getStringValue(); },
@@ -1060,6 +1196,27 @@ export interface LoginCommandResponse extends Parsable {
      * 用户名.
      */
     userName?: string | null;
+}
+/**
+ * 已登录用户通过第三方授权回调 code 直接绑定第三方账号（与登录接口分离）.
+ */
+export interface OAuthBindAccountByCodeCommand extends Parsable {
+    /**
+     * 第三方授权回调得到的 code.
+     */
+    code?: string | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 第三方认证方式 id，对应 OauthConnection 表的 id.
+     */
+    oAuthId?: Guid | null;
 }
 /**
  * 使用 OAuth 绑定已存在的账号.
@@ -1305,6 +1462,64 @@ export interface QueryUserBoundAccountsCommandResponse extends Parsable {
     items?: BoundAccountInfo[] | null;
 }
 /**
+ * 用户列表查询结果.
+ */
+export interface QueryUserListCommandResponse extends Parsable {
+    /**
+     * 用户列表.
+     */
+    items?: QueryUserListCommandResponseItem[] | null;
+    /**
+     * 总数量.
+     */
+    totalCount?: number | null;
+}
+/**
+ * 用户列表项.
+ */
+export interface QueryUserListCommandResponseItem extends Parsable {
+    /**
+     * 头像地址.
+     */
+    avatar?: string | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 邮箱.
+     */
+    email?: string | null;
+    /**
+     * 用户 id.
+     */
+    id?: string | null;
+    /**
+     * 是否管理员.
+     */
+    isAdmin?: boolean | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 是否超级管理员.
+     */
+    isRoot?: boolean | null;
+    /**
+     * 昵称.
+     */
+    nickName?: string | null;
+    /**
+     * 手机号.
+     */
+    phone?: string | null;
+    /**
+     * 用户名.
+     */
+    userName?: string | null;
+}
+/**
  * 刷新 token.
  */
 export interface RefreshTokenCommand extends Parsable {
@@ -1387,6 +1602,27 @@ export interface ResetPasswordCommand extends Parsable {
      * 原密码，使用 RSA 公钥加密.
      */
     oldPassword?: string | null;
+}
+/**
+ * 管理员重置指定用户的密码，新密码使用 RSA 公钥加密.
+ */
+export interface ResetUserPasswordCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 新密码，使用 RSA 公钥加密.
+     */
+    newPassword?: string | null;
+    /**
+     * 目标用户 id.
+     */
+    userId?: string | null;
 }
 /**
  * 保存设置.
@@ -1535,6 +1771,19 @@ export function serializeLoginCommandResponse(writer: SerializationWriter, login
         writer.writeStringValue("tokenType", loginCommandResponse.tokenType);
         writer.writeStringValue("userId", loginCommandResponse.userId);
         writer.writeStringValue("userName", loginCommandResponse.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeOAuthBindAccountByCodeCommand(writer: SerializationWriter, oAuthBindAccountByCodeCommand: Partial<OAuthBindAccountByCodeCommand> | undefined | null = {}) : void {
+    if (oAuthBindAccountByCodeCommand) {
+        writer.writeStringValue("code", oAuthBindAccountByCodeCommand.code);
+        writer.writeStringValue("contextUserId", oAuthBindAccountByCodeCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", oAuthBindAccountByCodeCommand.contextUserType);
+        writer.writeGuidValue("oAuthId", oAuthBindAccountByCodeCommand.oAuthId);
     }
 }
 /**
@@ -1712,6 +1961,36 @@ export function serializeQueryUserBoundAccountsCommandResponse(writer: Serializa
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryUserListCommandResponse(writer: SerializationWriter, queryUserListCommandResponse: Partial<QueryUserListCommandResponse> | undefined | null = {}) : void {
+    if (queryUserListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryUserListCommandResponseItem>("items", queryUserListCommandResponse.items, serializeQueryUserListCommandResponseItem);
+        writer.writeNumberValue("totalCount", queryUserListCommandResponse.totalCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryUserListCommandResponseItem(writer: SerializationWriter, queryUserListCommandResponseItem: Partial<QueryUserListCommandResponseItem> | undefined | null = {}) : void {
+    if (queryUserListCommandResponseItem) {
+        writer.writeStringValue("avatar", queryUserListCommandResponseItem.avatar);
+        writer.writeStringValue("createTime", queryUserListCommandResponseItem.createTime);
+        writer.writeStringValue("email", queryUserListCommandResponseItem.email);
+        writer.writeStringValue("id", queryUserListCommandResponseItem.id);
+        writer.writeBooleanValue("isAdmin", queryUserListCommandResponseItem.isAdmin);
+        writer.writeBooleanValue("isDisable", queryUserListCommandResponseItem.isDisable);
+        writer.writeBooleanValue("isRoot", queryUserListCommandResponseItem.isRoot);
+        writer.writeStringValue("nickName", queryUserListCommandResponseItem.nickName);
+        writer.writeStringValue("phone", queryUserListCommandResponseItem.phone);
+        writer.writeStringValue("userName", queryUserListCommandResponseItem.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshTokenCommand(writer: SerializationWriter, refreshTokenCommand: Partial<RefreshTokenCommand> | undefined | null = {}) : void {
     if (refreshTokenCommand) {
         writer.writeStringValue("refreshToken", refreshTokenCommand.refreshToken);
@@ -1757,6 +2036,19 @@ export function serializeResetPasswordCommand(writer: SerializationWriter, reset
         writer.writeEnumValue<UserType>("contextUserType", resetPasswordCommand.contextUserType);
         writer.writeStringValue("newPassword", resetPasswordCommand.newPassword);
         writer.writeStringValue("oldPassword", resetPasswordCommand.oldPassword);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeResetUserPasswordCommand(writer: SerializationWriter, resetUserPasswordCommand: Partial<ResetUserPasswordCommand> | undefined | null = {}) : void {
+    if (resetUserPasswordCommand) {
+        writer.writeStringValue("contextUserId", resetUserPasswordCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", resetUserPasswordCommand.contextUserType);
+        writer.writeStringValue("newPassword", resetUserPasswordCommand.newPassword);
+        writer.writeStringValue("userId", resetUserPasswordCommand.userId);
     }
 }
 /**
@@ -1874,6 +2166,32 @@ export function serializeUpdateUserInfoCommand(writer: SerializationWriter, upda
         writer.writeEnumValue<UserType>("contextUserType", updateUserInfoCommand.contextUserType);
         writer.writeStringValue("nickName", updateUserInfoCommand.nickName);
         writer.writeStringValue("phone", updateUserInfoCommand.phone);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateUserIsAdminCommand(writer: SerializationWriter, updateUserIsAdminCommand: Partial<UpdateUserIsAdminCommand> | undefined | null = {}) : void {
+    if (updateUserIsAdminCommand) {
+        writer.writeStringValue("contextUserId", updateUserIsAdminCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", updateUserIsAdminCommand.contextUserType);
+        writer.writeBooleanValue("isAdmin", updateUserIsAdminCommand.isAdmin);
+        writer.writeStringValue("userId", updateUserIsAdminCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateUserIsDisableCommand(writer: SerializationWriter, updateUserIsDisableCommand: Partial<UpdateUserIsDisableCommand> | undefined | null = {}) : void {
+    if (updateUserIsDisableCommand) {
+        writer.writeStringValue("contextUserId", updateUserIsDisableCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", updateUserIsDisableCommand.contextUserType);
+        writer.writeBooleanValue("isDisable", updateUserIsDisableCommand.isDisable);
+        writer.writeStringValue("userId", updateUserIsDisableCommand.userId);
     }
 }
 /**
@@ -2031,6 +2349,48 @@ export interface UpdateUserInfoCommand extends Parsable {
      * 手机号.
      */
     phone?: string | null;
+}
+/**
+ * 设置/取消用户的管理员角色，仅超级管理员可操作.
+ */
+export interface UpdateUserIsAdminCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 是否设为管理员.
+     */
+    isAdmin?: boolean | null;
+    /**
+     * 目标用户 id.
+     */
+    userId?: string | null;
+}
+/**
+ * 禁用/启用用户账号.
+ */
+export interface UpdateUserIsDisableCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 目标用户 id.
+     */
+    userId?: string | null;
 }
 /**
  * UserStateInfo.

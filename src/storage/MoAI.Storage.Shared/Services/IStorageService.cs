@@ -13,6 +13,11 @@ namespace MoAI.Storage.Services;
 public interface IStorageService
 {
     /// <summary>
+    /// 公开静态文件访问路由前缀，静态文件中间件与公开 URL 拼接共用此常量.
+    /// </summary>
+    public const string StaticRoutePrefix = "/static";
+
+    /// <summary>
     /// 生成文件预上传地址，并登记 file 记录（幂等：根据 ObjectKey 去重）.
     /// </summary>
     /// <param name="command">预上传命令.</param>

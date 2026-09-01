@@ -80,12 +80,19 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         using TransactionScope transactionScope = TransactionScopeHelper.Create();
 
         var userName = "u" + Guid.CreateVersion7().ToString("N");
+
+        // 占位手机号：phone 列非空且唯一，固定值会导致第二个 OAuth 用户注册失败，
+        // 因此用 sub 的稳定哈希生成唯一占位号（9 前缀避开真实号段，满足注册正则）
+        var subHashHex = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(oauthBindUserProfile.Profile.Sub ?? userName)));
+        var subDigits = long.Parse(subHashHex[..13], System.Globalization.NumberStyles.HexNumber).ToString();
+        var placeholderPhone = "9" + subDigits.PadRight(10, '0')[..10];
+
         var registerUserCommand = new RegisterUserCommand()
         {
             UserName = userName,
             Email = userName + "@moai.com",
             NickName = oauthBindUserProfile.Profile.PreferredUsername,
-            Phone = "12345678900",
+            Phone = placeholderPhone,
             Password = _rsaProvider.Encrypt(Guid.NewGuid().ToString("N"))
         };
 
