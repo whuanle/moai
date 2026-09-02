@@ -54,7 +54,7 @@ export function Settings() {
   }
 
   return (
-    <Page title={t('settings.title')}>
+    <Page>
       <Card title={t('settings.generalTitle')}>
         <div
           style={{

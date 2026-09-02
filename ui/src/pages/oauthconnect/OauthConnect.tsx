@@ -315,7 +315,7 @@ export function OauthConnect() {
   }
 
   return (
-    <Page title={t('oauthconnect.title')}>
+    <Page>
       <DataTable<OAuthConnectionItem>
         rowKey="id"
         columns={columns}
