@@ -76,7 +76,14 @@ export function Register() {
           >
             <Input prefix={<UserOutlined />} placeholder={t('auth.usernamePlaceholder')} size="large" />
           </Form.Item>
-          <Form.Item name="nickName" label={t('auth.nickName')}>
+          <Form.Item
+            name="nickName"
+            label={t('auth.nickName')}
+            rules={[
+              { required: true, message: t('auth.nickNamePlaceholder') },
+              { min: 3, max: 20, message: t('auth.nickNamePlaceholder') },
+            ]}
+          >
             <Input prefix={<IdcardOutlined />} placeholder={t('auth.nickNamePlaceholder')} size="large" />
           </Form.Item>
           <Form.Item
@@ -86,8 +93,15 @@ export function Register() {
           >
             <Input prefix={<MailOutlined />} placeholder={t('auth.emailPlaceholder')} size="large" />
           </Form.Item>
-          <Form.Item name="phone" label={t('auth.phone')}>
-            <Input prefix={<PhoneOutlined />} placeholder={t('auth.phonePlaceholder')} size="large" />
+          <Form.Item
+            name="phone"
+            label={t('auth.phone')}
+            rules={[
+              { required: true, message: t('auth.phonePlaceholder') },
+              { pattern: /^1[3-9]\d{9}$/, message: t('auth.phonePlaceholder') },
+            ]}
+          >
+            <Input prefix={<PhoneOutlined />} placeholder={t('auth.phonePlaceholder')} size="large" maxLength={11} />
           </Form.Item>
           <Form.Item
             name="password"

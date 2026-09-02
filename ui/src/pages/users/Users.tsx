@@ -288,7 +288,7 @@ export function Users() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, isRoot, currentUserId],
+    [t, isRoot, currentUserId, searchText, pageNo, pageSize],
   )
 
   const detailItems: DescriptionsProps['items'] = useMemo(() => {
