@@ -116,7 +116,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
         <img
           src={preview}
           alt={t('oauthconnect.icon')}
-          style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'contain' }}
+          style={{ width: 100,  borderRadius: 4, objectFit: 'contain' }}
         />
       )}
     </Space>
@@ -230,8 +230,7 @@ export function OauthConnect() {
   const providerOptions = [
     { value: 'custom', label: 'Custom OAuth' },
     { value: 'feishu', label: 'Feishu（飞书）' },
-    { value: 'dingTalk', label: 'DingTalk（钉钉）' },
-    { value: 'gitHub', label: 'GitHub' },
+    { value: 'dingTalk', label: 'DingTalk（钉钉）' }
   ]
 
   const columns: TableColumnsType<OAuthConnectionItem> = [
@@ -248,14 +247,14 @@ export function OauthConnect() {
     {
       title: t('oauthconnect.colIcon'),
       dataIndex: 'iconUrl',
-      width: 90,
+      width: 200,
       render: (url: string | null) => {
         const resolved = resolveStorageUrl(url)
         return resolved ? (
           <img
             src={resolved}
             alt="icon"
-            style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'contain' }}
+            style={{ height: 32, width: 200, borderRadius: 6, objectFit: 'contain' }}
           />
         ) : (
           '-'

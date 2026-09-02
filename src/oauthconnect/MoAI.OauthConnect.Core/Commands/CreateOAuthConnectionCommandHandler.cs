@@ -42,7 +42,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
 
         if (exist)
         {
-            throw new BusinessException("认证名称已存在，请更换后重试.");
+            throw new BusinessException("认证名称已存在，请更换后重试.") { StatusCode = 409 };
         }
 
         if (request.Provider == OAuthPrivider.Feishu)
@@ -119,7 +119,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     {
         if (wellKnownUrl == null)
         {
-            throw new BusinessException("发现端点不能为空.");
+            throw new BusinessException("发现端点不能为空.") { StatusCode = 409 };
         }
 
         // 获取端点信息

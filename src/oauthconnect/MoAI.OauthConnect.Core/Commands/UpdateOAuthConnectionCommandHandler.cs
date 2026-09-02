@@ -37,7 +37,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
 
         if (connection == null)
         {
-            throw new BusinessException("未找到认证方式，请检查名称是否正确.");
+            throw new BusinessException("未找到认证方式，请检查名称是否正确.") { StatusCode = 409 };
         }
 
         if (connection.Name != request.Name)
@@ -47,7 +47,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
 
             if (exist)
             {
-                throw new BusinessException("认证名称已存在，请更换后重试.");
+                throw new BusinessException("认证名称已存在，请更换后重试.") { StatusCode = 409 };
             }
         }
 

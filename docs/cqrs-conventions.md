@@ -88,7 +88,7 @@ MoAI.{Domain}.Api/
 
 ### Command 定义
 
-注意请求模型需要继承 `IModelValidator<T>` ，编写验证模型请求参数是否正确，提前拦截无效请求。
+注意请求模型需要继承 `IModelValidator<T>` ，编写验证模型请求参数是否正确，提前拦截无效请求。
 
 ```csharp
 using MediatR;
@@ -431,8 +431,5 @@ MoAI.Plugin.Core/
 throw new BusinessException("错误消息") { StatusCode = 404 };
 ```
 
-常用状态码：
-- 400: 请求参数错误
-- 403: 无权限
-- 404: 资源不存在
-- 409: 资源冲突
+抛出异常时，务必为 BusinessException 设置具体状态码，BusinessException 状态码会被设置为 http response 状态码，否则默 http statecode 值默认为 500，对前端拦截并不友好。
+
