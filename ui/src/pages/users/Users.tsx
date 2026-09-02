@@ -327,7 +327,7 @@ export function Users() {
   const detailAvatar = resolveStorageUrl((detail?.avatar as string | null | undefined) ?? null)
 
   return (
-    <Page title={t('users.title')}>
+    <Page>
       <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
         <Form.Item name="searchText">
           <Input

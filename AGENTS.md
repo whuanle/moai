@@ -57,3 +57,14 @@ node local-dev/user-management-e2e.mjs     # e2e（需后端 5210 运行中）
 ## 文档索引
 
 后端/前端规范与每个功能的 SDD/BDD/TDD/SOP 四件套：见 [docs/README.md](./docs/README.md)。
+
+## Skills
+
+项目专属开发 skill（AI 助手触发），按职责分层，总入口：[agent-tools/skills/README.md](./agent-tools/skills/README.md)。
+
+- **L1-orchestration/moai-feature** — 全栈新功能编排（后端 → syncapi → 前端 → 验证）
+- **L2-code-standards/moai-cqrs-backend** — 后端 CQRS 三层细则（真源 `docs/cqrs-conventions.md`）
+- **L2-code-standards/moai-frontend-ui** — 前端页面细则（真源 `ui/docs/frontend-conventions.md` + design-system）
+- **L3-fix-standards/moai-cqrs-review** — 铁律审查与修复五步标准
+
+全局副本：`~/.zcode/skills/moai-code-organization/`。新增 skill 按 `skills/README.md` 规则登记。Obsidian 镜像：`MoAI/SOP-端到端场景/98-框架代码开发Skill规范`。
