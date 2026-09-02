@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Button, Card, Form, Input, Typography } from 'antd'
+import { Button, Card, Form, Input, Typography, theme as antdTheme } from 'antd'
 import { IdcardOutlined, LockOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
+import { radius, spacing } from '@/design-system/theme'
 import { register } from '@/api/auth'
 
 interface RegisterFormValues {
@@ -19,6 +20,7 @@ export function Register() {
   const { t } = useTranslation()
   const feedback = useFeedback()
   const navigate = useNavigate()
+  const { token } = antdTheme.useToken()
   const [loading, setLoading] = useState(false)
 
   const handleFinish = async (values: RegisterFormValues) => {
@@ -48,13 +50,24 @@ export function Register() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16,
+        padding: spacing.lg,
+        background: `linear-gradient(180deg, ${token.colorBgLayout} 0%, ${token.colorPrimaryBg} 100%)`,
       }}
     >
-      <Card style={{ width: 420 }}>
-        <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          {t('auth.registerTitle')}
-        </Typography.Title>
+      <Card
+        style={{
+          width: 420,
+          borderRadius: radius.lg,
+          boxShadow: token.boxShadowTertiary,
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: spacing.lg }}>
+          <img src="/logo.svg" width={48} height={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
+          <Typography.Title level={3} style={{ marginBottom: 4 }}>
+            {t('auth.registerTitle')}
+          </Typography.Title>
+          <Typography.Text type="secondary">{t('auth.registerSubtitle')}</Typography.Text>
+        </div>
         <Form<RegisterFormValues> layout="vertical" onFinish={handleFinish} autoComplete="off">
           <Form.Item
             name="userName"
@@ -92,7 +105,7 @@ export function Register() {
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue('password') === value) return Promise.resolve()
-                  return Promise.reject(new Error(t('auth.confirmPasswordPlaceholder')))
+                  return Promise.reject(new Error(t('auth.passwordMismatch')))
                 },
               }),
             ]}
@@ -109,7 +122,7 @@ export function Register() {
             </Button>
           </Form.Item>
         </Form>
-        <Typography.Text type="secondary">
+        <Typography.Text type="secondary" style={{ display: 'block', textAlign: 'center' }}>
           {t('auth.haveAccount')} <Link to="/login">{t('auth.goLogin')}</Link>
         </Typography.Text>
       </Card>

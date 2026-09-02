@@ -29,7 +29,9 @@
   },
   "auth": {
     "loginTitle": "Sign in",
+    "loginSubtitle": "Welcome back, sign in to continue",
     "registerTitle": "Register",
+    "registerSubtitle": "Create your MoAI account",
     "username": "Username",
     "password": "Password",
     "confirmPassword": "Confirm password",
@@ -54,13 +56,13 @@
     "usernamePlaceholder": "Enter your username",
     "passwordPlaceholder": "Enter your password",
     "confirmPasswordPlaceholder": "Enter your password again",
+    "passwordMismatch": "Passwords do not match",
     "emailPlaceholder": "Enter your email",
     "nickNamePlaceholder": "Enter your nickname (optional)",
     "phonePlaceholder": "Enter your phone (optional)"
   },
   "account": {
     "title": "Account Settings",
-    "subtitle": "Manage your profile, security and third-party account links",
     "uploadAvatar": "Change avatar",
     "avatarSuccess": "Avatar updated successfully",
     "avatarTypeError": "Please upload an image file",
@@ -83,10 +85,10 @@
     "oauthEmpty": "No third-party sign-in channels available",
     "oauthBound": "Linked",
     "oauthNotBound": "Not linked",
-    "bind":  "Link",
-    "bindSuccess":  "Third-party account linked successfully",
-    "bindError":  "Failed to link third-party account",
-    "unbind":  "Unlink",
+    "bind": "Link",
+    "bindSuccess": "Third-party account linked successfully",
+    "bindError": "Failed to link third-party account",
+    "unbind": "Unlink",
     "unbindConfirm": "Unlink this third-party account?",
     "unbindSuccess": "Unlinked successfully"
   },
@@ -125,7 +127,6 @@
   },
   "settings": {
     "title": "System Settings",
-    "subtitle": "Manage global configuration items",
     "generalTitle": "General",
     "save": "Save",
     "saveSuccess": "Saved successfully",
@@ -136,7 +137,6 @@
   },
   "oauthconnect": {
     "title": "OAuth Connections",
-    "subtitle": "Configure OAuth, Feishu, DingTalk and other third-party sign-in connections",
     "create": "New connection",
     "createTitle": "New third-party sign-in connection",
     "editTitle": "Edit third-party sign-in connection",
@@ -176,8 +176,14 @@
     "unknownError": "Unexpected error, please try again later"
   },
   "ds": {
-    "query": { "search": "Search", "reset": "Reset" },
-    "table": { "refresh": "Refresh", "total": "Total {{total}} items" },
+    "query": {
+      "search": "Search",
+      "reset": "Reset"
+    },
+    "table": {
+      "refresh": "Refresh",
+      "total": "Total {{total}} items"
+    },
     "form": {
       "submit": "Submit",
       "cancel": "Cancel",
@@ -239,5 +245,49 @@
       "footer": "Templates are built on the @/design-system components.",
       "themeHint": "Toggle the global theme to check contrast in dark mode."
     }
+  },
+  "users": {
+    "title": "User Management",
+    "searchLabel": "Keyword",
+    "searchPlaceholder": "Username / Nickname / Email",
+    "colUser": "User",
+    "colUserName": "Username",
+    "colNickName": "Nickname",
+    "colEmail": "Email",
+    "colPhone": "Phone",
+    "colRole": "Role",
+    "colStatus": "Status",
+    "colCreateTime": "Created",
+    "colActions": "Actions",
+    "roleRoot": "Super Admin",
+    "roleAdmin": "Admin",
+    "roleMember": "Member",
+    "statusNormal": "Active",
+    "statusDisabled": "Disabled",
+    "view": "Detail",
+    "setAdmin": "Set Admin",
+    "unsetAdmin": "Remove Admin",
+    "setAdminConfirm": "Grant admin role to this user?",
+    "unsetAdminConfirm": "Remove admin role from this user?",
+    "disable": "Disable",
+    "enable": "Enable",
+    "disableConfirm": "Disable this account? The user will be blocked immediately.",
+    "enableConfirm": "Enable this account?",
+    "resetPassword": "Reset Password",
+    "resetPasswordTitle": "Reset Password - {{name}}",
+    "newPassword": "New Password",
+    "newPasswordRequired": "Please enter the new password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordRequired": "Please confirm the new password",
+    "passwordRule": "8-20 characters, must contain both letters and digits",
+    "passwordMismatch": "Passwords do not match",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "setAdminSuccess": "Admin role granted",
+    "unsetAdminSuccess": "Admin role removed",
+    "disableSuccess": "Account disabled",
+    "enableSuccess": "Account enabled",
+    "resetPasswordSuccess": "Password reset. Share it with the user securely.",
+    "detailTitle": "User Info"
   }
 }

@@ -19,9 +19,9 @@ namespace MoAI.Storage.Services;
     public class StorageService : IStorageService
     {
         /// <summary>
-        /// 公开静态文件访问路由前缀.
+        /// 公开静态文件访问路由前缀，统一定义于 <see cref="IStorageService.StaticRoutePrefix"/>.
         /// </summary>
-        public const string StaticRoutePrefix = "/static";
+        public const string StaticRoutePrefix = IStorageService.StaticRoutePrefix;
 
         /// <summary>
         /// 预上传记录有效期，超过该时长仍未完成上传的记录将被废弃.

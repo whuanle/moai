@@ -166,7 +166,7 @@ export function AccountSettings() {
   })
 
   return (
-    <Page title={t('account.title')} subtitle={t('account.subtitle')}>
+    <Page title={t('account.title')}>
       <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

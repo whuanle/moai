@@ -1,0 +1,33 @@
+# 代码熟悉轮次台账（SDD/TDD/BDD/SOD 闭环）
+
+目标：对 moai 代码库逐模块走「熟悉代码 → 生成 SDD/TDD/BDD/SOP 四件套 → 自检闭环」循环，至少 20 轮。每轮自检必须用真实证据（命令输出/测试结果/HTTP 实测）确认文档与代码一致，才算闭环。
+
+规则：
+- 后端模块文档放 `docs/<模块>/`，前端模块文档放 `ui/docs/<模块>/`，每轮四件：sdd.md / tdd.md / bdd.md / sop.md。
+- 每轮的 tdd.md 末尾附「自检记录」：跑过的命令与结果。
+- 台账状态：✅ 闭环 / 🔄 进行中 / ⬜ 未开始。
+
+| 轮 | 模块 | 文档目录 | 状态 | 自检证据 |
+|---|---|---|---|---|
+| 1 | 用户管理（后端+前端） | docs/user-management/ | ✅ | E2E 34/34、vitest 42/42、lint/tsc 绿（2026-09-01） |
+| 2 | auth 领域（后端） | docs/auth/ | ✅ | 锁定自检 8/8（local-dev/auth-lockout-check.mjs）；E2E 34/34；发现缺陷：redirectUrl 校验死代码（已记录） |
+| 3 | account 领域（后端自助） | docs/account/ | ✅ | 终审实测（audit-345.mjs）：userinfo/update 缓存失效/unbind 404/bound_accounts 全过 |
+| 4 | settings 领域（后端） | docs/settings/ | ✅ | 终审实测：GET/PUT 生效、非法 key 400 |
+| 5 | oauthconnect 领域（后端） | docs/oauthconnect/ | ✅ | 终审实测：create/list/软删除/重名拒绝；**PUT 缺陷已修复**（实测 200，文档已同步） |
+| 6 | common 领域（后端） | docs/common/ | ✅ | 实测 serverinfo 五字段/publicStoreUrl=/static；build_guid 匿名 401（修正初稿"匿名"说法）、带 token 200 v7；补强：RSA 密钥机制（configs/rsa_private.key 首启生成 2048 PKCS8、一钥三用），node 派生公钥与 serverinfo rsaPublic 逐字节一致（2026-09-02） |
+| 7 | storage 领域（后端） | docs/storage/ | ✅ | 终审全链路实测（audit-storage.mjs，跑两次均 7/7）：预上传→PUT 预签名直传 MinIO→完成→匿名 /static 访问字节一致；秒传复用 fileId；fileSize=0 400；私有前缀 404 |
+| 8 | hangfire 领域（后端） | docs/hangfire/ | ✅ | Redis 实证：hangfireservers 1 实例、recurring-job:counter 定义/执行链 LastJobId 一致；发现缺陷：counter cron 为 `* * * * ? *`（每秒语义，被 10s 轮询钳制约 10s 一次），源码注释"每分钟"是错的（2026-09-02） |
+| 9 | infra 基础设施（后端） | docs/infra/ | ✅ | dotnet build 0 错；MAI_FILE 覆盖链路实测（serverinfo serviceUrl=5210 而非 configs 的 5000）；SystemOptions 全字段对照源码（2026-09-02） |
+| 10 | database + PostgresScaffold（后端） | docs/database-scaffold/ | ✅ | psql 实证：6 表/vector 0.8.6/唯一复合索引/种子 admin+root+classify 99 行；序列 setval last_value=max+1；Redis moai:* 键命中；工具构建 0 错（2026-09-02） |
+| 11 | 前端认证流（登录/注册/OAuth/token 续期） | ui/docs/auth-flow/ | ✅ | jwt 宽限 60s 核对；/login、/oauth_login 均 200；E2E 34/34 覆盖 RSA 链路；前端三件套绿 |
+| 12 | 前端 Kiota API 层 | ui/docs/api-layer/ | ✅ | typecheck 0 错；kiota=1.27.0；usermanage 路径齐全；Feedback 测试 15/15 |
+| 13 | 前端主题系统（design-system/theme） | ui/docs/theme/ | ✅ | theme 单测 6/6；主色实测 #2970FF（旧文档 #4A9EFF 已过时并记录）；index.css 无 CSS 变量确认 |
+| 14 | 前端基础组件（Page/Card/DataTable/QueryBar/PageToolbar） | ui/docs/components-base/ | ✅ | 定向 vitest 5 文件 11 用例全过（Page2/StatCard1/DataTable4/QueryBar2/PageToolbar2）；全量 42/42 + lint 0 警告；props 逐项对照源码，i18n 键实测取值（2026-09-02） |
+| 15 | 前端表单与反馈（FormPage/DetailPage/Feedback/Chat） | ui/docs/components-form/ | ✅ | FormPage/DetailPage/Chat 7/7 + Feedback 15/15 单测通过；导出口径比对一致 |
+| 16 | 前端布局导航与路由 | ui/docs/layout-routing/ | ✅ | 路由表 11 条逐一比对；6 个 SPA 路由 200；未实现菜单项兜底行为确认并记录 |
+| 17 | 前端状态管理与 i18n | ui/docs/store-i18n/ | ✅ | store 三路 persist 键名核对（moai-web-store/theme/locale）；i18next 12 业务前缀清点；vitest 42/42 + tsc 0 错（2026-09-02） |
+| 18 | 前端账号设置页 AccountSettings | ui/docs/page-account/ | ✅ | 头像直传管线（SHA-256→pre_upload→PUT→complate→/account/avatar）逐环节对照源码；两处历史样式偏差如实记录（2026-09-02） |
+| 19 | 前端 Settings/OauthConnect 管理页 | ui/docs/page-admin/ | ✅ | dirty 跟踪/回滚与渠道 CRUD 对照源码；发现后端存量缺陷：渠道编辑 PUT 固定 400（SharpGrip），已记录规避法；**终审更新 2026-09-02：该缺陷已修复**（Validate 移除路由回填字段规则，audit-345 实测 PUT 200） |
+| 20 | 前端 Dashboard 与测试基建 | ui/docs/dashboard-testing/ | ✅ | Dashboard 静态假数据/占位路由行为确认并记录；13 测试文件 42 用例分布清点；新页面写测试五步模板（2026-09-02） |
+| 21 | 部署与本地环境（Docker/entrypoint/local-dev） | docs/deployment/ | ✅ | docker compose config -q 通过；serverinfo 200（serviceUrl=5210 证实 MAI_FILE 覆盖）；发现阻断缺陷 D1（Dockerfile COPY ui/moai 路径不存在）与 D2（OTLP 空 new Uri 必崩）（2026-09-02） |
+| 22 | 文档体系重构（分层+Gherkin+互链） | docs/DOC-STANDARD.md + 全部 21 模块 | ✅ | doc-audit.py 全过：385 场景全部编号化（@缩写-Sn+@auto/@manual）、四件互链 21×4、篇幅达标、链接/锚点零悬空；回归 63/63 E2E + 42/42 vitest + 15/15 浏览器点击（2026-09-02） |

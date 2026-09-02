@@ -24,6 +24,7 @@ export interface UserInfo {
   avatar?: string | null
   isDisable?: boolean | null
   isAdmin?: boolean | null
+  isRoot?: boolean | null
   isDeleted?: boolean | null
 }
 

@@ -31,7 +31,7 @@ public class DeleteOAuthConnectionCommandHandler : IRequestHandler<DeleteOAuthCo
 
         if (connection == null)
         {
-            throw new BusinessException("未找到认证方式，请检查名称是否正确.");
+            throw new BusinessException("未找到认证方式，请检查名称是否正确.") { StatusCode = 404 };
         }
 
         // 软删除，保留历史用户绑定记录.

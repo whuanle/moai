@@ -365,3 +365,7 @@ appsettings.Development.json
 /.idea
 .DS_Store
 /src/MaomiAI/MaomiAI.json
+
+# 本地开发私有配置（含密码/IP，勿提交；脚本与截图保留）
+local-dev/appsettings.Development.json
+local-dev/system.local.json

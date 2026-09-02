@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Button, Card, Form, Input, Space, Tooltip, Typography } from 'antd'
+import { Button, Card, Form, Input, Space, Tooltip, Typography, theme as antdTheme } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
+import { radius, spacing } from '@/design-system/theme'
 import { getOAuthProviders, login, type OAuthProviderItem } from '@/api/auth'
 import { resolveStorageUrl } from '@/utils/storage'
 
@@ -16,8 +17,8 @@ export function Login() {
   const { t } = useTranslation()
   const feedback = useFeedback()
   const navigate = useNavigate()
+  const { token } = antdTheme.useToken()
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState(true)
   const [providers, setProviders] = useState<OAuthProviderItem[]>([])
 
   useEffect(() => {
@@ -28,8 +29,6 @@ export function Login() {
         if (!cancelled) setProviders(items)
       } catch {
         // 错误已由全局请求中间件统一提示
-      } finally {
-        if (!cancelled) setOauthLoading(false)
       }
     })()
     return () => {
@@ -58,12 +57,24 @@ export function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: spacing.lg,
+        background: `linear-gradient(180deg, ${token.colorBgLayout} 0%, ${token.colorPrimaryBg} 100%)`,
       }}
     >
-      <Card style={{ width: 400 }}>
-        <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          {t('auth.loginTitle')}
-        </Typography.Title>
+      <Card
+        style={{
+          width: 400,
+          borderRadius: radius.lg,
+          boxShadow: token.boxShadowTertiary,
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: spacing.lg }}>
+          <img src="/logo.svg" width={48} height={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
+          <Typography.Title level={3} style={{ marginBottom: 4 }}>
+            {t('auth.loginTitle')}
+          </Typography.Title>
+          <Typography.Text type="secondary">{t('auth.loginSubtitle')}</Typography.Text>
+        </div>
         <Form<LoginFormValues> layout="vertical" onFinish={handleFinish} autoComplete="off">
           <Form.Item
             name="username"
@@ -92,23 +103,21 @@ export function Login() {
                 display: 'flex',
                 alignItems: 'center',
                 marginBottom: 16,
-                color: 'rgba(128,128,128,0.6)',
               }}
             >
-              <div style={{ flex: 1, height: 1, background: 'rgba(128,128,128,0.25)' }} />
+              <div style={{ flex: 1, height: 1, background: token.colorBorderSecondary }} />
               <Typography.Text type="secondary" style={{ marginInline: 12, fontSize: 12 }}>
                 {t('auth.oauthLogin')}
               </Typography.Text>
-              <div style={{ flex: 1, height: 1, background: 'rgba(128,128,128,0.25)' }} />
+              <div style={{ flex: 1, height: 1, background: token.colorBorderSecondary }} />
             </div>
-            <Space size="large" style={{ justifyContent: 'center', width: '100%' }}>
+            <Space size="large" style={{ justifyContent: 'center', width: '100%', marginBottom: spacing.md }}>
               {providers.map((item) => (
                 <Tooltip key={item.oAuthId} title={item.name} placement="top">
                   <Button
                     type="text"
                     shape="circle"
                     size="large"
-                    loading={oauthLoading}
                     onClick={() => {
                       if (item.redirectUrl) window.location.href = item.redirectUrl
                     }}
@@ -128,7 +137,7 @@ export function Login() {
             </Space>
           </>
         )}
-        <Typography.Text type="secondary">
+        <Typography.Text type="secondary" style={{ display: 'block', textAlign: 'center' }}>
           {t('auth.noAccount')} <Link to="/register">{t('auth.goRegister')}</Link>
         </Typography.Text>
       </Card>

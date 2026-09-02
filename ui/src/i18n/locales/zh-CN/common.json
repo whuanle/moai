@@ -29,7 +29,9 @@
   },
   "auth": {
     "loginTitle": "登录",
+    "loginSubtitle": "欢迎回来，请登录你的账号",
     "registerTitle": "注册",
+    "registerSubtitle": "创建你的 MoAI 账号",
     "username": "用户名",
     "password": "密码",
     "confirmPassword": "确认密码",
@@ -54,13 +56,13 @@
     "usernamePlaceholder": "请输入用户名",
     "passwordPlaceholder": "请输入密码",
     "confirmPasswordPlaceholder": "请再次输入密码",
+    "passwordMismatch": "两次输入的密码不一致",
     "emailPlaceholder": "请输入邮箱",
     "nickNamePlaceholder": "请输入昵称（可选）",
     "phonePlaceholder": "请输入手机号（可选）"
   },
   "account": {
     "title": "账号设置",
-    "subtitle": "管理你的个人信息、安全设置与第三方账号绑定",
     "uploadAvatar": "更换头像",
     "avatarSuccess": "头像更新成功",
     "avatarTypeError": "请上传图片文件",
@@ -83,10 +85,10 @@
     "oauthEmpty": "暂无可用第三方登录渠道",
     "oauthBound": "已绑定",
     "oauthNotBound": "未绑定",
-    "bind":  "绑定",
-    "bindSuccess":  "第三方账号绑定成功",
-    "bindError":  "第三方账号绑定失败",
-    "unbind":  "解绑",
+    "bind": "绑定",
+    "bindSuccess": "第三方账号绑定成功",
+    "bindError": "第三方账号绑定失败",
+    "unbind": "解绑",
     "unbindConfirm": "确认解绑该第三方账号？",
     "unbindSuccess": "解绑成功"
   },
@@ -125,7 +127,6 @@
   },
   "settings": {
     "title": "系统设置",
-    "subtitle": "管理系统全局配置项",
     "generalTitle": "基本设置",
     "save": "保存",
     "saveSuccess": "保存成功",
@@ -136,7 +137,6 @@
   },
   "oauthconnect": {
     "title": "第三方登录管理",
-    "subtitle": "配置 OAuth、飞书、钉钉等第三方登录连接",
     "create": "新建连接",
     "createTitle": "新建第三方登录连接",
     "editTitle": "编辑第三方登录连接",
@@ -176,8 +176,14 @@
     "unknownError": "系统异常，请稍后重试"
   },
   "ds": {
-    "query": { "search": "查询", "reset": "重置" },
-    "table": { "refresh": "刷新", "total": "共 {{total}} 条" },
+    "query": {
+      "search": "查询",
+      "reset": "重置"
+    },
+    "table": {
+      "refresh": "刷新",
+      "total": "共 {{total}} 条"
+    },
     "form": {
       "submit": "提交",
       "cancel": "取消",
@@ -239,5 +245,49 @@
       "footer": "模板均基于 @/design-system 组件构建。",
       "themeHint": "切换全局主题模式，观察暗色下的对比度。"
     }
+  },
+  "users": {
+    "title": "用户管理",
+    "searchLabel": "关键字",
+    "searchPlaceholder": "用户名 / 昵称 / 邮箱",
+    "colUser": "用户",
+    "colUserName": "用户名",
+    "colNickName": "昵称",
+    "colEmail": "邮箱",
+    "colPhone": "手机号",
+    "colRole": "角色",
+    "colStatus": "状态",
+    "colCreateTime": "创建时间",
+    "colActions": "操作",
+    "roleRoot": "超级管理员",
+    "roleAdmin": "管理员",
+    "roleMember": "普通用户",
+    "statusNormal": "正常",
+    "statusDisabled": "已禁用",
+    "view": "查看",
+    "setAdmin": "设为管理员",
+    "unsetAdmin": "取消管理员",
+    "setAdminConfirm": "确认将该用户设为管理员？",
+    "unsetAdminConfirm": "确认取消该用户的管理员角色？",
+    "disable": "禁用",
+    "enable": "启用",
+    "disableConfirm": "确认禁用该账号？禁用后该用户将无法登录和使用系统。",
+    "enableConfirm": "确认启用该账号？",
+    "resetPassword": "重置密码",
+    "resetPasswordTitle": "重置密码 - {{name}}",
+    "newPassword": "新密码",
+    "newPasswordRequired": "请输入新密码",
+    "confirmPassword": "确认新密码",
+    "confirmPasswordRequired": "请再次输入新密码",
+    "passwordRule": "密码长度 8-20 位，且必须同时包含字母和数字",
+    "passwordMismatch": "两次输入的密码不一致",
+    "confirm": "确认",
+    "cancel": "取消",
+    "setAdminSuccess": "已设为管理员",
+    "unsetAdminSuccess": "已取消管理员角色",
+    "disableSuccess": "账号已禁用",
+    "enableSuccess": "账号已启用",
+    "resetPasswordSuccess": "密码已重置，请将新密码线下告知用户",
+    "detailTitle": "用户信息"
   }
 }
