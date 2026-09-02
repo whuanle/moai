@@ -438,3 +438,33 @@ throw new BusinessException("错误消息") { StatusCode = 404 };
 ## 时间
 
 时间统一使用 DataTimeOffset 类型，不要使用 DateTime 类型。
+
+
+
+## Guid
+
+当需要使用 Guid、uuid 时，数据库使用 uuid，后端代码使用 Guid，并且使用 `Guid.CreateVersion7()` 创建新的 id，不可以使用 `Guid.NewGuid()`。
+
+
+
+## 枚举
+
+枚举都应该设置 JsonPropertyName，因为前后端传递枚举参数类型时是使用字符串表示而不是枚举值，所以前后端传递枚举使用 JsonPropertyName 字符串表示。一般首字母小写接口，不使用下划线等拼接单词。
+
+```csharp
+public enum AIProtocolFamily
+{
+    [JsonPropertyName("openaiChatCompletions")]
+    OpenAIChatCompletions = 0,
+
+    [JsonPropertyName("openaiResponses")]
+    OpenAIResponses = 1,
+
+    [JsonPropertyName("anthropicMessages")]
+    AnthropicMessages = 2,
+    
+    [JsonPropertyName("googleGemini")]
+    GoogleGemini = 3,
+}
+```
+

@@ -18,6 +18,16 @@ namespace MoAI.Database;
 public partial class DatabaseContext : DbContext
 {
     /// <summary>
+    /// 模型渠道.
+    /// </summary>
+    public virtual DbSet<AiChannelEntity> AiChannels { get; set; }
+
+    /// <summary>
+    /// 模型.
+    /// </summary>
+    public virtual DbSet<AiModelEntity> AiModels { get; set; }
+
+    /// <summary>
     /// 分类.
     /// </summary>
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }

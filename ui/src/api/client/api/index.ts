@@ -4,6 +4,8 @@
 // @ts-ignore
 import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } from './account/index.js';
 // @ts-ignore
+import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
+// @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
@@ -26,6 +28,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The account property
      */
     get account(): AccountRequestBuilder;
+    /**
+     * The ai property
+     */
+    get ai(): AiRequestBuilder;
     /**
      * The auth property
      */
@@ -61,6 +67,9 @@ export const ApiRequestBuilderUriTemplate = "{+baseurl}/api";
 export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     account: {
         navigationMetadata: AccountRequestBuilderNavigationMetadata,
+    },
+    ai: {
+        navigationMetadata: AiRequestBuilderNavigationMetadata,
     },
     auth: {
         navigationMetadata: AuthRequestBuilderNavigationMetadata,

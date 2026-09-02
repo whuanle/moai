@@ -1,6 +1,7 @@
 using Maomi;
 using Maomi.I18n;
 using MoAI.Account;
+using MoAI.AIChannel;
 using MoAI.Common;
 using MoAI.Database;
 using MoAI.Filters;
@@ -25,6 +26,7 @@ namespace MoAI;
 [InjectModule<AccountCoreModule>]
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
+[InjectModule<AIChannelCoreModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

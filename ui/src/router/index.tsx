@@ -10,6 +10,7 @@ import { Settings } from '@/pages/settings/Settings'
 import { AccountSettings } from '@/pages/account/AccountSettings'
 import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
 import { Users } from '@/pages/users/Users'
+import { Models } from '@/pages/ai/Models'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
       { path: 'users', element: <Users /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
+      { path: 'models', element: <Models /> },
       // 其它专用页面（/xxx）在此追加
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],
