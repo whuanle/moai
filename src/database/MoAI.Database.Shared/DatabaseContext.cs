@@ -57,6 +57,21 @@ public partial class DatabaseContext : DbContext
     /// </summary>
     public virtual DbSet<UserOauthConnectionEntity> UserOauthConnections { get; set; }
 
+    /// <summary>
+    /// 团队.
+    /// </summary>
+    public virtual DbSet<TeamEntity> Teams { get; set; }
+
+    /// <summary>
+    /// 团队成员.
+    /// </summary>
+    public virtual DbSet<TeamUserEntity> TeamUsers { get; set; }
+
+    /// <summary>
+    /// 知识库.
+    /// </summary>
+    public virtual DbSet<WikiEntity> Wikis { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,0 +1,15 @@
+using MediatR;
+using MoAI.Team.Queries.Responses;
+
+namespace MoAI.Team.Queries;
+
+/// <summary>
+/// 查询团队成员列表，仅团队成员可访问.
+/// </summary>
+public class QueryTeamUsersCommand : IRequest<QueryTeamUsersCommandResponse>
+{
+    /// <summary>
+    /// 团队 id.
+    /// </summary>
+    public long TeamId { get; init; }
+}

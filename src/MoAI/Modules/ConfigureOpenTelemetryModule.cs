@@ -27,6 +27,9 @@ public class ConfigureOpenTelemetryModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        var traceEndpoint = ParseOtlpEndpoint(_systemOptions.OTLP.Trace);
+        var metricsEndpoint = ParseOtlpEndpoint(_systemOptions.OTLP.Metrics);
+
         context.Services.AddOpenTelemetry()
               .ConfigureResource(resource => resource.AddService(AppConst.ActivitySource.Name))
               .WithTracing(tracing =>
@@ -39,12 +42,17 @@ public class ConfigureOpenTelemetryModule : IModule
                   .AddAspNetCoreInstrumentation()
                   .AddEntityFrameworkCoreInstrumentation()
                   .AddHttpClientInstrumentation()
-                  .AddRedisInstrumentation()
-                  .AddOtlpExporter(options =>
+                  .AddRedisInstrumentation();
+
+                  // OTLP 为可选项：未配置或地址非法时跳过导出，避免空地址 new Uri 崩溃
+                  if (traceEndpoint != null)
                   {
-                      options.Endpoint = new Uri(_systemOptions.OTLP.Trace);
-                      options.Protocol = (OtlpExportProtocol)_systemOptions.OTLP.Protocol;
-                  });
+                      tracing.AddOtlpExporter(options =>
+                      {
+                          options.Endpoint = traceEndpoint;
+                          options.Protocol = (OtlpExportProtocol)_systemOptions.OTLP.Protocol;
+                      });
+                  }
               })
               .WithMetrics(metrices =>
               {
@@ -52,12 +60,31 @@ public class ConfigureOpenTelemetryModule : IModule
                   .AddMaomiMQInstrumentation()
                   .AddHttpClientInstrumentation()
                   .AddAspNetCoreInstrumentation()
-                  .AddRuntimeInstrumentation()
-                  .AddOtlpExporter(options =>
+                  .AddRuntimeInstrumentation();
+
+                  if (metricsEndpoint != null)
                   {
-                      options.Endpoint = new Uri(_systemOptions.OTLP.Metrics);
-                      options.Protocol = (OtlpExportProtocol)_systemOptions.OTLP.Protocol;
-                  });
+                      metrices.AddOtlpExporter(options =>
+                      {
+                          options.Endpoint = metricsEndpoint;
+                          options.Protocol = (OtlpExportProtocol)_systemOptions.OTLP.Protocol;
+                      });
+                  }
               });
+    }
+
+    /// <summary>
+    /// 解析 OTLP 端点，空白或非法地址返回 null（视为未启用导出）.
+    /// </summary>
+    /// <param name="endpoint">配置的端点地址.</param>
+    /// <returns>返回 <see cref="Uri"/>，未配置时为 null.</returns>
+    private static Uri? ParseOtlpEndpoint(string? endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            return null;
+        }
+
+        return Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) ? uri : null;
     }
 }

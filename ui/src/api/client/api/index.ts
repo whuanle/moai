@@ -4,8 +4,6 @@
 // @ts-ignore
 import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } from './account/index.js';
 // @ts-ignore
-import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
-// @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
@@ -15,6 +13,8 @@ import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestB
 import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
+// @ts-ignore
+import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadata, type TeamRequestBuilder } from './team/index.js';
 // @ts-ignore
 import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetadata } from './usermanage/index.js';
 // @ts-ignore
@@ -28,10 +28,6 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The account property
      */
     get account(): AccountRequestBuilder;
-    /**
-     * The ai property
-     */
-    get ai(): AiRequestBuilder;
     /**
      * The auth property
      */
@@ -53,6 +49,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get storage(): StorageRequestBuilder;
     /**
+     * The team property
+     */
+    get team(): TeamRequestBuilder;
+    /**
      * The usermanage property
      */
     get usermanage(): UsermanageRequestBuilder;
@@ -68,9 +68,6 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     account: {
         navigationMetadata: AccountRequestBuilderNavigationMetadata,
     },
-    ai: {
-        navigationMetadata: AiRequestBuilderNavigationMetadata,
-    },
     auth: {
         navigationMetadata: AuthRequestBuilderNavigationMetadata,
     },
@@ -85,6 +82,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,
+    },
+    team: {
+        requestsMetadata: TeamRequestBuilderRequestsMetadata,
+        navigationMetadata: TeamRequestBuilderNavigationMetadata,
     },
     usermanage: {
         navigationMetadata: UsermanageRequestBuilderNavigationMetadata,

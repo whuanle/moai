@@ -31,3 +31,5 @@
 | 20 | 前端 Dashboard 与测试基建 | ui/docs/dashboard-testing/ | ✅ | Dashboard 静态假数据/占位路由行为确认并记录；13 测试文件 42 用例分布清点；新页面写测试五步模板（2026-09-02） |
 | 21 | 部署与本地环境（Docker/entrypoint/local-dev） | docs/deployment/ | ✅ | docker compose config -q 通过；serverinfo 200（serviceUrl=5210 证实 MAI_FILE 覆盖）；发现阻断缺陷 D1（Dockerfile COPY ui/moai 路径不存在）与 D2（OTLP 空 new Uri 必崩）（2026-09-02） |
 | 22 | 文档体系重构（分层+Gherkin+互链） | docs/DOC-STANDARD.md + 全部 21 模块 | ✅ | doc-audit.py 全过：385 场景全部编号化（@缩写-Sn+@auto/@manual）、四件互链 21×4、篇幅达标、链接/锚点零悬空；回归 63/63 E2E + 42/42 vitest + 15/15 浏览器点击（2026-09-02） |
+| 23 | 团队模块（数据库+API+前端） | docs/team/ | ✅ | team/team_user 建表（bool 软删除+partial 唯一索引，psql 冒烟）；team-e2e.mjs **35/35**；前端 Teams 页 3 测试 + vitest 45/45 + tsc/eslint 绿；全量回归 UM34+ACC/SET/OC14+STO7+AUTH8+BDD36+deep68 全过；浏览器走查建团/成员/解散（2026-09-02）；另修复台账 P4（Dockerfile ui/moai→ui + net10 镜像 + MAI_FILE）与 P5（OTLP 空配置容错） |
+| 24 | 团队模式二期（转让所有权+团队头像） | docs/team/ | ✅ | 新端点 PUT owner / POST avatar；team-e2e.mjs 47/47（TM-13 转让角色互换、TM-14 头像存储全链路+防伪造）；前端设置弹窗+转让入口，vitest 46/46；浏览器走查通过；全量回归 UM34+14+7+8+BDD36+deep68 全过（2026-09-02） |

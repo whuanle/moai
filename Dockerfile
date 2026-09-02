@@ -10,13 +10,13 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # 复制 package.json 和 package-lock.json
-COPY ui/moai/package*.json ./
+COPY ui/package*.json ./
 
 # 安装所有依赖
 RUN npm ci
 
 # 复制源代码
-COPY ui/moai/ .
+COPY ui/ .
 
 # 重新安装依赖以解决 Rollup 可选依赖项问题
 RUN rm -rf node_modules package-lock.json && npm install
@@ -25,7 +25,7 @@ RUN rm -rf node_modules package-lock.json && npm install
 RUN npm run build
 
 # ==================== 后端构建阶段 ====================
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS backend-builder
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-builder
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Packages.props", "."]
@@ -37,7 +37,7 @@ RUN dotnet build "./MoAI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 RUN dotnet publish "./MoAI.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 
 # ==================== 最终运行阶段 ====================
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # 创建配置和文件目录
@@ -53,6 +53,6 @@ COPY --from=frontend-builder /app/dist ./wwwroot
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-ENV MAI_CONFIG=/app/configs/system.json
+ENV MAI_FILE=/app/configs/system.json
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

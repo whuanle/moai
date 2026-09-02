@@ -12,6 +12,8 @@ using MoAI.Modules;
 using MoAI.OauthConnect;
 using MoAI.Settings;
 using MoAI.Storage;
+using MoAI.Team;
+using MoAI.Wiki;
 
 namespace MoAI;
 
@@ -27,6 +29,8 @@ namespace MoAI;
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<AIChannelCoreModule>]
+[InjectModule<TeamCoreModule>]
+[InjectModule<WikiCoreModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

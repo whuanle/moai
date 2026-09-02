@@ -79,15 +79,18 @@ public partial class DatabaseContext
     /// <param name="modelBuilder"></param>
     protected static void QueryFilter(ModelBuilder modelBuilder)
     {
-        // 给实体配置查询时自动加上 IsDeleted == 0;
+        // 给实体配置查询时自动加上软删除过滤；
+        // 兼容两种软删除形态：既有实体为 long ticks（== 0），团队模块实体为 bool（== false）.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (entityType.ClrType.IsAssignableTo(typeof(IDeleteAudited)))
             {
-                // 构造 x => x.IsDeleted == 0
+                // 构造 x => x.IsDeleted == 0 或 x => x.IsDeleted == false
                 var parameter = Expression.Parameter(entityType.ClrType, "x");
                 MemberExpression property = Expression.Property(parameter, nameof(IDeleteAudited.IsDeleted));
-                ConstantExpression constant = Expression.Constant(0L);
+                ConstantExpression constant = property.Type == typeof(bool)
+                    ? Expression.Constant(false)
+                    : Expression.Constant(0L);
                 BinaryExpression comparison = Expression.Equal(property, constant);
 
                 var lambdaExpression = Expression.Lambda(comparison, parameter);
