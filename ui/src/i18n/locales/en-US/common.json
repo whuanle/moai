@@ -349,5 +349,11 @@
     "enableSuccess": "Account enabled",
     "resetPasswordSuccess": "Password reset. Share it with the user securely.",
     "detailTitle": "User Info"
+  },
+  "plugins": {
+    "tabCustom": "Custom Plugins",
+    "tabDynamic": "Dynamic Plugins",
+    "tabStatic": "Static Plugins",
+    "empty": "No plugins yet"
   }
 }

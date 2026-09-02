@@ -41,6 +41,10 @@
 		<ProjectReference Include="..\common\MoAI.Common.Core\MoAI.Common.Core.csproj" />
 		<ProjectReference Include="..\storage\MoAI.Storage.Core\MoAI.Storage.Core.csproj" />
 		<ProjectReference Include="..\aichannel\MoAI.AIChannel.Core\MoAI.AIChannel.Core.csproj" />
+		<ProjectReference Include="..\aiplugin\MoAI.AiPlugin.Core\MoAI.AiPlugin.Core.csproj" />
+		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Static\MoAI.AIPlugin.Static.csproj" />
+		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Dynamic\MoAI.AIPlugin.Dynamic.csproj" />
+		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

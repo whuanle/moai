@@ -43,6 +43,31 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<OauthConnectionEntity> OauthConnections { get; set; }
 
     /// <summary>
+    /// 插件.
+    /// </summary>
+    public virtual DbSet<PluginEntity> Plugins { get; set; }
+
+    /// <summary>
+    /// 自定义插件.
+    /// </summary>
+    public virtual DbSet<PluginCustomEntity> PluginCustoms { get; set; }
+
+    /// <summary>
+    /// 内置插件.
+    /// </summary>
+    public virtual DbSet<PluginDynamicEntity> PluginDynamics { get; set; }
+
+    /// <summary>
+    /// 插件函数.
+    /// </summary>
+    public virtual DbSet<PluginFunctionEntity> PluginFunctions { get; set; }
+
+    /// <summary>
+    /// 内置插件.
+    /// </summary>
+    public virtual DbSet<PluginStaticEntity> PluginStatics { get; set; }
+
+    /// <summary>
     /// 系统设置.
     /// </summary>
     public virtual DbSet<SettingEntity> Settings { get; set; }

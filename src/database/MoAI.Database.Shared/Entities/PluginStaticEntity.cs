@@ -1,0 +1,51 @@
+﻿using System;
+using System.Collections.Generic;
+using MoAI.Database.Audits;
+
+#pragma warning disable CA1051
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+#pragma warning disable SA1601
+#pragma warning disable SA1204
+namespace MoAI.Database.Entities;
+
+/// <summary>
+/// 内置插件.
+/// </summary>
+public partial class PluginStaticEntity : IFullAudited
+{
+    /// <summary>
+    /// id.
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// 静态插件key.
+    /// </summary>
+    public string PluginKey { get; set; } = default!;
+
+    /// <summary>
+    /// 创建人.
+    /// </summary>
+    public long CreateUserId { get; set; }
+
+    /// <summary>
+    /// 创建时间.
+    /// </summary>
+    public DateTimeOffset CreateTime { get; set; }
+
+    /// <summary>
+    /// 最后修改人.
+    /// </summary>
+    public long UpdateUserId { get; set; }
+
+    /// <summary>
+    /// 更新时间.
+    /// </summary>
+    public DateTimeOffset UpdateTime { get; set; }
+
+    /// <summary>
+    /// 软删除.
+    /// </summary>
+    public long IsDeleted { get; set; }
+}

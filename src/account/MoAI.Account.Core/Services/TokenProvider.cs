@@ -41,7 +41,7 @@ public class TokenProvider : ITokenProvider
             new Claim(JwtRegisteredClaimNames.Name, userContext.UserName),
             new Claim(JwtRegisteredClaimNames.Nickname, userContext.NickName),
             new Claim(JwtRegisteredClaimNames.Email, userContext.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new Claim(JwtRegisteredClaimNames.Typ, userContext.UserType.ToJsonString()),
             new Claim("token_type", "access_token")
         };
@@ -77,7 +77,7 @@ public class TokenProvider : ITokenProvider
         var resfrshTokenClaims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, userContext.UserId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new Claim("token_type", "refresh_token")
         };
 

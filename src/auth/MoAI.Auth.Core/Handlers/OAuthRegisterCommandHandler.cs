@@ -93,7 +93,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             Email = userName + "@moai.com",
             NickName = oauthBindUserProfile.Profile.PreferredUsername,
             Phone = placeholderPhone,
-            Password = _rsaProvider.Encrypt(Guid.NewGuid().ToString("N"))
+            Password = _rsaProvider.Encrypt(Guid.CreateVersion7().ToString("N"))
         };
 
         var userId = await _mediator.Send(registerUserCommand, cancellationToken);

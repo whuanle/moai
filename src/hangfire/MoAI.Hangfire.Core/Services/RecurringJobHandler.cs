@@ -55,7 +55,7 @@ public class RecurringJobHandler<TCommand, TParams>
                     Params = @params,
                     CronExpression = cron,
                     Key = key,
-                    TaskId = Guid.NewGuid()
+                    TaskId = Guid.CreateVersion7()
                 },
                 cancellationToken);
 
@@ -91,7 +91,7 @@ public class RecurringJobHandler<TCommand, TParams>
                     Params = @params,
                     CronExpression = cron,
                     Key = key,
-                    TaskId = Guid.NewGuid()
+                    TaskId = Guid.CreateVersion7()
                 },
                 cancellationToken);
 

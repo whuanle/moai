@@ -349,5 +349,11 @@
     "enableSuccess": "账号已启用",
     "resetPasswordSuccess": "密码已重置，请将新密码线下告知用户",
     "detailTitle": "用户信息"
+  },
+  "plugins": {
+    "tabCustom": "自定义插件",
+    "tabDynamic": "动态插件",
+    "tabStatic": "静态插件",
+    "empty": "暂无插件"
   }
 }

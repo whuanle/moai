@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.AiPlugin</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AiPlugin.Shared\MoAI.AiPlugin.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AiPlugin.Api\MoAI.AiPlugin.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Services\" />
+		<Folder Include="Commands\" />
+		<Folder Include="Queries\" />
+	</ItemGroup>
+
+</Project>
