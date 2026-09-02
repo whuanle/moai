@@ -433,3 +433,8 @@ throw new BusinessException("错误消息") { StatusCode = 404 };
 
 抛出异常时，务必为 BusinessException 设置具体状态码，BusinessException 状态码会被设置为 http response 状态码，否则默 http statecode 值默认为 500，对前端拦截并不友好。
 
+
+
+## 时间
+
+时间统一使用 DataTimeOffset 类型，不要使用 DateTime 类型。
