@@ -4,6 +4,7 @@ using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Team.Services;
 using MoAI.Wiki.Commands;

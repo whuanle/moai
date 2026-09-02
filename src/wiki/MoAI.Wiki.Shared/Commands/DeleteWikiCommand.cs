@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
 

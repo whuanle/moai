@@ -405,6 +405,33 @@
     "transferOwner": "Transfer Ownership",
     "transferConfirm": "Transfer ownership to this member? You will become an admin.",
     "transferSuccess": "Ownership transferred",
-    "saveInfo": "Save Changes"
+    "saveInfo": "Save Changes",
+    "selectTeam": "Select team"
+  },
+  "wiki": {
+    "title": "Knowledge Base",
+    "create": "New Knowledge Base",
+    "createTitle": "New Knowledge Base",
+    "editTitle": "Edit Knowledge Base",
+    "name": "Name",
+    "namePlaceholder": "Enter knowledge base name",
+    "desc": "Description",
+    "descPlaceholder": "Enter description (optional)",
+    "confirm": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "colName": "Name",
+    "colDesc": "Description",
+    "colCreateTime": "Created",
+    "colActions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this knowledge base?",
+    "selectTeamFirst": "Select a team in the top-left first, or",
+    "goCreateTeam": "create a team",
+    "createSuccess": "Created",
+    "saveSuccess": "Saved",
+    "deleteSuccess": "Deleted",
+    "noPermission": "Only team admins can manage knowledge bases"
   }
 }

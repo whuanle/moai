@@ -8,6 +8,7 @@ import { Page, DataTable, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import {
   addTeamUser,
+  getMyTeams as fetchMyTeams,
   createTeam,
   dissolveTeam,
   getMyTeams,
@@ -46,6 +47,16 @@ interface SettingsFormValues {
 export function Teams() {
   const { t } = useTranslation()
   const currentUserId = useAppStore((state) => state.userInfo?.userId)
+  const setMyTeams = useAppStore((state) => state.setMyTeams)
+
+  /** 团队增删后同步侧边栏的团队列表 */
+  const syncSidebarTeams = useCallback(async () => {
+    try {
+      setMyTeams(await fetchMyTeams())
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }, [setMyTeams])
 
   const [loading, setLoading] = useState(true)
   const [teams, setTeams] = useState<TeamItem[]>([])
@@ -108,6 +119,7 @@ export function Teams() {
       setCreateOpen(false)
       createForm.resetFields()
       void load()
+      void syncSidebarTeams()
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -308,7 +320,19 @@ export function Teams() {
 
   const columns: TableColumnsType<TeamItem> = useMemo(
     () => [
-      { title: t('team.colName'), dataIndex: 'name', width: 160 },
+      {
+        title: t('team.colName'),
+        dataIndex: 'name',
+        width: 200,
+        render: (v: string | null, record) => (
+          <Space size={8}>
+            <Avatar size={26} src={record.avatar || undefined}>
+              {(v ?? '?').slice(0, 1)}
+            </Avatar>
+            {v}
+          </Space>
+        ),
+      },
       { title: t('team.colDesc'), dataIndex: 'description', ellipsis: true },
       {
         title: t('team.colRole'),

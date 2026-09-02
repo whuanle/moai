@@ -405,6 +405,33 @@
     "transferOwner": "转让所有权",
     "transferConfirm": "确认将所有权转让给该成员？你将变为管理员。",
     "transferSuccess": "所有权已转让",
-    "saveInfo": "保存修改"
+    "saveInfo": "保存修改",
+    "selectTeam": "选择团队"
+  },
+  "wiki": {
+    "title": "知识库",
+    "create": "新建知识库",
+    "createTitle": "新建知识库",
+    "editTitle": "编辑知识库",
+    "name": "名称",
+    "namePlaceholder": "请输入知识库名称",
+    "desc": "简介",
+    "descPlaceholder": "请输入简介（可选）",
+    "confirm": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "colName": "名称",
+    "colDesc": "简介",
+    "colCreateTime": "创建时间",
+    "colActions": "操作",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteConfirm": "确认删除该知识库？",
+    "selectTeamFirst": "请先在左上角选择一个团队，或",
+    "goCreateTeam": "前往创建团队",
+    "createSuccess": "创建成功",
+    "saveSuccess": "保存成功",
+    "deleteSuccess": "删除成功",
+    "noPermission": "仅团队管理员可管理知识库"
   }
 }

@@ -22,6 +22,96 @@ export interface AddTeamUserCommand extends Parsable {
     userId?: string | null;
 }
 /**
+ * 模型元数据，映射自 opencode models.json 中的模型对象.
+ */
+export interface AIChannelModelMeta extends Parsable {
+    /**
+     * 上下文最大 token 数.
+     */
+    contextWindow?: number | null;
+    /**
+     * 缓存读单价.
+     */
+    costCacheRead?: number | null;
+    /**
+     * 输入单价.
+     */
+    costInput?: number | null;
+    /**
+     * 输出单价.
+     */
+    costOutput?: number | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 模型族.
+     */
+    family?: string | null;
+    /**
+     * 输入模态，例如 ["text","image"].
+     */
+    inputModalities?: string[] | null;
+    /**
+     * 知识截止时间.
+     */
+    knowledgeCutoff?: string | null;
+    /**
+     * 最近更新时间.
+     */
+    lastUpdated?: string | null;
+    /**
+     * 最大输出 token 数.
+     */
+    maxOutput?: number | null;
+    /**
+     * 模型标识，例如 gpt-4o、deepseek/deepseek-v4-flash.
+     */
+    modelId?: string | null;
+    /**
+     * 展示名称，例如 gpt-4o.
+     */
+    name?: string | null;
+    /**
+     * 是否开放权重.
+     */
+    openWeights?: boolean | null;
+    /**
+     * 输出模态，例如 ["text"].
+     */
+    outputModalities?: string[] | null;
+    /**
+     * 发布日期.
+     */
+    releaseDate?: string | null;
+    /**
+     * 是否支持附件上传.
+     */
+    supportsAttachments?: boolean | null;
+    /**
+     * 是否支持推理.
+     */
+    supportsReasoning?: boolean | null;
+    /**
+     * 是否支持结构化输出.
+     */
+    supportsStructuredOutput?: boolean | null;
+    /**
+     * 是否支持温度参数.
+     */
+    supportsTemperature?: boolean | null;
+    /**
+     * 是否支持功能调用.
+     */
+    supportsToolCall?: boolean | null;
+    /**
+     * 是否支持视觉，为空时根据输入/输出模态推导.
+     */
+    supportsVision?: boolean | null;
+}
+export type AIProtocolFamily = (typeof AIProtocolFamilyObject)[keyof typeof AIProtocolFamilyObject];
+/**
  * 数据子项.
  */
 export interface AuditsInfo extends Parsable {
@@ -49,6 +139,28 @@ export interface AuditsInfo extends Parsable {
      * 更新人 名字.
      */
     updateUserName?: string | null;
+}
+/**
+ * 批量删除模型（软删除）.
+ */
+export interface BatchDeleteAIModelCommand extends Parsable {
+    /**
+     * 模型 id 集合.
+     */
+    modelIds?: Guid[] | null;
+}
+/**
+ * 批量启用/禁用模型.
+ */
+export interface BatchUpdateAIModelCommand extends Parsable {
+    /**
+     * 启用或禁用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 模型 id 集合.
+     */
+    modelIds?: Guid[] | null;
 }
 /**
  * 已绑定的第三方账号信息.
@@ -158,6 +270,65 @@ export function createAddTeamUserCommandFromDiscriminatorValue(parseNode: ParseN
     return deserializeIntoAddTeamUserCommand;
 }
 /**
+ * 创建 AI 渠道.
+ */
+export interface CreateAIChannelCommand extends Parsable {
+    /**
+     * 密钥.
+     */
+    apiKey?: string | null;
+    /**
+     * 接入端点.
+     */
+    baseUrl?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 渠道名称.
+     */
+    name?: string | null;
+    /**
+     * 协议族.
+     */
+    protocolFamily?: AIProtocolFamily | null;
+    /**
+     * 渠道标识，对应 models.json 中的 provider id.
+     */
+    providerKey?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AIChannelModelMeta}
+ */
+// @ts-ignore
+export function createAIChannelModelMetaFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAIChannelModelMeta;
+}
+/**
+ * 创建 AI 模型（手动添加，元数据可来自 models.json）.
+ */
+export interface CreateAIModelCommand extends Parsable {
+    /**
+     * 所属渠道 id.
+     */
+    channelId?: Guid | null;
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 模型元数据.
+     */
+    meta?: AIChannelModelMeta | null;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AuditsInfo}
@@ -165,6 +336,24 @@ export function createAddTeamUserCommandFromDiscriminatorValue(parseNode: ParseN
 // @ts-ignore
 export function createAuditsInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAuditsInfo;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BatchDeleteAIModelCommand}
+ */
+// @ts-ignore
+export function createBatchDeleteAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBatchDeleteAIModelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BatchUpdateAIModelCommand}
+ */
+// @ts-ignore
+export function createBatchUpdateAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBatchUpdateAIModelCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -223,6 +412,24 @@ export function createCompleteFileUploadCommandResponseFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateAIChannelCommand}
+ */
+// @ts-ignore
+export function createCreateAIChannelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateAIChannelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateAIModelCommand}
+ */
+// @ts-ignore
+export function createCreateAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateAIModelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateOAuthConnectionCommand}
  */
 // @ts-ignore
@@ -241,11 +448,29 @@ export function createCreateTeamCommandFromDiscriminatorValue(parseNode: ParseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateWikiCommand}
+ */
+// @ts-ignore
+export function createCreateWikiCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateWikiCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {EmptyCommandResponse}
  */
 // @ts-ignore
 export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoEmptyCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportAIModelCommand}
+ */
+// @ts-ignore
+export function createImportAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportAIModelCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -369,6 +594,42 @@ export function createPreUploadTempFileCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAIChannelListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAIChannelListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAIChannelListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAIChannelListCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryAIChannelListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAIChannelListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAIModelListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAIModelListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAIModelListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAIModelListCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryAIModelListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAIModelListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAllOAuthConnectionCommandResponse}
  */
 // @ts-ignore
@@ -477,6 +738,24 @@ export function createQueryUserListCommandResponseItemFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikisCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikisCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikisCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshTokenCommand}
  */
 // @ts-ignore
@@ -574,6 +853,24 @@ export function createSimpleOfLongFromDiscriminatorValue(parseNode: ParseNode | 
     return deserializeIntoSimpleOfLong;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SyncAIModelCommand}
+ */
+// @ts-ignore
+export function createSyncAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSyncAIModelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SyncAIModelCommandResponse}
+ */
+// @ts-ignore
+export function createSyncAIModelCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSyncAIModelCommandResponse;
+}
+/**
  * 创建团队，创建者自动成为 Owner.
  */
 export interface CreateTeamCommand extends Parsable {
@@ -612,6 +909,24 @@ export function createTeamUserItemFromDiscriminatorValue(parseNode: ParseNode | 
 // @ts-ignore
 export function createUnbindUserOAuthCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUnbindUserOAuthCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAIChannelCommand}
+ */
+// @ts-ignore
+export function createUpdateAIChannelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAIChannelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAIModelCommand}
+ */
+// @ts-ignore
+export function createUpdateAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAIModelCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -697,11 +1012,46 @@ export function createUpdateUserIsDisableCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateWikiCommand}
+ */
+// @ts-ignore
+export function createUpdateWikiCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateWikiCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UserStateInfo}
  */
 // @ts-ignore
 export function createUserStateInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUserStateInfo;
+}
+/**
+ * 创建知识库，需要团队 Admin 及以上角色.
+ */
+export interface CreateWikiCommand extends Parsable {
+    /**
+     * 知识库简介.
+     */
+    description?: string | null;
+    /**
+     * 知识库名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiItem}
+ */
+// @ts-ignore
+export function createWikiItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiItem;
 }
 /**
  * The deserialization information for the current model
@@ -720,6 +1070,36 @@ export function deserializeIntoAddTeamUserCommand(addTeamUserCommand: Partial<Ad
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAIChannelModelMeta(aIChannelModelMeta: Partial<AIChannelModelMeta> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextWindow": n => { aIChannelModelMeta.contextWindow = n.getNumberValue(); },
+        "costCacheRead": n => { aIChannelModelMeta.costCacheRead = n.getNumberValue(); },
+        "costInput": n => { aIChannelModelMeta.costInput = n.getNumberValue(); },
+        "costOutput": n => { aIChannelModelMeta.costOutput = n.getNumberValue(); },
+        "description": n => { aIChannelModelMeta.description = n.getStringValue(); },
+        "family": n => { aIChannelModelMeta.family = n.getStringValue(); },
+        "inputModalities": n => { aIChannelModelMeta.inputModalities = n.getCollectionOfPrimitiveValues<string>(); },
+        "knowledgeCutoff": n => { aIChannelModelMeta.knowledgeCutoff = n.getStringValue(); },
+        "lastUpdated": n => { aIChannelModelMeta.lastUpdated = n.getStringValue(); },
+        "maxOutput": n => { aIChannelModelMeta.maxOutput = n.getNumberValue(); },
+        "modelId": n => { aIChannelModelMeta.modelId = n.getStringValue(); },
+        "name": n => { aIChannelModelMeta.name = n.getStringValue(); },
+        "openWeights": n => { aIChannelModelMeta.openWeights = n.getBooleanValue(); },
+        "outputModalities": n => { aIChannelModelMeta.outputModalities = n.getCollectionOfPrimitiveValues<string>(); },
+        "releaseDate": n => { aIChannelModelMeta.releaseDate = n.getStringValue(); },
+        "supportsAttachments": n => { aIChannelModelMeta.supportsAttachments = n.getBooleanValue(); },
+        "supportsReasoning": n => { aIChannelModelMeta.supportsReasoning = n.getBooleanValue(); },
+        "supportsStructuredOutput": n => { aIChannelModelMeta.supportsStructuredOutput = n.getBooleanValue(); },
+        "supportsTemperature": n => { aIChannelModelMeta.supportsTemperature = n.getBooleanValue(); },
+        "supportsToolCall": n => { aIChannelModelMeta.supportsToolCall = n.getBooleanValue(); },
+        "supportsVision": n => { aIChannelModelMeta.supportsVision = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAuditsInfo(auditsInfo: Partial<AuditsInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "createTime": n => { auditsInfo.createTime = n.getStringValue(); },
@@ -728,6 +1108,27 @@ export function deserializeIntoAuditsInfo(auditsInfo: Partial<AuditsInfo> | unde
         "updateTime": n => { auditsInfo.updateTime = n.getStringValue(); },
         "updateUserId": n => { auditsInfo.updateUserId = n.getNumberValue(); },
         "updateUserName": n => { auditsInfo.updateUserName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBatchDeleteAIModelCommand(batchDeleteAIModelCommand: Partial<BatchDeleteAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "modelIds": n => { batchDeleteAIModelCommand.modelIds = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBatchUpdateAIModelCommand(batchUpdateAIModelCommand: Partial<BatchUpdateAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "enabled": n => { batchUpdateAIModelCommand.enabled = n.getBooleanValue(); },
+        "modelIds": n => { batchUpdateAIModelCommand.modelIds = n.getCollectionOfPrimitiveValues<Guid>(); },
     }
 }
 /**
@@ -806,6 +1207,34 @@ export function deserializeIntoCompleteFileUploadCommandResponse(completeFileUpl
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateAIChannelCommand(createAIChannelCommand: Partial<CreateAIChannelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "apiKey": n => { createAIChannelCommand.apiKey = n.getStringValue(); },
+        "baseUrl": n => { createAIChannelCommand.baseUrl = n.getStringValue(); },
+        "description": n => { createAIChannelCommand.description = n.getStringValue(); },
+        "enabled": n => { createAIChannelCommand.enabled = n.getBooleanValue(); },
+        "name": n => { createAIChannelCommand.name = n.getStringValue(); },
+        "protocolFamily": n => { createAIChannelCommand.protocolFamily = n.getEnumValue<AIProtocolFamily>(AIProtocolFamilyObject); },
+        "providerKey": n => { createAIChannelCommand.providerKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateAIModelCommand(createAIModelCommand: Partial<CreateAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "channelId": n => { createAIModelCommand.channelId = n.getGuidValue(); },
+        "enabled": n => { createAIModelCommand.enabled = n.getBooleanValue(); },
+        "meta": n => { createAIModelCommand.meta = n.getObjectValue<AIChannelModelMeta>(createAIChannelModelMetaFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "iconUrl": n => { createOAuthConnectionCommand.iconUrl = n.getStringValue(); },
@@ -832,8 +1261,31 @@ export function deserializeIntoCreateTeamCommand(createTeamCommand: Partial<Crea
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateWikiCommand(createWikiCommand: Partial<CreateWikiCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { createWikiCommand.description = n.getStringValue(); },
+        "name": n => { createWikiCommand.name = n.getStringValue(); },
+        "teamId": n => { createWikiCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partial<EmptyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoImportAIModelCommand(importAIModelCommand: Partial<ImportAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "channelId": n => { importAIModelCommand.channelId = n.getGuidValue(); },
+        "items": n => { importAIModelCommand.items = n.getCollectionOfObjectValues<AIChannelModelMeta>(createAIChannelModelMetaFromDiscriminatorValue); },
     }
 }
 /**
@@ -958,6 +1410,79 @@ export function deserializeIntoPreUploadTempFileCommand(preUploadTempFileCommand
         "fileName": n => { preUploadTempFileCommand.fileName = n.getStringValue(); },
         "fileSize": n => { preUploadTempFileCommand.fileSize = n.getNumberValue(); },
         "shA256": n => { preUploadTempFileCommand.shA256 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAIChannelListCommandResponse(queryAIChannelListCommandResponse: Partial<QueryAIChannelListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAIChannelListCommandResponse.items = n.getCollectionOfObjectValues<QueryAIChannelListCommandResponseItem>(createQueryAIChannelListCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAIChannelListCommandResponseItem(queryAIChannelListCommandResponseItem: Partial<QueryAIChannelListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryAIChannelListCommandResponseItem),
+        "baseUrl": n => { queryAIChannelListCommandResponseItem.baseUrl = n.getStringValue(); },
+        "description": n => { queryAIChannelListCommandResponseItem.description = n.getStringValue(); },
+        "enabled": n => { queryAIChannelListCommandResponseItem.enabled = n.getBooleanValue(); },
+        "id": n => { queryAIChannelListCommandResponseItem.id = n.getGuidValue(); },
+        "modelCount": n => { queryAIChannelListCommandResponseItem.modelCount = n.getNumberValue(); },
+        "name": n => { queryAIChannelListCommandResponseItem.name = n.getStringValue(); },
+        "protocolFamily": n => { queryAIChannelListCommandResponseItem.protocolFamily = n.getEnumValue<AIProtocolFamily>(AIProtocolFamilyObject); },
+        "providerKey": n => { queryAIChannelListCommandResponseItem.providerKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAIModelListCommandResponse(queryAIModelListCommandResponse: Partial<QueryAIModelListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAIModelListCommandResponse.items = n.getCollectionOfObjectValues<QueryAIModelListCommandResponseItem>(createQueryAIModelListCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAIModelListCommandResponseItem(queryAIModelListCommandResponseItem: Partial<QueryAIModelListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryAIModelListCommandResponseItem),
+        "channelId": n => { queryAIModelListCommandResponseItem.channelId = n.getGuidValue(); },
+        "contextWindow": n => { queryAIModelListCommandResponseItem.contextWindow = n.getNumberValue(); },
+        "costCacheRead": n => { queryAIModelListCommandResponseItem.costCacheRead = n.getNumberValue(); },
+        "costInput": n => { queryAIModelListCommandResponseItem.costInput = n.getNumberValue(); },
+        "costOutput": n => { queryAIModelListCommandResponseItem.costOutput = n.getNumberValue(); },
+        "description": n => { queryAIModelListCommandResponseItem.description = n.getStringValue(); },
+        "enabled": n => { queryAIModelListCommandResponseItem.enabled = n.getBooleanValue(); },
+        "family": n => { queryAIModelListCommandResponseItem.family = n.getStringValue(); },
+        "id": n => { queryAIModelListCommandResponseItem.id = n.getGuidValue(); },
+        "knowledgeCutoff": n => { queryAIModelListCommandResponseItem.knowledgeCutoff = n.getStringValue(); },
+        "lastUpdated": n => { queryAIModelListCommandResponseItem.lastUpdated = n.getStringValue(); },
+        "maxOutput": n => { queryAIModelListCommandResponseItem.maxOutput = n.getNumberValue(); },
+        "modalitiesInput": n => { queryAIModelListCommandResponseItem.modalitiesInput = n.getStringValue(); },
+        "modalitiesOutput": n => { queryAIModelListCommandResponseItem.modalitiesOutput = n.getStringValue(); },
+        "modelId": n => { queryAIModelListCommandResponseItem.modelId = n.getStringValue(); },
+        "modelKind": n => { queryAIModelListCommandResponseItem.modelKind = n.getStringValue(); },
+        "name": n => { queryAIModelListCommandResponseItem.name = n.getStringValue(); },
+        "openWeights": n => { queryAIModelListCommandResponseItem.openWeights = n.getBooleanValue(); },
+        "releaseDate": n => { queryAIModelListCommandResponseItem.releaseDate = n.getStringValue(); },
+        "supportsAttachments": n => { queryAIModelListCommandResponseItem.supportsAttachments = n.getBooleanValue(); },
+        "supportsReasoning": n => { queryAIModelListCommandResponseItem.supportsReasoning = n.getBooleanValue(); },
+        "supportsStructuredOutput": n => { queryAIModelListCommandResponseItem.supportsStructuredOutput = n.getBooleanValue(); },
+        "supportsTemperature": n => { queryAIModelListCommandResponseItem.supportsTemperature = n.getBooleanValue(); },
+        "supportsToolCall": n => { queryAIModelListCommandResponseItem.supportsToolCall = n.getBooleanValue(); },
+        "supportsVision": n => { queryAIModelListCommandResponseItem.supportsVision = n.getBooleanValue(); },
     }
 }
 /**
@@ -1116,6 +1641,33 @@ export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiCommandResponse(queryWikiCommandResponse: Partial<QueryWikiCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { queryWikiCommandResponse.createTime = n.getStringValue(); },
+        "description": n => { queryWikiCommandResponse.description = n.getStringValue(); },
+        "myRole": n => { queryWikiCommandResponse.myRole = n.getNumberValue(); },
+        "name": n => { queryWikiCommandResponse.name = n.getStringValue(); },
+        "teamId": n => { queryWikiCommandResponse.teamId = n.getStringValue(); },
+        "wikiId": n => { queryWikiCommandResponse.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikisCommandResponse(queryWikisCommandResponse: Partial<QueryWikisCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryWikisCommandResponse.items = n.getCollectionOfObjectValues<WikiItem>(createWikiItemFromDiscriminatorValue); },
+        "myRole": n => { queryWikisCommandResponse.myRole = n.getNumberValue(); },
+        "teamId": n => { queryWikisCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshTokenCommand(refreshTokenCommand: Partial<RefreshTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "refreshToken": n => { refreshTokenCommand.refreshToken = n.getStringValue(); },
@@ -1245,6 +1797,28 @@ export function deserializeIntoSimpleOfLong(simpleOfLong: Partial<SimpleOfLong> 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSyncAIModelCommand(syncAIModelCommand: Partial<SyncAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "channelId": n => { syncAIModelCommand.channelId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSyncAIModelCommandResponse(syncAIModelCommandResponse: Partial<SyncAIModelCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "added": n => { syncAIModelCommandResponse.added = n.getNumberValue(); },
+        "skipped": n => { syncAIModelCommandResponse.skipped = n.getNumberValue(); },
+        "total": n => { syncAIModelCommandResponse.total = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoTeamItem(teamItem: Partial<TeamItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { teamItem.avatar = n.getStringValue(); },
@@ -1282,6 +1856,35 @@ export function deserializeIntoUnbindUserOAuthCommand(unbindUserOAuthCommand: Pa
         "contextUserId": n => { unbindUserOAuthCommand.contextUserId = n.getStringValue(); },
         "contextUserType": n => { unbindUserOAuthCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "providerId": n => { unbindUserOAuthCommand.providerId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateAIChannelCommand(updateAIChannelCommand: Partial<UpdateAIChannelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "apiKey": n => { updateAIChannelCommand.apiKey = n.getStringValue(); },
+        "baseUrl": n => { updateAIChannelCommand.baseUrl = n.getStringValue(); },
+        "channelId": n => { updateAIChannelCommand.channelId = n.getGuidValue(); },
+        "description": n => { updateAIChannelCommand.description = n.getStringValue(); },
+        "enabled": n => { updateAIChannelCommand.enabled = n.getBooleanValue(); },
+        "name": n => { updateAIChannelCommand.name = n.getStringValue(); },
+        "protocolFamily": n => { updateAIChannelCommand.protocolFamily = n.getEnumValue<AIProtocolFamily>(AIProtocolFamilyObject); },
+        "providerKey": n => { updateAIChannelCommand.providerKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateAIModelCommand(updateAIModelCommand: Partial<UpdateAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "enabled": n => { updateAIModelCommand.enabled = n.getBooleanValue(); },
+        "meta": n => { updateAIModelCommand.meta = n.getObjectValue<AIChannelModelMeta>(createAIChannelModelMetaFromDiscriminatorValue); },
+        "modelId": n => { updateAIModelCommand.modelId = n.getGuidValue(); },
     }
 }
 /**
@@ -1402,6 +2005,18 @@ export function deserializeIntoUpdateUserIsDisableCommand(updateUserIsDisableCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateWikiCommand(updateWikiCommand: Partial<UpdateWikiCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { updateWikiCommand.description = n.getStringValue(); },
+        "name": n => { updateWikiCommand.name = n.getStringValue(); },
+        "wikiId": n => { updateWikiCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { userStateInfo.avatar = n.getStringValue(); },
@@ -1417,9 +2032,36 @@ export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInf
     }
 }
 /**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiItem(wikiItem: Partial<WikiItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { wikiItem.createTime = n.getStringValue(); },
+        "description": n => { wikiItem.description = n.getStringValue(); },
+        "name": n => { wikiItem.name = n.getStringValue(); },
+        "teamId": n => { wikiItem.teamId = n.getStringValue(); },
+        "wikiId": n => { wikiItem.wikiId = n.getStringValue(); },
+    }
+}
+/**
  * 空数据.
  */
 export interface EmptyCommandResponse extends Parsable {
+}
+/**
+ * 批量导入模型列表（前端从 opencode models.json 解析后提交）.
+ */
+export interface ImportAIModelCommand extends Parsable {
+    /**
+     * 所属渠道 id.
+     */
+    channelId?: Guid | null;
+    /**
+     * 待导入的模型列表.
+     */
+    items?: AIChannelModelMeta[] | null;
 }
 /**
  * 登录.
@@ -1607,6 +2249,166 @@ export interface PreUploadTempFileCommand extends Parsable {
      * 文件 SHA-256.
      */
     shA256?: string | null;
+}
+/**
+ * QueryAIChannelListCommandResponse.
+ */
+export interface QueryAIChannelListCommandResponse extends Parsable {
+    /**
+     * 渠道列表.
+     */
+    items?: QueryAIChannelListCommandResponseItem[] | null;
+}
+/**
+ * QueryAIChannelListCommandResponseItem.
+ */
+export interface QueryAIChannelListCommandResponseItem extends AuditsInfo, Parsable {
+    /**
+     * 接入端点，可能包含密钥脱敏.
+     */
+    baseUrl?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 渠道 id.
+     */
+    id?: Guid | null;
+    /**
+     * 模型数量.
+     */
+    modelCount?: number | null;
+    /**
+     * 渠道名称.
+     */
+    name?: string | null;
+    /**
+     * 协议（对应 AIProtocolFamily 枚举）.
+     */
+    protocolFamily?: AIProtocolFamily | null;
+    /**
+     * 渠道标识.
+     */
+    providerKey?: string | null;
+}
+/**
+ * QueryAIModelListCommandResponse.
+ */
+export interface QueryAIModelListCommandResponse extends Parsable {
+    /**
+     * 模型列表.
+     */
+    items?: QueryAIModelListCommandResponseItem[] | null;
+}
+/**
+ * QueryAIModelListCommandResponseItem.
+ */
+export interface QueryAIModelListCommandResponseItem extends AuditsInfo, Parsable {
+    /**
+     * 所属渠道 id.
+     */
+    channelId?: Guid | null;
+    /**
+     * 上下文最大 token 数.
+     */
+    contextWindow?: number | null;
+    /**
+     * 缓存读单价.
+     */
+    costCacheRead?: number | null;
+    /**
+     * 输入单价.
+     */
+    costInput?: number | null;
+    /**
+     * 输出单价.
+     */
+    costOutput?: number | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 模型族.
+     */
+    family?: string | null;
+    /**
+     * 模型 id.
+     */
+    id?: Guid | null;
+    /**
+     * 知识截止时间.
+     */
+    knowledgeCutoff?: string | null;
+    /**
+     * 最近更新时间.
+     */
+    lastUpdated?: string | null;
+    /**
+     * 最大输出 token 数.
+     */
+    maxOutput?: number | null;
+    /**
+     * 输入模态.
+     */
+    modalitiesInput?: string | null;
+    /**
+     * 输出模态.
+     */
+    modalitiesOutput?: string | null;
+    /**
+     * 模型标识.
+     */
+    modelId?: string | null;
+    /**
+     * 模型类型.
+     */
+    modelKind?: string | null;
+    /**
+     * 模型名称.
+     */
+    name?: string | null;
+    /**
+     * 是否开放权重.
+     */
+    openWeights?: boolean | null;
+    /**
+     * 发布日期.
+     */
+    releaseDate?: string | null;
+    /**
+     * 是否支持附件.
+     */
+    supportsAttachments?: boolean | null;
+    /**
+     * 是否支持推理.
+     */
+    supportsReasoning?: boolean | null;
+    /**
+     * 是否支持结构化输出.
+     */
+    supportsStructuredOutput?: boolean | null;
+    /**
+     * 是否支持温度参数.
+     */
+    supportsTemperature?: boolean | null;
+    /**
+     * 是否支持功能调用.
+     */
+    supportsToolCall?: boolean | null;
+    /**
+     * 是否支持视觉.
+     */
+    supportsVision?: boolean | null;
 }
 /**
  * QueryAllOAuthConnectionCommandResponse.
@@ -1837,6 +2639,52 @@ export interface QueryUserListCommandResponseItem extends Parsable {
     userName?: string | null;
 }
 /**
+ * 知识库详情响应.
+ */
+export interface QueryWikiCommandResponse extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 知识库简介.
+     */
+    description?: string | null;
+    /**
+     * 我在所属团队中的角色：0=Owner 1=Admin 2=Member.
+     */
+    myRole?: number | null;
+    /**
+     * 知识库名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
+ * 知识库列表响应.
+ */
+export interface QueryWikisCommandResponse extends Parsable {
+    /**
+     * 知识库集合.
+     */
+    items?: WikiItem[] | null;
+    /**
+     * 我在该团队中的角色：0=Owner 1=Admin 2=Member.
+     */
+    myRole?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 刷新 token.
  */
 export interface RefreshTokenCommand extends Parsable {
@@ -1971,6 +2819,36 @@ export function serializeAddTeamUserCommand(writer: SerializationWriter, addTeam
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAIChannelModelMeta(writer: SerializationWriter, aIChannelModelMeta: Partial<AIChannelModelMeta> | undefined | null = {}) : void {
+    if (aIChannelModelMeta) {
+        writer.writeNumberValue("contextWindow", aIChannelModelMeta.contextWindow);
+        writer.writeNumberValue("costCacheRead", aIChannelModelMeta.costCacheRead);
+        writer.writeNumberValue("costInput", aIChannelModelMeta.costInput);
+        writer.writeNumberValue("costOutput", aIChannelModelMeta.costOutput);
+        writer.writeStringValue("description", aIChannelModelMeta.description);
+        writer.writeStringValue("family", aIChannelModelMeta.family);
+        writer.writeCollectionOfPrimitiveValues<string>("inputModalities", aIChannelModelMeta.inputModalities);
+        writer.writeStringValue("knowledgeCutoff", aIChannelModelMeta.knowledgeCutoff);
+        writer.writeStringValue("lastUpdated", aIChannelModelMeta.lastUpdated);
+        writer.writeNumberValue("maxOutput", aIChannelModelMeta.maxOutput);
+        writer.writeStringValue("modelId", aIChannelModelMeta.modelId);
+        writer.writeStringValue("name", aIChannelModelMeta.name);
+        writer.writeBooleanValue("openWeights", aIChannelModelMeta.openWeights);
+        writer.writeCollectionOfPrimitiveValues<string>("outputModalities", aIChannelModelMeta.outputModalities);
+        writer.writeStringValue("releaseDate", aIChannelModelMeta.releaseDate);
+        writer.writeBooleanValue("supportsAttachments", aIChannelModelMeta.supportsAttachments);
+        writer.writeBooleanValue("supportsReasoning", aIChannelModelMeta.supportsReasoning);
+        writer.writeBooleanValue("supportsStructuredOutput", aIChannelModelMeta.supportsStructuredOutput);
+        writer.writeBooleanValue("supportsTemperature", aIChannelModelMeta.supportsTemperature);
+        writer.writeBooleanValue("supportsToolCall", aIChannelModelMeta.supportsToolCall);
+        writer.writeBooleanValue("supportsVision", aIChannelModelMeta.supportsVision);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAuditsInfo(writer: SerializationWriter, auditsInfo: Partial<AuditsInfo> | undefined | null = {}) : void {
     if (auditsInfo) {
         writer.writeStringValue("createTime", auditsInfo.createTime);
@@ -1979,6 +2857,27 @@ export function serializeAuditsInfo(writer: SerializationWriter, auditsInfo: Par
         writer.writeStringValue("updateTime", auditsInfo.updateTime);
         writer.writeNumberValue("updateUserId", auditsInfo.updateUserId);
         writer.writeStringValue("updateUserName", auditsInfo.updateUserName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBatchDeleteAIModelCommand(writer: SerializationWriter, batchDeleteAIModelCommand: Partial<BatchDeleteAIModelCommand> | undefined | null = {}) : void {
+    if (batchDeleteAIModelCommand) {
+        writer.writeCollectionOfPrimitiveValues<Guid>("modelIds", batchDeleteAIModelCommand.modelIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBatchUpdateAIModelCommand(writer: SerializationWriter, batchUpdateAIModelCommand: Partial<BatchUpdateAIModelCommand> | undefined | null = {}) : void {
+    if (batchUpdateAIModelCommand) {
+        writer.writeBooleanValue("enabled", batchUpdateAIModelCommand.enabled);
+        writer.writeCollectionOfPrimitiveValues<Guid>("modelIds", batchUpdateAIModelCommand.modelIds);
     }
 }
 /**
@@ -2057,6 +2956,34 @@ export function serializeCompleteFileUploadCommandResponse(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateAIChannelCommand(writer: SerializationWriter, createAIChannelCommand: Partial<CreateAIChannelCommand> | undefined | null = {}) : void {
+    if (createAIChannelCommand) {
+        writer.writeStringValue("apiKey", createAIChannelCommand.apiKey);
+        writer.writeStringValue("baseUrl", createAIChannelCommand.baseUrl);
+        writer.writeStringValue("description", createAIChannelCommand.description);
+        writer.writeBooleanValue("enabled", createAIChannelCommand.enabled);
+        writer.writeStringValue("name", createAIChannelCommand.name);
+        writer.writeEnumValue<AIProtocolFamily>("protocolFamily", createAIChannelCommand.protocolFamily);
+        writer.writeStringValue("providerKey", createAIChannelCommand.providerKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateAIModelCommand(writer: SerializationWriter, createAIModelCommand: Partial<CreateAIModelCommand> | undefined | null = {}) : void {
+    if (createAIModelCommand) {
+        writer.writeGuidValue("channelId", createAIModelCommand.channelId);
+        writer.writeBooleanValue("enabled", createAIModelCommand.enabled);
+        writer.writeObjectValue<AIChannelModelMeta>("meta", createAIModelCommand.meta, serializeAIChannelModelMeta);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateOAuthConnectionCommand(writer: SerializationWriter, createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (createOAuthConnectionCommand) {
         writer.writeStringValue("iconUrl", createOAuthConnectionCommand.iconUrl);
@@ -2083,8 +3010,31 @@ export function serializeCreateTeamCommand(writer: SerializationWriter, createTe
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateWikiCommand(writer: SerializationWriter, createWikiCommand: Partial<CreateWikiCommand> | undefined | null = {}) : void {
+    if (createWikiCommand) {
+        writer.writeStringValue("description", createWikiCommand.description);
+        writer.writeStringValue("name", createWikiCommand.name);
+        writer.writeStringValue("teamId", createWikiCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeImportAIModelCommand(writer: SerializationWriter, importAIModelCommand: Partial<ImportAIModelCommand> | undefined | null = {}) : void {
+    if (importAIModelCommand) {
+        writer.writeGuidValue("channelId", importAIModelCommand.channelId);
+        writer.writeCollectionOfObjectValues<AIChannelModelMeta>("items", importAIModelCommand.items, serializeAIChannelModelMeta);
     }
 }
 /**
@@ -2209,6 +3159,79 @@ export function serializePreUploadTempFileCommand(writer: SerializationWriter, p
         writer.writeStringValue("fileName", preUploadTempFileCommand.fileName);
         writer.writeNumberValue("fileSize", preUploadTempFileCommand.fileSize);
         writer.writeStringValue("shA256", preUploadTempFileCommand.shA256);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAIChannelListCommandResponse(writer: SerializationWriter, queryAIChannelListCommandResponse: Partial<QueryAIChannelListCommandResponse> | undefined | null = {}) : void {
+    if (queryAIChannelListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryAIChannelListCommandResponseItem>("items", queryAIChannelListCommandResponse.items, serializeQueryAIChannelListCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAIChannelListCommandResponseItem(writer: SerializationWriter, queryAIChannelListCommandResponseItem: Partial<QueryAIChannelListCommandResponseItem> | undefined | null = {}) : void {
+    if (queryAIChannelListCommandResponseItem) {
+        serializeAuditsInfo(writer, queryAIChannelListCommandResponseItem)
+        writer.writeStringValue("baseUrl", queryAIChannelListCommandResponseItem.baseUrl);
+        writer.writeStringValue("description", queryAIChannelListCommandResponseItem.description);
+        writer.writeBooleanValue("enabled", queryAIChannelListCommandResponseItem.enabled);
+        writer.writeGuidValue("id", queryAIChannelListCommandResponseItem.id);
+        writer.writeNumberValue("modelCount", queryAIChannelListCommandResponseItem.modelCount);
+        writer.writeStringValue("name", queryAIChannelListCommandResponseItem.name);
+        writer.writeEnumValue<AIProtocolFamily>("protocolFamily", queryAIChannelListCommandResponseItem.protocolFamily);
+        writer.writeStringValue("providerKey", queryAIChannelListCommandResponseItem.providerKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAIModelListCommandResponse(writer: SerializationWriter, queryAIModelListCommandResponse: Partial<QueryAIModelListCommandResponse> | undefined | null = {}) : void {
+    if (queryAIModelListCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryAIModelListCommandResponseItem>("items", queryAIModelListCommandResponse.items, serializeQueryAIModelListCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAIModelListCommandResponseItem(writer: SerializationWriter, queryAIModelListCommandResponseItem: Partial<QueryAIModelListCommandResponseItem> | undefined | null = {}) : void {
+    if (queryAIModelListCommandResponseItem) {
+        serializeAuditsInfo(writer, queryAIModelListCommandResponseItem)
+        writer.writeGuidValue("channelId", queryAIModelListCommandResponseItem.channelId);
+        writer.writeNumberValue("contextWindow", queryAIModelListCommandResponseItem.contextWindow);
+        writer.writeNumberValue("costCacheRead", queryAIModelListCommandResponseItem.costCacheRead);
+        writer.writeNumberValue("costInput", queryAIModelListCommandResponseItem.costInput);
+        writer.writeNumberValue("costOutput", queryAIModelListCommandResponseItem.costOutput);
+        writer.writeStringValue("description", queryAIModelListCommandResponseItem.description);
+        writer.writeBooleanValue("enabled", queryAIModelListCommandResponseItem.enabled);
+        writer.writeStringValue("family", queryAIModelListCommandResponseItem.family);
+        writer.writeGuidValue("id", queryAIModelListCommandResponseItem.id);
+        writer.writeStringValue("knowledgeCutoff", queryAIModelListCommandResponseItem.knowledgeCutoff);
+        writer.writeStringValue("lastUpdated", queryAIModelListCommandResponseItem.lastUpdated);
+        writer.writeNumberValue("maxOutput", queryAIModelListCommandResponseItem.maxOutput);
+        writer.writeStringValue("modalitiesInput", queryAIModelListCommandResponseItem.modalitiesInput);
+        writer.writeStringValue("modalitiesOutput", queryAIModelListCommandResponseItem.modalitiesOutput);
+        writer.writeStringValue("modelId", queryAIModelListCommandResponseItem.modelId);
+        writer.writeStringValue("modelKind", queryAIModelListCommandResponseItem.modelKind);
+        writer.writeStringValue("name", queryAIModelListCommandResponseItem.name);
+        writer.writeBooleanValue("openWeights", queryAIModelListCommandResponseItem.openWeights);
+        writer.writeStringValue("releaseDate", queryAIModelListCommandResponseItem.releaseDate);
+        writer.writeBooleanValue("supportsAttachments", queryAIModelListCommandResponseItem.supportsAttachments);
+        writer.writeBooleanValue("supportsReasoning", queryAIModelListCommandResponseItem.supportsReasoning);
+        writer.writeBooleanValue("supportsStructuredOutput", queryAIModelListCommandResponseItem.supportsStructuredOutput);
+        writer.writeBooleanValue("supportsTemperature", queryAIModelListCommandResponseItem.supportsTemperature);
+        writer.writeBooleanValue("supportsToolCall", queryAIModelListCommandResponseItem.supportsToolCall);
+        writer.writeBooleanValue("supportsVision", queryAIModelListCommandResponseItem.supportsVision);
     }
 }
 /**
@@ -2367,6 +3390,33 @@ export function serializeQueryUserListCommandResponseItem(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiCommandResponse(writer: SerializationWriter, queryWikiCommandResponse: Partial<QueryWikiCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiCommandResponse) {
+        writer.writeStringValue("createTime", queryWikiCommandResponse.createTime);
+        writer.writeStringValue("description", queryWikiCommandResponse.description);
+        writer.writeNumberValue("myRole", queryWikiCommandResponse.myRole);
+        writer.writeStringValue("name", queryWikiCommandResponse.name);
+        writer.writeStringValue("teamId", queryWikiCommandResponse.teamId);
+        writer.writeStringValue("wikiId", queryWikiCommandResponse.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikisCommandResponse(writer: SerializationWriter, queryWikisCommandResponse: Partial<QueryWikisCommandResponse> | undefined | null = {}) : void {
+    if (queryWikisCommandResponse) {
+        writer.writeCollectionOfObjectValues<WikiItem>("items", queryWikisCommandResponse.items, serializeWikiItem);
+        writer.writeNumberValue("myRole", queryWikisCommandResponse.myRole);
+        writer.writeStringValue("teamId", queryWikisCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshTokenCommand(writer: SerializationWriter, refreshTokenCommand: Partial<RefreshTokenCommand> | undefined | null = {}) : void {
     if (refreshTokenCommand) {
         writer.writeStringValue("refreshToken", refreshTokenCommand.refreshToken);
@@ -2496,6 +3546,28 @@ export function serializeSimpleOfLong(writer: SerializationWriter, simpleOfLong:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSyncAIModelCommand(writer: SerializationWriter, syncAIModelCommand: Partial<SyncAIModelCommand> | undefined | null = {}) : void {
+    if (syncAIModelCommand) {
+        writer.writeGuidValue("channelId", syncAIModelCommand.channelId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSyncAIModelCommandResponse(writer: SerializationWriter, syncAIModelCommandResponse: Partial<SyncAIModelCommandResponse> | undefined | null = {}) : void {
+    if (syncAIModelCommandResponse) {
+        writer.writeNumberValue("added", syncAIModelCommandResponse.added);
+        writer.writeNumberValue("skipped", syncAIModelCommandResponse.skipped);
+        writer.writeNumberValue("total", syncAIModelCommandResponse.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeTeamItem(writer: SerializationWriter, teamItem: Partial<TeamItem> | undefined | null = {}) : void {
     if (teamItem) {
         writer.writeStringValue("avatar", teamItem.avatar);
@@ -2533,6 +3605,35 @@ export function serializeUnbindUserOAuthCommand(writer: SerializationWriter, unb
         writer.writeStringValue("contextUserId", unbindUserOAuthCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", unbindUserOAuthCommand.contextUserType);
         writer.writeGuidValue("providerId", unbindUserOAuthCommand.providerId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateAIChannelCommand(writer: SerializationWriter, updateAIChannelCommand: Partial<UpdateAIChannelCommand> | undefined | null = {}) : void {
+    if (updateAIChannelCommand) {
+        writer.writeStringValue("apiKey", updateAIChannelCommand.apiKey);
+        writer.writeStringValue("baseUrl", updateAIChannelCommand.baseUrl);
+        writer.writeGuidValue("channelId", updateAIChannelCommand.channelId);
+        writer.writeStringValue("description", updateAIChannelCommand.description);
+        writer.writeBooleanValue("enabled", updateAIChannelCommand.enabled);
+        writer.writeStringValue("name", updateAIChannelCommand.name);
+        writer.writeEnumValue<AIProtocolFamily>("protocolFamily", updateAIChannelCommand.protocolFamily);
+        writer.writeStringValue("providerKey", updateAIChannelCommand.providerKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateAIModelCommand(writer: SerializationWriter, updateAIModelCommand: Partial<UpdateAIModelCommand> | undefined | null = {}) : void {
+    if (updateAIModelCommand) {
+        writer.writeBooleanValue("enabled", updateAIModelCommand.enabled);
+        writer.writeObjectValue<AIChannelModelMeta>("meta", updateAIModelCommand.meta, serializeAIChannelModelMeta);
+        writer.writeGuidValue("modelId", updateAIModelCommand.modelId);
     }
 }
 /**
@@ -2653,6 +3754,18 @@ export function serializeUpdateUserIsDisableCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateWikiCommand(writer: SerializationWriter, updateWikiCommand: Partial<UpdateWikiCommand> | undefined | null = {}) : void {
+    if (updateWikiCommand) {
+        writer.writeStringValue("description", updateWikiCommand.description);
+        writer.writeStringValue("name", updateWikiCommand.name);
+        writer.writeStringValue("wikiId", updateWikiCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUserStateInfo(writer: SerializationWriter, userStateInfo: Partial<UserStateInfo> | undefined | null = {}) : void {
     if (userStateInfo) {
         writer.writeStringValue("avatar", userStateInfo.avatar);
@@ -2665,6 +3778,20 @@ export function serializeUserStateInfo(writer: SerializationWriter, userStateInf
         writer.writeStringValue("phone", userStateInfo.phone);
         writer.writeStringValue("userId", userStateInfo.userId);
         writer.writeStringValue("userName", userStateInfo.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiItem(writer: SerializationWriter, wikiItem: Partial<WikiItem> | undefined | null = {}) : void {
+    if (wikiItem) {
+        writer.writeStringValue("createTime", wikiItem.createTime);
+        writer.writeStringValue("description", wikiItem.description);
+        writer.writeStringValue("name", wikiItem.name);
+        writer.writeStringValue("teamId", wikiItem.teamId);
+        writer.writeStringValue("wikiId", wikiItem.wikiId);
     }
 }
 /**
@@ -2715,6 +3842,32 @@ export interface SimpleOfLong extends Parsable {
      * 任何类型.
      */
     value?: string | null;
+}
+/**
+ * 从供应商拉取并同步模型列表（后端负责获取模型并匹配内置 models.json）.
+ */
+export interface SyncAIModelCommand extends Parsable {
+    /**
+     * 渠道 id.
+     */
+    channelId?: Guid | null;
+}
+/**
+ * SyncAIModelCommandResponse.
+ */
+export interface SyncAIModelCommandResponse extends Parsable {
+    /**
+     * 本次新增数量.
+     */
+    added?: number | null;
+    /**
+     * 已存在跳过数量.
+     */
+    skipped?: number | null;
+    /**
+     * 供应商返回的模型总数.
+     */
+    total?: number | null;
 }
 /**
  * 团队项.
@@ -2799,6 +3952,60 @@ export interface UnbindUserOAuthCommand extends Parsable {
      * 第三方认证方式 id，对应 OauthConnection 表的 id.
      */
     providerId?: Guid | null;
+}
+/**
+ * 更新 AI 渠道.
+ */
+export interface UpdateAIChannelCommand extends Parsable {
+    /**
+     * 密钥，为空时保持不变.
+     */
+    apiKey?: string | null;
+    /**
+     * 接入端点.
+     */
+    baseUrl?: string | null;
+    /**
+     * 渠道 id，由 Controller 从路由参数回填.
+     */
+    channelId?: Guid | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 渠道名称.
+     */
+    name?: string | null;
+    /**
+     * 协议族.
+     */
+    protocolFamily?: AIProtocolFamily | null;
+    /**
+     * 渠道标识，对应 models.json 中的 provider id.
+     */
+    providerKey?: string | null;
+}
+/**
+ * 更新 AI 模型.
+ */
+export interface UpdateAIModelCommand extends Parsable {
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
+    /**
+     * 模型元数据.
+     */
+    meta?: AIChannelModelMeta | null;
+    /**
+     * 模型 id，由 Controller 从路由参数回填.
+     */
+    modelId?: Guid | null;
 }
 /**
  * 更新第三方登录连接配置.
@@ -2974,6 +4181,23 @@ export interface UpdateUserIsDisableCommand extends Parsable {
     userId?: string | null;
 }
 /**
+ * 更新知识库，需要团队 Admin 及以上角色.
+ */
+export interface UpdateWikiCommand extends Parsable {
+    /**
+     * 知识库简介.
+     */
+    description?: string | null;
+    /**
+     * 知识库名称.
+     */
+    name?: string | null;
+    /**
+     * 知识库 id，由 Controller 从路由参数回填.
+     */
+    wikiId?: string | null;
+}
+/**
  * UserStateInfo.
  */
 export interface UserStateInfo extends Parsable {
@@ -3019,6 +4243,40 @@ export interface UserStateInfo extends Parsable {
     userName?: string | null;
 }
 export type UserType = (typeof UserTypeObject)[keyof typeof UserTypeObject];
+/**
+ * 知识库项.
+ */
+export interface WikiItem extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 知识库简介.
+     */
+    description?: string | null;
+    /**
+     * 知识库名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
+ * AI 协议（协议族 + 协议风格组合）.
+ */
+export const AIProtocolFamilyObject = {
+    OpenAIChatCompletions: "openAIChatCompletions",
+    OpenAIResponses: "openAIResponses",
+    AnthropicMessages: "anthropicMessages",
+    GoogleGemini: "googleGemini",
+} as const;
 /**
  * OAuth 提供商.
  */

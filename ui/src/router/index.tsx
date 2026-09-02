@@ -12,6 +12,7 @@ import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
 import { Users } from '@/pages/users/Users'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
+import { Wiki } from '@/pages/wiki/Wiki'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
       { path: 'team', element: <Teams /> },
+      { path: 'wiki', element: <Wiki /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },

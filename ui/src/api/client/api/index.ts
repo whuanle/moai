@@ -4,6 +4,8 @@
 // @ts-ignore
 import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } from './account/index.js';
 // @ts-ignore
+import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
+// @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
@@ -18,6 +20,8 @@ import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadat
 // @ts-ignore
 import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetadata } from './usermanage/index.js';
 // @ts-ignore
+import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata, WikiRequestBuilderRequestsMetadata } from './wiki/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -28,6 +32,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The account property
      */
     get account(): AccountRequestBuilder;
+    /**
+     * The ai property
+     */
+    get ai(): AiRequestBuilder;
     /**
      * The auth property
      */
@@ -56,6 +64,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The usermanage property
      */
     get usermanage(): UsermanageRequestBuilder;
+    /**
+     * The wiki property
+     */
+    get wiki(): WikiRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -67,6 +79,9 @@ export const ApiRequestBuilderUriTemplate = "{+baseurl}/api";
 export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     account: {
         navigationMetadata: AccountRequestBuilderNavigationMetadata,
+    },
+    ai: {
+        navigationMetadata: AiRequestBuilderNavigationMetadata,
     },
     auth: {
         navigationMetadata: AuthRequestBuilderNavigationMetadata,
@@ -89,6 +104,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     usermanage: {
         navigationMetadata: UsermanageRequestBuilderNavigationMetadata,
+    },
+    wiki: {
+        requestsMetadata: WikiRequestBuilderRequestsMetadata,
+        navigationMetadata: WikiRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

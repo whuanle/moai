@@ -28,11 +28,23 @@ export interface UserInfo {
   isDeleted?: boolean | null
 }
 
+/** 团队列表项（与 api/team.ts 的 TeamItem 结构一致，store 层独立声明避免循环依赖） */
+export interface StoreTeamItem {
+  teamId?: string | number | null
+  name?: string | null
+  avatar?: string | null
+  myRole?: number | null
+}
+
 interface AppState {
   themeKey: ThemeKey
   locale: Locale
   serverInfo: ServerInfo | null
   userInfo: UserInfo | null
+  /** 当前选中的团队（团队模式上下文，持久化） */
+  currentTeamId: string | null
+  /** 我的团队列表（内存，登录后由侧边栏/页面加载） */
+  myTeams: StoreTeamItem[]
 
   setThemeKey: (key: ThemeKey) => void
   toggleTheme: () => void
@@ -41,6 +53,8 @@ interface AppState {
   clearServerInfo: () => void
   setUserInfo: (info: UserInfo) => void
   clearUserInfo: () => void
+  setCurrentTeamId: (teamId: string | null) => void
+  setMyTeams: (teams: StoreTeamItem[]) => void
 }
 
 const getInitialTheme = (): ThemeKey => {
@@ -63,6 +77,8 @@ export const useAppStore = create<AppState>()(
       locale: getInitialLocale(),
       serverInfo: null,
       userInfo: null,
+      currentTeamId: null,
+      myTeams: [],
 
       setThemeKey: (key) => {
         localStorage.setItem('moai-web-theme', key)
@@ -81,12 +97,15 @@ export const useAppStore = create<AppState>()(
       clearServerInfo: () => set({ serverInfo: null }),
       setUserInfo: (info) => set({ userInfo: info }),
       clearUserInfo: () => set({ userInfo: null }),
+      setCurrentTeamId: (teamId) => set({ currentTeamId: teamId }),
+      setMyTeams: (teams) => set({ myTeams: teams }),
     }),
     {
       name: 'moai-web-store',
       partialize: (state) => ({
         serverInfo: state.serverInfo,
         userInfo: state.userInfo,
+        currentTeamId: state.currentTeamId,
       }),
     },
   ),
