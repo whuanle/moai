@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Descriptions, Form, Input, Modal, Popconfirm, Space, Tag, Typography } from 'antd'
-import type { TableColumnsType } from 'antd'
+import {
+  CheckCircleOutlined,
+  EyeOutlined,
+  KeyOutlined,
+  SearchOutlined,
+  StopOutlined,
+  UserSwitchOutlined,
+} from '@ant-design/icons'
+import { Avatar, Button, Descriptions, Form, Input, Modal, Popconfirm, Skeleton, Space, Tag, Tooltip, Typography } from 'antd'
+import type { DescriptionsProps, TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { Page, DataTable, QueryBar, feedback } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { refreshUserProfile } from '@/api/auth'
+import { resolveStorageUrl } from '@/utils/storage'
 import {
   getUsers,
   getUserDetail,
@@ -24,6 +34,15 @@ interface PasswordFormValues {
 
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).{8,20}$/
 
+/** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 export function Users() {
   const { t } = useTranslation()
   const userInfo = useAppStore((state) => state.userInfo)
@@ -34,6 +53,7 @@ export function Users() {
   const [form] = Form.useForm<PasswordFormValues>()
   const [modalOpen, setModalOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [detailLoading, setDetailLoading] = useState(false)
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null)
   const [target, setTarget] = useState<UserListItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -87,12 +107,18 @@ export function Users() {
   }
 
   const openDetail = async (record: UserListItem) => {
+    setDetail(null)
+    setDetailLoading(true)
+    setDetailOpen(true)
     try {
       const res = await getUserDetail(Number(record.id))
-      setDetail(res as unknown as Record<string, unknown>)
-      setDetailOpen(true)
+      // 详情接口无 createTime，沿用列表行数据补齐
+      setDetail({ ...res, createTime: record.createTime } as unknown as Record<string, unknown>)
     } catch {
+      setDetailOpen(false)
       // 错误已由全局请求中间件统一提示
+    } finally {
+      setDetailLoading(false)
     }
   }
 
@@ -144,63 +170,117 @@ export function Users() {
       <Tag color="success">{t('users.statusNormal')}</Tag>
     )
 
+  /** 头像 + 用户名 + 昵称合并展示，释放列宽给邮箱等长文本列 */
+  const renderUser = (record: UserListItem) => {
+    const userName = record.userName || '-'
+    const nickName = record.nickName?.trim()
+    const avatarUrl = resolveStorageUrl(record.avatar ?? null)
+    return (
+      <Space>
+        <Avatar size={36} src={avatarUrl || undefined} alt={userName}>
+          {userName.slice(0, 1).toUpperCase()}
+        </Avatar>
+        <div style={{ lineHeight: 1.4, minWidth: 0 }}>
+          <div>{userName}</div>
+          {nickName && nickName !== userName && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {nickName}
+            </Text>
+          )}
+        </div>
+      </Space>
+    )
+  }
+
   const columns: TableColumnsType<UserListItem> = useMemo(
     () => [
-      { title: t('users.colUserName'), dataIndex: 'userName', width: 140 },
-      { title: t('users.colNickName'), dataIndex: 'nickName', width: 140 },
-      { title: t('users.colEmail'), dataIndex: 'email', ellipsis: true },
-      { title: t('users.colPhone'), dataIndex: 'phone', width: 140, render: (v: string | null) => v || '-' },
-      { title: t('users.colRole'), key: 'role', width: 110, render: (_, record) => renderRole(record) },
-      { title: t('users.colStatus'), key: 'status', width: 90, render: (_, record) => renderStatus(record) },
+      {
+        title: t('users.colUser'),
+        key: 'user',
+        width: 160,
+        render: (_, record) => renderUser(record),
+      },
+      {
+        title: t('users.colEmail'),
+        dataIndex: 'email',
+        ellipsis: true,
+        render: (v: string | null) => v || '-',
+      },
+      { title: t('users.colPhone'), dataIndex: 'phone', width: 130, render: (v: string | null) => v || '-' },
+      { title: t('users.colRole'), key: 'role', width: 100, render: (_, record) => renderRole(record) },
+      { title: t('users.colStatus'), key: 'status', width: 75, render: (_, record) => renderStatus(record) },
       {
         title: t('users.colCreateTime'),
         dataIndex: 'createTime',
-        width: 170,
-        render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-'),
+        width: 150,
+        render: (v: string | null) => (
+          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+        ),
       },
       {
         title: t('users.colActions'),
         key: 'actions',
-        width: 240,
+        width: 160,
+        fixed: 'right',
         render: (_, record) => {
           const protectedRow = isProtected(record)
           return (
-            <Space size={0} wrap>
-              <Button type="link" size="small" onClick={() => void openDetail(record)}>
-                {t('users.view')}
-              </Button>
+            <Space size={0}>
+              <Tooltip title={t('users.view')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EyeOutlined />}
+                  aria-label={t('users.view')}
+                  onClick={() => void openDetail(record)}
+                />
+              </Tooltip>
               {isRoot && !protectedRow && (
                 <Popconfirm
                   title={t(record.isAdmin ? 'users.unsetAdminConfirm' : 'users.setAdminConfirm')}
                   onConfirm={() => void handleToggleAdmin(record)}
                 >
-                  <Button type="link" size="small">
-                    {t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
-                  </Button>
+                  <Tooltip title={t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<UserSwitchOutlined />}
+                      aria-label={t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
+                    />
+                  </Tooltip>
                 </Popconfirm>
               )}
               {!protectedRow && (
                 <Popconfirm
                   title={t(record.isDisable ? 'users.enableConfirm' : 'users.disableConfirm')}
+                  okButtonProps={{ danger: !record.isDisable }}
                   onConfirm={() => void handleToggleDisable(record)}
                 >
-                  <Button type="link" size="small" danger={!record.isDisable}>
-                    {t(record.isDisable ? 'users.enable' : 'users.disable')}
-                  </Button>
+                  <Tooltip title={t(record.isDisable ? 'users.enable' : 'users.disable')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      danger={!record.isDisable}
+                      icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
+                      aria-label={t(record.isDisable ? 'users.enable' : 'users.disable')}
+                    />
+                  </Tooltip>
                 </Popconfirm>
               )}
               {!protectedRow && (
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => {
-                    setTarget(record)
-                    form.resetFields()
-                    setModalOpen(true)
-                  }}
-                >
-                  {t('users.resetPassword')}
-                </Button>
+                <Tooltip title={t('users.resetPassword')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<KeyOutlined />}
+                    aria-label={t('users.resetPassword')}
+                    onClick={() => {
+                      setTarget(record)
+                      form.resetFields()
+                      setModalOpen(true)
+                    }}
+                  />
+                </Tooltip>
               )}
             </Space>
           )
@@ -211,15 +291,52 @@ export function Users() {
     [t, isRoot, currentUserId],
   )
 
+  const detailItems: DescriptionsProps['items'] = useMemo(() => {
+    if (!detail) return []
+    return [
+      { key: 'email', label: t('users.colEmail'), children: String(detail.email ?? '-') },
+      { key: 'phone', label: t('users.colPhone'), children: String(detail.phone ?? '-') },
+      {
+        key: 'role',
+        label: t('users.colRole'),
+        children: detail.isRoot
+          ? t('users.roleRoot')
+          : detail.isAdmin
+            ? t('users.roleAdmin')
+            : t('users.roleMember'),
+      },
+      {
+        key: 'status',
+        label: t('users.colStatus'),
+        children: detail.isDisable ? t('users.statusDisabled') : t('users.statusNormal'),
+      },
+      {
+        key: 'createTime',
+        label: t('users.colCreateTime'),
+        children: formatDateTime(detail.createTime as string | null),
+      },
+    ]
+  }, [detail, t])
+
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />
   }
 
+  const detailUserName = String(detail?.userName ?? '')
+  const detailNickName = String(detail?.nickName ?? '')
+  const detailAvatar = resolveStorageUrl((detail?.avatar as string | null | undefined) ?? null)
+
   return (
-    <Page title={t('users.title')} subtitle={t('users.subtitle')}>
+    <Page title={t('users.title')}>
       <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
-        <Form.Item name="searchText" label={t('users.searchLabel')}>
-          <Input placeholder={t('users.searchPlaceholder')} allowClear maxLength={50} />
+        <Form.Item name="searchText">
+          <Input
+            placeholder={t('users.searchPlaceholder')}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            allowClear
+            maxLength={50}
+            style={{ width: 280 }}
+          />
         </Form.Item>
       </QueryBar>
       <DataTable<UserListItem>
@@ -227,6 +344,11 @@ export function Users() {
         columns={columns}
         dataSource={items}
         loading={loading}
+        sticky
+        scroll={{ x: 880 }}
+        toolbar={
+          <Text type="secondary">{t('ds.table.total', { total: totalCount })}</Text>
+        }
         onRefresh={() => void load(pageNo, pageSize, searchText)}
         refreshLoading={loading}
         pagination={{
@@ -247,32 +369,24 @@ export function Users() {
         footer={null}
         onCancel={() => setDetailOpen(false)}
       >
-        {detail && (
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label={t('users.colUserName')}>
-              {String(detail.userName ?? '-')}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('users.colNickName')}>
-              {String(detail.nickName ?? '-')}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('users.colEmail')}>
-              {String(detail.email ?? '-')}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('users.colPhone')}>
-              {String(detail.phone ?? '-')}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('users.colRole')}>
-              {detail.isRoot
-                ? t('users.roleRoot')
-                : detail.isAdmin
-                  ? t('users.roleAdmin')
-                  : t('users.roleMember')}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('users.colStatus')}>
-              {detail.isDisable ? t('users.statusDisabled') : t('users.statusNormal')}
-            </Descriptions.Item>
-          </Descriptions>
-        )}
+        <Skeleton loading={detailLoading} active paragraph={{ rows: 5 }}>
+          {detail && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+                <Avatar size={56} src={detailAvatar || undefined} alt={detailUserName}>
+                  {detailUserName.slice(0, 1).toUpperCase()}
+                </Avatar>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{detailNickName || detailUserName}</div>
+                  {detailNickName && detailNickName !== detailUserName && (
+                    <Text type="secondary">@{detailUserName}</Text>
+                  )}
+                </div>
+              </div>
+              <Descriptions column={1} size="small" bordered items={detailItems} />
+            </>
+          )}
+        </Skeleton>
       </Modal>
       <Modal
         open={modalOpen}

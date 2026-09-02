@@ -83,20 +83,20 @@ describe('Users', () => {
     const findRow = (text: string) =>
       Array.from(document.querySelectorAll('table tr')).find((r) => r.textContent?.includes(text))
 
-    const adminRowButtons = Array.from(findRow('admin')?.querySelectorAll('button') ?? []).map(
-      (b) => b.textContent,
-    )
-    const bobRowButtons = Array.from(findRow('bob')?.querySelectorAll('button') ?? []).map(
-      (b) => b.textContent,
-    )
+    const rowActionLabels = (text: string) =>
+      Array.from(findRow(text)?.querySelectorAll('button') ?? [])
+        .map((b) => b.getAttribute('aria-label'))
+        .filter(Boolean)
 
     // root 自己的行只有"查看"
+    const adminRowButtons = rowActionLabels('admin@admin.com')
     expect(adminRowButtons).toContain('查看')
     expect(adminRowButtons).not.toContain('设为管理员')
     expect(adminRowButtons).not.toContain('禁用')
     expect(adminRowButtons).not.toContain('重置密码')
 
     // bob 行有完整操作
+    const bobRowButtons = rowActionLabels('bob@moai.com')
     expect(bobRowButtons).toContain('设为管理员')
     expect(bobRowButtons).toContain('禁用')
     expect(bobRowButtons).toContain('重置密码')

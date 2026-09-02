@@ -35,6 +35,7 @@
 - **2026-09-01 交付验收**：E2E 34/34、Vitest 42/42、lint/typecheck 绿。修复：路由回填 Command 自动验证恒 400（移除 UserId 规则）；禁用中间件 fail-open（改为 403「账号已被禁用」）。
 - **2026-09-01 第二轮·全系统深度测试**：深度 API 68/68（28 端点：注册校验矩阵、登录限流、token 边界、存储全链路、权限门禁、分页边界、CORS、畸形请求）；BDD 36/36；浏览器走查（登录→仪表盘→/users→禁用/启用）。修复 11 处缺陷，要点：publicStoreUrl /statics→/static 统一常量；注册手机号重复 500→409；oauthconnect PUT 恒 400→修复；垃圾 refreshToken 500→401；update_userinfo 超长昵称 500→IModelValidator；avatar 伪造 objectKey→file 表校验 404；oauthconnect 各 BusinessException 补 StatusCode；**前端环境**：`.env.development`(5000) 优先级高于 `.env.local`，新增 `ui/.env.development.local` 指向 5210。
 - **2026-09-02 第三轮·OAuth 全链路 + 浏览器全页面回归**：本地模拟 OIDC Provider 完成 OAuth 12/12（创建/授权地址/302 回跳/待绑定/注册/直通/绑定/解绑）+ 浏览器全流程；修复第 12 缺陷（OAuthRegisterCommandHandler 占位手机号唯一索引冲突→sub 哈希生成）。全页面浏览器回归通过（注册/设置/oauthconnect 编辑/账号设置/成员视角）。最终回归 68/68+36/36+42/42、构建 0 错。
+- **2026-09-02 UI 优化走查**：/users 操作列图标化（Tooltip+aria-label，危险操作保留 Popconfirm）；搜索行精简（放大镜前缀、总数统计、刷新右对齐——DataTable 组件级调整）；表头 sticky + 操作列固定实测（视口 900px 横向滚动 266px 时操作列贴右缘、页面纵滚 900px 表头 top=0）；移除解释性副标题（users/settings/account，Dashboard 问候语保留）；用户列合并头像+用户名、时间统一 `YYYY-MM-DD HH:mm` 单行。登录页品牌区+主题自适应渐变（antd token）、favicon 小尺寸加粗。Vitest 42/42 + tsc/lint 绿；亮/暗双主题实机走查通过。
 - 遗留观察：改密不吊销其他会话旧 token；GET /api/settings 为 admin 专属（member 403）。
 
 ## 5. 变更记录
@@ -43,3 +44,4 @@
 |---|---|
 | 2026-09-01 | 功能交付；三轮验收（见存档） |
 | 2026-09-02 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化、四件互链、职责瘦身 |
+| 2026-09-02 | UI 优化（图标操作列/sticky 表头/副标题移除，见存档第四轮） |

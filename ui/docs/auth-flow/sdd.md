@@ -38,8 +38,8 @@
 
 ## 页面行为（as-built 摘要）
 
-- **Login.tsx**：400 宽 Card，username/password 必填；成功 feedback.success 后 `navigate('/dashboard',{replace:true})`，失败依赖全局中间件提示。挂载即拉 `getOAuthProviders()`（后端路由拼写即 `oauth_prividers`）：有渠道渲染圆形图标按钮（iconUrl 经 resolveStorageUrl 解析，无图标显示名称文本），点击整页跳授权。
-- **Register.tsx**：420 宽 Card；userName 必填、nickName/phone 选填、email 必填（antd type:'email'）、password 仅 `min:6`、confirmPassword 校验两次一致。强度（8-20 位含字母+数字）由后端解密后裁决。
+- **Login.tsx**：400 宽 Card（品牌区：logo 48px + 标题 + 副标题；背景 `linear-gradient(colorBgLayout→colorPrimaryBg)` 跟随明暗主题，卡片 radius.lg+主题阴影），username/password 必填；成功 feedback.success 后 `navigate('/dashboard',{replace:true})`，失败依赖全局中间件提示。挂载即拉 `getOAuthProviders()`（后端路由拼写即 `oauth_prividers`）：有渠道渲染圆形图标按钮（iconUrl 经 resolveStorageUrl 解析，无图标显示名称文本），点击整页跳授权；分隔线用 `colorBorderSecondary` token。
+- **Register.tsx**：420 宽 Card，与 Login 同款品牌区/主题自适应渐变背景（2026-09-02 统一）；userName 必填、nickName/phone 选填、email 必填（antd type:'email'）、password 仅 `min:6`、confirmPassword 校验两次一致（不一致报 `auth.passwordMismatch`）。强度（8-20 位含字母+数字）由后端解密后裁决。
 - **OAuthLogin.tsx**：`isPopup = opener 存在且同源`、`bindMode = isPopup && state 带 bind`。bindMode：缺参通知 cancel 关窗；否则 oauthBindByCode（鉴权客户端，绑定当前登录账号）。顶层：缺参/异常/无 tempOAuthBindId → 跳 /login；isBindUser → 落态进 dashboard；有 tempOAuthBindId → 「一键注册」确认卡。
 - **RequireAuth.tsx**：无 token 渲染期同步 `<Navigate to="/login" replace/>`；挂载执行一次 checkToken（异常按失败）；每 60 秒（TOKEN_CHECK_INTERVAL=60_000）复检；检查期间整屏 Spin；卸载清定时器。
 

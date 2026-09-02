@@ -41,7 +41,7 @@ export function DataTable<RecordType extends object>({
             marginBottom: spacing.md,
           }}
         >
-          <div>{toolbar}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>{toolbar}</div>
           {onRefresh && (
             <ConfigProvider button={{ autoInsertSpace: false }}>
               <Button onClick={onRefresh} loading={refreshLoading}>

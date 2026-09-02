@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography, Upload } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { Page, DataTable, feedback } from '@/design-system'
@@ -278,19 +278,33 @@ export function OauthConnect() {
     {
       title: t('oauthconnect.colActions'),
       key: 'actions',
-      width: 140,
+      width: 110,
+      fixed: 'right',
       render: (_, record) => (
-        <Space>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
-            {t('oauthconnect.edit')}
-          </Button>
+        <Space size={0}>
+          <Tooltip title={t('oauthconnect.edit')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={t('oauthconnect.edit')}
+              onClick={() => openEdit(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title={t('oauthconnect.deleteConfirm')}
+            okButtonProps={{ danger: true }}
             onConfirm={() => record.id && handleDelete(record.id)}
           >
-            <Button type="link" size="small" danger>
-              {t('oauthconnect.delete')}
-            </Button>
+            <Tooltip title={t('oauthconnect.delete')}>
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                aria-label={t('oauthconnect.delete')}
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -302,12 +316,14 @@ export function OauthConnect() {
   }
 
   return (
-    <Page>
+    <Page title={t('oauthconnect.title')}>
       <DataTable<OAuthConnectionItem>
         rowKey="id"
         columns={columns}
         dataSource={items}
         loading={loading}
+        sticky
+        scroll={{ x: 960 }}
         toolbar={
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('oauthconnect.create')}

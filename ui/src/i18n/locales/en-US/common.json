@@ -29,7 +29,9 @@
   },
   "auth": {
     "loginTitle": "Sign in",
+    "loginSubtitle": "Welcome back, sign in to continue",
     "registerTitle": "Register",
+    "registerSubtitle": "Create your MoAI account",
     "username": "Username",
     "password": "Password",
     "confirmPassword": "Confirm password",
@@ -54,13 +56,13 @@
     "usernamePlaceholder": "Enter your username",
     "passwordPlaceholder": "Enter your password",
     "confirmPasswordPlaceholder": "Enter your password again",
+    "passwordMismatch": "Passwords do not match",
     "emailPlaceholder": "Enter your email",
     "nickNamePlaceholder": "Enter your nickname (optional)",
     "phonePlaceholder": "Enter your phone (optional)"
   },
   "account": {
     "title": "Account Settings",
-    "subtitle": "Manage your profile, security and third-party account links",
     "uploadAvatar": "Change avatar",
     "avatarSuccess": "Avatar updated successfully",
     "avatarTypeError": "Please upload an image file",
@@ -125,7 +127,6 @@
   },
   "settings": {
     "title": "System Settings",
-    "subtitle": "Manage global configuration items",
     "generalTitle": "General",
     "save": "Save",
     "saveSuccess": "Saved successfully",
@@ -136,7 +137,6 @@
   },
   "oauthconnect": {
     "title": "OAuth Connections",
-    "subtitle": "Configure OAuth, Feishu, DingTalk and other third-party sign-in connections",
     "create": "New connection",
     "createTitle": "New third-party sign-in connection",
     "editTitle": "Edit third-party sign-in connection",
@@ -248,9 +248,9 @@
   },
   "users": {
     "title": "User Management",
-    "subtitle": "Manage system users, roles and account status",
     "searchLabel": "Keyword",
     "searchPlaceholder": "Username / Nickname / Email",
+    "colUser": "User",
     "colUserName": "Username",
     "colNickName": "Nickname",
     "colEmail": "Email",

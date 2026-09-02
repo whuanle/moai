@@ -13,13 +13,13 @@
 
 ### Settings.tsx（/settings）
 
-- 结构：`Page`（title/subtitle）+ 单 Card：一行设置项（名称 + 描述 + `Switch`）+ 右对齐「保存」按钮（`disabled={!dirty || loading}`）。
+- 结构：`Page`（仅 title，2026-09-02 起管理页不渲染解释性副标题）+ 单 Card：一行设置项（名称 + 描述 + `Switch`）+ 右对齐「保存」按钮（`disabled={!dirty || loading}`）。
 - 加载：`getSettings()` 在 items 中找 `oauth_auto_register`，`value === 'true'` 转 bool；脏标记：Switch 变更置 dirty，保存成功或重载后清零。
 - 保存失败自动 `load()` 重拉，把开关恢复为库中真值（[@FE-PG-S8](./bdd.md#fe-pg-s8)）。
 
 ### OauthConnect.tsx（/oauthconnect）
 
-- 列表：无标题 `<Page>` + `DataTable` 六列（名称/类型 Tag/Key ellipsis/图标 32px `resolveStorageUrl`/授权地址 copyable/操作），`pagination={false}`；工具栏「新建」主按钮 + `onRefresh`；`isAdmin` 为 true 才加载。
+- 列表：`<Page title>` + `DataTable` 六列（名称/类型 Tag/Key ellipsis/图标 32px `resolveStorageUrl`/授权地址 copyable/操作），`pagination={false}`、`sticky` 表头、操作列 `fixed:'right'` 图标按钮（编辑/删除，Tooltip+aria-label，删除保留 Popconfirm 红色确认）；工具栏「新建」主按钮 + `onRefresh`；`isAdmin` 为 true 才加载。（2026-09-02 与 /users 页统一 UI 约定）
 - 新建/编辑 Modal（`maskClosable={false}`、`destroyOnClose`）字段：name 必填（≤50）；provider Select（custom/feishu/dingTalk/gitHub，**编辑态禁用**）；key 必填；secret 新建必填/编辑可选（留空 = 不变，带提示）；iconUrl 必填（`IconPicker`：URL 输入 + 上传按钮 + 32px 预览）；wellKnown 仅 custom/gitHub 类显示且必填（飞书/钉钉隐藏，切换 provider 时清空）。
 - 提供商辅助：`providerNoDiscovery`（feishu/dingTalk 无 OIDC 发现端点）；`providerDefaults` 内置官方图标，切换类型时 iconUrl 为空则自动填充（不覆盖已填值）；`providerTagColor/providerLabel` 渲染类型标签。
 
