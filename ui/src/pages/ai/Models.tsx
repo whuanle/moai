@@ -55,6 +55,15 @@ function protocolLabel(value: string | null | undefined): string {
   return protocolLabelMap[value] ?? value
 }
 
+/** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 interface ChannelFormValues {
   providerKey: string
   name: string
@@ -554,6 +563,30 @@ export function Models() {
     },
     { title: t('models.colModelCount'), dataIndex: 'modelCount', width: 90, align: 'center' as const },
     {
+      title: t('models.colCreateUser'),
+      dataIndex: 'createUserName',
+      width: 120,
+      render: (v: string | null) => v || '-',
+    },
+    {
+      title: t('models.colCreateTime'),
+      dataIndex: 'createTime',
+      width: 160,
+      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+    },
+    {
+      title: t('models.colUpdateUser'),
+      dataIndex: 'updateUserName',
+      width: 120,
+      render: (v: string | null) => v || '-',
+    },
+    {
+      title: t('models.colUpdateTime'),
+      dataIndex: 'updateTime',
+      width: 160,
+      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+    },
+    {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
       width: 80,
@@ -618,7 +651,7 @@ export function Models() {
         columns={channelColumns}
         dataSource={channels}
         loading={channelLoading}
-        scroll={{ x: 1020 }}
+        scroll={{ x: 1620 }}
         pagination={false}
         expandable={{
           expandedRowKeys: expandedKeys,

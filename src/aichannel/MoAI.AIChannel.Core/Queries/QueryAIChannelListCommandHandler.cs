@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.AIChannel.Models;
 using MoAI.AIChannel.Queries;
 using MoAI.AIChannel.Queries.Responses;
@@ -13,14 +14,17 @@ namespace MoAI.AIChannel.Queries;
 public class QueryAIChannelListCommandHandler : IRequestHandler<QueryAIChannelListCommand, QueryAIChannelListCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAIChannelListCommandHandler"/> class.
     /// </summary>
-    /// <param name="databaseContext"></param>
-    public QueryAIChannelListCommandHandler(DatabaseContext databaseContext)
+    /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryAIChannelListCommandHandler(DatabaseContext databaseContext, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
@@ -43,6 +47,8 @@ public class QueryAIChannelListCommandHandler : IRequestHandler<QueryAIChannelLi
                 UpdateUserId = (int)x.UpdateUserId,
             })
             .ToListAsync(cancellationToken);
+
+        await _userInfoFillService.FillAsync(items, cancellationToken);
 
         return new QueryAIChannelListCommandResponse { Items = items };
     }
