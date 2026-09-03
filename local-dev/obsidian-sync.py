@@ -19,6 +19,8 @@ MODULES = [
     ('docs/database-scaffold', '数据库脚手架', '10'),
     ('docs/deployment',      '部署',        '11'),
     ('docs/team',            '团队',        '12'),
+    ('docs/wiki',            '知识库',       '13'),
+    ('docs/variable',        '变量',        '14'),
     ('ui/docs/auth-flow',        '认证流',       '21'),
     ('ui/docs/api-layer',        'API层',       '22'),
     ('ui/docs/theme',            '主题',        '23'),
@@ -29,6 +31,7 @@ MODULES = [
     ('ui/docs/page-account',     '账号设置页',    '28'),
     ('ui/docs/page-admin',       '管理页',      '29'),
     ('ui/docs/dashboard-testing','Dashboard与测试', '30'),
+    ('ui/docs/variable',         '变量页',       '15'),
 ]
 
 TYPE_DIRS = {'sdd': 'SDD-规范驱动', 'bdd': 'BDD-交互驱动', 'tdd': 'TDD-测试驱动', 'sop': 'SOP-端到端场景'}

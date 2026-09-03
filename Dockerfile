@@ -1,11 +1,8 @@
 # ==================== 前端构建阶段 ====================
 FROM node:22-slim AS frontend-builder
 
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# 注：依赖均为纯 JS/预编译二进制（antd/vite/kiota/playwright），无 node-gyp 原生编译需求，
+# 不需要 apt 安装 python3/make/g++（曾因 Docker VM 内 deb.debian.org DNS/502 反复构建失败）
 
 WORKDIR /app
 
@@ -25,7 +22,10 @@ RUN rm -rf node_modules package-lock.json && npm install
 RUN npm run build
 
 # ==================== 后端构建阶段 ====================
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-builder
+# SDK 钉 10.0.203 保证构建可复现。注：曾在 Apple Silicon 上用 QEMU 仿真 linux/amd64 构建时
+# 遇到 10.0.302 restore 报 MSB4184 / 10.0.203 直接 SIGSEGV，均为仿真环境问题；
+# 原生 arm64 与常规 amd64 CI 不受影响（原生 arm64 实测通过）
+FROM mcr.microsoft.com/dotnet/sdk:10.0.203 AS backend-builder
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Packages.props", "."]

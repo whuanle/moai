@@ -7,7 +7,7 @@
 
 | 形态 | 组成 | 状态 |
 |---|---|---|
-| Docker Compose 一键部署 | pgvector(pg16) + redis7 + rabbitmq3 + moai 后端镜像（含前端静态资源） | ✅ D1/D2 已修复（2026-09-02，见已知缺陷表）；完整构建/起容器验收（[@DEP-S2](./bdd.md#dep-s2)）待执行 |
+| Docker Compose 一键部署 | pgvector(pg16) + redis7 + rabbitmq3 + moai 后端镜像（含前端静态资源） | ✅ **容器实测通过（2026-09-03）**：镜像构建成功 + 起容器 serverinfo 200 + e2e 41/41（UM 34 + 存储 7，[@DEP-S2](./bdd.md#dep-s2)） |
 | 本地开发 | 后端 `dotnet run`（MAI_FILE 注入）+ 前端 `npm run dev` + 四个基础设施容器 | ✅ 当前实际可用形态（[@DEP-S12](./bdd.md#dep-s12)） |
 
 覆盖对象：`Dockerfile`、`docker-entrypoint.sh`、`docker-compose.yml`、`.env.example`、`init-pgvector.sql`、`configs/system.json` 回退链。
@@ -20,8 +20,8 @@
 
 ## Dockerfile（三阶段）
 
-1. `frontend-builder`（node:22-slim）：`COPY ui/package*.json` → `npm ci` → 复制源码 → 删 lock 重装（绕 Rollup 可选依赖问题）→ `npm run build`。（原 `COPY ui/moai/...` 路径缺陷 D1，已修复）
-2. `backend-builder`（**sdk:10.0**，仓库 TargetFramework 已升 net10.0）：复制 `Directory.Packages.props` + `Directory.Build.props` + `src/` → restore/build/publish `src/MoAI/MoAI.csproj`。
+1. `frontend-builder`（node:22-slim）：`COPY ui/package*.json` → `npm ci` → 复制源码 → 删 lock 重装（绕 Rollup 可选依赖问题）→ `npm run build`。（原 `COPY ui/moai/...` 路径缺陷 D1，已修复）**无 apt 工具链步骤**：依赖均为纯 JS/预编译二进制，无需 node-gyp（曾因 Docker VM 内 deb.debian.org DNS/502 反复失败，2026-09-03 移除后构建通过）。
+2. `backend-builder`（**sdk:10.0.203**，钉版本保证可复现）：复制 `Directory.Packages.props` + `Directory.Build.props` + `src/` → restore/build/publish `src/MoAI/MoAI.csproj`。
 3. `final`（**aspnet:10.0**）：publish 产物 + 前端 dist → `/app/wwwroot`（后端静态托管 + SPA 回退）+ `docker-entrypoint.sh`。
 
 ## docker-compose.yml
@@ -37,9 +37,16 @@
 |---|---|---|---|
 | D1 | Dockerfile 前端阶段曾 `COPY ui/moai/...`，仓库实际目录是 `ui/` | 曾导致**镜像构建直接失败**（[@DEP-S1](./bdd.md#dep-s1)） | ✅ **已修复（2026-09-02）**：两处改 `ui/`，镜像同步升 net10，`MAI_CONFIG` 改 `MAI_FILE` |
 | D2 | `ConfigureOpenTelemetryModule` 曾对 `OTLP.Trace/Metrics` **无条件 `new Uri(...)`**，而 entrypoint/compose 对 OTLP 默认留空 | 曾导致**默认 `docker-compose up` 后端启动即抛异常**（[@DEP-S4](./bdd.md#dep-s4)） | ✅ **已修复（2026-09-02）**：新增 `ParseOtlpEndpoint`，空值/非法地址跳过导出，OTLP 变为可选项 |
-| D3 | 容器形态 `Storage.LocalPath=/app/files`（本地盘），本地开发形态用 S3/MinIO | 两形态存储行为不一致；容器上传的文件不在对象存储（[@DEP-S3](./bdd.md#dep-s3)） | 按环境选型；统一 S3 需改 entrypoint 生成 Storage.S3 段 |
+| D3 | ~~entrypoint 只生成 `Storage.LocalPath`~~（该字段在 `SystemOptionStorage` 中**不存在**，S3 五字段全空 → S3 客户端无 ServiceURL，业务接口 500） | 曾导致容器形态上传类接口必 500（[@DEP-S3](./bdd.md#dep-s3)） | ✅ **已修复（2026-09-03）**：entrypoint 改为从 `S3_ENDPOINT/S3_BUCKET/S3_ACCESS_KEY_ID/S3_ACCESS_KEY_SECRET/S3_FORCE_PATH_STYLE` 生成 S3 段；compose 与 .env.example 同步透传。**部署注意**：`S3_ENDPOINT` 是单端点设计——预签名 URL 的 host 即应用所配端点，必须**同时**对应用与上传客户端可达（本地容器冒烟的验证方式：审计脚本进容器跑，见 SOP 第 6 节） |
 | D4 | `.env.example` 的 OTLP 示例指 `127.0.0.1:4012`，容器内 `127.0.0.1` 是容器自身 | 照抄示例则 OTLP 上报失败（[@DEP-S6](./bdd.md#dep-s6)） | 写 collector 的容器网络名或宿主机地址 |
 | D5 | README 引用的 `moai_docs/` 目录已不存在于仓库 | README 图片裂图 | 与部署无关，仅记录 |
+| D6 | aspnet:10.0 运行时无 `libgssapi_krb5.so.2`，启动时探测告警（Cannot load library） | **实测不影响功能**（容器内 e2e 41/41 全过，Negotiate 探测为非致命）；如需消除在 final 阶段加装 `libgssapi-krb5-2` | 记录，暂不处理（构建 VM 内 apt 不可用，装库需离线 .deb 方案） |
+
+## Apple Silicon 构建注意事项（2026-09-03 实测）
+
+- `mcr.microsoft.com/dotnet/{sdk,aspnet}:10.0` **均有 linux/arm64**，Apple Silicon 上直接原生构建（默认平台）即可，实测通过。
+- **不要**用 `--platform linux/amd64` + QEMU 仿真构建：dotnet restore 会随机 `SIGSEGV`（qemu signal 11）或 `MSB4184 GetTargetFrameworkVersion` 异常——两者均为仿真伪故障，原生 amd64 CI 不受影响（Dockerfile 注释有记）。
+- Docker VM 内 `deb.debian.org`（HTTP:80）曾出现 DNS 瞬断/502（代理拦截），apt 步骤已移除（D1 修复说明）；npm/nuget 走 HTTPS 正常。
 
 ## 本地开发环境（当前实际形态）
 
