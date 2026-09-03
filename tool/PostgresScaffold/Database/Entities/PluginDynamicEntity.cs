@@ -53,4 +53,9 @@ public partial class PluginDynamicEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 对应的模板key.
+    /// </summary>
+    public string TempleteKey { get; set; } = default!;
 }

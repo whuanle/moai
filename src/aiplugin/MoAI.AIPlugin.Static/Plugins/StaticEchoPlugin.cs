@@ -1,7 +1,7 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using MoAI.AiPlugin.Attributes;
-using MoAI.AiPlugin.Contracts;
+using MoAI.AIPlugin.Attributes;
+using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Static.Models;
 
 namespace MoAI.AIPlugin.Static.Plugins;
@@ -15,7 +15,11 @@ public class StaticEchoPlugin : IStaticPluginRuntime<StaticEchoRequest, StaticEc
     /// <inheritdoc/>
     public static string GetParamsExampleValue()
     {
-        return """{"Message":"hello"}""";
+        return """
+            {
+            "Message":"hello"  // 要发送的消息
+            }
+            """;
     }
 
     /// <inheritdoc/>

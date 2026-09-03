@@ -9,6 +9,7 @@ import {
   MoonOutlined,
   SettingOutlined,
   SunOutlined,
+  TagsOutlined,
   TeamOutlined,
   TranslationOutlined,
   UserOutlined,
@@ -37,6 +38,7 @@ const mainNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { key: 'plugin', icon: <AppstoreAddOutlined />, labelKey: 'nav.plugin', path: '/plugin' },
+  { key: 'classify', icon: <TagsOutlined />, labelKey: 'nav.classify', path: '/classify' },
   { key: 'users', icon: <UserOutlined />, labelKey: 'nav.users', path: '/users' },
   { key: 'models', icon: <CloudServerOutlined />, labelKey: 'nav.channel', path: '/models' },
   { key: 'oauthconnect', icon: <ApiOutlined />, labelKey: 'nav.oauthconnect', path: '/oauthconnect' },
@@ -49,6 +51,7 @@ const pathToKey: Record<string, string> = {
   '/wiki': 'wiki',
   '/team': 'team',
   '/plugin': 'plugin',
+  '/classify': 'classify',
   '/users': 'users',
   '/models': 'models',
   '/oauthconnect': 'oauthconnect',

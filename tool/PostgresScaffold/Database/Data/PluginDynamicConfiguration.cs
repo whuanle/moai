@@ -47,6 +47,10 @@ internal partial class PluginDynamicConfiguration : IEntityTypeConfiguration<Plu
             .HasMaxLength(50)
             .HasComment("对应的内置插件key")
             .HasColumnName("plugin_key");
+        entity.Property(e => e.TempleteKey)
+            .HasMaxLength(30)
+            .HasComment("对应的模板key")
+            .HasColumnName("templete_key");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

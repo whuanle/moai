@@ -15,6 +15,7 @@
 
 - [DOC-STANDARD.md](./DOC-STANDARD.md) — 文档分层、四件套契约、Gherkin（小黄瓜）规范、相互引用规则
 - [cqrs-conventions.md](./cqrs-conventions.md) — 后端 CQRS 三层与 `IModelValidator` 硬约束
+- [aiplugin-authoring.md](./aiplugin-authoring.md) — 静态/动态插件编写规范（发现机制、运行时接口、配置校验、流程）
 - [settings.md](./settings.md) — setting 表机制（接口层权限模式范例）
 - [storage-file-layout.md](./storage-file-layout.md) — 对象存储路径布局
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
@@ -34,6 +35,8 @@
 | [settings](./settings/) | SET | 系统设置项（SettingDefinitions 注册表） |
 | [oauthconnect](./oauthconnect/) | OC | 第三方登录连接器管理 |
 | [classify](./classify/) | CLS | 分类管理（plugin/app/kb 三类，仅管理员） |
+| [aiplugin-static](./aiplugin-static/) | STP | 静态插件（列表合并去重、运行抽屉、编辑写回） |
+| [aiplugin-dynamic](./aiplugin-dynamic/) | DYN | 动态插件（实例创建/编辑/删除、模板+配置、运行实例） |
 | [common](./common/) | COM | serverinfo / build_guid |
 | [storage](./storage/) | STO | S3/MinIO 三段式上传与 /static 中转 |
 | [hangfire](./hangfire/) | HF | 定时任务与 recurring job 扩展点 |

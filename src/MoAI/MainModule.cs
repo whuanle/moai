@@ -2,11 +2,12 @@ using Maomi;
 using Maomi.I18n;
 using MoAI.Account;
 using MoAI.AIChannel;
-using MoAI.AiPlugin;
+using MoAI.AIPlugin;
 using MoAI.AIPlugin.Custom;
 using MoAI.AIPlugin.Dynamic;
 using MoAI.AIPlugin.Static;
 using MoAI.Auth;
+using MoAI.Classify;
 using MoAI.Common;
 using MoAI.Database;
 using MoAI.Filters;
@@ -31,10 +32,11 @@ namespace MoAI;
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<AIChannelCoreModule>]
-[InjectModule<AiPluginCoreModule>]
+[InjectModule<AIPluginCoreModule>]
+[InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]
 [InjectModule<DynamicPluginsModule>]
-[InjectModule<CustomPluginsModule>]
+[InjectModule<CustomPluginModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

@@ -468,3 +468,48 @@ public enum AIProtocolFamily
 }
 ```
 
+
+
+## 软删除
+
+系统有统一构造的软删除，由过滤器拦截，编写业务代码的时候，请不要自己设置软删除。
+
+不需要在业务代码中这样写：
+
+```csharp
+.Where(x => x.IsDeleted == 0)
+```
+
+
+
+## 列表数据审计属性
+
+返回列表数据时，模型应当实现 AuditsInfo，这样统一审计属性结构，方便统一查询。
+
+然后使用 IUserInfoFillService 领域服务填充用户信息，这样前端可以显示创建人、修改人、创建时间、修改时间这些。
+
+
+
+分类项继承 `AuditsInfo`，即可获得统一审计属性：
+
+```csharp
+using MoAI.Infra.Models;
+public class ClassifyItem : AuditsInfo
+{
+}
+```
+
+调用 `IUserInfoFillService.FillAsync` 填充创建人/更新人名称：
+
+```csharp
+await _userInfoFillService.FillAsync(items, cancellationToken);
+```
+
+> 注意：使用 `IUserInfoFillService` 的模块，其 Core 项目需要在 `.csproj` 中引用 `MoAI.Account.Shared`，例如：
+>
+> ```xml
+> <ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+> ```
+
+
+

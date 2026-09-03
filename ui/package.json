@@ -22,6 +22,8 @@
     "@microsoft/kiota-serialization-json": "1.0.0-preview.93",
     "@microsoft/kiota-serialization-multipart": "1.0.0-preview.93",
     "@microsoft/kiota-serialization-text": "1.0.0-preview.93",
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "0.56.0",
     "antd": "^5.24.8",
     "dayjs": "^1.11.13",
     "i18next": "^23.16.8",

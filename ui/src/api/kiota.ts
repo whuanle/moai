@@ -1,3 +1,5 @@
+import { createClassifyClient, type ClassifyClient } from '@/api/classify-client/classifyClient'
+import { createAiPluginClient, type AiPluginClient } from '@/api/aiplugin-client/aiPluginClient'
 import { createMoAIClient, type MoAIClient } from '@/api/client/moAIClient'
 import {
   AllowedHostsValidator,
@@ -97,6 +99,20 @@ function buildAdapter(): FetchRequestAdapter {
 
 export function getApiClient(): MoAIClient {
   return createMoAIClient(buildAdapter())
+}
+
+/** 分类管理客户端（独立生成，用于 /api/classify 端点）.
+ * @returns 返回 {ClassifyClient}.
+ */
+export function getClassifyClient(): ClassifyClient {
+  return createClassifyClient(buildAdapter())
+}
+
+/** 插件管理客户端（独立生成，用于 /api/ai/plugin/manage 端点）.
+ * @returns 返回 {AiPluginClient}.
+ */
+export function getAiPluginClient(): AiPluginClient {
+  return createAiPluginClient(buildAdapter())
 }
 
 export function getAnonymousClient(): MoAIClient {

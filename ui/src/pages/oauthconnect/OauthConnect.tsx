@@ -18,6 +18,15 @@ import {
 
 const { Text } = Typography
 
+/** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 interface FormValues {
   name: string
   provider: string
@@ -275,6 +284,30 @@ export function OauthConnect() {
         ),
     },
     {
+      title: t('oauthconnect.colCreateUser'),
+      dataIndex: 'createUserName',
+      width: 120,
+      render: (v: string | null) => v || '-',
+    },
+    {
+      title: t('oauthconnect.colCreateTime'),
+      dataIndex: 'createTime',
+      width: 160,
+      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+    },
+    {
+      title: t('oauthconnect.colUpdateUser'),
+      dataIndex: 'updateUserName',
+      width: 120,
+      render: (v: string | null) => v || '-',
+    },
+    {
+      title: t('oauthconnect.colUpdateTime'),
+      dataIndex: 'updateTime',
+      width: 160,
+      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+    },
+    {
       title: t('oauthconnect.colActions'),
       key: 'actions',
       width: 110,
@@ -322,7 +355,7 @@ export function OauthConnect() {
         dataSource={items}
         loading={loading}
         sticky
-        scroll={{ x: 960 }}
+        scroll={{ x: 1440 }}
         toolbar={
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('oauthconnect.create')}

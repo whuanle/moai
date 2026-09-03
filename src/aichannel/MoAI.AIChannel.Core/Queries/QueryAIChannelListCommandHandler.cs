@@ -27,7 +27,6 @@ public class QueryAIChannelListCommandHandler : IRequestHandler<QueryAIChannelLi
     public async Task<QueryAIChannelListCommandResponse> Handle(QueryAIChannelListCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.AiChannels
-            .Where(x => x.IsDeleted == 0)
             .Select(x => new QueryAIChannelListCommandResponseItem
             {
                 Id = x.Id,

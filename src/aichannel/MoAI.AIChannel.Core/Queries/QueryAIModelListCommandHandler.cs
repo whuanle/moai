@@ -25,8 +25,7 @@ public class QueryAIModelListCommandHandler : IRequestHandler<QueryAIModelListCo
     /// <inheritdoc/>
     public async Task<QueryAIModelListCommandResponse> Handle(QueryAIModelListCommand request, CancellationToken cancellationToken)
     {
-        var query = _databaseContext.AiModels
-            .Where(x => x.IsDeleted == 0);
+        var query = _databaseContext.AiModels.AsQueryable();
 
         if (request.ChannelId != null)
         {

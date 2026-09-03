@@ -12,6 +12,7 @@ import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
 import { Users } from '@/pages/users/Users'
 import { Models } from '@/pages/ai/Models'
 import { Plugins } from '@/pages/plugins/Plugins'
+import { ClassifyPage } from '@/pages/classify/Classify'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },
       { path: 'plugin', element: <Plugins /> },
+      { path: 'classify', element: <ClassifyPage /> },
       // 其它专用页面（/xxx）在此追加
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],

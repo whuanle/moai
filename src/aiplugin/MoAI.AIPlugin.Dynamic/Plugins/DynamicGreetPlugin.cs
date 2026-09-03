@@ -1,7 +1,7 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using MoAI.AiPlugin.Attributes;
-using MoAI.AiPlugin.Contracts;
+using MoAI.AIPlugin.Attributes;
+using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Dynamic.Models;
 
 namespace MoAI.AIPlugin.Dynamic.Plugins;
@@ -17,7 +17,11 @@ public class DynamicGreetPlugin : IDynamicPluginRuntime<DynamicGreetRequest, Dyn
     /// <inheritdoc/>
     public static string GetParamsExampleValue()
     {
-        return """{"Name":"MoAI"}""";
+        return """
+            {
+            "Name":"MoAI" // 名称
+            }
+            """;
     }
 
     /// <inheritdoc/>

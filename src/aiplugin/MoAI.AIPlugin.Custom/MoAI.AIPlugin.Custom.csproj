@@ -6,11 +6,23 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MoAI.AiPlugin.Shared\MoAI.AiPlugin.Shared.csproj" />
+		<PackageReference Include="ModelContextProtocol" />
+		<PackageReference Include="Microsoft.OpenApi.Readers" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Plugins\" />
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\classify\MoAI.Classify.Shared\MoAI.Classify.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Services\" />
+		<Folder Include="Commands\" />
+		<Folder Include="Queries\" />
 	</ItemGroup>
 
 </Project>

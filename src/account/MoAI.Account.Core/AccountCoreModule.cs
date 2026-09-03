@@ -20,5 +20,6 @@ public class AccountCoreModule : IModule
 
         context.Services.AddScoped<CustomAuthorizaMiddleware>();
         context.Services.AddScoped<IUserAccountService, UserAccountService>();
+        context.Services.AddScoped<IUserInfoFillService, UserInfoFillService>();
     }
 }

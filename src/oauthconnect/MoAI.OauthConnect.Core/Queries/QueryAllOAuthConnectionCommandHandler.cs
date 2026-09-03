@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.Database;
 using MoAI.OauthConnect.Queries;
 using MoAI.OauthConnect.Queries.Responses;
@@ -12,21 +13,23 @@ namespace MoAI.OauthConnect.Handlers;
 public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAuthConnectionCommand, QueryAllOAuthConnectionCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAllOAuthConnectionCommandHandler"/> class.
     /// </summary>
-    /// <param name="databaseContext"></param>
-    public QueryAllOAuthConnectionCommandHandler(DatabaseContext databaseContext)
+    /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryAllOAuthConnectionCommandHandler(DatabaseContext databaseContext, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
     public async Task<QueryAllOAuthConnectionCommandResponse> Handle(QueryAllOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.OauthConnections
-            .Where(x => x.IsDeleted == 0)
             .Select(x => new QueryAllOAuthConnectionCommandResponseItem
             {
                 Id = x.Id,
@@ -42,6 +45,8 @@ public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAu
                 UpdateUserId = (int)x.UpdateUserId,
             })
             .ToListAsync(cancellationToken);
+
+        await _userInfoFillService.FillAsync(items, cancellationToken);
 
         return new QueryAllOAuthConnectionCommandResponse { Items = items };
     }

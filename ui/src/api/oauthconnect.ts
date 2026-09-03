@@ -10,7 +10,9 @@ export interface OAuthConnectionItem {
   wellKnown?: string | null
   authorizeUrl?: string | null
   createTime?: string | null
+  createUserName?: string | null
   updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface CreateOAuthConnectionPayload {

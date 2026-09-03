@@ -21,7 +21,7 @@ public static class ClassifySeed
             "创意", "学术", "设计", "艺术", "娱乐", "生活", "医疗", "游戏", "翻译", "音乐", "点评",
             "文案", "百科", "健康", "营销", "科学", "分析", "法律", "咨询", "金融", "旅游", "管理"
         };
-        var classifyTypes = new[] { "prompt", "plugin", "app" };
+        var classifyTypes = new[] { "plugin", "app", "kb" };
         var classifyEntities = new List<ClassifyEntity>();
 
         int classifyId = 1;
