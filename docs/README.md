@@ -33,6 +33,7 @@
 | [user-management](./user-management/) | UM | 管理员用户治理（列表/授权/禁用/重置密码）；[📘 HTML 操作指南](./user-management/manual.html)（含截图） |
 | [settings](./settings/) | SET | 系统设置项（SettingDefinitions 注册表） |
 | [oauthconnect](./oauthconnect/) | OC | 第三方登录连接器管理 |
+| [classify](./classify/) | CLS | 分类管理（plugin/app/kb 三类，仅管理员） |
 | [common](./common/) | COM | serverinfo / build_guid |
 | [storage](./storage/) | STO | S3/MinIO 三段式上传与 /static 中转 |
 | [hangfire](./hangfire/) | HF | 定时任务与 recurring job 扩展点 |
