@@ -43,6 +43,9 @@
 | [infra](./infra/) | INF | 配置加载/RSA/异常/模块框架 |
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
+| [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、解散与所有权转让 |
+| [wiki](./wiki/) | WK | 团队知识库与文档（内容协作 Member 可写） |
+| [variable](./variable/) | VR | 团队变量（普通/私密、分组、${key} 服务端替换；私密值仅管理员） |
 
 ### 前端（ui/docs/）
 
@@ -58,6 +61,7 @@
 | [page-account](../ui/docs/page-account/) | FE-PA | 账号设置页 /account |
 | [page-admin](../ui/docs/page-admin/) | FE-PG | /settings、/oauthconnect 管理页 |
 | [dashboard-testing](../ui/docs/dashboard-testing/) | FE-DT | Dashboard 页与测试基建 |
+| [variable](../ui/docs/variable/) | FE-VR | /variable 变量页（掩码/权限渲染/私密编辑三原则） |
 
 各模块入口统一为 `sdd.md`；四件互链见每个文件头部「关联」块。
 

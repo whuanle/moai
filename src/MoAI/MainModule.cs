@@ -17,6 +17,9 @@ using MoAI.Modules;
 using MoAI.OauthConnect;
 using MoAI.Settings;
 using MoAI.Storage;
+using MoAI.Team;
+using MoAI.Variable;
+using MoAI.Wiki;
 
 namespace MoAI;
 
@@ -32,6 +35,9 @@ namespace MoAI;
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<AIChannelCoreModule>]
+[InjectModule<TeamCoreModule>]
+[InjectModule<WikiCoreModule>]
+[InjectModule<VariableCoreModule>]
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]

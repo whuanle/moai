@@ -3,6 +3,7 @@ import {
   AppstoreAddOutlined,
   AppstoreOutlined,
   BookOutlined,
+  KeyOutlined,
   CloudServerOutlined,
   DashboardOutlined,
   LogoutOutlined,
@@ -14,11 +15,17 @@ import {
   TranslationOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Dropdown, Layout, Menu, Select, Typography } from 'antd'
+import { Avatar, Button, Dropdown, Layout, Menu, Select, Typography } from 'antd'
 import type { MenuProps } from 'antd'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
-import { useAppStore, type Locale, type ThemeMode } from '@/store/app'
+import {
+  useAppStore,
+  type Locale,
+  type ThemeMode,
+} from '@/store/app'
+import { getMyTeams } from '@/api/team'
 
 const { Sider } = Layout
 
@@ -34,6 +41,7 @@ const mainNav: NavItem[] = [
   { key: 'app', icon: <AppstoreOutlined />, labelKey: 'nav.app', path: '/app' },
   { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
+  { key: 'variable', icon: <KeyOutlined />, labelKey: 'nav.variable', path: '/variable' },
 ]
 
 const adminNav: NavItem[] = [
@@ -50,6 +58,7 @@ const pathToKey: Record<string, string> = {
   '/app': 'app',
   '/wiki': 'wiki',
   '/team': 'team',
+  '/variable': 'variable',
   '/plugin': 'plugin',
   '/classify': 'classify',
   '/users': 'users',
@@ -78,6 +87,16 @@ export function AppSider() {
   const userInfo = useAppStore((state) => state.userInfo)
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
+  const myTeams = useAppStore((state) => state.myTeams)
+  const setMyTeams = useAppStore((state) => state.setMyTeams)
+  const currentTeamId = useAppStore((state) => state.currentTeamId)
+  const setCurrentTeamId = useAppStore((state) => state.setCurrentTeamId)
+
+  useEffect(() => {
+    getMyTeams()
+      .then((teams) => setMyTeams(teams))
+      .catch(() => undefined)
+  }, [setMyTeams])
 
   const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
   const isDark = themeKey === 'dark'
@@ -169,6 +188,35 @@ export function AppSider() {
           </div>
         </div>
       </Dropdown>
+
+      <div style={{ padding: '0 16px 12px' }}>
+        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+          {t('team.title')}
+        </Typography.Text>
+        <Select
+          value={currentTeamId ?? undefined}
+          placeholder={t('team.selectTeam')}
+          style={{ width: '100%' }}
+          popupMatchSelectWidth={false}
+          onChange={(value: string) => {
+            setCurrentTeamId(value)
+            navigate('/wiki')
+          }}
+          options={myTeams.map((team) => ({
+            value: String(team.teamId),
+            label: (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {team.name}
+              </span>
+            ),
+          }))}
+          notFoundContent={
+            <Button type="link" size="small" onClick={() => navigate('/team')}>
+              {t('team.create')}
+            </Button>
+          }
+        />
+      </div>
 
       <Menu
         mode="inline"

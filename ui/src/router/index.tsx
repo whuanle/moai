@@ -11,6 +11,10 @@ import { AccountSettings } from '@/pages/account/AccountSettings'
 import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
 import { Users } from '@/pages/users/Users'
 import { Models } from '@/pages/ai/Models'
+import { Teams } from '@/pages/teams/Teams'
+import { Wiki } from '@/pages/wiki/Wiki'
+import { WikiDocuments } from '@/pages/wiki/WikiDocuments'
+import { Variables } from '@/pages/variables/Variables'
 import { Plugins } from '@/pages/plugins/Plugins'
 import { ClassifyPage } from '@/pages/classify/Classify'
 
@@ -31,6 +35,10 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
+      { path: 'team', element: <Teams /> },
+      { path: 'wiki', element: <Wiki /> },
+      { path: 'wiki/:id', element: <WikiDocuments /> },
+      { path: 'variable', element: <Variables /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },

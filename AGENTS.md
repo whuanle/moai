@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-MoAI 是开源 AI 应用平台（.NET 9 后端 + React 19 前端）。当前处于**平台底座阶段**：认证、账号、设置、OAuth 连接器、文件存储、后台任务已就绪；AI 业务层（聊天/知识库/插件/工作流，Semantic Kernel）尚未实现。
+MoAI 是开源 AI 应用平台（.NET 10 后端 + React 19 前端）。当前处于**平台底座阶段**：认证、账号、用户治理、设置、OAuth 连接器、文件存储、后台任务、**团队协作**（建团/成员/角色，2026-09-02 落地）已就绪；AI 业务层（聊天/知识库/插件/工作流，Semantic Kernel）尚未实现。
 
 ## 仓库结构
 
@@ -16,6 +16,7 @@ MoAI 是开源 AI 应用平台（.NET 9 后端 + React 19 前端）。当前处�
 │   ├── settings/         # 系统设置（setting 表 KV）
 │   ├── oauthconnect/     # 第三方 OAuth 连接器 CRUD（管理员）
 │   ├── storage/          # S3 兼容文件存储（MinIO），/static 中转
+│   ├── team/             # 团队协作：建团/成员/角色（bool 软删除 + partial 唯一索引）
 │   ├── database/         # EF Core + PostgreSQL(pgvector) + Redis 注册
 │   ├── hangfire/         # 后台任务（Redis 存储，桥接 MediatR）
 │   ├── common/           # serverinfo（RSA 公钥下发）等
@@ -56,7 +57,9 @@ node local-dev/user-management-e2e.mjs     # e2e（需后端 5210 运行中）
 
 ## 文档索引
 
-后端/前端规范与每个功能的 SDD/BDD/TDD/SOP 四件套：见 [docs/README.md](./docs/README.md)。
+- 文档地图（L0 导航）与 23 轮模块四件套（SDD/BDD/TDD/SOP）：[docs/README.md](./docs/README.md)
+- **写任何文档前必读**：[docs/DOC-STANDARD.md](./docs/DOC-STANDARD.md)（分层 L0–L3、Gherkin 场景编号、互链规则）
+- 轮次闭环台账（含每轮真实证据）：[docs/rounds-log.md](./docs/rounds-log.md)
 
 ## Skills
 

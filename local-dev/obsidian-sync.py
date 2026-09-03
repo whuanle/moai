@@ -18,6 +18,7 @@ MODULES = [
     ('docs/infra',           '基础设施',     '09'),
     ('docs/database-scaffold', '数据库脚手架', '10'),
     ('docs/deployment',      '部署',        '11'),
+    ('docs/team',            '团队',        '12'),
     ('ui/docs/auth-flow',        '认证流',       '21'),
     ('ui/docs/api-layer',        'API层',       '22'),
     ('ui/docs/theme',            '主题',        '23'),

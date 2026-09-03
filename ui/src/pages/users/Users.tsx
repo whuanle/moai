@@ -16,6 +16,7 @@ import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { refreshUserProfile } from '@/api/auth'
 import { resolveStorageUrl } from '@/utils/storage'
+import { formatDateTime } from '@/utils/datetime'
 import {
   getUsers,
   getUserDetail,
@@ -34,14 +35,6 @@ interface PasswordFormValues {
 
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).{8,20}$/
 
-/** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 export function Users() {
   const { t } = useTranslation()
@@ -288,7 +281,7 @@ export function Users() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, isRoot, currentUserId],
+    [t, isRoot, currentUserId, searchText, pageNo, pageSize],
   )
 
   const detailItems: DescriptionsProps['items'] = useMemo(() => {

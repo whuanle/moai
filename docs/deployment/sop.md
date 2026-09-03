@@ -18,14 +18,14 @@ cd ui && npm run dev
 
 种子账号：admin / abcd123456（root）。验收场景：[@DEP-S12](./bdd.md#dep-s12)。
 
-## 2. Docker Compose 部署（暂受 D1/D2 阻断）
+## 2. Docker Compose 部署（D1/D2 已修复，整体构建验收待执行）
 
-前置修复：**D1**——Dockerfile 第 13/19 行两处 `ui/moai/` 改为 `ui/`（[@DEP-S1](./bdd.md#dep-s1)）；**D2**——`.env` 给 `OTLP_TRACE/OTLP_METRICS` 配可达端点（勿照抄 `.env.example` 的 127.0.0.1:4012，见 D4，[@DEP-S6](./bdd.md#dep-s6)）。
+原阻断缺陷已于 2026-09-02 修复：**D1**（Dockerfile 路径 `ui/moai/`→`ui/`、镜像升 net10、`MAI_FILE` 环境变量修正，[@DEP-S1](./bdd.md#dep-s1)）；**D2**（OTLP 空值容错 `ParseOtlpEndpoint`，[@DEP-S4](./bdd.md#dep-s4)）。可选：`.env` 给 `OTLP_TRACE/OTLP_METRICS` 配可达端点开启上报（勿照抄 `.env.example` 的 127.0.0.1:4012，见 D4，[@DEP-S6](./bdd.md#dep-s6)；不配则自动跳过导出）。
 
 ```bash
 cp .env.example .env && vim .env    # MOAI_SERVER_URL/MOAI_WEBUI_URL 改实际访问地址，AES 换随机串
 docker compose up -d                # 首次拉镜像或本地 build
-docker compose logs -f moai         # 确认无 Uri 异常（D2 观察点，[@DEP-S4](./bdd.md#dep-s4)）
+docker compose logs -f moai         # 确认启动无异常
 curl http://localhost:8080/api/common/serverinfo   # 冒烟
 ```
 
@@ -49,8 +49,8 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| docker build 在 COPY ui/moai 失败 | 缺陷 D1 | 改 Dockerfile 两处路径（[@DEP-S1](./bdd.md#dep-s1)） |
-| moai 容器反复重启，日志含 Uri/FormatException | 缺陷 D2：OTLP 为空 | .env 配 OTLP 端点或改代码加空值保护（[@DEP-S4](./bdd.md#dep-s4)） |
+| docker build 在 COPY ui/moai 失败 | 历史缺陷 D1（**已修复**，现路径为 ui/） | 若复现说明镜像基线过旧，核对 Dockerfile（[@DEP-S1](./bdd.md#dep-s1)） |
+| moai 容器反复重启，日志含 Uri/FormatException | 历史缺陷 D2（**已修复**，空值自动跳过） | 检查是否运行旧镜像；新代码 OTLP 未配置时不再抛异常（[@DEP-S4](./bdd.md#dep-s4)） |
 | 容器上传文件不在对象存储 | 缺陷 D3：容器形态 LocalPath | 按环境选型，见 SDD 已知缺陷表 |
 | 后端起在 5000 报地址占用 | 回退加载了过时 configs/system.json（macOS 5000 被 AirPlay 占用） | 显式设置 MAI_FILE（[@DEP-S11](./bdd.md#dep-s11)） |
 | 前端 4000 请求 401/跨域 | VITE_ServerUrl 与后端端口不一致 | 检查 ui/.env.local |
@@ -75,3 +75,4 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 |---|---|
 | 2026-09-02 | 初版（回溯整理），记录缺陷 D1~D5 |
 | 2026-09-02 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@DEP-S1~S12）、四件互链、职责瘦身；D1/D2 更正为 Dockerfile 两处（实测 grep） |
+| 2026-09-02 | D1/D2 修复同步（代码复核：ui/ 路径 + net10 镜像 + MAI_FILE；ParseOtlpEndpoint 空值容错）；部署章节解除阻断，@DEP-S2 整体构建验收待执行 |

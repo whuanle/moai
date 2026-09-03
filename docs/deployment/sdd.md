@@ -7,7 +7,7 @@
 
 | 形态 | 组成 | 状态 |
 |---|---|---|
-| Docker Compose 一键部署 | pgvector(pg16) + redis7 + rabbitmq3 + moai 后端镜像（含前端静态资源） | ⚠️ 被 D1/D2 两处**阻断性缺陷**卡死（见已知缺陷） |
+| Docker Compose 一键部署 | pgvector(pg16) + redis7 + rabbitmq3 + moai 后端镜像（含前端静态资源） | ✅ D1/D2 已修复（2026-09-02，见已知缺陷表）；完整构建/起容器验收（[@DEP-S2](./bdd.md#dep-s2)）待执行 |
 | 本地开发 | 后端 `dotnet run`（MAI_FILE 注入）+ 前端 `npm run dev` + 四个基础设施容器 | ✅ 当前实际可用形态（[@DEP-S12](./bdd.md#dep-s12)） |
 
 覆盖对象：`Dockerfile`、`docker-entrypoint.sh`、`docker-compose.yml`、`.env.example`、`init-pgvector.sql`、`configs/system.json` 回退链。
@@ -16,13 +16,13 @@
 
 - **容器形态**：`.env` → compose 环境变量 → `docker-entrypoint.sh` 用 heredoc 生成 `/app/configs/system.json` → 后端启动。工作目录 `/app`，`MAI_FILE` 未设置时加载器回退到 `configs/system.json`（相对 ContentRoot），容器内无需 MAI_FILE（[@DEP-S10](./bdd.md#dep-s10)）。
 - **本地开发形态**：`MAI_FILE=<绝对路径>/system.local.json` 显式注入，绕过仓库内过时的 `configs/system.json`（Port=5000 且为 Windows 路径）（[@DEP-S11](./bdd.md#dep-s11)）。
-- as-built 记录：Dockerfile 的 `ENV MAI_CONFIG=/app/configs/system.json` 是**无效变量**（加载器识别的是 `MAI_FILE`），当前只是恰好靠默认回退路径生效——勿模仿。
+- as-built 记录：Dockerfile 曾用无效变量 `ENV MAI_CONFIG=...`（加载器识别的是 `MAI_FILE`），**2026-09-02 已修正为 `ENV MAI_FILE=/app/configs/system.json`**，现与回退链双保险。
 
 ## Dockerfile（三阶段）
 
-1. `frontend-builder`（node:22-slim）：`COPY ui/moai/package*.json` → `npm ci` → 复制源码 → 删 lock 重装（绕 Rollup 可选依赖问题）→ `npm run build`。**注意 COPY 路径缺陷 D1**。
-2. `backend-builder`（sdk:9.0）：复制 `Directory.Packages.props` + `Directory.Build.props` + `src/` → restore/build/publish `src/MoAI/MoAI.csproj`。
-3. `final`（aspnet:9.0）：publish 产物 + 前端 dist → `/app/wwwroot`（后端静态托管 + SPA 回退）+ `docker-entrypoint.sh`。
+1. `frontend-builder`（node:22-slim）：`COPY ui/package*.json` → `npm ci` → 复制源码 → 删 lock 重装（绕 Rollup 可选依赖问题）→ `npm run build`。（原 `COPY ui/moai/...` 路径缺陷 D1，已修复）
+2. `backend-builder`（**sdk:10.0**，仓库 TargetFramework 已升 net10.0）：复制 `Directory.Packages.props` + `Directory.Build.props` + `src/` → restore/build/publish `src/MoAI/MoAI.csproj`。
+3. `final`（**aspnet:10.0**）：publish 产物 + 前端 dist → `/app/wwwroot`（后端静态托管 + SPA 回退）+ `docker-entrypoint.sh`。
 
 ## docker-compose.yml
 
@@ -31,12 +31,12 @@
 - `moai`：默认镜像 `registry.cn-hangzhou.aliyuncs.com/whuanle/moai:latest`（本地可 build），`depends_on` 三者 `service_healthy`（[@DEP-S7](./bdd.md#dep-s7)）；volume `moai_files:/app/files`。
 - 网络 `moai-network`（bridge）；四个 named volume（postgres_data/redis_data/rabbitmq_data/moai_files）。
 
-## 已知缺陷（D1/D2 为阻断性，必读）
+## 已知缺陷（D1/D2 已修复，D3–D5 记录中）
 
-| # | 问题 | 影响 | 规避 |
+| # | 问题 | 影响 | 状态/规避 |
 |---|---|---|---|
-| D1 | Dockerfile 前端阶段 `COPY ui/moai/...`（第 13、19 行两处），仓库实际目录是 `ui/`（无 moai 子目录） | **镜像构建直接失败**（[@DEP-S1](./bdd.md#dep-s1)） | 修复前用本地开发形态；修复时把两处 `ui/moai/` 改为 `ui/` |
-| D2 | `ConfigureOpenTelemetryModule` 对 `OTLP.Trace/Metrics` **无条件 `new Uri(...)`**（src/MoAI/Modules/ConfigureOpenTelemetryModule.cs 第 45/58 行），而 entrypoint/compose 对 OTLP 默认留空 | **默认 `docker-compose up` 后端启动即抛异常**（[@DEP-S4](./bdd.md#dep-s4)） | `.env` 给 `OTLP_TRACE/OTLP_METRICS` 配真实端点，或改代码加空值跳过 |
+| D1 | Dockerfile 前端阶段曾 `COPY ui/moai/...`，仓库实际目录是 `ui/` | 曾导致**镜像构建直接失败**（[@DEP-S1](./bdd.md#dep-s1)） | ✅ **已修复（2026-09-02）**：两处改 `ui/`，镜像同步升 net10，`MAI_CONFIG` 改 `MAI_FILE` |
+| D2 | `ConfigureOpenTelemetryModule` 曾对 `OTLP.Trace/Metrics` **无条件 `new Uri(...)`**，而 entrypoint/compose 对 OTLP 默认留空 | 曾导致**默认 `docker-compose up` 后端启动即抛异常**（[@DEP-S4](./bdd.md#dep-s4)） | ✅ **已修复（2026-09-02）**：新增 `ParseOtlpEndpoint`，空值/非法地址跳过导出，OTLP 变为可选项 |
 | D3 | 容器形态 `Storage.LocalPath=/app/files`（本地盘），本地开发形态用 S3/MinIO | 两形态存储行为不一致；容器上传的文件不在对象存储（[@DEP-S3](./bdd.md#dep-s3)） | 按环境选型；统一 S3 需改 entrypoint 生成 Storage.S3 段 |
 | D4 | `.env.example` 的 OTLP 示例指 `127.0.0.1:4012`，容器内 `127.0.0.1` 是容器自身 | 照抄示例则 OTLP 上报失败（[@DEP-S6](./bdd.md#dep-s6)） | 写 collector 的容器网络名或宿主机地址 |
 | D5 | README 引用的 `moai_docs/` 目录已不存在于仓库 | README 图片裂图 | 与部署无关，仅记录 |
