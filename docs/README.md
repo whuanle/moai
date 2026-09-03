@@ -57,6 +57,7 @@
 | [page-account](../ui/docs/page-account/) | FE-PA | 账号设置页 /account |
 | [page-admin](../ui/docs/page-admin/) | FE-PG | /settings、/oauthconnect 管理页 |
 | [dashboard-testing](../ui/docs/dashboard-testing/) | FE-DT | Dashboard 页与测试基建 |
+| [variable](../ui/docs/variable/) | FE-VR | /variable 变量页（掩码/权限渲染/私密编辑三原则） |
 
 各模块入口统一为 `sdd.md`；四件互链见每个文件头部「关联」块。
 
