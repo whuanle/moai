@@ -20,6 +20,8 @@ import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadat
 // @ts-ignore
 import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetadata } from './usermanage/index.js';
 // @ts-ignore
+import { type VariableRequestBuilder, VariableRequestBuilderNavigationMetadata, VariableRequestBuilderRequestsMetadata } from './variable/index.js';
+// @ts-ignore
 import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata, WikiRequestBuilderRequestsMetadata } from './wiki/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -65,6 +67,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get usermanage(): UsermanageRequestBuilder;
     /**
+     * The variable property
+     */
+    get variable(): VariableRequestBuilder;
+    /**
      * The wiki property
      */
     get wiki(): WikiRequestBuilder;
@@ -104,6 +110,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     usermanage: {
         navigationMetadata: UsermanageRequestBuilderNavigationMetadata,
+    },
+    variable: {
+        requestsMetadata: VariableRequestBuilderRequestsMetadata,
+        navigationMetadata: VariableRequestBuilderNavigationMetadata,
     },
     wiki: {
         requestsMetadata: WikiRequestBuilderRequestsMetadata,

@@ -220,3 +220,8 @@ function getServerUrl(): string {
 ```
 
 后续新增其它弹窗（含 `Modal.confirm` 等）也需遵循；建议统一封装一个默认 `maskClosable={false}` 的 Modal 组件，全局固化该行为。
+
+### 5. 时间统一 `YYYY-MM-DD HH:mm` 单行
+
+列表/详情中的时间一律使用 `utils/datetime.ts` 的 `formatDateTime()`（`YYYY-MM-DD HH:mm`，本地时区），禁止 `toLocaleString()`（各浏览器 locale 输出不一致）。空值/非法值显示 `-`。规范出处：docs/user-management/sdd.md 决策 6（2026-09-02）。
+

@@ -3,6 +3,7 @@ import {
   AppstoreAddOutlined,
   AppstoreOutlined,
   BookOutlined,
+  KeyOutlined,
   CloudServerOutlined,
   DashboardOutlined,
   LogoutOutlined,
@@ -18,7 +19,11 @@ import type { MenuProps } from 'antd'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
-import { useAppStore, type Locale, type ThemeMode } from '@/store/app'
+import {
+  useAppStore,
+  type Locale,
+  type ThemeMode,
+} from '@/store/app'
 import { getMyTeams } from '@/api/team'
 
 const { Sider } = Layout
@@ -35,6 +40,7 @@ const mainNav: NavItem[] = [
   { key: 'app', icon: <AppstoreOutlined />, labelKey: 'nav.app', path: '/app' },
   { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
+  { key: 'variable', icon: <KeyOutlined />, labelKey: 'nav.variable', path: '/variable' },
 ]
 
 const adminNav: NavItem[] = [
@@ -50,6 +56,7 @@ const pathToKey: Record<string, string> = {
   '/app': 'app',
   '/wiki': 'wiki',
   '/team': 'team',
+  '/variable': 'variable',
   '/plugin': 'plugin',
   '/users': 'users',
   '/models': 'models',

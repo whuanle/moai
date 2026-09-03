@@ -4,7 +4,9 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleLongFromDiscriminatorValue, serializeCreateWikiCommand, serializeSimpleLong, type BusinessValidationResult, type CreateWikiCommand, type SimpleLong } from '../../models/index.js';
 // @ts-ignore
-import { type WikiItemRequestBuilder, WikiItemRequestBuilderRequestsMetadata } from './item/index.js';
+import { DocumentRequestBuilderNavigationMetadata, type DocumentRequestBuilder } from './document/index.js';
+// @ts-ignore
+import { ItemRequestBuilderNavigationMetadata, ItemRequestBuilderRequestsMetadata, type ItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -15,15 +17,19 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  */
 export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilder> {
     /**
+     * The document property
+     */
+    get document(): DocumentRequestBuilder;
+    /**
      * The list property
      */
     get list(): ListRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.wiki.item collection
      * @param id 知识库 id.
-     * @returns {WikiItemRequestBuilder}
+     * @returns {ItemRequestBuilder}
      */
-     byId(id: string) : WikiItemRequestBuilder;
+     byId(id: string) : ItemRequestBuilder;
     /**
      * 创建知识库，需要团队 Admin 及以上角色.
      * @param body 创建知识库，需要团队 Admin 及以上角色.
@@ -53,8 +59,12 @@ export const WikiRequestBuilderUriTemplate = "{+baseurl}/api/wiki";
  */
 export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
-        requestsMetadata: WikiItemRequestBuilderRequestsMetadata,
-        pathParametersMappings: ["id"],
+        requestsMetadata: ItemRequestBuilderRequestsMetadata,
+        navigationMetadata: ItemRequestBuilderNavigationMetadata,
+        pathParametersMappings: ["%2Did"],
+    },
+    document: {
+        navigationMetadata: DocumentRequestBuilderNavigationMetadata,
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,

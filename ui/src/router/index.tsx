@@ -13,6 +13,8 @@ import { Users } from '@/pages/users/Users'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
 import { Wiki } from '@/pages/wiki/Wiki'
+import { WikiDocuments } from '@/pages/wiki/WikiDocuments'
+import { Variables } from '@/pages/variables/Variables'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -33,6 +35,8 @@ export const router = createBrowserRouter([
       { path: 'users', element: <Users /> },
       { path: 'team', element: <Teams /> },
       { path: 'wiki', element: <Wiki /> },
+      { path: 'wiki/:id', element: <WikiDocuments /> },
+      { path: 'variable', element: <Variables /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },

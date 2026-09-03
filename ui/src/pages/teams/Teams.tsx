@@ -6,6 +6,7 @@ import { UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Page, DataTable, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
+import { formatDateTime } from '@/utils/datetime'
 import {
   addTeamUser,
   getMyTeams as fetchMyTeams,
@@ -273,7 +274,7 @@ export function Teams() {
         title: t('team.colJoinTime'),
         dataIndex: 'joinTime',
         width: 160,
-        render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-'),
+        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
       },
       {
         title: t('team.colActions'),
@@ -345,7 +346,7 @@ export function Teams() {
         title: t('team.colCreateTime'),
         dataIndex: 'createTime',
         width: 170,
-        render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-'),
+        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
       },
       {
         title: t('team.colActions'),

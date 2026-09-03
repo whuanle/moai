@@ -43,6 +43,7 @@
 		<ProjectReference Include="..\aichannel\MoAI.AIChannel.Core\MoAI.AIChannel.Core.csproj" />
 		<ProjectReference Include="..\team\MoAI.Team.Core\MoAI.Team.Core.csproj" />
 		<ProjectReference Include="..\wiki\MoAI.Wiki.Core\MoAI.Wiki.Core.csproj" />
+		<ProjectReference Include="..\variable\MoAI.Variable.Core\MoAI.Variable.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

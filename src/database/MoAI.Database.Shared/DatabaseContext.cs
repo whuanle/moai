@@ -72,6 +72,16 @@ public partial class DatabaseContext : DbContext
     /// </summary>
     public virtual DbSet<WikiEntity> Wikis { get; set; }
 
+    /// <summary>
+    /// 知识库文档.
+    /// </summary>
+    public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
+
+    /// <summary>
+    /// 团队变量.
+    /// </summary>
+    public virtual DbSet<TeamVariableEntity> TeamVariables { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

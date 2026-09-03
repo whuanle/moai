@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryWikiCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateWikiCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryWikiCommandResponse, type UpdateWikiCommand } from '../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { DocumentsRequestBuilderRequestsMetadata, type DocumentsRequestBuilder } from './documents/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/wiki/{id}
+ * Builds and executes requests for operations under /api/wiki/{-id}
  */
-export interface WikiItemRequestBuilder extends BaseRequestBuilder<WikiItemRequestBuilder> {
+export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilder> {
+    /**
+     * The documents property
+     */
+    get documents(): DocumentsRequestBuilder;
     /**
      * 删除知识库，需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -67,13 +73,21 @@ export interface WikiItemRequestBuilder extends BaseRequestBuilder<WikiItemReque
 /**
  * Uri template for the request builder.
  */
-export const WikiItemRequestBuilderUriTemplate = "{+baseurl}/api/wiki/{id}";
+export const ItemRequestBuilderUriTemplate = "{+baseurl}/api/wiki/{%2Did}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    documents: {
+        requestsMetadata: DocumentsRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */
-export const WikiItemRequestBuilderRequestsMetadata: RequestsMetadata = {
+export const ItemRequestBuilderRequestsMetadata: RequestsMetadata = {
     delete: {
-        uriTemplate: WikiItemRequestBuilderUriTemplate,
+        uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {
             400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
@@ -86,7 +100,7 @@ export const WikiItemRequestBuilderRequestsMetadata: RequestsMetadata = {
         responseBodyFactory:  createEmptyCommandResponseFromDiscriminatorValue,
     },
     get: {
-        uriTemplate: WikiItemRequestBuilderUriTemplate,
+        uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {
             400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
@@ -99,7 +113,7 @@ export const WikiItemRequestBuilderRequestsMetadata: RequestsMetadata = {
         responseBodyFactory:  createQueryWikiCommandResponseFromDiscriminatorValue,
     },
     put: {
-        uriTemplate: WikiItemRequestBuilderUriTemplate,
+        uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {
             400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,

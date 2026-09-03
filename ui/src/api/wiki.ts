@@ -44,3 +44,46 @@ export async function deleteWiki(wikiId: number): Promise<void> {
   const client = getApiClient()
   await client.api.wiki.byId(String(wikiId)).delete()
 }
+
+export interface WikiDocumentItem {
+  /** 后端 long 序列化为字符串 */
+  documentId?: string | number | null
+  wikiId?: string | number | null
+  title?: string | null
+  createTime?: string | null
+  updateTime?: string | null
+}
+
+export interface WikiDocumentsResult {
+  wikiId?: string | number | null
+  /** 0=Owner 1=Admin 2=Member */
+  myRole?: number | null
+  items?: WikiDocumentItem[] | null
+}
+
+export async function getWikiDocuments(wikiId: number): Promise<WikiDocumentsResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).documents.get()
+  return { wikiId: res?.wikiId, myRole: res?.myRole, items: res?.items ?? [] }
+}
+
+export async function getWikiDocumentDetail(documentId: number) {
+  const client = getApiClient()
+  return client.api.wiki.document.byDocumentId(String(documentId)).get()
+}
+
+export async function createWikiDocument(wikiId: number, payload: { title: string; content?: string }): Promise<number> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).documents.post({ title: payload.title, content: payload.content })
+  return Number(res?.value ?? 0)
+}
+
+export async function updateWikiDocument(documentId: number, payload: { title: string; content?: string }): Promise<void> {
+  const client = getApiClient()
+  await client.api.wiki.document.byDocumentId(String(documentId)).put({ title: payload.title, content: payload.content })
+}
+
+export async function deleteWikiDocument(documentId: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.wiki.document.byDocumentId(String(documentId)).delete()
+}

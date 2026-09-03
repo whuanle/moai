@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Form, Input, Modal, Popconfirm, Space, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Page, DataTable, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import { createWiki, deleteWiki, getWikis, updateWiki, type WikiItem } from '@/api/wiki'
+import { formatDateTime } from '@/utils/datetime'
 
 const { Text } = Typography
 
@@ -19,6 +20,7 @@ interface WikiFormValues {
 
 export function Wiki() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const currentTeamId = useAppStore((state) => state.currentTeamId)
 
   const [loading, setLoading] = useState(false)
@@ -102,7 +104,7 @@ export function Wiki() {
         title: t('wiki.colCreateTime'),
         dataIndex: 'createTime',
         width: 170,
-        render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-'),
+        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
       },
       ...(isAdminPlus
         ? [
@@ -112,6 +114,9 @@ export function Wiki() {
               width: 140,
               render: (_: unknown, record: WikiItem) => (
                 <Space size={0} wrap>
+                  <Button type="link" size="small" onClick={() => navigate(`/wiki/${record.wikiId}`)}>
+                    {t('wiki.documents')}
+                  </Button>
                   <Button type="link" size="small" onClick={() => openEdit(record)}>
                     {t('wiki.edit')}
                   </Button>

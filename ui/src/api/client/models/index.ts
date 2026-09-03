@@ -448,11 +448,29 @@ export function createCreateTeamCommandFromDiscriminatorValue(parseNode: ParseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateVariableCommand}
+ */
+// @ts-ignore
+export function createCreateVariableCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateVariableCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateWikiCommand}
  */
 // @ts-ignore
 export function createCreateWikiCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateWikiCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateWikiDocumentCommand}
+ */
+// @ts-ignore
+export function createCreateWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateWikiDocumentCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -738,11 +756,47 @@ export function createQueryUserListCommandResponseItemFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryVariableCommandResponse}
+ */
+// @ts-ignore
+export function createQueryVariableCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryVariableCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryVariablesCommandResponse}
+ */
+// @ts-ignore
+export function createQueryVariablesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryVariablesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiCommandResponse}
  */
 // @ts-ignore
 export function createQueryWikiCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryWikiCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiDocumentCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiDocumentCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiDocumentsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiDocumentsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiDocumentsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -855,6 +909,24 @@ export function createSimpleOfLongFromDiscriminatorValue(parseNode: ParseNode | 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SubstituteVariableCommand}
+ */
+// @ts-ignore
+export function createSubstituteVariableCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSubstituteVariableCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SubstituteVariableCommandResponse}
+ */
+// @ts-ignore
+export function createSubstituteVariableCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSubstituteVariableCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SyncAIModelCommand}
  */
 // @ts-ignore
@@ -900,6 +972,15 @@ export function createTeamItemFromDiscriminatorValue(parseNode: ParseNode | unde
 // @ts-ignore
 export function createTeamUserItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoTeamUserItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamVariableItem}
+ */
+// @ts-ignore
+export function createTeamVariableItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamVariableItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1012,6 +1093,15 @@ export function createUpdateUserIsDisableCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateVariableCommand}
+ */
+// @ts-ignore
+export function createUpdateVariableCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateVariableCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateWikiCommand}
  */
 // @ts-ignore
@@ -1021,11 +1111,49 @@ export function createUpdateWikiCommandFromDiscriminatorValue(parseNode: ParseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateWikiDocumentCommand}
+ */
+// @ts-ignore
+export function createUpdateWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateWikiDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UserStateInfo}
  */
 // @ts-ignore
 export function createUserStateInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUserStateInfo;
+}
+/**
+ * 创建团队变量，需要团队 Admin 及以上角色.
+ */
+export interface CreateVariableCommand extends Parsable {
+    /**
+     * 变量描述.
+     */
+    description?: string | null;
+    /**
+     * 分组名，仅组织用途，可为空.
+     */
+    groupName?: string | null;
+    /**
+     * 是否私密变量：私密变量的值仅管理员可见，落库 AES 加密.
+     */
+    isSecret?: boolean | null;
+    /**
+     * 变量名，团队内唯一，字母开头，仅字母/数字/下划线，插件配置中以 ${key} 引用.
+     */
+    key?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 变量值.
+     */
+    value?: string | null;
 }
 /**
  * 创建知识库，需要团队 Admin 及以上角色.
@@ -1043,6 +1171,32 @@ export interface CreateWikiCommand extends Parsable {
      * 所属团队 id.
      */
     teamId?: string | null;
+}
+/**
+ * 创建知识库文档，全体团队成员可协作.
+ */
+export interface CreateWikiDocumentCommand extends Parsable {
+    /**
+     * 文档内容（Markdown）.
+     */
+    content?: string | null;
+    /**
+     * 文档标题.
+     */
+    title?: string | null;
+    /**
+     * 所属知识库 id，由 Controller 从路由参数回填.
+     */
+    wikiId?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiDocumentItem}
+ */
+// @ts-ignore
+export function createWikiDocumentItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiDocumentItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1261,11 +1415,38 @@ export function deserializeIntoCreateTeamCommand(createTeamCommand: Partial<Crea
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateVariableCommand(createVariableCommand: Partial<CreateVariableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { createVariableCommand.description = n.getStringValue(); },
+        "groupName": n => { createVariableCommand.groupName = n.getStringValue(); },
+        "isSecret": n => { createVariableCommand.isSecret = n.getBooleanValue(); },
+        "key": n => { createVariableCommand.key = n.getStringValue(); },
+        "teamId": n => { createVariableCommand.teamId = n.getStringValue(); },
+        "value": n => { createVariableCommand.value = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateWikiCommand(createWikiCommand: Partial<CreateWikiCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { createWikiCommand.description = n.getStringValue(); },
         "name": n => { createWikiCommand.name = n.getStringValue(); },
         "teamId": n => { createWikiCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateWikiDocumentCommand(createWikiDocumentCommand: Partial<CreateWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { createWikiDocumentCommand.content = n.getStringValue(); },
+        "title": n => { createWikiDocumentCommand.title = n.getStringValue(); },
+        "wikiId": n => { createWikiDocumentCommand.wikiId = n.getStringValue(); },
     }
 }
 /**
@@ -1641,6 +1822,35 @@ export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryVariableCommandResponse(queryVariableCommandResponse: Partial<QueryVariableCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryVariableCommandResponse.description = n.getStringValue(); },
+        "groupName": n => { queryVariableCommandResponse.groupName = n.getStringValue(); },
+        "isSecret": n => { queryVariableCommandResponse.isSecret = n.getBooleanValue(); },
+        "key": n => { queryVariableCommandResponse.key = n.getStringValue(); },
+        "teamId": n => { queryVariableCommandResponse.teamId = n.getStringValue(); },
+        "updateTime": n => { queryVariableCommandResponse.updateTime = n.getStringValue(); },
+        "value": n => { queryVariableCommandResponse.value = n.getStringValue(); },
+        "variableId": n => { queryVariableCommandResponse.variableId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryVariablesCommandResponse(queryVariablesCommandResponse: Partial<QueryVariablesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryVariablesCommandResponse.items = n.getCollectionOfObjectValues<TeamVariableItem>(createTeamVariableItemFromDiscriminatorValue); },
+        "myRole": n => { queryVariablesCommandResponse.myRole = n.getNumberValue(); },
+        "teamId": n => { queryVariablesCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryWikiCommandResponse(queryWikiCommandResponse: Partial<QueryWikiCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "createTime": n => { queryWikiCommandResponse.createTime = n.getStringValue(); },
@@ -1649,6 +1859,34 @@ export function deserializeIntoQueryWikiCommandResponse(queryWikiCommandResponse
         "name": n => { queryWikiCommandResponse.name = n.getStringValue(); },
         "teamId": n => { queryWikiCommandResponse.teamId = n.getStringValue(); },
         "wikiId": n => { queryWikiCommandResponse.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiDocumentCommandResponse(queryWikiDocumentCommandResponse: Partial<QueryWikiDocumentCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { queryWikiDocumentCommandResponse.content = n.getStringValue(); },
+        "createTime": n => { queryWikiDocumentCommandResponse.createTime = n.getStringValue(); },
+        "documentId": n => { queryWikiDocumentCommandResponse.documentId = n.getStringValue(); },
+        "myRole": n => { queryWikiDocumentCommandResponse.myRole = n.getNumberValue(); },
+        "title": n => { queryWikiDocumentCommandResponse.title = n.getStringValue(); },
+        "updateTime": n => { queryWikiDocumentCommandResponse.updateTime = n.getStringValue(); },
+        "wikiId": n => { queryWikiDocumentCommandResponse.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiDocumentsCommandResponse(queryWikiDocumentsCommandResponse: Partial<QueryWikiDocumentsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryWikiDocumentsCommandResponse.items = n.getCollectionOfObjectValues<WikiDocumentItem>(createWikiDocumentItemFromDiscriminatorValue); },
+        "myRole": n => { queryWikiDocumentsCommandResponse.myRole = n.getNumberValue(); },
+        "wikiId": n => { queryWikiDocumentsCommandResponse.wikiId = n.getStringValue(); },
     }
 }
 /**
@@ -1797,6 +2035,27 @@ export function deserializeIntoSimpleOfLong(simpleOfLong: Partial<SimpleOfLong> 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSubstituteVariableCommand(substituteVariableCommand: Partial<SubstituteVariableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { substituteVariableCommand.content = n.getStringValue(); },
+        "teamId": n => { substituteVariableCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSubstituteVariableCommandResponse(substituteVariableCommandResponse: Partial<SubstituteVariableCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { substituteVariableCommandResponse.content = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSyncAIModelCommand(syncAIModelCommand: Partial<SyncAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "channelId": n => { syncAIModelCommand.channelId = n.getGuidValue(); },
@@ -1844,6 +2103,23 @@ export function deserializeIntoTeamUserItem(teamUserItem: Partial<TeamUserItem> 
         "role": n => { teamUserItem.role = n.getNumberValue(); },
         "userId": n => { teamUserItem.userId = n.getStringValue(); },
         "userName": n => { teamUserItem.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTeamVariableItem(teamVariableItem: Partial<TeamVariableItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { teamVariableItem.description = n.getStringValue(); },
+        "groupName": n => { teamVariableItem.groupName = n.getStringValue(); },
+        "isSecret": n => { teamVariableItem.isSecret = n.getBooleanValue(); },
+        "key": n => { teamVariableItem.key = n.getStringValue(); },
+        "teamId": n => { teamVariableItem.teamId = n.getStringValue(); },
+        "updateTime": n => { teamVariableItem.updateTime = n.getStringValue(); },
+        "value": n => { teamVariableItem.value = n.getStringValue(); },
+        "variableId": n => { teamVariableItem.variableId = n.getStringValue(); },
     }
 }
 /**
@@ -2005,11 +2281,36 @@ export function deserializeIntoUpdateUserIsDisableCommand(updateUserIsDisableCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateVariableCommand(updateVariableCommand: Partial<UpdateVariableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { updateVariableCommand.description = n.getStringValue(); },
+        "groupName": n => { updateVariableCommand.groupName = n.getStringValue(); },
+        "value": n => { updateVariableCommand.value = n.getStringValue(); },
+        "variableId": n => { updateVariableCommand.variableId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateWikiCommand(updateWikiCommand: Partial<UpdateWikiCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { updateWikiCommand.description = n.getStringValue(); },
         "name": n => { updateWikiCommand.name = n.getStringValue(); },
         "wikiId": n => { updateWikiCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateWikiDocumentCommand(updateWikiDocumentCommand: Partial<UpdateWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { updateWikiDocumentCommand.content = n.getStringValue(); },
+        "documentId": n => { updateWikiDocumentCommand.documentId = n.getStringValue(); },
+        "title": n => { updateWikiDocumentCommand.title = n.getStringValue(); },
     }
 }
 /**
@@ -2029,6 +2330,20 @@ export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInf
         "phone": n => { userStateInfo.phone = n.getStringValue(); },
         "userId": n => { userStateInfo.userId = n.getStringValue(); },
         "userName": n => { userStateInfo.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiDocumentItem(wikiDocumentItem: Partial<WikiDocumentItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { wikiDocumentItem.createTime = n.getStringValue(); },
+        "documentId": n => { wikiDocumentItem.documentId = n.getStringValue(); },
+        "title": n => { wikiDocumentItem.title = n.getStringValue(); },
+        "updateTime": n => { wikiDocumentItem.updateTime = n.getStringValue(); },
+        "wikiId": n => { wikiDocumentItem.wikiId = n.getStringValue(); },
     }
 }
 /**
@@ -2639,6 +2954,60 @@ export interface QueryUserListCommandResponseItem extends Parsable {
     userName?: string | null;
 }
 /**
+ * 变量详情响应.
+ */
+export interface QueryVariableCommandResponse extends Parsable {
+    /**
+     * 变量描述.
+     */
+    description?: string | null;
+    /**
+     * 分组名，空串=未分组.
+     */
+    groupName?: string | null;
+    /**
+     * 是否私密变量.
+     */
+    isSecret?: boolean | null;
+    /**
+     * 变量名.
+     */
+    key?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 变量值；私密变量仅管理员可见（成员访问返回 403）.
+     */
+    value?: string | null;
+    /**
+     * 变量 id.
+     */
+    variableId?: string | null;
+}
+/**
+ * 团队变量列表响应.
+ */
+export interface QueryVariablesCommandResponse extends Parsable {
+    /**
+     * 变量集合.
+     */
+    items?: TeamVariableItem[] | null;
+    /**
+     * 我在该团队中的角色：0=Owner 1=Admin 2=Member.
+     */
+    myRole?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 知识库详情响应.
  */
 export interface QueryWikiCommandResponse extends Parsable {
@@ -2662,6 +3031,56 @@ export interface QueryWikiCommandResponse extends Parsable {
      * 所属团队 id.
      */
     teamId?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
+ * 知识库文档详情响应（含正文）.
+ */
+export interface QueryWikiDocumentCommandResponse extends Parsable {
+    /**
+     * 文档内容（Markdown）.
+     */
+    content?: string | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 我在所属团队中的角色：0=Owner 1=Admin 2=Member.
+     */
+    myRole?: number | null;
+    /**
+     * 文档标题.
+     */
+    title?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 所属知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
+ * 知识库文档列表响应.
+ */
+export interface QueryWikiDocumentsCommandResponse extends Parsable {
+    /**
+     * 文档集合.
+     */
+    items?: WikiDocumentItem[] | null;
+    /**
+     * 我在该团队中的角色：0=Owner 1=Admin 2=Member.
+     */
+    myRole?: number | null;
     /**
      * 知识库 id.
      */
@@ -3010,11 +3429,38 @@ export function serializeCreateTeamCommand(writer: SerializationWriter, createTe
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateVariableCommand(writer: SerializationWriter, createVariableCommand: Partial<CreateVariableCommand> | undefined | null = {}) : void {
+    if (createVariableCommand) {
+        writer.writeStringValue("description", createVariableCommand.description);
+        writer.writeStringValue("groupName", createVariableCommand.groupName);
+        writer.writeBooleanValue("isSecret", createVariableCommand.isSecret);
+        writer.writeStringValue("key", createVariableCommand.key);
+        writer.writeStringValue("teamId", createVariableCommand.teamId);
+        writer.writeStringValue("value", createVariableCommand.value);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateWikiCommand(writer: SerializationWriter, createWikiCommand: Partial<CreateWikiCommand> | undefined | null = {}) : void {
     if (createWikiCommand) {
         writer.writeStringValue("description", createWikiCommand.description);
         writer.writeStringValue("name", createWikiCommand.name);
         writer.writeStringValue("teamId", createWikiCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateWikiDocumentCommand(writer: SerializationWriter, createWikiDocumentCommand: Partial<CreateWikiDocumentCommand> | undefined | null = {}) : void {
+    if (createWikiDocumentCommand) {
+        writer.writeStringValue("content", createWikiDocumentCommand.content);
+        writer.writeStringValue("title", createWikiDocumentCommand.title);
+        writer.writeStringValue("wikiId", createWikiDocumentCommand.wikiId);
     }
 }
 /**
@@ -3390,6 +3836,35 @@ export function serializeQueryUserListCommandResponseItem(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryVariableCommandResponse(writer: SerializationWriter, queryVariableCommandResponse: Partial<QueryVariableCommandResponse> | undefined | null = {}) : void {
+    if (queryVariableCommandResponse) {
+        writer.writeStringValue("description", queryVariableCommandResponse.description);
+        writer.writeStringValue("groupName", queryVariableCommandResponse.groupName);
+        writer.writeBooleanValue("isSecret", queryVariableCommandResponse.isSecret);
+        writer.writeStringValue("key", queryVariableCommandResponse.key);
+        writer.writeStringValue("teamId", queryVariableCommandResponse.teamId);
+        writer.writeStringValue("updateTime", queryVariableCommandResponse.updateTime);
+        writer.writeStringValue("value", queryVariableCommandResponse.value);
+        writer.writeStringValue("variableId", queryVariableCommandResponse.variableId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryVariablesCommandResponse(writer: SerializationWriter, queryVariablesCommandResponse: Partial<QueryVariablesCommandResponse> | undefined | null = {}) : void {
+    if (queryVariablesCommandResponse) {
+        writer.writeCollectionOfObjectValues<TeamVariableItem>("items", queryVariablesCommandResponse.items, serializeTeamVariableItem);
+        writer.writeNumberValue("myRole", queryVariablesCommandResponse.myRole);
+        writer.writeStringValue("teamId", queryVariablesCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryWikiCommandResponse(writer: SerializationWriter, queryWikiCommandResponse: Partial<QueryWikiCommandResponse> | undefined | null = {}) : void {
     if (queryWikiCommandResponse) {
         writer.writeStringValue("createTime", queryWikiCommandResponse.createTime);
@@ -3398,6 +3873,34 @@ export function serializeQueryWikiCommandResponse(writer: SerializationWriter, q
         writer.writeStringValue("name", queryWikiCommandResponse.name);
         writer.writeStringValue("teamId", queryWikiCommandResponse.teamId);
         writer.writeStringValue("wikiId", queryWikiCommandResponse.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiDocumentCommandResponse(writer: SerializationWriter, queryWikiDocumentCommandResponse: Partial<QueryWikiDocumentCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiDocumentCommandResponse) {
+        writer.writeStringValue("content", queryWikiDocumentCommandResponse.content);
+        writer.writeStringValue("createTime", queryWikiDocumentCommandResponse.createTime);
+        writer.writeStringValue("documentId", queryWikiDocumentCommandResponse.documentId);
+        writer.writeNumberValue("myRole", queryWikiDocumentCommandResponse.myRole);
+        writer.writeStringValue("title", queryWikiDocumentCommandResponse.title);
+        writer.writeStringValue("updateTime", queryWikiDocumentCommandResponse.updateTime);
+        writer.writeStringValue("wikiId", queryWikiDocumentCommandResponse.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiDocumentsCommandResponse(writer: SerializationWriter, queryWikiDocumentsCommandResponse: Partial<QueryWikiDocumentsCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiDocumentsCommandResponse) {
+        writer.writeCollectionOfObjectValues<WikiDocumentItem>("items", queryWikiDocumentsCommandResponse.items, serializeWikiDocumentItem);
+        writer.writeNumberValue("myRole", queryWikiDocumentsCommandResponse.myRole);
+        writer.writeStringValue("wikiId", queryWikiDocumentsCommandResponse.wikiId);
     }
 }
 /**
@@ -3546,6 +4049,27 @@ export function serializeSimpleOfLong(writer: SerializationWriter, simpleOfLong:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSubstituteVariableCommand(writer: SerializationWriter, substituteVariableCommand: Partial<SubstituteVariableCommand> | undefined | null = {}) : void {
+    if (substituteVariableCommand) {
+        writer.writeStringValue("content", substituteVariableCommand.content);
+        writer.writeStringValue("teamId", substituteVariableCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSubstituteVariableCommandResponse(writer: SerializationWriter, substituteVariableCommandResponse: Partial<SubstituteVariableCommandResponse> | undefined | null = {}) : void {
+    if (substituteVariableCommandResponse) {
+        writer.writeStringValue("content", substituteVariableCommandResponse.content);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSyncAIModelCommand(writer: SerializationWriter, syncAIModelCommand: Partial<SyncAIModelCommand> | undefined | null = {}) : void {
     if (syncAIModelCommand) {
         writer.writeGuidValue("channelId", syncAIModelCommand.channelId);
@@ -3593,6 +4117,23 @@ export function serializeTeamUserItem(writer: SerializationWriter, teamUserItem:
         writer.writeNumberValue("role", teamUserItem.role);
         writer.writeStringValue("userId", teamUserItem.userId);
         writer.writeStringValue("userName", teamUserItem.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTeamVariableItem(writer: SerializationWriter, teamVariableItem: Partial<TeamVariableItem> | undefined | null = {}) : void {
+    if (teamVariableItem) {
+        writer.writeStringValue("description", teamVariableItem.description);
+        writer.writeStringValue("groupName", teamVariableItem.groupName);
+        writer.writeBooleanValue("isSecret", teamVariableItem.isSecret);
+        writer.writeStringValue("key", teamVariableItem.key);
+        writer.writeStringValue("teamId", teamVariableItem.teamId);
+        writer.writeStringValue("updateTime", teamVariableItem.updateTime);
+        writer.writeStringValue("value", teamVariableItem.value);
+        writer.writeStringValue("variableId", teamVariableItem.variableId);
     }
 }
 /**
@@ -3754,11 +4295,36 @@ export function serializeUpdateUserIsDisableCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateVariableCommand(writer: SerializationWriter, updateVariableCommand: Partial<UpdateVariableCommand> | undefined | null = {}) : void {
+    if (updateVariableCommand) {
+        writer.writeStringValue("description", updateVariableCommand.description);
+        writer.writeStringValue("groupName", updateVariableCommand.groupName);
+        writer.writeStringValue("value", updateVariableCommand.value);
+        writer.writeStringValue("variableId", updateVariableCommand.variableId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateWikiCommand(writer: SerializationWriter, updateWikiCommand: Partial<UpdateWikiCommand> | undefined | null = {}) : void {
     if (updateWikiCommand) {
         writer.writeStringValue("description", updateWikiCommand.description);
         writer.writeStringValue("name", updateWikiCommand.name);
         writer.writeStringValue("wikiId", updateWikiCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateWikiDocumentCommand(writer: SerializationWriter, updateWikiDocumentCommand: Partial<UpdateWikiDocumentCommand> | undefined | null = {}) : void {
+    if (updateWikiDocumentCommand) {
+        writer.writeStringValue("content", updateWikiDocumentCommand.content);
+        writer.writeStringValue("documentId", updateWikiDocumentCommand.documentId);
+        writer.writeStringValue("title", updateWikiDocumentCommand.title);
     }
 }
 /**
@@ -3778,6 +4344,20 @@ export function serializeUserStateInfo(writer: SerializationWriter, userStateInf
         writer.writeStringValue("phone", userStateInfo.phone);
         writer.writeStringValue("userId", userStateInfo.userId);
         writer.writeStringValue("userName", userStateInfo.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiDocumentItem(writer: SerializationWriter, wikiDocumentItem: Partial<WikiDocumentItem> | undefined | null = {}) : void {
+    if (wikiDocumentItem) {
+        writer.writeStringValue("createTime", wikiDocumentItem.createTime);
+        writer.writeStringValue("documentId", wikiDocumentItem.documentId);
+        writer.writeStringValue("title", wikiDocumentItem.title);
+        writer.writeStringValue("updateTime", wikiDocumentItem.updateTime);
+        writer.writeStringValue("wikiId", wikiDocumentItem.wikiId);
     }
 }
 /**
@@ -3842,6 +4422,28 @@ export interface SimpleOfLong extends Parsable {
      * 任何类型.
      */
     value?: string | null;
+}
+/**
+ * 对文本执行 ${key} 变量替换（含私密变量解密），仅团队 Admin 及以上可调用；插件运行时应使用服务端内部的 IVariableService，避免将私密值回传给成员.
+ */
+export interface SubstituteVariableCommand extends Parsable {
+    /**
+     * 待替换的文本.
+     */
+    content?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * 变量替换响应.
+ */
+export interface SubstituteVariableCommandResponse extends Parsable {
+    /**
+     * 替换后的文本；未匹配到变量的 ${key} 保留原文.
+     */
+    content?: string | null;
 }
 /**
  * 从供应商拉取并同步模型列表（后端负责获取模型并匹配内置 models.json）.
@@ -3935,6 +4537,43 @@ export interface TeamUserItem extends Parsable {
      * 用户名.
      */
     userName?: string | null;
+}
+/**
+ * 团队变量项；私密变量的 Value 对成员恒为 null.
+ */
+export interface TeamVariableItem extends Parsable {
+    /**
+     * 变量描述.
+     */
+    description?: string | null;
+    /**
+     * 分组名，空串=未分组.
+     */
+    groupName?: string | null;
+    /**
+     * 是否私密变量.
+     */
+    isSecret?: boolean | null;
+    /**
+     * 变量名.
+     */
+    key?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 变量值；私密变量恒为 null（仅管理员在详情接口可见）.
+     */
+    value?: string | null;
+    /**
+     * 变量 id.
+     */
+    variableId?: string | null;
 }
 /**
  * 解绑第三方账号.
@@ -4181,6 +4820,27 @@ export interface UpdateUserIsDisableCommand extends Parsable {
     userId?: string | null;
 }
 /**
+ * 更新团队变量，需要团队 Admin 及以上角色；变量名与类型不可修改，私密变量值留空表示保持不变.
+ */
+export interface UpdateVariableCommand extends Parsable {
+    /**
+     * 变量描述，null 表示不修改.
+     */
+    description?: string | null;
+    /**
+     * 分组名，null 表示不修改.
+     */
+    groupName?: string | null;
+    /**
+     * 变量值，null 表示保持不变（私密变量推荐留空以避免回传明文）.
+     */
+    value?: string | null;
+    /**
+     * 变量 id，由 Controller 从路由参数回填.
+     */
+    variableId?: string | null;
+}
+/**
  * 更新知识库，需要团队 Admin 及以上角色.
  */
 export interface UpdateWikiCommand extends Parsable {
@@ -4196,6 +4856,23 @@ export interface UpdateWikiCommand extends Parsable {
      * 知识库 id，由 Controller 从路由参数回填.
      */
     wikiId?: string | null;
+}
+/**
+ * 更新知识库文档，全体团队成员可协作.
+ */
+export interface UpdateWikiDocumentCommand extends Parsable {
+    /**
+     * 文档内容（Markdown）.
+     */
+    content?: string | null;
+    /**
+     * 文档 id，由 Controller 从路由参数回填.
+     */
+    documentId?: string | null;
+    /**
+     * 文档标题.
+     */
+    title?: string | null;
 }
 /**
  * UserStateInfo.
@@ -4243,6 +4920,31 @@ export interface UserStateInfo extends Parsable {
     userName?: string | null;
 }
 export type UserType = (typeof UserTypeObject)[keyof typeof UserTypeObject];
+/**
+ * 知识库文档列表项（不含正文）.
+ */
+export interface WikiDocumentItem extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 文档标题.
+     */
+    title?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 所属知识库 id.
+     */
+    wikiId?: string | null;
+}
 /**
  * 知识库项.
  */
