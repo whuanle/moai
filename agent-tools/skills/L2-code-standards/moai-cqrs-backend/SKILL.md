@@ -45,7 +45,7 @@ description: Backend CQRS three-layer code standards for MoAI (.NET 9, Maomi mod
 ### 3. Core 层要点
 
 - Handler 构造注入 `DatabaseContext` + 领域服务；**禁止注入 IUserContextProvider/UserContext**（用户信息只能经 Command 的 IUserIdContext 传入）
-- 实体审计属性（CreateUserId/CreateTime/UpdateUserId/UpdateTime/IsDeleted）框架自动注入，**不要手动赋值**；查询记得 `IsDeleted == 0`
+- 实体审计属性（CreateUserId/CreateTime/UpdateUserId/UpdateTime/IsDeleted）框架自动注入，**不要手动赋值**；软删除字段 `IsDeleted` 类型是 **long**（0=未删），查询记得 `IsDeleted == 0`，勿写成 bool
 - 目标保护依赖 DB 事实：root 判定 = `setting` 表 `key="root"` 的 value
 - 业务异常：`throw new BusinessException("中文消息.") { StatusCode = 400/403/404/409 }`，禁止裸 500
 - ⚠️ **写用户相关数据后必须 `RemoveUserStateAsync`** 失效 Redis 用户态（禁用/降权即时生效依赖此）
