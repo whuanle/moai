@@ -1,10 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Infra.Service;
 using MoAI.Infra.Services;
 using MoAI.Team.Services;
 using MoAI.Variable.Queries;
@@ -19,7 +17,6 @@ public class QueryVariableCommandHandler : IRequestHandler<QueryVariableCommand,
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
-    private readonly IAESProvider _aesProvider;
     private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
@@ -27,13 +24,11 @@ public class QueryVariableCommandHandler : IRequestHandler<QueryVariableCommand,
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    /// <param name="aesProvider">AES 加密服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
-    public QueryVariableCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAESProvider aesProvider, IUserContextProvider userContextProvider)
+    public QueryVariableCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
-        _aesProvider = aesProvider;
         _userContextProvider = userContextProvider;
     }
 
@@ -56,20 +51,16 @@ public class QueryVariableCommandHandler : IRequestHandler<QueryVariableCommand,
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
         }
 
-        // 私密变量的值仅 Owner/Admin 可见
-        if (variable.IsSecret && myRole == TeamRole.Member)
-        {
-            throw new BusinessException("私密变量的值仅团队管理员可见.") { StatusCode = 403 };
-        }
-
+        // 私密变量的值永不回传前端（Owner/Admin 编辑时也只能在 value 不填时保持、填写时覆盖）
+        // 普通变量则返回明文值，便于编辑时回填
         return new QueryVariableCommandResponse
         {
             VariableId = variable.Id,
             TeamId = variable.TeamId,
             Key = variable.Key,
-            GroupName = variable.GroupName,
+            Name = variable.Name,
             IsSecret = variable.IsSecret,
-            Value = variable.IsSecret ? _aesProvider.Decrypt(variable.Value) : variable.Value,
+            Value = variable.IsSecret ? null! : variable.Value,
             Description = variable.Description,
             UpdateTime = variable.UpdateTime
         };

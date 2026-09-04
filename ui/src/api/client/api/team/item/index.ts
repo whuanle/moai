@@ -6,6 +6,8 @@ import { createBusinessValidationResultFromDiscriminatorValue, createEmptyComman
 // @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
 // @ts-ignore
+import { CandidatesRequestBuilderRequestsMetadata, type CandidatesRequestBuilder } from './candidates/index.js';
+// @ts-ignore
 import { OwnerRequestBuilderRequestsMetadata, type OwnerRequestBuilder } from './owner/index.js';
 // @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
@@ -22,6 +24,10 @@ export interface TeamItemRequestBuilder extends BaseRequestBuilder<TeamItemReque
      * The avatar property
      */
     get avatar(): AvatarRequestBuilder;
+    /**
+     * The candidates property
+     */
+    get candidates(): CandidatesRequestBuilder;
     /**
      * The owner property
      */
@@ -98,6 +104,9 @@ export const TeamItemRequestBuilderUriTemplate = "{+baseurl}/api/team/{id}";
 export const TeamItemRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
+    candidates: {
+        requestsMetadata: CandidatesRequestBuilderRequestsMetadata,
     },
     owner: {
         requestsMetadata: OwnerRequestBuilderRequestsMetadata,

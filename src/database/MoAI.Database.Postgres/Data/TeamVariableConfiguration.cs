@@ -46,11 +46,6 @@ internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<Team
             .HasDefaultValueSql("''::character varying")
             .HasComment("变量描述，最长255字符，空串=未填写")
             .HasColumnName("description");
-        entity.Property(e => e.GroupName)
-            .HasMaxLength(50)
-            .HasDefaultValueSql("''::character varying")
-            .HasComment("分组名，仅组织用途不参与寻址，空串=未分组")
-            .HasColumnName("group_name");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnName("is_deleted");
@@ -61,6 +56,11 @@ internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<Team
             .HasMaxLength(100)
             .HasComment("变量名，团队内唯一（字母开头，字母/数字/下划线）")
             .HasColumnName("key");
+        entity.Property(e => e.Name)
+            .HasMaxLength(50)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("变量名称")
+            .HasColumnName("name");
         entity.Property(e => e.TeamId)
             .HasComment("所属团队ID，逻辑关联team.id（仓库约定不建物理外键）")
             .HasColumnName("team_id");

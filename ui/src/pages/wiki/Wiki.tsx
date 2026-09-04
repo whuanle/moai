@@ -16,8 +16,8 @@ import { formatDateTime } from '@/utils/datetime'
 
 const { Text } = Typography
 
-/** 角色：0=Owner 1=Admin 2=Member */
-const ROLE_MEMBER = 2
+/** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
+const ROLE_MEMBER = 0
 
 interface WikiFormValues {
   name: string

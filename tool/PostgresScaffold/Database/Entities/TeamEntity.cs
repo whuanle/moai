@@ -17,7 +17,7 @@ public partial class TeamEntity : IFullAudited
     /// <summary>
     /// 团队ID，自增主键.
     /// </summary>
-    public long Id { get; set; }
+    public int Id { get; set; }
 
     /// <summary>
     /// 团队名称，最长50字符.

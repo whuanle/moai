@@ -25,9 +25,9 @@ public partial class TeamVariableEntity : IFullAudited
     public long TeamId { get; set; }
 
     /// <summary>
-    /// 分组名，仅组织用途不参与寻址，空串=未分组.
+    /// 变量名称.
     /// </summary>
-    public string GroupName { get; set; } = default!;
+    public string Name { get; set; } = default!;
 
     /// <summary>
     /// 变量名，团队内唯一（字母开头，字母/数字/下划线）.

@@ -77,6 +77,7 @@ interface ModelFormValues {
   modelId: string
   name: string
   family?: string
+  modelKind?: string
   supportsVision?: boolean
   supportsAttachments?: boolean
   supportsToolCall?: boolean
@@ -125,6 +126,7 @@ function metaFromModelForm(values: ModelFormValues): AIModelMeta {
     modelId: values.modelId,
     name: values.name,
     family: values.family,
+    modelKind: values.modelKind,
     supportsVision: values.supportsVision === true,
     supportsAttachments: values.supportsAttachments === true,
     supportsToolCall: values.supportsToolCall === true,
@@ -133,6 +135,49 @@ function metaFromModelForm(values: ModelFormValues): AIModelMeta {
     supportsTemperature: values.supportsTemperature === true,
     contextWindow: values.contextWindow,
     maxOutput: values.maxOutput,
+  }
+}
+
+/** 可编辑的模型类型选项（与后端 AIModelKind 枚举一致）. */
+const KIND_OPTIONS = [
+  { value: 'conversation', labelKey: 'models.kindConversation' },
+  { value: 'embedding', labelKey: 'models.kindEmbedding' },
+  { value: 'image-generation', labelKey: 'models.kindImage' },
+  { value: 'video-generation', labelKey: 'models.kindVideo' },
+  { value: 'transcription', labelKey: 'models.kindTranscription' },
+] as const
+
+interface KindCapabilitySettings {
+  capabilities: string[]
+  contextWindow: boolean
+  maxOutput: boolean
+}
+
+/** 按模型类型决定下方能力开关与上下文/最大输出的显隐规则. */
+function kindCapabilitySettings(kind: string | undefined): KindCapabilitySettings {
+  switch (kind) {
+    case 'embedding':
+      // 向量模型只保留最大输出（向量维度），隐藏上下文与其他能力开关.
+      return { capabilities: [], contextWindow: false, maxOutput: true }
+    case 'image-generation':
+    case 'video-generation':
+    case 'transcription':
+      // 生图/视频/语音模型隐藏能力开关与上下文，仅保留最大输出.
+      return { capabilities: [], contextWindow: false, maxOutput: true }
+    default:
+      // 文本/对话模型展示全部能力开关与上下文/最大输出.
+      return {
+        capabilities: [
+          'supportsVision',
+          'supportsAttachments',
+          'supportsToolCall',
+          'supportsStructuredOutput',
+          'supportsReasoning',
+          'supportsTemperature',
+        ],
+        contextWindow: true,
+        maxOutput: true,
+      }
   }
 }
 
@@ -165,7 +210,7 @@ function ChannelModelsPanel({
   const [hideUnrecognized, setHideUnrecognized] = useState(true)
 
   const isRecognized = (model: AIModelItem): boolean =>
-    Boolean(model.family) || capabilityTags(model, t).length > 0
+    model.enabled === true || Boolean(model.family) || capabilityTags(model, t).length > 0
 
   const visibleModels = hideUnrecognized ? models.filter(isRecognized) : models
 
@@ -331,6 +376,9 @@ export function Models() {
   const [modelModalOpen, setModelModalOpen] = useState(false)
   const [editingModel, setEditingModel] = useState<AIModelItem | null>(null)
   const [modelChannelId, setModelChannelId] = useState<string | null>(null)
+  const [modelKind, setModelKind] = useState<string | undefined>()
+  const appliedKind = modelKind ?? editingModel?.modelKind ?? 'conversation'
+  const kindCaps = kindCapabilitySettings(appliedKind)
 
   const loadChannels = async () => {
     setChannelLoading(true)
@@ -482,17 +530,20 @@ export function Models() {
     setModelChannelId(channelId)
     setEditingModel(null)
     modelForm.resetFields()
-    modelForm.setFieldsValue({ enabled: true })
+    modelForm.setFieldsValue({ enabled: true, modelKind: 'conversation' })
+    setModelKind('conversation')
     setModelModalOpen(true)
   }
 
   const openEditModel = (record: AIModelItem) => {
     setModelChannelId(record.channelId ?? null)
     setEditingModel(record)
+    setModelKind(record.modelKind ?? 'conversation')
     modelForm.setFieldsValue({
       modelId: record.modelId ?? '',
       name: record.name ?? '',
       family: record.family ?? '',
+      modelKind: record.modelKind ?? 'conversation',
       supportsVision: record.supportsVision ?? undefined,
       supportsAttachments: record.supportsAttachments ?? undefined,
       supportsToolCall: record.supportsToolCall ?? undefined,
@@ -776,33 +827,32 @@ export function Models() {
           <Form.Item name="family" label={t('models.colFamily')}>
             <Input maxLength={100} />
           </Form.Item>
-          <Space size={24} wrap>
-            <Form.Item name="supportsVision" label={t('models.colSupportsVision')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="supportsAttachments" label={t('models.colSupportsAttachments')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="supportsToolCall" label={t('models.colSupportsToolCall')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="supportsStructuredOutput" label={t('models.colSupportsStructuredOutput')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="supportsReasoning" label={t('models.colSupportsReasoning')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="supportsTemperature" label={t('models.colSupportsTemperature')} valuePropName="checked">
-              <Switch />
-            </Form.Item>
-          </Space>
+          <Form.Item name="modelKind" label={t('models.colModelKind')}>
+            <Select
+              options={KIND_OPTIONS.map((k) => ({ value: k.value, label: t(k.labelKey) }))}
+              onChange={(v) => setModelKind(v as string)}
+            />
+          </Form.Item>
+          {kindCaps.capabilities.length > 0 && (
+            <Space size={24} wrap>
+              {kindCaps.capabilities.map((cap) => (
+                <Form.Item key={cap} name={cap} label={t(`models.col${cap[0].toUpperCase()}${cap.slice(1)}`)} valuePropName="checked">
+                  <Switch />
+                </Form.Item>
+              ))}
+            </Space>
+          )}
           <Space size={24}>
-            <Form.Item name="contextWindow" label={t('models.colContextWindow')}>
-              <InputNumber min={0} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item name="maxOutput" label={t('models.colMaxOutput')}>
-              <InputNumber min={0} style={{ width: '100%' }} />
-            </Form.Item>
+            {kindCaps.contextWindow && (
+              <Form.Item name="contextWindow" label={t('models.colContextWindow')}>
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            )}
+            {kindCaps.maxOutput && (
+              <Form.Item name="maxOutput" label={t('models.colMaxOutput')}>
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            )}
           </Space>
           <Form.Item name="enabled" label={t('models.enabled')} valuePropName="checked" initialValue>
             <Switch />

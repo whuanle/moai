@@ -27,8 +27,8 @@ Scenario: 校验
   Then 返回参数错误
 
 @VR-S4 @auto:e2e
-Scenario: 创建普通与私密变量（含分组）
-  When Admin 创建普通变量与私密变量（不同分组）
+Scenario: 创建普通与私密变量（含名称）
+  When Admin 创建普通变量与私密变量（不同名称）
   Then 返回变量 id
 
 @VR-S5 @auto:e2e
@@ -46,11 +46,11 @@ Scenario: 列表掩码
   Then 普通变量可见值，私密变量不回传值字段，且响应含 myRole
 
 @VR-S7 @auto:e2e
-Scenario: 详情
+Scenario: 详情私密值永不回传
   When Member 查看私密变量详情
-  Then 返回禁止
+  Then 返回 200 且值字段为空
   When Admin 查看私密变量详情
-  Then 返回解密后的原值
+  Then 返回 200 且值字段为空（仅返回可编辑的 key/name/描述）
   When 非成员查看任意详情
   Then 返回不存在
 ```
@@ -62,12 +62,16 @@ Scenario: 详情
 Scenario: 更新
   When Member 更新
   Then 返回禁止
-  When Admin 更新分组/描述/普通值
+  When Admin 更新名称/描述/普通值
   Then 返回成功且生效
   When Admin 编辑私密变量但不填值
   Then 值保持不变
   When Admin 为私密变量填入新值
   Then 值更新为新值
+  When Admin 修改变量名 key
+  Then 返回成功且按新 key 可替换
+  When Admin 将 key 改为团队内已存在的变量名
+  Then 返回冲突
 ```
 
 ## Feature: 替换
@@ -82,13 +86,13 @@ Scenario: 运行时替换
   Then 返回禁止
 ```
 
-## Feature: 分组与删除
+## Feature: 名称与删除
 
 ```gherkin
 @VR-S11 @auto:e2e
-Scenario: 分组筛选
-  When 按分组名筛选列表
-  Then 仅返回该分组的变量
+Scenario: 名称筛选
+  When 按变量名称筛选列表
+  Then 仅返回该名称的变量
 
 @VR-S12 @auto:e2e
 Scenario: 删除

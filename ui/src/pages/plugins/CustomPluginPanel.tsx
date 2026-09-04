@@ -79,7 +79,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const classifyId = classifyFilter === 'all' ? undefined : Number(classifyFilter)
+      const classifyId = classifyFilter === 'all' ? undefined : classifyFilter === 'uncategorized' ? 0 : Number(classifyFilter)
       const data = await customPluginApi.getCustomPlugins({
         name: searchName,
         type: filterType,

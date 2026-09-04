@@ -8,13 +8,13 @@
 
 ## 1. 目标
 
-参考 GitHub Actions 的 vars/secrets 模型，为团队提供变量管理：插件配置等场景以 `${key}` 引用变量，运行时由服务端替换。私密变量（如飞书应用密钥）的值仅 Owner/Admin 可见，成员不可见。
+参考 GitHub Actions 的 vars/secrets 模型，为团队提供变量管理：插件配置等场景以 `${key}` 引用变量，运行时由服务端替换。私密变量（如飞书应用密钥）的值永不回传前端，仅运行时替换使用。
 
 ## 2. 数据模型
 
-- `team_variable`：`id / team_id / group_name(50) / key(100) / value(text) / is_secret / description(255)` + 审计（bool 软删除）
+- `team_variable`：`id / team_id / name(50) / key(100) / value(text) / is_secret / description(255)` + 审计（bool 软删除）
 - partial 唯一 `(team_id, key) WHERE is_deleted = false`：同团队未删除范围变量名唯一，删除后同名可重建
-- **私密变量值 AES 加密落库**（`IAESProvider`，密钥来自 SystemOptions.AES）；普通变量明文
+- **私密变量值 AES 加密落库**（`IAESProvider`，密钥来自 SystemOptions.AES）；普通变量明文；**私密变量的值永不回传前端**
 - DDL：`asserts/variable.sql`
 
 ## 3. 权限矩阵（Handler 层判定，复用团队角色）
@@ -22,20 +22,20 @@
 | 操作 | Owner/Admin | Member | 非成员 |
 |---|---|---|---|
 | 创建/更新/删除 | ✅ | 403 | 404 |
-| 列表 | ✅（含私密值） | ✅（私密值恒掩码 null，序列化时整字段省略） | 404 |
-| 详情 | ✅（私密值解密返回） | 私密 403 / 普通可见 | 404 |
-| 替换 | ✅（结果含私密值） | 403 | 404 |
+| 列表 | ✅（私有值掩码） | ✅（私密值恒掩码 null，序列化时整字段省略） | 404 |
+| 详情 | ✅（私密值恒 null，仅返回可编辑的 key/name/描述） | ✅（私密值恒 null） | 404 |
+| 替换 | ✅（结果含私密值，服务端内部） | 403 | 404 |
 
 ## 4. API
 
 | 方法 | 路由 | 说明 |
 |---|---|---|
-| POST | `/api/variable` | 创建 `{teamId, key, groupName?, isSecret, value, description?}` |
-| PUT | `/api/variable/{id}` | 更新 `{groupName?, value?, description?}`；value=null 保持不变 |
+| POST | `/api/variable` | 创建 `{teamId, key, name?, isSecret, value, description?}` |
+| PUT | `/api/variable/{id}` | 更新 `{key?, name?, value?, description?}`；value=null 保持不变 |
 | DELETE | `/api/variable/{id}` | 软删除 |
-| GET | `/api/variable/list?teamId=&groupName=&keyword=` | 列表（含 myRole，私密值掩码） |
-| GET | `/api/variable/{id}` | 详情（私密值仅管理员） |
-| POST | `/api/variable/substitute` | `${key}` 替换（仅管理员） |
+| GET | `/api/variable/list?teamId=&name=&keyword=` | 列表（含 myRole，私密值掩码） |
+| GET | `/api/variable/{id}` | 详情（私密值恒 null） |
+| POST | `/api/variable/substitute` | `${key}` 替换（仅管理员，服务端解密） |
 
 ## 5. 替换语义（决策 D3）
 
@@ -46,16 +46,16 @@
 ## 5b. 前端设计（/variable 页）
 
 - 页面依赖「当前团队」上下文（`store.currentTeamId` + 侧边栏切换器，未选团队显示引导空态）
-- 组件结构与私密编辑三原则（不回填/留空=不变/新值才轮换）、权限渲染矩阵详见 [ui/docs/variable/sdd.md](../../ui/docs/variable/sdd.md)（FE-VR）
+- 组件结构与私密编辑三原则（不回填/留空=不变/新值才覆盖）、权限渲染矩阵详见 [ui/docs/variable/sdd.md](../../ui/docs/variable/sdd.md)（FE-VR）
 - 列表值列：普通明文 `copyable`，私密恒掩码 `••••••••`（数据层已掩码，前端仅兜底）
 
 ## 6. 关键决策
 
-- **D1** key 团队内唯一、分组仅组织用途：保证 `${key}` 在团队运行时寻址无歧义
-- **D2** 私密值 AES 加密落库 + 接口永不向成员回显（列表/详情均拦截）；编辑时留空表示保持不变
-- **D3** 替换服务端内部化（见上）；**D4** key 与类型不可变更（GitHub 风格，避免引用失效）
+- **D1** key 团队内唯一、name 仅组织用途：保证 `${key}` 在团队运行时寻址无歧义
+- **D2** 私密值 AES 加密落库 + **接口永不向任何人回显私密值**（详情/列表均恒 null）；编辑时留空表示保持不变、填写新值才覆盖
+- **D3** 替换服务端内部化（见上）；**D4** key 可变更（团队唯一校验兜底），类型不可变更（避免引用失效）
 
 ## 7. 已知问题 / 下阶段
 
 - 插件参数定义处引用 `${key}` 的校验（引用不存在的变量给出提示）随插件模块落地
-- 变量分组目前为自由文本，可升级为独立分组表；审计日志（谁在何时读取过私密值）下阶段考虑
+- 变量名称目前为自由文本，可升级为独立的名称字典；审计日志（谁在何时读取过私密值）下阶段考虑

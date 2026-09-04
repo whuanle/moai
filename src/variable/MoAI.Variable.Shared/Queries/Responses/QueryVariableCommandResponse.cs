@@ -21,9 +21,9 @@ public class QueryVariableCommandResponse
     public string Key { get; set; } = default!;
 
     /// <summary>
-    /// 分组名，空串=未分组.
+    /// 变量名称，空串=未填写.
     /// </summary>
-    public string GroupName { get; set; } = default!;
+    public string Name { get; set; } = default!;
 
     /// <summary>
     /// 是否私密变量.

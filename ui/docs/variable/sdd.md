@@ -9,15 +9,15 @@
 
 ## 组件（Variables.tsx）
 
-- 结构：`Page`（title；成员附只读副标题，Admin+ 无副标题——2026-09-02 管理页约定）+ `extra` 新建按钮（Admin+）+ `QueryBar`（分组 Select 选项由当页数据去重派生 + 关键字 Input）+ `DataTable`。
-- 列：变量名（`Text code` 纯名称，不带 `${}` 装饰——引用语法只在插件配置中出现）/ 分组 / 类型 Tag（私密红色）/ 值（私密恒 `••••••••` 掩码；普通 `copyable`）/ 描述 / 更新时间（`formatDateTime`）/ 操作（编辑/删除，Admin+）。
+- 结构：`Page`（title；成员附只读副标题，Admin+ 无副标题——2026-09-02 管理页约定）+ `extra` 新建按钮（Admin+）+ `QueryBar`（变量名称 Select 选项由当页数据去重派生 + 关键字 Input）+ `DataTable`。
+- 列：变量名（`Text code` 纯名称，不带 `${}` 装饰——引用语法只在插件配置中出现）/ 变量名称 / 类型 Tag（私密红色）/ 值（私密恒 `••••••••` 掩码；普通 `copyable`）/ 描述 / 更新时间（`formatDateTime`）/ 操作（编辑/删除，Admin+）。
 - 未选团队：居中空态「请先在左上角选择一个团队，或 前往创建团队」（Link → /team）。
 
 ## 新建/编辑 Modal
 
-- 字段：变量名（仅创建可填，正则 `^[A-Za-z][A-Za-z0-9_]{0,99}$`）/ 分组（≤50）/ 类型 Switch（仅创建可切）/ 值 TextArea（monospace）/ 描述（≤255）。
-- **私密编辑三原则**：打开不回填值（防 DOM 泄露）；留空提交 = 保持不变（`value: undefined`）；提供新值才轮换。普通变量编辑回填当前值。
-- 提交后仅刷新本页数据；类型与变量名不可变更（后端契约）。
+- 字段：变量名 key（可编辑，正则 `^[A-Za-z][A-Za-z0-9_]{0,99}$`）/ 变量名称 name（≤50）/ 类型 Switch（仅创建可切）/ 值 TextArea（monospace）/ 描述（≤255）。
+- **私密编辑三原则**：打开不回填值（值永不回传，防 DOM 泄露）；留空提交 = 保持不变（`value: undefined`）；提供新值才覆盖。普通变量编辑回填当前值。
+- 提交后仅刷新本页数据；类型不可变更（后端契约）；key 可修改（团队唯一由后端兜底）。
 
 ## 权限渲染（镜像后端，后端仍是最终防线）
 
@@ -29,6 +29,6 @@
 
 ## 状态与请求
 
-- 数据：`api/variable.ts` → Kiota 客户端；`getVariables(teamId, {groupName, keyword})`。
+- 数据：`api/variable.ts` → Kiota 客户端；`getVariables(teamId, {name, keyword})`。
 - 筛选：QueryBar 外部 `filterForm` 实例，搜索/重置共用 `applyFilters()`（重置后读清空值再拉取）。
 - 团队上下文缺失（未选团队）时不发请求，直接渲染空态。

@@ -6,6 +6,8 @@ import { ChannelRequestBuilderNavigationMetadata, ChannelRequestBuilderRequestsM
 // @ts-ignore
 import { ModelRequestBuilderNavigationMetadata, ModelRequestBuilderRequestsMetadata, type ModelRequestBuilder } from './model/index.js';
 // @ts-ignore
+import { PluginRequestBuilderNavigationMetadata, PluginRequestBuilderRequestsMetadata, type PluginRequestBuilder } from './plugin/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -20,6 +22,10 @@ export interface AiRequestBuilder extends BaseRequestBuilder<AiRequestBuilder> {
      * The model property
      */
     get model(): ModelRequestBuilder;
+    /**
+     * The plugin property
+     */
+    get plugin(): PluginRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -36,6 +42,10 @@ export const AiRequestBuilderNavigationMetadata: Record<Exclude<keyof AiRequestB
     model: {
         requestsMetadata: ModelRequestBuilderRequestsMetadata,
         navigationMetadata: ModelRequestBuilderNavigationMetadata,
+    },
+    plugin: {
+        requestsMetadata: PluginRequestBuilderRequestsMetadata,
+        navigationMetadata: PluginRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

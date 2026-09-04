@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { DeleteOutlined, EditOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
 import type { PluginClassify } from '@/api/classify'
 import {
   pluginApi,
+  type ClassifyFilter,
   type DynamicPluginManageItem,
   type DynamicPluginTemplate,
 } from '@/api/plugin'
@@ -43,6 +44,7 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState<DynamicPluginManageItem | null>(null)
   const [drawerTarget, setDrawerTarget] = useState<DynamicPluginManageItem | null>(null)
+  const [filter, setFilter] = useState<ClassifyFilter>('all')
   const [form] = Form.useForm<DynamicFormValues>()
 
   const load = useCallback(async () => {
@@ -135,6 +137,22 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
     }
   }
 
+  const filtered = useMemo(() => {
+    if (filter === 'all') return items
+    if (filter === 'uncategorized') return items.filter((i) => i.classifyId === 0 || !i.classifyId)
+    const id = Number(filter)
+    return items.filter((i) => i.classifyId === id)
+  }, [items, filter])
+
+  const filterTags = useMemo(
+    () => [
+      { value: 'all' as const, label: t('plugins.classifyAll') },
+      { value: 'uncategorized' as const, label: t('plugins.classifyUncategorized') },
+      ...classifies.map((c) => ({ value: String(c.classifyId), label: c.name })),
+    ],
+    [classifies, t],
+  )
+
   const columns: TableColumnsType<DynamicPluginManageItem> = [
     { title: t('plugins.colPluginName'), dataIndex: 'pluginName', width: 180 },
     { title: t('plugins.colTitle'), dataIndex: 'title', width: 150, ellipsis: true },
@@ -161,21 +179,33 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
       width: 150,
       fixed: 'right',
       render: (_: unknown, record: DynamicPluginManageItem) => (
-        <Space>
-          <Button type="text" size="small" onClick={() => setDrawerTarget(record)}>
-            {t('plugins.run')}
-          </Button>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t('plugins.editPlugin')}
-          </Button>
+        <Space size={0}>
+          <Tooltip title={t('plugins.run')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<PlayCircleOutlined />}
+              aria-label={t('plugins.run')}
+              onClick={() => setDrawerTarget(record)}
+            />
+          </Tooltip>
+          <Tooltip title={t('plugins.editPlugin')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={t('plugins.editPlugin')}
+              onClick={() => openEdit(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title={t('plugins.deletePluginConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => void handleDelete(record)}
           >
-            <Button type="text" size="small" danger aria-label={t('plugins.deletePlugin')}>
-              {t('plugins.deletePlugin')}
-            </Button>
+            <Tooltip title={t('plugins.deletePlugin')}>
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.deletePlugin')} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -187,18 +217,32 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
       <DataTable<DynamicPluginManageItem>
         rowKey="id"
         columns={columns}
-        dataSource={items}
+        dataSource={filtered}
         loading={loading}
         pagination={false}
         toolbar={
-          <Space>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
               {t('plugins.createDynamicInstance')}
             </Button>
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
               {t('plugins.refresh')}
             </Button>
-          </Space>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {filterTags.map((item, index) => (
+                <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  {index > 0 && (
+                    <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                      |
+                    </span>
+                  )}
+                  <Tag.CheckableTag checked={filter === item.value} onChange={() => setFilter(item.value)}>
+                    {item.label}
+                  </Tag.CheckableTag>
+                </span>
+              ))}
+            </span>
+          </div>
         }
       />
 

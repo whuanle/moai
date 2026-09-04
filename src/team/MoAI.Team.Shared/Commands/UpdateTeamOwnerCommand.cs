@@ -7,8 +7,14 @@ namespace MoAI.Team.Commands;
 /// <summary>
 /// 转让团队所有权，仅 Owner 可操作；原 Owner 降为 Admin.
 /// </summary>
-public class UpdateTeamOwnerCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateTeamOwnerCommand>
+public class UpdateTeamOwnerCommand : IRequest<EmptyCommandResponse>, IUserIdContext, IModelValidator<UpdateTeamOwnerCommand>
 {
+    /// <inheritdoc/>
+    public long ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 团队 id，由 Controller 从路由参数回填.
     /// </summary>

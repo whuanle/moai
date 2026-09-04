@@ -29,7 +29,6 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasFilter("(is_deleted = 0)");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
             .HasComment("团队ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.AvatarPath)

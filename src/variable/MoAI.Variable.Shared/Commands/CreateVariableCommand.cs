@@ -20,9 +20,9 @@ public class CreateVariableCommand : IRequest<SimpleLong>, IModelValidator<Creat
     public string Key { get; init; } = default!;
 
     /// <summary>
-    /// 分组名，仅组织用途，可为空.
+    /// 变量名称，仅组织用途，可为空.
     /// </summary>
-    public string? GroupName { get; init; }
+    public string? Name { get; init; }
 
     /// <summary>
     /// 是否私密变量：私密变量的值仅管理员可见，落库 AES 加密.
@@ -45,7 +45,7 @@ public class CreateVariableCommand : IRequest<SimpleLong>, IModelValidator<Creat
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.Key).NotEmpty().WithMessage("变量名不能为空.").Matches(@"^[A-Za-z][A-Za-z0-9_]{0,99}$").WithMessage("变量名仅允许字母开头，包含字母/数字/下划线，最长 100.");
         validate.RuleFor(x => x.Value).NotEmpty().WithMessage("变量值不能为空.");
-        validate.RuleFor(x => x.GroupName).MaximumLength(50).WithMessage("分组名最长 50 个字符.");
+        validate.RuleFor(x => x.Name).MaximumLength(50).WithMessage("变量名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("变量描述最长 255 个字符.");
     }
 }

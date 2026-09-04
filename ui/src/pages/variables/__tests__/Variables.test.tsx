@@ -10,11 +10,13 @@ vi.mock('@/api/variable', () => ({
     teamId: '7',
     myRole: 0,
     items: [
-      { variableId: '1', teamId: '7', key: 'WIKI_NAME', groupName: '基础配置', isSecret: false, value: '团队知识库', description: '', updateTime: '2026-09-02T00:00:00Z' },
-      { variableId: '2', teamId: '7', key: 'FEISHU_SECRET', groupName: '飞书', isSecret: true, value: null, description: '密钥', updateTime: '2026-09-02T00:00:00Z' },
+      { variableId: '1', teamId: '7', key: 'WIKI_NAME', name: '基础配置', isSecret: false, value: '团队知识库', description: '', updateTime: '2026-09-02T00:00:00Z' },
+      { variableId: '2', teamId: '7', key: 'FEISHU_SECRET', name: '飞书', isSecret: true, value: null, description: '密钥', updateTime: '2026-09-02T00:00:00Z' },
     ],
   }),
-  getVariableDetail: vi.fn(),
+  getVariableDetail: vi.fn().mockResolvedValue({
+    variableId: '2', teamId: '7', key: 'FEISHU_SECRET', name: '飞书', isSecret: true, value: null, description: '密钥', updateTime: '2026-09-02T00:00:00Z',
+  }),
   createVariable: vi.fn().mockResolvedValue(3),
   updateVariable: vi.fn().mockResolvedValue(undefined),
   deleteVariable: vi.fn().mockResolvedValue(undefined),
@@ -40,8 +42,8 @@ describe('Variables', () => {
       teamId: '7',
       myRole: 0,
       items: [
-        { variableId: '1', teamId: '7', key: 'WIKI_NAME', groupName: '基础配置', isSecret: false, value: '团队知识库', description: '', updateTime: '2026-09-02T00:00:00Z' },
-        { variableId: '2', teamId: '7', key: 'FEISHU_SECRET', groupName: '飞书', isSecret: true, value: null, description: '密钥', updateTime: '2026-09-02T00:00:00Z' },
+        { variableId: '1', teamId: '7', key: 'WIKI_NAME', name: '基础配置', isSecret: false, value: '团队知识库', description: '', updateTime: '2026-09-02T00:00:00Z' },
+        { variableId: '2', teamId: '7', key: 'FEISHU_SECRET', name: '飞书', isSecret: true, value: null, description: '密钥', updateTime: '2026-09-02T00:00:00Z' },
       ],
     })
     useAppStore.setState({ currentTeamId: '7' })
@@ -51,7 +53,7 @@ describe('Variables', () => {
     renderVariables()
 
     await waitFor(() => {
-      expect(getVariables).toHaveBeenCalledWith(7, { groupName: undefined, keyword: undefined })
+      expect(getVariables).toHaveBeenCalledWith(7, { name: undefined, keyword: undefined })
     })
     expect(await screen.findByText(/WIKI_NAME/)).toBeInTheDocument()
     expect(screen.getByText('团队知识库')).toBeInTheDocument()

@@ -8,8 +8,14 @@ namespace MoAI.Team.Commands;
 /// <summary>
 /// 修改成员角色，仅 Owner 可操作；只能改为 Admin/Member，所有权转让不在本期范围.
 /// </summary>
-public class UpdateTeamUserRoleCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateTeamUserRoleCommand>
+public class UpdateTeamUserRoleCommand : IRequest<EmptyCommandResponse>, IUserIdContext, IModelValidator<UpdateTeamUserRoleCommand>
 {
+    /// <inheritdoc/>
+    public long ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 团队 id，由 Controller 从路由参数回填.
     /// </summary>

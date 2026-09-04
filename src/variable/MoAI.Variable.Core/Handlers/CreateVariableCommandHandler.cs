@@ -65,7 +65,7 @@ public class CreateVariableCommandHandler : IRequestHandler<CreateVariableComman
         {
             TeamId = request.TeamId,
             Key = request.Key,
-            GroupName = request.GroupName ?? string.Empty,
+            Name = request.Name ?? string.Empty,
             IsSecret = request.IsSecret,
             // 私密变量 AES 加密落库，普通变量明文
             Value = request.IsSecret ? _aesProvider.Encrypt(request.Value) : request.Value,

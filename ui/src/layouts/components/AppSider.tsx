@@ -3,10 +3,11 @@ import {
   AppstoreAddOutlined,
   AppstoreOutlined,
   BookOutlined,
-  KeyOutlined,
   CloudServerOutlined,
   DashboardOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   MoonOutlined,
   SettingOutlined,
   SunOutlined,
@@ -15,9 +16,9 @@ import {
   TranslationOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Dropdown, Layout, Menu, Select, Typography } from 'antd'
+import { Avatar, Button, Dropdown, Layout, Menu, Select, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import {
@@ -41,7 +42,6 @@ const mainNav: NavItem[] = [
   { key: 'app', icon: <AppstoreOutlined />, labelKey: 'nav.app', path: '/app' },
   { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
-  { key: 'variable', icon: <KeyOutlined />, labelKey: 'nav.variable', path: '/variable' },
 ]
 
 const adminNav: NavItem[] = [
@@ -58,7 +58,6 @@ const pathToKey: Record<string, string> = {
   '/app': 'app',
   '/wiki': 'wiki',
   '/team': 'team',
-  '/variable': 'variable',
   '/plugin': 'plugin',
   '/classify': 'classify',
   '/users': 'users',
@@ -98,9 +97,16 @@ export function AppSider() {
       .catch(() => undefined)
   }, [setMyTeams])
 
+  const [collapsed, setCollapsed] = useState(false)
   const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
   const isDark = themeKey === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
+
+  // 进入带页内二级导航的页面（如 /team/:id）时，自动收缩一级菜单栏
+  useEffect(() => {
+    const isSecondaryPage = /^\/team\/[^/]+/.test(location.pathname)
+    if (isSecondaryPage) setCollapsed(true)
+  }, [location.pathname])
 
   const displayName = userInfo?.nickName ?? userInfo?.userName
 
@@ -141,6 +147,11 @@ export function AppSider() {
   return (
     <Sider
       width={232}
+      collapsedWidth={64}
+      collapsible
+      collapsed={collapsed}
+      onCollapse={setCollapsed}
+      trigger={null}
       theme={themeKey}
       style={{
         borderRight: `1px solid ${dividerColor}`,
@@ -159,10 +170,34 @@ export function AppSider() {
         }}
       >
       <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <img src="/logo.svg" width={28} height={28} alt="logo" />
-        <Typography.Text strong style={{ fontSize: 16 }}>
-          {t('app.name')}
-        </Typography.Text>
+        {collapsed ? (
+          <Tooltip title={t('common.expandMenu')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<MenuUnfoldOutlined />}
+              onClick={() => setCollapsed(false)}
+              aria-label={t('common.expandMenu')}
+              style={{ marginLeft: -8 }}
+            />
+          </Tooltip>
+        ) : (
+          <>
+            <img src="/logo.svg" width={28} height={28} alt="logo" />
+            <Typography.Text strong style={{ fontSize: 16, flex: 1 }}>
+              {t('app.name')}
+            </Typography.Text>
+            <Tooltip title={t('common.collapseMenu')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<MenuFoldOutlined />}
+                onClick={() => setCollapsed(true)}
+                aria-label={t('common.collapseMenu')}
+              />
+            </Tooltip>
+          </>
+        )}
       </div>
 
       <Dropdown menu={{ items: userMenuItems }} placement="bottomLeft" trigger={['click']}>
@@ -178,45 +213,49 @@ export function AppSider() {
           <Avatar size={34} icon={<UserOutlined />} src={userInfo?.avatar ?? undefined}>
             {displayName?.charAt(0) ?? 'U'}
           </Avatar>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <Typography.Text strong ellipsis style={{ display: 'block', fontSize: 14 }}>
-              {displayName}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {userInfo?.email ?? userInfo?.userName}
-            </Typography.Text>
-          </div>
+          {!collapsed && (
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Typography.Text strong ellipsis style={{ display: 'block', fontSize: 14 }}>
+                {displayName}
+              </Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {userInfo?.email ?? userInfo?.userName}
+              </Typography.Text>
+            </div>
+          )}
         </div>
       </Dropdown>
 
-      <div style={{ padding: '0 16px 12px' }}>
-        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-          {t('team.title')}
-        </Typography.Text>
-        <Select
-          value={currentTeamId ?? undefined}
-          placeholder={t('team.selectTeam')}
-          style={{ width: '100%' }}
-          popupMatchSelectWidth={false}
-          onChange={(value: string) => {
-            setCurrentTeamId(value)
-            navigate('/wiki')
-          }}
-          options={myTeams.map((team) => ({
-            value: String(team.teamId),
-            label: (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                {team.name}
-              </span>
-            ),
-          }))}
-          notFoundContent={
-            <Button type="link" size="small" onClick={() => navigate('/team')}>
-              {t('team.create')}
-            </Button>
-          }
-        />
-      </div>
+      {!collapsed && (
+        <div style={{ padding: '0 16px 12px' }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+            {t('team.title')}
+          </Typography.Text>
+          <Select
+            value={currentTeamId ?? undefined}
+            placeholder={t('team.selectTeam')}
+            style={{ width: '100%' }}
+            popupMatchSelectWidth={false}
+            onChange={(value: string) => {
+              setCurrentTeamId(value)
+              navigate('/wiki')
+            }}
+            options={myTeams.map((team) => ({
+              value: String(team.teamId),
+              label: (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  {team.name}
+                </span>
+              ),
+            }))}
+            notFoundContent={
+              <Button type="link" size="small" onClick={() => navigate('/team')}>
+                {t('team.create')}
+              </Button>
+            }
+          />
+        </div>
+      )}
 
       <Menu
         mode="inline"
@@ -242,14 +281,16 @@ export function AppSider() {
           style={{ width: '100%' }}
           popupMatchSelectWidth={false}
         />
-        <Select
-          value={locale}
-          options={localeOptions}
-          onChange={(value: Locale) => setLocale(value)}
-          suffixIcon={<TranslationOutlined />}
-          style={{ width: '100%' }}
-          popupMatchSelectWidth={false}
-        />
+        {!collapsed && (
+          <Select
+            value={locale}
+            options={localeOptions}
+            onChange={(value: Locale) => setLocale(value)}
+            suffixIcon={<TranslationOutlined />}
+            style={{ width: '100%' }}
+            popupMatchSelectWidth={false}
+          />
+        )}
       </div>
       </div>
     </Sider>

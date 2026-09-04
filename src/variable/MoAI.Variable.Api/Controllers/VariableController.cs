@@ -39,7 +39,7 @@ public class VariableController : ControllerBase
     }
 
     /// <summary>
-    /// 更新变量，需要团队 Admin 及以上角色；私密变量值留空表示保持不变.
+    /// 更新变量，需要团队 Admin 及以上角色；类型不可修改；私密变量的值不回显，留空表示保持不变.
     /// </summary>
     /// <param name="id">变量 id.</param>
     /// <param name="req">更新请求.</param>
@@ -48,7 +48,7 @@ public class VariableController : ControllerBase
     [HttpPut("{id}")]
     public async Task<EmptyCommandResponse> UpdateVariable(long id, [FromBody] UpdateVariableCommand req, CancellationToken ct)
     {
-        var cmd = new UpdateVariableCommand { VariableId = id, GroupName = req.GroupName, Value = req.Value, Description = req.Description };
+        var cmd = new UpdateVariableCommand { VariableId = id, Key = req.Key, Name = req.Name, Value = req.Value, Description = req.Description };
         return await _mediator.Send(cmd, ct);
     }
 

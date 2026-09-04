@@ -60,11 +60,11 @@ async function main() {
   check('VR-03a Member 创建 403', (await api('POST', '/api/variable', { token: member.token, body: { teamId: TID, key: 'NOPE', value: 'v' } })).status === 403)
   check('VR-03b 非成员创建 404', (await api('POST', '/api/variable', { token: outsider.token, body: { teamId: TID, key: 'NOPE', value: 'v' } })).status === 404)
 
-  // VR-04 创建普通 + 私密变量（分组）
-  const p1 = await api('POST', '/api/variable', { token: owner.token, body: { teamId: TID, key: 'WIKI_NAME', groupName: '基础配置', value: '团队知识库', description: '站点名' } })
+  // VR-04 创建普通 + 私密变量（名称）
+  const p1 = await api('POST', '/api/variable', { token: owner.token, body: { teamId: TID, key: 'WIKI_NAME', name: '基础配置', value: '团队知识库', description: '站点名' } })
   check('VR-04a 创建普通变量 200', p1.status === 200 && Number(p1.json?.value) > 0, `${p1.status}`)
   const PLAIN_ID = Number(p1.json?.value)
-  const p2 = await api('POST', '/api/variable', { token: owner.token, body: { teamId: TID, key: 'FEISHU_SECRET', groupName: '飞书', isSecret: true, value: 'super-secret-abc', description: '飞书应用密钥' } })
+  const p2 = await api('POST', '/api/variable', { token: owner.token, body: { teamId: TID, key: 'FEISHU_SECRET', name: '飞书', isSecret: true, value: 'super-secret-abc', description: '飞书应用密钥' } })
   check('VR-04b 创建私密变量 200', p2.status === 200, `${p2.status} ${p2.text.slice(0, 100)}`)
   const SECRET_ID = Number(p2.json?.value)
 
@@ -82,42 +82,62 @@ async function main() {
     check('VR-06c 私密变量值掩码(字段不回传)且名字可见', !!secret && secret.isSecret === true && secret.value == null, JSON.stringify(secret))
   }
 
-  // VR-07 详情：私密值 Member 403 / Admin 解密可见
-  check('VR-07a Member 查私密详情 403', (await api('GET', `/api/variable/${SECRET_ID}`, { token: member.token })).status === 403)
+  // VR-07 详情：私密值永不回传（前端仅能编辑 key/name，value 留空=保持、填写=覆盖）
+  check('VR-07a Member 查私密详情 200 且 value 为空', await (async () => {
+    const r = await api('GET', `/api/variable/${SECRET_ID}`, { token: member.token })
+    return r.status === 200 && r.json?.value == null
+  })())
   {
     const r = await api('GET', `/api/variable/${SECRET_ID}`, { token: owner.token })
-    check('VR-07b Admin 查私密详情解密回原值', r.status === 200 && r.json?.value === 'super-secret-abc', r.text.slice(0, 120))
+    check('VR-07b Admin 查私密详情 value 为空（仅供编辑 key/name）', r.status === 200 && r.json?.value == null, r.text.slice(0, 120))
   }
 
   // VR-08 非成员列表/详情 404
   check('VR-08a 非成员列表 404', (await api('GET', `/api/variable/list?teamId=${TID}`, { token: outsider.token })).status === 404)
   check('VR-08b 非成员详情 404', (await api('GET', `/api/variable/${PLAIN_ID}`, { token: outsider.token })).status === 404)
 
-  // VR-09 更新：Member 403；分组/描述/值更新；私密留空保持
+  // VR-09 更新：Member 403；名称/描述/值更新；私密留空保持；key 可改
   check('VR-09a Member 更新 403', (await api('PUT', `/api/variable/${PLAIN_ID}`, { token: member.token, body: { value: 'hack' } })).status === 403)
-  check('VR-09b Admin 更新普通值 200', (await api('PUT', `/api/variable/${PLAIN_ID}`, { token: owner.token, body: { groupName: '基础配置', value: '团队知识库 v2', description: '站点名改' } })).status === 200)
-  check('VR-09c 私密留空(null)保持不变', await (async () => {
+  check('VR-09b Admin 更新普通值 200', (await api('PUT', `/api/variable/${PLAIN_ID}`, { token: owner.token, body: { name: '基础配置', value: '团队知识库 v2', description: '站点名改' } })).status === 200)
+  check('VR-09c 普通变量值更新生效', await (async () => {
+    const r = await api('GET', `/api/variable/${PLAIN_ID}`, { token: owner.token })
+    return r.status === 200 && r.json?.value === '团队知识库 v2'
+  })())
+  // 私密值留空(null)保持：通过 substitute 校验（详情不再回传 value）
+  check('VR-09d 私密留空(null)保持不变', await (async () => {
     await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { description: '飞书密钥改' } })
-    return (await api('GET', `/api/variable/${SECRET_ID}`, { token: owner.token })).json?.value
-  })() === 'super-secret-abc')
-  check('VR-09d 私密提供新值则更新', await (async () => {
+    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET}' } })
+    return r.json?.content === 'super-secret-abc'
+  })())
+  // 私密提供新值则覆盖
+  check('VR-09e 私密提供新值则更新', await (async () => {
     await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { value: 'rotated-secret-xyz' } })
-    return (await api('GET', `/api/variable/${SECRET_ID}`, { token: owner.token })).json?.value
-  })() === 'rotated-secret-xyz')
+    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET}' } })
+    return r.json?.content === 'rotated-secret-xyz'
+  })())
+  // key 可修改，并保持团队内唯一（改名后替换按新 key 命中）
+  check('VR-09f key 可修改', await (async () => {
+    const up = await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { key: 'FEISHU_SECRET_V2' } })
+    if (up.status !== 200) return false
+    const oldRef = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET}' } })
+    const newRef = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET_V2}' } })
+    return oldRef.json?.content === '${FEISHU_SECRET}' && newRef.json?.content === 'rotated-secret-xyz'
+  })())
+  check('VR-09g key 改名后同团队冲突 409', (await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { key: 'WIKI_NAME' } })).status === 409)
 
   // VR-10 替换：普通+私密均替换；未知保留；Member 403
   {
-    const content = 'feishu app=${WIKI_NAME} secret=${FEISHU_SECRET} unknown=${NOPE_KEY}'
+    const content = 'feishu app=${WIKI_NAME} secret=${FEISHU_SECRET_V2} unknown=${NOPE_KEY}'
     const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content } })
     check('VR-10a 替换含私密与未知保留', r.status === 200 && r.json?.content === 'feishu app=团队知识库 v2 secret=rotated-secret-xyz unknown=${NOPE_KEY}', JSON.stringify(r.json))
     check('VR-10b Member 替换 403', (await api('POST', '/api/variable/substitute', { token: member.token, body: { teamId: TID, content: 'x' } })).status === 403)
   }
 
-  // VR-11 分组筛选
-  check('VR-11 分组筛选命中', await (async () => {
-    const r = await api('GET', `/api/variable/list?teamId=${TID}&groupName=飞书`, { token: owner.token })
+  // VR-11 名称筛选
+  check('VR-11 名称筛选命中', await (async () => {
+    const r = await api('GET', `/api/variable/list?teamId=${TID}&name=飞书`, { token: owner.token })
     const keys = (r.json?.items ?? []).map(i => i.key)
-    return keys.length === 1 && keys[0] === 'FEISHU_SECRET'
+    return keys.length === 1 && keys[0] === 'FEISHU_SECRET_V2'
   })())
 
   // VR-12 删除：Member 403 / Admin 200 / 删除后同名可重建

@@ -5,7 +5,6 @@ using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Infra.Services;
 using MoAI.Team.Commands;
 using MoAI.Team.Services;
 
@@ -18,38 +17,25 @@ public class AddTeamUserCommandHandler : IRequestHandler<AddTeamUserCommand, Emp
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
-    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AddTeamUserCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    /// <param name="userContextProvider">用户上下文提供者.</param>
-    public AddTeamUserCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider)
+    public AddTeamUserCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
-        _userContextProvider = userContextProvider;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(AddTeamUserCommand request, CancellationToken cancellationToken)
     {
-        var userId = _userContextProvider.GetUserContext().UserId;
-        var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);
-
-        if (myRole == null || myRole == TeamRole.Member)
-        {
-            throw new BusinessException("只有团队管理员可以添加成员.") { StatusCode = myRole == null ? 404 : 403 };
-        }
-
-        if (request.Role == TeamRole.Admin && myRole != TeamRole.Owner)
-        {
-            throw new BusinessException("只有团队所有者可以授予管理员角色.") { StatusCode = 403 };
-        }
-
-        var targetRole = await _teamService.GetMyRoleAsync(request.TeamId, request.UserId, cancellationToken);
+        var targetRole = await _databaseContext.TeamUsers
+            .Where(x => x.TeamId == request.TeamId && x.UserId == request.UserId)
+            .Select(x => (TeamRole?)x.Role)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (targetRole != null)
         {
@@ -66,12 +52,14 @@ public class AddTeamUserCommandHandler : IRequestHandler<AddTeamUserCommand, Emp
 
         _databaseContext.TeamUsers.Add(new TeamUserEntity
         {
-            TeamId = request.TeamId,
+            TeamId = (int)request.TeamId,
             UserId = request.UserId,
-            Role = request.Role,
+            Role = (int)request.Role,
         });
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        await _teamService.RemoveRoleCacheAsync(request.TeamId, request.UserId, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

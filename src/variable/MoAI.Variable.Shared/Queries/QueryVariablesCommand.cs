@@ -15,9 +15,9 @@ public class QueryVariablesCommand : IRequest<QueryVariablesCommandResponse>, IM
     public long TeamId { get; init; }
 
     /// <summary>
-    /// 按分组名精确筛选，空为不过滤.
+    /// 按变量名称精确筛选，空为不过滤.
     /// </summary>
-    public string? GroupName { get; init; }
+    public string? Name { get; init; }
 
     /// <summary>
     /// 按变量名/描述模糊筛选，空为不过滤.
@@ -28,7 +28,7 @@ public class QueryVariablesCommand : IRequest<QueryVariablesCommandResponse>, IM
     public static void Validate(AbstractValidator<QueryVariablesCommand> validate)
     {
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
-        validate.RuleFor(x => x.GroupName).MaximumLength(50).WithMessage("分组名最长 50 个字符.");
+        validate.RuleFor(x => x.Name).MaximumLength(50).WithMessage("变量名称最长 50 个字符.");
         validate.RuleFor(x => x.Keyword).MaximumLength(100).WithMessage("关键字最长 100 个字符.");
     }
 }

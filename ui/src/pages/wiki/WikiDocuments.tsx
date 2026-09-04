@@ -15,8 +15,8 @@ import {
   type WikiDocumentItem,
 } from '@/api/wiki'
 
-/** 角色：0=Owner 1=Admin 2=Member */
-const ROLE_MEMBER = 2
+/** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
+const ROLE_MEMBER = 0
 
 interface DocumentFormValues {
   title: string

@@ -5,7 +5,8 @@ export interface TeamVariableItem {
   variableId?: string | number | null
   teamId?: string | number | null
   key?: string | null
-  groupName?: string | null
+  /** 变量名称，空串=未填写 */
+  name?: string | null
   isSecret?: boolean | null
   /** 私密变量对成员/列表恒为空 */
   value?: string | null
@@ -20,12 +21,12 @@ export interface VariablesResult {
   items?: TeamVariableItem[] | null
 }
 
-export async function getVariables(teamId: number, filters?: { groupName?: string; keyword?: string }): Promise<VariablesResult> {
+export async function getVariables(teamId: number, filters?: { name?: string; keyword?: string }): Promise<VariablesResult> {
   const client = getApiClient()
   const res = await client.api.variable.list.get({
     queryParameters: {
       teamId: String(teamId),
-      groupName: filters?.groupName || undefined,
+      name: filters?.name || undefined,
       keyword: filters?.keyword || undefined,
     },
   })
@@ -40,7 +41,7 @@ export async function getVariableDetail(variableId: number) {
 export async function createVariable(payload: {
   teamId: number
   key: string
-  groupName?: string
+  name?: string
   isSecret: boolean
   value: string
   description?: string
@@ -49,7 +50,7 @@ export async function createVariable(payload: {
   const res = await client.api.variable.post({
     teamId: String(payload.teamId),
     key: payload.key,
-    groupName: payload.groupName,
+    name: payload.name,
     isSecret: payload.isSecret,
     value: payload.value,
     description: payload.description,
@@ -57,14 +58,15 @@ export async function createVariable(payload: {
   return Number(res?.value ?? 0)
 }
 
-/** value 为 undefined 表示保持不变（私密变量推荐） */
+/** value 为 undefined 表示保持不变（私密变量推荐）；key/name/description 为 undefined 表示不修改 */
 export async function updateVariable(
   variableId: number,
-  payload: { groupName?: string; value?: string; description?: string },
+  payload: { key?: string; name?: string; value?: string; description?: string },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.variable.byId(String(variableId)).put({
-    groupName: payload.groupName ?? null,
+    key: payload.key ?? null,
+    name: payload.name ?? null,
     value: payload.value ?? null,
     description: payload.description ?? null,
   })

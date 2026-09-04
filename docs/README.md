@@ -45,7 +45,7 @@
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
 | [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、解散与所有权转让 |
 | [wiki](./wiki/) | WK | 团队知识库与文档（内容协作 Member 可写） |
-| [variable](./variable/) | VR | 团队变量（普通/私密、分组、${key} 服务端替换；私密值仅管理员） |
+| [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 
 ### 前端（ui/docs/）
 

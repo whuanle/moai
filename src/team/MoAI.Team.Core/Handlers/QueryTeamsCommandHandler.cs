@@ -2,7 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
-using MoAI.Infra.Services;
 using MoAI.Storage.Services;
 using MoAI.Team.Queries;
 using MoAI.Team.Queries.Responses;
@@ -16,28 +15,23 @@ public class QueryTeamsCommandHandler : IRequestHandler<QueryTeamsCommand, Query
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IStorageService _storageService;
-    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryTeamsCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="storageService">存储领域服务.</param>
-    /// <param name="userContextProvider">用户上下文提供者.</param>
-    public QueryTeamsCommandHandler(DatabaseContext databaseContext, IStorageService storageService, IUserContextProvider userContextProvider)
+    public QueryTeamsCommandHandler(DatabaseContext databaseContext, IStorageService storageService)
     {
         _databaseContext = databaseContext;
         _storageService = storageService;
-        _userContextProvider = userContextProvider;
     }
 
     /// <inheritdoc/>
     public async Task<QueryTeamsCommandResponse> Handle(QueryTeamsCommand request, CancellationToken cancellationToken)
     {
-        var userId = _userContextProvider.GetUserContext().UserId;
-
         var teams = await _databaseContext.TeamUsers
-            .Where(x => x.UserId == userId)
+            .Where(x => x.UserId == request.ContextUserId)
             .Join(_databaseContext.Teams, tu => tu.TeamId, t => t.Id, (tu, t) => new { tu.Role, Team = t })
             .Select(x => new
             {
@@ -60,20 +54,36 @@ public class QueryTeamsCommandHandler : IRequestHandler<QueryTeamsCommand, Query
             .Select(g => new { TeamId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.TeamId, x => x.Count, cancellationToken);
 
+        // 查询各团队负责人（Owner）的用户信息
+        var owners = await _databaseContext.TeamUsers
+            .Where(x => teamIds.Contains(x.TeamId) && x.Role == (int)TeamRole.Owner)
+            .Join(_databaseContext.Users, tu => tu.UserId, u => u.Id, (tu, u) => new { tu.TeamId, u.Id, u.UserName, u.NickName, u.AvatarPath })
+            .ToDictionaryAsync(x => x.TeamId, x => x, cancellationToken);
+
         return new QueryTeamsCommandResponse
         {
-            Items = teams.Select(x => new TeamItem
+            Items = teams.Select(x =>
             {
-                TeamId = x.Id,
-                Name = x.Name,
-                Description = x.Description,
-                Avatar = string.IsNullOrWhiteSpace(x.AvatarPath)
-                    ? string.Empty
-                    : _storageService.GetPublicFileUrl(x.AvatarPath).ToString(),
-                IsDisable = x.IsDisable,
-                MyRole = x.MyRole,
-                MemberCount = counts.GetValueOrDefault(x.Id),
-                CreateTime = x.CreateTime
+                owners.TryGetValue(x.Id, out var owner);
+                return new TeamItem
+                {
+                    TeamId = x.Id,
+                    Name = x.Name,
+                    Description = x.Description,
+                    Avatar = string.IsNullOrWhiteSpace(x.AvatarPath)
+                        ? string.Empty
+                        : _storageService.GetPublicFileUrl(x.AvatarPath).ToString(),
+                    IsDisable = x.IsDisable,
+                    MyRole = x.MyRole,
+                    MemberCount = counts.GetValueOrDefault(x.Id),
+                    CreateTime = x.CreateTime,
+                    OwnerUserId = owner?.Id ?? default,
+                    OwnerUserName = owner?.UserName ?? string.Empty,
+                    OwnerNickName = owner?.NickName ?? string.Empty,
+                    OwnerAvatar = string.IsNullOrWhiteSpace(owner?.AvatarPath)
+                        ? string.Empty
+                        : _storageService.GetPublicFileUrl(owner!.AvatarPath).ToString()
+                };
             }).ToList()
         };
     }

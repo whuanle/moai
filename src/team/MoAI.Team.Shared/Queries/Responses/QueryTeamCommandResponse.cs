@@ -36,6 +36,26 @@ public class QueryTeamCommandResponse
     public int MyRole { get; set; }
 
     /// <summary>
+    /// 团队负责人（Owner）的用户 id.
+    /// </summary>
+    public long OwnerUserId { get; set; }
+
+    /// <summary>
+    /// 团队负责人的用户名.
+    /// </summary>
+    public string OwnerUserName { get; set; } = default!;
+
+    /// <summary>
+    /// 团队负责人的昵称.
+    /// </summary>
+    public string OwnerNickName { get; set; } = default!;
+
+    /// <summary>
+    /// 团队负责人的头像地址（公开访问 URL，空串=未设置）.
+    /// </summary>
+    public string OwnerAvatar { get; set; } = default!;
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }

@@ -47,26 +47,26 @@ public class QueryVariablesCommandHandler : IRequestHandler<QueryVariablesComman
         var query = _databaseContext.TeamVariables
             .Where(x => x.TeamId == request.TeamId);
 
-        if (!string.IsNullOrWhiteSpace(request.GroupName))
+        if (!string.IsNullOrWhiteSpace(request.Name))
         {
-            query = query.Where(x => x.GroupName == request.GroupName);
+            query = query.Where(x => x.Name == request.Name);
         }
 
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
             var keyword = request.Keyword.Trim();
-            query = query.Where(x => x.Key.Contains(keyword) || x.Description.Contains(keyword));
+            query = query.Where(x => x.Key.Contains(keyword) || x.Name.Contains(keyword) || x.Description.Contains(keyword));
         }
 
         var items = await query
-            .OrderBy(x => x.GroupName)
+            .OrderBy(x => x.Name)
             .ThenBy(x => x.Key)
             .Select(x => new TeamVariableItem
             {
                 VariableId = x.Id,
                 TeamId = x.TeamId,
                 Key = x.Key,
-                GroupName = x.GroupName,
+                Name = x.Name,
                 IsSecret = x.IsSecret,
                 // 私密变量值对成员恒为 null，仅管理员在详情接口可见
                 Value = x.IsSecret ? null : x.Value,

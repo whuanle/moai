@@ -17,12 +17,12 @@ public partial class TeamUserEntity : IFullAudited
     /// <summary>
     /// 自增主键.
     /// </summary>
-    public long Id { get; set; }
+    public int Id { get; set; }
 
     /// <summary>
     /// 所属团队ID，逻辑关联team.id（仓库约定不建物理外键）.
     /// </summary>
-    public long TeamId { get; set; }
+    public int TeamId { get; set; }
 
     /// <summary>
     /// 成员用户ID，逻辑关联user.id（仓库约定不建物理外键）.
@@ -30,7 +30,7 @@ public partial class TeamUserEntity : IFullAudited
     public long UserId { get; set; }
 
     /// <summary>
-    /// 成员角色：0=Owner(所有者，可解散/转让/管理一切) 1=Admin(可管理成员、创建团队资源) 2=Member(普通成员)，新成员默认2.
+    /// 成员角色.
     /// </summary>
     public int Role { get; set; }
 

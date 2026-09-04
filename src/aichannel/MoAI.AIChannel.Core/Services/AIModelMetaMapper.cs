@@ -38,7 +38,9 @@ public static class AIModelMetaMapper
         entity.CostOutput = meta.CostOutput;
         entity.CostCacheRead = meta.CostCacheRead;
 
-        entity.ModelKind = DeriveModelKind(meta);
+        entity.ModelKind = string.IsNullOrWhiteSpace(meta.ModelKind)
+            ? DeriveModelKind(meta)
+            : meta.ModelKind;
         entity.SupportsVision = meta.SupportsVision
             ?? (meta.InputModalities?.Contains("image", StringComparer.OrdinalIgnoreCase) == true
                 || meta.OutputModalities?.Contains("image", StringComparer.OrdinalIgnoreCase) == true);

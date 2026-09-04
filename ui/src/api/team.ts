@@ -1,11 +1,11 @@
 import { getApiClient } from '@/api/kiota'
 import { uploadImageWithKey } from '@/utils/storage'
 
-/** 与生成客户端 TeamRoleObject 一致（后端枚举按字符串序列化） */
+/** 与生成客户端 TeamRoleObject 一致（后端枚举按字符串序列化）：0=Member 1=Admin 2=Owner */
 const ROLE_STR: Record<number, 'owner' | 'admin' | 'member'> = {
-  0: 'owner',
+  0: 'member',
   1: 'admin',
-  2: 'member',
+  2: 'owner',
 }
 
 export interface TeamItem {
@@ -19,6 +19,11 @@ export interface TeamItem {
   myRole?: number | null
   memberCount?: number | null
   createTime?: string | null
+  /** 团队负责人（Owner） */
+  ownerUserId?: string | number | null
+  ownerUserName?: string | null
+  ownerNickName?: string | null
+  ownerAvatar?: string | null
 }
 
 export interface TeamUserItem {
@@ -28,6 +33,14 @@ export interface TeamUserItem {
   avatar?: string | null
   role?: number | null
   joinTime?: string | null
+}
+
+/** 可邀请的候选用户（与生成客户端 TeamCandidateItem 的字段对齐） */
+export interface TeamCandidateItem {
+  userId?: string | number | null
+  userName?: string | null
+  nickName?: string | null
+  avatar?: string | null
 }
 
 export async function createTeam(payload: { name: string; description?: string }): Promise<number> {
@@ -60,6 +73,14 @@ export async function dissolveTeam(teamId: number): Promise<void> {
 export async function getTeamUsers(teamId: number): Promise<TeamUserItem[]> {
   const client = getApiClient()
   const res = await client.api.team.byId(String(teamId)).users.get()
+  return res?.items ?? []
+}
+
+export async function getTeamCandidates(teamId: number, keyword: string): Promise<TeamCandidateItem[]> {
+  const client = getApiClient()
+  const res = await client.api.team
+    .byId(String(teamId))
+    .candidates.get({ queryParameters: { keyword: keyword || undefined } })
   return res?.items ?? []
 }
 

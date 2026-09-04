@@ -4,7 +4,6 @@ using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Infra.Services;
 using MoAI.Team.Commands;
 using MoAI.Team.Services;
 
@@ -17,37 +16,21 @@ public class DissolveTeamCommandHandler : IRequestHandler<DissolveTeamCommand, E
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
-    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DissolveTeamCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    /// <param name="userContextProvider">用户上下文提供者.</param>
-    public DissolveTeamCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider)
+    public DissolveTeamCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
-        _userContextProvider = userContextProvider;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DissolveTeamCommand request, CancellationToken cancellationToken)
     {
-        var userId = _userContextProvider.GetUserContext().UserId;
-        var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);
-
-        if (myRole == null)
-        {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
-        }
-
-        if (myRole != TeamRole.Owner)
-        {
-            throw new BusinessException("只有团队所有者可以解散团队.") { StatusCode = 403 };
-        }
-
         var team = await _databaseContext.Teams
             .FirstOrDefaultAsync(x => x.Id == request.TeamId, cancellationToken);
 
@@ -64,6 +47,12 @@ public class DissolveTeamCommandHandler : IRequestHandler<DissolveTeamCommand, E
         _databaseContext.TeamUsers.RemoveRange(members);
         _databaseContext.Teams.Remove(team);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 移除全部成员在团队中的角色缓存
+        foreach (var member in members)
+        {
+            await _teamService.RemoveRoleCacheAsync(request.TeamId, member.UserId, cancellationToken);
+        }
 
         return EmptyCommandResponse.Default;
     }

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
 import type { TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
 import {
   DeleteOutlined,
+  SearchOutlined,
   SettingOutlined,
   StopOutlined,
   TeamOutlined,
@@ -11,7 +12,9 @@ import {
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Page, DataTable, feedback } from '@/design-system'
+import { useNavigate } from 'react-router'
+import { Card, DataTable, feedback, Page } from '@/design-system'
+import { neutralColors, spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import {
@@ -20,22 +23,26 @@ import {
   createTeam,
   dissolveTeam,
   getMyTeams,
+  getTeamCandidates,
   getTeamUsers,
   removeTeamUser,
   transferTeamOwner,
   updateTeam,
   updateTeamUserRole,
   uploadTeamAvatar,
+  type TeamCandidateItem,
   type TeamItem,
   type TeamUserItem,
 } from '@/api/team'
 
 const { Text } = Typography
 
-/** 角色：0=Owner 1=Admin 2=Member */
-const ROLE_OWNER = 0
+/** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
+const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
-const ROLE_MEMBER = 2
+const ROLE_MEMBER = 0
+
+type FilterKey = 'all' | 'created' | 'managed'
 
 interface CreateFormValues {
   name: string
@@ -54,6 +61,7 @@ interface SettingsFormValues {
 
 export function Teams() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const currentUserId = useAppStore((state) => state.userInfo?.userId)
   const setMyTeams = useAppStore((state) => state.setMyTeams)
 
@@ -80,6 +88,10 @@ export function Teams() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [savingInfo, setSavingInfo] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [filter, setFilter] = useState<FilterKey>('all')
+  const [searchText, setSearchText] = useState('')
+  const [candidates, setCandidates] = useState<TeamCandidateItem[]>([])
+  const [searching, setSearching] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -95,6 +107,19 @@ export function Teams() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const filteredTeams = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return teams.filter((team) => {
+      if (filter === 'created' && team.myRole !== ROLE_OWNER) return false
+      if (filter === 'managed' && team.myRole !== ROLE_ADMIN) return false
+      if (!keyword) return true
+      return (
+        (team.name ?? '').toLowerCase().includes(keyword) ||
+        (team.description ?? '').toLowerCase().includes(keyword)
+      )
+    })
+  }, [teams, filter, searchText])
 
   const openMembers = async (team: TeamItem) => {
     setCurrent(team)
@@ -152,11 +177,24 @@ export function Teams() {
       await addTeamUser(Number(current.teamId), { userId: values.userId, role: values.role })
       feedback.success(t('team.addSuccess'))
       addForm.resetFields()
+      setCandidates([])
       await reloadMembers()
     } catch {
       // 错误已由全局请求中间件统一提示
     }
   }
+
+  const handleSearchCandidates = useCallback(async (keyword: string) => {
+    if (!current) return
+    setSearching(true)
+    try {
+      setCandidates(await getTeamCandidates(Number(current.teamId), keyword))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setSearching(false)
+    }
+  }, [current])
 
   const handleChangeRole = async (member: TeamUserItem, role: number) => {
     if (!current) return
@@ -328,107 +366,139 @@ export function Teams() {
     [t, isOwnerOfCurrent, current, currentUserId],
   )
 
-  const columns: TableColumnsType<TeamItem> = useMemo(
-    () => [
-      {
-        title: t('team.colName'),
-        key: 'name',
-        render: (_, record) => {
-          const name = record.name || '-'
-          return (
-            <Space>
-              <Avatar size={36} src={record.avatar || undefined} alt={name}>
-                {name.slice(0, 1).toUpperCase()}
-              </Avatar>
-              <div style={{ lineHeight: 1.4, minWidth: 0 }}>
-                <div>{name}</div>
-                {record.description && (
-                  <Text type="secondary" style={{ fontSize: 12 }} ellipsis>
-                    {record.description}
-                  </Text>
-                )}
-              </div>
-            </Space>
-          )
-        },
-      },
-      {
-        title: t('team.colRole'),
-        key: 'myRole',
-        width: 100,
-        render: (_, record) => renderRole(record.myRole),
-      },
-      { title: t('team.colMembers'), dataIndex: 'memberCount', width: 90 },
-      {
-        title: t('team.colCreateTime'),
-        dataIndex: 'createTime',
-        width: 150,
-        render: (v: string | null) => (
-          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-        ),
-      },
-      {
-        title: t('team.colActions'),
-        key: 'actions',
-        width: 128,
-        fixed: 'right' as const,
-        render: (_, record) => (
-          <Space size={0}>
-            <Tooltip title={t('team.members')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<TeamOutlined />}
-                aria-label={t('team.members')}
-                onClick={() => void openMembers(record)}
-              />
-            </Tooltip>
-            {(record.myRole === ROLE_OWNER || record.myRole === ROLE_ADMIN) && (
-              <Tooltip title={t('team.settings')}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<SettingOutlined />}
-                  aria-label={t('team.settings')}
-                  onClick={() => openSettings(record)}
-                />
-              </Tooltip>
-            )}
-            {record.myRole === ROLE_OWNER && (
-              <Popconfirm title={t('team.dissolveConfirm')} onConfirm={() => void handleDissolve(record)}>
-                <Tooltip title={t('team.dissolve')}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('team.dissolve')} />
-                </Tooltip>
-              </Popconfirm>
-            )}
-          </Space>
-        ),
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t],
-  )
-
   return (
     <Page>
-      <DataTable<TeamItem>
-        rowKey="teamId"
-        columns={columns}
-        dataSource={teams}
-        loading={loading}
-        sticky
-        scroll={{ x: 800 }}
-        toolbar={
-          <Space size={12}>
-            <Button type="primary" onClick={() => setCreateOpen(true)}>
-              {t('team.create')}
-            </Button>
-            <Text type="secondary">{t('ds.table.total', { total: teams.length })}</Text>
-          </Space>
-        }
-        onRefresh={() => void load()}
-        refreshLoading={loading}
-      />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: spacing.md,
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Segmented<FilterKey>
+          value={filter}
+          onChange={(value) => setFilter(value)}
+          options={[
+            { label: t('team.filterAll'), value: 'all' },
+            { label: t('team.filterCreated'), value: 'created' },
+            { label: t('team.filterManaged'), value: 'managed' },
+          ]}
+        />
+        <Space size={spacing.sm}>
+          <Input
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            allowClear
+            prefix={<SearchOutlined style={{ color: neutralColors.textTertiary }} />}
+            placeholder={t('team.searchPlaceholder')}
+            style={{ width: 240 }}
+          />
+          <Button type="primary" icon={<TeamOutlined />} onClick={() => setCreateOpen(true)}>
+            {t('team.create')}
+          </Button>
+        </Space>
+      </div>
+      {loading ? null : filteredTeams.length === 0 ? (
+        <Empty description={t('team.empty')} />
+      ) : (
+        <Row gutter={[spacing.md, spacing.md]}>
+          {filteredTeams.map((team) => {
+            const name = team.name || '-'
+            const ownerName = team.ownerNickName || team.ownerUserName || '-'
+            return (
+              <Col xs={24} sm={12} md={8} lg={6} xxl={4} key={String(team.teamId)}>
+                <Card style={{ height: '100%', cursor: 'pointer' }} styles={{ body: { padding: spacing.md } }}>
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}
+                    onClick={() => navigate(`/team/${team.teamId}`)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+                        <Avatar size={44} src={team.avatar || undefined} alt={name}>
+                          {name.slice(0, 1).toUpperCase()}
+                        </Avatar>
+                        <div style={{ minWidth: 0, alignSelf: 'center' }}>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 15,
+                              lineHeight: 1.4,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {name}
+                          </div>
+                          <div style={{ marginTop: 2 }}>{renderRole(team.myRole)}</div>
+                        </div>
+                      </div>
+                      <Space size={0} align="center" style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                        <Tooltip title={t('team.members')}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<TeamOutlined />}
+                            aria-label={t('team.members')}
+                            onClick={() => void openMembers(team)}
+                          />
+                        </Tooltip>
+                        {(team.myRole === ROLE_OWNER || team.myRole === ROLE_ADMIN) && (
+                          <Tooltip title={t('team.settings')}>
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<SettingOutlined />}
+                              aria-label={t('team.settings')}
+                              onClick={() => openSettings(team)}
+                            />
+                          </Tooltip>
+                        )}
+                        {team.myRole === ROLE_OWNER && (
+                          <Popconfirm title={t('team.dissolveConfirm')} onConfirm={() => void handleDissolve(team)}>
+                            <Tooltip title={t('team.dissolve')}>
+                              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('team.dissolve')} />
+                            </Tooltip>
+                          </Popconfirm>
+                        )}
+                      </Space>
+                    </div>
+                    <Typography.Paragraph
+                      type="secondary"
+                      style={{ fontSize: 13, marginBottom: 0, minHeight: 38 }}
+                      ellipsis={{ rows: 2 }}
+                    >
+                      {team.description || '-'}
+                    </Typography.Paragraph>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs }}>
+                      <span style={{ fontSize: 12, color: neutralColors.textTertiary }}>
+                        {t('team.owner')}: {ownerName}
+                      </span>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: spacing.md,
+                          color: neutralColors.textTertiary,
+                          fontSize: 12,
+                          marginTop: 'auto',
+                          borderTop: `1px solid ${neutralColors.border}`,
+                          paddingTop: spacing.sm,
+                        }}
+                      >
+                        <span>{t('team.colMembers')}: {team.memberCount ?? 0}</span>
+                        <span>{t('team.colCreateTime')}: {formatDateTime(team.createTime)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            )
+          })}
+        </Row>
+      )}
       <Modal
         open={createOpen}
         title={t('team.createTitle')}
@@ -466,8 +536,21 @@ export function Teams() {
       >
         {isOwnerOfCurrent && (
           <Form form={addForm} layout="inline" style={{ marginBottom: 16 }} initialValues={{ role: ROLE_MEMBER }}>
-            <Form.Item name="userId" rules={[{ required: true, message: t('team.userIdPlaceholder') }]}>
-              <InputNumber placeholder={t('team.userIdPlaceholder')} min={1} style={{ width: 160 }} />
+            <Form.Item name="userId" rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}>
+              <Select
+                showSearch
+                placeholder={t('team.addMemberPlaceholder')}
+                style={{ width: 220 }}
+                filterOption={false}
+                onSearch={(v) => void handleSearchCandidates(v)}
+                onFocus={() => void handleSearchCandidates('')}
+                notFoundContent={searching ? null : t('team.addMemberNoResult')}
+                loading={searching}
+                options={candidates.map((c) => ({
+                  value: Number(c.userId),
+                  label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
+                }))}
+              />
             </Form.Item>
             <Form.Item name="role">
               <Select

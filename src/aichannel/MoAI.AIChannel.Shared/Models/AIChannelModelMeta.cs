@@ -11,6 +11,11 @@ public class AIChannelModelMeta
     public string ModelId { get; set; } = default!;
 
     /// <summary>
+    /// 模型类型（conversation/embedding/image-generation/transcription/video-generation），为空时由服务端自动推导.
+    /// </summary>
+    public string? ModelKind { get; set; }
+
+    /// <summary>
     /// 展示名称，例如 gpt-4o.
     /// </summary>
     public string Name { get; set; } = default!;

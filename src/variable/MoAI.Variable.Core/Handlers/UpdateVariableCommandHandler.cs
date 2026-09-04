@@ -60,9 +60,23 @@ public class UpdateVariableCommandHandler : IRequestHandler<UpdateVariableComman
             throw new BusinessException("只有团队管理员可以管理变量.") { StatusCode = 403 };
         }
 
-        if (request.GroupName != null)
+        // 更新变量名 key：确保团队内唯一（排除自身），保持变量名规则由 Validate 校验
+        if (request.Key != null && !string.Equals(variable.Key, request.Key, StringComparison.Ordinal))
         {
-            variable.GroupName = request.GroupName;
+            var keyExist = await _databaseContext.TeamVariables
+                .AnyAsync(x => x.TeamId == variable.TeamId && x.Key == request.Key, cancellationToken);
+
+            if (keyExist)
+            {
+                throw new BusinessException("变量名已存在，请更换后重试.") { StatusCode = 409 };
+            }
+
+            variable.Key = request.Key;
+        }
+
+        if (request.Name != null)
+        {
+            variable.Name = request.Name;
         }
 
         if (request.Description != null)

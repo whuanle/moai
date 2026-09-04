@@ -18,30 +18,31 @@ import {
 
 const { Text } = Typography
 
-/** 角色：0=Owner 1=Admin 2=Member */
-const ROLE_MEMBER = 2
+/** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
+const ROLE_MEMBER = 0
 
 interface VariableFormValues {
   key?: string
-  groupName?: string
+  name?: string
   isSecret?: boolean
   value?: string
   description?: string
 }
 
 interface VariableFilters extends Record<string, unknown> {
-  groupName?: string
+  name?: string
   keyword?: string
 }
 
-export function Variables() {
+export function Variables({ teamId }: { teamId?: number }) {
   const { t } = useTranslation()
-  const currentTeamId = useAppStore((state) => state.currentTeamId)
+  const storeTeamId = useAppStore((state) => state.currentTeamId)
+  const currentTeamId = teamId ?? (storeTeamId ? Number(storeTeamId) : undefined)
 
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<TeamVariableItem[]>([])
   const [myRole, setMyRole] = useState<number | null>(null)
-  const [groupName, setGroupName] = useState<string | undefined>(undefined)
+  const [name, setName] = useState<string | undefined>(undefined)
   const [keyword, setKeyword] = useState<string | undefined>(undefined)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<TeamVariableItem | null>(null)
@@ -59,7 +60,7 @@ export function Variables() {
     }
     setLoading(true)
     try {
-      const res = await getVariables(Number(currentTeamId), { groupName, keyword })
+      const res = await getVariables(Number(currentTeamId), { name, keyword })
       setItems(res.items ?? [])
       setMyRole(res.myRole ?? null)
     } catch {
@@ -67,15 +68,15 @@ export function Variables() {
     } finally {
       setLoading(false)
     }
-  }, [currentTeamId, groupName, keyword])
+  }, [currentTeamId, name, keyword])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const groupOptions = useMemo(() => {
-    const groups = Array.from(new Set(items.map(i => i.groupName).filter((g): g is string => !!g)))
-    return groups.map(g => ({ value: g, label: g }))
+  const nameOptions = useMemo(() => {
+    const names = Array.from(new Set(items.map(i => i.name).filter((n): n is string => !!n)))
+    return names.map(n => ({ value: n, label: n }))
   }, [items])
 
   const openCreate = () => {
@@ -86,11 +87,12 @@ export function Variables() {
 
   const openEdit = async (record: TeamVariableItem) => {
     try {
-      // 私密变量的值仅详情接口（管理员）可见，但不回填编辑框（留空 = 保持不变）
+      // 私密变量的值永不回传：不向编辑框回填（留空 = 保持不变）；普通变量回填当前值
       const detail = await getVariableDetail(Number(record.variableId))
       setEditing(record)
       form.setFieldsValue({
-        groupName: detail?.groupName ?? '',
+        key: record.key ?? undefined,
+        name: detail?.name ?? '',
         isSecret: record.isSecret ?? false,
         value: record.isSecret ? undefined : (detail?.value ?? undefined),
         description: detail?.description ?? '',
@@ -106,10 +108,11 @@ export function Variables() {
     setSaving(true)
     try {
       if (editing) {
-        // 私密变量编辑时留空 = 保持不变
+        // 私密变量编辑时留空 = 保持不变；提供新值则覆盖
         const keepSecretValue = editing.isSecret && !values.value
         await updateVariable(Number(editing.variableId), {
-          groupName: values.groupName,
+          key: values.key,
+          name: values.name,
           value: keepSecretValue ? undefined : values.value,
           description: values.description,
         })
@@ -117,7 +120,7 @@ export function Variables() {
         await createVariable({
           teamId: Number(currentTeamId),
           key: values.key!,
-          groupName: values.groupName,
+          name: values.name,
           isSecret: values.isSecret === true,
           value: values.value!,
           description: values.description,
@@ -146,14 +149,14 @@ export function Variables() {
   /** 应用筛选（搜索与重置共用：重置后表单已清空，读到的即空值） */
   const applyFilters = () => {
     const values = filterForm.getFieldsValue() as VariableFilters
-    setGroupName(typeof values.groupName === 'string' && values.groupName ? values.groupName : undefined)
+    setName(typeof values.name === 'string' && values.name ? values.name : undefined)
     setKeyword(typeof values.keyword === 'string' && values.keyword.trim() ? values.keyword.trim() : undefined)
   }
 
   const columns: TableColumnsType<TeamVariableItem> = useMemo(
     () => [
       { title: t('variable.colKey'), dataIndex: 'key', width: 160, render: (v: string) => <Text code>{v}</Text> },
-      { title: t('variable.colGroup'), dataIndex: 'groupName', width: 110, render: (v: string | null) => v || '-' },
+      { title: t('variable.colName'), dataIndex: 'name', width: 110, render: (v: string | null) => v || '-' },
       {
         title: t('variable.colType'),
         dataIndex: 'isSecret',
@@ -229,8 +232,8 @@ export function Variables() {
         onReset={applyFilters}
         loading={loading}
       >
-        <Form.Item name="groupName">
-          <Select allowClear placeholder={t('variable.groupAll')} style={{ width: 140 }} options={groupOptions} />
+        <Form.Item name="name">
+          <Select allowClear placeholder={t('variable.nameAll')} style={{ width: 140 }} options={nameOptions} />
         </Form.Item>
         <Form.Item name="keyword">
           <Input
@@ -274,24 +277,18 @@ export function Variables() {
         maskClosable={false}
       >
         <Form form={form} layout="vertical" initialValues={{ isSecret: false }}>
-          {editing ? (
-            <Form.Item label={t('variable.key')} required>
-              <Input value={editing.key ?? undefined} disabled />
-            </Form.Item>
-          ) : (
-            <Form.Item
-              name="key"
-              label={t('variable.key')}
-              rules={[
-                { required: true, message: t('variable.keyPlaceholder') },
-                { pattern: /^[A-Za-z][A-Za-z0-9_]{0,99}$/, message: t('variable.keyRule') },
-              ]}
-            >
-              <Input placeholder={t('variable.keyPlaceholder')} maxLength={100} />
-            </Form.Item>
-          )}
-          <Form.Item name="groupName" label={t('variable.groupName')} rules={[{ max: 50 }]}>
-            <Input placeholder={t('variable.groupNamePlaceholder')} maxLength={50} />
+          <Form.Item
+            name="key"
+            label={t('variable.key')}
+            rules={[
+              { required: true, message: t('variable.keyPlaceholder') },
+              { pattern: /^[A-Za-z][A-Za-z0-9_]{0,99}$/, message: t('variable.keyRule') },
+            ]}
+          >
+            <Input placeholder={t('variable.keyPlaceholder')} maxLength={100} disabled={!editing} />
+          </Form.Item>
+          <Form.Item name="name" label={t('variable.name')} rules={[{ max: 50 }]}>
+            <Input placeholder={t('variable.namePlaceholder')} maxLength={50} />
           </Form.Item>
           <Form.Item name="isSecret" label={t('variable.type')} valuePropName="checked">
             <Switch checkedChildren={t('variable.secret')} unCheckedChildren={t('variable.plain')} disabled={!!editing} />

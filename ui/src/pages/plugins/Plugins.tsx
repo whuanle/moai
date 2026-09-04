@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Select, Space, Tag, Tabs } from 'antd'
+import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
+import { EditOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useSearchParams } from 'react-router'
 import { classifyApi, type PluginClassify } from '@/api/classify'
@@ -160,13 +160,25 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
       width: 120,
       fixed: 'right',
       render: (_: unknown, record: StaticPluginManageItem) => (
-        <Space>
-          <Button type="text" size="small" icon={<PlayCircleOutlined />} onClick={() => setDrawerTarget(record)}>
-            {t('plugins.run')}
-          </Button>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t('plugins.editPlugin')}
-          </Button>
+        <Space size={0}>
+          <Tooltip title={t('plugins.run')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<PlayCircleOutlined />}
+              aria-label={t('plugins.run')}
+              onClick={() => setDrawerTarget(record)}
+            />
+          </Tooltip>
+          <Tooltip title={t('plugins.editPlugin')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={t('plugins.editPlugin')}
+              onClick={() => openEdit(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },

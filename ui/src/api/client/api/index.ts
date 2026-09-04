@@ -8,6 +8,8 @@ import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/
 // @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
 // @ts-ignore
+import { ClassifyRequestBuilderNavigationMetadata, ClassifyRequestBuilderRequestsMetadata, type ClassifyRequestBuilder } from './classify/index.js';
+// @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
 import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
@@ -42,6 +44,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The auth property
      */
     get auth(): AuthRequestBuilder;
+    /**
+     * The classify property
+     */
+    get classify(): ClassifyRequestBuilder;
     /**
      * The common property
      */
@@ -91,6 +97,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     auth: {
         navigationMetadata: AuthRequestBuilderNavigationMetadata,
+    },
+    classify: {
+        requestsMetadata: ClassifyRequestBuilderRequestsMetadata,
+        navigationMetadata: ClassifyRequestBuilderNavigationMetadata,
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,

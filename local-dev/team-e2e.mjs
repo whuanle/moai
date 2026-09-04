@@ -1,4 +1,4 @@
-// 团队模块 E2E（真实 HTTP，依赖 mock 无需外部服务；后端 127.0.0.1:5210）
+﻿// 团队模块 E2E（真实 HTTP，依赖 mock 无需外部服务；后端 127.0.0.1:5210）
 // 场景编号与 docs/team/bdd.md 对应（@TM-Sn）
 import crypto from 'node:crypto'
 
@@ -62,28 +62,28 @@ async function main() {
   // TM-04 校验：空名 400 / 超长 400 / 非法角色 400
   check('TM-04a 空名称 400', (await api('POST', '/api/team', { token: owner.token, body: { name: '' } })).status === 400)
   check('TM-04b 超长名称 400', (await api('POST', '/api/team', { token: owner.token, body: { name: 'x'.repeat(51) } })).status === 400)
-  check('TM-04c 添加成员非法角色 400', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 0 } })).status === 400)
+  check('TM-04c 添加成员非法角色 400', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 3 } })).status === 400)
 
   // TM-05 我的列表含新团队 myRole=Owner memberCount=1
   {
     const r = await api('GET', '/api/team/list', { token: owner.token })
     const t = (r.json?.items ?? []).find(i => Number(i.teamId) === TID)
-    check('TM-05 列表含新团队 Owner/1人', r.status === 200 && !!t && t.myRole === 0 && t.memberCount === 1, JSON.stringify(t))
+    check('TM-05 列表含新团队 Owner/1人', r.status === 200 && !!t && t.myRole === 2 && t.memberCount === 1, JSON.stringify(t))
   }
 
   // TM-06 详情与成员可见性
-  check('TM-06a Owner 查详情 200 myRole=0', (await api('GET', `/api/team/${TID}`, { token: owner.token })).json?.myRole === 0)
+  check('TM-06a Owner 查详情 200 myRole=0', (await api('GET', `/api/team/${TID}`, { token: owner.token })).json?.myRole === 2)
   check('TM-06b 非成员查详情 404', (await api('GET', `/api/team/${TID}`, { token: alice.token })).status === 404)
   check('TM-06c 非成员查成员列表 404', (await api('GET', `/api/team/${TID}/users`, { token: alice.token })).status === 404)
 
   // TM-07 成员管理权限
-  check('TM-07a 成员(owner)添加成员 OK（Owner 加 Member）', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 2 } })).status === 200)
-  check('TM-07b 重复添加 409', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 2 } })).status === 409)
-  check('TM-07c 添加不存在用户 404', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: 999999, role: 2 } })).status === 404)
+  check('TM-07a 成员(owner)添加成员 OK（Owner 加 Member）', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 0 } })).status === 200)
+  check('TM-07b 重复添加 409', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 0 } })).status === 409)
+  check('TM-07c 添加不存在用户 404', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: 999999, role: 0 } })).status === 404)
   check('TM-07d Admin 授 Admin 需 Owner：当前 Owner 操作 → 200', (await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: bob.userId, role: 1 } })).status === 200)
   // bob(Admin) 尝试授 Admin 给 carol → 403
   check('TM-07e Admin 授予 Admin 403', (await api('POST', `/api/team/${TID}/users`, { token: bob.token, body: { userId: carol.userId, role: 1 } })).status === 403)
-  check('TM-07f Admin 添加 Member 200', (await api('POST', `/api/team/${TID}/users`, { token: bob.token, body: { userId: carol.userId, role: 2 } })).status === 200)
+  check('TM-07f Admin 添加 Member 200', (await api('POST', `/api/team/${TID}/users`, { token: bob.token, body: { userId: carol.userId, role: 0 } })).status === 200)
 
   // TM-08 角色管理（仅 Owner）
   check('TM-08a Admin 改角色 403', (await api('PUT', `/api/team/${TID}/user/${carol.userId}/role`, { token: bob.token, body: { role: 1 } })).status === 403)
@@ -95,7 +95,7 @@ async function main() {
   {
     const r = await api('GET', `/api/team/${TID}/users`, { token: alice.token })
     const roles = Object.fromEntries((r.json?.items ?? []).map(i => [i.userId, i.role]))
-    check('TM-09 成员列表 4 人角色正确', r.status === 200 && (r.json.items ?? []).length === 4 && roles[owner.userId] === 0 && roles[bob.userId] === 1 && roles[carol.userId] === 1 && roles[alice.userId] === 2, JSON.stringify(roles))
+    check('TM-09 成员列表 4 人角色正确', r.status === 200 && (r.json.items ?? []).length === 4 && roles[owner.userId] === 2 && roles[bob.userId] === 1 && roles[carol.userId] === 1 && roles[alice.userId] === 0, JSON.stringify(roles))
   }
 
   // TM-10 移除矩阵
@@ -123,14 +123,14 @@ async function main() {
     const t = await api('POST', '/api/team', { token: owner.token, body: { name: 'own-team-' + TS } })
     const TID2 = Number(t.json.value)
     await api('POST', `/api/team/${TID2}/users`, { token: owner.token, body: { userId: alice.userId, role: 1 } })
-    await api('POST', `/api/team/${TID2}/users`, { token: owner.token, body: { userId: bob.userId, role: 2 } })
+    await api('POST', `/api/team/${TID2}/users`, { token: owner.token, body: { userId: bob.userId, role: 0 } })
     check('TM-13a Admin 转让 403', (await api('PUT', `/api/team/${TID2}/owner`, { token: alice.token, body: { userId: bob.userId } })).status === 403)
     check('TM-13b 转让给非成员 404', (await api('PUT', `/api/team/${TID2}/owner`, { token: owner.token, body: { userId: carol.userId } })).status === 404)
     check('TM-13c 转让给自己 400', (await api('PUT', `/api/team/${TID2}/owner`, { token: owner.token, body: { userId: owner.userId } })).status === 400)
     check('TM-13d Owner 转让给 Admin 200', (await api('PUT', `/api/team/${TID2}/owner`, { token: owner.token, body: { userId: alice.userId } })).status === 200)
     const members = (await api('GET', `/api/team/${TID2}/users`, { token: alice.token })).json.items
     const roles = Object.fromEntries(members.map(i => [Number(i.userId), i.role]))
-    check('TM-13e 角色互换：新 Owner=0 原 Owner→Admin', roles[alice.userId] === 0 && roles[owner.userId] === 1, JSON.stringify(roles))
+    check('TM-13e 角色互换：新 Owner=2 原 Owner→Admin', roles[alice.userId] === 2 && roles[owner.userId] === 1, JSON.stringify(roles))
     check('TM-13f 新 Owner 可解散，旧 Owner 403', (await api('DELETE', `/api/team/${TID2}`, { token: owner.token })).status === 403 && (await api('DELETE', `/api/team/${TID2}`, { token: alice.token })).status === 200)
   }
 
@@ -159,3 +159,4 @@ async function main() {
 }
 
 main().catch(e => { console.error('脚本异常:', e); process.exit(2) })
+

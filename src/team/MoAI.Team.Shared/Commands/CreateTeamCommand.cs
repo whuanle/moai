@@ -7,8 +7,14 @@ namespace MoAI.Team.Commands;
 /// <summary>
 /// 创建团队，创建者自动成为 Owner.
 /// </summary>
-public class CreateTeamCommand : IRequest<SimpleLong>, IModelValidator<CreateTeamCommand>
+public class CreateTeamCommand : IRequest<SimpleLong>, IUserIdContext, IModelValidator<CreateTeamCommand>
 {
+    /// <inheritdoc/>
+    public long ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 团队名称.
     /// </summary>

@@ -33,7 +33,6 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
         entity.HasIndex(e => e.UserId, "idx_team_user_user_id");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
             .HasComment("自增主键")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
@@ -47,8 +46,7 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Role)
-            .HasDefaultValue(2)
-            .HasComment("成员角色：0=Owner(所有者，可解散/转让/管理一切) 1=Admin(可管理成员、创建团队资源) 2=Member(普通成员)，新成员默认2")
+            .HasComment("成员角色")
             .HasColumnName("role");
         entity.Property(e => e.TeamId)
             .HasComment("所属团队ID，逻辑关联team.id（仓库约定不建物理外键）")

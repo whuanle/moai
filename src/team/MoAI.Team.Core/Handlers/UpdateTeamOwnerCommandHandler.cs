@@ -4,7 +4,6 @@ using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Infra.Services;
 using MoAI.Team.Commands;
 using MoAI.Team.Services;
 
@@ -17,38 +16,22 @@ public class UpdateTeamOwnerCommandHandler : IRequestHandler<UpdateTeamOwnerComm
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
-    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateTeamOwnerCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    /// <param name="userContextProvider">用户上下文提供者.</param>
-    public UpdateTeamOwnerCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider)
+    public UpdateTeamOwnerCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
-        _userContextProvider = userContextProvider;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateTeamOwnerCommand request, CancellationToken cancellationToken)
     {
-        var userId = _userContextProvider.GetUserContext().UserId;
-        var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);
-
-        if (myRole == null)
-        {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
-        }
-
-        if (myRole != TeamRole.Owner)
-        {
-            throw new BusinessException("只有团队所有者可以转让所有权.") { StatusCode = 403 };
-        }
-
-        if (request.UserId == userId)
+        if (request.UserId == request.ContextUserId)
         {
             throw new BusinessException("不能转让给自己.") { StatusCode = 400 };
         }
@@ -63,12 +46,15 @@ public class UpdateTeamOwnerCommandHandler : IRequestHandler<UpdateTeamOwnerComm
 
         // 原所有者降为 Admin，目标成员升为 Owner
         var currentOwner = await _databaseContext.TeamUsers
-            .FirstAsync(x => x.TeamId == request.TeamId && x.UserId == userId, cancellationToken);
+            .FirstAsync(x => x.TeamId == request.TeamId && x.UserId == request.ContextUserId, cancellationToken);
 
-        currentOwner.Role = TeamRole.Admin;
-        target.Role = TeamRole.Owner;
+        currentOwner.Role = (int)TeamRole.Admin;
+        target.Role = (int)TeamRole.Owner;
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        await _teamService.RemoveRoleCacheAsync(request.TeamId, request.ContextUserId, cancellationToken);
+        await _teamService.RemoveRoleCacheAsync(request.TeamId, request.UserId, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }
