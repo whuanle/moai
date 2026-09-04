@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Space, Typography } from 'antd'
+import {
+  BookOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons'
+import { Avatar, Button, Form, Input, Modal, Popconfirm, Space, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
@@ -96,34 +102,70 @@ export function Wiki() {
     }
   }
 
+  /** 图标 + 名称合并展示 */
+  const renderName = (record: WikiItem) => {
+    const name = record.name || '-'
+    return (
+      <Space>
+        <Avatar shape="square" size={36} icon={<BookOutlined />} />
+        <div style={{ lineHeight: 1.4, minWidth: 0 }}>
+          <div>{name}</div>
+          {record.description && (
+            <Text type="secondary" style={{ fontSize: 12 }} ellipsis>
+              {record.description}
+            </Text>
+          )}
+        </div>
+      </Space>
+    )
+  }
+
   const columns: TableColumnsType<WikiItem> = useMemo(
     () => [
-      { title: t('wiki.colName'), dataIndex: 'name', width: 200 },
-      { title: t('wiki.colDesc'), dataIndex: 'description', ellipsis: true },
+      {
+        title: t('wiki.colName'),
+        key: 'name',
+        render: (_, record) => renderName(record),
+      },
       {
         title: t('wiki.colCreateTime'),
         dataIndex: 'createTime',
-        width: 170,
-        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+        width: 150,
+        render: (v: string | null) => (
+          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+        ),
       },
       ...(isAdminPlus
         ? [
             {
               title: t('wiki.colActions'),
               key: 'actions',
-              width: 140,
+              width: 128,
+              fixed: 'right' as const,
               render: (_: unknown, record: WikiItem) => (
-                <Space size={0} wrap>
-                  <Button type="link" size="small" onClick={() => navigate(`/wiki/${record.wikiId}`)}>
-                    {t('wiki.documents')}
-                  </Button>
-                  <Button type="link" size="small" onClick={() => openEdit(record)}>
-                    {t('wiki.edit')}
-                  </Button>
+                <Space size={0}>
+                  <Tooltip title={t('wiki.documents')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<FileTextOutlined />}
+                      aria-label={t('wiki.documents')}
+                      onClick={() => navigate(`/wiki/${record.wikiId}`)}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('wiki.edit')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      aria-label={t('wiki.edit')}
+                      onClick={() => openEdit(record)}
+                    />
+                  </Tooltip>
                   <Popconfirm title={t('wiki.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                    <Button type="link" size="small" danger>
-                      {t('wiki.delete')}
-                    </Button>
+                    <Tooltip title={t('wiki.delete')}>
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.delete')} />
+                    </Tooltip>
                   </Popconfirm>
                 </Space>
               ),
@@ -137,7 +179,7 @@ export function Wiki() {
 
   if (!currentTeamId) {
     return (
-      <Page title={t('wiki.title')}>
+      <Page>
         <div style={{ padding: '48px 0', textAlign: 'center' }}>
           <Text type="secondary">
             {t('wiki.selectTeamFirst')}{' '}
@@ -149,21 +191,24 @@ export function Wiki() {
   }
 
   return (
-    <Page
-      title={t('wiki.title')}
-      extra={
-        isAdminPlus ? (
-          <Button type="primary" onClick={openCreate}>
-            {t('wiki.create')}
-          </Button>
-        ) : undefined
-      }
-    >
+    <Page>
       <DataTable<WikiItem>
         rowKey="wikiId"
         columns={columns}
         dataSource={wikis}
         loading={loading}
+        sticky
+        scroll={{ x: 700 }}
+        toolbar={
+          <Space size={12}>
+            {isAdminPlus && (
+              <Button type="primary" onClick={openCreate}>
+                {t('wiki.create')}
+              </Button>
+            )}
+            <Text type="secondary">{t('ds.table.total', { total: wikis.length })}</Text>
+          </Space>
+        }
         onRefresh={() => void load()}
         refreshLoading={loading}
       />
