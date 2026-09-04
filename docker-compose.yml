@@ -92,6 +92,12 @@ services:
       - OTLP_TRACE=${OTLP_TRACE:-}
       - OTLP_METRICS=${OTLP_METRICS:-}
       - OTLP_PROTOCOL=${OTLP_PROTOCOL:-0}
+      # S3 兼容对象存储（必配：存储实现为纯 S3，不配置则业务接口 500）
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - S3_FORCE_PATH_STYLE=${S3_FORCE_PATH_STYLE:-true}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
+      - S3_ACCESS_KEY_SECRET=${S3_ACCESS_KEY_SECRET:-}
     volumes:
       - moai_files:/app/files
     ports:

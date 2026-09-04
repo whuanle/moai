@@ -18,7 +18,11 @@ cat > /app/configs/system.json << EOF
     },
     "RabbitMQ": "amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@${RABBITMQ_HOST:-rabbitmq}:${RABBITMQ_PORT:-5672}",
     "Storage": {
-      "LocalPath": "/app/files"
+      "Endpoint": "${S3_ENDPOINT:-}",
+      "ForcePathStyle": ${S3_FORCE_PATH_STYLE:-true},
+      "Bucket": "${S3_BUCKET:-}",
+      "AccessKeyId": "${S3_ACCESS_KEY_ID:-}",
+      "AccessKeySecret": "${S3_ACCESS_KEY_SECRET:-}"
     },
     "OTLP": {
       "Trace": "${OTLP_TRACE:-}",

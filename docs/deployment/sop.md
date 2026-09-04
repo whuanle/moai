@@ -18,13 +18,13 @@ cd ui && npm run dev
 
 种子账号：admin / abcd123456（root）。验收场景：[@DEP-S12](./bdd.md#dep-s12)。
 
-## 2. Docker Compose 部署（D1/D2 已修复，整体构建验收待执行）
+## 2. Docker Compose 部署（✅ 2026-09-03 容器实测通过）
 
-原阻断缺陷已于 2026-09-02 修复：**D1**（Dockerfile 路径 `ui/moai/`→`ui/`、镜像升 net10、`MAI_FILE` 环境变量修正，[@DEP-S1](./bdd.md#dep-s1)）；**D2**（OTLP 空值容错 `ParseOtlpEndpoint`，[@DEP-S4](./bdd.md#dep-s4)）。可选：`.env` 给 `OTLP_TRACE/OTLP_METRICS` 配可达端点开启上报（勿照抄 `.env.example` 的 127.0.0.1:4012，见 D4，[@DEP-S6](./bdd.md#dep-s6)；不配则自动跳过导出）。
+D1（路径/镜像/MAI_FILE）、D2（OTLP 空值容错）、D3（entrypoint 生成 S3 段）均已修复并实测，见 [TDD 修复记录](./tdd.md)。`.env` 需配置：`MOAI_SERVER_URL/MOAI_WEBUI_URL`（实际访问地址）、`MOAI_AES_KEY`（随机串）、**`S3_*` 五项（必配，存储为纯 S3 实现，不配则上传接口 500）**；OTLP 可选（勿照抄 `.env.example` 的 127.0.0.1:4012，见 D4，[@DEP-S6](./bdd.md#dep-s6)）。
 
 ```bash
-cp .env.example .env && vim .env    # MOAI_SERVER_URL/MOAI_WEBUI_URL 改实际访问地址，AES 换随机串
-docker compose up -d                # 首次拉镜像或本地 build
+cp .env.example .env && vim .env
+docker compose up -d
 docker compose logs -f moai         # 确认启动无异常
 curl http://localhost:8080/api/common/serverinfo   # 冒烟
 ```
@@ -51,7 +51,10 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 |---|---|---|
 | docker build 在 COPY ui/moai 失败 | 历史缺陷 D1（**已修复**，现路径为 ui/） | 若复现说明镜像基线过旧，核对 Dockerfile（[@DEP-S1](./bdd.md#dep-s1)） |
 | moai 容器反复重启，日志含 Uri/FormatException | 历史缺陷 D2（**已修复**，空值自动跳过） | 检查是否运行旧镜像；新代码 OTLP 未配置时不再抛异常（[@DEP-S4](./bdd.md#dep-s4)） |
-| 容器上传文件不在对象存储 | 缺陷 D3：容器形态 LocalPath | 按环境选型，见 SDD 已知缺陷表 |
+| 容器上传文件不在对象存储 | 历史缺陷 D3（**已修复**：entrypoint 生成 S3 段） | `.env` 配 S3_* 五项；预签名 host 须同时被应用与客户端可达（见 sdd 缺陷表） |
+| 容器启动后自行退出，日志 `ACCESS_REFUSED`（RabbitMQ PLAIN） | MQ 凭据与 broker 不符（默认 guest/guest 常被拒） | 传 `RABBITMQ_USER/RABBITMQ_PASSWORD`（Maomi.MQ 消费者失败会 StopHost） |
+| 启动日志 `Cannot load library libgssapi_krb5.so.2` | 缺陷 D6：aspnet:10.0 无 Kerberos 库 | 实测不影响功能，忽略；要消除需 final 加装 libgssapi-krb5-2 |
+| Apple Silicon `docker build` 报 SIGSEGV/MSB4184（amd64） | QEMU 仿真伪故障 | 用原生 arm64 构建（默认平台）；见 sdd「Apple Silicon 注意事项」 |
 | 后端起在 5000 报地址占用 | 回退加载了过时 configs/system.json（macOS 5000 被 AirPlay 占用） | 显式设置 MAI_FILE（[@DEP-S11](./bdd.md#dep-s11)） |
 | 前端 4000 请求 401/跨域 | VITE_ServerUrl 与后端端口不一致 | 检查 ui/.env.local |
 | 前端代理 /openapi 拉不到 | vite.config.ts 代理 target 写死 5000（遗留） | syncapi 时显式传 5210 地址 |
@@ -67,6 +70,7 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 
 ## 7. 历史验收存档（L3 证据，保留原始记录）
 
+- **2026-09-03（@DEP-S2 容器全链路验收 ✅）**：`docker build -t moai:dep-s2-verify .`（arm64 原生）成功；`docker run` 起容器（S3_*/RABBITMQ_* 指向宿主基础设施，OTLP 留空）→ `serverinfo` 200、SPA `/` 与 `/login` 均 200；宿主跑 [user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs) `http://127.0.0.1:8081` **34/34**；存储审计进容器跑 `docker run --rm -v ./local-dev:/audit -w /audit node:22-slim node audit-storage.mjs http://host.docker.internal:8081` **7/7**（预签名视角一致，直传 MinIO→完成→匿名 /static→秒传→校验→404）。过程中实证：OTLP 留空不崩（D2）；`ACCESS_REFUSED` 未传 MQ 凭据会 StopHost（排障表已录）；SigV4 预签名 URL 重映射 host 会 403（审计脚本注释已录）。
 - **2026-09-02（轮 21，as-built 回溯）**：物料（Dockerfile/entrypoint/compose/.env.example/init-pgvector.sql）随仓库确认；`ls ui/moai` 证实 D1（目录不存在）；`grep new Uri` 证实 D2（45/58 行无条件）；`docker compose config -q` OK；`docker ps` 四基础设施容器 Up(healthy)；`curl /api/common/serverinfo` 返回 serviceUrl=5210 与 MAI_FILE 一致。容器形态整体验收**未通过**（被 D1/D2 阻断），待修复清单见 [TDD 待修复](./tdd.md)。
 
 ## 8. 变更记录
@@ -76,3 +80,4 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 | 2026-09-02 | 初版（回溯整理），记录缺陷 D1~D5 |
 | 2026-09-02 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@DEP-S1~S12）、四件互链、职责瘦身；D1/D2 更正为 Dockerfile 两处（实测 grep） |
 | 2026-09-02 | D1/D2 修复同步（代码复核：ui/ 路径 + net10 镜像 + MAI_FILE；ParseOtlpEndpoint 空值容错）；部署章节解除阻断，@DEP-S2 整体构建验收待执行 |
+| 2026-09-03 | **@DEP-S2 全链路验收通过**：D3 修复（entrypoint S3 段 + compose/.env.example 透传）；apt 死重移除（依赖无 node-gyp）；新增 D6（krb5 探测告警）与 Apple Silicon 构建注意事项；排障表 +3 行（MQ 凭据 StopHost / krb5 / QEMU 仿真） |
