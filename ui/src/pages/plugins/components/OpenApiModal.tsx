@@ -3,6 +3,7 @@ import { Alert, Form, Modal, Progress, Spin, Upload } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { UploadFile } from 'antd'
+import type { RcFile } from 'antd/es/upload/interface'
 import type { PluginClassify } from '@/api/classify'
 import type { CustomPlugin, CustomPluginDetail, CustomKeyValue } from '@/api/plugin'
 import { customPluginApi } from '@/api/plugin'
@@ -102,7 +103,7 @@ export function OpenApiModal({
   }, [form, onCancel])
 
   // 选择文件后立即上传，成功后回填 fileId
-  const handleSelectFile = async (file: File) => {
+  const handleSelectFile = async (file: RcFile) => {
     setSelectedFile({
       uid: crypto.randomUUID(),
       name: file.name,
@@ -139,10 +140,10 @@ export function OpenApiModal({
     }
   }
 
-  const beforeUpload = (file: UploadFile) => {
+  const beforeUpload = (file: RcFile) => {
     setSelectedFile(null)
     setUploadedFileId(undefined)
-    void handleSelectFile(file as unknown as File)
+    void handleSelectFile(file)
     return Upload.LIST_IGNORE
   }
 
