@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Queries;
 using MoAI.AIPlugin.Queries.Responses;
@@ -21,16 +22,19 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IPluginRegistry _registry;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryPluginManageListCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="registry">插件注册表.</param>
-    public QueryPluginManageListCommandHandler(DatabaseContext databaseContext, IPluginRegistry registry)
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryPluginManageListCommandHandler(DatabaseContext databaseContext, IPluginRegistry registry, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
         _registry = registry;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
@@ -90,7 +94,9 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                         IsSystem = plugin.IsSystem,
                         IsPublic = plugin.IsPublic,
                         CreateTime = plugin.CreateTime,
+                        CreateUserId = (int)plugin.CreateUserId,
                         UpdateTime = plugin.UpdateTime,
+                        UpdateUserId = (int)plugin.UpdateUserId,
                         PluginKey = staticInfo?.Key,
                         ParamsExample = staticInfo != null ? PluginTypeHelper.GetStaticExample(staticInfo.PluginType, "GetParamsExampleValue") : null,
                     };
@@ -112,7 +118,9 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                         IsSystem = plugin.IsSystem,
                         IsPublic = plugin.IsPublic,
                         CreateTime = plugin.CreateTime,
+                        CreateUserId = (int)plugin.CreateUserId,
                         UpdateTime = plugin.UpdateTime,
+                        UpdateUserId = (int)plugin.UpdateUserId,
                         TempleteKey = dynamicEntity.TempleteKey,
                         Config = dynamicEntity.Config,
                         ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
@@ -133,7 +141,9 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                     IsSystem = plugin.IsSystem,
                     IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
+                    CreateUserId = (int)plugin.CreateUserId,
                     UpdateTime = plugin.UpdateTime,
+                    UpdateUserId = (int)plugin.UpdateUserId,
                 };
             })
             .ToList();
@@ -162,7 +172,9 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                     IsSystem = true,
                     IsPublic = true,
                     CreateTime = DateTimeOffset.UtcNow,
+                    CreateUserId = 0,
                     UpdateTime = DateTimeOffset.UtcNow,
+                    UpdateUserId = 0,
                     PluginKey = x.Key,
                     ParamsExample = PluginTypeHelper.GetStaticExample(x.PluginType, "GetParamsExampleValue"),
                 })
@@ -175,6 +187,8 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
             .OrderBy(x => x.Kind == "static" ? 0 : 1)
             .ThenBy(x => x.CreateTime)
             .ToList();
+
+        await _userInfoFillService.FillAsync(ordered, cancellationToken);
 
         return new QueryPluginManageListCommandResponse { Items = ordered };
     }

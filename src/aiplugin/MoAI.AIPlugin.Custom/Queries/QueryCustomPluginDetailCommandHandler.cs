@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Queries;
 using MoAI.AIPlugin.Queries.Responses;
@@ -16,14 +17,17 @@ namespace MoAI.AIPlugin.Queries;
 public class QueryCustomPluginDetailCommandHandler : IRequestHandler<QueryCustomPluginDetailCommand, QueryCustomPluginDetailCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryCustomPluginDetailCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public QueryCustomPluginDetailCommandHandler(DatabaseContext databaseContext)
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryCustomPluginDetailCommandHandler(DatabaseContext databaseContext, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
@@ -56,6 +60,8 @@ public class QueryCustomPluginDetailCommandHandler : IRequestHandler<QueryCustom
         {
             throw new BusinessException("未找到插件") { StatusCode = 404 };
         }
+
+        await _userInfoFillService.FillAsync(plugin, cancellationToken);
 
         return plugin;
     }

@@ -1,11 +1,12 @@
 ﻿using System;
+using MoAI.Infra.Models;
 
 namespace MoAI.AIPlugin.Queries.Responses;
 
 /// <summary>
 /// 插件管理列表响应项.
 /// </summary>
-public class QueryPluginManageListCommandResponseItem
+public class QueryPluginManageListCommandResponseItem : AuditsInfo
 {
     /// <summary>
     /// 插件记录 id.
@@ -56,16 +57,6 @@ public class QueryPluginManageListCommandResponseItem
     /// 是否公开访问.
     /// </summary>
     public bool IsPublic { get; init; }
-
-    /// <summary>
-    /// 创建时间.
-    /// </summary>
-    public DateTimeOffset CreateTime { get; init; }
-
-    /// <summary>
-    /// 更新时间.
-    /// </summary>
-    public DateTimeOffset UpdateTime { get; init; }
 
     /// <summary>
     /// 静态插件 key，仅静态插件有；用于前端编辑写回定位.

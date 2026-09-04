@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Queries;
 using MoAI.AIPlugin.Queries.Responses;
@@ -14,14 +15,17 @@ namespace MoAI.AIPlugin.Queries;
 public class QueryCustomPluginListCommandHandler : IRequestHandler<QueryCustomPluginListCommand, QueryCustomPluginBaseListCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryCustomPluginListCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public QueryCustomPluginListCommandHandler(DatabaseContext databaseContext)
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryCustomPluginListCommandHandler(DatabaseContext databaseContext, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
@@ -78,6 +82,8 @@ public class QueryCustomPluginListCommandHandler : IRequestHandler<QueryCustomPl
                 ClassifyId = x.ClassifyId,
             })
             .ToListAsync(cancellationToken);
+
+        await _userInfoFillService.FillAsync(plugins, cancellationToken);
 
         return new QueryCustomPluginBaseListCommandResponse { Items = plugins };
     }

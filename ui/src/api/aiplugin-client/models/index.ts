@@ -787,11 +787,11 @@ export function deserializeIntoQueryPluginManageListCommandResponse(queryPluginM
 // @ts-ignore
 export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPluginManageListCommandResponseItem: Partial<QueryPluginManageListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        ...deserializeIntoAuditsInfo(queryPluginManageListCommandResponseItem),
         "classifyId": n => { queryPluginManageListCommandResponseItem.classifyId = n.getNumberValue(); },
         "classifyName": n => { queryPluginManageListCommandResponseItem.classifyName = n.getStringValue(); },
         "config": n => { queryPluginManageListCommandResponseItem.config = n.getStringValue(); },
         "configExample": n => { queryPluginManageListCommandResponseItem.configExample = n.getStringValue(); },
-        "createTime": n => { queryPluginManageListCommandResponseItem.createTime = n.getStringValue(); },
         "description": n => { queryPluginManageListCommandResponseItem.description = n.getStringValue(); },
         "id": n => { queryPluginManageListCommandResponseItem.id = n.getGuidValue(); },
         "isPublic": n => { queryPluginManageListCommandResponseItem.isPublic = n.getBooleanValue(); },
@@ -803,7 +803,6 @@ export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPlu
         "templeteKey": n => { queryPluginManageListCommandResponseItem.templeteKey = n.getStringValue(); },
         "title": n => { queryPluginManageListCommandResponseItem.title = n.getStringValue(); },
         "type": n => { queryPluginManageListCommandResponseItem.type = n.getNumberValue(); },
-        "updateTime": n => { queryPluginManageListCommandResponseItem.updateTime = n.getStringValue(); },
     }
 }
 /**
@@ -1347,7 +1346,7 @@ export interface QueryPluginManageListCommandResponse extends Parsable {
 /**
  * 插件管理列表响应项.
  */
-export interface QueryPluginManageListCommandResponseItem extends Parsable {
+export interface QueryPluginManageListCommandResponseItem extends AuditsInfo, Parsable {
     /**
      * 分类 id，0 表示未分类.
      */
@@ -1364,10 +1363,6 @@ export interface QueryPluginManageListCommandResponseItem extends Parsable {
      * 动态插件模板配置示例 JSON，仅动态插件实例有；创建实例时的 Monaco 初始值.
      */
     configExample?: string | null;
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
     /**
      * 描述.
      */
@@ -1412,10 +1407,6 @@ export interface QueryPluginManageListCommandResponseItem extends Parsable {
      * 类型：mcp|openapi|native|tool（对应 PluginEntity.Type）.
      */
     type?: number | null;
-    /**
-     * 更新时间.
-     */
-    updateTime?: string | null;
 }
 /**
  * 刷新 MCP 服务器的工具列表，也就是重新从 mcp 服务器拉取这个服务的 tool 列表.
@@ -1853,11 +1844,11 @@ export function serializeQueryPluginManageListCommandResponse(writer: Serializat
 // @ts-ignore
 export function serializeQueryPluginManageListCommandResponseItem(writer: SerializationWriter, queryPluginManageListCommandResponseItem: Partial<QueryPluginManageListCommandResponseItem> | undefined | null = {}) : void {
     if (queryPluginManageListCommandResponseItem) {
+        serializeAuditsInfo(writer, queryPluginManageListCommandResponseItem)
         writer.writeNumberValue("classifyId", queryPluginManageListCommandResponseItem.classifyId);
         writer.writeStringValue("classifyName", queryPluginManageListCommandResponseItem.classifyName);
         writer.writeStringValue("config", queryPluginManageListCommandResponseItem.config);
         writer.writeStringValue("configExample", queryPluginManageListCommandResponseItem.configExample);
-        writer.writeStringValue("createTime", queryPluginManageListCommandResponseItem.createTime);
         writer.writeStringValue("description", queryPluginManageListCommandResponseItem.description);
         writer.writeGuidValue("id", queryPluginManageListCommandResponseItem.id);
         writer.writeBooleanValue("isPublic", queryPluginManageListCommandResponseItem.isPublic);
@@ -1869,7 +1860,6 @@ export function serializeQueryPluginManageListCommandResponseItem(writer: Serial
         writer.writeStringValue("templeteKey", queryPluginManageListCommandResponseItem.templeteKey);
         writer.writeStringValue("title", queryPluginManageListCommandResponseItem.title);
         writer.writeNumberValue("type", queryPluginManageListCommandResponseItem.type);
-        writer.writeStringValue("updateTime", queryPluginManageListCommandResponseItem.updateTime);
     }
 }
 /**

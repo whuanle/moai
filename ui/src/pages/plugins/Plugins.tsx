@@ -31,6 +31,14 @@ function typeLabel(t: (k: string) => string, type: number): string {
   return TYPE_LABEL_KEY[type] ? t(TYPE_LABEL_KEY[type]) : String(type)
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: PluginClassify[] }) {
   const { t } = useTranslation()
   const [items, setItems] = useState<StaticPluginManageItem[]>([])
@@ -142,6 +150,10 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
       render: (v: boolean) =>
         v ? <Tag color="green">{t('plugins.isPublic')}</Tag> : <Tag>{t('plugins.notPublic')}</Tag>,
     },
+    { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
+    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
+    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => formatDateTime(v) },
     {
       title: t('plugins.colActions'),
       key: 'actions',

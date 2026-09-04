@@ -295,6 +295,21 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
     },
     {
+      title: t('plugins.colUpdateUser'),
+      dataIndex: 'updateUserName',
+      key: 'updateUserName',
+      width: 110,
+      ellipsis: true,
+      render: (v: string | null) => v || '-',
+    },
+    {
+      title: t('plugins.colUpdateTime'),
+      dataIndex: 'updateTime',
+      key: 'updateTime',
+      width: 160,
+      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+    },
+    {
       title: t('plugins.colActions'),
       key: 'actions',
       width: 150,
