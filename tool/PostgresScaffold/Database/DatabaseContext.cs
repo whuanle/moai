@@ -73,6 +73,21 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<SettingEntity> Settings { get; set; }
 
     /// <summary>
+    /// 团队，知识库/插件等资源的管理单元.
+    /// </summary>
+    public virtual DbSet<TeamEntity> Teams { get; set; }
+
+    /// <summary>
+    /// 团队成员，用户与团队多对多关联.
+    /// </summary>
+    public virtual DbSet<TeamUserEntity> TeamUsers { get; set; }
+
+    /// <summary>
+    /// 团队变量，插件配置以 ${key} 引用.
+    /// </summary>
+    public virtual DbSet<TeamVariableEntity> TeamVariables { get; set; }
+
+    /// <summary>
     /// 用户.
     /// </summary>
     public virtual DbSet<UserEntity> Users { get; set; }
@@ -81,6 +96,16 @@ public partial class DatabaseContext : DbContext
     /// oauth2.0对接.
     /// </summary>
     public virtual DbSet<UserOauthConnectionEntity> UserOauthConnections { get; set; }
+
+    /// <summary>
+    /// 知识库，挂在团队下的资源.
+    /// </summary>
+    public virtual DbSet<WikiEntity> Wikis { get; set; }
+
+    /// <summary>
+    /// 知识库文档，挂在知识库下的内容页.
+    /// </summary>
+    public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

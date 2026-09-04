@@ -27,6 +27,7 @@ internal partial class WikiDocumentConfiguration : IEntityTypeConfiguration<Wiki
         entity.HasIndex(e => e.WikiId, "idx_wiki_document_wiki_id");
 
         entity.Property(e => e.Id)
+            .ValueGeneratedNever()
             .HasComment("文档ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.Content)
@@ -41,7 +42,7 @@ internal partial class WikiDocumentConfiguration : IEntityTypeConfiguration<Wiki
             .HasComment("创建人用户ID，审计钩子插入时自动填充")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasComment("软删除：false=未删除，true=已删除（审计钩子经接口适配自动写入）")
+            .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Title)
             .HasMaxLength(100)

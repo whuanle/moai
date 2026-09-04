@@ -40,9 +40,9 @@ public partial class WikiEntity : IFullAudited
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 软删除：false=未删除，true=已删除（审计钩子经接口适配自动写入）.
+    /// 软删除.
     /// </summary>
-    public bool IsDeleted { get; set; }
+    public long IsDeleted { get; set; }
 
     /// <summary>
     /// 创建人用户ID，审计钩子插入时自动填充.

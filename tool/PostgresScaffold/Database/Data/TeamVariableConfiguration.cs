@@ -28,9 +28,10 @@ internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<Team
 
         entity.HasIndex(e => new { e.TeamId, e.Key }, "idx_team_variable_team_key_live_uindex")
             .IsUnique()
-            .HasFilter("(is_deleted = false)");
+            .HasFilter("(is_deleted = 0)");
 
         entity.Property(e => e.Id)
+            .ValueGeneratedNever()
             .HasComment("变量ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
@@ -51,7 +52,7 @@ internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<Team
             .HasComment("分组名，仅组织用途不参与寻址，空串=未分组")
             .HasColumnName("group_name");
         entity.Property(e => e.IsDeleted)
-            .HasComment("软删除：false=未删除，true=已删除（审计钩子经接口适配自动写入）")
+            .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsSecret)
             .HasComment("是否私密变量：true 值仅管理员可见")

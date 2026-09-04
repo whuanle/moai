@@ -28,11 +28,12 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
 
         entity.HasIndex(e => new { e.TeamId, e.UserId }, "idx_team_user_team_user_live_uindex")
             .IsUnique()
-            .HasFilter("(is_deleted = false)");
+            .HasFilter("(is_deleted = 0)");
 
         entity.HasIndex(e => e.UserId, "idx_team_user_user_id");
 
         entity.Property(e => e.Id)
+            .ValueGeneratedNever()
             .HasComment("自增主键")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
@@ -43,7 +44,7 @@ internal partial class TeamUserConfiguration : IEntityTypeConfiguration<TeamUser
             .HasComment("邀请人用户ID，审计钩子插入时自动填充")
             .HasColumnName("create_user_id");
         entity.Property(e => e.IsDeleted)
-            .HasComment("软删除：false=在团队中，true=已移出（审计钩子经接口适配自动写入）")
+            .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.Role)
             .HasDefaultValue(2)

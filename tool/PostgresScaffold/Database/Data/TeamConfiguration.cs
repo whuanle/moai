@@ -26,9 +26,10 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
 
         entity.HasIndex(e => e.Name, "idx_team_name_live_uindex")
             .IsUnique()
-            .HasFilter("(is_deleted = false)");
+            .HasFilter("(is_deleted = 0)");
 
         entity.Property(e => e.Id)
+            .ValueGeneratedNever()
             .HasComment("团队ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.AvatarPath)
@@ -49,7 +50,7 @@ internal partial class TeamConfiguration : IEntityTypeConfiguration<TeamEntity>
             .HasComment("团队简介，最长255字符，空串=未填写")
             .HasColumnName("description");
         entity.Property(e => e.IsDeleted)
-            .HasComment("软删除：false=未删除，true=已删除（审计钩子经接口适配自动写入）")
+            .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.IsDisable)
             .HasComment("是否禁用团队：true=团队及下级资源停用，由管理员操作，不影响成员账号登录")

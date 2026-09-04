@@ -35,9 +35,9 @@ public partial class TeamUserEntity : IFullAudited
     public int Role { get; set; }
 
     /// <summary>
-    /// 软删除：false=在团队中，true=已移出（审计钩子经接口适配自动写入）.
+    /// 软删除.
     /// </summary>
-    public bool IsDeleted { get; set; }
+    public long IsDeleted { get; set; }
 
     /// <summary>
     /// 邀请人用户ID，审计钩子插入时自动填充.
