@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Space, Typography } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { Link, useParams } from 'react-router'
+import { DeleteOutlined } from '@ant-design/icons'
 import { Page, DataTable, feedback } from '@/design-system'
 import { formatDateTime } from '@/utils/datetime'
 import {
@@ -15,8 +15,6 @@ import {
   type WikiDocumentItem,
 } from '@/api/wiki'
 
-const { Text } = Typography
-
 /** 角色：0=Owner 1=Admin 2=Member */
 const ROLE_MEMBER = 2
 
@@ -27,7 +25,6 @@ interface DocumentFormValues {
 
 export function WikiDocuments() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const params = useParams<{ id: string }>()
   const wikiId = Number(params.id)
 
@@ -119,20 +116,23 @@ export function WikiDocuments() {
       {
         title: t('wiki.colUpdateTime'),
         dataIndex: 'updateTime',
-        width: 170,
-        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+        width: 150,
+        render: (v: string | null) => (
+          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+        ),
       },
       ...(isAdminPlus
         ? [
             {
               title: t('wiki.colActions'),
               key: 'actions',
-              width: 110,
+              width: 96,
+              fixed: 'right' as const,
               render: (_: unknown, record: WikiDocumentItem) => (
                 <Popconfirm title={t('wiki.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                  <Button type="link" size="small" danger>
-                    {t('wiki.delete')}
-                  </Button>
+                  <Tooltip title={t('wiki.delete')}>
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.delete')} />
+                  </Tooltip>
                 </Popconfirm>
               ),
             } as TableColumnsType<WikiDocumentItem>[number],
@@ -145,26 +145,23 @@ export function WikiDocuments() {
 
   return (
     <Page
-      title={
-        <Space size={8}>
-          <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={() => navigate('/wiki')} aria-label="back" />
-          {t('wiki.docTitle')}
-        </Space>
-      }
+      breadcrumb={[
+        { title: <Link to="/wiki">{t('wiki.title')}</Link> },
+        { title: t('wiki.docTitle') },
+      ]}
       extra={
         <Button type="primary" onClick={openCreate}>
           {t('wiki.docCreate')}
         </Button>
       }
     >
-      <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-        {t('wiki.docHint')} <Link to="/wiki">{t('wiki.title')}</Link>
-      </Text>
       <DataTable<WikiDocumentItem>
         rowKey="documentId"
         columns={columns}
         dataSource={docs}
         loading={loading}
+        sticky
+        scroll={{ x: 600 }}
         onRefresh={() => void load()}
         refreshLoading={loading}
       />

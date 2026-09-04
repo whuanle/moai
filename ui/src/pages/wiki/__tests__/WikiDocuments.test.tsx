@@ -55,7 +55,7 @@ describe('WikiDocuments', () => {
     })
     expect(await screen.findByText('安装指南')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '新建文档' })).toBeInTheDocument()
-    expect(screen.getByText('删除')).toBeInTheDocument()
+    expect(screen.getByLabelText('删除')).toBeInTheDocument()
   })
 
   it('点击标题打开编辑器并回显正文', async () => {

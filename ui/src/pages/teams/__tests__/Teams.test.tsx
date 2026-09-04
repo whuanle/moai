@@ -77,8 +77,8 @@ describe('Teams', () => {
     const findRow = (text: string) =>
       Array.from(document.querySelectorAll('table tr')).find((r) => r.textContent?.includes(text))
 
-    expect(findRow('Alpha 团队')?.textContent).toContain('解散')
-    expect(findRow('Beta 团队')?.textContent).not.toContain('解散')
+    expect(findRow('Alpha 团队')?.querySelector("button[aria-label='解散']")).not.toBeNull()
+    expect(findRow('Beta 团队')?.querySelector("button[aria-label='解散']")).toBeNull()
   })
 
   it('成员弹窗展示成员列表，Owner 行不可移除', async () => {
@@ -89,7 +89,7 @@ describe('Teams', () => {
     const row = Array.from(document.querySelectorAll('table tr')).find((r) =>
       r.textContent?.includes('Alpha 团队'),
     )
-    const membersBtn = Array.from(row!.querySelectorAll('button')).find((b) => b.textContent === '成员')
+    const membersBtn = Array.from(row!.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === '成员')
     membersBtn!.click()
 
     expect(await screen.findByText('owner')).toBeInTheDocument()
@@ -103,7 +103,7 @@ describe('Teams', () => {
     const memberRow = Array.from(document.querySelectorAll('table tr')).find((r) =>
       r.textContent?.includes('member'),
     )
-    expect(Array.from(memberRow!.querySelectorAll('button')).map((b) => b.textContent)).toContain('移除')
+    expect(memberRow!.querySelector("button[aria-label='移除']")).not.toBeNull()
   })
 
   it('Admin+ 行有设置入口，Owner 行额外有转让按钮，Member 行没有', async () => {
@@ -114,17 +114,17 @@ describe('Teams', () => {
       Array.from(document.querySelectorAll('table tr')).find((r) => r.textContent?.includes(text))
 
     // Alpha（我是 Owner）：设置 + 解散
-    expect(findRow('Alpha 团队')?.textContent).toContain('设置')
-    expect(findRow('Alpha 团队')?.textContent).toContain('解散')
+    expect(findRow('Alpha 团队')?.querySelector("button[aria-label='设置']")).not.toBeNull()
+    expect(findRow('Alpha 团队')?.querySelector("button[aria-label='解散']")).not.toBeNull()
     // Beta（我是 Member）：无设置/解散
     expect(findRow('Beta 团队')?.textContent).not.toContain('设置')
-    expect(findRow('Beta 团队')?.textContent).not.toContain('解散')
+    expect(findRow('Beta 团队')?.querySelector("button[aria-label='解散']")).toBeNull()
 
     // 打开成员弹窗：Owner 看到转让按钮（非 Owner 行）
     const row = findRow('Alpha 团队')
-    const membersBtn = Array.from(row!.querySelectorAll('button')).find((b) => b.textContent === '成员')
+    const membersBtn = Array.from(row!.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === '成员')
     membersBtn!.click()
     expect(await screen.findByText('member')).toBeInTheDocument()
-    expect(screen.getByText('转让所有权')).toBeInTheDocument()
+    expect(screen.getByLabelText('转让所有权')).toBeInTheDocument()
   })
 })

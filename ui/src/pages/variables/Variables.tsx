@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -170,24 +171,33 @@ export function Variables() {
       {
         title: t('variable.colUpdateTime'),
         dataIndex: 'updateTime',
-        width: 160,
-        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+        width: 150,
+        render: (v: string | null) => (
+          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+        ),
       },
       ...(isAdminPlus
         ? [
             {
               title: t('variable.colActions'),
               key: 'actions',
-              width: 130,
+              width: 96,
+              fixed: 'right' as const,
               render: (_: unknown, record: TeamVariableItem) => (
-                <Space size={0} wrap>
-                  <Button type="link" size="small" onClick={() => void openEdit(record)}>
-                    {t('variable.edit')}
-                  </Button>
+                <Space size={0}>
+                  <Tooltip title={t('variable.edit')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      aria-label={t('variable.edit')}
+                      onClick={() => void openEdit(record)}
+                    />
+                  </Tooltip>
                   <Popconfirm title={t('variable.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                    <Button type="link" size="small" danger>
-                      {t('variable.delete')}
-                    </Button>
+                    <Tooltip title={t('variable.delete')}>
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('variable.delete')} />
+                    </Tooltip>
                   </Popconfirm>
                 </Space>
               ),
@@ -196,12 +206,12 @@ export function Variables() {
         : []),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, isAdminPlus],
+    [t, isAdminPlus, currentTeamId],
   )
 
   if (!currentTeamId) {
     return (
-      <Page title={t('variable.title')}>
+      <Page>
         <div style={{ padding: '48px 0', textAlign: 'center' }}>
           <Text type="secondary">
             {t('wiki.selectTeamFirst')} <Link to="/team">{t('wiki.goCreateTeam')}</Link>
@@ -212,28 +222,24 @@ export function Variables() {
   }
 
   return (
-    <Page
-      title={t('variable.title')}
-      subtitle={isAdminPlus ? undefined : t('variable.memberReadOnly')}
-      extra={
-        isAdminPlus ? (
-          <Button type="primary" onClick={openCreate}>
-            {t('variable.create')}
-          </Button>
-        ) : undefined
-      }
-    >
+    <Page>
       <QueryBar
         form={filterForm}
         onSearch={applyFilters}
         onReset={applyFilters}
         loading={loading}
       >
-        <Form.Item name="groupName" label={t('variable.colGroup')}>
+        <Form.Item name="groupName">
           <Select allowClear placeholder={t('variable.groupAll')} style={{ width: 140 }} options={groupOptions} />
         </Form.Item>
-        <Form.Item name="keyword" label={t('variable.searchLabel')}>
-          <Input allowClear placeholder={t('variable.searchPlaceholder')} maxLength={100} style={{ width: 200 }} />
+        <Form.Item name="keyword">
+          <Input
+            placeholder={t('variable.searchPlaceholder')}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            allowClear
+            maxLength={100}
+            style={{ width: 280 }}
+          />
         </Form.Item>
       </QueryBar>
       <DataTable<TeamVariableItem>
@@ -241,6 +247,18 @@ export function Variables() {
         columns={columns}
         dataSource={items}
         loading={loading}
+        sticky
+        scroll={{ x: 900 }}
+        toolbar={
+          <Space size={12}>
+            {isAdminPlus && (
+              <Button type="primary" onClick={openCreate}>
+                {t('variable.create')}
+              </Button>
+            )}
+            <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
+          </Space>
+        }
         onRefresh={() => void load()}
         refreshLoading={loading}
       />

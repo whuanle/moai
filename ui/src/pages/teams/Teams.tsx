@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Tag, Typography, Upload } from 'antd'
+import { Avatar, Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
 import type { TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
+import {
+  DeleteOutlined,
+  SettingOutlined,
+  StopOutlined,
+  TeamOutlined,
+  UploadOutlined,
+  UserSwitchOutlined,
+} from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Page, DataTable, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
@@ -279,7 +286,8 @@ export function Teams() {
       {
         title: t('team.colActions'),
         key: 'actions',
-        width: 170,
+        width: 110,
+        fixed: 'right' as const,
         render: (_, record) => {
           const role = record.role ?? ROLE_MEMBER
           const isSelf = String(record.userId) === String(currentUserId)
@@ -291,50 +299,59 @@ export function Teams() {
                 title={t('team.transferConfirm')}
                 onConfirm={() => void handleTransfer(record)}
               >
-                <Button type="link" size="small">
-                  {t('team.transferOwner')}
-                </Button>
+                <Tooltip title={t('team.transferOwner')}>
+                  <Button type="text" size="small" icon={<UserSwitchOutlined />} aria-label={t('team.transferOwner')} />
+                </Tooltip>
               </Popconfirm>,
             )
           }
           if (canRemoveMember(record)) {
+            const label = t(isSelf ? 'team.leave' : 'team.remove')
             actions.push(
               <Popconfirm
                 key="remove"
                 title={t(isSelf ? 'team.leaveConfirm' : 'team.removeConfirm')}
                 onConfirm={() => void handleRemoveMember(record)}
               >
-                <Button type="link" size="small" danger>
-                  {t(isSelf ? 'team.leave' : 'team.remove')}
-                </Button>
+                <Tooltip title={label}>
+                  <Button type="text" size="small" danger icon={<StopOutlined />} aria-label={label} />
+                </Tooltip>
               </Popconfirm>,
             )
           }
           if (actions.length === 0) return <Text type="secondary">-</Text>
-          return <Space size={0} wrap>{actions}</Space>
+          return <Space size={0}>{actions}</Space>
         },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, isOwnerOfCurrent, current],
+    [t, isOwnerOfCurrent, current, currentUserId],
   )
 
   const columns: TableColumnsType<TeamItem> = useMemo(
     () => [
       {
         title: t('team.colName'),
-        dataIndex: 'name',
-        width: 200,
-        render: (v: string | null, record) => (
-          <Space size={8}>
-            <Avatar size={26} src={record.avatar || undefined}>
-              {(v ?? '?').slice(0, 1)}
-            </Avatar>
-            {v}
-          </Space>
-        ),
+        key: 'name',
+        render: (_, record) => {
+          const name = record.name || '-'
+          return (
+            <Space>
+              <Avatar size={36} src={record.avatar || undefined} alt={name}>
+                {name.slice(0, 1).toUpperCase()}
+              </Avatar>
+              <div style={{ lineHeight: 1.4, minWidth: 0 }}>
+                <div>{name}</div>
+                {record.description && (
+                  <Text type="secondary" style={{ fontSize: 12 }} ellipsis>
+                    {record.description}
+                  </Text>
+                )}
+              </div>
+            </Space>
+          )
+        },
       },
-      { title: t('team.colDesc'), dataIndex: 'description', ellipsis: true },
       {
         title: t('team.colRole'),
         key: 'myRole',
@@ -345,28 +362,43 @@ export function Teams() {
       {
         title: t('team.colCreateTime'),
         dataIndex: 'createTime',
-        width: 170,
-        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+        width: 150,
+        render: (v: string | null) => (
+          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+        ),
       },
       {
         title: t('team.colActions'),
         key: 'actions',
-        width: 160,
+        width: 128,
+        fixed: 'right' as const,
         render: (_, record) => (
-          <Space size={0} wrap>
-            <Button type="link" size="small" onClick={() => void openMembers(record)}>
-              {t('team.members')}
-            </Button>
+          <Space size={0}>
+            <Tooltip title={t('team.members')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<TeamOutlined />}
+                aria-label={t('team.members')}
+                onClick={() => void openMembers(record)}
+              />
+            </Tooltip>
             {(record.myRole === ROLE_OWNER || record.myRole === ROLE_ADMIN) && (
-              <Button type="link" size="small" onClick={() => openSettings(record)}>
-                {t('team.settings')}
-              </Button>
+              <Tooltip title={t('team.settings')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<SettingOutlined />}
+                  aria-label={t('team.settings')}
+                  onClick={() => openSettings(record)}
+                />
+              </Tooltip>
             )}
             {record.myRole === ROLE_OWNER && (
               <Popconfirm title={t('team.dissolveConfirm')} onConfirm={() => void handleDissolve(record)}>
-                <Button type="link" size="small" danger>
-                  {t('team.dissolve')}
-                </Button>
+                <Tooltip title={t('team.dissolve')}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('team.dissolve')} />
+                </Tooltip>
               </Popconfirm>
             )}
           </Space>
@@ -378,19 +410,22 @@ export function Teams() {
   )
 
   return (
-    <Page
-      title={t('team.title')}
-      extra={
-        <Button type="primary" onClick={() => setCreateOpen(true)}>
-          {t('team.create')}
-        </Button>
-      }
-    >
+    <Page>
       <DataTable<TeamItem>
         rowKey="teamId"
         columns={columns}
         dataSource={teams}
         loading={loading}
+        sticky
+        scroll={{ x: 800 }}
+        toolbar={
+          <Space size={12}>
+            <Button type="primary" onClick={() => setCreateOpen(true)}>
+              {t('team.create')}
+            </Button>
+            <Text type="secondary">{t('ds.table.total', { total: teams.length })}</Text>
+          </Space>
+        }
         onRefresh={() => void load()}
         refreshLoading={loading}
       />

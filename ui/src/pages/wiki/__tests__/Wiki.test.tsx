@@ -64,8 +64,11 @@ describe('Wiki', () => {
     renderWiki()
     expect(await screen.findByText('产品文档')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '新建知识库' })).toBeInTheDocument()
-    expect(screen.getAllByText('编辑').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('删除').length).toBeGreaterThan(0)
+    const actionButtons = Array.from(
+      document.querySelectorAll('table button[aria-label]'),
+    ).map((b) => b.getAttribute('aria-label'))
+    expect(actionButtons).toContain('编辑')
+    expect(actionButtons).toContain('删除')
   })
 
   it('未选择团队时提示先选团队', async () => {

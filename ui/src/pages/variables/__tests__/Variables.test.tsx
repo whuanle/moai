@@ -65,7 +65,7 @@ describe('Variables', () => {
     renderVariables()
     expect(await screen.findByText(/WIKI_NAME/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '新建变量' })).toBeInTheDocument()
-    expect(screen.getAllByText('编辑').length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText('编辑').length).toBeGreaterThan(0)
   })
 
   it('Member 角色只读（无新建/操作列）', async () => {
