@@ -31,7 +31,6 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasFilter("(is_deleted = 0)");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
             .HasComment("知识库ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.AvatarPath)

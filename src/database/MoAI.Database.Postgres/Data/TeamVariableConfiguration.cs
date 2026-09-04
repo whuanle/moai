@@ -31,7 +31,6 @@ internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<Team
             .HasFilter("(is_deleted = 0)");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
             .HasComment("变量ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.CreateTime)
