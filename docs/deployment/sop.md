@@ -68,8 +68,34 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 4. 前端 `npm run typecheck && npm run lint && npm run test` 全绿。
 5. （修复 D1 后新增）`docker compose build moai` 成功并起容器，页面可登录（[@DEP-S2](./bdd.md#dep-s2)）。
 
-## 7. 历史验收存档（L3 证据，保留原始记录）
+## 7. 远端部署实例：154 服务器（154.8.214.31）
 
+> 2026-09-05 由本会话部署并完成全量测试。与宿主机上的 sms-stack 完全隔离（独立 compose 项目 `moai154`、独立网络/卷/容器名前缀）。
+
+**实例信息**
+
+| 项 | 值 |
+|---|---|
+| Web/API | http://154.8.214.31:18080（ufw 已放行，SPA + API 同端口） |
+| MinIO S3 | http://154.8.214.31:19000（ufw 已放行，预签名直传需要客户端可达） |
+| SSH | ubuntu@154.8.214.31（密码见 Obsidian SMS 台账，sudo 免密） |
+| 部署目录 | `/home/ubuntu/moai154`（docker-compose.yml + app/ 运行时镜像构建上下文） |
+| 容器 | moai154-app / -postgres(pgvector:pg16) / -redis / -rabbit / -minio，全部 mem_limit（合计 <900M，适配 1.9G 小机） |
+| 种子账号 | admin / abcd123456（root） |
+
+**低内存部署方式（服务器零构建）**：本地 `npm run build` + `dotnet publish -r linux-x64 --self-contained false`，产物 + dist(→wwwroot) + entrypoint 打包上传，服务器仅用 4 行 Dockerfile（FROM aspnet:10.0 + COPY）——2C/1G 可用内存跑不动 node/dotnet 构建。
+
+**部署检查单（新机必做）**：① S3_* 五项 + RabbitMQ 正确凭据（错凭据 → 消费者异常 → StopHost 整机退出）；② **MinIO 桶 `moai` 预建**：`mc mb s/moai && mc anonymous set download s/moai`（缺桶 → PUT 404 NoSuchBucket → complate 409）；③ 防火墙放行 Web/MinIO 端口；④ entrypoint 可执行位。
+
+**已验证（2026-09-05）**：serverinfo/SPA/静态对象 200；UM 34/34、团队 47/47、知识库 23/23、audit-345 14/14、锁定 8/8（脚本 REDIS_DEL_CMD 可覆盖后远端清 key）、存储 7/7（审计进容器，详见第 8 节）。
+
+**两条环境硬限制（排障必读）**：
+- **云主机公网 IP hairpin 不通**：服务器本机/容器内访问 `154.8.214.31:*` 一律超时；服务器侧验证走 `127.0.0.1` 或 compose 内网名。真实浏览器（公网）可达即可，服务器自测需换内网视角。
+- **Mac→154 间歇 PMTU 黑洞**：直连 HTTP 会随机 stall/CONNECT_TIMEOUT（SSH 正常）。Mac 侧测试优先 SSH 隧道（`ssh -N -L 18081:127.0.0.1:18080`）；存储审计用"审计进容器"模式（服务器上 `docker run --network moai154_moai154 node:22-slim` 跑脚本）。
+
+## 8. 历史验收存档（L3 证据，保留原始记录）
+
+- **2026-09-05（154 服务器部署 + 全量测试 ✅）**：发现四台候选机均无 MoAI 部署后，在 154.8.214.31 从零部署（低内存方案，见第 7 节）。测试记录：团队 47/47、知识库 23/23 从 Mac 公网直连通过；UM 34/34、audit-345 14/14、锁定 8/8 经 SSH 隧道通过（期间发现锁定脚本的清 key 写死本地容器名 → 已改为 REDIS_DEL_CMD 可覆盖；重复运行导致的账号锁定属测试污染非缺陷，清 `moai:login:fail:*` 后恢复）；存储 7/7 在服务器容器内通过（过程中实证：新 MinIO 缺桶 → PUT 404 NoSuchBucket → complate 409，建桶 `mc mb s/moai` 后全绿；公网 IP hairpin 不通 → 审计须走内网视角；调试残留的未完成文件行走 /static 返回 500 而非 404，已登记为观察项）。
 - **2026-09-03（@DEP-S2 容器全链路验收 ✅）**：`docker build -t moai:dep-s2-verify .`（arm64 原生）成功；`docker run` 起容器（S3_*/RABBITMQ_* 指向宿主基础设施，OTLP 留空）→ `serverinfo` 200、SPA `/` 与 `/login` 均 200；宿主跑 [user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs) `http://127.0.0.1:8081` **34/34**；存储审计进容器跑 `docker run --rm -v ./local-dev:/audit -w /audit node:22-slim node audit-storage.mjs http://host.docker.internal:8081` **7/7**（预签名视角一致，直传 MinIO→完成→匿名 /static→秒传→校验→404）。过程中实证：OTLP 留空不崩（D2）；`ACCESS_REFUSED` 未传 MQ 凭据会 StopHost（排障表已录）；SigV4 预签名 URL 重映射 host 会 403（审计脚本注释已录）。
 - **2026-09-02（轮 21，as-built 回溯）**：物料（Dockerfile/entrypoint/compose/.env.example/init-pgvector.sql）随仓库确认；`ls ui/moai` 证实 D1（目录不存在）；`grep new Uri` 证实 D2（45/58 行无条件）；`docker compose config -q` OK；`docker ps` 四基础设施容器 Up(healthy)；`curl /api/common/serverinfo` 返回 serviceUrl=5210 与 MAI_FILE 一致。容器形态整体验收**未通过**（被 D1/D2 阻断），待修复清单见 [TDD 待修复](./tdd.md)。
 
@@ -81,3 +107,4 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 | 2026-09-02 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@DEP-S1~S12）、四件互链、职责瘦身；D1/D2 更正为 Dockerfile 两处（实测 grep） |
 | 2026-09-02 | D1/D2 修复同步（代码复核：ui/ 路径 + net10 镜像 + MAI_FILE；ParseOtlpEndpoint 空值容错）；部署章节解除阻断，@DEP-S2 整体构建验收待执行 |
 | 2026-09-03 | **@DEP-S2 全链路验收通过**：D3 修复（entrypoint S3 段 + compose/.env.example 透传）；apt 死重移除（依赖无 node-gyp）；新增 D6（krb5 探测告警）与 Apple Silicon 构建注意事项；排障表 +3 行（MQ 凭据 StopHost / krb5 / QEMU 仿真） |
+| 2026-09-05 | 新增第 7 节「远端部署实例：154 服务器」（部署信息、检查单含 MinIO 建桶、hairpin/PMTU 两条环境硬限制）+ 存档 154 全量测试记录；锁定脚本清 key 命令改为 REDIS_DEL_CMD 可覆盖 |

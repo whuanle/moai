@@ -27,7 +27,6 @@ internal partial class WikiDocumentConfiguration : IEntityTypeConfiguration<Wiki
         entity.HasIndex(e => e.WikiId, "idx_wiki_document_wiki_id");
 
         entity.Property(e => e.Id)
-            .ValueGeneratedNever()
             .HasComment("文档ID，自增主键")
             .HasColumnName("id");
         entity.Property(e => e.Content)
