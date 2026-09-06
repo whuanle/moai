@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { Variables } from '../Variables'
 import { useAppStore } from '@/store/app'
@@ -64,6 +64,13 @@ describe('Variables', () => {
   })
 
   it('Admin 角色显示新建与操作列', async () => {
+    vi.mocked(getVariables).mockResolvedValue({
+      teamId: '7',
+      myRole: 1,
+      items: [
+        { variableId: '1', teamId: '7', key: 'WIKI_NAME', name: '基础配置', isSecret: false, value: '团队知识库', description: '', updateTime: '2026-09-02T00:00:00Z' },
+      ],
+    })
     renderVariables()
     expect(await screen.findByText(/WIKI_NAME/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '新建变量' })).toBeInTheDocument()
@@ -71,7 +78,7 @@ describe('Variables', () => {
   })
 
   it('Member 角色只读（无新建/操作列）', async () => {
-    vi.mocked(getVariables).mockResolvedValue({ teamId: '7', myRole: 2, items: [] })
+    vi.mocked(getVariables).mockResolvedValue({ teamId: '7', myRole: 0, items: [] })
     renderVariables()
     await waitFor(() => {
       expect(getVariables).toHaveBeenCalled()
@@ -85,5 +92,19 @@ describe('Variables', () => {
     useAppStore.setState({ currentTeamId: null })
     renderVariables()
     expect(screen.getByText(/请先在左上角选择一个团队/)).toBeInTheDocument()
+  })
+
+  it('新建变量弹窗：变量 Key 输入框可编辑', async () => {
+    vi.mocked(getVariables).mockResolvedValue({ teamId: '7', myRole: 1, items: [] })
+    renderVariables()
+    fireEvent.click(await screen.findByRole('button', { name: '新建变量' }))
+
+    const modal = await screen.findByRole('dialog')
+    expect(within(modal).getByText('变量 Key')).toBeInTheDocument()
+
+    const keyInput = within(modal).getByPlaceholderText('字母开头，仅字母/数字/下划线，如 FEISHU_APP_ID')
+    expect(keyInput).toBeEnabled()
+    fireEvent.change(keyInput, { target: { value: 'FEISHU_APP_ID' } })
+    expect(keyInput).toHaveValue('FEISHU_APP_ID')
   })
 })

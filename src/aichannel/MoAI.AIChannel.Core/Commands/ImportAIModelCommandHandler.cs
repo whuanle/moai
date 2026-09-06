@@ -63,6 +63,7 @@ public class ImportAIModelCommandHandler : IRequestHandler<ImportAIModelCommand,
             {
                 ChannelId = request.ChannelId,
                 Enabled = true,
+                IsPublic = false,
             };
 
             AIModelMetaMapper.Apply(model, meta);

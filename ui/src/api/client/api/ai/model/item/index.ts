@@ -4,12 +4,30 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateAIModelCommand, type BusinessValidationResult, type EmptyCommandResponse, type UpdateAIModelCommand } from '../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { AuthorizationRequestBuilderRequestsMetadata, type AuthorizationRequestBuilder } from './authorization/index.js';
+// @ts-ignore
+import { QuotaRequestBuilderNavigationMetadata, type QuotaRequestBuilder } from './quota/index.js';
+// @ts-ignore
+import { type VisibilityRequestBuilder, VisibilityRequestBuilderRequestsMetadata } from './visibility/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/ai/model/{id}
  */
 export interface ModelItemRequestBuilder extends BaseRequestBuilder<ModelItemRequestBuilder> {
+    /**
+     * The authorization property
+     */
+    get authorization(): AuthorizationRequestBuilder;
+    /**
+     * The quota property
+     */
+    get quota(): QuotaRequestBuilder;
+    /**
+     * The visibility property
+     */
+    get visibility(): VisibilityRequestBuilder;
     /**
      * 删除 AI 模型（仅管理员可访问）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -51,6 +69,20 @@ export interface ModelItemRequestBuilder extends BaseRequestBuilder<ModelItemReq
  * Uri template for the request builder.
  */
 export const ModelItemRequestBuilderUriTemplate = "{+baseurl}/api/ai/model/{id}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const ModelItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ModelItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    authorization: {
+        requestsMetadata: AuthorizationRequestBuilderRequestsMetadata,
+    },
+    quota: {
+        navigationMetadata: QuotaRequestBuilderNavigationMetadata,
+    },
+    visibility: {
+        requestsMetadata: VisibilityRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

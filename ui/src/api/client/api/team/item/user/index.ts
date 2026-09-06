@@ -7,7 +7,7 @@ import { type WithUserItemRequestBuilder, WithUserItemRequestBuilderNavigationMe
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/team/{id}/user
+ * Builds and executes requests for operations under /api/team/{-id}/user
  */
 export interface UserRequestBuilder extends BaseRequestBuilder<UserRequestBuilder> {
     /**
@@ -20,7 +20,7 @@ export interface UserRequestBuilder extends BaseRequestBuilder<UserRequestBuilde
 /**
  * Uri template for the request builder.
  */
-export const UserRequestBuilderUriTemplate = "{+baseurl}/api/team/{id}/user";
+export const UserRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}/user";
 /**
  * Metadata for all the navigation properties in the request builder.
  */

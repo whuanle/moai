@@ -7,7 +7,7 @@ import { createBusinessValidationResultFromDiscriminatorValue, createEmptyComman
 import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/team/{id}/user/{userId}/role
+ * Builds and executes requests for operations under /api/team/{-id}/user/{userId}/role
  */
 export interface RoleRequestBuilder extends BaseRequestBuilder<RoleRequestBuilder> {
     /**
@@ -33,7 +33,7 @@ export interface RoleRequestBuilder extends BaseRequestBuilder<RoleRequestBuilde
 /**
  * Uri template for the request builder.
  */
-export const RoleRequestBuilderUriTemplate = "{+baseurl}/api/team/{id}/user/{userId}/role";
+export const RoleRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}/user/{userId}/role";
 /**
  * Metadata for all the requests in the request builder.
  */

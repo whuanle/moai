@@ -48,6 +48,7 @@ public class CreateAIModelCommandHandler : IRequestHandler<CreateAIModelCommand,
         {
             ChannelId = request.ChannelId,
             Enabled = request.Enabled,
+            IsPublic = request.IsPublic,
         };
 
         AIModelMetaMapper.Apply(model, request.Meta);

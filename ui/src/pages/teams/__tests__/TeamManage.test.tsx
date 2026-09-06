@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { TeamManage } from '../TeamManage'
 import { useAppStore } from '@/store/app'
-import { getTeamDetail, getTeamUsers } from '@/api/team'
+import { dissolveTeam, getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
 import { getVariables } from '@/api/variable'
 
 vi.mock('@/api/variable', () => ({
@@ -39,6 +39,8 @@ vi.mock('@/api/team', () => ({
   updateTeamUserRole: vi.fn().mockResolvedValue(undefined),
   uploadTeamAvatar: vi.fn().mockResolvedValue(''),
   getTeamCandidates: vi.fn().mockResolvedValue([]),
+  dissolveTeam: vi.fn().mockResolvedValue(undefined),
+  getMyTeams: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('@/api/kiota', () => ({
@@ -88,6 +90,43 @@ describe('TeamManage', () => {
     expect(getTeamUsers).toHaveBeenCalledWith(7)
   })
 
+  it('角色列只展示角色标签，不出现角色下拉框', async () => {
+    renderManage()
+
+    fireEvent.click(await screen.findByText('成员管理'))
+
+    expect(await screen.findByText('所有者')).toBeInTheDocument()
+    expect(screen.getAllByText('成员').length).toBeGreaterThan(0)
+    // 旧角色下拉框已移除，其「设为成员」选项文案不再出现
+    expect(screen.queryByText('设为成员')).not.toBeInTheDocument()
+  })
+
+  it('普通成员行在操作列显示设为管理员图标，点击后调用角色更新', async () => {
+    renderManage()
+
+    fireEvent.click(await screen.findByText('成员管理'))
+
+    fireEvent.click(await screen.findByRole('button', { name: '设为管理员' }))
+    await waitFor(() => {
+      expect(updateTeamUserRole).toHaveBeenCalledWith(7, 2, 1)
+    })
+  })
+
+  it('管理员行在操作列显示取消管理员图标，点击后降级为成员', async () => {
+    ;(getTeamUsers as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { userId: '1', userName: 'owner', nickName: 'O', role: 2, joinTime: '2026-09-02T00:00:00Z' },
+      { userId: '3', userName: 'admin1', nickName: 'A', role: 1, joinTime: '2026-09-02T00:00:00Z' },
+    ])
+    renderManage()
+
+    fireEvent.click(await screen.findByText('成员管理'))
+
+    fireEvent.click(await screen.findByRole('button', { name: '取消管理员' }))
+    await waitFor(() => {
+      expect(updateTeamUserRole).toHaveBeenCalledWith(7, 3, 0)
+    })
+  })
+
   it('切换到设置菜单展示表单', async () => {
     renderManage()
 
@@ -95,6 +134,40 @@ describe('TeamManage', () => {
     fireEvent.click(screen.getByText('设置'))
 
     expect(await screen.findByText('团队名称')).toBeInTheDocument()
+  })
+
+  it('设置菜单中 Owner 可解散团队并返回列表', async () => {
+    renderManage()
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByText('设置'))
+
+    // antd Button 会在两个汉字间自动插入空格，实际渲染为「解 散」
+    fireEvent.click(await screen.findByText(/解\s*散/))
+    // 测试环境未包裹 AppProviders，antd 默认英文 locale，Popconfirm 确认按钮为 OK
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+
+    await waitFor(() => {
+      expect(dissolveTeam).toHaveBeenCalledWith(7)
+    })
+  })
+
+  it('设置菜单中非 Owner 不显示解散按钮', async () => {
+    ;(getTeamDetail as ReturnType<typeof vi.fn>).mockResolvedValue({
+      teamId: '7',
+      name: 'Alpha 团队',
+      description: '第一个',
+      myRole: 0,
+      memberCount: 2,
+      createTime: '2026-09-02T00:00:00Z',
+    })
+    renderManage()
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByText('设置'))
+
+    expect(await screen.findByText('团队名称')).toBeInTheDocument()
+    expect(screen.queryByText(/解\s*散/)).not.toBeInTheDocument()
   })
 
   it('知识库/插件菜单展示占位空态', async () => {

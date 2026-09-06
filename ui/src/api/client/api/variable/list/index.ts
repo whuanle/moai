@@ -33,13 +33,13 @@ export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilde
  */
 export interface ListRequestBuilderGetQueryParameters {
     /**
-     * 按变量名称精确筛选，空为不过滤.
-     */
-    name?: string;
-    /**
      * 按变量名/描述模糊筛选，空为不过滤.
      */
     keyword?: string;
+    /**
+     * 按变量名称精确筛选，空为不过滤.
+     */
+    name?: string;
     /**
      * 团队 id.
      */
@@ -48,13 +48,13 @@ export interface ListRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const ListRequestBuilderUriTemplate = "{+baseurl}/api/variable/list{?Name*,Keyword*,TeamId*}";
+export const ListRequestBuilderUriTemplate = "{+baseurl}/api/variable/list{?Keyword*,Name*,TeamId*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const ListRequestBuilderGetQueryParametersMapper: Record<string, string> = {
-    "name": "Name",
     "keyword": "Keyword",
+    "name": "Name",
     "teamId": "TeamId",
 };
 /**

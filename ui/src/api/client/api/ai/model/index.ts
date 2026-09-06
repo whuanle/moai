@@ -10,7 +10,7 @@ import { BatchDeleteRequestBuilderRequestsMetadata, type BatchDeleteRequestBuild
 // @ts-ignore
 import { ImportRequestBuilderRequestsMetadata, type ImportRequestBuilder } from './importEscaped/index.js';
 // @ts-ignore
-import { ModelItemRequestBuilderRequestsMetadata, type ModelItemRequestBuilder } from './item/index.js';
+import { ModelItemRequestBuilderNavigationMetadata, ModelItemRequestBuilderRequestsMetadata, type ModelItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { SyncRequestBuilderRequestsMetadata, type SyncRequestBuilder } from './sync/index.js';
 // @ts-ignore
@@ -98,6 +98,7 @@ export const ModelRequestBuilderUriTemplate = "{+baseurl}/api/ai/model{?channelI
 export const ModelRequestBuilderNavigationMetadata: Record<Exclude<keyof ModelRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
         requestsMetadata: ModelItemRequestBuilderRequestsMetadata,
+        navigationMetadata: ModelItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
     batch: {

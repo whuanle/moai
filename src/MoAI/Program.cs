@@ -1,4 +1,5 @@
 using MoAI;
+using MoAI.Gateway;
 using Scalar.AspNetCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -73,6 +74,9 @@ app.UseHttpLogging();
 //app.MapMcp("/mcp/wiki/{wikiId}");
 
 app.MapControllers();
+
+// 团队模型网关（OpenAI/Anthropic 兼容 /v1 端点）
+app.MapGatewayEndpoints();
 
 // SPA 回退：未匹配的路由返回 index.html（放在最后，以免抢在认证分发之前）
 app.MapFallbackToFile("index.html");

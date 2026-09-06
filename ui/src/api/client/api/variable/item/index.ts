@@ -33,8 +33,8 @@ export interface VariableItemRequestBuilder extends BaseRequestBuilder<VariableI
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryVariableCommandResponse | undefined>;
     /**
-     * 更新变量，需要团队 Admin 及以上角色；私密变量值留空表示保持不变.
-     * @param body 更新团队变量，需要团队 Admin 及以上角色；变量名与类型不可修改，私密变量值留空表示保持不变.
+     * 更新变量，需要团队 Admin 及以上角色；类型不可修改；私密变量的值不回显，留空表示保持不变.
+     * @param body 更新团队变量，需要团队 Admin 及以上角色；类型不可修改；私密变量的值不回显，留空表示保持不变.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -57,8 +57,8 @@ export interface VariableItemRequestBuilder extends BaseRequestBuilder<VariableI
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 更新变量，需要团队 Admin 及以上角色；私密变量值留空表示保持不变.
-     * @param body 更新团队变量，需要团队 Admin 及以上角色；变量名与类型不可修改，私密变量值留空表示保持不变.
+     * 更新变量，需要团队 Admin 及以上角色；类型不可修改；私密变量的值不回显，留空表示保持不变.
+     * @param body 更新团队变量，需要团队 Admin 及以上角色；类型不可修改；私密变量的值不回显，留空表示保持不变.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

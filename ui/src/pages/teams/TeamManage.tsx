@@ -4,23 +4,30 @@ import type { MenuProps, TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
 import {
   AppstoreAddOutlined,
+  ApiOutlined,
   BookOutlined,
   KeyOutlined,
+  MinusCircleOutlined,
+  SafetyCertificateOutlined,
   SettingOutlined,
   StopOutlined,
   TeamOutlined,
   UploadOutlined,
+  UserAddOutlined,
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { Card as DSCard, DataTable, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import { Variables } from '@/pages/variables/Variables'
+import { TeamGateway } from '@/pages/teams/TeamGateway'
 import {
   addTeamUser,
+  dissolveTeam,
+  getMyTeams,
   getTeamCandidates,
   getTeamDetail,
   getTeamUsers,
@@ -41,11 +48,10 @@ const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
-type SectionKey = 'info' | 'members' | 'knowledge' | 'plugins' | 'variables' | 'settings'
+type SectionKey = 'info' | 'members' | 'gateway' | 'knowledge' | 'plugins' | 'variables' | 'settings'
 
 interface MemberFormValues {
   userId: number
-  role: number
 }
 
 interface TeamDetail {
@@ -68,6 +74,8 @@ export function TeamManage() {
   const params = useParams<{ id: string }>()
   const teamId = Number(params.id)
   const currentUserId = useAppStore((state) => state.userInfo?.userId)
+  const setMyTeams = useAppStore((state) => state.setMyTeams)
+  const navigate = useNavigate()
 
   const [section, setSection] = useState<SectionKey>('info')
   const [detail, setDetail] = useState<TeamDetail | null>(null)
@@ -78,6 +86,7 @@ export function TeamManage() {
   const [settingsForm] = Form.useForm<{ name: string; description?: string }>()
   const [savingInfo, setSavingInfo] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [dissolving, setDissolving] = useState(false)
   const [candidates, setCandidates] = useState<TeamCandidateItem[]>([])
   const [searching, setSearching] = useState(false)
 
@@ -135,7 +144,7 @@ export function TeamManage() {
   const handleAddMember = async () => {
     const values = await addForm.validateFields()
     try {
-      await addTeamUser(teamId, { userId: values.userId, role: values.role })
+      await addTeamUser(teamId, { userId: values.userId, role: ROLE_MEMBER })
       feedback.success(t('team.addSuccess'))
       addForm.resetFields()
       setCandidates([])
@@ -200,6 +209,24 @@ export function TeamManage() {
     }
   }
 
+  const handleDissolve = async () => {
+    setDissolving(true)
+    try {
+      await dissolveTeam(teamId)
+      feedback.success(t('team.dissolveSuccess'))
+      try {
+        setMyTeams(await getMyTeams())
+      } catch {
+        // 侧边栏团队列表刷新失败不阻塞跳转
+      }
+      navigate('/team')
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setDissolving(false)
+    }
+  }
+
   const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
     if (!file.type.startsWith('image/')) {
       feedback.error(t('team.avatarTypeError'))
@@ -226,45 +253,68 @@ export function TeamManage() {
 
   const memberColumns: TableColumnsType<TeamUserItem> = useMemo(
     () => [
-      { title: t('team.colNickName'), dataIndex: 'nickName', width: 120 },
-      { title: t('team.colUserName'), dataIndex: 'userName', width: 140, ellipsis: true },
+      {
+        title: t('team.colMember'),
+        key: 'member',
+        render: (_, record) => (
+          <Space size={spacing.sm}>
+            <Avatar size={32}>{(record.nickName || record.userName || '?').slice(0, 1).toUpperCase()}</Avatar>
+            <div>
+              <div style={{ fontWeight: 500 }}>{record.nickName || record.userName || '-'}</div>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {record.userName}
+              </Text>
+            </div>
+          </Space>
+        ),
+      },
       {
         title: t('team.colRole'),
         key: 'role',
-        width: 180,
-        render: (_, record) => {
-          const role = record.role ?? ROLE_MEMBER
-          if (role === ROLE_OWNER || !isOwner) return renderRole(role)
-          return (
-            <Select
-              size="small"
-              value={role === ROLE_ADMIN ? ROLE_ADMIN : ROLE_MEMBER}
-              style={{ width: 120 }}
-              onChange={(v) => void handleChangeRole(record, v)}
-              options={[
-                { value: ROLE_ADMIN, label: t('team.roleAdminOption') },
-                { value: ROLE_MEMBER, label: t('team.roleMemberOption') },
-              ]}
-            />
-          )
-        },
+        width: 110,
+        render: (_, record) => renderRole(record.role ?? ROLE_MEMBER),
       },
       {
         title: t('team.colJoinTime'),
         dataIndex: 'joinTime',
-        width: 160,
+        width: 170,
         render: (v: string | null) => (v ? formatDateTime(v) : '-'),
       },
       {
         title: t('team.colActions'),
         key: 'actions',
-        width: 110,
+        width: 150,
         fixed: 'right' as const,
         render: (_, record) => {
           const role = record.role ?? ROLE_MEMBER
           const isSelf = String(record.userId) === String(currentUserId)
           const actions: ReactNode[] = []
           if (isOwner && role !== ROLE_OWNER) {
+            if (role === ROLE_ADMIN) {
+              actions.push(
+                <Tooltip key="unset-admin" title={t('team.unsetAdmin')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MinusCircleOutlined />}
+                    aria-label={t('team.unsetAdmin')}
+                    onClick={() => void handleChangeRole(record, ROLE_MEMBER)}
+                  />
+                </Tooltip>,
+              )
+            } else {
+              actions.push(
+                <Tooltip key="set-admin" title={t('team.setAdmin')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<SafetyCertificateOutlined />}
+                    aria-label={t('team.setAdmin')}
+                    onClick={() => void handleChangeRole(record, ROLE_ADMIN)}
+                  />
+                </Tooltip>,
+              )
+            }
             actions.push(
               <Popconfirm key="transfer" title={t('team.transferConfirm')} onConfirm={() => void handleTransfer(record)}>
                 <Tooltip title={t('team.transferOwner')}>
@@ -299,6 +349,7 @@ export function TeamManage() {
   const menuItems: Required<MenuProps>['items'] = [
     { key: 'info', icon: <TeamOutlined />, label: t('team.info') },
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
+    { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
@@ -346,39 +397,7 @@ export function TeamManage() {
               />
             </DSCard>
           ) : section === 'members' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              {isOwner && (
-                <Form form={addForm} layout="inline" style={{ marginBottom: spacing.md }} initialValues={{ role: ROLE_MEMBER }}>
-                  <Form.Item name="userId" rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}>
-                    <Select
-                      showSearch
-                      placeholder={t('team.addMemberPlaceholder')}
-                      style={{ width: 240 }}
-                      filterOption={false}
-                      onSearch={(v) => void handleSearchCandidates(v)}
-                      onFocus={() => void handleSearchCandidates('')}
-                      notFoundContent={searching ? null : t('team.addMemberNoResult')}
-                      loading={searching}
-                      options={candidates.map((c) => ({
-                        value: Number(c.userId),
-                        label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item name="role">
-                    <Select
-                      style={{ width: 140 }}
-                      options={[
-                        { value: ROLE_MEMBER, label: t('team.roleMember') },
-                        { value: ROLE_ADMIN, label: t('team.roleAdmin') },
-                      ]}
-                    />
-                  </Form.Item>
-                  <Button type="primary" onClick={() => void handleAddMember()}>
-                    {t('team.addMember')}
-                  </Button>
-                </Form>
-              )}
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
               <DataTable<TeamUserItem>
                 rowKey="userId"
                 columns={memberColumns}
@@ -386,8 +405,38 @@ export function TeamManage() {
                 loading={membersLoading}
                 onRefresh={() => void reloadMembers()}
                 refreshLoading={membersLoading}
+                toolbar={
+                  isOwner ? (
+                    <Form form={addForm} layout="inline" style={{ display: 'flex', gap: spacing.sm }}>
+                      <Form.Item
+                        name="userId"
+                        rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}
+                        style={{ marginBottom: 0, flex: 1, minWidth: 240 }}
+                      >
+                        <Select
+                          showSearch
+                          placeholder={t('team.addMemberPlaceholder')}
+                          filterOption={false}
+                          onSearch={(v) => void handleSearchCandidates(v)}
+                          onFocus={() => void handleSearchCandidates('')}
+                          notFoundContent={searching ? null : t('team.addMemberNoResult')}
+                          loading={searching}
+                          options={candidates.map((c) => ({
+                            value: Number(c.userId),
+                            label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
+                          }))}
+                        />
+                      </Form.Item>
+                      <Button type="primary" icon={<UserAddOutlined />} onClick={() => void handleAddMember()}>
+                        {t('team.addMember')}
+                      </Button>
+                    </Form>
+                  ) : undefined
+                }
               />
             </DSCard>
+          ) : section === 'gateway' ? (
+            <TeamGateway teamId={teamId} canManage={isOwner || detail?.myRole === ROLE_ADMIN} />
           ) : section === 'knowledge' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
               <Empty description={t('team.knowledge')} />
@@ -435,6 +484,13 @@ export function TeamManage() {
                   {t('team.saveInfo')}
                 </Button>
               </Form>
+              {isOwner && (
+                <Popconfirm title={t('team.dissolveConfirm')} onConfirm={() => void handleDissolve()}>
+                  <Button danger style={{ marginTop: spacing.lg }} loading={dissolving}>
+                    {t('team.dissolve')}
+                  </Button>
+                </Popconfirm>
+              )}
             </DSCard>
           )}
         </Content>

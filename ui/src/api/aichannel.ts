@@ -3,6 +3,7 @@ import { getApiClient } from '@/api/kiota'
 import { AIProtocolFamilyObject } from '@/api/client/models'
 import type {
   AIChannelModelMeta,
+  AIModelQuotaInfo,
   AIProtocolFamily,
   BatchDeleteAIModelCommand,
   BatchUpdateAIModelCommand,
@@ -10,11 +11,16 @@ import type {
   CreateAIModelCommand,
   ImportAIModelCommand,
   QueryAIChannelListCommandResponseItem,
+  QueryAIModelAuthorizationCommandResponse,
+  QueryAIModelAuthorizationCommandResponseItem,
   QueryAIModelListCommandResponseItem,
   SyncAIModelCommand,
   SyncAIModelCommandResponse,
   UpdateAIChannelCommand,
+  UpdateAIModelAuthorizationCommand,
   UpdateAIModelCommand,
+  UpdateAIModelQuotaCommand,
+  UpdateAIModelVisibilityCommand,
 } from '@/api/client/models'
 
 /** AI 渠道项（Kiota 生成类型别名）. */
@@ -128,6 +134,64 @@ async function syncModel(channelId: string): Promise<SyncAIModelCommandResponse>
   return res ?? { total: 0, added: 0, skipped: 0 }
 }
 
+/** 模型授权与额度查询响应（Kiota 生成类型别名）. */
+export type ModelAuthorization = QueryAIModelAuthorizationCommandResponse
+/** 授权团队项（Kiota 生成类型别名）. */
+export type ModelAuthorizationItem = QueryAIModelAuthorizationCommandResponseItem
+/** 模型额度信息（Kiota 生成类型别名）. */
+export type ModelQuotaInfo = AIModelQuotaInfo
+
+export interface UpdateModelQuotaPayload {
+  /** 重置周期单位：0=不重置 1=小时 2=天 3=周 4=月. */
+  periodUnit: number
+  /** 周期长度，periodUnit=0 时无效. */
+  periodValue: number
+  /** 每个重置周期内的 tokens 上限. */
+  limitValue: number
+}
+
+async function getModelAuthorization(modelId: string): Promise<ModelAuthorization | null> {
+  const client = getApiClient()
+  const res = await client.api.ai.model.byId(modelId as Guid).authorization.get()
+  return res ?? null
+}
+
+/** 全量替换私有模型的授权团队集合. */
+async function updateModelAuthorization(modelId: string, teamIds: number[]): Promise<void> {
+  const client = getApiClient()
+  await client.api.ai.model.byId(modelId as Guid).authorization.put({
+    modelId: modelId as Guid,
+    teamIds,
+  } as UpdateAIModelAuthorizationCommand)
+}
+
+/** 切换模型公私有可见性. */
+async function updateModelVisibility(modelId: string, isPublic: boolean): Promise<void> {
+  const client = getApiClient()
+  await client.api.ai.model.byId(modelId as Guid).visibility.put({
+    modelId: modelId as Guid,
+    isPublic,
+  } as UpdateAIModelVisibilityCommand)
+}
+
+/** 设置额度：公开模型传 teamId=0，私有模型传已授权团队 id. */
+async function updateModelQuota(modelId: string, teamId: number, payload: UpdateModelQuotaPayload): Promise<void> {
+  const client = getApiClient()
+  await client.api.ai.model.byId(modelId as Guid).quota.byTeamId(teamId).put({
+    modelId: modelId as Guid,
+    teamId,
+    periodUnit: payload.periodUnit,
+    periodValue: payload.periodValue,
+    // 后端 long 在 OpenAPI 中映射为 string
+    limitValue: String(payload.limitValue),
+  } as UpdateAIModelQuotaCommand)
+}
+
+async function deleteModelQuota(modelId: string, teamId: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.ai.model.byId(modelId as Guid).quota.byTeamId(teamId).delete()
+}
+
 async function batchUpdateModel(modelIds: string[], enabled: boolean): Promise<void> {
   const client = getApiClient()
   await client.api.ai.model.batch.post({
@@ -161,4 +225,9 @@ export const aichannelApi = {
   syncModel,
   batchUpdateModel,
   batchDeleteModel,
+  getModelAuthorization,
+  updateModelAuthorization,
+  updateModelVisibility,
+  updateModelQuota,
+  deleteModelQuota,
 }

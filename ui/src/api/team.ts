@@ -104,6 +104,22 @@ export async function removeTeamUser(teamId: number, userId: number): Promise<vo
   await client.api.team.byId(String(teamId)).user.byUserId(String(userId)).delete()
 }
 
+/** 全部团队列表项（管理员，与生成客户端 QueryTeamAllCommandResponseItem 字段对齐） */
+export interface AllTeamItem {
+  /** 后端 long 序列化为字符串 */
+  teamId?: string | number | null
+  name?: string | null
+  isDisable?: boolean | null
+  memberCount?: number | null
+}
+
+/** 查询系统内全部团队（仅管理员），供模型授权等管理场景选择团队使用 */
+export async function getAllTeams(): Promise<AllTeamItem[]> {
+  const client = getApiClient()
+  const res = await client.api.team.all.get()
+  return res?.items ?? []
+}
+
 export async function transferTeamOwner(teamId: number, userId: number): Promise<void> {
   const client = getApiClient()
   await client.api.team.byId(String(teamId)).owner.put({ userId: String(userId) })

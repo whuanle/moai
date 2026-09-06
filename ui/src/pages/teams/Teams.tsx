@@ -1,46 +1,22 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Segmented, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
-import type { TableColumnsType } from 'antd'
-import type { UploadProps } from 'antd'
-import {
-  DeleteOutlined,
-  SearchOutlined,
-  SettingOutlined,
-  StopOutlined,
-  TeamOutlined,
-  UploadOutlined,
-  UserSwitchOutlined,
-} from '@ant-design/icons'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Segmented, Space, Tag, Typography } from 'antd'
+import { SearchOutlined, TeamOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, DataTable, feedback, Page } from '@/design-system'
+import { Card, feedback, Page } from '@/design-system'
 import { neutralColors, spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import {
-  addTeamUser,
   getMyTeams as fetchMyTeams,
   createTeam,
-  dissolveTeam,
   getMyTeams,
-  getTeamCandidates,
-  getTeamUsers,
-  removeTeamUser,
-  transferTeamOwner,
-  updateTeam,
-  updateTeamUserRole,
-  uploadTeamAvatar,
-  type TeamCandidateItem,
   type TeamItem,
-  type TeamUserItem,
 } from '@/api/team'
-
-const { Text } = Typography
 
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
-const ROLE_MEMBER = 0
 
 type FilterKey = 'all' | 'created' | 'managed'
 
@@ -49,20 +25,9 @@ interface CreateFormValues {
   description?: string
 }
 
-interface AddMemberFormValues {
-  userId: number
-  role: number
-}
-
-interface SettingsFormValues {
-  name: string
-  description?: string
-}
-
 export function Teams() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const currentUserId = useAppStore((state) => state.userInfo?.userId)
   const setMyTeams = useAppStore((state) => state.setMyTeams)
 
   /** 团队增删后同步侧边栏的团队列表 */
@@ -78,20 +43,9 @@ export function Teams() {
   const [teams, setTeams] = useState<TeamItem[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [membersOpen, setMembersOpen] = useState(false)
-  const [membersLoading, setMembersLoading] = useState(false)
-  const [current, setCurrent] = useState<TeamItem | null>(null)
-  const [members, setMembers] = useState<TeamUserItem[]>([])
-  const [addForm] = Form.useForm<AddMemberFormValues>()
   const [createForm] = Form.useForm<CreateFormValues>()
-  const [settingsForm] = Form.useForm<SettingsFormValues>()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [savingInfo, setSavingInfo] = useState(false)
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [filter, setFilter] = useState<FilterKey>('all')
   const [searchText, setSearchText] = useState('')
-  const [candidates, setCandidates] = useState<TeamCandidateItem[]>([])
-  const [searching, setSearching] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -121,28 +75,6 @@ export function Teams() {
     })
   }, [teams, filter, searchText])
 
-  const openMembers = async (team: TeamItem) => {
-    setCurrent(team)
-    setMembersOpen(true)
-    setMembersLoading(true)
-    try {
-      setMembers(await getTeamUsers(Number(team.teamId)))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setMembersLoading(false)
-    }
-  }
-
-  const reloadMembers = async () => {
-    if (!current) return
-    try {
-      setMembers(await getTeamUsers(Number(current.teamId)))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
   const handleCreate = async () => {
     const values = await createForm.validateFields()
     setCreating(true)
@@ -160,211 +92,11 @@ export function Teams() {
     }
   }
 
-  const handleDissolve = async (team: TeamItem) => {
-    try {
-      await dissolveTeam(Number(team.teamId))
-      feedback.success(t('team.dissolveSuccess'))
-      void load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const handleAddMember = async () => {
-    const values = await addForm.validateFields()
-    if (!current) return
-    try {
-      await addTeamUser(Number(current.teamId), { userId: values.userId, role: values.role })
-      feedback.success(t('team.addSuccess'))
-      addForm.resetFields()
-      setCandidates([])
-      await reloadMembers()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const handleSearchCandidates = useCallback(async (keyword: string) => {
-    if (!current) return
-    setSearching(true)
-    try {
-      setCandidates(await getTeamCandidates(Number(current.teamId), keyword))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSearching(false)
-    }
-  }, [current])
-
-  const handleChangeRole = async (member: TeamUserItem, role: number) => {
-    if (!current) return
-    try {
-      await updateTeamUserRole(Number(current.teamId), Number(member.userId), role)
-      feedback.success(t('team.roleSuccess'))
-      await reloadMembers()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const handleRemoveMember = async (member: TeamUserItem) => {
-    if (!current) return
-    try {
-      await removeTeamUser(Number(current.teamId), Number(member.userId))
-      feedback.success(t('team.removeSuccess'))
-      await reloadMembers()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const openSettings = (team: TeamItem) => {
-    setCurrent(team)
-    settingsForm.setFieldsValue({ name: team.name ?? '', description: team.description ?? undefined })
-    setSettingsOpen(true)
-  }
-
-  const handleSaveInfo = async () => {
-    const values = await settingsForm.validateFields()
-    if (!current) return
-    setSavingInfo(true)
-    try {
-      await updateTeam(Number(current.teamId), { name: values.name, description: values.description })
-      feedback.success(t('team.saveSuccess'))
-      setSettingsOpen(false)
-      void load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSavingInfo(false)
-    }
-  }
-
-  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
-    if (!file.type.startsWith('image/')) {
-      feedback.error(t('team.avatarTypeError'))
-      return Upload.LIST_IGNORE
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      feedback.error(t('team.avatarSizeError'))
-      return Upload.LIST_IGNORE
-    }
-    if (current) {
-      setUploadingAvatar(true)
-      uploadTeamAvatar(Number(current.teamId), file)
-        .then(() => feedback.success(t('team.avatarSuccess')))
-        .then(() => load())
-        .catch(() => undefined)
-        .finally(() => setUploadingAvatar(false))
-    }
-    return Upload.LIST_IGNORE
-  }
-
-  const handleTransfer = async (member: TeamUserItem) => {
-    if (!current) return
-    try {
-      await transferTeamOwner(Number(current.teamId), Number(member.userId))
-      feedback.success(t('team.transferSuccess'))
-      await Promise.all([reloadMembers(), load()])
-      setCurrent((prev) => (prev ? { ...prev, myRole: ROLE_ADMIN } : prev))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
   const renderRole = (role: number | null | undefined) => {
     if (role === ROLE_OWNER) return <Tag color="gold">{t('team.roleOwner')}</Tag>
     if (role === ROLE_ADMIN) return <Tag color="blue">{t('team.roleAdmin')}</Tag>
     return <Tag>{t('team.roleMember')}</Tag>
   }
-
-  const isOwnerOfCurrent = current?.myRole === ROLE_OWNER
-
-  /** 成员行的移除按钮是否可用（镜像后端矩阵：Owner 行不可移除；Admin 不能移 Admin；Member 仅自己可退） */
-  const canRemoveMember = (member: TeamUserItem): boolean => {
-    const role = member.role ?? ROLE_MEMBER
-    const myRole = current?.myRole ?? ROLE_MEMBER
-    if (role === ROLE_OWNER) return false
-    if (myRole === ROLE_MEMBER) return true
-    if (myRole === ROLE_ADMIN) return role === ROLE_MEMBER
-    return true
-  }
-
-  const memberColumns: TableColumnsType<TeamUserItem> = useMemo(
-    () => [
-      { title: t('team.colNickName'), dataIndex: 'nickName', width: 120 },
-      { title: t('team.colUserName'), dataIndex: 'userName', width: 140, ellipsis: true },
-      {
-        title: t('team.colRole'),
-        key: 'role',
-        width: 180,
-        render: (_, record) => {
-          const role = record.role ?? ROLE_MEMBER
-          if (role === ROLE_OWNER || !isOwnerOfCurrent) return renderRole(role)
-          return (
-            <Select
-              size="small"
-              value={role === ROLE_ADMIN ? ROLE_ADMIN : ROLE_MEMBER}
-              style={{ width: 120 }}
-              onChange={(v) => void handleChangeRole(record, v)}
-              options={[
-                { value: ROLE_ADMIN, label: t('team.roleAdminOption') },
-                { value: ROLE_MEMBER, label: t('team.roleMemberOption') },
-              ]}
-            />
-          )
-        },
-      },
-      {
-        title: t('team.colJoinTime'),
-        dataIndex: 'joinTime',
-        width: 160,
-        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
-      },
-      {
-        title: t('team.colActions'),
-        key: 'actions',
-        width: 110,
-        fixed: 'right' as const,
-        render: (_, record) => {
-          const role = record.role ?? ROLE_MEMBER
-          const isSelf = String(record.userId) === String(currentUserId)
-          const actions: ReactNode[] = []
-          if (isOwnerOfCurrent && role !== ROLE_OWNER) {
-            actions.push(
-              <Popconfirm
-                key="transfer"
-                title={t('team.transferConfirm')}
-                onConfirm={() => void handleTransfer(record)}
-              >
-                <Tooltip title={t('team.transferOwner')}>
-                  <Button type="text" size="small" icon={<UserSwitchOutlined />} aria-label={t('team.transferOwner')} />
-                </Tooltip>
-              </Popconfirm>,
-            )
-          }
-          if (canRemoveMember(record)) {
-            const label = t(isSelf ? 'team.leave' : 'team.remove')
-            actions.push(
-              <Popconfirm
-                key="remove"
-                title={t(isSelf ? 'team.leaveConfirm' : 'team.removeConfirm')}
-                onConfirm={() => void handleRemoveMember(record)}
-              >
-                <Tooltip title={label}>
-                  <Button type="text" size="small" danger icon={<StopOutlined />} aria-label={label} />
-                </Tooltip>
-              </Popconfirm>,
-            )
-          }
-          if (actions.length === 0) return <Text type="secondary">-</Text>
-          return <Space size={0}>{actions}</Space>
-        },
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, isOwnerOfCurrent, current, currentUserId],
-  )
 
   return (
     <Page>
@@ -436,35 +168,6 @@ export function Teams() {
                           <div style={{ marginTop: 2 }}>{renderRole(team.myRole)}</div>
                         </div>
                       </div>
-                      <Space size={0} align="center" style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title={t('team.members')}>
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<TeamOutlined />}
-                            aria-label={t('team.members')}
-                            onClick={() => void openMembers(team)}
-                          />
-                        </Tooltip>
-                        {(team.myRole === ROLE_OWNER || team.myRole === ROLE_ADMIN) && (
-                          <Tooltip title={t('team.settings')}>
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<SettingOutlined />}
-                              aria-label={t('team.settings')}
-                              onClick={() => openSettings(team)}
-                            />
-                          </Tooltip>
-                        )}
-                        {team.myRole === ROLE_OWNER && (
-                          <Popconfirm title={t('team.dissolveConfirm')} onConfirm={() => void handleDissolve(team)}>
-                            <Tooltip title={t('team.dissolve')}>
-                              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('team.dissolve')} />
-                            </Tooltip>
-                          </Popconfirm>
-                        )}
-                      </Space>
                     </div>
                     <Typography.Paragraph
                       type="secondary"
@@ -511,99 +214,6 @@ export function Teams() {
         maskClosable={false}
       >
         <Form form={createForm} layout="vertical">
-          <Form.Item
-            name="name"
-            label={t('team.name')}
-            rules={[
-              { required: true, message: t('team.namePlaceholder') },
-              { max: 50, message: `${t('team.name')} ≤ 50` },
-            ]}
-          >
-            <Input placeholder={t('team.namePlaceholder')} maxLength={50} />
-          </Form.Item>
-          <Form.Item name="description" label={t('team.desc')} rules={[{ max: 255 }]}>
-            <Input.TextArea placeholder={t('team.descPlaceholder')} maxLength={255} rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        open={membersOpen}
-        title={t('team.membersTitle')}
-        footer={null}
-        onCancel={() => setMembersOpen(false)}
-        width={680}
-        destroyOnHidden
-      >
-        {isOwnerOfCurrent && (
-          <Form form={addForm} layout="inline" style={{ marginBottom: 16 }} initialValues={{ role: ROLE_MEMBER }}>
-            <Form.Item name="userId" rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}>
-              <Select
-                showSearch
-                placeholder={t('team.addMemberPlaceholder')}
-                style={{ width: 220 }}
-                filterOption={false}
-                onSearch={(v) => void handleSearchCandidates(v)}
-                onFocus={() => void handleSearchCandidates('')}
-                notFoundContent={searching ? null : t('team.addMemberNoResult')}
-                loading={searching}
-                options={candidates.map((c) => ({
-                  value: Number(c.userId),
-                  label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
-                }))}
-              />
-            </Form.Item>
-            <Form.Item name="role">
-              <Select
-                style={{ width: 140 }}
-                options={[
-                  { value: ROLE_MEMBER, label: t('team.roleMember') },
-                  { value: ROLE_ADMIN, label: t('team.roleAdmin') },
-                ]}
-              />
-            </Form.Item>
-            <Button type="primary" onClick={() => void handleAddMember()}>
-              {t('team.addMember')}
-            </Button>
-          </Form>
-        )}
-        <div aria-label="team-member-table">
-          <DataTable<TeamUserItem>
-            rowKey="userId"
-            columns={memberColumns}
-            dataSource={members}
-            loading={membersLoading}
-            onRefresh={() => void reloadMembers()}
-            refreshLoading={membersLoading}
-          />
-        </div>
-      </Modal>
-      <Modal
-        open={settingsOpen}
-        title={t('team.settingsTitle')}
-        onOk={() => void handleSaveInfo()}
-        onCancel={() => setSettingsOpen(false)}
-        okText={t('team.saveInfo')}
-        cancelText={t('team.cancel')}
-        confirmLoading={savingInfo}
-        destroyOnHidden
-        maskClosable={false}
-      >
-        <Form form={settingsForm} layout="vertical">
-          <Form.Item label={t('team.avatar')}>
-            <Space align="center">
-              <Avatar size={64} src={current?.avatar || undefined}>
-                {(current?.name ?? '?').slice(0, 1)}
-              </Avatar>
-              <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*">
-                <Button icon={<UploadOutlined />} loading={uploadingAvatar}>
-                  {t('team.avatar')}
-                </Button>
-              </Upload>
-            </Space>
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>{t('team.avatarHint')}</Text>
-            </div>
-          </Form.Item>
           <Form.Item
             name="name"
             label={t('team.name')}

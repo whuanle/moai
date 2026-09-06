@@ -20,6 +20,7 @@ import {
   EditOutlined,
   PlusOutlined,
   SyncOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
@@ -34,6 +35,7 @@ import {
 import { getCatalogProviders, type CatalogProvider } from '@/api/models-catalog'
 import { DataTable, feedback, Page } from '@/design-system'
 import { useAppStore } from '@/store/app'
+import { ModelAccessDrawer } from './ModelAccessDrawer'
 
 const kindColor: Record<string, string> = {
   conversation: 'blue',
@@ -190,6 +192,7 @@ interface ChannelModelsPanelProps {
   onAddModel: (channelId: string) => void
   onEditModel: (model: AIModelItem) => void
   onDeleteModel: (model: AIModelItem) => void
+  onAccessModel: (model: AIModelItem) => void
   onRefresh: () => void
 }
 
@@ -202,6 +205,7 @@ function ChannelModelsPanel({
   onAddModel,
   onEditModel,
   onDeleteModel,
+  onAccessModel,
   onRefresh,
 }: ChannelModelsPanelProps) {
   const { t } = useTranslation()
@@ -243,6 +247,17 @@ function ChannelModelsPanel({
       },
     },
     {
+      title: t('models.colVisibility'),
+      dataIndex: 'isPublic',
+      width: 90,
+      render: (v: boolean | null | undefined) =>
+        v === false ? (
+          <Tag color="orange">{t('models.private')}</Tag>
+        ) : (
+          <Tag color="green">{t('models.public')}</Tag>
+        ),
+    },
+    {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
       width: 80,
@@ -251,9 +266,18 @@ function ChannelModelsPanel({
     {
       title: t('models.colActions'),
       key: 'actions',
-      width: 110,
+      width: 150,
       render: (_, record) => (
         <Space size={0}>
+          <Tooltip title={t('models.access')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<TeamOutlined />}
+              aria-label={t('models.access')}
+              onClick={() => onAccessModel(record)}
+            />
+          </Tooltip>
           <Tooltip title={t('models.edit')}>
             <Button
               type="text"
@@ -310,7 +334,7 @@ function ChannelModelsPanel({
       columns={columns}
       dataSource={visibleModels}
       loading={loading}
-      scroll={{ x: 1120 }}
+      scroll={{ x: 1220 }}
       pagination={false}
       size="small"
       rowSelection={{
@@ -377,6 +401,8 @@ export function Models() {
   const [editingModel, setEditingModel] = useState<AIModelItem | null>(null)
   const [modelChannelId, setModelChannelId] = useState<string | null>(null)
   const [modelKind, setModelKind] = useState<string | undefined>()
+  const [accessModel, setAccessModel] = useState<AIModelItem | null>(null)
+  const [accessOpen, setAccessOpen] = useState(false)
   const appliedKind = modelKind ?? editingModel?.modelKind ?? 'conversation'
   const kindCaps = kindCapabilitySettings(appliedKind)
 
@@ -601,6 +627,11 @@ export function Models() {
     }
   }
 
+  const openAccessDrawer = (record: AIModelItem) => {
+    setAccessModel(record)
+    setAccessOpen(true)
+  }
+
   const channelColumns: TableColumnsType<AIChannelItem> = [
     { title: t('models.colName'), dataIndex: 'name', width: 160 },
     { title: t('models.colProviderKey'), dataIndex: 'providerKey', width: 160, ellipsis: true },
@@ -724,6 +755,7 @@ export function Models() {
               onAddModel={openCreateModel}
               onEditModel={openEditModel}
               onDeleteModel={handleDeleteModel}
+              onAccessModel={openAccessDrawer}
               onRefresh={() => {
                 if (record.id) {
                   void loadModelsForChannel(record.id)
@@ -859,6 +891,18 @@ export function Models() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <ModelAccessDrawer
+        model={accessModel}
+        open={accessOpen}
+        onClose={() => setAccessOpen(false)}
+        onVisibilityChanged={() => {
+          const channelId = accessModel?.channelId
+          if (channelId) {
+            void loadModelsForChannel(channelId)
+          }
+        }}
+      />
     </Page>
   )
 }

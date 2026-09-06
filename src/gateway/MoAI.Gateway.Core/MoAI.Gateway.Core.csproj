@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Gateway</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\..\aichannel\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Gateway.Api\MoAI.Gateway.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Handlers\" />
+		<Folder Include="Services\" />
+		<Folder Include="Protocols\" />
+	</ItemGroup>
+
+</Project>

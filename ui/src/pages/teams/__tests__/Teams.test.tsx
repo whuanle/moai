@@ -7,8 +7,7 @@ import { getMyTeams } from '@/api/team'
 
 vi.mock('@/api/team', () => ({
   createTeam: vi.fn().mockResolvedValue(9),
-  getMyTeams: vi.fn().mockResolvedValue([
-    {
+  getMyTeams: vi.fn().mockResolvedValue([    {
       teamId: '7',
       name: 'Alpha 团队',
       description: '第一个',
@@ -33,17 +32,6 @@ vi.mock('@/api/team', () => ({
       createTime: '2026-09-02T00:00:00Z',
     },
   ]),
-  getTeamUsers: vi.fn().mockResolvedValue([
-    { userId: '1', userName: 'owner', nickName: 'O', role: 2, joinTime: '2026-09-02T00:00:00Z' },
-    { userId: '2', userName: 'member', nickName: 'M', role: 0, joinTime: '2026-09-02T00:00:00Z' },
-  ]),
-  getTeamDetail: vi.fn(),
-  updateTeam: vi.fn().mockResolvedValue(undefined),
-  dissolveTeam: vi.fn().mockResolvedValue(undefined),
-  addTeamUser: vi.fn().mockResolvedValue(undefined),
-  updateTeamUserRole: vi.fn().mockResolvedValue(undefined),
-  removeTeamUser: vi.fn().mockResolvedValue(undefined),
-  getTeamCandidates: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('@/api/kiota', () => ({
@@ -86,50 +74,19 @@ describe('Teams', () => {
     expect(screen.getByText('成员', { selector: '.ant-tag' })).toBeInTheDocument()
   })
 
-  it('卡片上按角色显示操作按钮：Owner 显示设置+解散，Admin 显示设置，Member 无', async () => {
+  it('卡片不显示任何操作按钮（成员/设置/解散），操作需进入团队后进行', async () => {
     renderTeams()
     expect(await screen.findByText('Alpha 团队')).toBeInTheDocument()
 
-    // Alpha（Owner）
-    expect(findCard('Alpha 团队')?.querySelector("button[aria-label='设置']")).not.toBeNull()
-    expect(findCard('Alpha 团队')?.querySelector("button[aria-label='解散']")).not.toBeNull()
-    // Gamma（Admin）：设置，无解散
-    expect(findCard('Gamma 团队')?.querySelector("button[aria-label='设置']")).not.toBeNull()
-    expect(findCard('Gamma 团队')?.querySelector("button[aria-label='解散']")).toBeNull()
-    // Beta（Member）：无设置/解散
-    expect(findCard('Beta 团队')?.querySelector("button[aria-label='设置']")).toBeNull()
-    expect(findCard('Beta 团队')?.querySelector("button[aria-label='解散']")).toBeNull()
-  })
-
-  it('成员弹窗展示成员列表，Owner 行不可移除', async () => {
-    renderTeams()
-    expect(await screen.findByText('Alpha 团队')).toBeInTheDocument()
-
-    const membersBtn = findCard('Alpha 团队')?.querySelector("button[aria-label='成员']")
-    ;(membersBtn as HTMLElement | null)?.click()
-
-    expect(await screen.findByText('owner')).toBeInTheDocument()
-    expect(screen.getByText('member')).toBeInTheDocument()
-    // Owner 自己的行（role=owner）操作列渲染 "-"
-    const ownerRow = Array.from(document.querySelectorAll('table tr')).find((r) =>
-      r.textContent?.includes('owner'),
-    )
-    expect(ownerRow?.textContent).toContain('-')
-    // Member 行有移除按钮
-    const memberRow = Array.from(document.querySelectorAll('table tr')).find((r) =>
-      r.textContent?.includes('member'),
-    )
-    expect(memberRow!.querySelector("button[aria-label='移除']")).not.toBeNull()
-  })
-
-  it('Owner 卡片成员弹窗含转让按钮', async () => {
-    renderTeams()
-    expect(await screen.findByText('Alpha 团队')).toBeInTheDocument()
-
-    const membersBtn = findCard('Alpha 团队')?.querySelector("button[aria-label='成员']")
-    ;(membersBtn as HTMLElement | null)?.click()
-    expect(await screen.findByText('member')).toBeInTheDocument()
-    expect(screen.getByLabelText('转让所有权')).toBeInTheDocument()
+    for (const cardName of ['Alpha 团队', 'Beta 团队', 'Gamma 团队']) {
+      const card = findCard(cardName)
+      expect(card?.querySelector("button[aria-label='成员']")).toBeNull()
+      expect(card?.querySelector("button[aria-label='设置']")).toBeNull()
+      expect(card?.querySelector("button[aria-label='解散']")).toBeNull()
+    }
+    expect(screen.queryByLabelText('成员')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('设置')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('解散')).not.toBeInTheDocument()
   })
 
   it('默认显示全部已加入团队，筛选“我创建的”仅剩 Owner 卡，筛选“我管理的”仅剩 Admin 卡', async () => {

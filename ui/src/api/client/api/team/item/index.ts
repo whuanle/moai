@@ -8,6 +8,8 @@ import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from 
 // @ts-ignore
 import { CandidatesRequestBuilderRequestsMetadata, type CandidatesRequestBuilder } from './candidates/index.js';
 // @ts-ignore
+import { GatewayRequestBuilderNavigationMetadata, type GatewayRequestBuilder } from './gateway/index.js';
+// @ts-ignore
 import { OwnerRequestBuilderRequestsMetadata, type OwnerRequestBuilder } from './owner/index.js';
 // @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
@@ -17,9 +19,9 @@ import { type UsersRequestBuilder, UsersRequestBuilderRequestsMetadata } from '.
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/team/{id}
+ * Builds and executes requests for operations under /api/team/{-id}
  */
-export interface TeamItemRequestBuilder extends BaseRequestBuilder<TeamItemRequestBuilder> {
+export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilder> {
     /**
      * The avatar property
      */
@@ -28,6 +30,10 @@ export interface TeamItemRequestBuilder extends BaseRequestBuilder<TeamItemReque
      * The candidates property
      */
     get candidates(): CandidatesRequestBuilder;
+    /**
+     * The gateway property
+     */
+    get gateway(): GatewayRequestBuilder;
     /**
      * The owner property
      */
@@ -97,16 +103,19 @@ export interface TeamItemRequestBuilder extends BaseRequestBuilder<TeamItemReque
 /**
  * Uri template for the request builder.
  */
-export const TeamItemRequestBuilderUriTemplate = "{+baseurl}/api/team/{id}";
+export const ItemRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}";
 /**
  * Metadata for all the navigation properties in the request builder.
  */
-export const TeamItemRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
     },
     candidates: {
         requestsMetadata: CandidatesRequestBuilderRequestsMetadata,
+    },
+    gateway: {
+        navigationMetadata: GatewayRequestBuilderNavigationMetadata,
     },
     owner: {
         requestsMetadata: OwnerRequestBuilderRequestsMetadata,
@@ -121,9 +130,9 @@ export const TeamItemRequestBuilderNavigationMetadata: Record<Exclude<keyof Team
 /**
  * Metadata for all the requests in the request builder.
  */
-export const TeamItemRequestBuilderRequestsMetadata: RequestsMetadata = {
+export const ItemRequestBuilderRequestsMetadata: RequestsMetadata = {
     delete: {
-        uriTemplate: TeamItemRequestBuilderUriTemplate,
+        uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {
             400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
@@ -136,7 +145,7 @@ export const TeamItemRequestBuilderRequestsMetadata: RequestsMetadata = {
         responseBodyFactory:  createEmptyCommandResponseFromDiscriminatorValue,
     },
     get: {
-        uriTemplate: TeamItemRequestBuilderUriTemplate,
+        uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {
             400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
@@ -149,7 +158,7 @@ export const TeamItemRequestBuilderRequestsMetadata: RequestsMetadata = {
         responseBodyFactory:  createQueryTeamCommandResponseFromDiscriminatorValue,
     },
     put: {
-        uriTemplate: TeamItemRequestBuilderUriTemplate,
+        uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",
         errorMappings: {
             400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,

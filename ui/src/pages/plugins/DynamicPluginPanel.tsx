@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DeleteOutlined, EditOutlined, PlayCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import {
+  DeleteOutlined,
+  EditOutlined,
+  AppstoreOutlined,
+  PlayCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons'
 import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import type { PluginClassify } from '@/api/classify'
 import {
   pluginApi,
@@ -37,6 +45,7 @@ interface DynamicFormValues {
 
 export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [items, setItems] = useState<DynamicPluginManageItem[]>([])
   const [templates, setTemplates] = useState<DynamicPluginTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -228,6 +237,9 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
               {t('plugins.refresh')}
             </Button>
+            <Button icon={<AppstoreOutlined />} onClick={() => navigate('/plugin/templates')}>
+              {t('plugins.templateList')}
+            </Button>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               {filterTags.map((item, index) => (
                 <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -292,6 +304,8 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
             <Select
               disabled={Boolean(editing)}
               allowClear
+              showSearch
+              optionFilterProp="label"
               placeholder={t('plugins.dynamicTemplatePlaceholder')}
               options={templates.map((tp) => ({ value: tp.key, label: `${tp.name} (${tp.key})` }))}
               onChange={(v) => {

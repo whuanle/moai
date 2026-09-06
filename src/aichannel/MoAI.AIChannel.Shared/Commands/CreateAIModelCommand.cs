@@ -26,6 +26,11 @@ public class CreateAIModelCommand : IRequest<EmptyCommandResponse>, IModelValida
     /// </summary>
     public bool Enabled { get; init; } = true;
 
+    /// <summary>
+    /// 是否公开：true=所有团队可用；false=私有，仅授权团队可用，默认私有.
+    /// </summary>
+    public bool IsPublic { get; init; } = false;
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateAIModelCommand> validate)
     {

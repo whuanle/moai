@@ -11,6 +11,7 @@ using MoAI.Classify;
 using MoAI.Common;
 using MoAI.Database;
 using MoAI.Filters;
+using MoAI.Gateway;
 using MoAI.Hangfire;
 using MoAI.Infra;
 using MoAI.Modules;
@@ -35,6 +36,7 @@ namespace MoAI;
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<AIChannelCoreModule>]
+[InjectModule<GatewayCoreModule>]
 [InjectModule<TeamCoreModule>]
 [InjectModule<WikiCoreModule>]
 [InjectModule<VariableCoreModule>]

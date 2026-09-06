@@ -72,6 +72,10 @@ internal partial class AiModelConfiguration : IEntityTypeConfiguration<AiModelEn
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsPublic)
+            .HasDefaultValue(true)
+            .HasComment("是否公开：true=所有团队可用；false=私有，仅授权团队可用")
+            .HasColumnName("is_public");
         entity.Property(e => e.KnowledgeCutoff)
             .HasMaxLength(50)
             .HasComment("知识截止时间")

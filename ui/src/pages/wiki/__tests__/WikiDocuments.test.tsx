@@ -7,13 +7,13 @@ import { getWikiDocuments } from '@/api/wiki'
 vi.mock('@/api/wiki', () => ({
   getWikiDocuments: vi.fn().mockResolvedValue({
     wikiId: '5',
-    myRole: 0,
+    myRole: 1,
     items: [
       { documentId: '11', wikiId: '5', title: '安装指南', createTime: '2026-09-02T00:00:00Z', updateTime: '2026-09-02T01:00:00Z' },
     ],
   }),
   getWikiDocumentDetail: vi.fn().mockResolvedValue({
-    documentId: '11', wikiId: '5', title: '安装指南', content: '# 安装', myRole: 0,
+    documentId: '11', wikiId: '5', title: '安装指南', content: '# 安装', myRole: 1,
     createTime: '2026-09-02T00:00:00Z', updateTime: '2026-09-02T01:00:00Z',
   }),
   createWikiDocument: vi.fn().mockResolvedValue(12),
@@ -40,7 +40,7 @@ describe('WikiDocuments', () => {
     vi.clearAllMocks()
     vi.mocked(getWikiDocuments).mockResolvedValue({
       wikiId: '5',
-      myRole: 0,
+      myRole: 1,
       items: [
         { documentId: '11', wikiId: '5', title: '安装指南', createTime: '2026-09-02T00:00:00Z', updateTime: '2026-09-02T01:00:00Z' },
       ],

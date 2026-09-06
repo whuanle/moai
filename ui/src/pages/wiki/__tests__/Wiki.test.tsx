@@ -8,7 +8,7 @@ import { getWikis } from '@/api/wiki'
 vi.mock('@/api/wiki', () => ({
   getWikis: vi.fn().mockResolvedValue({
     teamId: '7',
-    myRole: 0,
+    myRole: 1,
     items: [
       { wikiId: '1', teamId: '7', name: '产品文档', description: '产品相关', createTime: '2026-09-02T00:00:00Z' },
       { wikiId: '2', teamId: '7', name: '技术文档', description: '', createTime: '2026-09-02T00:00:00Z' },
@@ -37,7 +37,7 @@ describe('Wiki', () => {
     vi.clearAllMocks()
     vi.mocked(getWikis).mockResolvedValue({
       teamId: '7',
-      myRole: 0,
+      myRole: 1,
       items: [
         { wikiId: '1', teamId: '7', name: '产品文档', description: '产品相关', createTime: '2026-09-02T00:00:00Z' },
         { wikiId: '2', teamId: '7', name: '技术文档', description: '', createTime: '2026-09-02T00:00:00Z' },
@@ -79,7 +79,7 @@ describe('Wiki', () => {
   })
 
   it('Member 角色不显示新建与操作列', async () => {
-    vi.mocked(getWikis).mockResolvedValueOnce({ teamId: '7', myRole: 2, items: [] })
+    vi.mocked(getWikis).mockResolvedValueOnce({ teamId: '7', myRole: 0, items: [] })
     renderWiki()
     await waitFor(() => {
       expect(getWikis).toHaveBeenCalled()

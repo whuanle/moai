@@ -132,4 +132,9 @@ public class QueryAIModelListCommandResponseItem : AuditsInfo
     /// 是否启用.
     /// </summary>
     public bool Enabled { get; set; }
+
+    /// <summary>
+    /// 是否公开：true=所有团队可用；false=私有，仅授权团队可用.
+    /// </summary>
+    public bool IsPublic { get; set; }
 }

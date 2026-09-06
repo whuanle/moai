@@ -79,6 +79,7 @@ public class SyncAIModelCommandHandler : IRequestHandler<SyncAIModelCommand, Syn
             {
                 ChannelId = channel.Id,
                 Enabled = shouldEnable,
+                IsPublic = false,
                 ModelId = modelId,
                 Name = modelId,
                 ModelKind = AIModelMetaMapper.DeriveModelKind(new AIChannelModelMeta { ModelId = modelId, Name = modelId }),

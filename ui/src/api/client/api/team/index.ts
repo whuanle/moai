@@ -4,7 +4,9 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleLongFromDiscriminatorValue, serializeCreateTeamCommand, serializeSimpleLong, type BusinessValidationResult, type CreateTeamCommand, type SimpleLong } from '../../models/index.js';
 // @ts-ignore
-import { TeamItemRequestBuilderNavigationMetadata, TeamItemRequestBuilderRequestsMetadata, type TeamItemRequestBuilder } from './item/index.js';
+import { AllRequestBuilderRequestsMetadata, type AllRequestBuilder } from './all/index.js';
+// @ts-ignore
+import { ItemRequestBuilderNavigationMetadata, ItemRequestBuilderRequestsMetadata, type ItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -15,15 +17,19 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  */
 export interface TeamRequestBuilder extends BaseRequestBuilder<TeamRequestBuilder> {
     /**
+     * The all property
+     */
+    get all(): AllRequestBuilder;
+    /**
      * The list property
      */
     get list(): ListRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.team.item collection
      * @param id 团队 id.
-     * @returns {TeamItemRequestBuilder}
+     * @returns {ItemRequestBuilder}
      */
-     byId(id: string) : TeamItemRequestBuilder;
+     byId(id: string) : ItemRequestBuilder;
     /**
      * 创建团队，创建者自动成为团队所有者.
      * @param body 创建团队，创建者自动成为 Owner.
@@ -53,9 +59,12 @@ export const TeamRequestBuilderUriTemplate = "{+baseurl}/api/team";
  */
 export const TeamRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
-        requestsMetadata: TeamItemRequestBuilderRequestsMetadata,
-        navigationMetadata: TeamItemRequestBuilderNavigationMetadata,
-        pathParametersMappings: ["id"],
+        requestsMetadata: ItemRequestBuilderRequestsMetadata,
+        navigationMetadata: ItemRequestBuilderNavigationMetadata,
+        pathParametersMappings: ["%2Did"],
+    },
+    all: {
+        requestsMetadata: AllRequestBuilderRequestsMetadata,
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,

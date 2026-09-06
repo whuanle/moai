@@ -114,6 +114,35 @@ export interface AIChannelModelMeta extends Parsable {
      */
     supportsVision?: boolean | null;
 }
+/**
+ * 模型额度信息，来源于额度规则与其余额行.
+ */
+export interface AIModelQuotaInfo extends Parsable {
+    /**
+     * 规则本身的有效期，null=长期有效.
+     */
+    expirationTime?: Date | null;
+    /**
+     * 额度规则 id.
+     */
+    limitId?: number | null;
+    /**
+     * 每个重置周期内的 tokens 上限.
+     */
+    limitValue?: string | null;
+    /**
+     * 重置周期单位：0=不重置(总量一次性) 1=小时 2=天 3=周 4=月.
+     */
+    periodUnit?: number | null;
+    /**
+     * 重置周期长度，与 period_unit 配合，例如每 8 小时=(8,1)、每天=(1,2)；period_unit=0 时无效.
+     */
+    periodValue?: number | null;
+    /**
+     * 当前周期已消耗 tokens.
+     */
+    usedTokens?: string | null;
+}
 export type AIProtocolFamily = (typeof AIProtocolFamilyObject)[keyof typeof AIProtocolFamilyObject];
 /**
  * 数据子项.
@@ -349,9 +378,35 @@ export interface CreateAIModelCommand extends Parsable {
      */
     enabled?: boolean | null;
     /**
+     * 是否公开：true=所有团队可用；false=私有，仅授权团队可用，默认私有.
+     */
+    isPublic?: boolean | null;
+    /**
      * 模型元数据.
      */
     meta?: AIChannelModelMeta | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AIModelQuotaInfo}
+ */
+// @ts-ignore
+export function createAIModelQuotaInfoFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAIModelQuotaInfo;
+}
+/**
+ * 创建 API Key 请求体.
+ */
+export interface CreateApiKeyRequest extends Parsable {
+    /**
+     * 过期时间，null=永不过期.
+     */
+    expireTime?: string | null;
+    /**
+     * 密钥名称.
+     */
+    name?: string | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -481,6 +536,15 @@ export function createCreateAIModelCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateApiKeyRequest}
+ */
+// @ts-ignore
+export function createCreateApiKeyRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateApiKeyRequest;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateClassifyCommand}
  */
 // @ts-ignore
@@ -495,6 +559,15 @@ export function createCreateClassifyCommandFromDiscriminatorValue(parseNode: Par
 // @ts-ignore
 export function createCreateOAuthConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateOAuthConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateTeamApiKeyCommandResponse}
+ */
+// @ts-ignore
+export function createCreateTeamApiKeyCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateTeamApiKeyCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -825,6 +898,24 @@ export function createQueryAIChannelListCommandResponseItemFromDiscriminatorValu
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAIModelAuthorizationCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAIModelAuthorizationCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAIModelAuthorizationCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAIModelAuthorizationCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryAIModelAuthorizationCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAIModelAuthorizationCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAIModelListCommandResponse}
  */
 // @ts-ignore
@@ -996,6 +1087,33 @@ export function createQuerySettingsCommandResponseFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamAllCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamAllCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamAllCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamAllCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryTeamAllCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamAllCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamApiKeysCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamApiKeysCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamApiKeysCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryTeamCandidatesCommandResponse}
  */
 // @ts-ignore
@@ -1010,6 +1128,15 @@ export function createQueryTeamCandidatesCommandResponseFromDiscriminatorValue(p
 // @ts-ignore
 export function createQueryTeamCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryTeamCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamGatewayModelsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamGatewayModelsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamGatewayModelsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1300,6 +1427,32 @@ export function createSyncAIModelCommandResponseFromDiscriminatorValue(parseNode
     return deserializeIntoSyncAIModelCommandResponse;
 }
 /**
+ * 创建网关 API Key 响应，secret 仅此一次返回，服务端只保存 sha256.
+ */
+export interface CreateTeamApiKeyCommandResponse extends Parsable {
+    /**
+     * 密钥 id.
+     */
+    apiKeyId?: Guid | null;
+    /**
+     * 密钥前缀，用于列表展示.
+     */
+    keyPrefix?: string | null;
+    /**
+     * 密钥原文，仅创建时返回一次.
+     */
+    secret?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamApiKeyItem}
+ */
+// @ts-ignore
+export function createTeamApiKeyItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamApiKeyItem;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TeamCandidateItem}
@@ -1328,6 +1481,24 @@ export interface CreateTeamCommand extends Parsable {
      * 团队名称.
      */
     name?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamGatewayModelItem}
+ */
+// @ts-ignore
+export function createTeamGatewayModelItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamGatewayModelItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamGatewayModelQuota}
+ */
+// @ts-ignore
+export function createTeamGatewayModelQuotaFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamGatewayModelQuota;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1377,11 +1548,47 @@ export function createUpdateAIChannelCommandFromDiscriminatorValue(parseNode: Pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAIModelAuthorizationCommand}
+ */
+// @ts-ignore
+export function createUpdateAIModelAuthorizationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAIModelAuthorizationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateAIModelCommand}
  */
 // @ts-ignore
 export function createUpdateAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateAIModelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAIModelQuotaCommand}
+ */
+// @ts-ignore
+export function createUpdateAIModelQuotaCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAIModelQuotaCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAIModelVisibilityCommand}
+ */
+// @ts-ignore
+export function createUpdateAIModelVisibilityCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAIModelVisibilityCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateApiKeyRequest}
+ */
+// @ts-ignore
+export function createUpdateApiKeyRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateApiKeyRequest;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1536,10 +1743,6 @@ export interface CreateVariableCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 变量名称，仅组织用途，可为空.
-     */
-    name?: string | null;
-    /**
      * 是否私密变量：私密变量的值仅管理员可见，落库 AES 加密.
      */
     isSecret?: boolean | null;
@@ -1547,6 +1750,10 @@ export interface CreateVariableCommand extends Parsable {
      * 变量名，团队内唯一，字母开头，仅字母/数字/下划线，插件配置中以 ${key} 引用.
      */
     key?: string | null;
+    /**
+     * 变量名称，仅组织用途，可为空.
+     */
+    name?: string | null;
     /**
      * 所属团队 id.
      */
@@ -1676,6 +1883,21 @@ export function deserializeIntoAIChannelModelMeta(aIChannelModelMeta: Partial<AI
         "supportsTemperature": n => { aIChannelModelMeta.supportsTemperature = n.getBooleanValue(); },
         "supportsToolCall": n => { aIChannelModelMeta.supportsToolCall = n.getBooleanValue(); },
         "supportsVision": n => { aIChannelModelMeta.supportsVision = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAIModelQuotaInfo(aIModelQuotaInfo: Partial<AIModelQuotaInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expirationTime": n => { aIModelQuotaInfo.expirationTime = n.getDateValue(); },
+        "limitId": n => { aIModelQuotaInfo.limitId = n.getNumberValue(); },
+        "limitValue": n => { aIModelQuotaInfo.limitValue = n.getStringValue(); },
+        "periodUnit": n => { aIModelQuotaInfo.periodUnit = n.getNumberValue(); },
+        "periodValue": n => { aIModelQuotaInfo.periodValue = n.getNumberValue(); },
+        "usedTokens": n => { aIModelQuotaInfo.usedTokens = n.getStringValue(); },
     }
 }
 /**
@@ -1824,7 +2046,19 @@ export function deserializeIntoCreateAIModelCommand(createAIModelCommand: Partia
     return {
         "channelId": n => { createAIModelCommand.channelId = n.getGuidValue(); },
         "enabled": n => { createAIModelCommand.enabled = n.getBooleanValue(); },
+        "isPublic": n => { createAIModelCommand.isPublic = n.getBooleanValue(); },
         "meta": n => { createAIModelCommand.meta = n.getObjectValue<AIChannelModelMeta>(createAIChannelModelMetaFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateApiKeyRequest(createApiKeyRequest: Partial<CreateApiKeyRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expireTime": n => { createApiKeyRequest.expireTime = n.getStringValue(); },
+        "name": n => { createApiKeyRequest.name = n.getStringValue(); },
     }
 }
 /**
@@ -1859,6 +2093,18 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateTeamApiKeyCommandResponse(createTeamApiKeyCommandResponse: Partial<CreateTeamApiKeyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "apiKeyId": n => { createTeamApiKeyCommandResponse.apiKeyId = n.getGuidValue(); },
+        "keyPrefix": n => { createTeamApiKeyCommandResponse.keyPrefix = n.getStringValue(); },
+        "secret": n => { createTeamApiKeyCommandResponse.secret = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateTeamCommand(createTeamCommand: Partial<CreateTeamCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "contextUserId": n => { createTeamCommand.contextUserId = n.getStringValue(); },
@@ -1875,9 +2121,9 @@ export function deserializeIntoCreateTeamCommand(createTeamCommand: Partial<Crea
 export function deserializeIntoCreateVariableCommand(createVariableCommand: Partial<CreateVariableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { createVariableCommand.description = n.getStringValue(); },
-        "name": n => { createVariableCommand.name = n.getStringValue(); },
         "isSecret": n => { createVariableCommand.isSecret = n.getBooleanValue(); },
         "key": n => { createVariableCommand.key = n.getStringValue(); },
+        "name": n => { createVariableCommand.name = n.getStringValue(); },
         "teamId": n => { createVariableCommand.teamId = n.getStringValue(); },
         "value": n => { createVariableCommand.value = n.getStringValue(); },
     }
@@ -2274,6 +2520,31 @@ export function deserializeIntoQueryAIChannelListCommandResponseItem(queryAIChan
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAIModelAuthorizationCommandResponse(queryAIModelAuthorizationCommandResponse: Partial<QueryAIModelAuthorizationCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "globalQuota": n => { queryAIModelAuthorizationCommandResponse.globalQuota = n.getObjectValue<AIModelQuotaInfo>(createAIModelQuotaInfoFromDiscriminatorValue); },
+        "isPublic": n => { queryAIModelAuthorizationCommandResponse.isPublic = n.getBooleanValue(); },
+        "items": n => { queryAIModelAuthorizationCommandResponse.items = n.getCollectionOfObjectValues<QueryAIModelAuthorizationCommandResponseItem>(createQueryAIModelAuthorizationCommandResponseItemFromDiscriminatorValue); },
+        "modelId": n => { queryAIModelAuthorizationCommandResponse.modelId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAIModelAuthorizationCommandResponseItem(queryAIModelAuthorizationCommandResponseItem: Partial<QueryAIModelAuthorizationCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "quota": n => { queryAIModelAuthorizationCommandResponseItem.quota = n.getObjectValue<AIModelQuotaInfo>(createAIModelQuotaInfoFromDiscriminatorValue); },
+        "teamId": n => { queryAIModelAuthorizationCommandResponseItem.teamId = n.getNumberValue(); },
+        "teamName": n => { queryAIModelAuthorizationCommandResponseItem.teamName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAIModelListCommandResponse(queryAIModelListCommandResponse: Partial<QueryAIModelListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAIModelListCommandResponse.items = n.getCollectionOfObjectValues<QueryAIModelListCommandResponseItem>(createQueryAIModelListCommandResponseItemFromDiscriminatorValue); },
@@ -2296,6 +2567,7 @@ export function deserializeIntoQueryAIModelListCommandResponseItem(queryAIModelL
         "enabled": n => { queryAIModelListCommandResponseItem.enabled = n.getBooleanValue(); },
         "family": n => { queryAIModelListCommandResponseItem.family = n.getStringValue(); },
         "id": n => { queryAIModelListCommandResponseItem.id = n.getGuidValue(); },
+        "isPublic": n => { queryAIModelListCommandResponseItem.isPublic = n.getBooleanValue(); },
         "knowledgeCutoff": n => { queryAIModelListCommandResponseItem.knowledgeCutoff = n.getStringValue(); },
         "lastUpdated": n => { queryAIModelListCommandResponseItem.lastUpdated = n.getStringValue(); },
         "maxOutput": n => { queryAIModelListCommandResponseItem.maxOutput = n.getNumberValue(); },
@@ -2543,6 +2815,39 @@ export function deserializeIntoQuerySettingsCommandResponse(querySettingsCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryTeamAllCommandResponse(queryTeamAllCommandResponse: Partial<QueryTeamAllCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamAllCommandResponse.items = n.getCollectionOfObjectValues<QueryTeamAllCommandResponseItem>(createQueryTeamAllCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamAllCommandResponseItem(queryTeamAllCommandResponseItem: Partial<QueryTeamAllCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isDisable": n => { queryTeamAllCommandResponseItem.isDisable = n.getBooleanValue(); },
+        "memberCount": n => { queryTeamAllCommandResponseItem.memberCount = n.getNumberValue(); },
+        "name": n => { queryTeamAllCommandResponseItem.name = n.getStringValue(); },
+        "teamId": n => { queryTeamAllCommandResponseItem.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamApiKeysCommandResponse(queryTeamApiKeysCommandResponse: Partial<QueryTeamApiKeysCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamApiKeysCommandResponse.items = n.getCollectionOfObjectValues<TeamApiKeyItem>(createTeamApiKeyItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryTeamCandidatesCommandResponse(queryTeamCandidatesCommandResponse: Partial<QueryTeamCandidatesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryTeamCandidatesCommandResponse.items = n.getCollectionOfObjectValues<TeamCandidateItem>(createTeamCandidateItemFromDiscriminatorValue); },
@@ -2566,6 +2871,16 @@ export function deserializeIntoQueryTeamCommandResponse(queryTeamCommandResponse
         "ownerUserId": n => { queryTeamCommandResponse.ownerUserId = n.getStringValue(); },
         "ownerUserName": n => { queryTeamCommandResponse.ownerUserName = n.getStringValue(); },
         "teamId": n => { queryTeamCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamGatewayModelsCommandResponse(queryTeamGatewayModelsCommandResponse: Partial<QueryTeamGatewayModelsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamGatewayModelsCommandResponse.items = n.getCollectionOfObjectValues<TeamGatewayModelItem>(createTeamGatewayModelItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -2636,9 +2951,9 @@ export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCom
 export function deserializeIntoQueryVariableCommandResponse(queryVariableCommandResponse: Partial<QueryVariableCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { queryVariableCommandResponse.description = n.getStringValue(); },
-        "name": n => { queryVariableCommandResponse.name = n.getStringValue(); },
         "isSecret": n => { queryVariableCommandResponse.isSecret = n.getBooleanValue(); },
         "key": n => { queryVariableCommandResponse.key = n.getStringValue(); },
+        "name": n => { queryVariableCommandResponse.name = n.getStringValue(); },
         "teamId": n => { queryVariableCommandResponse.teamId = n.getStringValue(); },
         "updateTime": n => { queryVariableCommandResponse.updateTime = n.getStringValue(); },
         "value": n => { queryVariableCommandResponse.value = n.getStringValue(); },
@@ -2959,12 +3274,60 @@ export function deserializeIntoSyncAIModelCommandResponse(syncAIModelCommandResp
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoTeamApiKeyItem(teamApiKeyItem: Partial<TeamApiKeyItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { teamApiKeyItem.createTime = n.getStringValue(); },
+        "expireTime": n => { teamApiKeyItem.expireTime = n.getStringValue(); },
+        "id": n => { teamApiKeyItem.id = n.getGuidValue(); },
+        "isDisable": n => { teamApiKeyItem.isDisable = n.getBooleanValue(); },
+        "isExpired": n => { teamApiKeyItem.isExpired = n.getBooleanValue(); },
+        "keyPrefix": n => { teamApiKeyItem.keyPrefix = n.getStringValue(); },
+        "lastUsedTime": n => { teamApiKeyItem.lastUsedTime = n.getStringValue(); },
+        "name": n => { teamApiKeyItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoTeamCandidateItem(teamCandidateItem: Partial<TeamCandidateItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { teamCandidateItem.avatar = n.getStringValue(); },
         "nickName": n => { teamCandidateItem.nickName = n.getStringValue(); },
         "userId": n => { teamCandidateItem.userId = n.getStringValue(); },
         "userName": n => { teamCandidateItem.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTeamGatewayModelItem(teamGatewayModelItem: Partial<TeamGatewayModelItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { teamGatewayModelItem.aiModelId = n.getGuidValue(); },
+        "channelName": n => { teamGatewayModelItem.channelName = n.getStringValue(); },
+        "modelId": n => { teamGatewayModelItem.modelId = n.getStringValue(); },
+        "name": n => { teamGatewayModelItem.name = n.getStringValue(); },
+        "providerKey": n => { teamGatewayModelItem.providerKey = n.getStringValue(); },
+        "quota": n => { teamGatewayModelItem.quota = n.getObjectValue<TeamGatewayModelQuota>(createTeamGatewayModelQuotaFromDiscriminatorValue); },
+        "totalUsedTokens": n => { teamGatewayModelItem.totalUsedTokens = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTeamGatewayModelQuota(teamGatewayModelQuota: Partial<TeamGatewayModelQuota> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expirationTime": n => { teamGatewayModelQuota.expirationTime = n.getStringValue(); },
+        "limitValue": n => { teamGatewayModelQuota.limitValue = n.getStringValue(); },
+        "periodEnd": n => { teamGatewayModelQuota.periodEnd = n.getStringValue(); },
+        "periodUnit": n => { teamGatewayModelQuota.periodUnit = n.getNumberValue(); },
+        "periodValue": n => { teamGatewayModelQuota.periodValue = n.getNumberValue(); },
+        "usedTokens": n => { teamGatewayModelQuota.usedTokens = n.getStringValue(); },
     }
 }
 /**
@@ -3010,10 +3373,10 @@ export function deserializeIntoTeamUserItem(teamUserItem: Partial<TeamUserItem> 
 // @ts-ignore
 export function deserializeIntoTeamVariableItem(teamVariableItem: Partial<TeamVariableItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-         "description": n => { teamVariableItem.description = n.getStringValue(); },
-         "name": n => { teamVariableItem.name = n.getStringValue(); },
+        "description": n => { teamVariableItem.description = n.getStringValue(); },
         "isSecret": n => { teamVariableItem.isSecret = n.getBooleanValue(); },
         "key": n => { teamVariableItem.key = n.getStringValue(); },
+        "name": n => { teamVariableItem.name = n.getStringValue(); },
         "teamId": n => { teamVariableItem.teamId = n.getStringValue(); },
         "updateTime": n => { teamVariableItem.updateTime = n.getStringValue(); },
         "value": n => { teamVariableItem.value = n.getStringValue(); },
@@ -3054,11 +3417,58 @@ export function deserializeIntoUpdateAIChannelCommand(updateAIChannelCommand: Pa
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateAIModelAuthorizationCommand(updateAIModelAuthorizationCommand: Partial<UpdateAIModelAuthorizationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "modelId": n => { updateAIModelAuthorizationCommand.modelId = n.getGuidValue(); },
+        "teamIds": n => { updateAIModelAuthorizationCommand.teamIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateAIModelCommand(updateAIModelCommand: Partial<UpdateAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "enabled": n => { updateAIModelCommand.enabled = n.getBooleanValue(); },
         "meta": n => { updateAIModelCommand.meta = n.getObjectValue<AIChannelModelMeta>(createAIChannelModelMetaFromDiscriminatorValue); },
         "modelId": n => { updateAIModelCommand.modelId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateAIModelQuotaCommand(updateAIModelQuotaCommand: Partial<UpdateAIModelQuotaCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "limitValue": n => { updateAIModelQuotaCommand.limitValue = n.getStringValue(); },
+        "modelId": n => { updateAIModelQuotaCommand.modelId = n.getGuidValue(); },
+        "periodUnit": n => { updateAIModelQuotaCommand.periodUnit = n.getNumberValue(); },
+        "periodValue": n => { updateAIModelQuotaCommand.periodValue = n.getNumberValue(); },
+        "teamId": n => { updateAIModelQuotaCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateAIModelVisibilityCommand(updateAIModelVisibilityCommand: Partial<UpdateAIModelVisibilityCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isPublic": n => { updateAIModelVisibilityCommand.isPublic = n.getBooleanValue(); },
+        "modelId": n => { updateAIModelVisibilityCommand.modelId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateApiKeyRequest(updateApiKeyRequest: Partial<UpdateApiKeyRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isDisable": n => { updateApiKeyRequest.isDisable = n.getBooleanValue(); },
+        "name": n => { updateApiKeyRequest.name = n.getStringValue(); },
     }
 }
 /**
@@ -3817,6 +4227,44 @@ export interface QueryAIChannelListCommandResponseItem extends AuditsInfo, Parsa
     providerKey?: string | null;
 }
 /**
+ * 模型授权与额度查询响应.
+ */
+export interface QueryAIModelAuthorizationCommandResponse extends Parsable {
+    /**
+     * 全局额度（公开模型，TeamId=0 的规则），未设置时为 null.
+     */
+    globalQuota?: AIModelQuotaInfo | null;
+    /**
+     * 是否公开：true=所有团队可用，可设全局额度；false=私有，仅授权团队可用.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 授权团队集合（私有模型），每项携带该团队当前额度.
+     */
+    items?: QueryAIModelAuthorizationCommandResponseItem[] | null;
+    /**
+     * 模型 id.
+     */
+    modelId?: Guid | null;
+}
+/**
+ * 授权团队及其额度信息.
+ */
+export interface QueryAIModelAuthorizationCommandResponseItem extends Parsable {
+    /**
+     * 该团队的额度，未设置时为 null（不限额）.
+     */
+    quota?: AIModelQuotaInfo | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: number | null;
+    /**
+     * 团队名称.
+     */
+    teamName?: string | null;
+}
+/**
  * QueryAIModelListCommandResponse.
  */
 export interface QueryAIModelListCommandResponse extends Parsable {
@@ -3865,6 +4313,10 @@ export interface QueryAIModelListCommandResponseItem extends AuditsInfo, Parsabl
      * 模型 id.
      */
     id?: Guid | null;
+    /**
+     * 是否公开：true=所有团队可用；false=私有，仅授权团队可用.
+     */
+    isPublic?: boolean | null;
     /**
      * 知识截止时间.
      */
@@ -4288,6 +4740,45 @@ export interface QuerySettingsCommandResponse extends Parsable {
     items?: SettingItemResponse[] | null;
 }
 /**
+ * 全部团队列表响应（管理员）.
+ */
+export interface QueryTeamAllCommandResponse extends Parsable {
+    /**
+     * 团队集合.
+     */
+    items?: QueryTeamAllCommandResponseItem[] | null;
+}
+/**
+ * 全部团队列表项（管理员）.
+ */
+export interface QueryTeamAllCommandResponseItem extends Parsable {
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 成员数量.
+     */
+    memberCount?: number | null;
+    /**
+     * 团队名称.
+     */
+    name?: string | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * 团队网关 API Key 列表响应.
+ */
+export interface QueryTeamApiKeysCommandResponse extends Parsable {
+    /**
+     * 密钥集合.
+     */
+    items?: TeamApiKeyItem[] | null;
+}
+/**
  * 团队候选用户列表响应.
  */
 export interface QueryTeamCandidatesCommandResponse extends Parsable {
@@ -4344,6 +4835,15 @@ export interface QueryTeamCommandResponse extends Parsable {
      * 团队 id.
      */
     teamId?: string | null;
+}
+/**
+ * 团队可用网关模型列表响应.
+ */
+export interface QueryTeamGatewayModelsCommandResponse extends Parsable {
+    /**
+     * 模型集合.
+     */
+    items?: TeamGatewayModelItem[] | null;
 }
 /**
  * 团队列表响应.
@@ -4439,10 +4939,6 @@ export interface QueryVariableCommandResponse extends Parsable {
      */
     description?: string | null;
     /**
-     * 变量名称，空串=未填写.
-     */
-    name?: string | null;
-    /**
      * 是否私密变量.
      */
     isSecret?: boolean | null;
@@ -4450,6 +4946,10 @@ export interface QueryVariableCommandResponse extends Parsable {
      * 变量名.
      */
     key?: string | null;
+    /**
+     * 变量名称，空串=未填写.
+     */
+    name?: string | null;
     /**
      * 所属团队 id.
      */
@@ -4822,6 +5322,21 @@ export function serializeAIChannelModelMeta(writer: SerializationWriter, aIChann
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAIModelQuotaInfo(writer: SerializationWriter, aIModelQuotaInfo: Partial<AIModelQuotaInfo> | undefined | null = {}) : void {
+    if (aIModelQuotaInfo) {
+        writer.writeDateValue("expirationTime", aIModelQuotaInfo.expirationTime);
+        writer.writeNumberValue("limitId", aIModelQuotaInfo.limitId);
+        writer.writeStringValue("limitValue", aIModelQuotaInfo.limitValue);
+        writer.writeNumberValue("periodUnit", aIModelQuotaInfo.periodUnit);
+        writer.writeNumberValue("periodValue", aIModelQuotaInfo.periodValue);
+        writer.writeStringValue("usedTokens", aIModelQuotaInfo.usedTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAuditsInfo(writer: SerializationWriter, auditsInfo: Partial<AuditsInfo> | undefined | null = {}) : void {
     if (auditsInfo) {
         writer.writeStringValue("createTime", auditsInfo.createTime);
@@ -4963,7 +5478,19 @@ export function serializeCreateAIModelCommand(writer: SerializationWriter, creat
     if (createAIModelCommand) {
         writer.writeGuidValue("channelId", createAIModelCommand.channelId);
         writer.writeBooleanValue("enabled", createAIModelCommand.enabled);
+        writer.writeBooleanValue("isPublic", createAIModelCommand.isPublic);
         writer.writeObjectValue<AIChannelModelMeta>("meta", createAIModelCommand.meta, serializeAIChannelModelMeta);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateApiKeyRequest(writer: SerializationWriter, createApiKeyRequest: Partial<CreateApiKeyRequest> | undefined | null = {}) : void {
+    if (createApiKeyRequest) {
+        writer.writeStringValue("expireTime", createApiKeyRequest.expireTime);
+        writer.writeStringValue("name", createApiKeyRequest.name);
     }
 }
 /**
@@ -4998,6 +5525,18 @@ export function serializeCreateOAuthConnectionCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateTeamApiKeyCommandResponse(writer: SerializationWriter, createTeamApiKeyCommandResponse: Partial<CreateTeamApiKeyCommandResponse> | undefined | null = {}) : void {
+    if (createTeamApiKeyCommandResponse) {
+        writer.writeGuidValue("apiKeyId", createTeamApiKeyCommandResponse.apiKeyId);
+        writer.writeStringValue("keyPrefix", createTeamApiKeyCommandResponse.keyPrefix);
+        writer.writeStringValue("secret", createTeamApiKeyCommandResponse.secret);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateTeamCommand(writer: SerializationWriter, createTeamCommand: Partial<CreateTeamCommand> | undefined | null = {}) : void {
     if (createTeamCommand) {
         writer.writeStringValue("contextUserId", createTeamCommand.contextUserId);
@@ -5014,9 +5553,9 @@ export function serializeCreateTeamCommand(writer: SerializationWriter, createTe
 export function serializeCreateVariableCommand(writer: SerializationWriter, createVariableCommand: Partial<CreateVariableCommand> | undefined | null = {}) : void {
     if (createVariableCommand) {
         writer.writeStringValue("description", createVariableCommand.description);
-        writer.writeStringValue("name", createVariableCommand.name);
         writer.writeBooleanValue("isSecret", createVariableCommand.isSecret);
         writer.writeStringValue("key", createVariableCommand.key);
+        writer.writeStringValue("name", createVariableCommand.name);
         writer.writeStringValue("teamId", createVariableCommand.teamId);
         writer.writeStringValue("value", createVariableCommand.value);
     }
@@ -5413,6 +5952,31 @@ export function serializeQueryAIChannelListCommandResponseItem(writer: Serializa
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAIModelAuthorizationCommandResponse(writer: SerializationWriter, queryAIModelAuthorizationCommandResponse: Partial<QueryAIModelAuthorizationCommandResponse> | undefined | null = {}) : void {
+    if (queryAIModelAuthorizationCommandResponse) {
+        writer.writeObjectValue<AIModelQuotaInfo>("globalQuota", queryAIModelAuthorizationCommandResponse.globalQuota, serializeAIModelQuotaInfo);
+        writer.writeBooleanValue("isPublic", queryAIModelAuthorizationCommandResponse.isPublic);
+        writer.writeCollectionOfObjectValues<QueryAIModelAuthorizationCommandResponseItem>("items", queryAIModelAuthorizationCommandResponse.items, serializeQueryAIModelAuthorizationCommandResponseItem);
+        writer.writeGuidValue("modelId", queryAIModelAuthorizationCommandResponse.modelId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAIModelAuthorizationCommandResponseItem(writer: SerializationWriter, queryAIModelAuthorizationCommandResponseItem: Partial<QueryAIModelAuthorizationCommandResponseItem> | undefined | null = {}) : void {
+    if (queryAIModelAuthorizationCommandResponseItem) {
+        writer.writeObjectValue<AIModelQuotaInfo>("quota", queryAIModelAuthorizationCommandResponseItem.quota, serializeAIModelQuotaInfo);
+        writer.writeNumberValue("teamId", queryAIModelAuthorizationCommandResponseItem.teamId);
+        writer.writeStringValue("teamName", queryAIModelAuthorizationCommandResponseItem.teamName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAIModelListCommandResponse(writer: SerializationWriter, queryAIModelListCommandResponse: Partial<QueryAIModelListCommandResponse> | undefined | null = {}) : void {
     if (queryAIModelListCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryAIModelListCommandResponseItem>("items", queryAIModelListCommandResponse.items, serializeQueryAIModelListCommandResponseItem);
@@ -5435,6 +5999,7 @@ export function serializeQueryAIModelListCommandResponseItem(writer: Serializati
         writer.writeBooleanValue("enabled", queryAIModelListCommandResponseItem.enabled);
         writer.writeStringValue("family", queryAIModelListCommandResponseItem.family);
         writer.writeGuidValue("id", queryAIModelListCommandResponseItem.id);
+        writer.writeBooleanValue("isPublic", queryAIModelListCommandResponseItem.isPublic);
         writer.writeStringValue("knowledgeCutoff", queryAIModelListCommandResponseItem.knowledgeCutoff);
         writer.writeStringValue("lastUpdated", queryAIModelListCommandResponseItem.lastUpdated);
         writer.writeNumberValue("maxOutput", queryAIModelListCommandResponseItem.maxOutput);
@@ -5682,6 +6247,39 @@ export function serializeQuerySettingsCommandResponse(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryTeamAllCommandResponse(writer: SerializationWriter, queryTeamAllCommandResponse: Partial<QueryTeamAllCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamAllCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryTeamAllCommandResponseItem>("items", queryTeamAllCommandResponse.items, serializeQueryTeamAllCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamAllCommandResponseItem(writer: SerializationWriter, queryTeamAllCommandResponseItem: Partial<QueryTeamAllCommandResponseItem> | undefined | null = {}) : void {
+    if (queryTeamAllCommandResponseItem) {
+        writer.writeBooleanValue("isDisable", queryTeamAllCommandResponseItem.isDisable);
+        writer.writeNumberValue("memberCount", queryTeamAllCommandResponseItem.memberCount);
+        writer.writeStringValue("name", queryTeamAllCommandResponseItem.name);
+        writer.writeStringValue("teamId", queryTeamAllCommandResponseItem.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamApiKeysCommandResponse(writer: SerializationWriter, queryTeamApiKeysCommandResponse: Partial<QueryTeamApiKeysCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamApiKeysCommandResponse) {
+        writer.writeCollectionOfObjectValues<TeamApiKeyItem>("items", queryTeamApiKeysCommandResponse.items, serializeTeamApiKeyItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryTeamCandidatesCommandResponse(writer: SerializationWriter, queryTeamCandidatesCommandResponse: Partial<QueryTeamCandidatesCommandResponse> | undefined | null = {}) : void {
     if (queryTeamCandidatesCommandResponse) {
         writer.writeCollectionOfObjectValues<TeamCandidateItem>("items", queryTeamCandidatesCommandResponse.items, serializeTeamCandidateItem);
@@ -5705,6 +6303,16 @@ export function serializeQueryTeamCommandResponse(writer: SerializationWriter, q
         writer.writeStringValue("ownerUserId", queryTeamCommandResponse.ownerUserId);
         writer.writeStringValue("ownerUserName", queryTeamCommandResponse.ownerUserName);
         writer.writeStringValue("teamId", queryTeamCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamGatewayModelsCommandResponse(writer: SerializationWriter, queryTeamGatewayModelsCommandResponse: Partial<QueryTeamGatewayModelsCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamGatewayModelsCommandResponse) {
+        writer.writeCollectionOfObjectValues<TeamGatewayModelItem>("items", queryTeamGatewayModelsCommandResponse.items, serializeTeamGatewayModelItem);
     }
 }
 /**
@@ -5774,10 +6382,10 @@ export function serializeQueryUserListCommandResponseItem(writer: SerializationW
 // @ts-ignore
 export function serializeQueryVariableCommandResponse(writer: SerializationWriter, queryVariableCommandResponse: Partial<QueryVariableCommandResponse> | undefined | null = {}) : void {
     if (queryVariableCommandResponse) {
-writer.writeStringValue("description", queryVariableCommandResponse.description);
-writer.writeStringValue("name", queryVariableCommandResponse.name);
+        writer.writeStringValue("description", queryVariableCommandResponse.description);
         writer.writeBooleanValue("isSecret", queryVariableCommandResponse.isSecret);
         writer.writeStringValue("key", queryVariableCommandResponse.key);
+        writer.writeStringValue("name", queryVariableCommandResponse.name);
         writer.writeStringValue("teamId", queryVariableCommandResponse.teamId);
         writer.writeStringValue("updateTime", queryVariableCommandResponse.updateTime);
         writer.writeStringValue("value", queryVariableCommandResponse.value);
@@ -6098,12 +6706,60 @@ export function serializeSyncAIModelCommandResponse(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTeamApiKeyItem(writer: SerializationWriter, teamApiKeyItem: Partial<TeamApiKeyItem> | undefined | null = {}) : void {
+    if (teamApiKeyItem) {
+        writer.writeStringValue("createTime", teamApiKeyItem.createTime);
+        writer.writeStringValue("expireTime", teamApiKeyItem.expireTime);
+        writer.writeGuidValue("id", teamApiKeyItem.id);
+        writer.writeBooleanValue("isDisable", teamApiKeyItem.isDisable);
+        writer.writeBooleanValue("isExpired", teamApiKeyItem.isExpired);
+        writer.writeStringValue("keyPrefix", teamApiKeyItem.keyPrefix);
+        writer.writeStringValue("lastUsedTime", teamApiKeyItem.lastUsedTime);
+        writer.writeStringValue("name", teamApiKeyItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeTeamCandidateItem(writer: SerializationWriter, teamCandidateItem: Partial<TeamCandidateItem> | undefined | null = {}) : void {
     if (teamCandidateItem) {
         writer.writeStringValue("avatar", teamCandidateItem.avatar);
         writer.writeStringValue("nickName", teamCandidateItem.nickName);
         writer.writeStringValue("userId", teamCandidateItem.userId);
         writer.writeStringValue("userName", teamCandidateItem.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTeamGatewayModelItem(writer: SerializationWriter, teamGatewayModelItem: Partial<TeamGatewayModelItem> | undefined | null = {}) : void {
+    if (teamGatewayModelItem) {
+        writer.writeGuidValue("aiModelId", teamGatewayModelItem.aiModelId);
+        writer.writeStringValue("channelName", teamGatewayModelItem.channelName);
+        writer.writeStringValue("modelId", teamGatewayModelItem.modelId);
+        writer.writeStringValue("name", teamGatewayModelItem.name);
+        writer.writeStringValue("providerKey", teamGatewayModelItem.providerKey);
+        writer.writeObjectValue<TeamGatewayModelQuota>("quota", teamGatewayModelItem.quota, serializeTeamGatewayModelQuota);
+        writer.writeStringValue("totalUsedTokens", teamGatewayModelItem.totalUsedTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTeamGatewayModelQuota(writer: SerializationWriter, teamGatewayModelQuota: Partial<TeamGatewayModelQuota> | undefined | null = {}) : void {
+    if (teamGatewayModelQuota) {
+        writer.writeStringValue("expirationTime", teamGatewayModelQuota.expirationTime);
+        writer.writeStringValue("limitValue", teamGatewayModelQuota.limitValue);
+        writer.writeStringValue("periodEnd", teamGatewayModelQuota.periodEnd);
+        writer.writeNumberValue("periodUnit", teamGatewayModelQuota.periodUnit);
+        writer.writeNumberValue("periodValue", teamGatewayModelQuota.periodValue);
+        writer.writeStringValue("usedTokens", teamGatewayModelQuota.usedTokens);
     }
 }
 /**
@@ -6149,10 +6805,10 @@ export function serializeTeamUserItem(writer: SerializationWriter, teamUserItem:
 // @ts-ignore
 export function serializeTeamVariableItem(writer: SerializationWriter, teamVariableItem: Partial<TeamVariableItem> | undefined | null = {}) : void {
     if (teamVariableItem) {
-writer.writeStringValue("description", teamVariableItem.description);
-writer.writeStringValue("name", teamVariableItem.name);
+        writer.writeStringValue("description", teamVariableItem.description);
         writer.writeBooleanValue("isSecret", teamVariableItem.isSecret);
         writer.writeStringValue("key", teamVariableItem.key);
+        writer.writeStringValue("name", teamVariableItem.name);
         writer.writeStringValue("teamId", teamVariableItem.teamId);
         writer.writeStringValue("updateTime", teamVariableItem.updateTime);
         writer.writeStringValue("value", teamVariableItem.value);
@@ -6193,11 +6849,58 @@ export function serializeUpdateAIChannelCommand(writer: SerializationWriter, upd
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateAIModelAuthorizationCommand(writer: SerializationWriter, updateAIModelAuthorizationCommand: Partial<UpdateAIModelAuthorizationCommand> | undefined | null = {}) : void {
+    if (updateAIModelAuthorizationCommand) {
+        writer.writeGuidValue("modelId", updateAIModelAuthorizationCommand.modelId);
+        writer.writeCollectionOfPrimitiveValues<number>("teamIds", updateAIModelAuthorizationCommand.teamIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateAIModelCommand(writer: SerializationWriter, updateAIModelCommand: Partial<UpdateAIModelCommand> | undefined | null = {}) : void {
     if (updateAIModelCommand) {
         writer.writeBooleanValue("enabled", updateAIModelCommand.enabled);
         writer.writeObjectValue<AIChannelModelMeta>("meta", updateAIModelCommand.meta, serializeAIChannelModelMeta);
         writer.writeGuidValue("modelId", updateAIModelCommand.modelId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateAIModelQuotaCommand(writer: SerializationWriter, updateAIModelQuotaCommand: Partial<UpdateAIModelQuotaCommand> | undefined | null = {}) : void {
+    if (updateAIModelQuotaCommand) {
+        writer.writeStringValue("limitValue", updateAIModelQuotaCommand.limitValue);
+        writer.writeGuidValue("modelId", updateAIModelQuotaCommand.modelId);
+        writer.writeNumberValue("periodUnit", updateAIModelQuotaCommand.periodUnit);
+        writer.writeNumberValue("periodValue", updateAIModelQuotaCommand.periodValue);
+        writer.writeNumberValue("teamId", updateAIModelQuotaCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateAIModelVisibilityCommand(writer: SerializationWriter, updateAIModelVisibilityCommand: Partial<UpdateAIModelVisibilityCommand> | undefined | null = {}) : void {
+    if (updateAIModelVisibilityCommand) {
+        writer.writeBooleanValue("isPublic", updateAIModelVisibilityCommand.isPublic);
+        writer.writeGuidValue("modelId", updateAIModelVisibilityCommand.modelId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateApiKeyRequest(writer: SerializationWriter, updateApiKeyRequest: Partial<UpdateApiKeyRequest> | undefined | null = {}) : void {
+    if (updateApiKeyRequest) {
+        writer.writeBooleanValue("isDisable", updateApiKeyRequest.isDisable);
+        writer.writeStringValue("name", updateApiKeyRequest.name);
     }
 }
 /**
@@ -6369,11 +7072,11 @@ export function serializeUpdateUserIsDisableCommand(writer: SerializationWriter,
 // @ts-ignore
 export function serializeUpdateVariableCommand(writer: SerializationWriter, updateVariableCommand: Partial<UpdateVariableCommand> | undefined | null = {}) : void {
     if (updateVariableCommand) {
-writer.writeStringValue("description", updateVariableCommand.description);
-writer.writeStringValue("key", updateVariableCommand.key);
-writer.writeStringValue("name", updateVariableCommand.name);
-writer.writeStringValue("value", updateVariableCommand.value);
-writer.writeStringValue("variableId", updateVariableCommand.variableId);
+        writer.writeStringValue("description", updateVariableCommand.description);
+        writer.writeStringValue("key", updateVariableCommand.key);
+        writer.writeStringValue("name", updateVariableCommand.name);
+        writer.writeStringValue("value", updateVariableCommand.value);
+        writer.writeStringValue("variableId", updateVariableCommand.variableId);
     }
 }
 /**
@@ -6559,6 +7262,43 @@ export interface SyncAIModelCommandResponse extends Parsable {
     total?: number | null;
 }
 /**
+ * 网关 API Key 项.
+ */
+export interface TeamApiKeyItem extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 过期时间，null=永不过期.
+     */
+    expireTime?: string | null;
+    /**
+     * 密钥 id.
+     */
+    id?: Guid | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 是否已过期.
+     */
+    isExpired?: boolean | null;
+    /**
+     * 密钥前缀，如 moai-Ab12CdEf.
+     */
+    keyPrefix?: string | null;
+    /**
+     * 最近一次调用时间，null=从未使用.
+     */
+    lastUsedTime?: string | null;
+    /**
+     * 密钥名称.
+     */
+    name?: string | null;
+}
+/**
  * 团队候选用户项.
  */
 export interface TeamCandidateItem extends Parsable {
@@ -6578,6 +7318,68 @@ export interface TeamCandidateItem extends Parsable {
      * 用户名.
      */
     userName?: string | null;
+}
+/**
+ * 团队可用网关模型项.
+ */
+export interface TeamGatewayModelItem extends Parsable {
+    /**
+     * ai模型 id.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 所属渠道名称.
+     */
+    channelName?: string | null;
+    /**
+     * 网关调用时使用的模型 id（即渠道模型 id）.
+     */
+    modelId?: string | null;
+    /**
+     * 模型名称.
+     */
+    name?: string | null;
+    /**
+     * 渠道供应商标识.
+     */
+    providerKey?: string | null;
+    /**
+     * 额度限制，null=不限额.
+     */
+    quota?: TeamGatewayModelQuota | null;
+    /**
+     * 该团队通过开放接口累计消耗 tokens.
+     */
+    totalUsedTokens?: string | null;
+}
+/**
+ * 模型额度状态.
+ */
+export interface TeamGatewayModelQuota extends Parsable {
+    /**
+     * 规则有效期，null=长期有效.
+     */
+    expirationTime?: string | null;
+    /**
+     * 每周期 tokens 上限.
+     */
+    limitValue?: string | null;
+    /**
+     * 当前周期终点，period_unit=0 时为 null.
+     */
+    periodEnd?: string | null;
+    /**
+     * 重置周期单位：0=不重置(总量一次性) 1=小时 2=天 3=周 4=月.
+     */
+    periodUnit?: number | null;
+    /**
+     * 周期长度，与 period_unit 配合.
+     */
+    periodValue?: number | null;
+    /**
+     * 当前周期已消耗 tokens.
+     */
+    usedTokens?: string | null;
 }
 /**
  * 团队项.
@@ -6671,10 +7473,6 @@ export interface TeamVariableItem extends Parsable {
      */
     description?: string | null;
     /**
-     * 变量名称，空串=未填写.
-     */
-    name?: string | null;
-    /**
      * 是否私密变量.
      */
     isSecret?: boolean | null;
@@ -6682,6 +7480,10 @@ export interface TeamVariableItem extends Parsable {
      * 变量名.
      */
     key?: string | null;
+    /**
+     * 变量名称，空串=未填写.
+     */
+    name?: string | null;
     /**
      * 所属团队 id.
      */
@@ -6754,6 +7556,19 @@ export interface UpdateAIChannelCommand extends Parsable {
     providerKey?: string | null;
 }
 /**
+ * 更新私有模型的团队授权（全量替换），仅私有模型可设置；公开模型应使用额度接口.
+ */
+export interface UpdateAIModelAuthorizationCommand extends Parsable {
+    /**
+     * 模型 id，由 Controller 从路由参数回填.
+     */
+    modelId?: Guid | null;
+    /**
+     * 授权团队 id 集合（全量替换），取消授权的团队会同步移除其额度规则.
+     */
+    teamIds?: number[] | null;
+}
+/**
  * 更新 AI 模型.
  */
 export interface UpdateAIModelCommand extends Parsable {
@@ -6769,6 +7584,57 @@ export interface UpdateAIModelCommand extends Parsable {
      * 模型 id，由 Controller 从路由参数回填.
      */
     modelId?: Guid | null;
+}
+/**
+ * 设置模型额度规则：公开模型固定 teamId=0（所有团队共享），私有模型按已授权团队单独设置.
+ */
+export interface UpdateAIModelQuotaCommand extends Parsable {
+    /**
+     * 每个重置周期内的 tokens 上限.
+     */
+    limitValue?: string | null;
+    /**
+     * 模型 id，由 Controller 从路由参数回填.
+     */
+    modelId?: Guid | null;
+    /**
+     * 重置周期单位：0=不重置(总量一次性) 1=小时 2=天 3=周 4=月.
+     */
+    periodUnit?: number | null;
+    /**
+     * 重置周期长度，与 PeriodUnit 配合，例如每 8 小时=(8,1)、每天=(1,2)；PeriodUnit=0 时无效.
+     */
+    periodValue?: number | null;
+    /**
+     * 额度主体团队 id，0=模型全局额度（公开模型）.
+     */
+    teamId?: number | null;
+}
+/**
+ * 仅更新模型的公私有可见性，不触碰模型元数据：true=所有团队可用；false=私有，仅授权团队可用.
+ */
+export interface UpdateAIModelVisibilityCommand extends Parsable {
+    /**
+     * 是否公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 模型 id，由 Controller 从路由参数回填.
+     */
+    modelId?: Guid | null;
+}
+/**
+ * 修改 API Key 请求体.
+ */
+export interface UpdateApiKeyRequest extends Parsable {
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 新名称，null=不修改.
+     */
+    name?: string | null;
 }
 /**
  * 修改分类.
@@ -7043,7 +7909,7 @@ export interface UpdateUserIsDisableCommand extends Parsable {
     userId?: string | null;
 }
 /**
- * 更新团队变量，需要团队 Admin 及以上角色；变量名与类型不可修改，私密变量值留空表示保持不变.
+ * 更新团队变量，需要团队 Admin 及以上角色；类型不可修改；私密变量的值不回显，留空表示保持不变.
  */
 export interface UpdateVariableCommand extends Parsable {
     /**
@@ -7051,7 +7917,7 @@ export interface UpdateVariableCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 变量名 key，团队内唯一；letters 开头，仅字母/数字/下划线；null 表示不修改.
+     * 变量名 key，团队内唯一；字母开头，仅字母/数字/下划线；null 表示不修改.
      */
     key?: string | null;
     /**

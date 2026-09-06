@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MoAI.Account.Services;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -21,6 +22,7 @@ public class TeamController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IUserContextProvider _userContextProvider;
     private readonly ITeamService _teamService;
+    private readonly IUserAccountService _userAccountService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TeamController"/> class.
@@ -28,11 +30,13 @@ public class TeamController : ControllerBase
     /// <param name="mediator">MediatR 实例，用于发送命令/查询.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public TeamController(IMediator mediator, IUserContextProvider userContextProvider, ITeamService teamService)
+    /// <param name="userAccountService">用户账号服务.</param>
+    public TeamController(IMediator mediator, IUserContextProvider userContextProvider, ITeamService teamService, IUserAccountService userAccountService)
     {
         _mediator = mediator;
         _userContextProvider = userContextProvider;
         _teamService = teamService;
+        _userAccountService = userAccountService;
     }
 
     private long CurrentUserId => _userContextProvider.GetUserContext().UserId;
@@ -61,6 +65,18 @@ public class TeamController : ControllerBase
         var cmd = new QueryTeamsCommand();
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询系统内全部团队，仅管理员可访问，供模型授权等管理场景选择团队使用.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryTeamAllCommandResponse"/>.</returns>
+    [HttpGet("all")]
+    public async Task<QueryTeamAllCommandResponse> QueryAllTeams(CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryTeamAllCommand(), ct);
     }
 
     /// <summary>
@@ -221,6 +237,15 @@ public class TeamController : ControllerBase
         if (myRole == null)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
+        }
+    }
+
+    private async Task EnsureAdminAsync(CancellationToken ct)
+    {
+        var userState = await _userAccountService.GetUserStateAsync(CurrentUserId, ct);
+        if (!userState.IsAdmin)
+        {
+            throw new BusinessException("只有管理员可以查看全部团队") { StatusCode = 403 };
         }
     }
 

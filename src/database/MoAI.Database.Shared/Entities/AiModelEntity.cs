@@ -163,4 +163,9 @@ public partial class AiModelEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 是否公开：true=所有团队可用；false=私有，仅授权团队可用.
+    /// </summary>
+    public bool IsPublic { get; set; }
 }

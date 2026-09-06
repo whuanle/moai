@@ -60,6 +60,7 @@ public class QueryAIModelListCommandHandler : IRequestHandler<QueryAIModelListCo
                 CostOutput = x.CostOutput,
                 CostCacheRead = x.CostCacheRead,
                 Enabled = x.Enabled,
+                IsPublic = x.IsPublic,
                 CreateTime = x.CreateTime,
                 CreateUserId = (int)x.CreateUserId,
                 UpdateTime = x.UpdateTime,

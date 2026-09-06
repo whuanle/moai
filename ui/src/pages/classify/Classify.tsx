@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Space, Tabs } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Space, Spin, Tabs, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { classifyApi, ClassifyType, type Classify, type ClassifyTypeKey } from '@/api/classify'
-import { DataTable, feedback, Page } from '@/design-system'
+import { Card, feedback, Page } from '@/design-system'
+import { fontSize, spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
+
+const { Text, Paragraph } = Typography
 
 const TYPE_TABS: { key: ClassifyTypeKey; labelKey: string }[] = [
   { key: ClassifyType.Plugin, labelKey: 'classify.typePlugin' },
@@ -22,6 +25,59 @@ function formatDateTime(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return '-'
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', gap: spacing.sm }}>
+      <Text type="secondary" style={{ fontSize: fontSize.sm, flexShrink: 0 }}>
+        {label}
+      </Text>
+      <Text type="secondary" style={{ fontSize: fontSize.sm }}>
+        {value}
+      </Text>
+    </div>
+  )
+}
+
+interface ClassifyCardItemProps {
+  item: Classify
+  onEdit: (item: Classify) => void
+  onDelete: (item: Classify) => void
+}
+
+function ClassifyCardItem({ item, onEdit, onDelete }: ClassifyCardItemProps) {
+  const { t } = useTranslation()
+  return (
+    <Card styles={{ body: { padding: 20, display: 'flex', flexDirection: 'column', height: '100%' } }}>
+      <Text strong style={{ fontSize: 16, display: 'block' }}>
+        {item.name || '-'}
+      </Text>
+      <Paragraph type="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}>
+        {item.description || '-'}
+      </Paragraph>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs, marginTop: 'auto' }}>
+        <MetaRow label={t('classify.colCreateUser')} value={`${item.createUserName || '-'} · ${formatDateTime(item.createTime)}`} />
+        <MetaRow label={t('classify.colUpdateUser')} value={`${item.updateUserName || '-'} · ${formatDateTime(item.updateTime)}`} />
+      </div>
+      <div style={{ marginTop: spacing.sm, display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(16, 24, 40, 0.08)', paddingTop: spacing.sm }}>
+        <Space>
+          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)}>
+            {t('classify.edit')}
+          </Button>
+          <Popconfirm
+            title={t('classify.deleteConfirm')}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => onDelete(item)}
+          >
+            <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+              {t('classify.delete')}
+            </Button>
+          </Popconfirm>
+        </Space>
+      </div>
+    </Card>
+  )
 }
 
 function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
@@ -102,48 +158,31 @@ function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
     }
   }
 
-  const columns = [
-    { title: t('classify.colName'), dataIndex: 'name', width: 200 },
-    { title: t('classify.colDesc'), dataIndex: 'description', ellipsis: true },
-    { title: t('classify.colCreateUser'), dataIndex: 'createUserName', width: 120, render: (v: string | null) => v || '-' },
-    { title: t('classify.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span> },
-    { title: t('classify.colUpdateUser'), dataIndex: 'updateUserName', width: 120, render: (v: string | null) => v || '-' },
-    { title: t('classify.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span> },
-    {
-      title: t('classify.colActions'),
-      key: 'actions',
-      width: 120,
-      render: (_: unknown, record: Classify) => (
-        <Space>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-          <Popconfirm
-            title={t('classify.deleteConfirm')}
-            okButtonProps={{ danger: true }}
-            onConfirm={() => void handleDelete(record)}
-          >
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ]
-
   return (
     <>
-      <DataTable<Classify>
-        rowKey="classifyId"
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        pagination={false}
-        toolbar={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            {t('classify.addClassify')}
-          </Button>
-        }
-        onRefresh={load}
-        refreshLoading={loading}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          {t('classify.addClassify')}
+        </Button>
+        <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
+          {t('ds.table.refresh')}
+        </Button>
+      </div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: spacing.xxl * 2 }}>
+          <Spin />
+        </div>
+      ) : items.length === 0 ? (
+        <Empty description={t('classify.empty')} />
+      ) : (
+        <Row gutter={[16, 16]}>
+          {items.map((item) => (
+            <Col xs={24} sm={12} lg={8} xl={6} key={item.classifyId}>
+              <ClassifyCardItem item={item} onEdit={openEdit} onDelete={(record) => void handleDelete(record)} />
+            </Col>
+          ))}
+        </Row>
+      )}
       <Modal
         open={modalOpen}
         title={editing ? t('classify.editClassify') : t('classify.addClassify')}

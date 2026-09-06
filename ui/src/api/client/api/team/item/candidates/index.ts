@@ -7,7 +7,7 @@ import { createBusinessValidationResultFromDiscriminatorValue, createQueryTeamCa
 import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
- * Builds and executes requests for operations under /api/team/{id}/candidates
+ * Builds and executes requests for operations under /api/team/{-id}/candidates
  */
 export interface CandidatesRequestBuilder extends BaseRequestBuilder<CandidatesRequestBuilder> {
     /**
@@ -40,7 +40,7 @@ export interface CandidatesRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const CandidatesRequestBuilderUriTemplate = "{+baseurl}/api/team/{id}/candidates{?keyword*}";
+export const CandidatesRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}/candidates{?keyword*}";
 /**
  * Metadata for all the requests in the request builder.
  */

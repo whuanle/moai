@@ -16,6 +16,7 @@ import { TeamManage } from '@/pages/teams/TeamManage'
 import { Wiki } from '@/pages/wiki/Wiki'
 import { WikiDocuments } from '@/pages/wiki/WikiDocuments'
 import { Plugins } from '@/pages/plugins/Plugins'
+import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
 import { ClassifyPage } from '@/pages/classify/Classify'
 
 export const router = createBrowserRouter([
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },
       { path: 'plugin', element: <Plugins /> },
+      { path: 'plugin/templates', element: <PluginTemplates /> },
       { path: 'classify', element: <ClassifyPage /> },
       // 其它专用页面（/xxx）在此追加
       { path: '*', element: <Navigate to="/dashboard" replace /> },

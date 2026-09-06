@@ -285,7 +285,7 @@ export function Variables({ teamId }: { teamId?: number }) {
               { pattern: /^[A-Za-z][A-Za-z0-9_]{0,99}$/, message: t('variable.keyRule') },
             ]}
           >
-            <Input placeholder={t('variable.keyPlaceholder')} maxLength={100} disabled={!editing} />
+            <Input placeholder={t('variable.keyPlaceholder')} maxLength={100} />
           </Form.Item>
           <Form.Item name="name" label={t('variable.name')} rules={[{ max: 50 }]}>
             <Input placeholder={t('variable.namePlaceholder')} maxLength={50} />
