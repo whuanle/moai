@@ -1,4 +1,8 @@
-import { getAiPluginClient } from '@/api/kiota'
+import { getAiPluginClient, getApiClient } from '@/api/kiota'
+import type {
+  QueryPluginTeamAuthorizationCommandResponse,
+  UpdatePluginTeamAuthorizationCommand,
+} from '@/api/client/models'
 import type {
   DeleteCustomPluginCommand,
   DeleteDynamicPluginCommand,
@@ -28,7 +32,6 @@ import type {
   UpdateMcpServerPluginCommand,
   UpdateOpenApiPluginCommand,
 } from '@/api/aiplugin-client/models'
-
 /** 插件管理项（Kiota 生成类型别名）. */
 export type PluginManageItem = QueryPluginManageListCommandResponseItem
 
@@ -70,6 +73,13 @@ export type CustomKeyValue = KeyValueString
 
 /** 插件类型（mcp|openApi）. */
 export type CustomPluginType = PluginType
+
+/** 私有系统插件团队授权项. */
+export interface PluginTeamAuthorization {
+  pluginId: string | null
+  isPublic: boolean | null
+  items: { teamId: number; teamName: string }[]
+}
 
 /** 表格排序状态：字段名 + 方向（ascend 升序 / descend 降序）. */
 export interface CustomPluginSort {
@@ -177,6 +187,26 @@ async function preUploadOpenApiFile(
   return (await client.api.ai.plugin.custom.pre_upload_openapi.post(payload)) ?? null
 }
 
+/** 查询私有系统插件的团队授权：公开插件返回 isPublic=true 且 items 为空. */
+async function getPluginTeamAuthorization(pluginId: string): Promise<PluginTeamAuthorization | null> {
+  const client = getApiClient()
+  const res: QueryPluginTeamAuthorizationCommandResponse | undefined =
+    await client.api.ai.plugin.byPluginId(pluginId).authorization.get()
+  if (!res) return null
+  return {
+    pluginId: res.pluginId ?? null,
+    isPublic: res.isPublic ?? null,
+    items: (res.items ?? []).map((x) => ({ teamId: Number(x.teamId ?? 0), teamName: String(x.teamName ?? '') })),
+  }
+}
+
+/** 更新私有系统插件的团队授权（全量替换），仅私有插件可设置. */
+async function updatePluginTeamAuthorization(pluginId: string, teamIds: number[]): Promise<void> {
+  const client = getApiClient()
+  const body: UpdatePluginTeamAuthorizationCommand = { pluginId, teamIds }
+  await client.api.ai.plugin.byPluginId(pluginId).authorization.put(body)
+}
+
 export const customPluginApi = {
   getCustomPlugins,
   getCustomPluginDetail,
@@ -188,6 +218,11 @@ export const customPluginApi = {
   refreshMcp,
   deleteCustomPlugin,
   preUploadOpenApiFile,
+}
+
+export const pluginAuthorizationApi = {
+  getPluginTeamAuthorization,
+  updatePluginTeamAuthorization,
 }
 
 async function getManagePlugins(kind?: PluginKind): Promise<StaticPluginManageItem[]> {

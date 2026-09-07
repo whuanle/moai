@@ -93,6 +93,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginStaticEntity> PluginStatics { get; set; }
 
     /// <summary>
+    /// 授权私有系统插件给哪些团队使用.
+    /// </summary>
+    public virtual DbSet<PluginTeamAuthorizationEntity> PluginTeamAuthorizations { get; set; }
+
+    /// <summary>
     /// 系统设置.
     /// </summary>
     public virtual DbSet<SettingEntity> Settings { get; set; }
@@ -128,14 +133,34 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<UserOauthConnectionEntity> UserOauthConnections { get; set; }
 
     /// <summary>
-    /// 知识库，挂在团队下的资源.
+    /// 知识库.
     /// </summary>
     public virtual DbSet<WikiEntity> Wikis { get; set; }
 
     /// <summary>
-    /// 知识库文档，挂在知识库下的内容页.
+    /// 知识库文档.
     /// </summary>
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
+
+    /// <summary>
+    /// 文档切片内容.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkContentEntity> WikiDocumentChunkContents { get; set; }
+
+    /// <summary>
+    /// 切片向量化内容.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
+
+    /// <summary>
+    /// 切片元数据内容表（提问/提纲/摘要）.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkMetadatumEntity> WikiDocumentChunkMetadata { get; set; }
+
+    /// <summary>
+    /// 文档内容.
+    /// </summary>
+    public virtual DbSet<WikiDocumentContentEntity> WikiDocumentContents { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

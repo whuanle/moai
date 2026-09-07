@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.TeamPlugin</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Maomi.Core" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Commands\" />
+		<Folder Include="Commands\Responses\" />
+		<Folder Include="Queries\" />
+		<Folder Include="Queries\Responses\" />
+	</ItemGroup>
+
+</Project>

@@ -24,6 +24,7 @@ import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import { Variables } from '@/pages/variables/Variables'
 import { TeamGateway } from '@/pages/teams/TeamGateway'
+import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
 import {
   addTeamUser,
   dissolveTeam,
@@ -48,7 +49,8 @@ const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
-type SectionKey = 'info' | 'members' | 'gateway' | 'knowledge' | 'plugins' | 'variables' | 'settings'
+const SECTION_KEYS = ['info', 'members', 'gateway', 'knowledge', 'plugins', 'variables', 'settings'] as const
+type SectionKey = (typeof SECTION_KEYS)[number]
 
 interface MemberFormValues {
   userId: number
@@ -71,13 +73,15 @@ interface TeamDetail {
 
 export function TeamManage() {
   const { t } = useTranslation()
-  const params = useParams<{ id: string }>()
+  const params = useParams<{ id: string; section?: string }>()
   const teamId = Number(params.id)
+  const navigate = useNavigate()
+  const rawSection = params.section ?? 'info'
+  const section: SectionKey = SECTION_KEYS.includes(rawSection as SectionKey) ? (rawSection as SectionKey) : 'info'
+  const navigateToSection = (key: SectionKey) => navigate(`/team/${teamId}/${key}`)
   const currentUserId = useAppStore((state) => state.userInfo?.userId)
   const setMyTeams = useAppStore((state) => state.setMyTeams)
-  const navigate = useNavigate()
 
-  const [section, setSection] = useState<SectionKey>('info')
   const [detail, setDetail] = useState<TeamDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<TeamUserItem[]>([])
@@ -371,7 +375,7 @@ export function TeamManage() {
             mode="inline"
             items={menuItems}
             selectedKeys={[section]}
-            onClick={({ key }) => setSection(key as SectionKey)}
+            onClick={({ key }) => navigateToSection(key as SectionKey)}
             style={{ borderRadius: spacing.sm }}
           />
         </Sider>
@@ -443,7 +447,7 @@ export function TeamManage() {
             </DSCard>
           ) : section === 'plugins' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <Empty description={t('team.managePlugins')} />
+              <TeamPlugins teamId={teamId} />
             </DSCard>
           ) : section === 'variables' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>

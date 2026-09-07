@@ -545,7 +545,20 @@
     "templateListSubtitle": "Registered dynamic plugin templates",
     "backToPlugins": "Back to plugins",
     "templateEmpty": "No templates yet",
-    "templateNoDescription": "No description"
+    "templateNoDescription": "No description",
+    "teamOwned": "Team-owned",
+    "authorization": "Authorize Teams",
+    "authorizationTitle": "Team Authorization",
+    "authIsPublic": "Public plugins are available to all teams, no authorization needed",
+    "authNoTeams": "No authorized teams",
+    "authSelectTeamPlaceholder": "Search or select teams",
+    "authAddTeam": "Add Team",
+    "authAddSuccess": "Teams authorized",
+    "authColTeam": "Team",
+    "authRemove": "Remove",
+    "authRemoveConfirm": "This team will lose access to this private plugin. Remove?",
+    "authRemoveSuccess": "Authorization removed",
+    "noPlugin": "No plugin to authorize"
   },
   "classify": {
     "title": "Classify",
@@ -638,7 +651,8 @@
     "knowledge": "Knowledge",
     "managePlugins": "Plugins",
     "manageVariables": "Variables",
-    "gateway": "Model Gateway"
+    "gateway": "Model Gateway",
+    "pluginsMemberHint": "This team has {{count}} owned plugins; system plugins are opened by admins"
   },
   "wiki": {
     "title": "Knowledge Base",

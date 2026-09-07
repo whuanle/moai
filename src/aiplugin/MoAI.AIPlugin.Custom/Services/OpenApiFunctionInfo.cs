@@ -3,7 +3,7 @@
 /// <summary>
 /// OpenApi 接口信息.
 /// </summary>
-internal sealed class OpenApiFunctionInfo
+public sealed class OpenApiFunctionInfo
 {
     /// <summary>
     /// 接口名称.

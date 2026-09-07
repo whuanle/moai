@@ -6,6 +6,7 @@ import {
   PlayCircleOutlined,
   PlusOutlined,
   ReloadOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons'
 import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -21,6 +22,7 @@ import {
 } from '@/api/plugin'
 import { DataTable, feedback } from '@/design-system'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
+import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-'
@@ -53,6 +55,7 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState<DynamicPluginManageItem | null>(null)
   const [drawerTarget, setDrawerTarget] = useState<DynamicPluginManageItem | null>(null)
+  const [authPlugin, setAuthPlugin] = useState<DynamicPluginManageItem | null>(null)
   const [filter, setFilter] = useState<ClassifyFilter>('all')
   const [form] = Form.useForm<DynamicFormValues>()
 
@@ -198,6 +201,17 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
               onClick={() => setDrawerTarget(record)}
             />
           </Tooltip>
+          {record.isPublic === false && (
+            <Tooltip title={t('plugins.authorization')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<ShareAltOutlined />}
+                aria-label={t('plugins.authorization')}
+                onClick={() => setAuthPlugin(record)}
+              />
+            </Tooltip>
+          )}
           <Tooltip title={t('plugins.editPlugin')}>
             <Button
               type="text"
@@ -266,6 +280,13 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
           paramsExample={drawerTarget.paramsExample}
         />
       )}
+
+      <PluginTeamAuthorizationDrawer
+        open={Boolean(authPlugin)}
+        pluginId={authPlugin?.id ?? null}
+        pluginName={authPlugin?.pluginName ?? null}
+        onClose={() => setAuthPlugin(null)}
+      />
 
       <Modal
         open={modalOpen}

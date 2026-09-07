@@ -3,7 +3,7 @@
 /// <summary>
 /// OpenApi 文档解析结果.
 /// </summary>
-internal sealed class OpenApiParseResult
+public sealed class OpenApiParseResult
 {
     /// <summary>
     /// 服务器地址.

@@ -1069,6 +1069,24 @@ export function createQueryPluginManageListCommandResponseItemFromDiscriminatorV
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginTeamAuthorizationCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginTeamAuthorizationCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginTeamAuthorizationCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginTeamAuthorizationCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryPluginTeamAuthorizationCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginTeamAuthorizationCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryServerInfoCommandResponse}
  */
 // @ts-ignore
@@ -1137,6 +1155,15 @@ export function createQueryTeamCommandResponseFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createQueryTeamGatewayModelsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryTeamGatewayModelsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamPluginsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamPluginsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamPluginsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1330,6 +1357,33 @@ export function createSaveStaticPluginCommandFromDiscriminatorValue(parseNode: P
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveTeamDynamicPluginCommand}
+ */
+// @ts-ignore
+export function createSaveTeamDynamicPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveTeamDynamicPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveTeamMcpPluginCommand}
+ */
+// @ts-ignore
+export function createSaveTeamMcpPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveTeamMcpPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveTeamOpenApiPluginCommand}
+ */
+// @ts-ignore
+export function createSaveTeamOpenApiPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveTeamOpenApiPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SettingItemResponse}
  */
 // @ts-ignore
@@ -1512,6 +1566,15 @@ export function createTeamItemFromDiscriminatorValue(parseNode: ParseNode | unde
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamPluginItem}
+ */
+// @ts-ignore
+export function createTeamPluginItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamPluginItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TeamUserItem}
  */
 // @ts-ignore
@@ -1625,6 +1688,15 @@ export function createUpdateOAuthConnectionCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createUpdateOpenApiPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateOpenApiPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdatePluginTeamAuthorizationCommand}
+ */
+// @ts-ignore
+export function createUpdatePluginTeamAuthorizationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdatePluginTeamAuthorizationCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2791,6 +2863,29 @@ export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPlu
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryPluginTeamAuthorizationCommandResponse(queryPluginTeamAuthorizationCommandResponse: Partial<QueryPluginTeamAuthorizationCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isPublic": n => { queryPluginTeamAuthorizationCommandResponse.isPublic = n.getBooleanValue(); },
+        "items": n => { queryPluginTeamAuthorizationCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginTeamAuthorizationCommandResponseItem>(createQueryPluginTeamAuthorizationCommandResponseItemFromDiscriminatorValue); },
+        "pluginId": n => { queryPluginTeamAuthorizationCommandResponse.pluginId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginTeamAuthorizationCommandResponseItem(queryPluginTeamAuthorizationCommandResponseItem: Partial<QueryPluginTeamAuthorizationCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "teamId": n => { queryPluginTeamAuthorizationCommandResponseItem.teamId = n.getNumberValue(); },
+        "teamName": n => { queryPluginTeamAuthorizationCommandResponseItem.teamName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCommandResponse: Partial<QueryServerInfoCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "maxUploadFileSize": n => { queryServerInfoCommandResponse.maxUploadFileSize = n.getNumberValue(); },
@@ -2881,6 +2976,19 @@ export function deserializeIntoQueryTeamCommandResponse(queryTeamCommandResponse
 export function deserializeIntoQueryTeamGatewayModelsCommandResponse(queryTeamGatewayModelsCommandResponse: Partial<QueryTeamGatewayModelsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryTeamGatewayModelsCommandResponse.items = n.getCollectionOfObjectValues<TeamGatewayModelItem>(createTeamGatewayModelItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamPluginsCommandResponse(queryTeamPluginsCommandResponse: Partial<QueryTeamPluginsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "canManage": n => { queryTeamPluginsCommandResponse.canManage = n.getBooleanValue(); },
+        "items": n => { queryTeamPluginsCommandResponse.items = n.getCollectionOfObjectValues<TeamPluginItem>(createTeamPluginItemFromDiscriminatorValue); },
+        "myRole": n => { queryTeamPluginsCommandResponse.myRole = n.getNumberValue(); },
+        "teamId": n => { queryTeamPluginsCommandResponse.teamId = n.getStringValue(); },
     }
 }
 /**
@@ -3158,6 +3266,55 @@ export function deserializeIntoSaveStaticPluginCommand(saveStaticPluginCommand: 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSaveTeamDynamicPluginCommand(saveTeamDynamicPluginCommand: Partial<SaveTeamDynamicPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "config": n => { saveTeamDynamicPluginCommand.config = n.getStringValue(); },
+        "contextUserId": n => { saveTeamDynamicPluginCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { saveTeamDynamicPluginCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "description": n => { saveTeamDynamicPluginCommand.description = n.getStringValue(); },
+        "instanceKey": n => { saveTeamDynamicPluginCommand.instanceKey = n.getStringValue(); },
+        "teamId": n => { saveTeamDynamicPluginCommand.teamId = n.getStringValue(); },
+        "templeteKey": n => { saveTeamDynamicPluginCommand.templeteKey = n.getStringValue(); },
+        "title": n => { saveTeamDynamicPluginCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSaveTeamMcpPluginCommand(saveTeamMcpPluginCommand: Partial<SaveTeamMcpPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoMcpServerPluginConnectionOptions(saveTeamMcpPluginCommand),
+        "contextUserId": n => { saveTeamMcpPluginCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { saveTeamMcpPluginCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "pluginId": n => { saveTeamMcpPluginCommand.pluginId = n.getGuidValue(); },
+        "teamId": n => { saveTeamMcpPluginCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSaveTeamOpenApiPluginCommand(saveTeamOpenApiPluginCommand: Partial<SaveTeamOpenApiPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contextUserId": n => { saveTeamOpenApiPluginCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { saveTeamOpenApiPluginCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "description": n => { saveTeamOpenApiPluginCommand.description = n.getStringValue(); },
+        "fileId": n => { saveTeamOpenApiPluginCommand.fileId = n.getStringValue(); },
+        "fileName": n => { saveTeamOpenApiPluginCommand.fileName = n.getStringValue(); },
+        "name": n => { saveTeamOpenApiPluginCommand.name = n.getStringValue(); },
+        "pluginId": n => { saveTeamOpenApiPluginCommand.pluginId = n.getGuidValue(); },
+        "teamId": n => { saveTeamOpenApiPluginCommand.teamId = n.getStringValue(); },
+        "title": n => { saveTeamOpenApiPluginCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSettingItemResponse(settingItemResponse: Partial<SettingItemResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { settingItemResponse.description = n.getStringValue(); },
@@ -3356,6 +3513,35 @@ export function deserializeIntoTeamItem(teamItem: Partial<TeamItem> | undefined 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoTeamPluginItem(teamPluginItem: Partial<TeamPluginItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyId": n => { teamPluginItem.classifyId = n.getNumberValue(); },
+        "classifyName": n => { teamPluginItem.classifyName = n.getStringValue(); },
+        "config": n => { teamPluginItem.config = n.getStringValue(); },
+        "configExample": n => { teamPluginItem.configExample = n.getStringValue(); },
+        "counter": n => { teamPluginItem.counter = n.getNumberValue(); },
+        "createTime": n => { teamPluginItem.createTime = n.getStringValue(); },
+        "createUserId": n => { teamPluginItem.createUserId = n.getStringValue(); },
+        "description": n => { teamPluginItem.description = n.getStringValue(); },
+        "instanceKey": n => { teamPluginItem.instanceKey = n.getStringValue(); },
+        "isSystem": n => { teamPluginItem.isSystem = n.getBooleanValue(); },
+        "isTeamOwned": n => { teamPluginItem.isTeamOwned = n.getBooleanValue(); },
+        "kind": n => { teamPluginItem.kind = n.getStringValue(); },
+        "paramsExample": n => { teamPluginItem.paramsExample = n.getStringValue(); },
+        "pluginId": n => { teamPluginItem.pluginId = n.getGuidValue(); },
+        "pluginKey": n => { teamPluginItem.pluginKey = n.getStringValue(); },
+        "pluginName": n => { teamPluginItem.pluginName = n.getStringValue(); },
+        "server": n => { teamPluginItem.server = n.getStringValue(); },
+        "templeteKey": n => { teamPluginItem.templeteKey = n.getStringValue(); },
+        "title": n => { teamPluginItem.title = n.getStringValue(); },
+        "type": n => { teamPluginItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoTeamUserItem(teamUserItem: Partial<TeamUserItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { teamUserItem.avatar = n.getStringValue(); },
@@ -3530,6 +3716,17 @@ export function deserializeIntoUpdateOpenApiPluginCommand(updateOpenApiPluginCom
         "query": n => { updateOpenApiPluginCommand.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "serverUrl": n => { updateOpenApiPluginCommand.serverUrl = n.getStringValue(); },
         "title": n => { updateOpenApiPluginCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdatePluginTeamAuthorizationCommand(updatePluginTeamAuthorizationCommand: Partial<UpdatePluginTeamAuthorizationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "pluginId": n => { updatePluginTeamAuthorizationCommand.pluginId = n.getGuidValue(); },
+        "teamIds": n => { updatePluginTeamAuthorizationCommand.teamIds = n.getCollectionOfPrimitiveValues<number>(); },
     }
 }
 /**
@@ -4706,6 +4903,36 @@ export interface QueryPluginManageListCommandResponseItem extends AuditsInfo, Pa
     type?: number | null;
 }
 /**
+ * 私有系统插件团队授权查询响应.
+ */
+export interface QueryPluginTeamAuthorizationCommandResponse extends Parsable {
+    /**
+     * 插件是否公开；公开成员对所有团队可用，无需授权.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 已授权团队列表（公开插件为空）.
+     */
+    items?: QueryPluginTeamAuthorizationCommandResponseItem[] | null;
+    /**
+     * 系统插件记录 id.
+     */
+    pluginId?: Guid | null;
+}
+/**
+ * 私有系统插件团队授权查询响应项.
+ */
+export interface QueryPluginTeamAuthorizationCommandResponseItem extends Parsable {
+    /**
+     * 团队 id.
+     */
+    teamId?: number | null;
+    /**
+     * 团队名称.
+     */
+    teamName?: string | null;
+}
+/**
  * 服务器信息.
  */
 export interface QueryServerInfoCommandResponse extends Parsable {
@@ -4844,6 +5071,27 @@ export interface QueryTeamGatewayModelsCommandResponse extends Parsable {
      * 模型集合.
      */
     items?: TeamGatewayModelItem[] | null;
+}
+/**
+ * 团队可用插件列表查询响应.
+ */
+export interface QueryTeamPluginsCommandResponse extends Parsable {
+    /**
+     * 可管理（Owner/Admin）.
+     */
+    canManage?: boolean | null;
+    /**
+     * 团队可用插件列表（团队自有插件 + 可用的系统插件）.
+     */
+    items?: TeamPluginItem[] | null;
+    /**
+     * 我在团队中的角色：0=Owner 1=Admin 2=Member.
+     */
+    myRole?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
 }
 /**
  * 团队列表响应.
@@ -5271,6 +5519,105 @@ export interface SaveStaticPluginCommand extends Parsable {
     pluginKey?: string | null;
     /**
      * 插件标题.
+     */
+    title?: string | null;
+}
+/**
+ * 保存团队动态插件实例。创建时填实例 key + 模板 key + 配置；更新时实例 key 不可变.
+ */
+export interface SaveTeamDynamicPluginCommand extends Parsable {
+    /**
+     * 实例配置 JSON.
+     */
+    config?: string | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 实例 key（用户填，小写+下划线，团队内唯一）；更新时不可变.
+     */
+    instanceKey?: string | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 模板 key（后端代码模型的 key，如 dynamic_greet）.
+     */
+    templeteKey?: string | null;
+    /**
+     * 实例标题（展示名称）.
+     */
+    title?: string | null;
+}
+/**
+ * 导入/更新团队 MCP 服务器插件，导入时会访问 MCP 服务器.
+ */
+export interface SaveTeamMcpPluginCommand extends McpServerPluginConnectionOptions, Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 插件记录 id；更新时传入，新建为空.
+     */
+    pluginId?: Guid | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * 导入/更新团队 OpenAPI 插件.
+ */
+export interface SaveTeamOpenApiPluginCommand extends Parsable {
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 上传的 id.
+     */
+    fileId?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 插件名称.
+     */
+    name?: string | null;
+    /**
+     * 插件记录 id；更新时传入，新建为空.
+     */
+    pluginId?: Guid | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 插件标题，可中文.
      */
     title?: string | null;
 }
@@ -6223,6 +6570,29 @@ export function serializeQueryPluginManageListCommandResponseItem(writer: Serial
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryPluginTeamAuthorizationCommandResponse(writer: SerializationWriter, queryPluginTeamAuthorizationCommandResponse: Partial<QueryPluginTeamAuthorizationCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginTeamAuthorizationCommandResponse) {
+        writer.writeBooleanValue("isPublic", queryPluginTeamAuthorizationCommandResponse.isPublic);
+        writer.writeCollectionOfObjectValues<QueryPluginTeamAuthorizationCommandResponseItem>("items", queryPluginTeamAuthorizationCommandResponse.items, serializeQueryPluginTeamAuthorizationCommandResponseItem);
+        writer.writeGuidValue("pluginId", queryPluginTeamAuthorizationCommandResponse.pluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginTeamAuthorizationCommandResponseItem(writer: SerializationWriter, queryPluginTeamAuthorizationCommandResponseItem: Partial<QueryPluginTeamAuthorizationCommandResponseItem> | undefined | null = {}) : void {
+    if (queryPluginTeamAuthorizationCommandResponseItem) {
+        writer.writeNumberValue("teamId", queryPluginTeamAuthorizationCommandResponseItem.teamId);
+        writer.writeStringValue("teamName", queryPluginTeamAuthorizationCommandResponseItem.teamName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryServerInfoCommandResponse(writer: SerializationWriter, queryServerInfoCommandResponse: Partial<QueryServerInfoCommandResponse> | undefined | null = {}) : void {
     if (queryServerInfoCommandResponse) {
         writer.writeNumberValue("maxUploadFileSize", queryServerInfoCommandResponse.maxUploadFileSize);
@@ -6313,6 +6683,19 @@ export function serializeQueryTeamCommandResponse(writer: SerializationWriter, q
 export function serializeQueryTeamGatewayModelsCommandResponse(writer: SerializationWriter, queryTeamGatewayModelsCommandResponse: Partial<QueryTeamGatewayModelsCommandResponse> | undefined | null = {}) : void {
     if (queryTeamGatewayModelsCommandResponse) {
         writer.writeCollectionOfObjectValues<TeamGatewayModelItem>("items", queryTeamGatewayModelsCommandResponse.items, serializeTeamGatewayModelItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamPluginsCommandResponse(writer: SerializationWriter, queryTeamPluginsCommandResponse: Partial<QueryTeamPluginsCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamPluginsCommandResponse) {
+        writer.writeBooleanValue("canManage", queryTeamPluginsCommandResponse.canManage);
+        writer.writeCollectionOfObjectValues<TeamPluginItem>("items", queryTeamPluginsCommandResponse.items, serializeTeamPluginItem);
+        writer.writeNumberValue("myRole", queryTeamPluginsCommandResponse.myRole);
+        writer.writeStringValue("teamId", queryTeamPluginsCommandResponse.teamId);
     }
 }
 /**
@@ -6590,6 +6973,55 @@ export function serializeSaveStaticPluginCommand(writer: SerializationWriter, sa
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSaveTeamDynamicPluginCommand(writer: SerializationWriter, saveTeamDynamicPluginCommand: Partial<SaveTeamDynamicPluginCommand> | undefined | null = {}) : void {
+    if (saveTeamDynamicPluginCommand) {
+        writer.writeStringValue("config", saveTeamDynamicPluginCommand.config);
+        writer.writeStringValue("contextUserId", saveTeamDynamicPluginCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", saveTeamDynamicPluginCommand.contextUserType);
+        writer.writeStringValue("description", saveTeamDynamicPluginCommand.description);
+        writer.writeStringValue("instanceKey", saveTeamDynamicPluginCommand.instanceKey);
+        writer.writeStringValue("teamId", saveTeamDynamicPluginCommand.teamId);
+        writer.writeStringValue("templeteKey", saveTeamDynamicPluginCommand.templeteKey);
+        writer.writeStringValue("title", saveTeamDynamicPluginCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSaveTeamMcpPluginCommand(writer: SerializationWriter, saveTeamMcpPluginCommand: Partial<SaveTeamMcpPluginCommand> | undefined | null = {}) : void {
+    if (saveTeamMcpPluginCommand) {
+        serializeMcpServerPluginConnectionOptions(writer, saveTeamMcpPluginCommand)
+        writer.writeStringValue("contextUserId", saveTeamMcpPluginCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", saveTeamMcpPluginCommand.contextUserType);
+        writer.writeGuidValue("pluginId", saveTeamMcpPluginCommand.pluginId);
+        writer.writeStringValue("teamId", saveTeamMcpPluginCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSaveTeamOpenApiPluginCommand(writer: SerializationWriter, saveTeamOpenApiPluginCommand: Partial<SaveTeamOpenApiPluginCommand> | undefined | null = {}) : void {
+    if (saveTeamOpenApiPluginCommand) {
+        writer.writeStringValue("contextUserId", saveTeamOpenApiPluginCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", saveTeamOpenApiPluginCommand.contextUserType);
+        writer.writeStringValue("description", saveTeamOpenApiPluginCommand.description);
+        writer.writeStringValue("fileId", saveTeamOpenApiPluginCommand.fileId);
+        writer.writeStringValue("fileName", saveTeamOpenApiPluginCommand.fileName);
+        writer.writeStringValue("name", saveTeamOpenApiPluginCommand.name);
+        writer.writeGuidValue("pluginId", saveTeamOpenApiPluginCommand.pluginId);
+        writer.writeStringValue("teamId", saveTeamOpenApiPluginCommand.teamId);
+        writer.writeStringValue("title", saveTeamOpenApiPluginCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSettingItemResponse(writer: SerializationWriter, settingItemResponse: Partial<SettingItemResponse> | undefined | null = {}) : void {
     if (settingItemResponse) {
         writer.writeStringValue("description", settingItemResponse.description);
@@ -6788,6 +7220,35 @@ export function serializeTeamItem(writer: SerializationWriter, teamItem: Partial
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTeamPluginItem(writer: SerializationWriter, teamPluginItem: Partial<TeamPluginItem> | undefined | null = {}) : void {
+    if (teamPluginItem) {
+        writer.writeNumberValue("classifyId", teamPluginItem.classifyId);
+        writer.writeStringValue("classifyName", teamPluginItem.classifyName);
+        writer.writeStringValue("config", teamPluginItem.config);
+        writer.writeStringValue("configExample", teamPluginItem.configExample);
+        writer.writeNumberValue("counter", teamPluginItem.counter);
+        writer.writeStringValue("createTime", teamPluginItem.createTime);
+        writer.writeStringValue("createUserId", teamPluginItem.createUserId);
+        writer.writeStringValue("description", teamPluginItem.description);
+        writer.writeStringValue("instanceKey", teamPluginItem.instanceKey);
+        writer.writeBooleanValue("isSystem", teamPluginItem.isSystem);
+        writer.writeBooleanValue("isTeamOwned", teamPluginItem.isTeamOwned);
+        writer.writeStringValue("kind", teamPluginItem.kind);
+        writer.writeStringValue("paramsExample", teamPluginItem.paramsExample);
+        writer.writeGuidValue("pluginId", teamPluginItem.pluginId);
+        writer.writeStringValue("pluginKey", teamPluginItem.pluginKey);
+        writer.writeStringValue("pluginName", teamPluginItem.pluginName);
+        writer.writeStringValue("server", teamPluginItem.server);
+        writer.writeStringValue("templeteKey", teamPluginItem.templeteKey);
+        writer.writeStringValue("title", teamPluginItem.title);
+        writer.writeEnumValue<PluginType>("type", teamPluginItem.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeTeamUserItem(writer: SerializationWriter, teamUserItem: Partial<TeamUserItem> | undefined | null = {}) : void {
     if (teamUserItem) {
         writer.writeStringValue("avatar", teamUserItem.avatar);
@@ -6962,6 +7423,17 @@ export function serializeUpdateOpenApiPluginCommand(writer: SerializationWriter,
         writer.writeCollectionOfObjectValues<KeyValueString>("query", updateOpenApiPluginCommand.query, serializeKeyValueString);
         writer.writeStringValue("serverUrl", updateOpenApiPluginCommand.serverUrl);
         writer.writeStringValue("title", updateOpenApiPluginCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdatePluginTeamAuthorizationCommand(writer: SerializationWriter, updatePluginTeamAuthorizationCommand: Partial<UpdatePluginTeamAuthorizationCommand> | undefined | null = {}) : void {
+    if (updatePluginTeamAuthorizationCommand) {
+        writer.writeGuidValue("pluginId", updatePluginTeamAuthorizationCommand.pluginId);
+        writer.writeCollectionOfPrimitiveValues<number>("teamIds", updatePluginTeamAuthorizationCommand.teamIds);
     }
 }
 /**
@@ -7434,6 +7906,91 @@ export interface TeamItem extends Parsable {
      */
     teamId?: string | null;
 }
+/**
+ * 团队可用插件项：本团队拥有的插件（自定义/动态）或本团队可用的系统插件.
+ */
+export interface TeamPluginItem extends Parsable {
+    /**
+     * 分类 id，0 表示未分类.
+     */
+    classifyId?: number | null;
+    /**
+     * 分类名称，分类不存在或为 0 时为 null.
+     */
+    classifyName?: string | null;
+    /**
+     * 动态插件实例配置 JSON，仅动态插件实例有.
+     */
+    config?: string | null;
+    /**
+     * 动态插件模板配置示例 JSON，仅动态插件实例有.
+     */
+    configExample?: string | null;
+    /**
+     * 使用量计数.
+     */
+    counter?: number | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 创建人 id.
+     */
+    createUserId?: string | null;
+    /**
+     * 插件描述.
+     */
+    description?: string | null;
+    /**
+     * 动态插件实例 key（仅动态插件实例有）.
+     */
+    instanceKey?: string | null;
+    /**
+     * 是否为系统插件（true=系统插件）.
+     */
+    isSystem?: boolean | null;
+    /**
+     * 是否为本团队自己创建的插件（false=系统插件）.
+     */
+    isTeamOwned?: boolean | null;
+    /**
+     * 插件种类：custom|dynamic|static.
+     */
+    kind?: string | null;
+    /**
+     * 静态插件请求参数示例 JSON（仅静态插件有）.
+     */
+    paramsExample?: string | null;
+    /**
+     * 插件记录 id；系统内存插件的静态注册插件为 Guid.Empty.
+     */
+    pluginId?: Guid | null;
+    /**
+     * 静态插件 key（仅静态插件有）.
+     */
+    pluginKey?: string | null;
+    /**
+     * 插件名称/Key.
+     */
+    pluginName?: string | null;
+    /**
+     * 自定义插件服务器地址（仅 custom 有）.
+     */
+    server?: string | null;
+    /**
+     * 动态插件模板 key，仅动态插件实例有.
+     */
+    templeteKey?: string | null;
+    /**
+     * 插件标题（展示名称）.
+     */
+    title?: string | null;
+    /**
+     * 插件类型：mcp|openapi|native|tool.
+     */
+    type?: PluginType | null;
+}
 export type TeamRole = (typeof TeamRoleObject)[keyof typeof TeamRoleObject];
 /**
  * 团队成员项.
@@ -7751,6 +8308,19 @@ export interface UpdateOpenApiPluginCommand extends Parsable {
      * 插件标题，可中文.
      */
     title?: string | null;
+}
+/**
+ * 更新私有系统插件的团队授权（全量替换），仅私有插件可设置；公开插件应使用公开状态接口.
+ */
+export interface UpdatePluginTeamAuthorizationCommand extends Parsable {
+    /**
+     * 系统插件记录 id，由 Controller 从路由参数回填.
+     */
+    pluginId?: Guid | null;
+    /**
+     * 授权团队 id 集合（全量替换），取消授权的团队将无法继续使用该私有插件.
+     */
+    teamIds?: number[] | null;
 }
 /**
  * 设置团队头像，仅 Owner/Admin 可操作；objectKey 需为已完成上传并登记的文件.

@@ -50,8 +50,8 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
   const [baseUrl, setBaseUrl] = useState('')
 
   useEffect(() => {
-    setBaseUrl(`${window.location.origin}/v1`)
-  }, [])
+    setBaseUrl(`${window.location.origin}/aiapi/${teamId}/v1`)
+  }, [teamId])
 
   const reloadKeys = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
@@ -287,6 +287,7 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
           loading={modelsLoading}
           onRefresh={() => void reloadModels()}
           refreshLoading={modelsLoading}
+          scroll={{ y: 360 }}
         />
       </DSCard>
 

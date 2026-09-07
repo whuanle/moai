@@ -4,6 +4,7 @@ import {
   EditOutlined,
   EyeOutlined,
   SearchOutlined,
+  ShareAltOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
 import { Button, Form, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
@@ -20,6 +21,7 @@ import { DataTable, feedback, QueryBar } from '@/design-system'
 import { McpPluginModal, type McpFormValues } from './components/McpPluginModal'
 import { OpenApiModal, type OpenApiFormValues } from './components/OpenApiModal'
 import { FunctionListModal } from './components/FunctionListModal'
+import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
 
 const { Text } = Typography
 
@@ -75,6 +77,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
   const [editing, setEditing] = useState<CustomPlugin | null>(null)
   const [editMode, setEditMode] = useState<'mcp' | 'openApi' | null>(null)
   const [functionPlugin, setFunctionPlugin] = useState<CustomPlugin | null>(null)
+  const [authPlugin, setAuthPlugin] = useState<CustomPlugin | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -336,6 +339,17 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
               />
             </Tooltip>
           )}
+          {record.isPublic === false && (
+            <Tooltip title={t('plugins.authorization')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<ShareAltOutlined />}
+                aria-label={t('plugins.authorization')}
+                onClick={() => setAuthPlugin(record)}
+              />
+            </Tooltip>
+          )}
           <Tooltip title={t('plugins.editPlugin')}>
             <Button
               type="text"
@@ -462,6 +476,13 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         open={Boolean(functionPlugin)}
         plugin={functionPlugin}
         onCancel={() => setFunctionPlugin(null)}
+      />
+
+      <PluginTeamAuthorizationDrawer
+        open={Boolean(authPlugin)}
+        pluginId={authPlugin?.pluginId ?? null}
+        pluginName={authPlugin?.pluginName ?? null}
+        onClose={() => setAuthPlugin(null)}
       />
     </>
   )

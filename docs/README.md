@@ -44,6 +44,7 @@
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
 | [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、解散与所有权转让 |
+| [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库与文档（内容协作 Member 可写） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 

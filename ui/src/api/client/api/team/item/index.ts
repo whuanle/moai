@@ -12,6 +12,8 @@ import { GatewayRequestBuilderNavigationMetadata, type GatewayRequestBuilder } f
 // @ts-ignore
 import { OwnerRequestBuilderRequestsMetadata, type OwnerRequestBuilder } from './owner/index.js';
 // @ts-ignore
+import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
+// @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
 // @ts-ignore
 import { type UsersRequestBuilder, UsersRequestBuilderRequestsMetadata } from './users/index.js';
@@ -38,6 +40,10 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * The owner property
      */
     get owner(): OwnerRequestBuilder;
+    /**
+     * The plugin property
+     */
+    get plugin(): PluginRequestBuilder;
     /**
      * The user property
      */
@@ -119,6 +125,9 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
     },
     owner: {
         requestsMetadata: OwnerRequestBuilderRequestsMetadata,
+    },
+    plugin: {
+        navigationMetadata: PluginRequestBuilderNavigationMetadata,
     },
     user: {
         navigationMetadata: UserRequestBuilderNavigationMetadata,

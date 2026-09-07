@@ -5,6 +5,7 @@ import { TeamManage } from '../TeamManage'
 import { useAppStore } from '@/store/app'
 import { dissolveTeam, getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
 import { getVariables } from '@/api/variable'
+import { getTeamPlugins } from '@/api/team-plugin'
 
 vi.mock('@/api/variable', () => ({
   getVariables: vi.fn().mockResolvedValue({
@@ -47,11 +48,24 @@ vi.mock('@/api/kiota', () => ({
   getApiClient: vi.fn(() => ({})),
 }))
 
-function renderManage(teamId = '7') {
+vi.mock('@/api/team-plugin', () => ({
+  getTeamPlugins: vi.fn().mockResolvedValue({
+    teamId: '7',
+    myRole: 0,
+    canManage: false,
+    items: [],
+  }),
+  deleteTeamPlugin: vi.fn().mockResolvedValue(undefined),
+  saveTeamDynamicPlugin: vi.fn().mockResolvedValue(undefined),
+  saveTeamMcpPlugin: vi.fn().mockResolvedValue('x'),
+  saveTeamOpenApiPlugin: vi.fn().mockResolvedValue('x'),
+}))
+
+function renderManage(teamId = '7', section = 'info') {
   return render(
-    <MemoryRouter initialEntries={[`/team/${teamId}`]}>
+    <MemoryRouter initialEntries={[`/team/${teamId}/${section}`]}>
       <Routes>
-        <Route path="/team/:id" element={<TeamManage />} />
+        <Route path="/team/:id/:section?" element={<TeamManage />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -170,7 +184,7 @@ describe('TeamManage', () => {
     expect(screen.queryByText(/解\s*散/)).not.toBeInTheDocument()
   })
 
-  it('知识库/插件菜单展示占位空态', async () => {
+  it('知识库菜单展示占位空态，插件菜单嵌入团队插件组件', async () => {
     renderManage()
 
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
@@ -178,7 +192,8 @@ describe('TeamManage', () => {
     expect(await screen.findByText('知识库', { selector: '.ant-empty-description' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('插件'))
-    expect(await screen.findByText('插件', { selector: '.ant-empty-description' })).toBeInTheDocument()
+    expect(await screen.findByText(/本团队共有 0 个私有插件/)).toBeInTheDocument()
+    expect(getTeamPlugins).toHaveBeenCalledWith(7)
   })
 
   it('环境变量菜单嵌入变量组件并按团队加载', async () => {
@@ -189,5 +204,20 @@ describe('TeamManage', () => {
 
     expect(getVariables).toHaveBeenCalledWith(7, expect.objectContaining({ keyword: undefined, name: undefined }))
     expect(await screen.findByText('API_KEY')).toBeInTheDocument()
+  })
+
+  it('URL 中的子路由片段决定当前区块，刷新后停留在原页', async () => {
+    renderManage(undefined, 'variables')
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    expect(await screen.findByText('API_KEY')).toBeInTheDocument()
+    expect(getVariables).toHaveBeenCalledWith(7, expect.objectContaining({ keyword: undefined, name: undefined }))
+  })
+
+  it('非法子路由片段回退到信息区块', async () => {
+    renderManage(undefined, 'not-exist')
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    expect(await screen.findByText('负责人')).toBeInTheDocument()
   })
 })

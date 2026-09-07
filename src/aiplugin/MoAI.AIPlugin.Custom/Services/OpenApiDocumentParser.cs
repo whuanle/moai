@@ -5,7 +5,7 @@ namespace MoAI.AIPlugin.Services;
 /// <summary>
 /// OpenApi 文档解析器，读取文件流并拆解每个接口.
 /// </summary>
-internal static class OpenApiDocumentParser
+public static class OpenApiDocumentParser
 {
     /// <summary>
     /// 解析 openapi 文档流，生成插件函数实体集合.

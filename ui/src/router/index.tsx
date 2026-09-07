@@ -37,7 +37,7 @@ export const router = createBrowserRouter([
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
       { path: 'team', element: <Teams /> },
-      { path: 'team/:id', element: <TeamManage /> },
+      { path: 'team/:id/:section?', element: <TeamManage /> },
       { path: 'wiki', element: <Wiki /> },
       { path: 'wiki/:id', element: <WikiDocuments /> },
       { path: 'settings', element: <Settings /> },

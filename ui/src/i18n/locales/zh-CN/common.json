@@ -480,7 +480,8 @@
     "knowledge": "知识库",
     "managePlugins": "插件",
     "manageVariables": "环境变量",
-    "gateway": "模型网关"
+    "gateway": "模型网关",
+    "pluginsMemberHint": "本团队共有 {{count}} 个私有插件；系统插件由管理员统一开放"
   },
   "wiki": {
     "title": "知识库",
@@ -692,7 +693,20 @@
     "templateListSubtitle": "已注册的动态插件模板",
     "backToPlugins": "返回插件",
     "templateEmpty": "暂无模板",
-    "templateNoDescription": "暂无描述"
+    "templateNoDescription": "暂无描述",
+    "teamOwned": "团队自有",
+    "authorization": "授权团队",
+    "authorizationTitle": "团队授权",
+    "authIsPublic": "公开插件对所有团队可用，无需授权",
+    "authNoTeams": "暂无授权团队",
+    "authSelectTeamPlaceholder": "搜索或选择团队",
+    "authAddTeam": "添加团队授权",
+    "authAddSuccess": "团队授权成功",
+    "authColTeam": "团队",
+    "authRemove": "移除授权",
+    "authRemoveConfirm": "移除后该团队无法继续使用此私有插件，确认移除？",
+    "authRemoveSuccess": "授权已移除",
+    "noPlugin": "暂无可授权的插件"
   },
   "classify": {
     "title": "分类管理",

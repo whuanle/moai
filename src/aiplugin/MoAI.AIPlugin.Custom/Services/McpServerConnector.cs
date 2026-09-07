@@ -9,7 +9,7 @@ namespace MoAI.AIPlugin.Services;
 /// <summary>
 /// MCP 服务器连接器，负责连接 MCP 服务器并拉取工具列表.
 /// </summary>
-internal static class McpServerConnector
+public static class McpServerConnector
 {
     /// <summary>
     /// 连接 MCP 服务器并拉取工具列表，生成插件函数实体集合.

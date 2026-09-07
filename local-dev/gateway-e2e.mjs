@@ -1,6 +1,6 @@
 // 团队模型网关 E2E 冒烟脚本（不依赖真实上游模型渠道）
 // 用法: node local-dev/gateway-e2e.mjs [baseUrl]   （需后端运行中，默认 http://127.0.0.1:5210）
-// 覆盖：密钥管理 API、/v1/models 两种鉴权头、禁用/删除即时失效、模型未授权 404、成员权限矩阵
+// 覆盖：密钥管理 API、/aiapi/{teamId}/v1/models 两种鉴权头、路由团队校验、禁用/删除即时失效、模型未授权 404、成员权限矩阵
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
 const crypto = await import('node:crypto')
 
@@ -92,20 +92,25 @@ const keys = await api(adminToken, `/api/team/${teamId}/gateway/keys`)
 check('密钥列表不泄露原文', keys.status === 200 && keys.body?.items?.some((x) => x.id === keyId && x.keyPrefix && !JSON.stringify(x).includes(secret)))
 
 // ---------- 网关鉴权 ----------
-const noKey = await fetch(`${BASE}/v1/models`)
-check('无密钥访问 /v1/models 返回 401', noKey.status === 401)
+const gwBase = `${BASE}/aiapi/${teamId}/v1`
+const noKey = await fetch(`${gwBase}/models`)
+check('无密钥访问 /aiapi/{teamId}/v1/models 返回 401', noKey.status === 401)
 
-const badKey = await fetch(`${BASE}/v1/models`, { headers: { Authorization: 'Bearer moai-invalidinvalidinvalidinvalidinvalid' } })
+const badKey = await fetch(`${gwBase}/models`, { headers: { Authorization: 'Bearer moai-invalidinvalidinvalidinvalidinvalid' } })
 check('伪造密钥返回 401', badKey.status === 401)
 
-const okAuth = await fetch(`${BASE}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
+const okAuth = await fetch(`${gwBase}/models`, { headers: { Authorization: `Bearer ${secret}` } })
 const okBody = await okAuth.json()
-check('Bearer 密钥访问 /v1/models 返回 200', okAuth.status === 200 && okBody?.object === 'list' && Array.isArray(okBody.data))
+check('Bearer 密钥访问 models 返回 200', okAuth.status === 200 && okBody?.object === 'list' && Array.isArray(okBody.data))
 
-const okHeader = await fetch(`${BASE}/v1/models`, { headers: { 'x-api-key': secret } })
-check('x-api-key 密钥访问 /v1/models 返回 200', okHeader.status === 200)
+const okHeader = await fetch(`${gwBase}/models`, { headers: { 'x-api-key': secret } })
+check('x-api-key 密钥访问 models 返回 200', okHeader.status === 200)
 
-const chat404 = await fetch(`${BASE}/v1/chat/completions`, {
+// 路由 teamId 严格校验：用错误的团队 id 访问，返回 403
+const wrongTeam = await fetch(`${BASE}/aiapi/${teamId + 1}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
+check('路由团队 id 与密钥不一致返回 403', wrongTeam.status === 403)
+
+const chat404 = await fetch(`${gwBase}/chat/completions`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
   body: JSON.stringify({ model: 'gw-e2e-不存在', messages: [{ role: 'user', content: 'hi' }] }),
@@ -113,7 +118,7 @@ const chat404 = await fetch(`${BASE}/v1/chat/completions`, {
 const chat404Body = await chat404.json()
 check('未授权模型返回 404 + OpenAI 错误信封', chat404.status === 404 && chat404Body?.error?.code === 'model_not_found', JSON.stringify(chat404Body))
 
-const msg404 = await fetch(`${BASE}/v1/messages`, {
+const msg404 = await fetch(`${gwBase}/messages`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', 'x-api-key': secret },
   body: JSON.stringify({ model: 'gw-e2e-不存在', max_tokens: 64, messages: [{ role: 'user', content: 'hi' }] }),
@@ -123,11 +128,11 @@ check('messages 协议未授权模型返回 Anthropic 错误信封', msg404.stat
 
 // ---------- 禁用/删除即时失效 ----------
 await api(adminToken, `/api/team/${teamId}/gateway/keys/${keyId}`, 'PUT', { isDisable: true })
-const disabled = await fetch(`${BASE}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
+const disabled = await fetch(`${gwBase}/models`, { headers: { Authorization: `Bearer ${secret}` } })
 check('禁用后密钥立即失效(401)', disabled.status === 401)
 
 await api(adminToken, `/api/team/${teamId}/gateway/keys/${keyId}`, 'PUT', { isDisable: false })
-const reEnabled = await fetch(`${BASE}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
+const reEnabled = await fetch(`${gwBase}/models`, { headers: { Authorization: `Bearer ${secret}` } })
 check('重新启用后恢复(200)', reEnabled.status === 200)
 
 // ---------- 成员权限矩阵 ----------
@@ -143,7 +148,7 @@ check('普通成员不可管理密钥(403)', bobKeys.status === 403)
 // ---------- 清理 ----------
 const delKey = await api(adminToken, `/api/team/${teamId}/gateway/keys/${keyId}`, 'DELETE')
 check('删除密钥', delKey.status === 200)
-const deleted = await fetch(`${BASE}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
+const deleted = await fetch(`${gwBase}/models`, { headers: { Authorization: `Bearer ${secret}` } })
 check('删除后密钥失效(401)', deleted.status === 401)
 
 const dissolve = await api(adminToken, `/api/team/${teamId}`, 'DELETE')

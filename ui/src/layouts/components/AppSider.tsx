@@ -26,7 +26,6 @@ import {
   type Locale,
   type ThemeMode,
 } from '@/store/app'
-import { getMyTeams } from '@/api/team'
 
 const { Sider } = Layout
 
@@ -86,17 +85,6 @@ export function AppSider() {
   const userInfo = useAppStore((state) => state.userInfo)
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
-  const myTeams = useAppStore((state) => state.myTeams)
-  const setMyTeams = useAppStore((state) => state.setMyTeams)
-  const currentTeamId = useAppStore((state) => state.currentTeamId)
-  const setCurrentTeamId = useAppStore((state) => state.setCurrentTeamId)
-
-  useEffect(() => {
-    getMyTeams()
-      .then((teams) => setMyTeams(teams))
-      .catch(() => undefined)
-  }, [setMyTeams])
-
   const [collapsed, setCollapsed] = useState(false)
   const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
   const isDark = themeKey === 'dark'
@@ -225,37 +213,6 @@ export function AppSider() {
           )}
         </div>
       </Dropdown>
-
-      {!collapsed && (
-        <div style={{ padding: '0 16px 12px' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-            {t('team.title')}
-          </Typography.Text>
-          <Select
-            value={currentTeamId ?? undefined}
-            placeholder={t('team.selectTeam')}
-            style={{ width: '100%' }}
-            popupMatchSelectWidth={false}
-            onChange={(value: string) => {
-              setCurrentTeamId(value)
-              navigate('/wiki')
-            }}
-            options={myTeams.map((team) => ({
-              value: String(team.teamId),
-              label: (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  {team.name}
-                </span>
-              ),
-            }))}
-            notFoundContent={
-              <Button type="link" size="small" onClick={() => navigate('/team')}>
-                {t('team.create')}
-              </Button>
-            }
-          />
-        </div>
-      )}
 
       <Menu
         mode="inline"
