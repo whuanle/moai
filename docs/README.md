@@ -8,7 +8,7 @@
 |---|---|---|
 | L0 导航 | 本页 | — |
 | L1 全局规范 | 后端 CQRS / 文档标准 / 前端约定 / 设计系统 | 见下「全局规范」 |
-| L2 领域四件套 | 21 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
+| L2 领域四件套 | 22 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
 | L3 证据 | 可执行验收脚本 / 单测 / 回归命令 | 见下「回归入口」 |
 
 ## 全局规范（L1）
@@ -22,7 +22,7 @@
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
 - [ui/docs/design-system/](../ui/docs/design-system/README.md) — 设计系统规范
 
-## 模块地图（L2，21 个四件套）
+## 模块地图（L2，22 个四件套）
 
 缩写列 = BDD 场景编号前缀（见各模块 bdd.md）。
 
@@ -47,6 +47,7 @@
 | [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、解散与所有权转让 |
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
+| [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱手动维护 + 外部 Neo4j 接入只读；`OPEN_NEO4J` 门禁） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 
 ### 前端（ui/docs/）
