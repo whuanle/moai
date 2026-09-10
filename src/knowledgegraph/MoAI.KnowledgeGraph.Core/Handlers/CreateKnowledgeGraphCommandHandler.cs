@@ -63,6 +63,13 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                 throw new BusinessException("数据库不存在或无法访问.") { StatusCode = 400 };
             }
 
+            var connectedNameExist = await _databaseContext.KnowledgeGraphs
+                .AnyAsync(x => x.TeamId == request.TeamId && x.Name == request.Name, cancellationToken);
+            if (connectedNameExist)
+            {
+                throw new BusinessException("知识图谱名称已存在，请更换后重试.") { StatusCode = 409 };
+            }
+
             var connectedGraph = new KnowledgeGraphEntity
             {
                 TeamId = (int)request.TeamId,
@@ -73,7 +80,20 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                 Database = database,
             };
             _databaseContext.KnowledgeGraphs.Add(connectedGraph);
-            await _databaseContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _databaseContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                if (IsNameUniqueConstraintViolation(ex))
+                {
+                    throw new BusinessException("知识图谱名称已存在，请更换后重试.") { StatusCode = 409 };
+                }
+
+                throw;
+            }
+
             return new SimpleLong { Value = connectedGraph.Id };
         }
 

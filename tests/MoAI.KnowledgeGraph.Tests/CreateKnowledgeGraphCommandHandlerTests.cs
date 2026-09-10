@@ -84,6 +84,31 @@ public class CreateKnowledgeGraphCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_Connected_WhenNameDuplicated_Throws409()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var settings = new Mock<IKnowledgeGraphSettingsService>();
+        settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.ProbeDatabaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        await sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" },
+            CancellationToken.None);
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext2" },
+            CancellationToken.None));
+
+        Assert.Equal(409, ex.StatusCode);
+        Assert.Single(db.Context.KnowledgeGraphs);
+    }
+
+    [Fact]
     public async Task Handle_WhenDisabled_Throws409()
     {
         using var db = TestSqliteContext.Create();
