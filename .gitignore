@@ -369,3 +369,6 @@ appsettings.Development.json
 # 本地开发私有配置（含密码/IP，勿提交；脚本与截图保留）
 local-dev/appsettings.Development.json
 local-dev/system.local.json
+
+# 头脑风暴可视化临时产物
+.superpowers/
