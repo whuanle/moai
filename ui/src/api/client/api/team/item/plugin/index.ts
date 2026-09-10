@@ -4,13 +4,17 @@
 // @ts-ignore
 import { DynamicRequestBuilderRequestsMetadata, type DynamicRequestBuilder } from './dynamic/index.js';
 // @ts-ignore
-import { type WithPluginItemRequestBuilder, WithPluginItemRequestBuilderRequestsMetadata } from './item/index.js';
+import { type WithPluginItemRequestBuilder, WithPluginItemRequestBuilderNavigationMetadata, WithPluginItemRequestBuilderRequestsMetadata } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
 import { McpRequestBuilderRequestsMetadata, type McpRequestBuilder } from './mcp/index.js';
 // @ts-ignore
 import { OpenapiRequestBuilderRequestsMetadata, type OpenapiRequestBuilder } from './openapi/index.js';
+// @ts-ignore
+import { Pre_upload_openapiRequestBuilderRequestsMetadata, type Pre_upload_openapiRequestBuilder } from './pre_upload_openapi/index.js';
+// @ts-ignore
+import { RunRequestBuilderRequestsMetadata, type RunRequestBuilder } from './run/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -35,6 +39,14 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      */
     get openapi(): OpenapiRequestBuilder;
     /**
+     * The pre_upload_openapi property
+     */
+    get pre_upload_openapi(): Pre_upload_openapiRequestBuilder;
+    /**
+     * The run property
+     */
+    get run(): RunRequestBuilder;
+    /**
      * Gets an item from the ApiSdk.api.team.item.plugin.item collection
      * @param pluginId 插件记录 id.
      * @returns {WithPluginItemRequestBuilder}
@@ -51,6 +63,7 @@ export const PluginRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}/plug
 export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof PluginRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byPluginId: {
         requestsMetadata: WithPluginItemRequestBuilderRequestsMetadata,
+        navigationMetadata: WithPluginItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["pluginId"],
     },
     dynamic: {
@@ -64,6 +77,12 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     openapi: {
         requestsMetadata: OpenapiRequestBuilderRequestsMetadata,
+    },
+    pre_upload_openapi: {
+        requestsMetadata: Pre_upload_openapiRequestBuilderRequestsMetadata,
+    },
+    run: {
+        requestsMetadata: RunRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

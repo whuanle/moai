@@ -12,6 +12,8 @@ import { ClassifyRequestBuilderNavigationMetadata, ClassifyRequestBuilderRequest
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
+import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBuilderRequestsMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
+// @ts-ignore
 import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
 // @ts-ignore
 import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
@@ -52,6 +54,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The common property
      */
     get common(): CommonRequestBuilder;
+    /**
+     * The knowledgeGraph property
+     */
+    get knowledgeGraph(): KnowledgeGraphRequestBuilder;
     /**
      * The oauthconnect property
      */
@@ -104,6 +110,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
+    },
+    knowledgeGraph: {
+        requestsMetadata: KnowledgeGraphRequestBuilderRequestsMetadata,
+        navigationMetadata: KnowledgeGraphRequestBuilderNavigationMetadata,
     },
     oauthconnect: {
         navigationMetadata: OauthconnectRequestBuilderNavigationMetadata,

@@ -4,12 +4,30 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, type BusinessValidationResult, type EmptyCommandResponse } from '../../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { DetailRequestBuilderRequestsMetadata, type DetailRequestBuilder } from './detail/index.js';
+// @ts-ignore
+import { FunctionsRequestBuilderRequestsMetadata, type FunctionsRequestBuilder } from './functions/index.js';
+// @ts-ignore
+import { Refresh_mcpRequestBuilderRequestsMetadata, type Refresh_mcpRequestBuilder } from './refresh_mcp/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/team/{-id}/plugin/{pluginId}
  */
 export interface WithPluginItemRequestBuilder extends BaseRequestBuilder<WithPluginItemRequestBuilder> {
+    /**
+     * The detail property
+     */
+    get detail(): DetailRequestBuilder;
+    /**
+     * The functions property
+     */
+    get functions(): FunctionsRequestBuilder;
+    /**
+     * The refresh_mcp property
+     */
+    get refresh_mcp(): Refresh_mcpRequestBuilder;
     /**
      * 删除团队插件，需团队 Owner/Admin.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -32,6 +50,20 @@ export interface WithPluginItemRequestBuilder extends BaseRequestBuilder<WithPlu
  * Uri template for the request builder.
  */
 export const WithPluginItemRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}/plugin/{pluginId}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const WithPluginItemRequestBuilderNavigationMetadata: Record<Exclude<keyof WithPluginItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    detail: {
+        requestsMetadata: DetailRequestBuilderRequestsMetadata,
+    },
+    functions: {
+        requestsMetadata: FunctionsRequestBuilderRequestsMetadata,
+    },
+    refresh_mcp: {
+        requestsMetadata: Refresh_mcpRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */
