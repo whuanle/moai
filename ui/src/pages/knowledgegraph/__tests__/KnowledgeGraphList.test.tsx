@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { KnowledgeGraphList } from '../KnowledgeGraphList'
 import { useAppStore } from '@/store/app'
 import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
+import { getMyTeams } from '@/api/team'
 
 vi.mock('@/api/knowledgeGraph', () => ({
   getKnowledgeGraphs: vi.fn(),
@@ -39,5 +40,13 @@ describe('KnowledgeGraphList', () => {
     vi.mocked(getKnowledgeGraphs).mockResolvedValue({ teamId: '7', myRole: 2, enabled: false, items: [] })
     renderPage()
     expect(await screen.findByText(/未开启知识图谱能力/)).toBeInTheDocument()
+  })
+
+  it('无团队时不显示能力未开启提示', async () => {
+    useAppStore.setState({ myTeams: [] })
+    vi.mocked(getMyTeams).mockResolvedValue([])
+    renderPage()
+    expect(await screen.findByText(/还没有知识图谱/)).toBeInTheDocument()
+    expect(screen.queryByText(/未开启知识图谱能力/)).toBeNull()
   })
 })

@@ -23,13 +23,24 @@ export function KnowledgeGraphList() {
   const [enabled, setEnabled] = useState(true)
 
   const load = useCallback(async () => {
-    const teams: TeamItem[] = myTeams.length > 0 ? myTeams : await getMyTeams()
-    if (myTeams.length === 0) setMyTeams(teams)
+    let teams: TeamItem[]
+    if (myTeams.length > 0) {
+      teams = myTeams
+    } else {
+      try {
+        teams = await getMyTeams()
+        setMyTeams(teams)
+      } catch {
+        teams = []
+      }
+    }
     const collected: CardItem[] = []
     let anyEnabled = false
+    let queried = false
     for (const team of teams) {
       const teamId = Number(team.teamId)
       if (!teamId) continue
+      queried = true
       try {
         const res = await getKnowledgeGraphs(teamId)
         if (res.enabled) anyEnabled = true
@@ -40,7 +51,7 @@ export function KnowledgeGraphList() {
         // 单个团队失败不中断
       }
     }
-    setEnabled(anyEnabled)
+    setEnabled(!queried || anyEnabled)
     setItems(collected)
   }, [myTeams, setMyTeams])
 

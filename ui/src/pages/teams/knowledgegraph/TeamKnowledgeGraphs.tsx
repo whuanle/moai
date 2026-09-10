@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Card, Col, Form, Input, Modal, Popconfirm, Row, Select, Space } from 'antd'
+import { Button, Col, Form, Input, Modal, Popconfirm, Row, Select, Space } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
-import { feedback } from '@/design-system'
+import { Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import {
   createKnowledgeGraph,
@@ -48,7 +48,7 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   useEffect(() => { void load() }, [load])
 
   useEffect(() => {
-    if (enabled) void getKnowledgeGraphTemplates().then(setTemplates)
+    if (enabled) void getKnowledgeGraphTemplates().then(setTemplates).catch(() => setTemplates([]))
   }, [enabled])
 
   const openCreate = () => {
