@@ -1,11 +1,6 @@
-using System;
-using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Commands;
@@ -23,7 +18,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
     [Fact]
     public async Task Handle_WhenEnabledAndAdmin_CreatesGraph()
     {
-        using var db = CreateContext();
+        using var db = TestSqliteContext.Create();
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TeamRole.Admin);
@@ -40,7 +35,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
     [Fact]
     public async Task Handle_WhenDisabled_Throws409()
     {
-        using var db = CreateContext();
+        using var db = TestSqliteContext.Create();
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TeamRole.Admin);
@@ -56,9 +51,27 @@ public class CreateKnowledgeGraphCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenEnabledButUriEmpty_Throws409()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var settings = new Mock<IKnowledgeGraphSettingsService>();
+        settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = " " });
+
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
+
+        Assert.Equal(409, ex.StatusCode);
+    }
+
+    [Fact]
     public async Task Handle_WhenNameDuplicated_Throws409()
     {
-        using var db = CreateContext();
+        using var db = TestSqliteContext.Create();
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TeamRole.Owner);
@@ -74,46 +87,34 @@ public class CreateKnowledgeGraphCommandHandlerTests
         Assert.Equal(409, ex.StatusCode);
     }
 
-    private static SqliteScope CreateContext()
+    [Fact]
+    public async Task Handle_WithTemplate_MapsRelationTypeIdsToSavedEntityTypes()
     {
-        var connection = new SqliteConnection("Data Source=:memory:");
-        connection.Open();
-        var services = new ServiceCollection();
-        services.AddSingleton(Mock.Of<MoAI.Infra.Services.IIdProvider>());
-        services.AddSingleton(Mock.Of<MoAI.Infra.Services.IUserContextProvider>());
-        var provider = services.BuildServiceProvider();
-        var options = new DbContextOptionsBuilder<DatabaseContext>().UseSqlite(connection).Options;
-        var context = new TestDatabaseContext(options, provider);
-        context.Database.EnsureCreated();
-        return new SqliteScope(context, connection);
-    }
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var settings = new Mock<IKnowledgeGraphSettingsService>();
+        settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
-    private sealed class TestDatabaseContext : DatabaseContext
-    {
-        public TestDatabaseContext(DbContextOptions options, IServiceProvider serviceProvider)
-            : base(options, serviceProvider)
-        {
-        }
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var result = await sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "运维", TemplateKey = "ops" },
+            CancellationToken.None);
 
-        protected override bool ShouldApplySeedData() => false;
-    }
+        var entityTypes = db.Context.KnowledgeGraphEntityTypes
+            .Where(x => x.KgId == result.Value)
+            .ToList();
+        var peopleId = entityTypes.Single(x => x.Name == "人员").Id;
+        var serviceId = entityTypes.Single(x => x.Name == "服务").Id;
 
-    private sealed class SqliteScope : IDisposable
-    {
-        public SqliteScope(DatabaseContext context, SqliteConnection connection)
-        {
-            Context = context;
-            Connection = connection;
-        }
+        var relation = db.Context.KnowledgeGraphRelationTypes
+            .Single(x => x.KgId == result.Value && x.Name == "维护");
 
-        public DatabaseContext Context { get; }
-
-        public SqliteConnection Connection { get; }
-
-        public void Dispose()
-        {
-            Context.Dispose();
-            Connection.Dispose();
-        }
+        Assert.NotNull(relation.SourceTypeId);
+        Assert.NotNull(relation.TargetTypeId);
+        Assert.Equal(peopleId, relation.SourceTypeId);
+        Assert.Equal(serviceId, relation.TargetTypeId);
     }
 }

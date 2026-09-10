@@ -1,6 +1,8 @@
-using Neo4j.Driver;
+using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra.Exceptions;
+using MoAI.Settings.Models;
 using MoAI.Settings.Services;
+using Neo4j.Driver;
 
 namespace MoAI.KnowledgeGraph.Services;
 
@@ -12,7 +14,7 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
     private const string ConstraintCypher = "CREATE CONSTRAINT kg_node_id_unique IF NOT EXISTS FOR (n:KgNode) REQUIRE n.id IS UNIQUE";
     private const string IndexCypher = "CREATE INDEX kg_node_kg_name IF NOT EXISTS FOR (n:KgNode) ON (n.kgId, n.name)";
 
-    private readonly IKnowledgeGraphSettingsService _settingsService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly List<IDriver> _retired = new();
     private IDriver? _driver;
@@ -23,10 +25,10 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="Neo4jDriverProvider"/> class.
     /// </summary>
-    /// <param name="settingsService">知识图谱设置读取服务.</param>
-    public Neo4jDriverProvider(IKnowledgeGraphSettingsService settingsService)
+    /// <param name="scopeFactory">用于在单例中安全解析 scoped 设置服务的作用域工厂.</param>
+    public Neo4jDriverProvider(IServiceScopeFactory scopeFactory)
     {
-        _settingsService = settingsService;
+        _scopeFactory = scopeFactory;
     }
 
     /// <summary>
@@ -36,7 +38,13 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
     /// <returns>返回 <see cref="IDriver"/>.</returns>
     public async Task<IDriver> GetDriverAsync(CancellationToken cancellationToken)
     {
-        var settings = await _settingsService.GetAsync(cancellationToken);
+        Neo4jKnowledgeGraphSettings settings;
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var settingsService = scope.ServiceProvider.GetRequiredService<IKnowledgeGraphSettingsService>();
+            settings = await settingsService.GetAsync(cancellationToken);
+        }
+
         if (!settings.Enabled || string.IsNullOrWhiteSpace(settings.Uri))
         {
             throw new BusinessException("未开启知识图谱能力，请先在系统设置中配置 Neo4j.") { StatusCode = 409 };

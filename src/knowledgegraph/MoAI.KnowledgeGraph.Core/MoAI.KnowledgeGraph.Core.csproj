@@ -15,6 +15,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Neo4j.Driver" />
+		<PackageReference Include="Npgsql" />
 	</ItemGroup>
 
 	<ItemGroup>

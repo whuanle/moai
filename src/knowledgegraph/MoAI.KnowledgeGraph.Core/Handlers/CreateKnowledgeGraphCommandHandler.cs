@@ -2,13 +2,13 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
-using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.Commands;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Services;
 using MoAI.Settings.Services;
+using Npgsql;
 
 namespace MoAI.KnowledgeGraph.Handlers;
 
@@ -17,6 +17,8 @@ namespace MoAI.KnowledgeGraph.Handlers;
 /// </summary>
 public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledgeGraphCommand, SimpleLong>
 {
+    private const string NameUniqueConstraintName = "idx_kg_team_name_live_uindex";
+
     private readonly DatabaseContext _databaseContext;
     private readonly IKnowledgeGraphAuthorizer _authorizer;
     private readonly IKnowledgeGraphSettingsService _settingsService;
@@ -45,6 +47,11 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             throw new BusinessException("未开启知识图谱能力，请先在系统设置中配置 Neo4j.") { StatusCode = 409 };
         }
 
+        if (string.IsNullOrWhiteSpace(settings.Uri))
+        {
+            throw new BusinessException("知识图谱已开启但未配置 Neo4j 连接地址，请先在系统设置中完善.") { StatusCode = 409 };
+        }
+
         KnowledgeGraphTemplate? template = null;
         if (!string.IsNullOrWhiteSpace(request.TemplateKey))
         {
@@ -67,12 +74,24 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             TemplateKey = request.TemplateKey,
         };
         _databaseContext.KnowledgeGraphs.Add(graph);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            if (IsNameUniqueConstraintViolation(ex))
+            {
+                throw new BusinessException("知识图谱名称已存在，请更换后重试.") { StatusCode = 409 };
+            }
+
+            throw;
+        }
 
         if (template != null && template.EntityTypes.Count > 0)
         {
             var sort = 0;
-            var typeNameToId = new Dictionary<string, long>(StringComparer.Ordinal);
+            var entityTypes = new List<KnowledgeGraphEntityTypeEntity>();
             foreach (var typeName in template.EntityTypes)
             {
                 var entityType = new KnowledgeGraphEntityTypeEntity
@@ -84,11 +103,17 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                     Sort = sort++,
                 };
                 _databaseContext.KnowledgeGraphEntityTypes.Add(entityType);
-                typeNameToId[typeName] = entityType.Id;
+                entityTypes.Add(entityType);
             }
 
-            // 先确保实体类型落库拿到自增 id
+            // 先确保实体类型落库拿到自增 id，再构建名称到 id 的映射
             await _databaseContext.SaveChangesAsync(cancellationToken);
+
+            var typeNameToId = new Dictionary<string, long>(StringComparer.Ordinal);
+            foreach (var entityType in entityTypes)
+            {
+                typeNameToId[entityType.Name] = entityType.Id;
+            }
 
             sort = 0;
             foreach (var relation in template.RelationTypes)
@@ -109,5 +134,20 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
         }
 
         return new SimpleLong { Value = graph.Id };
+    }
+
+    private static bool IsNameUniqueConstraintViolation(DbUpdateException exception)
+    {
+        for (Exception? current = exception; current != null; current = current.InnerException)
+        {
+            if (current is PostgresException postgresException
+                && string.Equals(postgresException.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
+                && string.Equals(postgresException.ConstraintName, NameUniqueConstraintName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
