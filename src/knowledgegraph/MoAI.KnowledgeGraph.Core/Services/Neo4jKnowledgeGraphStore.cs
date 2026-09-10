@@ -183,7 +183,11 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
             await cursor.ConsumeAsync();
             return true;
         }
-        catch (Exception)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not MoAI.Infra.Exceptions.BusinessException)
         {
             return false;
         }
@@ -213,7 +217,11 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
                 var countRecord = (await countCursor.ToListAsync())[0];
                 count = countRecord["c"].As<long>();
             }
-            catch (Exception)
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is not MoAI.Infra.Exceptions.BusinessException)
             {
                 count = 0;
             }
@@ -239,7 +247,11 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
                 var countRecord = (await countCursor.ToListAsync())[0];
                 count = countRecord["c"].As<long>();
             }
-            catch (Exception)
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is not MoAI.Infra.Exceptions.BusinessException)
             {
                 count = 0;
             }

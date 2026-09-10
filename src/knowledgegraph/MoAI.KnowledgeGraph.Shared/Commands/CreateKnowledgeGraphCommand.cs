@@ -47,7 +47,10 @@ public class CreateKnowledgeGraphCommand : IRequest<SimpleLong>, IModelValidator
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("简介最长 255 个字符.");
         validate.RuleFor(x => x.Mode).Must(KnowledgeGraphModes.IsValid).WithMessage("图谱来源不合法.");
-        validate.RuleFor(x => x.Database).NotEmpty().When(x => x.Mode == KnowledgeGraphModes.Connected).WithMessage("接入图谱必须填写数据库名.");
+        validate.RuleFor(x => x.Database)
+            .NotEmpty().WithMessage("接入图谱必须填写数据库名.")
+            .MaximumLength(100).WithMessage("数据库名最长 100 个字符.")
+            .When(x => x.Mode == KnowledgeGraphModes.Connected);
         validate.RuleFor(x => x.TemplateKey).Empty().When(x => x.Mode == KnowledgeGraphModes.Connected).WithMessage("接入图谱不能使用模板.");
     }
 }

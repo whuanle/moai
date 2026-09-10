@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -37,7 +38,12 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
 
         if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
         {
-            var introspection = await _store.IntrospectAsync(graph.Database!, cancellationToken);
+            if (string.IsNullOrWhiteSpace(graph.Database))
+            {
+                throw new BusinessException("接入图谱缺少数据库配置.") { StatusCode = 409 };
+            }
+
+            var introspection = await _store.IntrospectAsync(graph.Database, cancellationToken);
             return new QueryKnowledgeGraphSchemaCommandResponse
             {
                 Mode = KnowledgeGraphModes.Connected,
