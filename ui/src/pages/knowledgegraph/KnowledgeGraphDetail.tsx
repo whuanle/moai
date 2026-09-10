@@ -100,7 +100,7 @@ export function KnowledgeGraphDetail() {
               </Card>
             ) : section === 'schema' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphSchema graphId={graphId} myRole={graph?.myRole ?? null} />
+                <KnowledgeGraphSchema graphId={graphId} myRole={graph?.myRole ?? null} mode={graph.mode} />
               </Card>
             ) : (
               <KnowledgeGraphSettings graph={graph} onChanged={load} />

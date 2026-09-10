@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Spin, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
@@ -36,6 +36,7 @@ interface RelationTypeFormValues {
 interface KnowledgeGraphSchemaProps {
   graphId: number
   myRole: number | null
+  mode?: string | null
 }
 
 function ColorCell({ color }: { color?: string | null }) {
@@ -57,10 +58,10 @@ function ColorCell({ color }: { color?: string | null }) {
   )
 }
 
-export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaProps) {
+export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: KnowledgeGraphSchemaProps) {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [fetchedMode, setFetchedMode] = useState<string | null>(null)
   const [propertyKeys, setPropertyKeys] = useState<string[]>([])
   const [entityTypes, setEntityTypes] = useState<KnowledgeGraphEntityTypeItem[]>([])
   const [relationTypes, setRelationTypes] = useState<KnowledgeGraphRelationTypeItem[]>([])
@@ -73,19 +74,23 @@ export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaPr
   const [relationForm] = Form.useForm<RelationTypeFormValues>()
 
   const canManage = myRole !== null && myRole !== ROLE_MEMBER
+  const mode = modeProp ?? fetchedMode
   const isConnected = mode === 'connected'
 
   const load = useCallback(async () => {
-    if (!Number.isFinite(graphId) || graphId <= 0) return
+    if (!Number.isFinite(graphId) || graphId <= 0) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const schema = await getKnowledgeGraphSchema(graphId)
-      setMode(schema.mode ?? null)
+      setFetchedMode(schema.mode ?? null)
       setPropertyKeys(schema.propertyKeys ?? [])
       setEntityTypes(schema.entityTypes ?? [])
       setRelationTypes(schema.relationTypes ?? [])
     } catch {
-      setMode(null)
+      setFetchedMode(null)
       setPropertyKeys([])
       setEntityTypes([])
       setRelationTypes([])
@@ -314,6 +319,14 @@ export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaPr
           </Space>
         </div>
       </Space>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: spacing.xl }}>
+        <Spin />
+      </div>
     )
   }
 

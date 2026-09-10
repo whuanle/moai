@@ -17,8 +17,8 @@ vi.mock('@/api/knowledgeGraph', () => ({
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
-function renderSchema(myRole: number | null) {
-  return render(<KnowledgeGraphSchema graphId={1} myRole={myRole} />)
+function renderSchema(myRole: number | null, mode?: string | null) {
+  return render(<KnowledgeGraphSchema graphId={1} myRole={myRole} mode={mode} />)
 }
 
 describe('KnowledgeGraphSchema', () => {
@@ -83,5 +83,14 @@ describe('KnowledgeGraphSchema', () => {
     expect(screen.queryByRole('button', { name: /新增关系类型/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^编辑$/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^删除$/ })).toBeNull()
+  })
+
+  it('详情下传 connected 时即使 schema 拉取失败也只渲染只读视图', async () => {
+    vi.mocked(getKnowledgeGraphSchema).mockRejectedValue(new Error('schema unavailable'))
+    renderSchema(2, 'connected')
+    expect(await screen.findByText('标签（实体类型）')).toBeInTheDocument()
+    expect(screen.getByText('属性键')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /新增实体类型/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /新增关系类型/ })).toBeNull()
   })
 })

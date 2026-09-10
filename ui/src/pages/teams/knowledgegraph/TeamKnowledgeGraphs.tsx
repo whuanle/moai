@@ -66,7 +66,13 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   }
 
   const handleSubmit = async () => {
-    const values = await form.validateFields()
+    let values: FormValues
+    try {
+      values = await form.validateFields()
+    } catch {
+      // 校验失败，antd 已在表单项下展示错误
+      return
+    }
     setSaving(true)
     try {
       if (editing) {

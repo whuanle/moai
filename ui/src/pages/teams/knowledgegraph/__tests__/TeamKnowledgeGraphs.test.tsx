@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { TeamKnowledgeGraphs } from '../TeamKnowledgeGraphs'
-import { getKnowledgeGraphs, getKnowledgeGraphTemplates } from '@/api/knowledgeGraph'
+import { createKnowledgeGraph, getKnowledgeGraphs, getKnowledgeGraphTemplates } from '@/api/knowledgeGraph'
 
 vi.mock('@/api/knowledgeGraph', () => ({
   getKnowledgeGraphs: vi.fn(),
@@ -67,5 +67,46 @@ describe('TeamKnowledgeGraphs', () => {
 
     expect(await screen.findByText(/未开启知识图谱能力/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /新建知识图谱/ })).toBeDisabled()
+  })
+
+  it('新建弹窗：来源单选在模板与数据库输入间切换', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] })
+    renderTeam()
+    fireEvent.click(await screen.findByRole('button', { name: /新建知识图谱/ }))
+
+    const modal = await screen.findByRole('dialog')
+    expect(within(modal).getByText('模板')).toBeInTheDocument()
+    expect(within(modal).queryByLabelText('数据库名')).toBeNull()
+
+    fireEvent.click(within(modal).getByRole('radio', { name: '接入已有' }))
+    expect(await within(modal).findByLabelText('数据库名')).toBeInTheDocument()
+    expect(within(modal).queryByText('模板')).toBeNull()
+  })
+
+  it('新建弹窗：接入模式数据库必填，未填不发请求', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] })
+    renderTeam()
+    fireEvent.click(await screen.findByRole('button', { name: /新建知识图谱/ }))
+
+    const modal = await screen.findByRole('dialog')
+    fireEvent.change(within(modal).getByLabelText('名称'), { target: { value: '外部图谱' } })
+    fireEvent.click(within(modal).getByRole('radio', { name: '接入已有' }))
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+
+    expect(await within(modal).findByText('请输入 Neo4j 数据库名')).toBeInTheDocument()
+    expect(createKnowledgeGraph).not.toHaveBeenCalled()
+  })
+
+  it('接入图卡片显示只读徽标', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: '7',
+      myRole: 2,
+      enabled: true,
+      items: [{ kgId: '2', teamId: '7', name: '外部图谱', mode: 'connected' }],
+    })
+    renderTeam()
+
+    expect(await screen.findByText('外部图谱')).toBeInTheDocument()
+    expect(screen.getByText('外部接入 · 只读')).toBeInTheDocument()
   })
 })
