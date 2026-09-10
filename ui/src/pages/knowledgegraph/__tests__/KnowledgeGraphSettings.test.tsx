@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphSettings } from '../KnowledgeGraphSettings'
@@ -49,5 +49,21 @@ describe('KnowledgeGraphSettings', () => {
     renderSettings(null)
     expect(screen.queryByText('基础信息')).toBeNull()
     expect(screen.queryByText(/仅团队管理员/)).toBeNull()
+  })
+
+  it('接入图展示数据库名并使用移除接入的确认文案', async () => {
+    renderSettings({
+      kgId: '1',
+      name: '外部图谱',
+      mode: 'connected',
+      database: 'neo4j',
+      myRole: 2,
+      createTime: '2026-09-10T00:00:00Z',
+    })
+    expect(screen.getByText('neo4j')).toBeInTheDocument()
+    expect(screen.queryByText('空白 / 自定义')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /删\s*除/ }))
+    expect(await screen.findByText('仅从平台移除该接入，不影响外部数据，确认移除？')).toBeInTheDocument()
   })
 })

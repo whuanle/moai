@@ -30,6 +30,7 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
   const [form] = Form.useForm<SettingsFormValues>()
 
   const isAdminPlus = graph?.myRole != null && graph.myRole !== ROLE_MEMBER
+  const isConnected = graph?.mode === 'connected'
 
   useEffect(() => {
     form.setFieldsValue({
@@ -89,15 +90,23 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
             </Button>
           </Form>
           <Descriptions column={1} style={{ marginTop: spacing.lg }}>
-            <Descriptions.Item label={t('knowledgegraph.settings.templateKey')}>
-              {graph?.templateKey || t('knowledgegraph.templateBlank')}
-            </Descriptions.Item>
+            {isConnected ? (
+              <Descriptions.Item label={t('knowledgegraph.database')}>{graph?.database || '-'}</Descriptions.Item>
+            ) : (
+              <Descriptions.Item label={t('knowledgegraph.settings.templateKey')}>
+                {graph?.templateKey || t('knowledgegraph.templateBlank')}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label={t('knowledgegraph.settings.createTime')}>
               {formatDateTime(graph?.createTime)}
             </Descriptions.Item>
           </Descriptions>
           <Space style={{ marginTop: spacing.lg }}>
-            <Popconfirm title={t('knowledgegraph.deleteConfirm')} okButtonProps={{ danger: true }} onConfirm={() => void handleDelete()}>
+            <Popconfirm
+              title={isConnected ? t('knowledgegraph.deleteConnectedConfirm') : t('knowledgegraph.deleteConfirm')}
+              okButtonProps={{ danger: true }}
+              onConfirm={() => void handleDelete()}
+            >
               <Button danger>{t('knowledgegraph.delete')}</Button>
             </Popconfirm>
           </Space>
@@ -113,9 +122,13 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
             <span style={{ fontWeight: 600 }}>{graph?.description || '-'}</span>
           </div>
           <Descriptions column={1}>
-            <Descriptions.Item label={t('knowledgegraph.settings.templateKey')}>
-              {graph?.templateKey || t('knowledgegraph.templateBlank')}
-            </Descriptions.Item>
+            {isConnected ? (
+              <Descriptions.Item label={t('knowledgegraph.database')}>{graph?.database || '-'}</Descriptions.Item>
+            ) : (
+              <Descriptions.Item label={t('knowledgegraph.settings.templateKey')}>
+                {graph?.templateKey || t('knowledgegraph.templateBlank')}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label={t('knowledgegraph.settings.createTime')}>
               {formatDateTime(graph?.createTime)}
             </Descriptions.Item>
