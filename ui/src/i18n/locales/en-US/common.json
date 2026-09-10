@@ -908,6 +908,13 @@
     "desc": "Description",
     "template": "Template",
     "templateBlank": "Blank / Custom",
+    "mode": "Source",
+    "modeManaged": "Managed (create new)",
+    "modeConnected": "Connect existing",
+    "database": "Database",
+    "databasePlaceholder": "Enter Neo4j database name",
+    "connectedBadge": "External connection · Read-only",
+    "deleteConnectedConfirm": "This only removes the connection from the platform and does not affect external data. Continue?",
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete this knowledge graph? Its nodes and relations will be removed too.",
@@ -961,6 +968,12 @@
       "anyType": "Any",
       "deleteEntityConfirm": "Delete this entity type?",
       "deleteRelationConfirm": "Delete this relation type?"
+    },
+    "schemaConnected": {
+      "labels": "Labels (Entity Types)",
+      "relationshipTypes": "Relationship Types",
+      "propertyKeys": "Property Keys",
+      "count": "Count"
     },
     "settings": {
       "basicTitle": "Basic Info",

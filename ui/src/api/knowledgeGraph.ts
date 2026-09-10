@@ -6,6 +6,9 @@ export interface KnowledgeGraphItem {
   name?: string | null
   description?: string | null
   templateKey?: string | null
+  mode?: string | null
+  database?: string | null
+  readOnly?: boolean | null
   createTime?: string | null
 }
 
@@ -22,6 +25,9 @@ export interface KnowledgeGraphDetail {
   name?: string | null
   description?: string | null
   templateKey?: string | null
+  mode?: string | null
+  database?: string | null
+  readOnly?: boolean | null
   myRole?: number | null
   enabled?: boolean | null
   createTime?: string | null
@@ -40,6 +46,7 @@ export interface KnowledgeGraphEntityTypeItem {
   name?: string | null
   color?: string | null
   description?: string | null
+  count?: string | number | null
 }
 
 export interface KnowledgeGraphRelationTypeItem {
@@ -49,11 +56,16 @@ export interface KnowledgeGraphRelationTypeItem {
   description?: string | null
   sourceTypeId?: string | number | null
   targetTypeId?: string | number | null
+  count?: string | number | null
 }
 
 export interface KnowledgeGraphSchema {
+  mode?: string | null
+  database?: string | null
+  readOnly?: boolean | null
   entityTypes?: KnowledgeGraphEntityTypeItem[] | null
   relationTypes?: KnowledgeGraphRelationTypeItem[] | null
+  propertyKeys?: string[] | null
 }
 
 export interface KnowledgeGraphNodeItem {
@@ -78,13 +90,22 @@ export async function getKnowledgeGraphs(teamId: number): Promise<KnowledgeGraph
   return { teamId: res?.teamId, myRole: res?.myRole, enabled: res?.enabled ?? false, items: res?.items ?? [] }
 }
 
-export async function createKnowledgeGraph(payload: { teamId: number; name: string; description?: string; templateKey?: string | null }): Promise<number> {
+export async function createKnowledgeGraph(payload: {
+  teamId: number
+  name: string
+  description?: string
+  mode?: 'managed' | 'connected'
+  templateKey?: string | null
+  database?: string | null
+}): Promise<number> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.post({
     teamId: String(payload.teamId),
     name: payload.name,
     description: payload.description,
+    mode: payload.mode ?? 'managed',
     templateKey: payload.templateKey ?? undefined,
+    database: payload.database ?? undefined,
   })
   return Number(res?.value ?? 0)
 }
@@ -114,7 +135,14 @@ export async function deleteKnowledgeGraph(kgId: number): Promise<void> {
 export async function getKnowledgeGraphSchema(kgId: number): Promise<KnowledgeGraphSchema> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).schema.get()
-  return { entityTypes: res?.entityTypes ?? [], relationTypes: res?.relationTypes ?? [] }
+  return {
+    mode: res?.mode,
+    database: res?.database,
+    readOnly: res?.readOnly,
+    entityTypes: res?.entityTypes ?? [],
+    relationTypes: res?.relationTypes ?? [],
+    propertyKeys: res?.propertyKeys ?? [],
+  }
 }
 
 export async function createEntityType(kgId: number, payload: { name: string; color?: string; description?: string }): Promise<number> {

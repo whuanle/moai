@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Col, Form, Input, Modal, Popconfirm, Row, Select, Space } from 'antd'
+import { Button, Col, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -19,7 +19,9 @@ const ROLE_MEMBER = 0
 interface FormValues {
   name: string
   description?: string
+  mode?: 'managed' | 'connected'
   templateKey?: string
+  database?: string
 }
 
 export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
@@ -71,7 +73,15 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
         await updateKnowledgeGraph(Number(editing.kgId), { name: values.name, description: values.description })
         feedback.success(t('knowledgegraph.saveSuccess'))
       } else {
-        await createKnowledgeGraph({ teamId, name: values.name, description: values.description, templateKey: values.templateKey })
+        const mode = values.mode ?? 'managed'
+        await createKnowledgeGraph({
+          teamId,
+          name: values.name,
+          description: values.description,
+          mode,
+          templateKey: mode === 'managed' ? values.templateKey : undefined,
+          database: mode === 'connected' ? values.database : undefined,
+        })
         feedback.success(t('knowledgegraph.createSuccess'))
       }
       setOpen(false)
@@ -108,6 +118,11 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
           <Col key={String(item.kgId)} xs={24} sm={12} md={8} lg={6}>
             <Card>
               <div style={{ fontWeight: 600 }}>{item.name}</div>
+              {item.mode === 'connected' && (
+                <div style={{ marginTop: spacing.xs }}>
+                  <Tag color="blue">{t('knowledgegraph.connectedBadge')}</Tag>
+                </div>
+              )}
               <div style={{ opacity: 0.65, minHeight: 22 }}>{item.description || '-'}</div>
               {isAdminPlus && (
                 <Space>
@@ -118,7 +133,10 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
                     aria-label={t('knowledgegraph.edit')}
                     onClick={() => openEdit(item)}
                   />
-                  <Popconfirm title={t('knowledgegraph.deleteConfirm')} onConfirm={() => void handleDelete(item)}>
+                  <Popconfirm
+                    title={item.mode === 'connected' ? t('knowledgegraph.deleteConnectedConfirm') : t('knowledgegraph.deleteConfirm')}
+                    onConfirm={() => void handleDelete(item)}
+                  >
                     <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('knowledgegraph.delete')} />
                   </Popconfirm>
                 </Space>
@@ -149,14 +167,34 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
             <Input.TextArea maxLength={255} rows={2} />
           </Form.Item>
           {!editing && (
-            <Form.Item name="templateKey" label={t('knowledgegraph.template')} initialValue="blank">
-              <Select
-                options={templates.map((x) => ({
-                  value: x.key ?? '',
-                  label: `${x.name}${x.entityTypes?.length ? ` (${x.entityTypes.join(' / ')})` : ''}`,
-                }))}
-              />
-            </Form.Item>
+            <>
+              <Form.Item name="mode" label={t('knowledgegraph.mode')} initialValue="managed">
+                <Radio.Group>
+                  <Radio value="managed">{t('knowledgegraph.modeManaged')}</Radio>
+                  <Radio value="connected">{t('knowledgegraph.modeConnected')}</Radio>
+                </Radio.Group>
+              </Form.Item>
+              <Form.Item noStyle shouldUpdate={(p, c) => p.mode !== c.mode}>
+                {({ getFieldValue }) => getFieldValue('mode') === 'connected' ? (
+                  <Form.Item
+                    name="database"
+                    label={t('knowledgegraph.database')}
+                    rules={[{ required: true, message: t('knowledgegraph.databasePlaceholder') }]}
+                  >
+                    <Input maxLength={100} placeholder={t('knowledgegraph.databasePlaceholder')} />
+                  </Form.Item>
+                ) : (
+                  <Form.Item name="templateKey" label={t('knowledgegraph.template')} initialValue="blank">
+                    <Select
+                      options={templates.map((x) => ({
+                        value: x.key ?? '',
+                        label: `${x.name}${x.entityTypes?.length ? ` (${x.entityTypes.join(' / ')})` : ''}`,
+                      }))}
+                    />
+                  </Form.Item>
+                )}
+              </Form.Item>
+            </>
           )}
         </Form>
       </Modal>

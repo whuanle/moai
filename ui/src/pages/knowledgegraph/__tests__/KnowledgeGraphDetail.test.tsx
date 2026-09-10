@@ -76,4 +76,23 @@ describe('KnowledgeGraphDetail', () => {
     renderShell()
     expect(await screen.findByText(/未开启知识图谱能力/)).toBeInTheDocument()
   })
+
+  it('接入图仅显示模型/设置并默认模型、展示只读徽标', async () => {
+    vi.mocked(getKnowledgeGraphDetail).mockResolvedValue({
+      kgId: '1',
+      teamId: '7',
+      name: '外部图谱',
+      mode: 'connected',
+      readOnly: true,
+      myRole: 2,
+      enabled: true,
+    })
+    renderShell('/team/7/kg/1')
+    expect(await screen.findByText('外部图谱')).toBeInTheDocument()
+    expect(await screen.findByText('外部接入 · 只读')).toBeInTheDocument()
+    expect(screen.getByText('模型')).toBeInTheDocument()
+    expect(screen.getByText('设置')).toBeInTheDocument()
+    expect(screen.queryByText('实体')).toBeNull()
+    expect(screen.queryByText('关系')).toBeNull()
+  })
 })

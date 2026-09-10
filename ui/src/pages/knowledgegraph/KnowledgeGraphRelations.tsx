@@ -25,9 +25,10 @@ interface FormValues {
 
 interface KnowledgeGraphRelationsProps {
   graphId: number
+  graphEnabled?: boolean
 }
 
-export function KnowledgeGraphRelations({ graphId }: KnowledgeGraphRelationsProps) {
+export function KnowledgeGraphRelations({ graphId, graphEnabled = true }: KnowledgeGraphRelationsProps) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<KnowledgeGraphEdgeItem[]>([])
@@ -171,11 +172,11 @@ export function KnowledgeGraphRelations({ graphId }: KnowledgeGraphRelationsProp
       fixed: 'right',
       render: (_, record) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          <Button type="link" size="small" disabled={!graphEnabled} onClick={() => openEdit(record)}>
             {t('knowledgegraph.edit')}
           </Button>
           <Popconfirm title={t('knowledgegraph.relation.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-            <Button type="link" size="small" danger>
+            <Button type="link" size="small" danger disabled={!graphEnabled}>
               {t('knowledgegraph.delete')}
             </Button>
           </Popconfirm>
@@ -187,7 +188,7 @@ export function KnowledgeGraphRelations({ graphId }: KnowledgeGraphRelationsProp
   return (
     <>
       <Space style={{ marginBottom: spacing.md }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        <Button type="primary" icon={<PlusOutlined />} disabled={!graphEnabled} onClick={openCreate}>
           {t('knowledgegraph.relation.create')}
         </Button>
       </Space>

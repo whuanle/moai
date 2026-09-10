@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
@@ -60,6 +60,8 @@ function ColorCell({ color }: { color?: string | null }) {
 export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaProps) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
+  const [mode, setMode] = useState<string | null>(null)
+  const [propertyKeys, setPropertyKeys] = useState<string[]>([])
   const [entityTypes, setEntityTypes] = useState<KnowledgeGraphEntityTypeItem[]>([])
   const [relationTypes, setRelationTypes] = useState<KnowledgeGraphRelationTypeItem[]>([])
   const [entityOpen, setEntityOpen] = useState(false)
@@ -71,15 +73,20 @@ export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaPr
   const [relationForm] = Form.useForm<RelationTypeFormValues>()
 
   const canManage = myRole !== null && myRole !== ROLE_MEMBER
+  const isConnected = mode === 'connected'
 
   const load = useCallback(async () => {
     if (!Number.isFinite(graphId) || graphId <= 0) return
     setLoading(true)
     try {
       const schema = await getKnowledgeGraphSchema(graphId)
+      setMode(schema.mode ?? null)
+      setPropertyKeys(schema.propertyKeys ?? [])
       setEntityTypes(schema.entityTypes ?? [])
       setRelationTypes(schema.relationTypes ?? [])
     } catch {
+      setMode(null)
+      setPropertyKeys([])
       setEntityTypes([])
       setRelationTypes([])
     } finally {
@@ -122,10 +129,11 @@ export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaPr
     try {
       if (editingEntityType) {
         await updateEntityType(graphId, Number(editingEntityType.entityTypeId), values)
+        feedback.success(t('knowledgegraph.saveSuccess'))
       } else {
         await createEntityType(graphId, values)
+        feedback.success(t('knowledgegraph.createSuccess'))
       }
-      feedback.success(t('knowledgegraph.saveSuccess'))
       setEntityOpen(false)
       void load()
     } catch {
@@ -176,10 +184,11 @@ export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaPr
       }
       if (editingRelationType) {
         await updateRelationType(graphId, Number(editingRelationType.relationTypeId), payload)
+        feedback.success(t('knowledgegraph.saveSuccess'))
       } else {
         await createRelationType(graphId, payload)
+        feedback.success(t('knowledgegraph.createSuccess'))
       }
-      feedback.success(t('knowledgegraph.saveSuccess'))
       setRelationOpen(false)
       void load()
     } catch {
@@ -264,6 +273,49 @@ export function KnowledgeGraphSchema({ graphId, myRole }: KnowledgeGraphSchemaPr
         ]
       : []),
   ]
+
+  const connectedEntityColumns: TableColumnsType<KnowledgeGraphEntityTypeItem> = [
+    { title: t('knowledgegraph.schema.name'), dataIndex: 'name', key: 'name', render: (v: string | null | undefined) => v || '-' },
+    { title: t('knowledgegraph.schemaConnected.count'), dataIndex: 'count', key: 'count', width: 160, render: (v: number | string | null | undefined) => v ?? '-' },
+  ]
+
+  const connectedRelationColumns: TableColumnsType<KnowledgeGraphRelationTypeItem> = [
+    { title: t('knowledgegraph.schema.name'), dataIndex: 'name', key: 'name', render: (v: string | null | undefined) => v || '-' },
+    { title: t('knowledgegraph.schemaConnected.count'), dataIndex: 'count', key: 'count', width: 160, render: (v: number | string | null | undefined) => v ?? '-' },
+  ]
+
+  if (isConnected) {
+    return (
+      <Space direction="vertical" size={spacing.lg} style={{ width: '100%' }}>
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.schemaConnected.labels')}</div>
+          <DataTable<KnowledgeGraphEntityTypeItem>
+            rowKey={(record) => String(record.entityTypeId ?? record.name)}
+            columns={connectedEntityColumns}
+            dataSource={entityTypes}
+            loading={loading}
+            pagination={false}
+          />
+        </div>
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.schemaConnected.relationshipTypes')}</div>
+          <DataTable<KnowledgeGraphRelationTypeItem>
+            rowKey={(record) => String(record.relationTypeId ?? record.name)}
+            columns={connectedRelationColumns}
+            dataSource={relationTypes}
+            loading={loading}
+            pagination={false}
+          />
+        </div>
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.schemaConnected.propertyKeys')}</div>
+          <Space wrap size={spacing.xs}>
+            {propertyKeys.length > 0 ? propertyKeys.map((key) => <Tag key={key}>{key}</Tag>) : <span>-</span>}
+          </Space>
+        </div>
+      </Space>
+    )
+  }
 
   return (
     <Space direction="vertical" size={spacing.lg} style={{ width: '100%' }}>

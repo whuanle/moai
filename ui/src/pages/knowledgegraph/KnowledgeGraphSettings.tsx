@@ -64,6 +64,10 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
     }
   }
 
+  if (graph === null) {
+    return <Card loading styles={{ body: { padding: spacing.lg, maxWidth: 720, minHeight: 160 } }} />
+  }
+
   return (
     <Card styles={{ body: { padding: spacing.lg, maxWidth: 720 } }}>
       <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.settings.basicTitle')}</div>

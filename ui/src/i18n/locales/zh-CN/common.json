@@ -737,6 +737,13 @@
     "desc": "简介",
     "template": "模板",
     "templateBlank": "空白 / 自定义",
+    "mode": "来源",
+    "modeManaged": "平台托管（新建）",
+    "modeConnected": "接入已有",
+    "database": "数据库名",
+    "databasePlaceholder": "请输入 Neo4j 数据库名",
+    "connectedBadge": "外部接入 · 只读",
+    "deleteConnectedConfirm": "仅从平台移除该接入，不影响外部数据，确认移除？",
     "edit": "编辑",
     "delete": "删除",
     "deleteConfirm": "确认删除该知识图谱？其中的节点与关系将一并清除。",
@@ -790,6 +797,12 @@
       "anyType": "任意",
       "deleteEntityConfirm": "确认删除该实体类型？",
       "deleteRelationConfirm": "确认删除该关系类型？"
+    },
+    "schemaConnected": {
+      "labels": "标签（实体类型）",
+      "relationshipTypes": "关系类型",
+      "propertyKeys": "属性键",
+      "count": "数量"
     },
     "settings": {
       "basicTitle": "基础信息",

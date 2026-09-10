@@ -146,11 +146,11 @@ export function KnowledgeGraphEntities({ graphId, graphEnabled = true }: Knowled
       fixed: 'right',
       render: (_, record) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          <Button type="link" size="small" disabled={!graphEnabled} onClick={() => openEdit(record)}>
             {t('knowledgegraph.edit')}
           </Button>
           <Popconfirm title={t('knowledgegraph.entity.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-            <Button type="link" size="small" danger>
+            <Button type="link" size="small" danger disabled={!graphEnabled}>
               {t('knowledgegraph.delete')}
             </Button>
           </Popconfirm>
