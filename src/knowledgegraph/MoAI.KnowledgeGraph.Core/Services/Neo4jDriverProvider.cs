@@ -14,9 +14,11 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
 
     private readonly IKnowledgeGraphSettingsService _settingsService;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly List<IDriver> _retired = new();
     private IDriver? _driver;
     private string? _connectionKey;
-    private bool _initialized;
+    private volatile bool _initialized;
+    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Neo4jDriverProvider"/> class.
@@ -44,14 +46,29 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(Neo4jDriverProvider));
+            }
+
             if (_driver == null || _connectionKey != key)
             {
-                if (_driver != null)
+                IDriver newDriver;
+                try
                 {
-                    await _driver.DisposeAsync();
+                    newDriver = GraphDatabase.Driver(new Uri(settings.Uri), AuthTokens.Basic(settings.Username, settings.Password));
+                }
+                catch (Exception ex) when (ex is FormatException or ArgumentException)
+                {
+                    throw new BusinessException("Neo4j 连接地址无效，请检查系统设置.") { StatusCode = 409 };
                 }
 
-                _driver = GraphDatabase.Driver(new Uri(settings.Uri), AuthTokens.Basic(settings.Username, settings.Password));
+                if (_driver != null)
+                {
+                    _retired.Add(_driver);
+                }
+
+                _driver = newDriver;
                 _connectionKey = key;
                 _initialized = false;
             }
@@ -88,11 +105,32 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
-        if (_driver != null)
+        await _lock.WaitAsync();
+        try
         {
-            await _driver.DisposeAsync();
-        }
+            if (_disposed)
+            {
+                return;
+            }
 
-        _lock.Dispose();
+            _disposed = true;
+
+            if (_driver != null)
+            {
+                await _driver.DisposeAsync();
+                _driver = null;
+            }
+
+            foreach (var driver in _retired)
+            {
+                await driver.DisposeAsync();
+            }
+
+            _retired.Clear();
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 }
