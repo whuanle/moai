@@ -54,6 +54,13 @@ public class DeleteKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Dele
             throw new BusinessException("该实体类型下仍有节点，无法删除.") { StatusCode = 409 };
         }
 
+        var referenced = await _databaseContext.KnowledgeGraphRelationTypes
+            .AnyAsync(x => x.KgId == request.KgId && (x.SourceTypeId == request.EntityTypeId || x.TargetTypeId == request.EntityTypeId), cancellationToken);
+        if (referenced)
+        {
+            throw new BusinessException("该实体类型仍被关系类型引用，无法删除.") { StatusCode = 409 };
+        }
+
         _databaseContext.KnowledgeGraphEntityTypes.Remove(entity);
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return EmptyCommandResponse.Default;
