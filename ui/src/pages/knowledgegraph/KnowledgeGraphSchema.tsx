@@ -4,7 +4,7 @@ import { Button, Form, Input, Modal, Popconfirm, Select, Space } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { neutralColors, spacing } from '@/design-system/theme'
 import {
   createEntityType,
   createRelationType,
@@ -48,7 +48,7 @@ function ColorCell({ color }: { color?: string | null }) {
           width: 14,
           height: 14,
           borderRadius: 3,
-          border: '1px solid rgba(0,0,0,0.15)',
+          border: `1px solid ${neutralColors.border}`,
           backgroundColor: color,
         }}
       />
