@@ -4,7 +4,13 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryWikiCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateWikiCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryWikiCommandResponse, type UpdateWikiCommand } from '../../../models/index.js';
 // @ts-ignore
-import { DocumentsRequestBuilderRequestsMetadata, type DocumentsRequestBuilder } from './documents/index.js';
+import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
+// @ts-ignore
+import { DocumentsRequestBuilderNavigationMetadata, DocumentsRequestBuilderRequestsMetadata, type DocumentsRequestBuilder } from './documents/index.js';
+// @ts-ignore
+import { EmbeddingConfigRequestBuilderRequestsMetadata, type EmbeddingConfigRequestBuilder } from './embeddingConfig/index.js';
+// @ts-ignore
+import { RerankModelRequestBuilderRequestsMetadata, type RerankModelRequestBuilder } from './rerankModel/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -13,9 +19,21 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  */
 export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilder> {
     /**
+     * The avatar property
+     */
+    get avatar(): AvatarRequestBuilder;
+    /**
      * The documents property
      */
     get documents(): DocumentsRequestBuilder;
+    /**
+     * The embeddingConfig property
+     */
+    get embeddingConfig(): EmbeddingConfigRequestBuilder;
+    /**
+     * The rerankModel property
+     */
+    get rerankModel(): RerankModelRequestBuilder;
     /**
      * 删除知识库，需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -78,8 +96,18 @@ export const ItemRequestBuilderUriTemplate = "{+baseurl}/api/wiki/{%2Did}";
  * Metadata for all the navigation properties in the request builder.
  */
 export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    avatar: {
+        requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
     documents: {
         requestsMetadata: DocumentsRequestBuilderRequestsMetadata,
+        navigationMetadata: DocumentsRequestBuilderNavigationMetadata,
+    },
+    embeddingConfig: {
+        requestsMetadata: EmbeddingConfigRequestBuilderRequestsMetadata,
+    },
+    rerankModel: {
+        requestsMetadata: RerankModelRequestBuilderRequestsMetadata,
     },
 };
 /**

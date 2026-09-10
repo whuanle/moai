@@ -12,6 +12,7 @@
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.1.2" />
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageVersion Include="Azure.Identity" Version="1.17.1" />
+    <PackageVersion Include="CommunityToolkit.VectorData.PgVector" Version="1.0.1" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Google.GenAI" Version="1.21.0" />
@@ -22,10 +23,13 @@
     <PackageVersion Include="LinqKit.Core" Version="1.2.11" />
     <PackageVersion Include="Maomi.MQ.Instrumentation" Version="2.1.0" />
     <PackageVersion Include="Maomi.MQ.RabbitMQ" Version="2.3.0" />
+    <PackageVersion Include="Maomi.ToMarkdown" Version="1.0.0-alpha.2" />
+    <PackageVersion Include="Maomi.ToMarkdown.Token" Version="1.0.0-alpha.2" />
     <PackageVersion Include="Markdig" Version="0.43.0" />
     <PackageVersion Include="MediatR" Version="14.2.0" />
     <PackageVersion Include="Microsoft.Agents.AI.Anthropic" Version="1.20.0-preview.260831.1" />
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.20.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.9.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.22.0" />
@@ -57,7 +61,7 @@
     <PackageVersion Include="Mscc.GenerativeAI.Microsoft" Version="3.1.0" />
     <PackageVersion Include="MySqlConnector" Version="2.5.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageVersion Include="Npgsql" Version="10.0.0-rc.1" />
+    <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
     <PackageVersion Include="NSwag.AspNetCore" Version="14.7.1" />
     <PackageVersion Include="OllamaSharp" Version="5.4.30" />
@@ -93,6 +97,7 @@
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="13.0.1" />
     <PackageVersion Include="StackExchange.Redis.Extensions.System.Text.Json" Version="13.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.8.2" />
     <PackageVersion Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />

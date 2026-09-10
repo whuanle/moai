@@ -11,6 +11,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.Agents.AI.OpenAI" />
+		<PackageReference Include="Google.GenAI" />
+		<PackageReference Include="Mscc.GenerativeAI.Microsoft" />
+		<PackageReference Include="OllamaSharp" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="Commands\" />
 		<Folder Include="Queries\" />
 		<Folder Include="Models\" />

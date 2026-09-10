@@ -7,12 +7,34 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+		<ProjectReference Include="..\..\aichannel\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.Wiki.Api\MoAI.Wiki.Api.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
+		<PackageReference Include="Maomi.MQ.RabbitMQ" />
+		<PackageReference Include="Maomi.ToMarkdown" />
+		<PackageReference Include="Maomi.ToMarkdown.Token" />
+		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+		<PackageReference Include="Npgsql" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="Handlers\" />
+		<Folder Include="Services\" />
+		<Folder Include="Consumers\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>MoAI.UsageCounters.Tests</_Parameter1>
+		</AssemblyAttribute>
 	</ItemGroup>
 
 </Project>

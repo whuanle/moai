@@ -1,4 +1,4 @@
-﻿namespace MoAI.Wiki.Models;
+﻿namespace MoAI.Infra.Models;
 
 /// <summary>
 /// 任务通用状态.
@@ -13,25 +13,25 @@ public enum WorkerState
     /// <summary>
     /// 等待处理.
     /// </summary>
-    Wait,
+    Wait = 1,
 
     /// <summary>
     /// 正在处理.
     /// </summary>
-    Processing,
+    Processing = 2,
 
     /// <summary>
     /// 取消.
     /// </summary>
-    Cancal,
+    Cancal = 3,
 
     /// <summary>
     /// 成功.
     /// </summary>
-    Successful,
+    Successful = 4,
 
     /// <summary>
     /// 失败.
     /// </summary>
-    Failed
+    Failed = 5
 }

@@ -47,7 +47,7 @@ public sealed class SettingDefinition
 - `SettingDefinitions.All`：全部内置设置项（只读列表）。
 - `SettingDefinitions.Find(string key)`：按 key 查找，未命中返回 `null`。
 
-将 key 提取为常量便于复用（例如 `SettingDefinitions.OAuthAutoRegisterKey`）。
+将 key 提取为常量便于复用（例如 `SettingDefinitions.Neo4jEnabledKey`）。
 
 ## 新增一个设置项的步骤
 
@@ -62,7 +62,8 @@ public sealed class SettingDefinition
 
 ### key 命名
 
-- 使用**小写加下划线**（snake_case），如 `oauth_auto_register`。
+- 使用**小写加下划线**（snake_case），如 `some_setting_key`。
+- 例外：与外部系统部署变量一一对应的配置项保留其原始大写形式，例如 Neo4j 知识图谱的 `OPEN_NEO4J`、`NEO4J_URI`、`NEO4J_USERNAME`、`NEO4J_PASSWORD`，便于运维按同名环境变量对照。
 - 每个 key 定义为一个 `const string`，避免硬编码字符串散落各处。
 - key 全局唯一，删除该配置项等于移除其定义 + 种子数据。
 
@@ -129,18 +130,18 @@ public async Task<EmptyCommandResponse> SaveSetting([FromBody] SaveSettingComman
 - 其中 `IsRoot`（`setting` 表 `key="root"` 的值等于当前用户 id）由 `UserAccountService.GetUserStateAsync` 填充到 `UserStateInfo.IsRoot`。
 - 认证由 `ApiApplicationModelConvention` 自动为 Controller 追加 `[Authorize]`，无需手写。
 
-## 示例（内置：允许第三方账号登录直接创建账号）
+## 示例（内置：是否开启 Neo4j 知识图谱）
 
 `SettingDefinitions`：
 
 ```csharp
-public const string OAuthAutoRegisterKey = "oauth_auto_register";
+public const string Neo4jEnabledKey = "OPEN_NEO4J";
 
 new SettingDefinition
 {
-    Key = OAuthAutoRegisterKey,
-    Name = "允许第三方账号登录直接创建账号",
-    Description = "开启后，第三方授权登录（例如 GitHub、Google 等）在未注册时将自动创建账号.",
+    Key = Neo4jEnabledKey,
+    Name = "Neo4j 知识图谱",
+    Description = "开启后，知识库可以使用知识图谱能力；关闭时无需填写连接信息.",
     DefaultValue = "false"
 }
 ```
@@ -184,3 +185,14 @@ protected static void SeedData(ModelBuilder modelBuilder)
 ```
 
 > 注意：`key="root"` 为系统级配置（超级管理员），不通过 `SettingDefinitions` 暴露，不应作为普通设置项读写。
+
+## 内置设置项清单
+
+| key | 名称 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `OPEN_NEO4J` | Neo4j 知识图谱 | `"false"` | 开启后知识库可使用知识图谱能力；由超级管理员在系统设置页操作 |
+| `NEO4J_URI` | Neo4j 连接地址 | `""` | 仅在 `OPEN_NEO4J="true"` 时需填写 |
+| `NEO4J_USERNAME` | Neo4j 用户名 | `""` | 同上 |
+| `NEO4J_PASSWORD` | Neo4j 密码 | `""` | 同上，明文存储，仅超级管理员可改 |
+
+> 成组配置（如知识图谱）供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的 `IKnowledgeGraphSettingsService` 读取，避免各模块自行拼 key 查表。

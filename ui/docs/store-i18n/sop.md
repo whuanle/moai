@@ -15,7 +15,7 @@
 ## 2. 新增/维护 i18n 词条
 
 1. **同时**编辑 zh-CN 与 en-US 的 `common.json`（两包键数须一致）；
-2. 键名 `<模块前缀>.<名称>`，新页面用新顶层前缀，嵌套 ≤ 2 层（参照 `settings.oauthAutoRegister.name`）；
+2. 键名 `<模块前缀>.<名称>`，新页面用新顶层前缀，嵌套 ≤ 2 层（参照 `settings.knowledgeGraph.enable.name`）；
 3. 变量文案用 `{{name}}` 插值；组件内 `useTranslation()`，**禁止硬编码文案**；
 4. 回归：typecheck（resolveJsonModule 已开；键拼错属运行时问题）+ 切 en-US 检查布局不溢出。
 

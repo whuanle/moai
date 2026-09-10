@@ -61,7 +61,7 @@ public class TeamPluginItem
     /// <summary>
     /// 使用量计数.
     /// </summary>
-    public int Counter { get; set; }
+    public long Counter { get; set; }
 
     /// <summary>
     /// 动态插件实例 key（仅动态插件实例有）.

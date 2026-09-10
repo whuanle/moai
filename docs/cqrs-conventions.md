@@ -435,6 +435,27 @@ throw new BusinessException("错误消息") { StatusCode = 404 };
 
 
 
+## 依赖注入
+
+所有模块的 `.Shared` 项目都需要引用 `MoAI.Infra.Shared`。
+
+使用依赖注入时，使用 Maomi.Core 框架做依赖注入，也就是不需要手动注入。
+
+例如：
+
+```csharp
+context.Services.AddScoped<WikiEmbeddingTableService>();
+```
+
+改成 Maomi.Core 框架注入很简单：
+
+```csharp
+[InjectOnScoped]
+public class WikiEmbeddingTableService
+```
+
+
+
 ## 时间
 
 时间统一使用 DataTimeOffset 类型，不要使用 DateTime 类型。

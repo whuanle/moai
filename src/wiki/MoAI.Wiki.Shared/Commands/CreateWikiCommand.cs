@@ -24,6 +24,11 @@ public class CreateWikiCommand : IRequest<SimpleLong>, IModelValidator<CreateWik
     /// </summary>
     public string? Description { get; init; }
 
+    /// <summary>
+    /// 是否公开，公开后所有人都可以使用（只读），但非团队成员不能进入操作.
+    /// </summary>
+    public bool IsPublic { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateWikiCommand> validate)
     {

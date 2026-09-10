@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1707;CS1591;SA1600</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" VersionOverride="10.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\aiplugin\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
+    <ProjectReference Include="..\..\src\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
+    <ProjectReference Include="..\..\src\database\MoAI.Database.Postgres\MoAI.Database.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\wiki\MoAI.Wiki.Core\MoAI.Wiki.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="review-artifacts\**\*.cs" />
+  </ItemGroup>
+
+</Project>

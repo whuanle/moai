@@ -10,6 +10,11 @@ namespace MoAI.AIChannel.Queries;
 public class QueryAIModelListCommand : IRequest<QueryAIModelListCommandResponse>
 {
     /// <summary>
+    /// 团队 id；传入时仅返回公开或已授权给该团队的模型.
+    /// </summary>
+    public int? TeamId { get; init; }
+
+    /// <summary>
     /// 渠道 id，为空时查询全部.
     /// </summary>
     public Guid? ChannelId { get; init; }

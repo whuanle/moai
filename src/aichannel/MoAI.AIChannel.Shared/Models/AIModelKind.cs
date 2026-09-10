@@ -36,4 +36,10 @@ public enum AIModelKind
     /// </summary>
     [JsonPropertyName("video-generation")]
     VideoGeneration = 4,
+
+    /// <summary>
+    /// 重排序模型（检索结果重排）.
+    /// </summary>
+    [JsonPropertyName("rerank")]
+    Rerank = 5,
 }

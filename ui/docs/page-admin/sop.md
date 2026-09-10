@@ -6,17 +6,17 @@
 
 | 操作 | 谁能做 | 入口 | 场景 |
 |---|---|---|---|
-| 系统设置（自动注册开关） | admin+ | 侧边栏管理组「设置」 | [@FE-PG-S7](./bdd.md#fe-pg-s7)~[@FE-PG-S9](./bdd.md#fe-pg-s9) |
+| 系统设置（Neo4j 知识图谱） | root | 侧边栏管理组「设置」 | [@FE-PG-S7](./bdd.md#fe-pg-s7)~[@FE-PG-S9](./bdd.md#fe-pg-s9) |
 | 第三方登录渠道维护 | admin+ | 侧边栏管理组「第三方登录」 | [@FE-PG-S10](./bdd.md#fe-pg-s10)~[@FE-PG-S16](./bdd.md#fe-pg-s16) |
-| 普通用户 | 无 | 菜单不可见；直访被重定向；接口 403 | [@FE-PG-S2](./bdd.md#fe-pg-s2)/[@FE-PG-S4](./bdd.md#fe-pg-s4)~[@FE-PG-S6](./bdd.md#fe-pg-s6) |
+| 普通用户 / 非 root 管理员 | 无（设置对非 root 重定向；渠道对 member 不可见） | 菜单不可见；直访被重定向；接口 403 | [@FE-PG-S2](./bdd.md#fe-pg-s2)/[@FE-PG-S4](./bdd.md#fe-pg-s4)~[@FE-PG-S6](./bdd.md#fe-pg-s6) |
 
 > 管理组「插件」（/plugin）为占位导航，点击回概览（[@FE-PG-S3](./bdd.md#fe-pg-s3)）；「用户」见 [../../../docs/user-management/sop.md](../../../docs/user-management/sop.md)。
 
-## 2. 配置「第三方登录自动注册」
+## 2. 配置「Neo4j 知识图谱」
 
-1. `/settings` → 基本设置卡切换开关 → 保存（未修改前保存不可点；保存失败自动回滚为库中真值，[@FE-PG-S9](./bdd.md#fe-pg-s9)）。
-2. **开**：第三方登录遇未注册用户自动建号；**关**：走注册确认/绑定流程（上游 [../../../docs/auth/sop.md](../../../docs/auth/sop.md)）。
-3. 等价运维直改：`setting` 表 `key='oauth_auto_register'`，`value='true'|'false'`（前端按字符串比较）。
+1. root 登录 → `/settings`（非 root 会被重定向到仪表盘）→ 打开「开启 Neo4j 知识图谱」后填写连接地址/用户名/密码 → 保存（未修改前保存不可点；保存失败自动回滚为库中真值，[@FE-PG-S9](./bdd.md#fe-pg-s9)）。
+2. **开**：先写 `OPEN_NEO4J="true"`，再写三项连接设置，知识库可读取该能力；**关**：仅写 `OPEN_NEO4J="false"`，不覆盖已有连接信息。
+3. 等价运维直改：`setting` 表 `key='OPEN_NEO4J'`（`value='true'|'false'`）及 `NEO4J_URI`/`NEO4J_USERNAME`/`NEO4J_PASSWORD`（上游 [../../../docs/settings/sop.md](../../../docs/settings/sop.md)）。
 
 ## 3. 维护第三方登录渠道
 
@@ -30,6 +30,7 @@
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | 侧边栏没有管理组 | 当前登录人非 admin | 由 root 在用户页授权后重登 |
+| 侧边栏没有「设置」/ 访问 /settings 被重定向 | 「设置」为 root 专属，当前登录人是 admin 但非 root | 换 root 账号 |
 | 保存设置后开关跳回 | 保存失败触发页面回滚 | 看全局错误提示（网络/权限） |
 | 新建渠道 400 | 必填项缺失 | 补全 name/key/secret/iconUrl（custom 还需发现端点） |
 | 编辑渠道返回 400 | 历史后端缺陷（**已修复**，2026-09-02 实测 200） | 若复现回查后端 `UpdateOAuthConnectionCommand.Validate`（上游排障表） |

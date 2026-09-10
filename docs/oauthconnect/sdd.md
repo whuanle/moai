@@ -21,7 +21,6 @@
 - `oauth_connection`（`OauthConnectionEntity`，IFullAudited 软删除）：Id(Guid)/Name(唯一性由 Handler 查重)/Provider/Key/Secret/IconUrl/AuthorizeUrl/WellKnown。无种子数据（空表起步）。
 - `user_oauth_connection`：用户绑定（UserId + ProviderId→oauth_connection.Id + Sub），由 auth 模块写入，本模块不操作。
 - 枚举 `OAuthPrivider`（历史拼写）：Custom=0("custom")、Feishu=1("feishu")、DingTalk=2("dingtalk")。
-- 相关设置项：`setting.key="oauth_auto_register"`（默认 false，见 [../settings.md](../settings.md)）。
 
 ## 组件
 

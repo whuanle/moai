@@ -23,7 +23,7 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
     /// Initializes a new instance of the <see cref="QueryAllOAuthPrividerCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
-    /// <param name="systemOptions"></param>
+    /// <param name="systemOptions"></param>  
     public QueryAllOAuthPrividerCommandHandler(DatabaseContext databaseContext, SystemOptions systemOptions)
     {
         _databaseContext = databaseContext;

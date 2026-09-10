@@ -17,6 +17,7 @@ public static class AIModelMetaMapper
     /// </summary>
     /// <param name="entity">实体.</param>
     /// <param name="meta">模型元数据.</param>
+    /// <returns>返回填充后的实体.</returns>
     public static AiModelEntity Apply(AiModelEntity entity, AIChannelModelMeta meta)
     {
         entity.ModelId = meta.ModelId;
@@ -38,9 +39,8 @@ public static class AIModelMetaMapper
         entity.CostOutput = meta.CostOutput;
         entity.CostCacheRead = meta.CostCacheRead;
 
-        entity.ModelKind = string.IsNullOrWhiteSpace(meta.ModelKind)
-            ? DeriveModelKind(meta)
-            : meta.ModelKind;
+        entity.ModelKind = ResolveModelKind(meta);
+
         entity.SupportsVision = meta.SupportsVision
             ?? (meta.InputModalities?.Contains("image", StringComparer.OrdinalIgnoreCase) == true
                 || meta.OutputModalities?.Contains("image", StringComparer.OrdinalIgnoreCase) == true);
@@ -52,7 +52,35 @@ public static class AIModelMetaMapper
     }
 
     /// <summary>
-    /// 推导模型类型：结合 family / 模型 id / 输入输出模态，识别文本、向量、语音、生图、视频等.
+    /// 判断模型文本是否命中重排序规则：文本包含 rerank 即成立（同时覆盖 reranker 写法）.
+    /// </summary>
+    /// <param name="text">模型 id、名称或模型族文本.</param>
+    /// <returns>命中时返回 <c>true</c>.</returns>
+    public static bool IsRerankModel(string? text)
+    {
+        return !string.IsNullOrWhiteSpace(text)
+            && text.Contains("rerank", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 解析模型最终类型：先套用重排序规则，其次取目录声明的类型，最后自动推导.
+    /// </summary>
+    /// <param name="meta">模型元数据.</param>
+    /// <returns>返回 <see cref="AIModelKind"/> 对应的字符串.</returns>
+    public static string ResolveModelKind(AIChannelModelMeta meta)
+    {
+        // 重排序模型优先：模型 id / 名称 / 模型族 含 rerank 时，
+        // 无论目录是否声明类型，一律归为重排序模型，避免被判定为文本模型.
+        if (IsRerankModel(meta.ModelId) || IsRerankModel(meta.Name) || IsRerankModel(meta.Family))
+        {
+            return AIChannelMetaMapperNames.Rerank;
+        }
+
+        return string.IsNullOrWhiteSpace(meta.ModelKind) ? DeriveModelKind(meta) : meta.ModelKind;
+    }
+
+    /// <summary>
+    /// 推导模型类型：结合 family / 模型 id / 名称 / 输入输出模态，识别重排序、向量、语音、生图、视频、文本等.
     /// </summary>
     /// <param name="meta">模型元数据.</param>
     /// <returns>返回 <see cref="AIModelKind"/> 对应的字符串.</returns>
@@ -60,11 +88,18 @@ public static class AIModelMetaMapper
     {
         var family = meta.Family?.ToLowerInvariant() ?? string.Empty;
         var modelId = meta.ModelId?.ToLowerInvariant() ?? string.Empty;
+        var name = meta.Name?.ToLowerInvariant() ?? string.Empty;
         var outputs = (meta.OutputModalities ?? new List<string>())
             .Select(x => x.ToLowerInvariant())
             .ToList();
 
         var hasText = outputs.Contains("text");
+
+        // 重排序模型：id/名称/family 含 rerank/reranker（须先于 embedding 判定，避免被文本输出误判）
+        if (IsRerankModel(family) || IsRerankModel(modelId) || IsRerankModel(name))
+        {
+            return AIChannelMetaMapperNames.Rerank;
+        }
 
         // 向量/嵌入模型：family 或 名称/id 含 embedding，或输出模态为 embedding/vector
         if (family.Contains("embedding", StringComparison.OrdinalIgnoreCase)
@@ -116,4 +151,5 @@ internal static class AIChannelMetaMapperNames
     internal const string ImageGeneration = "image-generation";
     internal const string Transcription = "transcription";
     internal const string VideoGeneration = "video-generation";
+    internal const string Rerank = "rerank";
 }

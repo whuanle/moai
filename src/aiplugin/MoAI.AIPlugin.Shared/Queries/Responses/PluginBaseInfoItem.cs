@@ -62,5 +62,5 @@ public class PluginBaseInfoItem : AuditsInfo
     /// <summary>
     /// 使用量计数.
     /// </summary>
-    public int Counter { get; set; }
+    public long Counter { get; set; }
 }

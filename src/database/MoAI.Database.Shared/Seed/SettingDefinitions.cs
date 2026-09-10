@@ -10,18 +10,54 @@ namespace MoAI.Database.Seed;
 public static class SettingDefinitions
 {
     /// <summary>
-    /// 允许第三方账号登录直接创建账号.
+    /// 是否开启 Neo4j 知识图谱.
     /// </summary>
-    public const string OAuthAutoRegisterKey = "oauth_auto_register";
+    public const string Neo4jEnabledKey = "OPEN_NEO4J";
+
+    /// <summary>
+    /// Neo4j 连接地址.
+    /// </summary>
+    public const string Neo4jUriKey = "NEO4J_URI";
+
+    /// <summary>
+    /// Neo4j 用户名.
+    /// </summary>
+    public const string Neo4jUsernameKey = "NEO4J_USERNAME";
+
+    /// <summary>
+    /// Neo4j 密码.
+    /// </summary>
+    public const string Neo4jPasswordKey = "NEO4J_PASSWORD";
 
     private static readonly List<SettingDefinition> BackingField = new()
     {
         new SettingDefinition
         {
-            Key = OAuthAutoRegisterKey,
-            Name = "允许第三方账号登录直接创建账号",
-            Description = "开启后，第三方授权登录（例如 GitHub、Google 等）在未注册时将自动创建账号.",
+            Key = Neo4jEnabledKey,
+            Name = "Neo4j 知识图谱",
+            Description = "开启后，知识库可以使用知识图谱能力；关闭时无需填写连接信息.",
             DefaultValue = "false"
+        },
+        new SettingDefinition
+        {
+            Key = Neo4jUriKey,
+            Name = "Neo4j 连接地址",
+            Description = "Neo4j 数据库连接地址，例如 neo4j://127.0.0.1:7687.",
+            DefaultValue = string.Empty
+        },
+        new SettingDefinition
+        {
+            Key = Neo4jUsernameKey,
+            Name = "Neo4j 用户名",
+            Description = "Neo4j 数据库登录用户名.",
+            DefaultValue = string.Empty
+        },
+        new SettingDefinition
+        {
+            Key = Neo4jPasswordKey,
+            Name = "Neo4j 密码",
+            Description = "Neo4j 数据库登录密码.",
+            DefaultValue = string.Empty
         }
     };
 

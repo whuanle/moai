@@ -7,6 +7,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIChannel.Api\MoAI.AIChannel.Api.csproj" />
 	</ItemGroup>
@@ -22,6 +23,12 @@
 	  <PackageReference Include="Microsoft.Agents.AI.OpenAI" />
 	  <PackageReference Include="Mscc.GenerativeAI.Microsoft" />
 	  <PackageReference Include="OllamaSharp" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>MoAI.Gateway.Core.Tests</_Parameter1>
+		</AssemblyAttribute>
 	</ItemGroup>
 
 </Project>

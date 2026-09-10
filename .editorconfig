@@ -7,6 +7,7 @@ dotnet_diagnostic.SA1117.severity = none
 
 # SA1204: A static element is positioned beneath an instance element of the same type.
 dotnet_diagnostic.SA1204.severity = none
+dotnet_diagnostic.CA1873.severity = none
 
 [*.cs]
 #### 命名样式 ####

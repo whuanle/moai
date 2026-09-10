@@ -2,7 +2,9 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
+using Hangfire;
 
 namespace MoAI.Hangfire.Services;
 
@@ -32,10 +34,10 @@ public class CounterActivatorJobHandler
     /// 执行器.
     /// </summary>
     /// <returns></returns>
+    [DisableConcurrentExecution(timeoutInSeconds: 300)]
     public async Task InvokeAsync()
     {
         // 获取所有计数器激活器 ICounterActivatorJob
-        CancellationToken cancellationToken = CancellationToken.None;
         var activatorJobs = _serviceProvider.GetServices<ICounterActivatorJob>();
 
         // 并发获取每个激活器
@@ -55,33 +57,42 @@ public class CounterActivatorJobHandler
     private async Task ActivatorAsync(ICounterActivatorJob activatorJob)
     {
         var name = await activatorJob.GetNameAsync();
-        var values = await _redisDatabase.HashGetAllAsync<int>($"counter:{name}");
+        var values = await _redisDatabase.HashGetAllAsync<long>($"counter:{name}");
         if (values != null && values.Count > 0)
         {
-            await activatorJob.ActivateAsync(values.Where(x => x.Value > 0).ToDictionary().AsReadOnly());
-
-            // 获取服务器最新统计值
-            var lastValues = await _redisDatabase.HashGetAllAsync<int>($"counter:{name}");
-
-            // 将 lastValues 中的值从 values 中减去
-            foreach (var oldCounter in values)
+            var positiveValues = values.Where(x => x.Value > 0).ToDictionary().AsReadOnly();
+            if (positiveValues.Count == 0)
             {
-                if (lastValues.TryGetValue(oldCounter.Key, out var newCounter))
-                {
-                    var newValue = newCounter - oldCounter.Value;
-                    if (newValue <= 0)
-                    {
-                        lastValues[oldCounter.Key] = 0;
-                    }
-                    else
-                    {
-                        lastValues[oldCounter.Key] = newValue;
-                    }
-                }
+                return;
             }
 
-            // 批量设置某个 name 的值
-            await _redisDatabase.HashSetAsync($"counter:{name}", lastValues);
+            await activatorJob.ActivateAsync(positiveValues);
+            await SubtractSnapshotAsync(name, positiveValues);
         }
+    }
+
+    private async Task SubtractSnapshotAsync(string name, IReadOnlyDictionary<string, long> values)
+    {
+        RedisValue[] arguments = new RedisValue[values.Count * 2];
+        var index = 0;
+        foreach (var item in values)
+        {
+            arguments[index++] = item.Key;
+            arguments[index++] = item.Value;
+        }
+
+        const string Script = """
+            for i = 1, #ARGV, 2 do
+                local remaining = redis.call('HINCRBY', KEYS[1], ARGV[i], '-' .. ARGV[i + 1])
+                if remaining <= 0 then
+                    redis.call('HDEL', KEYS[1], ARGV[i])
+                end
+            end
+            return 1
+            """;
+        await _redisDatabase.ScriptEvaluateAsync(
+            Script,
+            [new RedisKey($"counter:{name}")],
+            arguments);
     }
 }

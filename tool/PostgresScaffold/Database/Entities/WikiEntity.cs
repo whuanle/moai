@@ -47,7 +47,7 @@ public partial class WikiEntity : IFullAudited
     /// <summary>
     /// 向量化模型的id.
     /// </summary>
-    public int EmbeddingModelId { get; set; }
+    public Guid EmbeddingModelId { get; set; }
 
     /// <summary>
     /// 知识库向量维度.

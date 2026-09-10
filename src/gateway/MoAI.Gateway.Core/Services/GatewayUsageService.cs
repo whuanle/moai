@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
@@ -14,16 +15,19 @@ namespace MoAI.Gateway.Services;
 public class GatewayUsageService
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IAiModelUsageCounter _usageCounter;
     private readonly ILogger<GatewayUsageService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GatewayUsageService"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="usageCounter">AI 模型用量计数器.</param>
     /// <param name="logger">日志.</param>
-    public GatewayUsageService(DatabaseContext databaseContext, ILogger<GatewayUsageService> logger)
+    public GatewayUsageService(DatabaseContext databaseContext, IAiModelUsageCounter usageCounter, ILogger<GatewayUsageService> logger)
     {
         _databaseContext = databaseContext;
+        _usageCounter = usageCounter;
         _logger = logger;
     }
 
@@ -65,7 +69,31 @@ public class GatewayUsageService
     /// <param name="cancellationToken">取消令牌.</param>
     public async Task RecordAsync(Guid modelId, int teamId, long userId, Guid apiKeyId, string channelProviderKey, int promptTokens, int completionTokens, CancellationToken cancellationToken = default)
     {
-        var totalTokens = promptTokens + completionTokens;
+        if (promptTokens < 0 || completionTokens < 0)
+        {
+            _logger.LogWarning(
+                "忽略无效的模型用量记账. ModelId={ModelId}, PromptTokens={PromptTokens}, CompletionTokens={CompletionTokens}",
+                modelId,
+                promptTokens,
+                completionTokens);
+            return;
+        }
+
+        int totalTokens;
+        try
+        {
+            totalTokens = checked(promptTokens + completionTokens);
+        }
+        catch (OverflowException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "忽略溢出的模型用量记账. ModelId={ModelId}, PromptTokens={PromptTokens}, CompletionTokens={CompletionTokens}",
+                modelId,
+                promptTokens,
+                completionTokens);
+            return;
+        }
 
         try
         {
@@ -85,7 +113,7 @@ public class GatewayUsageService
             {
                 ModelId = modelId,
                 TeamId = teamId,
-                UserId = (int)userId,
+                UserId = userId,
                 CompletionTokens = completionTokens,
                 PromptTokens = promptTokens,
                 TotalTokens = totalTokens,
@@ -93,36 +121,6 @@ public class GatewayUsageService
                 UseResourceId = 0,
                 Channel = TruncateChannel(channelProviderKey),
             });
-
-            var audit = await _databaseContext.AiModelTokenAudits.FirstOrDefaultAsync(
-                x => x.ModelId == modelId
-                    && x.TeamId == teamId
-                    && x.UserId == (int)userId
-                    && x.UseType == (int)AiModelUseType.OpenApi
-                    && x.UseResourceId == apiKeyId,
-                cancellationToken);
-            if (audit == null)
-            {
-                _databaseContext.AiModelTokenAudits.Add(new AiModelTokenAuditEntity
-                {
-                    ModelId = modelId,
-                    TeamId = teamId,
-                    UserId = (int)userId,
-                    UseType = (int)AiModelUseType.OpenApi,
-                    UseResourceId = apiKeyId,
-                    CompletionTokens = completionTokens,
-                    PromptTokens = promptTokens,
-                    TotalTokens = totalTokens,
-                    Count = 1,
-                });
-            }
-            else
-            {
-                audit.CompletionTokens += completionTokens;
-                audit.PromptTokens += promptTokens;
-                audit.TotalTokens += totalTokens;
-                audit.Count += 1;
-            }
 
             await _databaseContext.TeamApiKeys
                 .Where(x => x.Id == apiKeyId)
@@ -134,6 +132,28 @@ public class GatewayUsageService
         {
             // 记账失败不影响本次调用的返回结果，但要留下日志便于对账.
             _logger.LogError(ex, "网关用量记账失败. ModelId={ModelId}, TeamId={TeamId}, ApiKeyId={ApiKeyId}", modelId, teamId, apiKeyId);
+            return;
+        }
+
+        try
+        {
+            await _usageCounter.IncrementAsync(
+                modelId,
+                teamId,
+                userId,
+                (int)AiModelUseType.OpenApi,
+                apiKeyId,
+                promptTokens,
+                completionTokens,
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "模型用量计数失败. ModelId={ModelId}, TeamId={TeamId}, UserId={UserId}", modelId, teamId, userId);
         }
     }
 

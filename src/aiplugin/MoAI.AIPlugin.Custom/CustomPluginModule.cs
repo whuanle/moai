@@ -15,5 +15,6 @@ public class CustomPluginModule : IModule
     public void ConfigureServices(ServiceContext context)
     {
         context.Services.AddScoped<IDynamicInstanceResolver, DynamicInstanceResolver>();
+        context.Services.AddScoped<MoAI.Hangfire.Services.ICounterActivatorJob, PluginUsageCounterActivatorJob>();
     }
 }

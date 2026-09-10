@@ -1,32 +1,64 @@
+using MoAI.Infra.Models;
+
 namespace MoAI.Wiki.Queries.Responses;
 
 /// <summary>
-/// 知识库文档列表项（不含正文）.
+/// 知识库文档项.
 /// </summary>
-public class WikiDocumentItem
+public class WikiDocumentItem : AuditsInfo
 {
     /// <summary>
     /// 文档 id.
     /// </summary>
-    public long DocumentId { get; set; }
+    public int DocumentId { get; set; }
 
     /// <summary>
-    /// 所属知识库 id.
+    /// 知识库 id.
     /// </summary>
-    public long WikiId { get; set; }
+    public int WikiId { get; set; }
 
     /// <summary>
-    /// 文档标题.
+    /// 文件 id.
     /// </summary>
-    public string Title { get; set; } = default!;
+    public int FileId { get; set; }
 
     /// <summary>
-    /// 创建时间.
+    /// 文件名称.
     /// </summary>
-    public DateTimeOffset CreateTime { get; set; }
+    public string FileName { get; set; } = default!;
 
     /// <summary>
-    /// 更新时间.
+    /// 文件大小（字节）.
     /// </summary>
-    public DateTimeOffset UpdateTime { get; set; }
+    public int FileSize { get; set; }
+
+    /// <summary>
+    /// 文件类型.
+    /// </summary>
+    public string ContentType { get; set; } = default!;
+
+    /// <summary>
+    /// 是否已经向量化.
+    /// </summary>
+    public bool IsEmbedding { get; set; }
+
+    /// <summary>
+    /// 是否已提取内容（上传后自动提取入库，wiki_document_content 有内容）.
+    /// </summary>
+    public bool IsContentExtracted { get; set; }
+
+    /// <summary>
+    /// 已提取内容长度（字节/字符）.
+    /// </summary>
+    public int ContentLength { get; set; }
+
+    /// <summary>
+    /// 切片数量.
+    /// </summary>
+    public int ChunkCount { get; set; }
+
+    /// <summary>
+    /// 元数据数量.
+    /// </summary>
+    public int MetadataCount { get; set; }
 }

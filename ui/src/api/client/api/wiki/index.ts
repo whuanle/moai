@@ -4,11 +4,11 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleLongFromDiscriminatorValue, serializeCreateWikiCommand, serializeSimpleLong, type BusinessValidationResult, type CreateWikiCommand, type SimpleLong } from '../../models/index.js';
 // @ts-ignore
-import { DocumentRequestBuilderNavigationMetadata, type DocumentRequestBuilder } from './document/index.js';
-// @ts-ignore
 import { ItemRequestBuilderNavigationMetadata, ItemRequestBuilderRequestsMetadata, type ItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
+// @ts-ignore
+import { ModelOptionsRequestBuilderRequestsMetadata, type ModelOptionsRequestBuilder } from './modelOptions/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -17,13 +17,13 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  */
 export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilder> {
     /**
-     * The document property
-     */
-    get document(): DocumentRequestBuilder;
-    /**
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The modelOptions property
+     */
+    get modelOptions(): ModelOptionsRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.wiki.item collection
      * @param id 知识库 id.
@@ -63,11 +63,11 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
         navigationMetadata: ItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["%2Did"],
     },
-    document: {
-        navigationMetadata: DocumentRequestBuilderNavigationMetadata,
-    },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    modelOptions: {
+        requestsMetadata: ModelOptionsRequestBuilderRequestsMetadata,
     },
 };
 /**

@@ -59,9 +59,10 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
 
         var wiki = new WikiEntity
         {
-            TeamId = request.TeamId,
+            TeamId = (int)request.TeamId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
+            IsPublic = request.IsPublic,
         };
 
         _databaseContext.Wikis.Add(wiki);

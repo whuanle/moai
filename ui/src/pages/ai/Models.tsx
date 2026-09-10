@@ -40,6 +40,7 @@ import { ModelAccessDrawer } from './ModelAccessDrawer'
 const kindColor: Record<string, string> = {
   conversation: 'blue',
   embedding: 'geekblue',
+  rerank: 'gold',
   'image-generation': 'purple',
   transcription: 'cyan',
   'video-generation': 'magenta',
@@ -95,6 +96,8 @@ function kindLabel(kind: string | null | undefined, t: (k: string) => string): s
   switch (kind) {
     case 'embedding':
       return t('models.kindEmbedding')
+    case 'rerank':
+      return t('models.kindRerank')
     case 'image-generation':
       return t('models.kindImage')
     case 'video-generation':
@@ -144,6 +147,7 @@ function metaFromModelForm(values: ModelFormValues): AIModelMeta {
 const KIND_OPTIONS = [
   { value: 'conversation', labelKey: 'models.kindConversation' },
   { value: 'embedding', labelKey: 'models.kindEmbedding' },
+  { value: 'rerank', labelKey: 'models.kindRerank' },
   { value: 'image-generation', labelKey: 'models.kindImage' },
   { value: 'video-generation', labelKey: 'models.kindVideo' },
   { value: 'transcription', labelKey: 'models.kindTranscription' },
@@ -161,6 +165,9 @@ function kindCapabilitySettings(kind: string | undefined): KindCapabilitySetting
     case 'embedding':
       // 向量模型只保留最大输出（向量维度），隐藏上下文与其他能力开关.
       return { capabilities: [], contextWindow: false, maxOutput: true }
+    case 'rerank':
+      // 重排序模型无能力开关、无上下文与最大输出.
+      return { capabilities: [], contextWindow: false, maxOutput: false }
     case 'image-generation':
     case 'video-generation':
     case 'transcription':

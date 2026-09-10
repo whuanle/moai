@@ -35,6 +35,7 @@
 - [ ] 页面根节点使用 `Page` 包裹。
 - [ ] 列表页工具行使用 `PageToolbar`（筛选在左、操作在右；无筛选时操作左对齐），未手动拼 `Space`。
 - [ ] 列表页使用 `DataTable`，未散落 antd Table。
+- [ ] 多数据列表页使用剩余高度布局：查询/工具栏在上，表格区域 `flex: 1; min-height: 0`，`DataTable.scroll.y` 让表格内容滚动，分页贴近底部且页面底部无大块空白。
 - [ ] 颜色/间距取 token，无魔法值。
 - [ ] 文案走 `useTranslation()`，无硬编码。
 - [ ] 暗色模式下对比度可用（经 token 感知）。

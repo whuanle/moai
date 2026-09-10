@@ -15,5 +15,6 @@ public class SettingsCoreModule : IModule
     public void ConfigureServices(ServiceContext context)
     {
         context.Services.AddScoped<ISettingsService, SettingsService>();
+        context.Services.AddScoped<IKnowledgeGraphSettingsService, KnowledgeGraphSettingsService>();
     }
 }

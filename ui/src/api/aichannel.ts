@@ -89,10 +89,10 @@ async function deleteChannel(id: string): Promise<void> {
   await client.api.ai.channel.byId(id as Guid).delete()
 }
 
-async function getModels(channelId?: string): Promise<AIModelItem[]> {
+async function getModels(channelId?: string, teamId?: number): Promise<AIModelItem[]> {
   const client = getApiClient()
   const res = await client.api.ai.model.get({
-    queryParameters: channelId ? { channelId: channelId as Guid } : undefined,
+    queryParameters: channelId || teamId !== undefined ? { channelId: channelId as Guid | undefined, teamId } : undefined,
   })
   return res?.items ?? []
 }

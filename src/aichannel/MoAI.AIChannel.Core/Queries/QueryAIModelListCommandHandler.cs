@@ -27,6 +27,13 @@ public class QueryAIModelListCommandHandler : IRequestHandler<QueryAIModelListCo
     {
         var query = _databaseContext.AiModels.AsQueryable();
 
+        if (request.TeamId.HasValue)
+        {
+            var teamId = request.TeamId.Value;
+            query = query.Where(x => x.IsPublic || _databaseContext.AiModelAuthorizations
+                .Any(a => a.AiModelId == x.Id && a.TeamId == teamId));
+        }
+
         if (request.ChannelId != null)
         {
             query = query.Where(x => x.ChannelId == request.ChannelId.Value);

@@ -61,9 +61,8 @@ public class SyncAIModelCommandHandler : IRequestHandler<SyncAIModelCommand, Syn
             // 匹配到 models.json 的模型默认启用；未匹配到（无参数）默认禁用.
             if (existing.TryGetValue(modelId, out var existedModel))
             {
-                var derivedKind = meta != null
-                    ? AIModelMetaMapper.DeriveModelKind(meta)
-                    : AIModelMetaMapper.DeriveModelKind(new AIChannelModelMeta { ModelId = modelId, Name = modelId });
+                var derivedKind = AIModelMetaMapper.ResolveModelKind(
+                    meta ?? new AIChannelModelMeta { ModelId = modelId, Name = modelId });
 
                 if (existedModel.Enabled != shouldEnable || existedModel.ModelKind != derivedKind)
                 {
@@ -82,7 +81,7 @@ public class SyncAIModelCommandHandler : IRequestHandler<SyncAIModelCommand, Syn
                 IsPublic = false,
                 ModelId = modelId,
                 Name = modelId,
-                ModelKind = AIModelMetaMapper.DeriveModelKind(new AIChannelModelMeta { ModelId = modelId, Name = modelId }),
+                ModelKind = AIModelMetaMapper.ResolveModelKind(new AIChannelModelMeta { ModelId = modelId, Name = modelId }),
             };
 
             if (meta != null)

@@ -14,6 +14,7 @@
 ## 全局规范（L1）
 
 - [DOC-STANDARD.md](./DOC-STANDARD.md) — 文档分层、四件套契约、Gherkin（小黄瓜）规范、相互引用规则
+- [api_interface.md](./api_interface.md) — 前后端对接：后端 OpenAPI → 前端 `npm run syncapi` 生成客户端
 - [cqrs-conventions.md](./cqrs-conventions.md) — 后端 CQRS 三层与 `IModelValidator` 硬约束
 - [aiplugin-authoring.md](./aiplugin-authoring.md) — 静态/动态插件编写规范（发现机制、运行时接口、配置校验、流程）
 - [settings.md](./settings.md) — setting 表机制（接口层权限模式范例）
@@ -45,7 +46,7 @@
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
 | [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、解散与所有权转让 |
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
-| [wiki](./wiki/) | WK | 团队知识库与文档（内容协作 Member 可写） |
+| [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 
 ### 前端（ui/docs/）

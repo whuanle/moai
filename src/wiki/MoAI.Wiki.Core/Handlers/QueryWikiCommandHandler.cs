@@ -47,19 +47,48 @@ public class QueryWikiCommandHandler : IRequestHandler<QueryWikiCommand, QueryWi
         var userId = _userContextProvider.GetUserContext().UserId;
         var myRole = await _teamService.GetMyRoleAsync(wiki.TeamId, userId, cancellationToken);
 
-        if (myRole == null)
-        {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
-        }
+        var embeddingModelName = await _databaseContext.AiModels
+            .Where(x => x.Id == wiki.EmbeddingModelId)
+            .Select(x => x.Name)
+            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
 
-        return new QueryWikiCommandResponse
+        var rerankModelName = wiki.RerankModelId.HasValue
+            ? await _databaseContext.AiModels
+                .Where(x => x.Id == wiki.RerankModelId.Value)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync(cancellationToken) ?? string.Empty
+            : string.Empty;
+
+        var baseResponse = new QueryWikiCommandResponse
         {
             WikiId = wiki.Id,
             TeamId = wiki.TeamId,
             Name = wiki.Name,
             Description = wiki.Description,
-            MyRole = (int)myRole.Value,
-            CreateTime = wiki.CreateTime
+            IsPublic = wiki.IsPublic,
+            AvatarPath = wiki.AvatarPath,
+            CreateTime = wiki.CreateTime,
+            EmbeddingModelId = wiki.EmbeddingModelId,
+            EmbeddingModelName = embeddingModelName,
+            EmbeddingDimensions = wiki.EmbeddingDimensions,
+            IsLock = wiki.IsLock,
+            RerankModelId = wiki.RerankModelId,
+            RerankModelName = rerankModelName,
         };
+
+        // 公开知识库：非团队成员可只读访问（myRole 置 0 = 非成员），但不得进入操作
+        if (myRole == null)
+        {
+            if (!wiki.IsPublic)
+            {
+                throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
+            }
+
+            baseResponse.MyRole = 0;
+            return baseResponse;
+        }
+
+        baseResponse.MyRole = (int)myRole.Value;
+        return baseResponse;
     }
 }

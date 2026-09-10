@@ -36,16 +36,17 @@ public class AIModelController : ControllerBase
     }
 
     /// <summary>
-    /// 查询 AI 模型列表，可按渠道过滤（仅管理员可访问）.
+    /// 查询 AI 模型列表，可按渠道和团队过滤（仅管理员可访问）.
     /// </summary>
     /// <param name="channelId">渠道 id，为空时查询全部.</param>
+    /// <param name="teamId">团队 id，传入时仅返回公开或已授权给该团队的模型.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryAIModelListCommandResponse"/>.</returns>
     [HttpGet]
-    public async Task<QueryAIModelListCommandResponse> QueryAll([FromQuery] Guid? channelId, CancellationToken ct)
+    public async Task<QueryAIModelListCommandResponse> QueryAll([FromQuery] Guid? channelId, [FromQuery] int? teamId, CancellationToken ct)
     {
         await EnsureAdminAsync(ct);
-        return await _mediator.Send(new QueryAIModelListCommand { ChannelId = channelId }, ct);
+        return await _mediator.Send(new QueryAIModelListCommand { ChannelId = channelId, TeamId = teamId }, ct);
     }
 
     /// <summary>

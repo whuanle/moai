@@ -53,6 +53,9 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.EmbeddingModelId)
             .HasComment("向量化模型的id")
             .HasColumnName("embedding_model_id");
+        entity.Property(e => e.RerankModelId)
+            .HasComment("重排序模型的id，可选，为空表示不使用重排序")
+            .HasColumnName("rerank_model_id");
         entity.Property(e => e.IsDeleted)
             .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")

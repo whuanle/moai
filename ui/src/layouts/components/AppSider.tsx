@@ -85,6 +85,7 @@ export function AppSider() {
   const userInfo = useAppStore((state) => state.userInfo)
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
+  const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
   const [collapsed, setCollapsed] = useState(false)
   const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
   const isDark = themeKey === 'dark'
@@ -127,9 +128,11 @@ export function AppSider() {
     if (item) navigate(item.path)
   }
 
+  const visibleAdminNav = adminNav.filter((item) => item.key !== 'settings' || isRoot)
+
   const menuItems: Required<MenuProps>['items'] = [
     ...buildMenuItems(mainNav, t),
-    ...(isAdmin ? [{ type: 'divider' as const }, ...buildMenuItems(adminNav, t)] : []),
+    ...(isAdmin ? [{ type: 'divider' as const }, ...buildMenuItems(visibleAdminNav, t)] : []),
   ]
 
   return (

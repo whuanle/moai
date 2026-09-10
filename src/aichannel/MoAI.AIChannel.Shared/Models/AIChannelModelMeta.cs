@@ -11,7 +11,8 @@ public class AIChannelModelMeta
     public string ModelId { get; set; } = default!;
 
     /// <summary>
-    /// 模型类型（conversation/embedding/image-generation/transcription/video-generation），为空时由服务端自动推导.
+    /// 模型类型（conversation/embedding/image-generation/transcription/video-generation/rerank），为空时由服务端自动推导；
+    /// 模型 id / 名称 / 模型族 含 rerank 时，始终判定为 rerank.
     /// </summary>
     public string? ModelKind { get; set; }
 

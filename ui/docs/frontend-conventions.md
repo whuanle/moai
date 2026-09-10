@@ -211,7 +211,11 @@ function getServerUrl(): string {
 
 `DataTable` 头部操作区使用 flex **左对齐 + `gap`**，按钮依次从左开始排列；不要用 `justifyContent: 'space-between'` 让按钮分居两端（避免"新建"在左、"刷新"在右的操作割裂）。
 
-### 4. 模态窗体禁止点击遮罩关闭
+### 4. 列表页表格占满剩余高度
+
+列表页数据较多时，页面主体应使用纵向 flex 布局：查询/工具栏占自身高度，`DataTable` 所在区域 `flex: 1; min-height: 0`，表格通过 `scroll.y` 使用剩余高度滚动。分页组件应保持在表格底部，避免只给表格一个过小固定高度导致分页上移、页面底部出现大块空白。
+
+### 5. 模态窗体禁止点击遮罩关闭
 
 所有表单类 `Modal` 一律设置 `maskClosable={false}`，防止用户在输入时误点窗体外部空白导致已填内容丢失：
 
@@ -221,7 +225,7 @@ function getServerUrl(): string {
 
 后续新增其它弹窗（含 `Modal.confirm` 等）也需遵循；建议统一封装一个默认 `maskClosable={false}` 的 Modal 组件，全局固化该行为。
 
-### 5. 时间统一 `YYYY-MM-DD HH:mm` 单行
+### 6. 时间统一 `YYYY-MM-DD HH:mm` 单行
 
 列表/详情中的时间一律使用 `utils/datetime.ts` 的 `formatDateTime()`（`YYYY-MM-DD HH:mm`，本地时区），禁止 `toLocaleString()`（各浏览器 locale 输出不一致）。空值/非法值显示 `-`。规范出处：docs/user-management/sdd.md 决策 6（2026-09-02）。
 

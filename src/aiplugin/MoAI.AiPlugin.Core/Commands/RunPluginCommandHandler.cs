@@ -23,7 +23,10 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
     /// <param name="registry">插件注册表.</param>
     /// <param name="executor">插件执行引擎.</param>
     /// <param name="dynamicResolver">动态插件实例解析器.</param>
-    public RunPluginCommandHandler(IPluginRegistry registry, IPluginExecutor executor, IDynamicInstanceResolver dynamicResolver)
+    public RunPluginCommandHandler(
+        IPluginRegistry registry,
+        IPluginExecutor executor,
+        IDynamicInstanceResolver dynamicResolver)
     {
         _registry = registry;
         _executor = executor;

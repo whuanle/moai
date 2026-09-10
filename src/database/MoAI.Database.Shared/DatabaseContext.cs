@@ -128,6 +128,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<UserEntity> Users { get; set; }
 
     /// <summary>
+    /// 通用任务.
+    /// </summary>
+    public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
+
+    /// <summary>
     /// oauth2.0对接.
     /// </summary>
     public virtual DbSet<UserOauthConnectionEntity> UserOauthConnections { get; set; }
@@ -148,11 +153,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentEntity> WikiDocumentChunkContents { get; set; }
 
     /// <summary>
-    /// 切片向量化内容.
-    /// </summary>
-    public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
-
-    /// <summary>
     /// 切片元数据内容表（提问/提纲/摘要）.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkMetadatumEntity> WikiDocumentChunkMetadata { get; set; }
@@ -168,5 +168,5 @@ public partial class DatabaseContext : DbContext
         OnModelCreatingPartial(modelBuilder);
     }
 
-    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

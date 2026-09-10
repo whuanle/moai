@@ -1,244 +1,139 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   BookOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  FileTextOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Form, Input, Modal, Popconfirm, Space, Tooltip, Typography } from 'antd'
-import type { TableColumnsType } from 'antd'
+import { Avatar, Col, Empty, Row, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router'
-import { Page, DataTable, feedback } from '@/design-system'
+import { useNavigate } from 'react-router'
+import { Card, Page } from '@/design-system'
+import { neutralColors, spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
-import { createWiki, deleteWiki, getWikis, updateWiki, type WikiItem } from '@/api/wiki'
+import { getMyTeams, type TeamItem } from '@/api/team'
+import { getWikis, type WikiCardItem } from '@/api/wiki'
 import { formatDateTime } from '@/utils/datetime'
 
-const { Text } = Typography
+const { Paragraph } = Typography
 
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-interface WikiFormValues {
-  name: string
-  description?: string
-}
-
 export function Wiki() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const currentTeamId = useAppStore((state) => state.currentTeamId)
+  const myTeams = useAppStore((state) => state.myTeams)
+  const setMyTeams = useAppStore((state) => state.setMyTeams)
 
-  const [loading, setLoading] = useState(false)
-  const [wikis, setWikis] = useState<WikiItem[]>([])
-  const [myRole, setMyRole] = useState<number | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<WikiItem | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [form] = Form.useForm<WikiFormValues>()
-
-  const isAdminPlus = myRole !== null && myRole !== ROLE_MEMBER
+  const [loading, setLoading] = useState(true)
+  const [cards, setCards] = useState<WikiCardItem[]>([])
 
   const load = useCallback(async () => {
-    if (!currentTeamId) {
-      setWikis([])
-      setMyRole(null)
-      return
-    }
     setLoading(true)
     try {
-      const res = await getWikis(Number(currentTeamId))
-      setWikis(res.items ?? [])
-      setMyRole(res.myRole ?? null)
+      const fetchedTeams: TeamItem[] = myTeams.length > 0 ? myTeams : await getMyTeams()
+      // 同步到 store，供侧边栏等其它入口复用，保持最新
+      if (myTeams.length === 0) setMyTeams(fetchedTeams)
+
+      const items: WikiCardItem[] = []
+      for (const team of fetchedTeams) {
+        const teamId = Number(team.teamId)
+        if (!Number.isFinite(teamId) || teamId <= 0) continue
+        try {
+          const res = await getWikis(teamId)
+          for (const w of res.items ?? []) {
+            items.push({
+              ...w,
+              teamName: team.name,
+              myRole: res.myRole ?? team.myRole ?? ROLE_MEMBER,
+            })
+          }
+        } catch {
+          // 单个团队查询失败不中断整体聚合
+        }
+      }
+      setCards(items)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setLoading(false)
     }
-  }, [currentTeamId])
+  }, [myTeams, setMyTeams])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const openCreate = () => {
-    setEditing(null)
-    form.resetFields()
-    setFormOpen(true)
-  }
-
-  const openEdit = (record: WikiItem) => {
-    setEditing(record)
-    form.setFieldsValue({ name: record.name ?? '', description: record.description ?? undefined })
-    setFormOpen(true)
-  }
-
-  const handleSubmit = async () => {
-    const values = await form.validateFields()
-    setSaving(true)
-    try {
-      if (editing) {
-        await updateWiki(Number(editing.wikiId), { name: values.name, description: values.description })
-      } else if (currentTeamId) {
-        await createWiki({ teamId: Number(currentTeamId), name: values.name, description: values.description })
-      }
-      feedback.success(t(editing ? 'wiki.saveSuccess' : 'wiki.createSuccess'))
-      setFormOpen(false)
-      void load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (record: WikiItem) => {
-    try {
-      await deleteWiki(Number(record.wikiId))
-      feedback.success(t('wiki.deleteSuccess'))
-      void load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  /** 图标 + 名称合并展示 */
-  const renderName = (record: WikiItem) => {
-    const name = record.name || '-'
-    return (
-      <Space>
-        <Avatar shape="square" size={36} icon={<BookOutlined />} />
-        <div style={{ lineHeight: 1.4, minWidth: 0 }}>
-          <div>{name}</div>
-          {record.description && (
-            <Text type="secondary" style={{ fontSize: 12 }} ellipsis>
-              {record.description}
-            </Text>
-          )}
-        </div>
-      </Space>
-    )
-  }
-
-  const columns: TableColumnsType<WikiItem> = useMemo(
-    () => [
-      {
-        title: t('wiki.colName'),
-        key: 'name',
-        render: (_, record) => renderName(record),
-      },
-      {
-        title: t('wiki.colCreateTime'),
-        dataIndex: 'createTime',
-        width: 150,
-        render: (v: string | null) => (
-          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-        ),
-      },
-      ...(isAdminPlus
-        ? [
-            {
-              title: t('wiki.colActions'),
-              key: 'actions',
-              width: 128,
-              fixed: 'right' as const,
-              render: (_: unknown, record: WikiItem) => (
-                <Space size={0}>
-                  <Tooltip title={t('wiki.documents')}>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<FileTextOutlined />}
-                      aria-label={t('wiki.documents')}
-                      onClick={() => navigate(`/wiki/${record.wikiId}`)}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('wiki.edit')}>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditOutlined />}
-                      aria-label={t('wiki.edit')}
-                      onClick={() => openEdit(record)}
-                    />
-                  </Tooltip>
-                  <Popconfirm title={t('wiki.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                    <Tooltip title={t('wiki.delete')}>
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.delete')} />
-                    </Tooltip>
-                  </Popconfirm>
-                </Space>
-              ),
-            } as TableColumnsType<WikiItem>[number],
-          ]
-        : []),
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, isAdminPlus],
-  )
-
-  if (!currentTeamId) {
-    return (
-      <Page>
-        <div style={{ padding: '48px 0', textAlign: 'center' }}>
-          <Text type="secondary">
-            {t('wiki.selectTeamFirst')}{' '}
-            <Link to="/team">{t('wiki.goCreateTeam')}</Link>
-          </Text>
-        </div>
-      </Page>
-    )
-  }
-
   return (
     <Page>
-      <DataTable<WikiItem>
-        rowKey="wikiId"
-        columns={columns}
-        dataSource={wikis}
-        loading={loading}
-        sticky
-        scroll={{ x: 700 }}
-        toolbar={
-          <Space size={12}>
-            {isAdminPlus && (
-              <Button type="primary" onClick={openCreate}>
-                {t('wiki.create')}
-              </Button>
-            )}
-            <Text type="secondary">{t('ds.table.total', { total: wikis.length })}</Text>
-          </Space>
-        }
-        onRefresh={() => void load()}
-        refreshLoading={loading}
-      />
-      <Modal
-        open={formOpen}
-        title={editing ? t('wiki.editTitle') : t('wiki.createTitle')}
-        onOk={() => void handleSubmit()}
-        onCancel={() => setFormOpen(false)}
-        okText={editing ? t('wiki.save') : t('wiki.confirm')}
-        cancelText={t('wiki.cancel')}
-        confirmLoading={saving}
-        destroyOnHidden
-        maskClosable={false}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label={t('wiki.name')}
-            rules={[
-              { required: true, message: t('wiki.namePlaceholder') },
-              { max: 50, message: `${t('wiki.name')} ≤ 50` },
-            ]}
-          >
-            <Input placeholder={t('wiki.namePlaceholder')} maxLength={50} />
-          </Form.Item>
-          <Form.Item name="description" label={t('wiki.desc')} rules={[{ max: 255 }]}>
-            <Input.TextArea placeholder={t('wiki.descPlaceholder')} maxLength={255} rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {loading ? null : cards.length === 0 ? (
+        <Empty description={t('wiki.empty')} />
+      ) : (
+        <Row gutter={[spacing.md, spacing.md]}>
+          {cards.map((card) => {
+            const name = card.name || '-'
+            return (
+              <Col xs={24} sm={12} md={8} lg={6} xxl={4} key={String(card.wikiId)}>
+                <Card style={{ height: '100%', cursor: 'pointer' }} styles={{ body: { padding: spacing.md } }}>
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}
+                    onClick={() => navigate(`/team/${card.teamId}/wiki/${card.wikiId}`)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+                        <Avatar shape="square" size={44} icon={<BookOutlined />} />
+                        <div style={{ minWidth: 0, alignSelf: 'center' }}>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 15,
+                              lineHeight: 1.4,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {name}
+                          </div>
+                          <div style={{ marginTop: 2 }}>
+                            <Tag style={{ marginInlineEnd: 0 }}>{card.teamName || '-'}</Tag>
+                          </div>
+                        </div>
+                      </div>
+                      {card.isPublic && (
+                        <Tooltip title={t('wiki.public')}>
+                          <GlobalOutlined style={{ color: neutralColors.textTertiary }} aria-label={t('wiki.public')} />
+                        </Tooltip>
+                      )}
+                    </div>
+                    <Paragraph
+                      type="secondary"
+                      style={{ fontSize: 13, marginBottom: 0, minHeight: 38 }}
+                      ellipsis={{ rows: 2 }}
+                    >
+                      {card.description || '-'}
+                    </Paragraph>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: spacing.sm,
+                        color: neutralColors.textTertiary,
+                        fontSize: 12,
+                        marginTop: 'auto',
+                        borderTop: `1px solid ${neutralColors.border}`,
+                        paddingTop: spacing.sm,
+                      }}
+                    >
+                      <span>{t('wiki.colCreateTime')}: {formatDateTime(card.createTime)}</span>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            )
+          })}
+        </Row>
+      )}
     </Page>
   )
 }

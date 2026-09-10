@@ -53,7 +53,7 @@ public partial class DatabaseContext
     /// OnModelCreatingPartial.
     /// </summary>
     /// <param name="modelBuilder"></param>
-    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
+    protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -104,11 +104,25 @@ public partial class DatabaseContext
     /// 定义种子数据.
     /// </summary>
     /// <param name="modelBuilder"></param>
-    protected static void SeedData(ModelBuilder modelBuilder)
+    protected virtual void SeedData(ModelBuilder modelBuilder)
     {
+        if (!ShouldApplySeedData())
+        {
+            return;
+        }
+
         UserSeed.Apply(modelBuilder);
         ClassifySeed.Apply(modelBuilder);
         SettingSeed.Apply(modelBuilder);
+    }
+
+    /// <summary>
+    /// Determines whether built-in seed data should be applied when building the model.
+    /// </summary>
+    /// <returns>true to apply seed data; otherwise false.</returns>
+    protected virtual bool ShouldApplySeedData()
+    {
+        return true;
     }
 
     /// <summary>

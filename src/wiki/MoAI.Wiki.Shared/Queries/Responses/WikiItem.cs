@@ -26,6 +26,16 @@ public class WikiItem
     public string Description { get; set; } = default!;
 
     /// <summary>
+    /// 是否公开，公开后所有人都可以使用（只读），但非团队成员不能进入操作.
+    /// </summary>
+    public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 知识库头像的 ObjectKey（空串=未设置）.
+    /// </summary>
+    public string AvatarPath { get; set; } = default!;
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }

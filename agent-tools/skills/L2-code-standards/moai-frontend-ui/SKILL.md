@@ -22,7 +22,7 @@ description: Frontend page standards for MoAI ui/ (React 19, antd 5 design-syste
 
 ### 0. API 客户端（Kiota）
 
-- 后端起在 `:5210` 后：`cd ui && npm run syncapi http://127.0.0.1:5210/openapi/v1.json`（脚本先删后生成）
+- 后端起在 `:5000`（`MoAI:Port` 默认值）后：`cd ui && npm run syncapi`（默认源 `http://127.0.0.1:5000/openapi/v1.json`，脚本先删后生成）；端口被 `MAI_FILE` 覆盖时显式传参。细节见 `docs/api_interface.md`
 - `src/api/client/` **禁止手改**（Kiota 锁定 `1.0.0-preview.93`，勿用 caret 升级）
 - 手写封装放 `src/api/<module>.ts`：业务请求用 `getApiClient()`；登录/注册/serverinfo 等匿名接口用 `getAnonymousClient()`
 - 密码传输：`getServerInfo().rsaPublic` → `rsaEncrypt` → 提交，禁止明文

@@ -1,7 +1,10 @@
 import { getApiClient } from '@/api/kiota'
 
 export const SettingKeys = {
-  oauthAutoRegister: 'oauth_auto_register',
+  neo4jEnabled: 'OPEN_NEO4J',
+  neo4jUri: 'NEO4J_URI',
+  neo4jUsername: 'NEO4J_USERNAME',
+  neo4jPassword: 'NEO4J_PASSWORD',
 } as const
 
 export async function getSettings() {

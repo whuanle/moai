@@ -14,7 +14,8 @@ import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
 import { TeamManage } from '@/pages/teams/TeamManage'
 import { Wiki } from '@/pages/wiki/Wiki'
-import { WikiDocuments } from '@/pages/wiki/WikiDocuments'
+import { WikiDetail } from '@/pages/wiki/WikiDetail'
+import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
 import { Plugins } from '@/pages/plugins/Plugins'
 import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
 import { ClassifyPage } from '@/pages/classify/Classify'
@@ -38,8 +39,9 @@ export const router = createBrowserRouter([
       { path: 'users', element: <Users /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
+      { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
+      { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'wiki', element: <Wiki /> },
-      { path: 'wiki/:id', element: <WikiDocuments /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },

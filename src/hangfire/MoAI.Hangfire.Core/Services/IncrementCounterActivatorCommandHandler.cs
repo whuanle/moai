@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
+using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Hangfire.Services;
@@ -33,16 +34,23 @@ public class IncrementCounterActivatorCommandHandler : IRequestHandler<Increment
 
         _validator.ValidateAndThrow(request);
 
-        List<Task> tasks = new();
-        var batch = _redisDatabase.Database.CreateBatch();
+        RedisValue[] arguments = new RedisValue[request.Counters.Count * 2];
+        var index = 0;
         foreach (var item in request.Counters)
         {
-            var task = batch.HashIncrementAsync($"counter:{request.Name}", item.Key, item.Value);
-            tasks.Add(task);
+            arguments[index++] = item.Key;
+            arguments[index++] = item.Value;
         }
 
-        batch.Execute();
-
-        await Task.WhenAll(tasks);
+        const string Script = """
+            for i = 1, #ARGV, 2 do
+                redis.call('HINCRBY', KEYS[1], ARGV[i], ARGV[i + 1])
+            end
+            return 1
+            """;
+        await _redisDatabase.ScriptEvaluateAsync(
+            Script,
+            [new RedisKey($"counter:{request.Name}")],
+            arguments);
     }
 }

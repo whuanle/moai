@@ -22,13 +22,13 @@ description: Orchestrate a full-stack feature in the MoAI project (backend CQRS 
 
 1. **澄清需求**：资源名、字段、谁有权操作（admin/root/所有人）、是否需要管理页。
 2. **后端** → 按 `L2-code-standards/moai-cqrs-backend` 执行（Shared/Core/Api 三层）。
-3. **API 同步**：后端起在 `:5210`（`MAI_FILE=/Users/wen/project/maomi/local-dev/system.local.json ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/MoAI`），然后 `cd ui && npm run syncapi http://127.0.0.1:5210/openapi/v1.json`。
+3. **API 同步**：`cd src/MoAI && dotnet run`（默认 `:5000`，取自 `MoAI:Port`；`MAI_FILE=/path/to/system.local.json ASPNETCORE_ENVIRONMENT=Development dotnet run` 可覆盖端口），然后 `cd ui && npm run syncapi`（默认拉 `http://127.0.0.1:5000/openapi/v1.json`，端口不同则显式传参；后端未起可用 `src/MoAI/MoAI.json` 离线生成）。细节见 `docs/api_interface.md`。
 4. **前端** → 按 `L2-code-standards/moai-frontend-ui` 执行（api 封装 + 页面 + i18n + 测试）。
 5. **验证**（全绿才算完成）：
    ```bash
    dotnet build src/MoAI/MoAI.csproj
    cd ui && npm run typecheck && npm run lint && npm run test
-   # e2e 按模块选：node local-dev/user-management-e2e.mjs 等（需后端 :5210）
+   # e2e 按模块选：node local-dev/user-management-e2e.mjs 等（需后端运行中）
    ```
 6. **审查**：改动多时按 `L3-fix-standards/moai-cqrs-review` 清单过一遍。
 7. **回填**：踩到新坑 → 登记 Obsidian `99-问题台账`；沉淀新流程 → 按 `skills/README.md` 新增规则落新 skill。

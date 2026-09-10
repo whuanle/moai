@@ -71,7 +71,7 @@ public class WikiController : ControllerBase
     [HttpPut("{id}")]
     public async Task<EmptyCommandResponse> UpdateWiki(long id, [FromBody] UpdateWikiCommand req, CancellationToken ct)
     {
-        var cmd = new UpdateWikiCommand { WikiId = id, Name = req.Name, Description = req.Description };
+        var cmd = new UpdateWikiCommand { WikiId = id, Name = req.Name, Description = req.Description, IsPublic = req.IsPublic };
         return await _mediator.Send(cmd, ct);
     }
 
@@ -88,66 +88,69 @@ public class WikiController : ControllerBase
     }
 
     /// <summary>
-    /// 查询知识库的文档列表（不含正文），仅团队成员可访问.
+    /// 设置知识库头像，仅团队 Admin 及以上可操作.
     /// </summary>
-    /// <param name="wikiId">知识库 id.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryWikiDocumentsCommandResponse"/>.</returns>
-    [HttpGet("{wikiId}/documents")]
-    public Task<QueryWikiDocumentsCommandResponse> QueryWikiDocuments(long wikiId, CancellationToken ct)
-    {
-        return _mediator.Send(new QueryWikiDocumentsCommand { WikiId = wikiId }, ct);
-    }
-
-    /// <summary>
-    /// 创建文档，全体团队成员可协作.
-    /// </summary>
-    /// <param name="wikiId">知识库 id.</param>
-    /// <param name="req">创建请求.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回文档 <see cref="SimpleLong"/>.</returns>
-    [HttpPost("{wikiId}/documents")]
-    public async Task<SimpleLong> CreateWikiDocument(long wikiId, [FromBody] CreateWikiDocumentCommand req, CancellationToken ct)
-    {
-        var cmd = new CreateWikiDocumentCommand { WikiId = wikiId, Title = req.Title, Content = req.Content };
-        return await _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 查询文档详情（含正文），仅团队成员可访问.
-    /// </summary>
-    /// <param name="documentId">文档 id.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="QueryWikiDocumentCommandResponse"/>.</returns>
-    [HttpGet("document/{documentId}")]
-    public Task<QueryWikiDocumentCommandResponse> QueryWikiDocument(long documentId, CancellationToken ct)
-    {
-        return _mediator.Send(new QueryWikiDocumentCommand { DocumentId = documentId }, ct);
-    }
-
-    /// <summary>
-    /// 更新文档，全体团队成员可协作.
-    /// </summary>
-    /// <param name="documentId">文档 id.</param>
-    /// <param name="req">更新请求.</param>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">头像请求.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPut("document/{documentId}")]
-    public async Task<EmptyCommandResponse> UpdateWikiDocument(long documentId, [FromBody] UpdateWikiDocumentCommand req, CancellationToken ct)
+    [HttpPost("{id}/avatar")]
+    public Task<EmptyCommandResponse> UpdateWikiAvatar(long id, [FromBody] UpdateWikiAvatarCommand req, CancellationToken ct)
     {
-        var cmd = new UpdateWikiDocumentCommand { DocumentId = documentId, Title = req.Title, Content = req.Content };
-        return await _mediator.Send(cmd, ct);
+        var cmd = new UpdateWikiAvatarCommand { WikiId = id, ObjectKey = req.ObjectKey };
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>
-    /// 删除文档，需要团队 Admin 及以上角色.
+    /// 查询团队可用的向量化/对话模型选项（公开模型 + 已授权模型），仅团队成员可访问.
     /// </summary>
-    /// <param name="documentId">文档 id.</param>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiModelOptionsCommandResponse"/>.</returns>
+    [HttpGet("model-options")]
+    public Task<QueryWikiModelOptionsCommandResponse> QueryWikiModelOptions([FromQuery] int teamId, CancellationToken ct)
+    {
+        return _mediator.Send(new QueryWikiModelOptionsCommand { TeamId = teamId }, ct);
+    }
+
+    /// <summary>
+    /// 更新知识库向量化配置（向量化模型 + 维度，上限 2000），仅团队 Admin 及以上可操作.
+    /// 一旦 wiki 上已有文档被向量化（IsLock=true），该接口将返回 409.
+    /// 重排序模型不受该限制，见 <see cref="UpdateWikiRerankModel"/>.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">向量化配置请求.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpDelete("document/{documentId}")]
-    public Task<EmptyCommandResponse> DeleteWikiDocument(long documentId, CancellationToken ct)
+    [HttpPut("{id}/embedding-config")]
+    public Task<EmptyCommandResponse> UpdateWikiEmbedding(long id, [FromBody] UpdateWikiEmbeddingCommand req, CancellationToken ct)
     {
-        return _mediator.Send(new DeleteWikiDocumentCommand { DocumentId = documentId }, ct);
+        var cmd = new UpdateWikiEmbeddingCommand
+        {
+            WikiId = id,
+            EmbeddingModelId = req.EmbeddingModelId,
+            EmbeddingDimensions = req.EmbeddingDimensions,
+        };
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 更新知识库重排序模型配置，仅团队 Admin 及以上可操作.
+    /// 重排序模型可选：传 null（或不传）表示不使用重排序.
+    /// 与向量化配置解耦：知识库锁定（IsLock=true）后仍可绑定、更换或解绑.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">重排序模型请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id}/rerank-model")]
+    public Task<EmptyCommandResponse> UpdateWikiRerankModel(long id, [FromBody] UpdateWikiRerankModelCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateWikiRerankModelCommand
+        {
+            WikiId = id,
+            RerankModelId = req.RerankModelId,
+        };
+        return _mediator.Send(cmd, ct);
     }
 }

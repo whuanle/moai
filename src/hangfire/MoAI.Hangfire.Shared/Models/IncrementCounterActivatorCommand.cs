@@ -17,11 +17,14 @@ public class IncrementCounterActivatorCommand : IRequest, IModelValidator<Increm
     /// <summary>
     /// 批量增加计数器，key 是 id，value 是数量.
     /// </summary>
-    public IReadOnlyDictionary<string, int> Counters { get; init; } = new Dictionary<string, int>();
+    public IReadOnlyDictionary<string, long> Counters { get; init; } = new Dictionary<string, long>();
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<IncrementCounterActivatorCommand> validate)
     {
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空");
+        validate.RuleFor(x => x.Counters)
+            .Must(x => x.Values.All(value => value > 0))
+            .WithMessage("计数增量必须大于 0");
     }
 }

@@ -1,73 +1,100 @@
 # MoAI 开发指南（AGENTS.md）
 
-> 面向 AI 编码助手与开发者的项目入口文档。所有规范文档见 [docs/README.md](./docs/README.md)，本文只做索引与硬约束摘要。
+> 项目入口文档。只讲现状、硬约束、文档索引；规范细节一律以 `docs/`、`ui/docs/` 真源为准，本文不复制全文。
+> 动后端前读 [cqrs-conventions.md](./docs/cqrs-conventions.md)，动前端前读 [frontend-conventions.md](./ui/docs/frontend-conventions.md) + [design-system](./ui/docs/design-system/README.md)，改已有模块先读其 `sdd.md`/`bdd.md`，**写任何文档前必读 [DOC-STANDARD.md](./docs/DOC-STANDARD.md)**。
 
 ## 项目简介
 
-MoAI 是开源 AI 应用平台（.NET 10 后端 + React 19 前端）。当前处于**平台底座阶段**：认证、账号、用户治理、设置、OAuth 连接器、文件存储、后台任务、**团队协作**（建团/成员/角色，2026-09-02 落地）已就绪；AI 业务层（聊天/知识库/插件/工作流，Semantic Kernel）尚未实现。
+开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
 ```
-├── src/                  # 后端（模块化单体，唯一可执行项目 src/MoAI）
-│   ├── MoAI/             # 组合宿主：Program.cs、模块注册、中间件
-│   ├── auth/             # 认证：登录/注册/OAuth/刷新 Token（JWT）
-│   ├── account/          # 账号自助 + 管理员用户治理（/usermanage）
-│   ├── settings/         # 系统设置（setting 表 KV）
-│   ├── oauthconnect/     # 第三方 OAuth 连接器 CRUD（管理员）
-│   ├── storage/          # S3 兼容文件存储（MinIO），/static 中转
-│   ├── team/             # 团队协作：建团/成员/角色（bool 软删除 + partial 唯一索引）
-│   ├── database/         # EF Core + PostgreSQL(pgvector) + Redis 注册
-│   ├── hangfire/         # 后台任务（Redis 存储，桥接 MediatR）
-│   ├── common/           # serverinfo（RSA 公钥下发）等
-│   └── infra/            # 配置加载（MAI_FILE）、Refit、MQ 抽象
-├── ui/                   # 前端（React 19 + TS + Vite + antd 5 + zustand）
-└── docs/                 # 全部规范与功能文档（见 docs/README.md）
+src/MoAI/         组合宿主（Program.cs、MainModule、OpenApiModule）
+src/{auth,account,settings,oauthconnect,storage,common,infra,database,hangfire}/   平台底座
+src/{classify,team,teamplugin,variable,wiki}/                                      团队协作
+src/{aichannel,aimodel,aiplugin,gateway}/                                          AI 业务层
+src/{ai,admin,plugin}/                                                             在建
+ui/               前端（React 19 + TS + Vite + antd 5 + zustand + Kiota）
+docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NET 单测
 ```
 
 ## 硬约束（违反即返工）
 
-**后端：**
-- CQRS 三层：`*.Shared`（Command/Query 定义 + `IModelValidator<T>`）→ `*.Core`（Handler）→ `*.Api`（Controller）。详见 [docs/cqrs-conventions.md](./docs/cqrs-conventions.md)
-- 角色门禁（admin/root 判断）只在 Controller 层；目标保护规则（不能操作 root/自己/其他 admin）在 Handler 层
-- 写用户相关数据后必须 `RemoveUserStateAsync` 失效 Redis 用户态缓存
-- 密码一律 RSA(PKCS1) 密文传输，服务端解密后校验强度，`PBKDF2Helper.ToHash` 落库
+**后端**（[真源](./docs/cqrs-conventions.md)）
+- CQRS 三层：`*.Shared`（Command/Query）→ `*.Core`（Handler）→ `*.Api`（Controller），依赖单向
+- 请求模型必须实现 `IModelValidator<T>` 并写 `static Validate`
+- 角色门禁只在 Controller；目标保护规则（不能动 root/自己/其他 admin）在 Handler
+- Handler **禁止注入** `IUserContextProvider`/`UserContext`；需用户维度时 Command 继承 `IUserIdContext`
+- 改用户相关数据后必须 `RemoveUserStateAsync` 失效 Redis 用户态
+- 密码：RSA(PKCS1) 传输 → 解密校验强度 → `PBKDF2Helper.ToHash` 落库
+- 审计属性与软删除由框架注入/过滤，禁止手动赋值或写 `.Where(IsDeleted == 0)`
+- 时间用 `DateTimeOffset`；Guid 用 `Guid.CreateVersion7()`；枚举必须带 `JsonPropertyName`
+- `BusinessException` 必须显式设 `StatusCode`（否则默认 500）
+- DI 用 Maomi 特性（`[InjectOnScoped]`），不手写 `AddScoped`
+- 列表 DTO 继承 `AuditsInfo`，用 `IUserInfoFillService.FillAsync` 填充人名
 
-**前端（详见 [ui/docs/frontend-conventions.md](./ui/docs/frontend-conventions.md) 与 [ui/docs/design-system/](./ui/docs/design-system/README.md)）：**
-- 禁止直接 import antd 的 Table/Form 等被设计系统封装的组件，用 `src/design-system/components/*`
-- 颜色/间距必须用 token，禁止硬编码
-- 危险操作必须 Popconfirm；文案全部走 i18n（zh-CN + en-US 同步改）
-- API 客户端是 Kiota 生成的（`ui/src/api/client/`，勿手改），`npm run syncapi http://127.0.0.1:5210/openapi/v1.json` 重新生成；手写封装放 `ui/src/api/*.ts`
+**前端**（[真源](./ui/docs/frontend-conventions.md)）
+- 禁止直接 import antd `Table`/`Form` 等被封装组件，一律用 `@/design-system`
+- 颜色/间距取 token，禁 `#hex` 硬编码；危险操作必须 `Popconfirm`
+- 文案全走 `t()`，zh-CN 与 en-US 同步改
+- `src/api/client/` 是 Kiota 生成物**禁手改**；手写封装放 `src/api/*.ts`，页面只调封装层
+- Kiota 锁 `1.0.0-preview.93`，勿用 `^` 升级
+- `Page` 不重复渲染大标题、不加 `maxWidth`；操作栏左对齐；Modal 一律 `maskClosable={false}`
+- 时间用 `formatDateTime()`；提示用 `App.useApp()` 的 message，不用静态 `message`
 
-## 本地开发
+**前后端对接**（[真源](./docs/api_interface.md)）
+- 流程：写后端 Controller → `cd src/MoAI && dotnet run` → `cd ui && npm run syncapi`
+- 接口文档由 NSwag 自动生成，`/openapi/v1.json`，仅 Development 暴露；勿手写接口文档
+- 前后对接务必使用 kiota，禁止自行拼接 http 请求
 
-- 后端：`src/MoAI` 下 `MAI_FILE=/Users/wen/project/maomi/local-dev/system.local.json ASPNETCORE_ENVIRONMENT=Development dotnet run`（端口 5210）
-- 前端：`ui/` 下 `npm run dev`（端口 4000）
-- 基础设施容器：moai-postgres(5432)、moai-redis(55379)、moai-rabbitmq(55672)、moai-minio(9000)
-- 种子账号：admin / abcd123456（root）
-- GitHub 直连会失败，git 操作带代理：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 fetch`
-
-## 验证命令（提交前全绿）
-
-```
-dotnet build src/MoAI/MoAI.csproj          # 后端 0 error
-cd ui && npm run typecheck && npm run lint && npm run test   # 前端全绿
-node local-dev/user-management-e2e.mjs     # e2e（需后端 5210 运行中）
-```
+**文档**（[真源](./docs/DOC-STANDARD.md)）
+- 改代码 → 更新 `bdd.md` 场景 → `tdd.md` 补映射并执行 → `sdd.md`/`sop.md` 同步
+- 场景编号 `@<缩写>-S<n>` 永久不复用；分层不重复内容，跨层一律链接
 
 ## 文档索引
 
-- 文档地图（L0 导航）与 23 轮模块四件套（SDD/BDD/TDD/SOP）：[docs/README.md](./docs/README.md)
-- **写任何文档前必读**：[docs/DOC-STANDARD.md](./docs/DOC-STANDARD.md)（分层 L0–L3、Gherkin 场景编号、互链规则）
-- 轮次闭环台账（含每轮真实证据）：[docs/rounds-log.md](./docs/rounds-log.md)
+- [docs/README.md](./docs/README.md) — 文档地图（L0）与模块四件套索引
+- [cqrs-conventions.md](./docs/cqrs-conventions.md) ｜ [api_interface.md](./docs/api_interface.md) ｜ [DOC-STANDARD.md](./docs/DOC-STANDARD.md)
+- [aiplugin-authoring.md](./docs/aiplugin-authoring.md) ｜ [settings.md](./docs/settings.md) ｜ [storage-file-layout.md](./docs/storage-file-layout.md)
+- [ui/AGENTS.md](./ui/AGENTS.md) — 前端专属入口（动 `ui/` 时读这份）
+- [frontend-conventions.md](./ui/docs/frontend-conventions.md) ｜ [design-system](./ui/docs/design-system/README.md)
+- [rounds-log.md](./docs/rounds-log.md) — 轮次闭环台账与证据
+
+> ⚠️ `docs/README.md` 模块地图滞后于 `src/`：`aichannel`、`gateway`、`aimodel`、`ai`、`admin`、`plugin` 尚无四件套，改动以源码为准并补文档。
+
+## 本地开发
+
+- 后端：`cd src/MoAI && dotnet run`，默认 **5000**（同监听 5001），取自 `MoAI:Port`；`MAI_FILE=... ASPNETCORE_ENVIRONMENT=Development dotnet run` 可覆盖
+- 文档：`http://127.0.0.1:5000/openapi/v1.json` ｜ Scalar：`/scalar/v1`
+- 前端：`cd ui && npm run dev`（4000）
+- 容器（docker compose）：postgres 5432、redis 6379、rabbitmq 5672/15672；**MinIO 不在 compose 中**，由 `MoAI:Storage:Endpoint` 指向外部实例
+- 种子账号：admin / abcd123456（root）
+- git 需代理：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 fetch`
+
+## 验证命令（提交前全绿）
+
+```bash
+dotnet build src/MoAI/MoAI.csproj                 # 0 error
+cd ui && npm run typecheck && npm run lint && npm run test
+# E2E（需后端运行中）
+node local-dev/user-management-e2e.mjs   # UM 34
+node local-dev/team-e2e.mjs              # TM 47
+node local-dev/wiki-e2e.mjs              # WK 23
+node local-dev/variable-e2e.mjs          # VR 26
+node local-dev/audit-345.mjs node local-dev/audit-storage.mjs node local-dev/auth-lockout-check.mjs
+```
 
 ## Skills
 
-项目专属开发 skill（AI 助手触发），按职责分层，总入口：[agent-tools/skills/README.md](./agent-tools/skills/README.md)。
+分层总入口 [agent-tools/skills/README.md](./agent-tools/skills/README.md)，跨层只能上层调下层。
 
-- **L1-orchestration/moai-feature** — 全栈新功能编排（后端 → syncapi → 前端 → 验证）
-- **L2-code-standards/moai-cqrs-backend** — 后端 CQRS 三层细则（真源 `docs/cqrs-conventions.md`）
-- **L2-code-standards/moai-frontend-ui** — 前端页面细则（真源 `ui/docs/frontend-conventions.md` + design-system）
-- **L3-fix-standards/moai-cqrs-review** — 铁律审查与修复五步标准
+| 层 | Skill | 职责 |
+|---|---|---|
+| L1 | `moai-feature` | 全栈新功能编排（后端 → syncapi → 前端 → 验证） |
+| L2 | `moai-cqrs-backend` | 后端 CQRS 三层细则 |
+| L2 | `moai-frontend-ui` | 前端页面细则（design-system / Kiota / i18n） |
+| L3 | `moai-cqrs-review` | 铁律审查与修复五步标准 |
 
-全局副本：`~/.zcode/skills/moai-code-organization/`。新增 skill 按 `skills/README.md` 规则登记。Obsidian 镜像：`MoAI/SOP-端到端场景/98-框架代码开发Skill规范`。
+新增 skill 需在 `skills/README.md` 与本文同时登记；skill 只写浓缩铁律与实踩坑，用 REQUIRED REFERENCE 指向 `docs/` 真源。

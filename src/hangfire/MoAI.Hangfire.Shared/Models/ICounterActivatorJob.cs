@@ -16,5 +16,5 @@ public interface ICounterActivatorJob
     /// </summary>
     /// <param name="values"></param>
     /// <returns></returns>
-    Task ActivateAsync(IReadOnlyDictionary<string, int> values);
+    Task ActivateAsync(IReadOnlyDictionary<string, long> values);
 }

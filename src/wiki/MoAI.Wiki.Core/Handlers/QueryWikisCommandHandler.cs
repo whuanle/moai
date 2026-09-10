@@ -53,6 +53,8 @@ public class QueryWikisCommandHandler : IRequestHandler<QueryWikisCommand, Query
                 TeamId = x.TeamId,
                 Name = x.Name,
                 Description = x.Description,
+                IsPublic = x.IsPublic,
+                AvatarPath = x.AvatarPath,
                 CreateTime = x.CreateTime
             })
             .ToListAsync(cancellationToken);

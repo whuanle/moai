@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Descriptions, Empty, Form, Input, Layout, Menu, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
+import { Avatar, Button, Descriptions, Form, Input, Layout, Menu, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
 import type { MenuProps, TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
 import {
@@ -25,6 +25,7 @@ import { formatDateTime } from '@/utils/datetime'
 import { Variables } from '@/pages/variables/Variables'
 import { TeamGateway } from '@/pages/teams/TeamGateway'
 import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
+import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
 import {
   addTeamUser,
   dissolveTeam,
@@ -443,7 +444,7 @@ export function TeamManage() {
             <TeamGateway teamId={teamId} canManage={isOwner || detail?.myRole === ROLE_ADMIN} />
           ) : section === 'knowledge' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <Empty description={t('team.knowledge')} />
+              <TeamWikis teamId={teamId} />
             </DSCard>
           ) : section === 'plugins' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>

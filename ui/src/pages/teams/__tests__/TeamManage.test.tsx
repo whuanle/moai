@@ -6,6 +6,15 @@ import { useAppStore } from '@/store/app'
 import { dissolveTeam, getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
 import { getVariables } from '@/api/variable'
 import { getTeamPlugins } from '@/api/team-plugin'
+import { getWikis } from '@/api/wiki'
+
+vi.mock('@/api/wiki', () => ({
+  getWikis: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, items: [] }),
+  getWikiDetail: vi.fn(),
+  createWiki: vi.fn().mockResolvedValue(1),
+  updateWiki: vi.fn().mockResolvedValue(undefined),
+  deleteWiki: vi.fn().mockResolvedValue(undefined),
+}))
 
 vi.mock('@/api/variable', () => ({
   getVariables: vi.fn().mockResolvedValue({
@@ -184,12 +193,13 @@ describe('TeamManage', () => {
     expect(screen.queryByText(/解\s*散/)).not.toBeInTheDocument()
   })
 
-  it('知识库菜单展示占位空态，插件菜单嵌入团队插件组件', async () => {
+  it('知识库菜单嵌入团队知识库管理组件并按团队加载', async () => {
     renderManage()
 
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByText('知识库'))
-    expect(await screen.findByText('知识库', { selector: '.ant-empty-description' })).toBeInTheDocument()
+    expect(getWikis).toHaveBeenCalledWith(7)
+    expect(await screen.findByRole('button', { name: /新建知识库/ })).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('插件'))
     expect(await screen.findByText(/本团队共有 0 个私有插件/)).toBeInTheDocument()

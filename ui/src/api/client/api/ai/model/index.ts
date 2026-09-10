@@ -43,7 +43,7 @@ export interface ModelRequestBuilder extends BaseRequestBuilder<ModelRequestBuil
      */
      byId(id: Guid) : ModelItemRequestBuilder;
     /**
-     * 查询 AI 模型列表，可按渠道过滤（仅管理员可访问）.
+     * 查询 AI 模型列表，可按渠道和团队过滤（仅管理员可访问）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAIModelListCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -66,7 +66,7 @@ export interface ModelRequestBuilder extends BaseRequestBuilder<ModelRequestBuil
      */
      post(body: CreateAIModelCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 查询 AI 模型列表，可按渠道过滤（仅管理员可访问）.
+     * 查询 AI 模型列表，可按渠道和团队过滤（仅管理员可访问）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -80,18 +80,22 @@ export interface ModelRequestBuilder extends BaseRequestBuilder<ModelRequestBuil
      toPostRequestInformation(body: CreateAIModelCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
 }
 /**
- * 查询 AI 模型列表，可按渠道过滤（仅管理员可访问）.
+ * 查询 AI 模型列表，可按渠道和团队过滤（仅管理员可访问）.
  */
 export interface ModelRequestBuilderGetQueryParameters {
     /**
      * 渠道 id，为空时查询全部.
      */
     channelId?: Guid;
+    /**
+     * 团队 id，传入时仅返回公开或已授权给该团队的模型.
+     */
+    teamId?: number;
 }
 /**
  * Uri template for the request builder.
  */
-export const ModelRequestBuilderUriTemplate = "{+baseurl}/api/ai/model{?channelId*}";
+export const ModelRequestBuilderUriTemplate = "{+baseurl}/api/ai/model{?channelId*,teamId*}";
 /**
  * Metadata for all the navigation properties in the request builder.
  */

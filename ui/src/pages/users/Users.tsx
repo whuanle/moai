@@ -12,7 +12,7 @@ import type { DescriptionsProps, TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { Page, DataTable, QueryBar, feedback } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { controlHeight, spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { refreshUserProfile } from '@/api/auth'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -27,6 +27,13 @@ import {
 } from '@/api/usermanage'
 
 const { Text } = Typography
+
+const pageVerticalPadding = spacing.lg * 2
+const queryBarHeight = controlHeight + spacing.lg
+const tableHeaderHeight = 55
+const tablePaginationHeight = 57
+const usersPageHeight = `calc(100vh - ${pageVerticalPadding}px)`
+const usersTableScrollY = `calc(100vh - ${pageVerticalPadding + queryBarHeight + tableHeaderHeight + tablePaginationHeight}px)`
 
 interface PasswordFormValues {
   newPassword: string
@@ -321,41 +328,40 @@ export function Users() {
 
   return (
     <Page>
-      <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
-        <Form.Item name="searchText">
-          <Input
-            placeholder={t('users.searchPlaceholder')}
-            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
-            allowClear
-            maxLength={50}
-            style={{ width: 280 }}
+      <div style={{ display: 'flex', flexDirection: 'column', height: usersPageHeight, minHeight: 0 }}>
+        <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
+          <Form.Item name="searchText">
+            <Input
+              placeholder={t('users.searchPlaceholder')}
+              prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+              allowClear
+              maxLength={50}
+              style={{ width: 280 }}
+            />
+          </Form.Item>
+        </QueryBar>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <DataTable<UserListItem>
+            rowKey="id"
+            columns={columns}
+            dataSource={items}
+            loading={loading}
+            sticky
+            scroll={{ x: 880, y: usersTableScrollY }}
+            pagination={{
+              current: pageNo,
+              pageSize,
+              total: totalCount,
+              showSizeChanger: true,
+              onChange: (page, size) => {
+                setPageNo(page)
+                setPageSize(size)
+                void load(page, size, searchText)
+              },
+            }}
           />
-        </Form.Item>
-      </QueryBar>
-      <DataTable<UserListItem>
-        rowKey="id"
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        sticky
-        scroll={{ x: 880 }}
-        toolbar={
-          <Text type="secondary">{t('ds.table.total', { total: totalCount })}</Text>
-        }
-        onRefresh={() => void load(pageNo, pageSize, searchText)}
-        refreshLoading={loading}
-        pagination={{
-          current: pageNo,
-          pageSize,
-          total: totalCount,
-          showSizeChanger: true,
-          onChange: (page, size) => {
-            setPageNo(page)
-            setPageSize(size)
-            void load(page, size, searchText)
-          },
-        }}
-      />
+        </div>
+      </div>
       <Modal
         open={detailOpen}
         title={t('users.detailTitle')}

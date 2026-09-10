@@ -32,7 +32,7 @@ public partial class AiModelUsageLogEntity : IFullAudited
     /// <summary>
     /// 实际调用者用户id.
     /// </summary>
-    public int UserId { get; set; }
+    public long UserId { get; set; }
 
     /// <summary>
     /// 完成数量.

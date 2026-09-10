@@ -1,7 +1,7 @@
 # 前端管理页（Settings / OauthConnect）行为规格（BDD，Gherkin）
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（操作与验收流程）
-> 编号规则与标签语义见 [../../../docs/DOC-STANDARD.md](../../../docs/DOC-STANDARD.md) 第 3 节。两页无组件自动化，均为浏览器走查场景；后端门禁与接口行为以上游 BDD 为准。
+> 编号规则与标签语义见 [../../../docs/DOC-STANDARD.md](../../../docs/DOC-STANDARD.md) 第 3 节。Settings 页有组件单测（`settings/__tests__/Settings.test.tsx`），OauthConnect 仍为浏览器走查；后端门禁与接口行为以上游 BDD 为准。
 
 ```gherkin
 Feature: 管理菜单可见性（AppSider）
@@ -9,7 +9,8 @@ Feature: 管理菜单可见性（AppSider）
   Scenario: 管理员看到管理菜单
     Given 管理员已登录
     When 查看侧边栏
-    Then 管理组在主导航下以分隔线展示：插件、用户、第三方登录、设置
+    Then 管理组在主导航下以分隔线展示：插件、用户、第三方登录
+    And root 额外可见「设置」，非 root 管理员不可见
 
   @FE-PG-S2 @manual
   Scenario: 普通用户看不到管理菜单
@@ -26,8 +27,8 @@ Feature: 管理菜单可见性（AppSider）
 
 Feature: 页面门禁
   @FE-PG-S4 @manual
-  Scenario: 普通用户访问系统设置页被重定向
-    Given 普通用户已登录
+  Scenario: 非 root 访问系统设置页被重定向
+    Given 普通用户或非 root 管理员已登录
     When 直接访问系统设置页
     Then 被重定向回概览页
 
@@ -44,28 +45,27 @@ Feature: 页面门禁
     When 绕过页面直接调用管理接口
     Then 后端返回没有权限（403）
 
-Feature: OAuth 自动注册开关（/settings）
+Feature: Neo4j 知识图谱开关（/settings，root 专属）
   Background:
-    Given 管理员已登录并进入系统设置页
+    Given root 已登录并进入系统设置页
 
-  @FE-PG-S7 @manual
+  @FE-PG-S7 @auto:vitest
   Scenario: 查看当前值
     When 页面加载完成
-    Then 自动注册开关反映设置项当前值
+    Then 知识图谱开关与连接字段反映设置项当前值
     And 未修改时保存按钮不可点
 
-  @FE-PG-S8 @manual
+  @FE-PG-S8 @auto:vitest
   Scenario: 打开开关并保存
-    When 切换开关为开并点击保存
-    Then 提示保存成功
+    When 打开开关、填写连接信息并点击保存
+    Then 分别保存开关与三项连接设置
     And 保存按钮恢复禁用
-    And 后续第三方登录遇未注册用户时自动建号
 
   @FE-PG-S9 @manual
   Scenario: 保存失败回滚
-    Given 开关当前为关
-    When 切换为开后保存失败
-    Then 页面自动恢复开关为数据库真实值
+    Given root 修改了开关或连接字段
+    When 保存失败
+    Then 页面自动恢复为数据库真实值
     And 界面不残留假状态
 
 Feature: 渠道列表（/oauthconnect）

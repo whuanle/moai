@@ -47,12 +47,18 @@ public partial class WikiEntity : IFullAudited
     /// <summary>
     /// 向量化模型的id.
     /// </summary>
-    public int EmbeddingModelId { get; set; }
+    public Guid EmbeddingModelId { get; set; }
 
     /// <summary>
     /// 知识库向量维度.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
+
+    /// <summary>
+    /// 重排序模型id，可选，为空表示不使用重排序.
+    /// 与向量化配置解耦：知识库锁定（已有文档向量化）后仍可修改.
+    /// </summary>
+    public Guid? RerankModelId { get; set; }
 
     /// <summary>
     /// 团队头像.

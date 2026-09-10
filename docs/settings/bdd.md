@@ -1,4 +1,4 @@
-# 系统设置（Settings）行为规格（BDD，Gherkin）
+﻿# 系统设置（Settings）行为规格（BDD，Gherkin）
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（操作与验收流程）
 > 编号规则与标签语义见 [../DOC-STANDARD.md](../DOC-STANDARD.md) 第 3 节。术语：root=超级管理员；admin=管理员（root 隐含）；member=普通用户。
@@ -6,14 +6,14 @@
 ```gherkin
 Feature: 查询设置项
   Background:
-    Given 系统内置设置项 oauth_auto_register（默认值 "false"）
+    Given 系统内置设置项 OPEN_NEO4J（默认值 "false"）
 
   @SET-S1 @auto:e2e
   Scenario: 管理员查询设置项
     Given admin 已登录
     When 请求设置项列表
     Then 返回全部内置项，每项含 key/名称/描述/当前值
-    And oauth_auto_register 的值为数据库当前值（无记录时为默认值）
+    And OPEN_NEO4J 的值为数据库当前值（无记录时为默认值）
 
   @SET-S2 @auto:e2e
   Scenario: 普通用户无权查询
@@ -32,13 +32,13 @@ Feature: 保存设置项
 
   @SET-S4 @auto:e2e
   Scenario: root 保存设置项并回读生效
-    When 保存 oauth_auto_register 为 "true"
+    When 保存 OPEN_NEO4J 为 "true"
     Then 操作成功
     And 再次查询时该项值为 "true"
 
   @SET-S5 @manual
   Scenario: root 关闭开关
-    When 保存 oauth_auto_register 为 "false"
+    When 保存 OPEN_NEO4J 为 "false"
     Then 操作成功且回读为 "false"
 
   @SET-S6 @auto:e2e
@@ -65,25 +65,18 @@ Feature: 保存设置项
     Then 返回禁止访问（403）提示只有超级管理员可以修改设置项
     And 设置值未被修改
 
-Feature: 设置项的业务效果
-  @SET-S10 @auto:e2e
-  Scenario: 开启第三方自动注册后直通登录
-    Given oauth_auto_register 已设为 "true"
-    When 未注册用户以第三方账号授权登录
-    Then 自动创建账号并直接登录（不进入待绑定引导）
-
 Feature: 前端设置页（/settings）
   @SET-S11 @manual
-  Scenario: 管理员进入设置页
-    Given admin 登录并进入系统设置页
-    Then 展示内置项的名称、描述与开关
+  Scenario: root 进入设置页
+    Given root 登录并进入系统设置页
+    Then 展示知识图谱开关的名称、描述
     And 开关状态与后端值一致
 
   @SET-S12 @manual
   Scenario: 保存按钮脏检查
     When 未修改任何值
     Then 保存按钮置灰不可点
-    When 切换开关
+    When 切换开关或修改连接字段
     Then 保存按钮可用
 
   @SET-S13 @manual
@@ -94,9 +87,9 @@ Feature: 前端设置页（/settings）
 
   @SET-S14 @manual
   Scenario: 保存失败回滚
-    Given admin 登录（后端将拒绝保存）
-    When 切换开关并保存
-    Then 前端重新加载，开关恢复为数据库真实值
+    Given root 登录（后端将拒绝保存）
+    When 修改开关或字段并保存
+    Then 前端重新加载，恢复为数据库真实值
 
   @SET-S15 @manual
   Scenario: 普通用户访问设置页被重定向
@@ -104,4 +97,36 @@ Feature: 前端设置页（/settings）
     When 直接访问设置页
     Then 被重定向到仪表盘
     And 接口层同时返回 403
+
+Feature: 知识图谱设置（Neo4j）
+  Background:
+    Given 系统内置设置项 OPEN_NEO4J（默认值 "false"）与 NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD（默认空串）
+
+  @SET-S16 @auto:vitest
+  Scenario: root 开启知识图谱并保存连接信息
+    Given root 登录并进入系统设置页
+    When 打开「开启 Neo4j 知识图谱」并填写连接地址、用户名、密码后保存
+    Then 分别保存 OPEN_NEO4J="true" 与三项连接设置
+    And 回读时开关与连接信息与提交值一致
+
+  @SET-S17 @auto:vitest
+  Scenario: 关闭知识图谱不提交连接信息
+    Given root 在系统设置页
+    When 保持/切回「开启 Neo4j 知识图谱」为关闭并保存
+    Then 仅保存 OPEN_NEO4J="false"
+    And 不提交 NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD
+
+  @SET-S18 @auto:vitest
+  Scenario: 非 root 管理员访问设置页被重定向
+    Given admin 已登录但不是 root
+    When 打开系统设置页
+    Then 被重定向到仪表盘且不渲染知识图谱卡片与连接字段
+
+  @SET-S19 @manual
+  Scenario: 业务读取知识图谱配置
+    Given OPEN_NEO4J 为 "false"
+    When 业务模块调用 IKnowledgeGraphSettingsService
+    Then 返回 Enabled=false 且不携带连接信息
+    When OPEN_NEO4J 为 "true" 且已填写连接信息
+    Then 返回 Enabled=true 与该连接信息
 ```

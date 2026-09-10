@@ -23,7 +23,7 @@ npm run lint
 
 ```tsx
 vi.mock('@/api/settings', () => ({
-  getSettings: vi.fn().mockResolvedValue({ items: [{ key: 'oauth_auto_register', value: 'false' }] }),
+  getSettings: vi.fn().mockResolvedValue({ items: [{ key: 'OPEN_NEO4J', value: 'false' }] }),
   saveSetting: vi.fn().mockResolvedValue(undefined),
 }))
 ```

@@ -163,17 +163,20 @@ alter table public.ai_model_limit
 create table public.ai_model_token_audit
 (
     id                serial
-        constraint idx_65579_primary
+        constraint idx_ai_model_token_audit_primary
             primary key,
-    model_id          integer                                                       not null,
-    useri_id          integer                                                       not null,
-    completion_tokens integer                  default 0                            not null,
-    prompt_tokens     integer                  default 0                            not null,
-    total_tokens      integer                  default 0                            not null,
-    count             integer                  default 0                            not null,
-    create_user_id    integer                  default 0                            not null,
+    model_id          uuid                                                          not null,
+    team_id           integer                  default 0                            not null,
+    user_id           bigint                   default 0                            not null,
+    use_type          integer                  default 0                            not null,
+    use_resource_id   uuid                     default '00000000-0000-0000-0000-000000000000'::uuid not null,
+    completion_tokens bigint                   default 0                            not null,
+    prompt_tokens     bigint                   default 0                            not null,
+    total_tokens      bigint                   default 0                            not null,
+    count             bigint                   default 0                            not null,
+    create_user_id    bigint                   default 0                            not null,
     create_time       timestamp with time zone default CURRENT_TIMESTAMP            not null,
-    update_user_id    integer                  default 0                            not null,
+    update_user_id    bigint                   default 0                            not null,
     update_time       timestamp with time zone default timezone('utc'::text, now()) not null,
     is_deleted        bigint                   default '0'::bigint                  not null
 );
@@ -184,7 +187,13 @@ comment on column public.ai_model_token_audit.id is 'id';
 
 comment on column public.ai_model_token_audit.model_id is '模型id';
 
-comment on column public.ai_model_token_audit.useri_id is '用户id';
+comment on column public.ai_model_token_audit.team_id is '额度归属团队id';
+
+comment on column public.ai_model_token_audit.user_id is '实际使用者用户id';
+
+comment on column public.ai_model_token_audit.use_type is '消耗来源类型';
+
+comment on column public.ai_model_token_audit.use_resource_id is '消耗来源资源id';
 
 comment on column public.ai_model_token_audit.completion_tokens is '完成数量';
 
@@ -207,55 +216,71 @@ comment on column public.ai_model_token_audit.is_deleted is '软删除';
 alter table public.ai_model_token_audit
     owner to postgres;
 
-create table public.ai_model_useage_log
+create unique index idx_ai_model_token_audit_dim_uindex
+    on public.ai_model_token_audit (model_id, team_id, user_id, use_type, use_resource_id)
+    where (is_deleted = 0);
+
+create table public.ai_model_usage_log
 (
     id                serial
-        constraint idx_65593_primary
+        constraint idx_ai_model_usage_log_primary
             primary key,
-    model_id          integer                                                       not null,
-    useri_id          integer                                                       not null,
+    model_id          uuid                                                          not null,
+    team_id           integer                  default 0                            not null,
+    user_id           bigint                   default 0                            not null,
     completion_tokens integer                  default 0                            not null,
     prompt_tokens     integer                  default 0                            not null,
     total_tokens      integer                  default 0                            not null,
+    use_type          integer                  default 0                            not null,
+    use_resource_id   integer                  default 0                            not null,
     channel           varchar(30)              default '-'::character varying       not null,
-    create_user_id    integer                  default 0                            not null,
+    create_user_id    bigint                   default 0                            not null,
     create_time       timestamp with time zone default CURRENT_TIMESTAMP            not null,
-    update_user_id    integer                  default 0                            not null,
+    update_user_id    bigint                   default 0                            not null,
     update_time       timestamp with time zone default timezone('utc'::text, now()) not null,
     is_deleted        bigint                   default '0'::bigint                  not null
 );
 
-comment on table public.ai_model_useage_log is '模型使用日志,记录每次请求使用记录';
+comment on table public.ai_model_usage_log is '模型使用日志,记录每次请求使用记录';
 
-comment on column public.ai_model_useage_log.id is 'id';
+comment on column public.ai_model_usage_log.id is 'id';
 
-comment on column public.ai_model_useage_log.model_id is '模型id';
+comment on column public.ai_model_usage_log.model_id is '模型id';
 
-comment on column public.ai_model_useage_log.useri_id is '用户id';
+comment on column public.ai_model_usage_log.team_id is '本次调用计入额度的团队id';
 
-comment on column public.ai_model_useage_log.completion_tokens is '完成数量';
+comment on column public.ai_model_usage_log.user_id is '实际调用者用户id';
 
-comment on column public.ai_model_useage_log.prompt_tokens is '输入数量';
+comment on column public.ai_model_usage_log.completion_tokens is '完成数量';
 
-comment on column public.ai_model_useage_log.total_tokens is '总数量';
+comment on column public.ai_model_usage_log.prompt_tokens is '输入数量';
 
-comment on column public.ai_model_useage_log.channel is '渠道';
+comment on column public.ai_model_usage_log.total_tokens is '总数量';
 
-comment on column public.ai_model_useage_log.create_user_id is '创建人';
+comment on column public.ai_model_usage_log.use_type is '使用来源类型';
 
-comment on column public.ai_model_useage_log.create_time is '创建时间';
+comment on column public.ai_model_usage_log.use_resource_id is '使用来源资源id';
 
-comment on column public.ai_model_useage_log.update_user_id is '更新人';
+comment on column public.ai_model_usage_log.channel is '渠道';
 
-comment on column public.ai_model_useage_log.update_time is '更新时间';
+comment on column public.ai_model_usage_log.create_user_id is '创建人';
 
-comment on column public.ai_model_useage_log.is_deleted is '软删除';
+comment on column public.ai_model_usage_log.create_time is '创建时间';
 
-alter table public.ai_model_useage_log
+comment on column public.ai_model_usage_log.update_user_id is '更新人';
+
+comment on column public.ai_model_usage_log.update_time is '更新时间';
+
+comment on column public.ai_model_usage_log.is_deleted is '软删除';
+
+alter table public.ai_model_usage_log
     owner to postgres;
 
-create index idx_65593_ai_model_useage_log_channel_index
-    on public.ai_model_useage_log (channel);
+create index idx_ai_model_usage_log_channel_index
+    on public.ai_model_usage_log (channel);
+
+create index idx_ai_model_usage_log_team_id_index
+    on public.ai_model_usage_log (team_id);
 
 create table public.app
 (
@@ -908,7 +933,7 @@ create table public.plugin
     type           integer                                                       not null,
     classify_id    integer                  default 0                            not null,
     is_public      boolean                  default false                        not null,
-    counter        integer                  default 0                            not null,
+    counter        bigint                   default 0                            not null,
     create_user_id integer                                                       not null,
     create_time    timestamp with time zone default timezone('utc'::text, now()) not null,
     update_user_id integer                                                       not null,
@@ -1525,7 +1550,7 @@ create table public.wiki
     name                 varchar(20)                                                   not null,
     description          varchar(255)                                                  not null,
     is_public            boolean                                                       not null,
-    counter              integer                  default 0                            not null,
+    counter              bigint                   default 0                            not null,
     is_lock              boolean                                                       not null,
     embedding_model_id   integer                                                       not null,
     embedding_dimensions integer                  default 1024                         not null,

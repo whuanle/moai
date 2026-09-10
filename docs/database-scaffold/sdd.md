@@ -55,7 +55,7 @@ init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker ini
 | `oauth_connection` | id uuid 默认 uuid_generate_v4() | — |
 | `user_oauth_connection` | id bigint identity | 唯一 (provider_id, sub, is_deleted) |
 
-全部表含审计五件套列（create_user_id/create_time/update_user_id/update_time/is_deleted）。种子（HasData，随 EnsureCreated 写入，[@DB-S4](./bdd.md#db-s4)）：admin（id=1、IsAdmin=true、密码为 abcd123456 的 PBKDF2 哈希，**上线即改**）；setting 2 行（`root=1`、`oauth_auto_register=false`）；classify **99 行**（33 名称 × prompt/plugin/app）。新设置项先注册进 `SettingDefinitions`；HasData 不回填存量库（[@DB-S5](./bdd.md#db-s5)）。
+全部表含审计五件套列（create_user_id/create_time/update_user_id/update_time/is_deleted）。种子（HasData，随 EnsureCreated 写入，[@DB-S4](./bdd.md#db-s4)）：admin（id=1、IsAdmin=true、密码为 abcd123456 的 PBKDF2 哈希，**上线即改**）；setting 5 行（`root=1`、`OPEN_NEO4J=false`、`NEO4J_URI`/`NEO4J_USERNAME`/`NEO4J_PASSWORD`=空串）；classify **99 行**（33 名称 × prompt/plugin/app）。新设置项先注册进 `SettingDefinitions`；HasData 不回填存量库（[@DB-S5](./bdd.md#db-s5)）。
 
 ## 迁移策略（EnsureCreated 取舍，as-built）
 

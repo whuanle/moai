@@ -35,7 +35,7 @@ Feature: 种子数据与幂等
     Given 空库
     When 应用首次启动
     Then user 表存在 id=1 的 admin（IsAdmin=true，密码为 abcd123456 的 PBKDF2 哈希）
-    And setting 表存在 root=1 与 oauth_auto_register=false
+    And setting 表存在 root=1 与 OPEN_NEO4J=false
     And classify 表存在 99 行（33 名称 × prompt/plugin/app）
 
   @DB-S5 @manual

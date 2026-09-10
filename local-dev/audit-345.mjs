@@ -36,12 +36,12 @@ check('3-bound_accounts 200', bound.status === 200 && Array.isArray(bound.body?.
 
 // ===== 轮4 settings =====
 const st = await api(root, '/api/settings')
-check('4-settings GET 200 含 oauth_auto_register', st.status === 200 && (st.body?.items ?? []).some((i) => i.key === 'oauth_auto_register'))
-const save = await api(root, '/api/settings', 'PUT', { key: 'oauth_auto_register', value: 'true' })
+check('4-settings GET 200 含 OPEN_NEO4J', st.status === 200 && (st.body?.items ?? []).some((i) => i.key === 'OPEN_NEO4J'))
+const save = await api(root, '/api/settings', 'PUT', { key: 'OPEN_NEO4J', value: 'true' })
 const st2 = await api(root, '/api/settings')
-const nowVal = st2.body?.items?.find((i) => i.key === 'oauth_auto_register')?.value
+const nowVal = st2.body?.items?.find((i) => i.key === 'OPEN_NEO4J')?.value
 check('4-settings PUT 生效', save.status === 200 && nowVal === 'true')
-await api(root, '/api/settings', 'PUT', { key: 'oauth_auto_register', value: 'false' })
+await api(root, '/api/settings', 'PUT', { key: 'OPEN_NEO4J', value: 'false' })
 const badKey = await api(root, '/api/settings', 'PUT', { key: 'not_exist_key', value: 'x' })
 check('4-非法 key 400', badKey.status === 400)
 
