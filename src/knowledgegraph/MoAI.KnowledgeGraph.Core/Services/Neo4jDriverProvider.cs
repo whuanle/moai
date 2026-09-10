@@ -78,12 +78,10 @@ public sealed class Neo4jDriverProvider : IAsyncDisposable
 
         var driver = await GetDriverAsync(cancellationToken);
         await using var session = driver.AsyncSession();
-        await session.ExecuteWriteAsync(async tx =>
-        {
-            await tx.RunAsync(ConstraintCypher);
-            await tx.RunAsync(IndexCypher);
-        });
-
+        var constraintCursor = await session.RunAsync(ConstraintCypher);
+        await constraintCursor.ConsumeAsync();
+        var indexCursor = await session.RunAsync(IndexCypher);
+        await indexCursor.ConsumeAsync();
         _initialized = true;
     }
 
