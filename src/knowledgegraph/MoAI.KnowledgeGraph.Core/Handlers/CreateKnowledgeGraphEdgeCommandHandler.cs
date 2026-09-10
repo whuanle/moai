@@ -1,0 +1,60 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using MoAI.Database;
+using MoAI.Infra.Exceptions;
+using MoAI.Infra.Models;
+using MoAI.KnowledgeGraph.Commands;
+using MoAI.KnowledgeGraph.Services;
+
+namespace MoAI.KnowledgeGraph.Handlers;
+
+/// <summary>
+/// <inheritdoc cref="CreateKnowledgeGraphEdgeCommand"/>
+/// </summary>
+public class CreateKnowledgeGraphEdgeCommandHandler : IRequestHandler<CreateKnowledgeGraphEdgeCommand, SimpleString>
+{
+    private readonly DatabaseContext _databaseContext;
+    private readonly IKnowledgeGraphAuthorizer _authorizer;
+    private readonly IKnowledgeGraphStore _store;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CreateKnowledgeGraphEdgeCommandHandler"/> class.
+    /// </summary>
+    /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="authorizer">权限判定.</param>
+    /// <param name="store">图存储.</param>
+    public CreateKnowledgeGraphEdgeCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store)
+    {
+        _databaseContext = databaseContext;
+        _authorizer = authorizer;
+        _store = store;
+    }
+
+    /// <inheritdoc/>
+    public async Task<SimpleString> Handle(CreateKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
+    {
+        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+
+        var relationType = await _databaseContext.KnowledgeGraphRelationTypes
+            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KgId == request.KgId, cancellationToken)
+            ?? throw new BusinessException("关系类型不存在.") { StatusCode = 400 };
+
+        var source = await _store.GetNodeAsync(request.KgId, request.SourceNodeId, cancellationToken)
+            ?? throw new BusinessException("起点节点不存在.") { StatusCode = 400 };
+        var target = await _store.GetNodeAsync(request.KgId, request.TargetNodeId, cancellationToken)
+            ?? throw new BusinessException("终点节点不存在.") { StatusCode = 400 };
+
+        if (relationType.SourceTypeId != null && relationType.SourceTypeId != source.EntityTypeId)
+        {
+            throw new BusinessException("起点节点类型不符合关系约束.") { StatusCode = 400 };
+        }
+
+        if (relationType.TargetTypeId != null && relationType.TargetTypeId != target.EntityTypeId)
+        {
+            throw new BusinessException("终点节点类型不符合关系约束.") { StatusCode = 400 };
+        }
+
+        var edge = await _store.CreateEdgeAsync(request.KgId, request.RelationTypeId, request.SourceNodeId, request.TargetNodeId, cancellationToken);
+        return new SimpleString { Value = edge.Id };
+    }
+}
