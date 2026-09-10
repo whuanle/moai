@@ -143,6 +143,21 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiEntity> Wikis { get; set; }
 
     /// <summary>
+    /// 知识图谱.
+    /// </summary>
+    public virtual DbSet<KnowledgeGraphEntity> KnowledgeGraphs { get; set; }
+
+    /// <summary>
+    /// 知识图谱实体类型.
+    /// </summary>
+    public virtual DbSet<KnowledgeGraphEntityTypeEntity> KnowledgeGraphEntityTypes { get; set; }
+
+    /// <summary>
+    /// 知识图谱关系类型.
+    /// </summary>
+    public virtual DbSet<KnowledgeGraphRelationTypeEntity> KnowledgeGraphRelationTypes { get; set; }
+
+    /// <summary>
     /// 知识库文档.
     /// </summary>
     public virtual DbSet<WikiDocumentEntity> WikiDocuments { get; set; }
