@@ -28,5 +28,8 @@ internal partial class KnowledgeGraphRelationTypeConfiguration : IEntityTypeConf
         builder.Property(e => e.UpdateTime).HasDefaultValueSql("timezone('utc'::text, now())").HasComment("更新时间").HasColumnName("update_time");
         builder.Property(e => e.UpdateUserId).HasComment("最后修改人").HasColumnName("update_user_id");
         builder.Property(e => e.IsDeleted).HasDefaultValueSql("'0'::bigint").HasComment("软删除").HasColumnName("is_deleted");
+
+        builder.HasIndex(e => e.KgId).HasDatabaseName("idx_kg_relation_type_kg_id");
+        builder.HasIndex(e => new { e.KgId, e.Name }).IsUnique().HasFilter("is_deleted = 0").HasDatabaseName("idx_kg_relation_type_name_live_uindex");
     }
 }
