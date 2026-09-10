@@ -10,6 +10,7 @@ import {
   MinusCircleOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
+  ShareAltOutlined,
   StopOutlined,
   TeamOutlined,
   UploadOutlined,
@@ -26,6 +27,7 @@ import { Variables } from '@/pages/variables/Variables'
 import { TeamGateway } from '@/pages/teams/TeamGateway'
 import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
 import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
+import { TeamKnowledgeGraphs } from '@/pages/teams/knowledgegraph/TeamKnowledgeGraphs'
 import {
   addTeamUser,
   dissolveTeam,
@@ -50,7 +52,7 @@ const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
-const SECTION_KEYS = ['info', 'members', 'gateway', 'knowledge', 'plugins', 'variables', 'settings'] as const
+const SECTION_KEYS = ['info', 'members', 'gateway', 'knowledge', 'kg', 'plugins', 'variables', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 interface MemberFormValues {
@@ -356,6 +358,7 @@ export function TeamManage() {
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
     { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
+    { key: 'kg', icon: <ShareAltOutlined />, label: t('knowledgegraph.tabLabel') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
@@ -445,6 +448,10 @@ export function TeamManage() {
           ) : section === 'knowledge' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamWikis teamId={teamId} />
+            </DSCard>
+          ) : section === 'kg' ? (
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamKnowledgeGraphs teamId={teamId} />
             </DSCard>
           ) : section === 'plugins' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>

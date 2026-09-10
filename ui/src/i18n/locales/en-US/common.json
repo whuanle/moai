@@ -898,6 +898,73 @@
       "saveSuccess": "Rerank model saved"
     }
   },
+  "knowledgegraph": {
+    "title": "Knowledge Graph",
+    "create": "New Knowledge Graph",
+    "createTitle": "New Knowledge Graph",
+    "editTitle": "Edit Knowledge Graph",
+    "name": "Name",
+    "namePlaceholder": "Enter graph name",
+    "desc": "Description",
+    "template": "Template",
+    "templateBlank": "Blank / Custom",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this knowledge graph? Its nodes and relations will be removed too.",
+    "createSuccess": "Created",
+    "saveSuccess": "Saved",
+    "deleteSuccess": "Deleted",
+    "empty": "No knowledge graph yet. Create one under your team.",
+    "notFound": "Knowledge graph not found or removed",
+    "disabled": "Knowledge graph is disabled. Ask the super admin to configure Neo4j in system settings.",
+    "menuEntities": "Entities",
+    "menuRelations": "Relations",
+    "menuSchema": "Schema",
+    "menuSettings": "Settings",
+    "entity": {
+      "create": "New Entity",
+      "edit": "Edit Entity",
+      "colName": "Name",
+      "colType": "Type",
+      "colDesc": "Description",
+      "namePlaceholder": "Enter entity name",
+      "typePlaceholder": "Select entity type",
+      "deleteConfirm": "Delete this entity? Its relations will be removed too."
+    },
+    "relation": {
+      "create": "New Relation",
+      "edit": "Edit Relation",
+      "colSource": "Source",
+      "colType": "Relation",
+      "colTarget": "Target",
+      "sourcePlaceholder": "Select source entity",
+      "targetPlaceholder": "Select target entity",
+      "typePlaceholder": "Select relation type",
+      "deleteConfirm": "Delete this relation?"
+    },
+    "schema": {
+      "title": "Schema",
+      "entityTypes": "Entity Types",
+      "relationTypes": "Relation Types",
+      "addEntityType": "Add Entity Type",
+      "addRelationType": "Add Relation Type",
+      "name": "Name",
+      "color": "Color",
+      "desc": "Description",
+      "sourceType": "Source Type",
+      "targetType": "Target Type",
+      "anyType": "Any",
+      "deleteEntityConfirm": "Delete this entity type?",
+      "deleteRelationConfirm": "Delete this relation type?"
+    },
+    "settings": {
+      "basicTitle": "Basic Info",
+      "templateKey": "Template",
+      "createTime": "Created"
+    },
+    "tabLabel": "Knowledge Graph",
+    "noPermission": "Only team admins can manage knowledge graphs and schema"
+  },
   "variable": {
     "title": "Variables",
     "create": "New Variable",

@@ -727,6 +727,73 @@
       "saveSuccess": "重排序模型保存成功"
     }
   },
+  "knowledgegraph": {
+    "title": "知识图谱",
+    "create": "新建知识图谱",
+    "createTitle": "新建知识图谱",
+    "editTitle": "编辑知识图谱",
+    "name": "名称",
+    "namePlaceholder": "请输入图谱名称",
+    "desc": "简介",
+    "template": "模板",
+    "templateBlank": "空白 / 自定义",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteConfirm": "确认删除该知识图谱？其中的节点与关系将一并清除。",
+    "createSuccess": "创建成功",
+    "saveSuccess": "保存成功",
+    "deleteSuccess": "删除成功",
+    "empty": "还没有知识图谱，请在所属团队下新建一个",
+    "notFound": "知识图谱不存在或已被删除",
+    "disabled": "未开启知识图谱能力，请让超级管理员在系统设置中配置 Neo4j",
+    "menuEntities": "实体",
+    "menuRelations": "关系",
+    "menuSchema": "模型",
+    "menuSettings": "设置",
+    "entity": {
+      "create": "新建实体",
+      "edit": "编辑实体",
+      "colName": "名称",
+      "colType": "类型",
+      "colDesc": "描述",
+      "namePlaceholder": "请输入实体名称",
+      "typePlaceholder": "请选择实体类型",
+      "deleteConfirm": "确认删除该实体？其关联的关系也会被删除。"
+    },
+    "relation": {
+      "create": "新建关系",
+      "edit": "编辑关系",
+      "colSource": "起点",
+      "colType": "关系",
+      "colTarget": "终点",
+      "sourcePlaceholder": "请选择起点实体",
+      "targetPlaceholder": "请选择终点实体",
+      "typePlaceholder": "请选择关系类型",
+      "deleteConfirm": "确认删除该关系？"
+    },
+    "schema": {
+      "title": "模型 / Schema",
+      "entityTypes": "实体类型",
+      "relationTypes": "关系类型",
+      "addEntityType": "新增实体类型",
+      "addRelationType": "新增关系类型",
+      "name": "名称",
+      "color": "颜色",
+      "desc": "描述",
+      "sourceType": "起点类型",
+      "targetType": "终点类型",
+      "anyType": "任意",
+      "deleteEntityConfirm": "确认删除该实体类型？",
+      "deleteRelationConfirm": "确认删除该关系类型？"
+    },
+    "settings": {
+      "basicTitle": "基础信息",
+      "templateKey": "创建模板",
+      "createTime": "创建时间"
+    },
+    "tabLabel": "知识图谱",
+    "noPermission": "仅团队管理员可管理知识图谱与模型"
+  },
   "variable": {
     "title": "变量",
     "create": "新建变量",
