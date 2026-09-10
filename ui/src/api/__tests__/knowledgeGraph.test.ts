@@ -34,7 +34,7 @@ vi.mock('@/api/kiota', () => ({
   }),
 }))
 
-import { getKnowledgeGraphs, createKnowledgeGraph, deleteKnowledgeGraph, getKnowledgeGraphNodes, createKnowledgeGraphNode } from '../knowledgeGraph'
+import { getKnowledgeGraphs, deleteKnowledgeGraph, getKnowledgeGraphNodes } from '../knowledgeGraph'
 
 describe('knowledgeGraph api', () => {
   beforeEach(() => vi.clearAllMocks())
