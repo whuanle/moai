@@ -62,6 +62,7 @@
     <PackageVersion Include="MySqlConnector" Version="2.5.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
+    <PackageVersion Include="Neo4j.Driver" Version="5.28.0" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
     <PackageVersion Include="NSwag.AspNetCore" Version="14.7.1" />
     <PackageVersion Include="OllamaSharp" Version="5.4.30" />

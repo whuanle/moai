@@ -14,6 +14,7 @@ using MoAI.Filters;
 using MoAI.Gateway;
 using MoAI.Hangfire;
 using MoAI.Infra;
+using MoAI.KnowledgeGraph;
 using MoAI.Modules;
 using MoAI.OauthConnect;
 using MoAI.Settings;
@@ -40,6 +41,7 @@ namespace MoAI;
 [InjectModule<GatewayCoreModule>]
 [InjectModule<TeamCoreModule>]
 [InjectModule<WikiCoreModule>]
+[InjectModule<KnowledgeGraphCoreModule>]
 [InjectModule<VariableCoreModule>]
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]
