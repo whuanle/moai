@@ -55,6 +55,9 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             throw new BusinessException("知识图谱已开启但未配置 Neo4j 连接地址，请先在系统设置中完善.") { StatusCode = 409 };
         }
 
+        // 模板复制（图谱 + 实体类型 + 关系类型）必须整体成功或整体回滚
+        await using var transaction = await _databaseContext.Database.BeginTransactionAsync(cancellationToken);
+
         if (request.Mode == KnowledgeGraphModes.Connected)
         {
             var database = request.Database!.Trim();
@@ -94,6 +97,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                 throw;
             }
 
+            await transaction.CommitAsync(cancellationToken);
             return new SimpleLong { Value = connectedGraph.Id };
         }
 
@@ -180,6 +184,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             await _databaseContext.SaveChangesAsync(cancellationToken);
         }
 
+        await transaction.CommitAsync(cancellationToken);
         return new SimpleLong { Value = graph.Id };
     }
 

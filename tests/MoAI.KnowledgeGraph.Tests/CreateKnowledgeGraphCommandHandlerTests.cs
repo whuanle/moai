@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Commands;
@@ -196,5 +197,34 @@ public class CreateKnowledgeGraphCommandHandlerTests
         Assert.NotNull(relation.TargetTypeId);
         Assert.Equal(peopleId, relation.SourceTypeId);
         Assert.Equal(serviceId, relation.TargetTypeId);
+    }
+
+    [Fact]
+    public async Task Handle_WithTemplate_WhenRelationTypeInsertFails_RollsBackGraphAndEntityTypes()
+    {
+        using var db = TestSqliteContext.Create();
+
+        // 用 sqlite 触发器强制关系类型落库失败，验证前面已保存的图谱与实体类型一并回滚
+        // 注意：测试上下文走 EF 约定表名（未应用 Postgres 命名配置），故表名为 DbSet 名称
+        await db.Context.Database.ExecuteSqlRawAsync(
+            "CREATE TRIGGER fail_relation_type_insert BEFORE INSERT ON KnowledgeGraphRelationTypes BEGIN SELECT RAISE(ABORT, 'forced failure'); END;");
+
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var settings = new Mock<IKnowledgeGraphSettingsService>();
+        settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+        var store = new Mock<IKnowledgeGraphStore>();
+
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "运维", TemplateKey = "ops" },
+            CancellationToken.None));
+
+        Assert.Empty(db.Context.KnowledgeGraphs);
+        Assert.Empty(db.Context.KnowledgeGraphEntityTypes);
+        Assert.Empty(db.Context.KnowledgeGraphRelationTypes);
     }
 }

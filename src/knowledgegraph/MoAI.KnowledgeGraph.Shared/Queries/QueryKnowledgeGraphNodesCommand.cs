@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using MoAI.KnowledgeGraph.Queries.Responses;
 
@@ -6,7 +7,7 @@ namespace MoAI.KnowledgeGraph.Queries;
 /// <summary>
 /// 分页查询节点.
 /// </summary>
-public class QueryKnowledgeGraphNodesCommand : IRequest<QueryKnowledgeGraphNodesCommandResponse>
+public class QueryKnowledgeGraphNodesCommand : IRequest<QueryKnowledgeGraphNodesCommandResponse>, IModelValidator<QueryKnowledgeGraphNodesCommand>
 {
     /// <summary>
     /// 图谱 id.
@@ -32,4 +33,10 @@ public class QueryKnowledgeGraphNodesCommand : IRequest<QueryKnowledgeGraphNodes
     /// 每页数量.
     /// </summary>
     public int PageSize { get; init; } = 20;
+
+    /// <inheritdoc/>
+    public static void Validate(AbstractValidator<QueryKnowledgeGraphNodesCommand> validate)
+    {
+        validate.RuleFor(x => x.KgId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+    }
 }

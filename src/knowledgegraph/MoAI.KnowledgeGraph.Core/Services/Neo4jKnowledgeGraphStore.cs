@@ -187,8 +187,17 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
         {
             throw;
         }
-        catch (Exception ex) when (ex is not MoAI.Infra.Exceptions.BusinessException)
+        catch (BusinessException)
         {
+            throw;
+        }
+        catch (Exception ex) when (ex is ServiceUnavailableException || ex is AuthenticationException)
+        {
+            throw new BusinessException("无法连接 Neo4j，请检查系统设置中的连接配置。") { StatusCode = 503 };
+        }
+        catch (Neo4jException)
+        {
+            // 数据库不存在等客户端错误，交由上层返回 400
             return false;
         }
     }
@@ -206,7 +215,6 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
             var label = record["label"].As<string>();
             if (label.Contains('`', StringComparison.Ordinal))
             {
-                labels.Add(new KnowledgeGraphIntrospectedItem(label, 0));
                 continue;
             }
 
@@ -236,7 +244,6 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
             var relType = record["relationshipType"].As<string>();
             if (relType.Contains('`', StringComparison.Ordinal))
             {
-                relations.Add(new KnowledgeGraphIntrospectedItem(relType, 0));
                 continue;
             }
 
