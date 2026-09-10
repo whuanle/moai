@@ -273,36 +273,81 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
 
     private async Task<List<IRecord>> ReadAsync(string cypher, object parameters, CancellationToken cancellationToken)
     {
-        var driver = await _provider.GetDriverAsync(cancellationToken);
-        await using var session = driver.AsyncSession();
-        return await session.ExecuteReadAsync(async tx =>
+        try
         {
-            var cursor = await tx.RunAsync(cypher, parameters);
-            return await cursor.ToListAsync();
-        });
+            var driver = await _provider.GetDriverAsync(cancellationToken);
+            await using var session = driver.AsyncSession();
+            return await session.ExecuteReadAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(cypher, parameters);
+                return await cursor.ToListAsync();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (BusinessException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is ServiceUnavailableException || (ex is Neo4jException and not ClientException))
+        {
+            throw new BusinessException("无法连接 Neo4j，请检查系统设置中的连接配置。") { StatusCode = 503 };
+        }
     }
 
     private async Task<List<IRecord>> WriteReadAsync(string cypher, object parameters, CancellationToken cancellationToken)
     {
-        var driver = await _provider.GetDriverAsync(cancellationToken);
-        await using var session = driver.AsyncSession();
-        var records = new List<IRecord>();
-        await session.ExecuteWriteAsync(async tx =>
+        try
         {
-            var cursor = await tx.RunAsync(cypher, parameters);
-            records.AddRange(await cursor.ToListAsync());
-        });
-        return records;
+            var driver = await _provider.GetDriverAsync(cancellationToken);
+            await using var session = driver.AsyncSession();
+            var records = new List<IRecord>();
+            await session.ExecuteWriteAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(cypher, parameters);
+                records.AddRange(await cursor.ToListAsync());
+            });
+            return records;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (BusinessException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is ServiceUnavailableException || (ex is Neo4jException and not ClientException))
+        {
+            throw new BusinessException("无法连接 Neo4j，请检查系统设置中的连接配置。") { StatusCode = 503 };
+        }
     }
 
     private async Task WriteAsync(string cypher, object parameters, CancellationToken cancellationToken)
     {
-        var driver = await _provider.GetDriverAsync(cancellationToken);
-        await using var session = driver.AsyncSession();
-        await session.ExecuteWriteAsync(async tx =>
+        try
         {
-            var cursor = await tx.RunAsync(cypher, parameters);
-            await cursor.ConsumeAsync();
-        });
+            var driver = await _provider.GetDriverAsync(cancellationToken);
+            await using var session = driver.AsyncSession();
+            await session.ExecuteWriteAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(cypher, parameters);
+                await cursor.ConsumeAsync();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (BusinessException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is ServiceUnavailableException || (ex is Neo4jException and not ClientException))
+        {
+            throw new BusinessException("无法连接 Neo4j，请检查系统设置中的连接配置。") { StatusCode = 503 };
+        }
     }
 }

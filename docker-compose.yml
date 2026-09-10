@@ -60,6 +60,22 @@ services:
     networks:
       - moai-network
 
+  # Neo4j 图数据库 (知识图谱模块，可选)
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: moai-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/moai123456}
+      NEO4J_server_memory_heap_max__size: 512m
+    volumes:
+      - neo4j_data:/data
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    networks:
+      - moai-network
+
   # MoAI 后端服务
   moai:
     image: registry.cn-hangzhou.aliyuncs.com/whuanle/moai:latest
@@ -117,6 +133,7 @@ volumes:
   redis_data:
   rabbitmq_data:
   moai_files:
+  neo4j_data:
 
 networks:
   moai-network:
