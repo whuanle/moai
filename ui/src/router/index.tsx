@@ -10,14 +10,13 @@ import { Settings } from '@/pages/settings/Settings'
 import { AccountSettings } from '@/pages/account/AccountSettings'
 import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
 import { Users } from '@/pages/users/Users'
+import { AdminTeams } from '@/pages/admin/AdminTeams'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
 import { TeamManage } from '@/pages/teams/TeamManage'
 import { Wiki } from '@/pages/wiki/Wiki'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
-import { KnowledgeGraphList } from '@/pages/knowledgegraph/KnowledgeGraphList'
-import { KnowledgeGraphDetail } from '@/pages/knowledgegraph/KnowledgeGraphDetail'
 import { Plugins } from '@/pages/plugins/Plugins'
 import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
 import { ClassifyPage } from '@/pages/classify/Classify'
@@ -39,13 +38,12 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
+      { path: 'admin/teams', element: <AdminTeams /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'wiki', element: <Wiki /> },
-      { path: 'kg', element: <KnowledgeGraphList /> },
-      { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },
