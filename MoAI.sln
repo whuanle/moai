@@ -172,6 +172,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.KnowledgeGraph.Core", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.KnowledgeGraph.Api", "src\knowledgegraph\MoAI.KnowledgeGraph.Api\MoAI.KnowledgeGraph.Api.csproj", "{C10FAFC7-BCBE-423D-A6C5-E3FE621F8E10}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoAI.KnowledgeGraph.Tests", "tests\MoAI.KnowledgeGraph.Tests\MoAI.KnowledgeGraph.Tests.csproj", "{15B955D3-5D93-4583-9782-3C2B7575A889}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -890,6 +892,18 @@ Global
 		{C10FAFC7-BCBE-423D-A6C5-E3FE621F8E10}.Release|x64.Build.0 = Release|Any CPU
 		{C10FAFC7-BCBE-423D-A6C5-E3FE621F8E10}.Release|x86.ActiveCfg = Release|Any CPU
 		{C10FAFC7-BCBE-423D-A6C5-E3FE621F8E10}.Release|x86.Build.0 = Release|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Debug|x64.Build.0 = Debug|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Debug|x86.Build.0 = Debug|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Release|x64.ActiveCfg = Release|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Release|x64.Build.0 = Release|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Release|x86.ActiveCfg = Release|Any CPU
+		{15B955D3-5D93-4583-9782-3C2B7575A889}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -970,6 +984,7 @@ Global
 		{1644D3E9-443A-4C19-884E-BC73A4336546} = {4DC3AC4C-5276-1BDB-B55C-FBB3BF6720BA}
 		{4B8CB773-FEC4-430C-94F2-64FB0DFE0A9F} = {4DC3AC4C-5276-1BDB-B55C-FBB3BF6720BA}
 		{C10FAFC7-BCBE-423D-A6C5-E3FE621F8E10} = {4DC3AC4C-5276-1BDB-B55C-FBB3BF6720BA}
+		{15B955D3-5D93-4583-9782-3C2B7575A889} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B16D43C7-ED65-4A2E-9AE5-F3660DDC7334}
