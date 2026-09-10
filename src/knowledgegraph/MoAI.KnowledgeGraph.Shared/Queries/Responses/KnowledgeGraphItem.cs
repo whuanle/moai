@@ -1,3 +1,5 @@
+using MoAI.KnowledgeGraph.Models;
+
 namespace MoAI.KnowledgeGraph.Queries.Responses;
 
 /// <summary>
@@ -29,6 +31,21 @@ public class KnowledgeGraphItem
     /// 模板 key.
     /// </summary>
     public string? TemplateKey { get; init; }
+
+    /// <summary>
+    /// 来源：managed / connected.
+    /// </summary>
+    public string Mode { get; init; } = KnowledgeGraphModes.Managed;
+
+    /// <summary>
+    /// 接入数据库名（仅 connected）.
+    /// </summary>
+    public string? Database { get; init; }
+
+    /// <summary>
+    /// 是否只读（connected=true）.
+    /// </summary>
+    public bool ReadOnly { get; init; }
 
     /// <summary>
     /// 创建时间.

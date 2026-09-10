@@ -22,6 +22,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
     private readonly DatabaseContext _databaseContext;
     private readonly IKnowledgeGraphAuthorizer _authorizer;
     private readonly IKnowledgeGraphSettingsService _settingsService;
+    private readonly IKnowledgeGraphStore _store;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateKnowledgeGraphCommandHandler"/> class.
@@ -29,11 +30,13 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="authorizer">权限判定.</param>
     /// <param name="settingsService">知识图谱设置.</param>
-    public CreateKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphSettingsService settingsService)
+    /// <param name="store">图存储.</param>
+    public CreateKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphSettingsService settingsService, IKnowledgeGraphStore store)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
         _settingsService = settingsService;
+        _store = store;
     }
 
     /// <inheritdoc/>
@@ -50,6 +53,28 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
         if (string.IsNullOrWhiteSpace(settings.Uri))
         {
             throw new BusinessException("知识图谱已开启但未配置 Neo4j 连接地址，请先在系统设置中完善.") { StatusCode = 409 };
+        }
+
+        if (request.Mode == KnowledgeGraphModes.Connected)
+        {
+            var database = request.Database!.Trim();
+            if (!await _store.ProbeDatabaseAsync(database, cancellationToken))
+            {
+                throw new BusinessException("数据库不存在或无法访问.") { StatusCode = 400 };
+            }
+
+            var connectedGraph = new KnowledgeGraphEntity
+            {
+                TeamId = (int)request.TeamId,
+                Name = request.Name,
+                Description = request.Description ?? string.Empty,
+                TemplateKey = null,
+                Mode = KnowledgeGraphModes.Connected,
+                Database = database,
+            };
+            _databaseContext.KnowledgeGraphs.Add(connectedGraph);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+            return new SimpleLong { Value = connectedGraph.Id };
         }
 
         KnowledgeGraphTemplate? template = null;
@@ -72,6 +97,8 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             TemplateKey = request.TemplateKey,
+            Mode = KnowledgeGraphModes.Managed,
+            Database = null,
         };
         _databaseContext.KnowledgeGraphs.Add(graph);
         try

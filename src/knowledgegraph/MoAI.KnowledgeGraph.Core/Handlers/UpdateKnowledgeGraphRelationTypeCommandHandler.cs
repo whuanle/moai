@@ -34,7 +34,7 @@ public class UpdateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Up
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {

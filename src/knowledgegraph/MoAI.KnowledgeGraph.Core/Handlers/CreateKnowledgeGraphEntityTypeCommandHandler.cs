@@ -35,7 +35,7 @@ public class CreateKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Crea
     /// <inheritdoc/>
     public async Task<SimpleLong> Handle(CreateKnowledgeGraphEntityTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {

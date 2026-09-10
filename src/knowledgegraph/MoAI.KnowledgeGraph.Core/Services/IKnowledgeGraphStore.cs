@@ -1,3 +1,5 @@
+using MoAI.KnowledgeGraph.Models;
+
 namespace MoAI.KnowledgeGraph.Services;
 
 /// <summary>
@@ -69,4 +71,14 @@ public interface IKnowledgeGraphStore
     /// 清空图谱在图库中的所有节点与边.
     /// </summary>
     Task PurgeGraphAsync(long kgId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 探活指定数据库.
+    /// </summary>
+    Task<bool> ProbeDatabaseAsync(string database, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 内省指定数据库的标签 / 关系类型 / 属性键.
+    /// </summary>
+    Task<KnowledgeGraphIntrospection> IntrospectAsync(string database, CancellationToken cancellationToken);
 }

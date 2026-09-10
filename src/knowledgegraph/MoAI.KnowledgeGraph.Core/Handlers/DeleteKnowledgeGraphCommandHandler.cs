@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.Commands;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Services;
 using MoAI.Settings.Services;
 
@@ -41,7 +42,7 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
         // 能力开启时先清空图库节点与边；图库清理失败则整体失败，避免只删目录留下孤儿数据。
         // 能力未开启时无法连接 Neo4j（此时也不存在可访问的图数据），跳过清理，仅软删数据库元数据。
         var settings = await _settingsService.GetAsync(cancellationToken);
-        if (settings.Enabled)
+        if (settings.Enabled && string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))
         {
             await _store.PurgeGraphAsync(graph.Id, cancellationToken);
         }

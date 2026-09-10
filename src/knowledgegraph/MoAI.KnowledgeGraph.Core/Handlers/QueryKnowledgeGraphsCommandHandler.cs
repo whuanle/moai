@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
 using MoAI.KnowledgeGraph.Services;
@@ -46,6 +47,9 @@ public class QueryKnowledgeGraphsCommandHandler : IRequestHandler<QueryKnowledge
                 Name = x.Name,
                 Description = x.Description,
                 TemplateKey = x.TemplateKey,
+                Mode = x.Mode,
+                Database = x.Database,
+                ReadOnly = x.Mode == KnowledgeGraphModes.Connected,
                 CreateTime = x.CreateTime,
             })
             .ToListAsync(cancellationToken);

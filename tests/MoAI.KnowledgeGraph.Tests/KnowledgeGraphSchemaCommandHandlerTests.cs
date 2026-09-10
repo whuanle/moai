@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Commands;
 using MoAI.KnowledgeGraph.Handlers;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Services;
 using MoAI.Settings.Models;
@@ -275,7 +277,8 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         await db.Context.SaveChangesAsync(CancellationToken.None);
 
         var authorizer = CreateAuthorizer();
-        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object);
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, store.Object);
 
         var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KgId = KgId }, CancellationToken.None);
 
@@ -299,10 +302,46 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         Assert.Equal(service.Id, response.RelationTypes[1].TargetTypeId);
     }
 
+    [Fact]
+    public async Task QuerySchema_WhenConnected_UsesIntrospection()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.AuthorizeAsync(KgId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" }, MoAI.Database.Enums.TeamRole.Admin));
+
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.IntrospectAsync("ext", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphIntrospection(
+                new List<KnowledgeGraphIntrospectedItem> { new("Person", 3) },
+                new List<KnowledgeGraphIntrospectedItem> { new("KNOWS", 2) },
+                new List<string> { "name", "age" }));
+
+        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, store.Object);
+
+        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KgId = KgId }, CancellationToken.None);
+
+        Assert.Equal(KnowledgeGraphModes.Connected, response.Mode);
+        Assert.True(response.ReadOnly);
+        Assert.Equal("ext", response.Database);
+        var entityType = Assert.Single(response.EntityTypes);
+        Assert.Null(entityType.EntityTypeId);
+        Assert.Equal("Person", entityType.Name);
+        Assert.Equal(3, entityType.Count);
+        var relationType = Assert.Single(response.RelationTypes);
+        Assert.Null(relationType.RelationTypeId);
+        Assert.Equal("KNOWS", relationType.Name);
+        Assert.Equal(2, relationType.Count);
+        Assert.Equal(new[] { "name", "age" }, response.PropertyKeys);
+        store.Verify(x => x.IntrospectAsync("ext", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private static Mock<IKnowledgeGraphAuthorizer> CreateAuthorizer()
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.AuthorizeAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
+        authorizer.Setup(x => x.AuthorizeManagedAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer;
     }

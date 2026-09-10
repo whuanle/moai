@@ -6,9 +6,9 @@ namespace MoAI.KnowledgeGraph.Queries.Responses;
 public class KnowledgeGraphEntityTypeItem
 {
     /// <summary>
-    /// 类型 id.
+    /// 类型 id；外部接入图谱为 null.
     /// </summary>
-    public long EntityTypeId { get; init; }
+    public long? EntityTypeId { get; init; }
 
     /// <summary>
     /// 名称.
@@ -24,4 +24,9 @@ public class KnowledgeGraphEntityTypeItem
     /// 描述.
     /// </summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 节点数（仅 connected 内省）.
+    /// </summary>
+    public long? Count { get; init; }
 }

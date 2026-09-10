@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
 using MoAI.KnowledgeGraph.Services;
@@ -14,22 +15,39 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IKnowledgeGraphAuthorizer _authorizer;
+    private readonly IKnowledgeGraphStore _store;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryKnowledgeGraphSchemaCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="authorizer">权限判定.</param>
-    public QueryKnowledgeGraphSchemaCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer)
+    /// <param name="store">图存储.</param>
+    public QueryKnowledgeGraphSchemaCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
+        _store = store;
     }
 
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphSchemaCommandResponse> Handle(QueryKnowledgeGraphSchemaCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        var (graph, _) = await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+
+        if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
+        {
+            var introspection = await _store.IntrospectAsync(graph.Database!, cancellationToken);
+            return new QueryKnowledgeGraphSchemaCommandResponse
+            {
+                Mode = KnowledgeGraphModes.Connected,
+                Database = graph.Database,
+                ReadOnly = true,
+                EntityTypes = introspection.Labels.Select(x => new KnowledgeGraphEntityTypeItem { EntityTypeId = null, Name = x.Name, Color = string.Empty, Description = string.Empty, Count = x.Count }).ToList(),
+                RelationTypes = introspection.RelationshipTypes.Select(x => new KnowledgeGraphRelationTypeItem { RelationTypeId = null, Name = x.Name, Color = string.Empty, Description = string.Empty, Count = x.Count }).ToList(),
+                PropertyKeys = introspection.PropertyKeys.ToList(),
+            };
+        }
 
         var entityTypes = await _databaseContext.KnowledgeGraphEntityTypes
             .Where(x => x.KgId == request.KgId)
@@ -57,6 +75,13 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
             })
             .ToListAsync(cancellationToken);
 
-        return new QueryKnowledgeGraphSchemaCommandResponse { EntityTypes = entityTypes, RelationTypes = relationTypes };
+        return new QueryKnowledgeGraphSchemaCommandResponse
+        {
+            EntityTypes = entityTypes,
+            RelationTypes = relationTypes,
+            Mode = KnowledgeGraphModes.Managed,
+            Database = graph.Database,
+            ReadOnly = false,
+        };
     }
 }

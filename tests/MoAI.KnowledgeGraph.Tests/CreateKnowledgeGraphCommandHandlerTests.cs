@@ -5,6 +5,7 @@ using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Commands;
 using MoAI.KnowledgeGraph.Handlers;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Services;
 using MoAI.Settings.Models;
 using MoAI.Settings.Services;
@@ -26,10 +27,60 @@ public class CreateKnowledgeGraphCommandHandlerTests
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
         var result = await sut.Handle(new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None);
 
         Assert.True(result.Value > 0);
+        var graph = db.Context.KnowledgeGraphs.Single(x => x.Id == result.Value);
+        Assert.Equal(KnowledgeGraphModes.Managed, graph.Mode);
+        Assert.Null(graph.Database);
+    }
+
+    [Fact]
+    public async Task Handle_Connected_WhenProbeFails_Throws400()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var settings = new Mock<IKnowledgeGraphSettingsService>();
+        settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.ProbeDatabaseAsync("ext", It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" },
+            CancellationToken.None));
+
+        Assert.Equal(400, ex.StatusCode);
+        Assert.Empty(db.Context.KnowledgeGraphs);
+    }
+
+    [Fact]
+    public async Task Handle_Connected_WhenProbeSucceeds_PersistsModeAndDatabase()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.RequireTeamRoleAsync(It.IsAny<long>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var settings = new Mock<IKnowledgeGraphSettingsService>();
+        settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.ProbeDatabaseAsync("ext", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var result = await sut.Handle(
+            new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = " ext " },
+            CancellationToken.None);
+
+        var graph = db.Context.KnowledgeGraphs.Single(x => x.Id == result.Value);
+        Assert.Equal(KnowledgeGraphModes.Connected, graph.Mode);
+        Assert.Equal("ext", graph.Database);
+        Assert.Null(graph.TemplateKey);
     }
 
     [Fact]
@@ -43,7 +94,8 @@ public class CreateKnowledgeGraphCommandHandlerTests
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = false });
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
 
@@ -61,7 +113,8 @@ public class CreateKnowledgeGraphCommandHandlerTests
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = " " });
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
 
@@ -79,7 +132,8 @@ public class CreateKnowledgeGraphCommandHandlerTests
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
         await sut.Handle(new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None);
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
@@ -98,7 +152,8 @@ public class CreateKnowledgeGraphCommandHandlerTests
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object);
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
         var result = await sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "运维", TemplateKey = "ops" },
             CancellationToken.None);

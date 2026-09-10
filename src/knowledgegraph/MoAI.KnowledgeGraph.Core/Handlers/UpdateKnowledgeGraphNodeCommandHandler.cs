@@ -33,7 +33,7 @@ public class UpdateKnowledgeGraphNodeCommandHandler : IRequestHandler<UpdateKnow
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
 
         _ = await _store.GetNodeAsync(request.KgId, request.NodeId, cancellationToken)
             ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };

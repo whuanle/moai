@@ -17,4 +17,9 @@ public interface IKnowledgeGraphAuthorizer
     /// 校验当前用户对图谱的访问权限，返回图谱与角色.
     /// </summary>
     Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeAsync(long kgId, bool adminOnly, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 校验对“可写（托管）图谱”的访问；外部接入图谱抛 409.
+    /// </summary>
+    Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeManagedAsync(long kgId, bool adminOnly, CancellationToken cancellationToken);
 }

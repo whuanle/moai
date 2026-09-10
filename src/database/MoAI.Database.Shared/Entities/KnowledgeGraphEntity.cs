@@ -34,6 +34,16 @@ public partial class KnowledgeGraphEntity : IFullAudited
     public string? TemplateKey { get; set; }
 
     /// <summary>
+    /// 图谱来源：managed=平台托管，connected=外部接入.
+    /// </summary>
+    public string Mode { get; set; } = "managed";
+
+    /// <summary>
+    /// 接入的外部 Neo4j 数据库名（仅 connected）.
+    /// </summary>
+    public string? Database { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public long CreateUserId { get; set; }

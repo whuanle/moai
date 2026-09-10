@@ -6,9 +6,9 @@ namespace MoAI.KnowledgeGraph.Queries.Responses;
 public class KnowledgeGraphRelationTypeItem
 {
     /// <summary>
-    /// 关系类型 id.
+    /// 关系类型 id；外部接入图谱为 null.
     /// </summary>
-    public long RelationTypeId { get; init; }
+    public long? RelationTypeId { get; init; }
 
     /// <summary>
     /// 名称.
@@ -34,4 +34,9 @@ public class KnowledgeGraphRelationTypeItem
     /// 终点实体类型 id，null=任意.
     /// </summary>
     public long? TargetTypeId { get; init; }
+
+    /// <summary>
+    /// 边数（仅 connected 内省）.
+    /// </summary>
+    public long? Count { get; init; }
 }

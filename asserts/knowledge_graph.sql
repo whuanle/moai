@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS public.kg (
     name            varchar(50)  NOT NULL,
     description     varchar(255) NOT NULL DEFAULT '',
     template_key    varchar(50)  NULL,
+    mode            varchar(20)  NOT NULL DEFAULT 'managed',
+    database        varchar(100) NULL,
     is_deleted      bigint       NOT NULL DEFAULT 0,
     create_user_id  bigint       NOT NULL DEFAULT 0,
     create_time     timestamptz  NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -53,3 +55,7 @@ CREATE TABLE IF NOT EXISTS public.kg_relation_type (
 CREATE INDEX IF NOT EXISTS idx_kg_relation_type_kg_id ON public.kg_relation_type (kg_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_kg_relation_type_name_live_uindex ON public.kg_relation_type (kg_id, name) WHERE is_deleted = 0;
 ALTER TABLE public.kg_relation_type OWNER to postgres;
+
+-- 已有库增量：外部接入图谱来源与数据库名
+ALTER TABLE public.kg ADD COLUMN IF NOT EXISTS mode varchar(20) NOT NULL DEFAULT 'managed';
+ALTER TABLE public.kg ADD COLUMN IF NOT EXISTS database varchar(100) NULL;

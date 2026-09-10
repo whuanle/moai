@@ -1,9 +1,11 @@
 using System.Threading;
 using System.Threading.Tasks;
+using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Services;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Services;
 using MoAI.Team.Services;
 using Moq;
@@ -54,6 +56,40 @@ public class KnowledgeGraphAuthorizerTests
 
         var role = await sut.RequireTeamRoleAsync(7, adminOnly: true, CancellationToken.None);
 
+        Assert.Equal(TeamRole.Admin, role);
+    }
+
+    [Fact]
+    public async Task AuthorizeManagedAsync_WhenConnected_Throws409()
+    {
+        using var db = TestSqliteContext.Create();
+        db.Context.KnowledgeGraphs.Add(new KnowledgeGraphEntity { Id = 7, TeamId = 1, Name = "外部图", Description = string.Empty, Mode = KnowledgeGraphModes.Connected, Database = "ext" });
+        await db.Context.SaveChangesAsync(CancellationToken.None);
+        var teamService = new Mock<ITeamService>();
+        teamService.Setup(x => x.GetMyRoleAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var sut = CreateAuthorizer(db, teamService.Object);
+
+        var ex = await Assert.ThrowsAsync<BusinessException>(
+            () => sut.AuthorizeManagedAsync(7, adminOnly: false, CancellationToken.None));
+
+        Assert.Equal(409, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task AuthorizeManagedAsync_WhenManaged_ReturnsGraph()
+    {
+        using var db = TestSqliteContext.Create();
+        db.Context.KnowledgeGraphs.Add(new KnowledgeGraphEntity { Id = 7, TeamId = 1, Name = "托管图", Description = string.Empty, Mode = KnowledgeGraphModes.Managed });
+        await db.Context.SaveChangesAsync(CancellationToken.None);
+        var teamService = new Mock<ITeamService>();
+        teamService.Setup(x => x.GetMyRoleAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TeamRole.Admin);
+        var sut = CreateAuthorizer(db, teamService.Object);
+
+        var (graph, role) = await sut.AuthorizeManagedAsync(7, adminOnly: false, CancellationToken.None);
+
+        Assert.Equal(7, graph.Id);
         Assert.Equal(TeamRole.Admin, role);
     }
 

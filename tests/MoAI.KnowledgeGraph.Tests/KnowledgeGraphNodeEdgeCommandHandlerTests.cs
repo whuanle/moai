@@ -235,10 +235,30 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         store.Verify(x => x.ListNodesAsync(KgId, null, null, 1, 100, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task CreateNode_OnConnectedGraph_Throws409()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.AuthorizeManagedAsync(KgId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new BusinessException("外部接入图谱为只读.") { StatusCode = 409 });
+        var store = new Mock<IKnowledgeGraphStore>();
+        var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object);
+
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
+            new CreateKnowledgeGraphNodeCommand { KgId = KgId, EntityTypeId = 1, Name = "节点" },
+            CancellationToken.None));
+
+        Assert.Equal(409, ex.StatusCode);
+        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static Mock<IKnowledgeGraphAuthorizer> CreateAuthorizer()
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.AuthorizeAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
+        authorizer.Setup(x => x.AuthorizeManagedAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer;
     }

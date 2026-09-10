@@ -1,4 +1,5 @@
 using MoAI.Infra.Exceptions;
+using MoAI.KnowledgeGraph.Models;
 using Neo4j.Driver;
 
 namespace MoAI.KnowledgeGraph.Services;
@@ -169,6 +170,87 @@ public sealed class Neo4jKnowledgeGraphStore : IKnowledgeGraphStore
     public async Task PurgeGraphAsync(long kgId, CancellationToken cancellationToken)
     {
         await WriteAsync("MATCH (n:KgNode {kgId: $kgId}) DETACH DELETE n", new { kgId }, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> ProbeDatabaseAsync(string database, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var driver = await _provider.GetDriverAsync(cancellationToken);
+            await using var session = driver.AsyncSession(b => b.WithDatabase(database));
+            var cursor = await session.RunAsync("CALL db.labels()");
+            await cursor.ConsumeAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeGraphIntrospection> IntrospectAsync(string database, CancellationToken cancellationToken)
+    {
+        var driver = await _provider.GetDriverAsync(cancellationToken);
+        await using var session = driver.AsyncSession(b => b.WithDatabase(database));
+
+        var labelCursor = await session.RunAsync("CALL db.labels() YIELD label RETURN label ORDER BY label");
+        var labels = new List<KnowledgeGraphIntrospectedItem>();
+        foreach (var record in await labelCursor.ToListAsync())
+        {
+            var label = record["label"].As<string>();
+            if (label.Contains('`', StringComparison.Ordinal))
+            {
+                labels.Add(new KnowledgeGraphIntrospectedItem(label, 0));
+                continue;
+            }
+
+            long count;
+            try
+            {
+                var countCursor = await session.RunAsync($"MATCH (n:`{label}`) RETURN count(n) AS c");
+                var countRecord = (await countCursor.ToListAsync())[0];
+                count = countRecord["c"].As<long>();
+            }
+            catch (Exception)
+            {
+                count = 0;
+            }
+
+            labels.Add(new KnowledgeGraphIntrospectedItem(label, count));
+        }
+
+        var relCursor = await session.RunAsync("CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType ORDER BY relationshipType");
+        var relations = new List<KnowledgeGraphIntrospectedItem>();
+        foreach (var record in await relCursor.ToListAsync())
+        {
+            var relType = record["relationshipType"].As<string>();
+            if (relType.Contains('`', StringComparison.Ordinal))
+            {
+                relations.Add(new KnowledgeGraphIntrospectedItem(relType, 0));
+                continue;
+            }
+
+            long count;
+            try
+            {
+                var countCursor = await session.RunAsync($"MATCH ()-[r:`{relType}`]->() RETURN count(r) AS c");
+                var countRecord = (await countCursor.ToListAsync())[0];
+                count = countRecord["c"].As<long>();
+            }
+            catch (Exception)
+            {
+                count = 0;
+            }
+
+            relations.Add(new KnowledgeGraphIntrospectedItem(relType, count));
+        }
+
+        var keyCursor = await session.RunAsync("CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey ORDER BY propertyKey");
+        var keys = (await keyCursor.ToListAsync()).Select(x => x["propertyKey"].As<string>()).ToList();
+
+        return new KnowledgeGraphIntrospection(labels, relations, keys);
     }
 
     private static KnowledgeGraphNodeRecord MapNode(IRecord record)

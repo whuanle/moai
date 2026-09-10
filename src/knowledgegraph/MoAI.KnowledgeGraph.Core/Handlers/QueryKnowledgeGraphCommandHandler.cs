@@ -1,4 +1,5 @@
 using MediatR;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
 using MoAI.KnowledgeGraph.Services;
@@ -40,6 +41,9 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
             TemplateKey = graph.TemplateKey,
             MyRole = (int)role,
             Enabled = settings.Enabled,
+            Mode = graph.Mode,
+            Database = graph.Database,
+            ReadOnly = graph.Mode == KnowledgeGraphModes.Connected,
             CreateTime = graph.CreateTime,
         };
     }

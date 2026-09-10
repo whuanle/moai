@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.KnowledgeGraph.Models;
 
 namespace MoAI.KnowledgeGraph.Commands;
 
@@ -29,11 +30,24 @@ public class CreateKnowledgeGraphCommand : IRequest<SimpleLong>, IModelValidator
     /// </summary>
     public string? TemplateKey { get; init; }
 
+    /// <summary>
+    /// 来源：managed / connected.
+    /// </summary>
+    public string Mode { get; init; } = KnowledgeGraphModes.Managed;
+
+    /// <summary>
+    /// 接入的 Neo4j 数据库名（仅 connected）.
+    /// </summary>
+    public string? Database { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateKnowledgeGraphCommand> validate)
     {
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("简介最长 255 个字符.");
+        validate.RuleFor(x => x.Mode).Must(KnowledgeGraphModes.IsValid).WithMessage("图谱来源不合法.");
+        validate.RuleFor(x => x.Database).NotEmpty().When(x => x.Mode == KnowledgeGraphModes.Connected).WithMessage("接入图谱必须填写数据库名.");
+        validate.RuleFor(x => x.TemplateKey).Empty().When(x => x.Mode == KnowledgeGraphModes.Connected).WithMessage("接入图谱不能使用模板.");
     }
 }

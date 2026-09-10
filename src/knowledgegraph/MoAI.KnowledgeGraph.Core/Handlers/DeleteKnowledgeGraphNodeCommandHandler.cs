@@ -28,7 +28,7 @@ public class DeleteKnowledgeGraphNodeCommandHandler : IRequestHandler<DeleteKnow
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
         var deleted = await _store.DeleteNodeAsync(request.KgId, request.NodeId, cancellationToken);
         if (!deleted)
         {

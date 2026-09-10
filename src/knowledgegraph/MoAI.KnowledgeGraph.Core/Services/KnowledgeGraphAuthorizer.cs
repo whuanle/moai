@@ -5,6 +5,7 @@ using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Services;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.Team.Services;
 
 namespace MoAI.KnowledgeGraph.Services;
@@ -61,5 +62,17 @@ public class KnowledgeGraphAuthorizer : IKnowledgeGraphAuthorizer
 
         var role = await RequireTeamRoleAsync(graph.TeamId, adminOnly, cancellationToken);
         return (graph, role);
+    }
+
+    /// <inheritdoc/>
+    public async Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeManagedAsync(long kgId, bool adminOnly, CancellationToken cancellationToken)
+    {
+        var result = await AuthorizeAsync(kgId, adminOnly, cancellationToken);
+        if (string.Equals(result.Graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
+        {
+            throw new BusinessException("外部接入图谱为只读.") { StatusCode = 409 };
+        }
+
+        return result;
     }
 }

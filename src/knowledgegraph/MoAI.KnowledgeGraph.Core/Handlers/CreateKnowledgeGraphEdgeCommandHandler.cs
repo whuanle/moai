@@ -33,7 +33,7 @@ public class CreateKnowledgeGraphEdgeCommandHandler : IRequestHandler<CreateKnow
     /// <inheritdoc/>
     public async Task<SimpleString> Handle(CreateKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
 
         var relationType = await _databaseContext.KnowledgeGraphRelationTypes
             .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KgId == request.KgId, cancellationToken)
