@@ -45,7 +45,7 @@ export function KnowledgeGraphList() {
         const res = await getKnowledgeGraphs(teamId)
         if (res.enabled) anyEnabled = true
         for (const g of res.items ?? []) {
-          collected.push({ ...g, teamName: team.name ?? undefined, myRole: res.myRole, graphEnabled: res.enabled ?? false })
+          collected.push({ ...g, teamId, teamName: team.name ?? undefined, myRole: res.myRole, graphEnabled: res.enabled ?? false })
         }
       } catch {
         // 单个团队失败不中断

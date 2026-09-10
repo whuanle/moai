@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Button, Col, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
@@ -26,6 +27,7 @@ interface FormValues {
 
 export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [items, setItems] = useState<KnowledgeGraphItem[]>([])
   const [myRole, setMyRole] = useState<number | null>(null)
   const [enabled, setEnabled] = useState(true)
@@ -122,7 +124,11 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
       <Row gutter={[spacing.md, spacing.md]}>
         {items.map((item) => (
           <Col key={String(item.kgId)} xs={24} sm={12} md={8} lg={6}>
-            <Card>
+            <Card
+              hoverable
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/team/${teamId}/kg/${item.kgId}/entities`)}
+            >
               <div style={{ fontWeight: 600 }}>{item.name}</div>
               {item.mode === 'connected' && (
                 <div style={{ marginTop: spacing.xs }}>
@@ -131,7 +137,7 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
               )}
               <div style={{ opacity: 0.65, minHeight: 22 }}>{item.description || '-'}</div>
               {isAdminPlus && (
-                <Space>
+                <Space size={0} onClick={(e) => e.stopPropagation()}>
                   <Button
                     type="text"
                     size="small"
