@@ -921,6 +921,9 @@
     "menuRelations": "Relations",
     "menuSchema": "Schema",
     "menuSettings": "Settings",
+    "save": "Save",
+    "cancel": "Cancel",
+    "searchPlaceholder": "Search by name",
     "entity": {
       "create": "New Entity",
       "edit": "Edit Entity",
@@ -948,6 +951,8 @@
       "relationTypes": "Relation Types",
       "addEntityType": "Add Entity Type",
       "addRelationType": "Add Relation Type",
+      "editEntityType": "Edit Entity Type",
+      "editRelationType": "Edit Relation Type",
       "name": "Name",
       "color": "Color",
       "desc": "Description",

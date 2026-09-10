@@ -750,6 +750,9 @@
     "menuRelations": "关系",
     "menuSchema": "模型",
     "menuSettings": "设置",
+    "save": "保存",
+    "cancel": "取消",
+    "searchPlaceholder": "搜索名称",
     "entity": {
       "create": "新建实体",
       "edit": "编辑实体",
@@ -777,6 +780,8 @@
       "relationTypes": "关系类型",
       "addEntityType": "新增实体类型",
       "addRelationType": "新增关系类型",
+      "editEntityType": "编辑实体类型",
+      "editRelationType": "编辑关系类型",
       "name": "名称",
       "color": "颜色",
       "desc": "描述",
