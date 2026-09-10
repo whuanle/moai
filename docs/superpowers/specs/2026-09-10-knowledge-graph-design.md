@@ -1,4 +1,4 @@
-# 知识图谱模块设计（v1：独立图谱 + 手动维护）
+# 知识图谱模块设计（v1：独立图谱 + 手动维护 + 外部接入）
 
 - 日期：2026-09-10
 - 状态：待评审
@@ -8,16 +8,21 @@
 
 向量检索回答不了关系问题。例如"支付接口超时多久、由谁维护、影响哪个项目"：向量库能召回相关片段，但"由谁维护、影响哪个项目"必须把 `PaymentService` 与"王工""结算平台"之间的关联存下来才能答出。用 Neo4j 存实体与关系，把这类多跳关系查询做便宜。
 
-v1 交付一个**独立的知识图谱模块**：团队可创建多个图谱，用户在工作台手动维护节点与边；创建图谱时可套用内置模板，也可完全自定义 schema。文档 LLM 自动抽取、绑定知识库经 MQ 自动生成、结构化文件导入均为后续迭代。
+v1 交付一个**独立的知识图谱模块**，图谱有两种来源：
+
+- **平台托管（managed）**：团队可创建多个图谱，用户在工作台手动维护节点与边；创建时可套用内置模板，也可完全自定义 schema。
+- **外部接入（connected）**：业务侧已有 Neo4j 图谱（同一实例的某个数据库），平台只登记接入 + 自动内省 schema，默认只读，供后续 AI 应用消费。
+
+文档 LLM 自动抽取、绑定知识库经 MQ 自动生成、结构化文件导入均为后续迭代。
 
 ## 范围
 
 **包含：**
 - 知识图谱领域：团队级、可建多个、增删改查
-- schema：实体类型、关系类型增删改；内置模板目录（选用即复制类型到图谱）
-- 图数据：节点、边的手动增删改查（数据仅存 Neo4j）
-- 前端：`/kg` 卡片墙、团队详情「知识图谱」tab、工作台（实体 / 关系 / 模型 / 设置）
-- 能力门禁：`OPEN_NEO4J` 未开启时不可建图，图谱内容操作不可用
+- **托管图谱**：schema（实体类型、关系类型）增删改；内置模板目录（选用即复制类型到图谱）；节点、边的手动增删改查（数据仅存 Neo4j）
+- **接入图谱**：登记外部 Neo4j 数据库（同一实例）+ 自动内省标签 / 关系类型 / 属性键，只读，不迁移、不修改外部数据
+- 前端：`/kg` 卡片墙、团队详情「知识图谱」tab、工作台（托管：实体 / 关系 / 模型 / 设置；接入：模型 / 设置）
+- 能力门禁：`OPEN_NEO4J` 未开启时不可建图/接入，图谱内容操作不可用
 
 **不包含（后续迭代）：**
 - 文档 LLM 抽取三元组入图
@@ -47,7 +52,8 @@ v1 交付一个**独立的知识图谱模块**：团队可创建多个图谱，�
 DDL 新增 `asserts/knowledge_graph.sql`，实体与 Configuration 放在 `src/database`，保持与脚手架一致（审计五件套、boolean 软删除、partial 唯一索引、不建物理外键）。
 
 - `kg`（图谱）
-  - `id / team_id / name(varchar50) / description(varchar255) / template_key(varchar50, null=自定义) / is_deleted / 审计`
+  - `id / team_id / name(varchar50) / description(varchar255) / template_key(varchar50, null=自定义) / mode(varchar20, managed|connected) / database(varchar100, null) / is_deleted / 审计`
+  - `mode` 默认 `managed`；`database` 仅 `connected` 必填（同实例数据库名），`managed` 为空
   - 索引 `idx_kg_team_id`
   - partial 唯一 `(team_id, name) WHERE is_deleted = false`
 - `kg_entity_type`（实体类型）
@@ -88,14 +94,29 @@ DDL 新增 `asserts/knowledge_graph.sql`，实体与 Configuration 放在 `src/d
 - 删图谱：`MATCH (n:KgNode {kgId:$kgId}) DETACH DELETE n`
 - 删节点：`MATCH (n:KgNode {kgId:$kgId, id:$id}) DETACH DELETE n`（连同其边）
 
+### 接入图谱（connected，只读）
+
+接入图直接读外部数据库里对方自己的节点/关系（任意标签/属性），不套 `:KgNode` 结构：
+
+- 访问方式：`driver.AsyncSession(b => b.WithDatabase(database))`，`database` 为该图谱登记的库名
+- 登记探活：`CALL db.labels()` 成功即视为可接入；失败 → 400「数据库不存在或无法访问」
+- schema 内省：
+  - `CALL db.labels()` → 标签（实体类型候选）
+  - `CALL db.relationshipTypes()` → 关系类型
+  - `CALL db.propertyKeys()` → 属性键
+  - 每个标签/关系类型附带计数（`MATCH (n:`\`label\``) RETURN count(n)`；标签名反引号转义，含反引号的标签跳过），计数为尽力而为
+- 只读：不提供节点/边/schema 写操作
+- 删除：只软删平台登记记录，绝不对 `database` 执行任何写/删
+
 ## 权限（复用 Team 角色，Handler 判定）
 
 | 操作 | Owner/Admin | Member | 非成员 |
 |---|---|---|---|
-| 建图 / 改图 / 删图 | ✅ | 403 | 404 |
+| 建图 / 接入 / 改图 / 删图 | ✅ | 403 | 404 |
 | 列表 / 详情 | ✅ | ✅ | 404 |
-| 实体类型、关系类型增删改 | ✅ | 403 | 404 |
-| 节点 / 边增删改查 | ✅ | ✅ | 404 |
+| 实体类型、关系类型增删改（仅托管图） | ✅ | 403 | 404 |
+| 节点 / 边增删改查（仅托管图） | ✅ | ✅ | 404 |
+| schema 内省（接入图） | ✅ | ✅ | 404 |
 
 - 列表/详情响应携带 `myRole`
 - 角色判定注入 `MoAI.Team.Shared` 的 `ITeamService`；Core 只引用 Team 接口项目
@@ -105,13 +126,13 @@ DDL 新增 `asserts/knowledge_graph.sql`，实体与 Configuration 放在 `src/d
 
 | 方法 | 路由 | 说明 |
 |---|---|---|
-| POST | `/api/knowledge-graph` | 建图 `{teamId, name, description?, templateKey?}` |
-| GET | `/api/knowledge-graph/list?teamId=` | 列表（含 myRole、`enabled` 能力开关） |
-| GET | `/api/knowledge-graph/{id}` | 详情（含 myRole、templateKey） |
+| POST | `/api/knowledge-graph` | 建图/接入 `{teamId, name, description?, mode, templateKey? \| database?}` |
+| GET | `/api/knowledge-graph/list?teamId=` | 列表（含 myRole、`enabled` 能力开关、mode） |
+| GET | `/api/knowledge-graph/{id}` | 详情（含 myRole、templateKey、mode、database、`readOnly`） |
 | PUT | `/api/knowledge-graph/{id}` | 改名称/简介 |
-| DELETE | `/api/knowledge-graph/{id}` | 软删 + 清空 Neo4j |
+| DELETE | `/api/knowledge-graph/{id}` | 托管：软删 + 清空 Neo4j；接入：仅软删登记，不动外部库 |
 | GET | `/api/knowledge-graph/templates` | 内置模板目录 |
-| GET | `/api/knowledge-graph/{id}/schema` | 实体类型 + 关系类型 |
+| GET | `/api/knowledge-graph/{id}/schema` | 托管：实体类型 + 关系类型；接入：内省标签/关系类型/属性键 + 计数 |
 | POST | `/api/knowledge-graph/{id}/entity-types` | 新增实体类型 |
 | PUT | `/api/knowledge-graph/{id}/entity-types/{typeId}` | 改实体类型 |
 | DELETE | `/api/knowledge-graph/{id}/entity-types/{typeId}` | 删实体类型 |
@@ -133,38 +154,42 @@ DDL 新增 `asserts/knowledge_graph.sql`，实体与 Configuration 放在 `src/d
 
 ## 关键流程与校验（Core，跨存储校验在 `IKnowledgeGraphStore`）
 
-- **能力门禁**：建图与所有节点/边操作前读设置；`Enabled=false` → 409「未开启知识图谱能力」
-- **建图**：团队角色 Admin+；同团队未删除同名 409；带模板则复制类型
-- **实体类型 / 关系类型删除**：先查 Neo4j，仍有节点用 `entityTypeId`（或边用 `relationTypeId`）→ 409 拒绝；否则软删
+- **能力门禁**：建图/接入与所有节点/边操作前读设置；`Enabled=false` → 409「未开启知识图谱能力」
+- **建图（managed）**：团队角色 Admin+；同团队未删除同名 409；带模板则复制类型
+- **接入（connected）**：团队角色 Admin+；必填 `database`、禁止 `templateKey`；探活失败 400；同名 409
+- **只读约束**：`mode=connected` 时 schema CRUD、节点/边 CRUD 一律 409「外部接入图谱为只读」
+- **实体类型 / 关系类型删除**（仅 managed）：先查 Neo4j，仍有节点用 `entityTypeId`（或边用 `relationTypeId`）→ 409 拒绝；否则软删
 - **建节点**：`entityTypeId` 必须属于该图谱
 - **建边**：`relationTypeId` 属于该图谱；起止节点存在于该图谱；关系类型若设 `source_type_id`/`target_type_id`，则端点类型必须匹配，否则 400
 - **删节点**：`DETACH DELETE`，连带删除其边
-- **删图谱**：PG 软删 + 同步清 Neo4j（手动图谱数据量小）；未来图量大再改 `WorkerTask` + MQ 异步
+- **删图谱**：managed → PG 软删 + 同步清 Neo4j；connected → 仅 PG 软删，绝不写外部库
 - 节点/边数据全在 Neo4j，不涉及 Redis 用户态，无需 `RemoveUserStateAsync`
 
 ## 前端
 
 路由对齐 wiki：
 - `/kg`：我加入的所有团队的知识图谱**卡片墙**，只读聚合（`getMyTeams()` → 逐团队列表合并），不提供管理入口
-- `/team/:teamId/kg/:graphId/:section?`：工作台，`section ∈ entities(默认) | relations | schema | settings`
-- 团队详情「知识图谱」tab：新建 / 改 / 删（仅 Owner/Admin），数据源 `myRole` 判定
-- 建图弹窗：名称、简介、模板卡片（可选中高亮），含「空白 / 自定义」
-- 工作台：左侧菜单（实体 / 关系 / 模型 / 设置）；实体与关系为两个列表页（关系行显示 `起点 → 关系 → 终点`）；「模型」管理实体类型与关系类型（Admin+ 可编辑）
+- `/team/:teamId/kg/:graphId/:section?`：工作台；`managed` 的 `section ∈ entities(默认) | relations | schema | settings`，`connected` 为 `schema(默认) | settings`
+- 团队详情「知识图谱」tab：新建/接入 / 改 / 删（仅 Owner/Admin），数据源 `myRole` 判定
+- 建图/接入弹窗：先选「平台托管」或「接入已有」；托管填名称/简介/模板，接入填名称/库名
+- 工作台（managed）：左侧菜单（实体 / 关系 / 模型 / 设置）；实体与关系为两个列表页（关系行显示 `起点 → 关系 → 终点`）；「模型」管理实体类型与关系类型（Admin+ 可编辑）
+- 工作台（connected）：左侧菜单（模型 / 设置），顶部"外部接入 · 只读"提示；「模型」只读展示内省出的标签 / 关系类型 / 属性键与计数；删除时提示"仅从平台移除该接入，不影响外部数据"
 - 画布后续在实体页加「列表 / 画布」切换，v1 不放
 
 约束：全部走 `@/design-system`（Page / DataTable / Form / Modal / Popconfirm）；危险操作 `Popconfirm`；文案走 `t()`，zh-CN 与 en-US 同步；时间用 `formatDateTime()`；封装放 `ui/src/api/knowledgeGraph.ts`，页面只调封装层；Kiota 生成物禁手改。
 
 ## 失败处理
 
-- `OPEN_NEO4J=false`：`/kg` 卡片墙与工作台照常可用（元数据在 PG，可看），但「新建」禁用并提示，节点/边操作返回 409；建图请求同样 409
+- `OPEN_NEO4J=false`：`/kg` 卡片墙与工作台照常可用（元数据在 PG，可看），但「新建/接入」禁用并提示，节点/边操作返回 409；建图/接入请求同样 409
 - Neo4j 不可达 / 连接信息错误：存储层异常映射为 503，提示检查系统设置
+- 接入库不存在/无权限：探活失败 → 400「数据库不存在或无法访问」
 - 模板类型复制失败：整图创建回滚（同一事务写 PG）
 - 前端列表/详情加载失败保留页面骨架并提示，可重试
 
 ## 验证
 
 - 后端：`dotnet build src/MoAI/MoAI.csproj` 0 error；单测覆盖 Handler 校验（类型归属、关系类型约束、删除引用拦截、能力门禁）
-- E2E：`local-dev/kg-e2e.mjs`，覆盖 建图（含模板）→ schema CRUD → 节点/边 CRUD → 约束校验 → 删类型引用拦截 → 删图清空（需后端 + Neo4j + `OPEN_NEO4J=true`）
+- E2E：`local-dev/kg-e2e.mjs`，覆盖 建图（含模板）→ schema CRUD → 节点/边 CRUD → 约束校验 → 删类型引用拦截 → 删图清空；接入场景覆盖 接入探活 → 内省 schema → 只读拒绝（需后端 + Neo4j + `OPEN_NEO4J=true`）
 - 前端：`npm run typecheck && npm run lint && npm run test`，页面组件测试写在同目录 `__tests__/`
 - 文档：新增 `docs/knowledgegraph/{sdd,bdd,tdd,sop}.md`，场景编号 `KG-S<n>`
 
@@ -180,12 +205,17 @@ DDL 新增 `asserts/knowledge_graph.sql`，实体与 Configuration 放在 `src/d
 - **D8 v1 不做自定义属性字段**：节点/边只有名称 + 描述，属性字段后续迭代
 - **D9 删图谱同步清理 Neo4j**：v1 直接同步；图量大后改异步任务
 - **D10 绑定知识库与文档抽取延后**：向量化完成经 MQ 触发图谱生成的链路不在本期
+- **D11 双来源图谱**：`mode=managed`（平台托管，可维护）与 `mode=connected`（外部接入，只读）；同一张 `kg` 表用 `mode` 区分
+- **D12 接入按同实例数据库名**：外部图限定为系统设置那台 Neo4j 的某个 database，不引入第二套连接凭据；不区分社区/企业版
+- **D13 接入只读且不迁移**：平台不修改外部数据、不强制其套 `:KgNode` 结构；v1 仅登记 + 内省 schema（标签/关系类型/属性键 + 计数），节点级浏览见后续迭代
 
 ## 后续迭代
 
-1. 节点/边自定义属性字段与属性 schema
-2. 文档 LLM 抽取三元组入图（模板/自定义 schema 约束下抽取）
-3. 绑定知识库：向量化完成事件（`Maomi.MQ`）→ 图谱 consumer 增量生成
-4. 结构化文件导入（CSV / Excel / JSON、三元组、字段映射）
-5. 画布可视化视图与图查询（Cypher / 自然语言）
-6. 图谱检索与接入 Agent Framework（`AIContextProvider`）
+1. 接入图只读浏览：按标签列节点、通用属性面板、关系浏览
+2. 接入图可选"可写"开关（复用托管图 CRUD 适配任意结构）
+3. 节点/边自定义属性字段与属性 schema
+4. 文档 LLM 抽取三元组入图（模板/自定义 schema 约束下抽取）
+5. 绑定知识库：向量化完成事件（`Maomi.MQ`）→ 图谱 consumer 增量生成
+6. 结构化文件导入（CSV / Excel / JSON、三元组、字段映射）
+7. 画布可视化视图与图查询（Cypher / 自然语言）
+8. 图谱检索与接入 Agent Framework（`AIContextProvider`）
