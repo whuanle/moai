@@ -62,6 +62,9 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
                 Config = request.Config,
             };
 
+            _databaseContext.PluginDynamics.Add(newDynamic);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
+
             var pluginEntity = new PluginEntity
             {
                 IsSystem = false,
@@ -71,31 +74,31 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
                 Title = request.Title,
                 Description = request.Description,
                 Type = (int)PluginType.NativePlugin,
-                ClassifyId = 0,
+                ClassifyId = request.ClassifyId,
                 IsPublic = true,
                 Counter = 0,
             };
 
-            _databaseContext.PluginDynamics.Add(newDynamic);
             _databaseContext.Plugins.Add(pluginEntity);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
         }
         else
         {
             var pluginEntity = await _databaseContext.Plugins
                 .FirstOrDefaultAsync(x => x.PluginId == existing.Id && x.TeamId == request.TeamId && x.IsDeleted == 0, cancellationToken)
-                ?? throw new BusinessException("团队动态插件实例记录不存在") { StatusCode = 404 };
+                ?? throw new BusinessException("实例 Key 已被使用") { StatusCode = 409 };
 
             existing.TempleteKey = request.TempleteKey;
             existing.Config = request.Config;
 
             pluginEntity.Title = request.Title;
             pluginEntity.Description = request.Description;
+            pluginEntity.ClassifyId = request.ClassifyId;
 
             _databaseContext.PluginDynamics.Update(existing);
             _databaseContext.Plugins.Update(pluginEntity);
+            await _databaseContext.SaveChangesAsync(cancellationToken);
         }
-
-        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
     }
@@ -119,6 +122,11 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
         var dbExists = await _databaseContext.Plugins
             .AnyAsync(x => x.TeamId == teamId && x.PluginName == instanceKey && x.IsDeleted == 0, cancellationToken);
         if (dbExists)
+        {
+            throw new BusinessException("实例 Key 已被使用") { StatusCode = 409 };
+        }
+
+        if (_registry.Get(instanceKey) != null)
         {
             throw new BusinessException("实例 Key 已被使用") { StatusCode = 409 };
         }

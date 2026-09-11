@@ -45,6 +45,11 @@ public class SaveTeamDynamicPluginCommand : IUserIdContext, IRequest<EmptyComman
     /// </summary>
     public string Config { get; init; } = string.Empty;
 
+    /// <summary>
+    /// 分类 id，0 表示未分类.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<SaveTeamDynamicPluginCommand> validate)
     {

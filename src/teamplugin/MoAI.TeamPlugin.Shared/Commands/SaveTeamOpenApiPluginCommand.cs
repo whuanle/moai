@@ -27,6 +27,11 @@ public class SaveTeamOpenApiPluginCommand : IUserIdContext, IRequest<SimpleGuid>
     public Guid? PluginId { get; init; }
 
     /// <summary>
+    /// 分类 id，0 表示未分类.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
+    /// <summary>
     /// 上传的 id.
     /// </summary>
     public long FileId { get; init; } = default!;

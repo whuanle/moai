@@ -99,6 +99,21 @@ public class TeamPluginItem
     public string? ParamsExample { get; init; }
 
     /// <summary>
+    /// 是否公开（团队插件恒为 true）.
+    /// </summary>
+    public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// OpenAPI 文件 id（仅 OpenAPI 自定义插件有）.
+    /// </summary>
+    public long OpenapiFileId { get; set; }
+
+    /// <summary>
+    /// OpenAPI 文件名称（仅 OpenAPI 自定义插件有）.
+    /// </summary>
+    public string? OpenapiFileName { get; set; }
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }
@@ -107,4 +122,24 @@ public class TeamPluginItem
     /// 创建人 id.
     /// </summary>
     public long CreateUserId { get; set; }
+
+    /// <summary>
+    /// 创建人名称.
+    /// </summary>
+    public string CreateUserName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 更新时间.
+    /// </summary>
+    public DateTimeOffset UpdateTime { get; set; }
+
+    /// <summary>
+    /// 更新人 id.
+    /// </summary>
+    public long UpdateUserId { get; set; }
+
+    /// <summary>
+    /// 更新人名称.
+    /// </summary>
+    public string UpdateUserName { get; set; } = string.Empty;
 }

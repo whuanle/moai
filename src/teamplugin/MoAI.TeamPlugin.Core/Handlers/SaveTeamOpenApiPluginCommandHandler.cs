@@ -112,7 +112,7 @@ public class SaveTeamOpenApiPluginCommandHandler : IRequestHandler<SaveTeamOpenA
             Title = request.Title,
             Type = (int)PluginType.OpenApi,
             IsPublic = true,
-            ClassifyId = 0,
+            ClassifyId = request.ClassifyId,
             PluginId = pluginCustomEntity.Id,
             Description = request.Description,
         };
@@ -159,6 +159,7 @@ public class SaveTeamOpenApiPluginCommandHandler : IRequestHandler<SaveTeamOpenA
         pluginEntity.Title = request.Title;
         pluginEntity.Description = request.Description;
         pluginEntity.PluginName = request.Name;
+        pluginEntity.ClassifyId = request.ClassifyId;
 
         // 未覆盖新的 openapi 文件
         if (request.FileId == 0 || request.FileId == pluginCustomEntity.OpenapiFileId)

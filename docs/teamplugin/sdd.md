@@ -2,9 +2,9 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 资料来源：[../aiplugin-dynamic/sdd.md](../aiplugin-dynamic/sdd.md)、[../aiplugin-static/sdd.md](../aiplugin-static/sdd.md) ｜ 证据：[local-dev/team-plugin-e2e.mjs](../../local-dev/team-plugin-e2e.mjs)
 
-- 日期：2026-09-07
-- 状态：数据库（授权表）+ 后端 API + 前端已实现（本轮范围）；team-plugin e2e 待执行
-- 领域：`src/teamplugin`（Shared/Core/Api），前端 `ui/src/pages/teams/plugins` + `ui/src/pages/plugins/components/PluginTeamAuthorizationDrawer`
+- 日期：2026-09-10
+- 状态：数据库（授权表）+ 后端 API + 前端已实现（分自定义/动态两 Tab，能力对齐管理员面板）；team-plugin e2e 19/19 通过
+- 领域：`src/teamplugin`（Shared/Core/Api），前端 `ui/src/pages/teams/plugins`（+ 复用 `ui/src/pages/plugins/components` 弹窗）
 
 ## 1. 目标
 
@@ -43,12 +43,20 @@
 | 方法 | 路由 | 说明 | 出参 |
 |---|---|---|---|
 | GET | `/api/team/{teamId}/plugin/list` | 团队可用插件列表（含 myRole/canManage） | `QueryTeamPluginsCommandResponse` |
+| GET | `/api/team/{teamId}/plugin/dynamic_templates` | 可用动态模板（注册表发现，成员可访问） | `QueryPluginListCommandResponse` |
+| GET | `/api/team/{teamId}/plugin/{pluginId}/detail` | 自定义插件详情（团队自有/可用系统插件） | `QueryCustomPluginDetailCommandResponse` |
+| POST | `/api/team/{teamId}/plugin/{pluginId}/functions` | 插件函数列表 | `QueryCustomPluginFunctionsListCommandResponse` |
+| POST | `/api/team/{teamId}/plugin/{pluginId}/refresh_mcp` | 刷新 MCP 工具列表（Owner/Admin） | Empty |
+| POST | `/api/team/{teamId}/plugin/pre_upload_openapi` | 预上传 OpenAPI 文件（Owner/Admin） | `PreUploadOpenApiFilePluginCommandResponse` |
+| POST | `/api/team/{teamId}/plugin/run` | 运行团队可用插件（成员） | `PluginRunResult` |
 | POST | `/api/team/{teamId}/plugin/dynamic` | 创建/更新团队动态实例 | Empty |
 | POST | `/api/team/{teamId}/plugin/mcp` | 导入/更新团队 MCP 插件 | `SimpleGuid` |
 | POST | `/api/team/{teamId}/plugin/openapi` | 导入/更新团队 OpenAPI 插件 | `SimpleGuid` |
 | DELETE | `/api/team/{teamId}/plugin/{pluginId}` | 删除团队插件 | Empty |
 
-命令均实现 `IUserIdContext`，Controller 复用 `IUserContextProvider.SetUserContext` 注入当前用户；Handler 内用 `ITeamService.GetMyRoleAsync` 判角色。
+命令均实现 `IUserIdContext`，Controller 复用 `IUserContextProvider.SetUserContext` 注入当前用户；Handler 内用 `ITeamService.GetMyRoleAsync` 判角色。列表/详情/函数/运行仅需成员；创建/编辑/删除/刷新/预上传需 Owner/Admin。
+
+前端不再自绘简化表格：自定义/动态两个 Tab 复用管理员面板同款弹窗组件（`McpPluginModal`/`OpenApiModal`/`FunctionListModal`/`PluginRunDrawer`），通过可选注入的 `loadDetail`/`loadFunctions`/`uploadFile`/`runPlugin` 适配团队接口；`TeamPlugins` 仅负责拉取一次列表并按 `kind` 分发。
 
 ## 5. 关键决策
 
@@ -60,6 +68,8 @@
 
 ## 6. 已知问题 / 下阶段
 
-- 团队插件运行复用系统 `/ai/plugin/run`（admin 门禁），成员运行入口待开放；本轮前端未做成员运行 UI。
-- 团队插件不共享到其它团队（仅支持系统插件的授权）；跨团区分共享/授权留待后续。
+- 团队插件运行通过 `/api/team/{teamId}/plugin/run` 开放给成员：仅允许运行团队自有插件或公开/已授权的系统插件（`IsPluginAvailableAsync`），非成员 404。MCP/OpenAPI 自定义插件与管理员一致不走该运行入口（返回 404），动态实例与静态插件可运行。
+- 团队插件不共享到其它团队（仅支持系统插件的授权）；跨团队共享/授权留待后续。
 - `plugin_team_authorization` 仅支持系统插件，团队插件之间的授权/共享未纳入。
+- 分类列表 `/api/classify/list` 仅管理员可读：团队页仅管理员加载分类筛选/编辑，非管理员成员按列表返回的 `classifyName` 展示分类，保存时 `classifyId=0`。
+- 动态实例 key 全局唯一（`IDynamicInstanceResolver` 按 key 解析），跨团队冲突返回 409；同团队同 key 视为更新实例。

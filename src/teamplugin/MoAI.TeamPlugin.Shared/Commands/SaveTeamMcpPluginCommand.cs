@@ -26,6 +26,11 @@ public class SaveTeamMcpPluginCommand : McpServerPluginConnectionOptions, IUserI
     /// </summary>
     public Guid? PluginId { get; init; }
 
+    /// <summary>
+    /// 分类 id，0 表示未分类.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<SaveTeamMcpPluginCommand> validate)
     {

@@ -110,6 +110,8 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
             .ThenBy(x => x.CreateTime)
             .ToList();
 
+        await FillUserNamesAsync(items, cancellationToken);
+
         return new QueryTeamPluginsCommandResponse
         {
             TeamId = request.TeamId,
@@ -156,8 +158,13 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     ClassifyName = plugin.ClassifyId != 0 && classifies.TryGetValue(plugin.ClassifyId, out var cName) ? cName : null,
                     Counter = plugin.Counter,
                     Server = custom.Server,
+                    IsPublic = plugin.IsPublic,
+                    OpenapiFileId = custom.OpenapiFileId,
+                    OpenapiFileName = custom.OpenapiFileName,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
+                    UpdateTime = plugin.UpdateTime,
+                    UpdateUserId = plugin.UpdateUserId,
                 });
             }
             else if (dynamics.TryGetValue(plugin.PluginId, out var dynamicEntity))
@@ -181,8 +188,11 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     Config = dynamicEntity.Config,
                     ConfigExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetConfigExampleValue") : null,
                     ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
+                    IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
+                    UpdateTime = plugin.UpdateTime,
+                    UpdateUserId = plugin.UpdateUserId,
                 });
             }
         }
@@ -230,8 +240,13 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     ClassifyName = plugin.ClassifyId != 0 && classifies.TryGetValue(plugin.ClassifyId, out var cName) ? cName : null,
                     Counter = plugin.Counter,
                     Server = custom.Server,
+                    IsPublic = plugin.IsPublic,
+                    OpenapiFileId = custom.OpenapiFileId,
+                    OpenapiFileName = custom.OpenapiFileName,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
+                    UpdateTime = plugin.UpdateTime,
+                    UpdateUserId = plugin.UpdateUserId,
                 });
             }
             else if (dynamics.TryGetValue(plugin.PluginId, out var dynamicEntity))
@@ -255,8 +270,11 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     Config = dynamicEntity.Config,
                     ConfigExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetConfigExampleValue") : null,
                     ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
+                    IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
+                    UpdateTime = plugin.UpdateTime,
+                    UpdateUserId = plugin.UpdateUserId,
                 });
             }
             else
@@ -280,10 +298,42 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     ParamsExample = staticInfo != null ? PluginTypeHelper.GetStaticExample(staticInfo.PluginType, "GetParamsExampleValue") : null,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
+                    UpdateTime = plugin.UpdateTime,
+                    UpdateUserId = plugin.UpdateUserId,
                 });
             }
         }
 
         return items;
+    }
+
+    private async Task FillUserNamesAsync(List<TeamPluginItem> items, CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var userIds = items
+            .Select(x => x.CreateUserId)
+            .Concat(items.Select(x => x.UpdateUserId))
+            .Where(x => x > 0)
+            .Distinct()
+            .ToArray();
+
+        if (userIds.Length == 0)
+        {
+            return;
+        }
+
+        var userNames = await _databaseContext.Users
+            .Where(x => userIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.NickName, cancellationToken);
+
+        foreach (var item in items)
+        {
+            item.CreateUserName = userNames.TryGetValue(item.CreateUserId, out var createUserName) ? createUserName : string.Empty;
+            item.UpdateUserName = userNames.TryGetValue(item.UpdateUserId, out var updateUserName) ? updateUserName : string.Empty;
+        }
     }
 }

@@ -3,6 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MoAI.AIPlugin.Commands.Responses;
+using MoAI.AIPlugin.Models;
+using MoAI.AIPlugin.Queries.Responses;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.TeamPlugin.Commands;
@@ -129,6 +132,108 @@ public class TeamPluginController : ControllerBase
     public async Task<EmptyCommandResponse> Delete(long teamId, Guid pluginId, CancellationToken ct)
     {
         var cmd = new DeleteTeamPluginCommand { TeamId = teamId, PluginId = pluginId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询可用动态插件模板列表，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginListCommandResponse"/>.</returns>
+    [HttpGet("dynamic_templates")]
+    public async Task<QueryPluginListCommandResponse> DynamicTemplates(long teamId, CancellationToken ct)
+    {
+        var cmd = new QueryTeamDynamicTemplatesCommand { TeamId = teamId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询团队自定义插件详情，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="pluginId">插件记录 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryCustomPluginDetailCommandResponse"/>.</returns>
+    [HttpGet("{pluginId}/detail")]
+    public async Task<QueryCustomPluginDetailCommandResponse> Detail(long teamId, Guid pluginId, CancellationToken ct)
+    {
+        var cmd = new QueryTeamPluginDetailCommand { TeamId = teamId, PluginId = pluginId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询团队插件函数列表，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="pluginId">插件记录 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryCustomPluginFunctionsListCommandResponse"/>.</returns>
+    [HttpPost("{pluginId}/functions")]
+    public async Task<QueryCustomPluginFunctionsListCommandResponse> Functions(long teamId, Guid pluginId, CancellationToken ct)
+    {
+        var cmd = new QueryTeamPluginFunctionsListCommand { TeamId = teamId, PluginId = pluginId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 刷新团队 MCP 插件工具列表，需团队 Owner/Admin.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="pluginId">插件记录 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("{pluginId}/refresh_mcp")]
+    public async Task<EmptyCommandResponse> RefreshMcp(long teamId, Guid pluginId, CancellationToken ct)
+    {
+        var cmd = new RefreshTeamMcpPluginCommand { TeamId = teamId, PluginId = pluginId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 预上传团队 OpenAPI 文件，需团队 Owner/Admin.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="req">请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="PreUploadOpenApiFilePluginCommandResponse"/>.</returns>
+    [HttpPost("pre_upload_openapi")]
+    public async Task<PreUploadOpenApiFilePluginCommandResponse> PreUploadOpenApi(long teamId, [FromBody] PreUploadTeamOpenApiFileCommand req, CancellationToken ct)
+    {
+        var cmd = new PreUploadTeamOpenApiFileCommand
+        {
+            TeamId = teamId,
+            PluginName = req.PluginName,
+            FileName = req.FileName,
+            ContentType = req.ContentType,
+            FileSize = req.FileSize,
+            SHA256 = req.SHA256,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 执行团队可用插件，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="req">请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="PluginRunResult"/>.</returns>
+    [HttpPost("run")]
+    public async Task<PluginRunResult> Run(long teamId, [FromBody] RunTeamPluginCommand req, CancellationToken ct)
+    {
+        var cmd = new RunTeamPluginCommand
+        {
+            TeamId = teamId,
+            Key = req.Key,
+            RequestJson = req.RequestJson,
+        };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }

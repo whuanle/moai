@@ -99,7 +99,7 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
             Title = request.Title,
             Type = (int)PluginType.MCP,
             IsPublic = true,
-            ClassifyId = 0,
+            ClassifyId = request.ClassifyId,
             PluginId = pluginCustomEntity.Id,
             Description = request.Description,
         };
@@ -143,6 +143,7 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
         pluginEntity.Title = request.Title;
         pluginEntity.Description = request.Description;
         pluginEntity.PluginName = request.Name;
+        pluginEntity.ClassifyId = request.ClassifyId;
 
         pluginCustomEntity.Server = request.ServerUrl.ToString();
         pluginCustomEntity.Headers = request.Header.ToJsonString();
