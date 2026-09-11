@@ -53,6 +53,26 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelUsageLogEntity> AiModelUsageLogs { get; set; }
 
     /// <summary>
+    /// 应用.
+    /// </summary>
+    public virtual DbSet<AppEntity> Apps { get; set; }
+
+    /// <summary>
+    /// Agent 应用配置，与 app 一一对应（app_type=0）.
+    /// </summary>
+    public virtual DbSet<AppAgentConfigEntity> AppAgentConfigs { get; set; }
+
+    /// <summary>
+    /// Agent 应用会话消息（对话历史），追加写，按 seq 排序.
+    /// </summary>
+    public virtual DbSet<AppAgentMessageEntity> AppAgentMessages { get; set; }
+
+    /// <summary>
+    /// Agent 应用会话（会话列表），一个会话属于一个应用与一个用户.
+    /// </summary>
+    public virtual DbSet<AppAgentSessionEntity> AppAgentSessions { get; set; }
+
+    /// <summary>
     /// 分类.
     /// </summary>
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }
@@ -61,6 +81,12 @@ public partial class DatabaseContext : DbContext
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }
+
+    public virtual DbSet<KnowledgeGraphEntity> KnowledgeGraphs { get; set; }
+
+    public virtual DbSet<KnowledgeGraphEntityTypeEntity> KnowledgeGraphEntityTypes { get; set; }
+
+    public virtual DbSet<KnowledgeGraphRelationTypeEntity> KnowledgeGraphRelationTypes { get; set; }
 
     /// <summary>
     /// oauth2.0系统.
@@ -128,11 +154,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<UserEntity> Users { get; set; }
 
     /// <summary>
-    /// 通用任务.
-    /// </summary>
-    public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
-
-    /// <summary>
     /// oauth2.0对接.
     /// </summary>
     public virtual DbSet<UserOauthConnectionEntity> UserOauthConnections { get; set; }
@@ -141,21 +162,6 @@ public partial class DatabaseContext : DbContext
     /// 知识库.
     /// </summary>
     public virtual DbSet<WikiEntity> Wikis { get; set; }
-
-    /// <summary>
-    /// 知识图谱.
-    /// </summary>
-    public virtual DbSet<KnowledgeGraphEntity> KnowledgeGraphs { get; set; }
-
-    /// <summary>
-    /// 知识图谱实体类型.
-    /// </summary>
-    public virtual DbSet<KnowledgeGraphEntityTypeEntity> KnowledgeGraphEntityTypes { get; set; }
-
-    /// <summary>
-    /// 知识图谱关系类型.
-    /// </summary>
-    public virtual DbSet<KnowledgeGraphRelationTypeEntity> KnowledgeGraphRelationTypes { get; set; }
 
     /// <summary>
     /// 知识库文档.
@@ -168,6 +174,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentEntity> WikiDocumentChunkContents { get; set; }
 
     /// <summary>
+    /// 切片向量化内容.
+    /// </summary>
+    public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
+
+    /// <summary>
     /// 切片元数据内容表（提问/提纲/摘要）.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkMetadatumEntity> WikiDocumentChunkMetadata { get; set; }
@@ -176,6 +187,11 @@ public partial class DatabaseContext : DbContext
     /// 文档内容.
     /// </summary>
     public virtual DbSet<WikiDocumentContentEntity> WikiDocumentContents { get; set; }
+
+    /// <summary>
+    /// 工作任务.
+    /// </summary>
+    public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

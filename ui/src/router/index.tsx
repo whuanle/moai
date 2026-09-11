@@ -14,6 +14,7 @@ import { AdminTeams } from '@/pages/admin/AdminTeams'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
 import { TeamManage } from '@/pages/teams/TeamManage'
+import { AppManage } from '@/pages/teams/apps/AppManage'
 import { Wiki } from '@/pages/wiki/Wiki'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: 'admin/teams', element: <AdminTeams /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
+      { path: 'team/:teamId/app/:appId', element: <AppManage /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'wiki', element: <Wiki /> },

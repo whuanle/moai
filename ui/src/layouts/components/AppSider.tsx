@@ -1,7 +1,7 @@
 import {
   ApiOutlined,
+  ApartmentOutlined,
   AppstoreAddOutlined,
-  AppstoreOutlined,
   BookOutlined,
   CloudServerOutlined,
   DashboardOutlined,
@@ -38,7 +38,6 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
-  { key: 'app', icon: <AppstoreOutlined />, labelKey: 'nav.app', path: '/app' },
   { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
 ]
@@ -47,6 +46,7 @@ const adminNav: NavItem[] = [
   { key: 'plugin', icon: <AppstoreAddOutlined />, labelKey: 'nav.plugin', path: '/plugin' },
   { key: 'classify', icon: <TagsOutlined />, labelKey: 'nav.classify', path: '/classify' },
   { key: 'users', icon: <UserOutlined />, labelKey: 'nav.users', path: '/users' },
+  { key: 'adminTeams', icon: <ApartmentOutlined />, labelKey: 'nav.adminTeams', path: '/admin/teams' },
   { key: 'models', icon: <CloudServerOutlined />, labelKey: 'nav.channel', path: '/models' },
   { key: 'oauthconnect', icon: <ApiOutlined />, labelKey: 'nav.oauthconnect', path: '/oauthconnect' },
   { key: 'settings', icon: <SettingOutlined />, labelKey: 'nav.settings', path: '/settings' },
@@ -54,12 +54,12 @@ const adminNav: NavItem[] = [
 
 const pathToKey: Record<string, string> = {
   '/dashboard': 'dashboard',
-  '/app': 'app',
   '/wiki': 'wiki',
   '/team': 'team',
   '/plugin': 'plugin',
   '/classify': 'classify',
   '/users': 'users',
+  '/admin/teams': 'adminTeams',
   '/models': 'models',
   '/oauthconnect': 'oauthconnect',
   '/settings': 'settings',

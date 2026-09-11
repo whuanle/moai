@@ -16,6 +16,13 @@ vi.mock('@/api/wiki', () => ({
   deleteWiki: vi.fn().mockResolvedValue(undefined),
 }))
 
+vi.mock('@/api/app', () => ({
+  getApps: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, items: [] }),
+  createApp: vi.fn().mockResolvedValue('01924f5e-0000-7000-8000-0000000000ff'),
+  updateApp: vi.fn().mockResolvedValue(undefined),
+  uploadAppAvatar: vi.fn().mockResolvedValue(''),
+}))
+
 vi.mock('@/api/variable', () => ({
   getVariables: vi.fn().mockResolvedValue({
     teamId: '7',
@@ -68,7 +75,23 @@ vi.mock('@/api/team-plugin', () => ({
   saveTeamDynamicPlugin: vi.fn().mockResolvedValue(undefined),
   saveTeamMcpPlugin: vi.fn().mockResolvedValue('x'),
   saveTeamOpenApiPlugin: vi.fn().mockResolvedValue('x'),
+  getTeamPluginDetail: vi.fn().mockResolvedValue(null),
+  getTeamPluginFunctions: vi.fn().mockResolvedValue([]),
+  refreshTeamMcp: vi.fn().mockResolvedValue(undefined),
+  preUploadTeamOpenApiFile: vi.fn().mockResolvedValue(null),
+  runTeamPlugin: vi.fn().mockResolvedValue(null),
+  getTeamDynamicTemplates: vi.fn().mockResolvedValue({ items: [] }),
 }))
+
+/** 默认团队详情（Owner）；用例可覆盖，beforeEach 会复位，避免 mock 实现跨用例泄漏 */
+const ownerTeamDetail = {
+  teamId: '7',
+  name: 'Alpha 团队',
+  description: '第一个',
+  myRole: 2,
+  memberCount: 2,
+  createTime: '2026-09-02T00:00:00Z',
+}
 
 function renderManage(teamId = '7', section = 'info') {
   return render(
@@ -83,6 +106,7 @@ function renderManage(teamId = '7', section = 'info') {
 describe('TeamManage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    ;(getTeamDetail as ReturnType<typeof vi.fn>).mockResolvedValue(ownerTeamDetail)
     useAppStore.setState({
       userInfo: { accessToken: 'token', userId: '1', userName: 'owner', isAdmin: false },
     })
@@ -180,7 +204,7 @@ describe('TeamManage', () => {
       teamId: '7',
       name: 'Alpha 团队',
       description: '第一个',
-      myRole: 0,
+      myRole: 1,
       memberCount: 2,
       createTime: '2026-09-02T00:00:00Z',
     })
@@ -202,7 +226,8 @@ describe('TeamManage', () => {
     expect(await screen.findByRole('button', { name: /新建知识库/ })).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('插件'))
-    expect(await screen.findByText(/本团队共有 0 个私有插件/)).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: '自定义插件' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '动态插件' })).toBeInTheDocument()
     expect(getTeamPlugins).toHaveBeenCalledWith(7)
   })
 
@@ -222,6 +247,44 @@ describe('TeamManage', () => {
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
     expect(await screen.findByText('API_KEY')).toBeInTheDocument()
     expect(getVariables).toHaveBeenCalledWith(7, expect.objectContaining({ keyword: undefined, name: undefined }))
+  })
+
+  it('普通成员进入团队只能使用：只保留 信息/应用/知识库 分区', async () => {
+    ;(getTeamDetail as ReturnType<typeof vi.fn>).mockResolvedValue({
+      teamId: '7',
+      name: 'Alpha 团队',
+      description: '第一个',
+      myRole: 0,
+      memberCount: 2,
+      createTime: '2026-09-02T00:00:00Z',
+    })
+    renderManage()
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    expect(screen.getByText('应用')).toBeInTheDocument()
+    expect(screen.getByText('知识库')).toBeInTheDocument()
+    // 管理分区与应用配置入口对成员不可见
+    expect(screen.queryByText('成员管理')).not.toBeInTheDocument()
+    expect(screen.queryByText('模型网关')).not.toBeInTheDocument()
+    expect(screen.queryByText('插件')).not.toBeInTheDocument()
+    expect(screen.queryByText('环境变量')).not.toBeInTheDocument()
+    expect(screen.queryByText('设置')).not.toBeInTheDocument()
+  })
+
+  it('普通成员直接访问管理分区的 URL 会回落到信息页', async () => {
+    ;(getTeamDetail as ReturnType<typeof vi.fn>).mockResolvedValue({
+      teamId: '7',
+      name: 'Alpha 团队',
+      description: '第一个',
+      myRole: 0,
+      memberCount: 2,
+      createTime: '2026-09-02T00:00:00Z',
+    })
+    renderManage('7', 'variables')
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    expect(await screen.findByText('负责人')).toBeInTheDocument()
+    expect(getVariables).not.toHaveBeenCalled()
   })
 
   it('非法子路由片段回退到信息区块', async () => {

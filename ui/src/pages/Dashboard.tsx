@@ -36,7 +36,7 @@ export function Dashboard() {
       icon: <AppstoreAddOutlined />,
       title: t('dashboard.quickApp'),
       desc: t('dashboard.quickAppDesc'),
-      path: '/app',
+      path: '/team',
     },
     {
       icon: <FileAddOutlined />,
@@ -57,7 +57,7 @@ export function Dashboard() {
       title={t('dashboard.title')}
       subtitle={t('dashboard.subtitle', { name: userName ?? t('app.name') })}
       extra={
-        <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => navigate('/app')}>
+        <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => navigate('/team')}>
           {t('dashboard.quickApp')}
         </Button>
       }
@@ -130,7 +130,7 @@ export function Dashboard() {
           <Card
             title={t('dashboard.recentTitle')}
             extra={
-              <Button type="link" size="small" onClick={() => navigate('/app')}>
+              <Button type="link" size="small" onClick={() => navigate('/team')}>
                 {t('dashboard.viewAll')}
               </Button>
             }

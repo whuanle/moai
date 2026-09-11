@@ -125,6 +125,63 @@ export async function transferTeamOwner(teamId: number, userId: number): Promise
   await client.api.team.byId(String(teamId)).owner.put({ userId: String(userId) })
 }
 
+/** 管理员团队列表项（与生成客户端 QueryAdminTeamListCommandResponseItem 字段对齐） */
+export interface AdminTeamItem {
+  /** 后端 long 序列化为字符串 */
+  teamId?: string | number | null
+  name?: string | null
+  description?: string | null
+  avatar?: string | null
+  isDisable?: boolean | null
+  memberCount?: number | null
+  ownerUserId?: string | number | null
+  ownerUserName?: string | null
+  ownerNickName?: string | null
+  ownerAvatar?: string | null
+  createUserId?: number | null
+  createUserName?: string | null
+  createTime?: string | null
+}
+
+export interface AdminTeamListResult {
+  totalCount?: number | null
+  items?: AdminTeamItem[] | null
+}
+
+export interface GetAdminTeamsParams {
+  pageNo?: number
+  pageSize?: number
+  searchText?: string
+  /** 禁用状态筛选：不传=全部 true=仅已禁用 false=仅正常 */
+  isDisable?: boolean
+}
+
+/** 分页查询系统内全部团队（仅管理员） */
+export async function getAdminTeams(params: GetAdminTeamsParams): Promise<AdminTeamListResult> {
+  const client = getApiClient()
+  const res = await client.api.admin.team.list.get({
+    queryParameters: {
+      pageNo: params.pageNo,
+      pageSize: params.pageSize,
+      searchText: params.searchText,
+      isDisable: params.isDisable,
+    },
+  })
+  return { totalCount: res?.totalCount ?? 0, items: res?.items ?? [] }
+}
+
+/** 禁用/启用团队（仅管理员） */
+export async function setTeamDisable(teamId: number, isDisable: boolean): Promise<void> {
+  const client = getApiClient()
+  await client.api.admin.team.byId(String(teamId)).disable.put({ isDisable })
+}
+
+/** 转让团队负责人（仅管理员），目标用户可为系统内任意用户 */
+export async function adminTransferTeamOwner(teamId: number, userId: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.admin.team.byId(String(teamId)).owner.put({ userId: String(userId) })
+}
+
 export async function setTeamAvatar(teamId: number, objectKey: string): Promise<void> {
   const client = getApiClient()
   await client.api.team.byId(String(teamId)).avatar.post({ objectKey })

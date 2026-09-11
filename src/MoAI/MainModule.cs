@@ -6,6 +6,7 @@ using MoAI.AIPlugin;
 using MoAI.AIPlugin.Custom;
 using MoAI.AIPlugin.Dynamic;
 using MoAI.AIPlugin.Static;
+using MoAI.App;
 using MoAI.Auth;
 using MoAI.Classify;
 using MoAI.Common;
@@ -35,6 +36,7 @@ namespace MoAI;
 [InjectModule<CommonCoreModule>]
 [InjectModule<AuthCoreModule>]
 [InjectModule<AccountCoreModule>]
+[InjectModule<AppCoreModule>]
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<AIChannelCoreModule>]
