@@ -39,6 +39,7 @@ description: Backend CQRS three-layer code standards for MoAI (.NET 9, Maomi mod
 - Command/Query 都继承 `IModelValidator<T>`（FluentValidation 静态 `Validate`），提前拦截无效请求
 - ⚠️ **路由参数时序坑**：`{id}` 由 Controller 回填，自动验证发生在回填之前——Validate 里只能校验请求体字段，校验路由回填字段 = 接口恒 400（oauthconnect PUT 实踩）
 - 需要用户上下文的命令继承 `IUserIdContext`（`ContextUserId`/`ContextUserType`）；用不到就别继承
+- ⚠️ `IUserIdContext` 的两个属性**必须加 `[JsonIgnore]`**：否则会作为查询参数/请求体字段进入 OpenAPI，进而出现在 Kiota 生成的客户端里（查询型命令尤其明显）。仓库先例：`PagedParamter` 对内部属性同样加 `[JsonIgnore]`。Handler 侧读 `request.ContextUserId`，不要注入 `IUserContextProvider`
 - 分页继承 `PagedParamter`（上限 1000）；写命令响应统一 `EmptyCommandResponse`
 - 公开成员全部中文 XML 注释（StyleCop 强制）
 

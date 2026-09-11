@@ -372,3 +372,6 @@ local-dev/system.local.json
 
 # 头脑风暴可视化临时产物
 .superpowers/
+
+# IDE/工具工作目录（含 memory、skill、本地草稿等，不入库）
+.workbuddy/

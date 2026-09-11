@@ -6,14 +6,14 @@
 ## 项目简介
 
 开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
-已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关。进度见 [rounds-log.md](./docs/rounds-log.md)。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
 ```
 src/MoAI/         组合宿主（Program.cs、MainModule、OpenApiModule）
 src/{auth,account,settings,oauthconnect,storage,common,infra,database,hangfire}/   平台底座
-src/{classify,team,teamplugin,variable,wiki}/                                      团队协作
+src/{classify,team,teamplugin,variable,wiki,app}/                                  团队协作
 src/{aichannel,aimodel,aiplugin,gateway}/                                          AI 业务层
 src/{ai,admin,plugin}/                                                             在建
 ui/               前端（React 19 + TS + Vite + antd 5 + zustand + Kiota）
@@ -83,6 +83,9 @@ node local-dev/user-management-e2e.mjs   # UM 34
 node local-dev/team-e2e.mjs              # TM 47
 node local-dev/wiki-e2e.mjs              # WK 23
 node local-dev/variable-e2e.mjs          # VR 26
+node local-dev/app-e2e.mjs               # AP 28
+node local-dev/dynamic-plugin-e2e.mjs    # DYN 44（实例管理 + 失败路径 + 内置模板注册 dynamic_greet/bocha_web_search/bocha_ai_search/feishu_web_hook_text）
+node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/audit-345.mjs node local-dev/audit-storage.mjs node local-dev/auth-lockout-check.mjs
 ```
 

@@ -22,7 +22,7 @@
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
 - [ui/docs/design-system/](../ui/docs/design-system/README.md) — 设计系统规范
 
-## 模块地图（L2，22 个四件套）
+## 模块地图（L2，23 个四件套）
 
 缩写列 = BDD 场景编号前缀（见各模块 bdd.md）。
 
@@ -49,6 +49,7 @@
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱手动维护 + 外部 Neo4j 接入只读；`OPEN_NEO4J` 门禁） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
+| [app](./app/) | AP | 团队应用（团队页「应用」分区：Agent/流程应用的卡片列表与基础信息 + 头像与「允许外部使用」开关；卡片「管理」进**单页左侧应用信息 + 右侧 Agent 配置**的管理页，配置**对话模型**/插件/知识库/提示词；成员只读使用，无跨团队入口；会话运行与外部用户使用能力尚未开放） |
 
 ### 前端（ui/docs/）
 
