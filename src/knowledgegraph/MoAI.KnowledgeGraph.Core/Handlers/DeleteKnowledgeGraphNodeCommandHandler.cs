@@ -28,8 +28,8 @@ public class DeleteKnowledgeGraphNodeCommandHandler : IRequestHandler<DeleteKnow
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
-        var deleted = await _store.DeleteNodeAsync(request.KgId, request.NodeId, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
+        var deleted = await _store.DeleteNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken);
         if (!deleted)
         {
             throw new BusinessException("节点不存在.") { StatusCode = 404 };

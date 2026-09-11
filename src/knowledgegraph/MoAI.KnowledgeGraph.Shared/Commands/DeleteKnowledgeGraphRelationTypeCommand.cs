@@ -12,7 +12,7 @@ public class DeleteKnowledgeGraphRelationTypeCommand : IRequest<EmptyCommandResp
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KgId { get; init; }
+    public long KnowledgeGraphId { get; init; }
 
     /// <summary>
     /// 关系类型 id.
@@ -22,7 +22,7 @@ public class DeleteKnowledgeGraphRelationTypeCommand : IRequest<EmptyCommandResp
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<DeleteKnowledgeGraphRelationTypeCommand> validate)
     {
-        validate.RuleFor(x => x.KgId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
         validate.RuleFor(x => x.RelationTypeId).GreaterThan(0).WithMessage("关系类型 id 不正确.");
     }
 }

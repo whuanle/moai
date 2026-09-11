@@ -27,11 +27,11 @@ public class QueryKnowledgeGraphEdgesCommandHandler : IRequestHandler<QueryKnowl
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphEdgesCommandResponse> Handle(QueryKnowledgeGraphEdgesCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var pageNo = request.PageNo < 1 ? 1 : request.PageNo;
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
-        var (items, total) = await _store.ListEdgesAsync(request.KgId, request.RelationTypeId, request.NodeId, pageNo, pageSize, cancellationToken);
+        var (items, total) = await _store.ListEdgesAsync(request.KnowledgeGraphId, request.RelationTypeId, request.NodeId, pageNo, pageSize, cancellationToken);
         return new QueryKnowledgeGraphEdgesCommandResponse
         {
             Total = total,

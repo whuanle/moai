@@ -34,7 +34,7 @@ public class UpdateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Up
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {
@@ -42,11 +42,11 @@ public class UpdateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Up
         }
 
         var entity = await _databaseContext.KnowledgeGraphRelationTypes
-            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KgId == request.KgId, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken)
             ?? throw new BusinessException("关系类型不存在.") { StatusCode = 404 };
 
         var nameExist = await _databaseContext.KnowledgeGraphRelationTypes
-            .AnyAsync(x => x.KgId == request.KgId && x.Name == request.Name && x.Id != entity.Id, cancellationToken);
+            .AnyAsync(x => x.KnowledgeGraphId == request.KnowledgeGraphId && x.Name == request.Name && x.Id != entity.Id, cancellationToken);
         if (nameExist)
         {
             throw new BusinessException("关系类型名称已存在.") { StatusCode = 409 };
@@ -55,7 +55,7 @@ public class UpdateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Up
         if (request.SourceTypeId.HasValue)
         {
             var sourceExist = await _databaseContext.KnowledgeGraphEntityTypes
-                .AnyAsync(x => x.KgId == request.KgId && x.Id == request.SourceTypeId.Value, cancellationToken);
+                .AnyAsync(x => x.KnowledgeGraphId == request.KnowledgeGraphId && x.Id == request.SourceTypeId.Value, cancellationToken);
             if (!sourceExist)
             {
                 throw new BusinessException("关联的实体类型不存在.") { StatusCode = 400 };
@@ -65,7 +65,7 @@ public class UpdateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Up
         if (request.TargetTypeId.HasValue)
         {
             var targetExist = await _databaseContext.KnowledgeGraphEntityTypes
-                .AnyAsync(x => x.KgId == request.KgId && x.Id == request.TargetTypeId.Value, cancellationToken);
+                .AnyAsync(x => x.KnowledgeGraphId == request.KnowledgeGraphId && x.Id == request.TargetTypeId.Value, cancellationToken);
             if (!targetExist)
             {
                 throw new BusinessException("关联的实体类型不存在.") { StatusCode = 400 };

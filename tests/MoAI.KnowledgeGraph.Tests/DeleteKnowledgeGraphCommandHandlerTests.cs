@@ -14,7 +14,7 @@ namespace MoAI.KnowledgeGraph.Tests;
 
 public class DeleteKnowledgeGraphCommandHandlerTests
 {
-    private const long KgId = 7;
+    private const long KnowledgeGraphId = 7;
 
     [Fact]
     public async Task Handle_WhenManaged_PurgesGraph()
@@ -25,9 +25,9 @@ public class DeleteKnowledgeGraphCommandHandlerTests
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = CreateHandler(db, graph, store.Object);
 
-        await sut.Handle(new DeleteKnowledgeGraphCommand { KgId = KgId }, CancellationToken.None);
+        await sut.Handle(new DeleteKnowledgeGraphCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
 
-        store.Verify(x => x.PurgeGraphAsync(KgId, It.IsAny<CancellationToken>()), Times.Once);
+        store.Verify(x => x.PurgeGraphAsync(KnowledgeGraphId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class DeleteKnowledgeGraphCommandHandlerTests
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = CreateHandler(db, graph, store.Object);
 
-        await sut.Handle(new DeleteKnowledgeGraphCommand { KgId = KgId }, CancellationToken.None);
+        await sut.Handle(new DeleteKnowledgeGraphCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
 
         store.Verify(x => x.PurgeGraphAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -48,7 +48,7 @@ public class DeleteKnowledgeGraphCommandHandlerTests
     {
         var graph = new KnowledgeGraphEntity
         {
-            Id = KgId,
+            Id = KnowledgeGraphId,
             TeamId = 1,
             Name = "图谱",
             Description = string.Empty,
@@ -62,7 +62,7 @@ public class DeleteKnowledgeGraphCommandHandlerTests
     private static DeleteKnowledgeGraphCommandHandler CreateHandler(TestSqliteContext db, KnowledgeGraphEntity graph, IKnowledgeGraphStore store)
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
-        authorizer.Setup(x => x.AuthorizeAsync(KgId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        authorizer.Setup(x => x.AuthorizeAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((graph, MoAI.Database.Enums.TeamRole.Admin));
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))

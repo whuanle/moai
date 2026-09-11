@@ -33,16 +33,16 @@ public class CreateKnowledgeGraphNodeCommandHandler : IRequestHandler<CreateKnow
     /// <inheritdoc/>
     public async Task<SimpleString> Handle(CreateKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
 
         var typeExists = await _databaseContext.KnowledgeGraphEntityTypes
-            .AnyAsync(x => x.Id == request.EntityTypeId && x.KgId == request.KgId, cancellationToken);
+            .AnyAsync(x => x.Id == request.EntityTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken);
         if (!typeExists)
         {
             throw new BusinessException("实体类型不存在.") { StatusCode = 400 };
         }
 
-        var node = await _store.CreateNodeAsync(request.KgId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, cancellationToken);
+        var node = await _store.CreateNodeAsync(request.KnowledgeGraphId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, cancellationToken);
         return new SimpleString { Value = node.Id };
     }
 }

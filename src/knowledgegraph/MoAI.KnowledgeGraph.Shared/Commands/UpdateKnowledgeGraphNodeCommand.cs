@@ -12,7 +12,7 @@ public class UpdateKnowledgeGraphNodeCommand : IRequest<EmptyCommandResponse>, I
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KgId { get; init; }
+    public long KnowledgeGraphId { get; init; }
 
     /// <summary>
     /// 节点 id.
@@ -37,7 +37,7 @@ public class UpdateKnowledgeGraphNodeCommand : IRequest<EmptyCommandResponse>, I
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateKnowledgeGraphNodeCommand> validate)
     {
-        validate.RuleFor(x => x.KgId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
         validate.RuleFor(x => x.NodeId).NotEmpty().WithMessage("节点 id 不正确.");
         validate.RuleFor(x => x.EntityTypeId).GreaterThan(0).WithMessage("实体类型 id 不正确.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("节点名称不能为空.").MaximumLength(200).WithMessage("节点名称最长 200 个字符.");

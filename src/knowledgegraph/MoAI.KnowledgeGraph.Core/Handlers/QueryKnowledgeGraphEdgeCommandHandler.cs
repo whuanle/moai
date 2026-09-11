@@ -28,8 +28,8 @@ public class QueryKnowledgeGraphEdgeCommandHandler : IRequestHandler<QueryKnowle
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphEdgeCommandResponse> Handle(QueryKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
-        var edge = await _store.GetEdgeAsync(request.KgId, request.EdgeId, cancellationToken)
+        await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
+        var edge = await _store.GetEdgeAsync(request.KnowledgeGraphId, request.EdgeId, cancellationToken)
             ?? throw new BusinessException("边不存在.") { StatusCode = 404 };
 
         return new QueryKnowledgeGraphEdgeCommandResponse

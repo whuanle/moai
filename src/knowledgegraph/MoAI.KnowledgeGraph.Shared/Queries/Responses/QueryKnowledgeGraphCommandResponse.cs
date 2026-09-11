@@ -10,7 +10,7 @@ public class QueryKnowledgeGraphCommandResponse
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KgId { get; init; }
+    public long KnowledgeGraphId { get; init; }
 
     /// <summary>
     /// 团队 id.

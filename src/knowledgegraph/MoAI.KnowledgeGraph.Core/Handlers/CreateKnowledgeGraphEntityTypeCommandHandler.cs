@@ -35,7 +35,7 @@ public class CreateKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Crea
     /// <inheritdoc/>
     public async Task<SimpleLong> Handle(CreateKnowledgeGraphEntityTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {
@@ -43,20 +43,20 @@ public class CreateKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Crea
         }
 
         var nameExist = await _databaseContext.KnowledgeGraphEntityTypes
-            .AnyAsync(x => x.KgId == request.KgId && x.Name == request.Name, cancellationToken);
+            .AnyAsync(x => x.KnowledgeGraphId == request.KnowledgeGraphId && x.Name == request.Name, cancellationToken);
         if (nameExist)
         {
             throw new BusinessException("实体类型名称已存在.") { StatusCode = 409 };
         }
 
         var maxSort = await _databaseContext.KnowledgeGraphEntityTypes
-            .Where(x => x.KgId == request.KgId)
+            .Where(x => x.KnowledgeGraphId == request.KnowledgeGraphId)
             .Select(x => (int?)x.Sort)
             .MaxAsync(cancellationToken) ?? -1;
 
         var entity = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = request.KgId,
+            KnowledgeGraphId = request.KnowledgeGraphId,
             Name = request.Name,
             Color = request.Color ?? string.Empty,
             Description = request.Description ?? string.Empty,

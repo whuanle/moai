@@ -147,7 +147,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             {
                 var entityType = new KnowledgeGraphEntityTypeEntity
                 {
-                    KgId = graph.Id,
+                    KnowledgeGraphId = graph.Id,
                     Name = typeName,
                     Description = string.Empty,
                     Color = string.Empty,
@@ -171,7 +171,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             {
                 _databaseContext.KnowledgeGraphRelationTypes.Add(new KnowledgeGraphRelationTypeEntity
                 {
-                    KgId = graph.Id,
+                    KnowledgeGraphId = graph.Id,
                     Name = relation.Name,
                     Description = string.Empty,
                     Color = string.Empty,

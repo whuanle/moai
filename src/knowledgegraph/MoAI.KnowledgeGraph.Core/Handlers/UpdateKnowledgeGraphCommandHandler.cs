@@ -30,7 +30,7 @@ public class UpdateKnowledgeGraphCommandHandler : IRequestHandler<UpdateKnowledg
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphCommand request, CancellationToken cancellationToken)
     {
-        var (graph, _) = await _authorizer.AuthorizeAsync(request.KgId, adminOnly: true, cancellationToken);
+        var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 
         var nameExist = await _databaseContext.KnowledgeGraphs
             .AnyAsync(x => x.TeamId == graph.TeamId && x.Name == request.Name && x.Id != graph.Id, cancellationToken);

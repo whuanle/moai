@@ -34,7 +34,7 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphSchemaCommandResponse> Handle(QueryKnowledgeGraphSchemaCommand request, CancellationToken cancellationToken)
     {
-        var (graph, _) = await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
 
         if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
         {
@@ -56,7 +56,7 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
         }
 
         var entityTypes = await _databaseContext.KnowledgeGraphEntityTypes
-            .Where(x => x.KgId == request.KgId)
+            .Where(x => x.KnowledgeGraphId == request.KnowledgeGraphId)
             .OrderBy(x => x.Sort).ThenBy(x => x.Id)
             .Select(x => new KnowledgeGraphEntityTypeItem
             {
@@ -68,7 +68,7 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
             .ToListAsync(cancellationToken);
 
         var relationTypes = await _databaseContext.KnowledgeGraphRelationTypes
-            .Where(x => x.KgId == request.KgId)
+            .Where(x => x.KnowledgeGraphId == request.KnowledgeGraphId)
             .OrderBy(x => x.Sort).ThenBy(x => x.Id)
             .Select(x => new KnowledgeGraphRelationTypeItem
             {

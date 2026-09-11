@@ -33,15 +33,15 @@ public class CreateKnowledgeGraphEdgeCommandHandler : IRequestHandler<CreateKnow
     /// <inheritdoc/>
     public async Task<SimpleString> Handle(CreateKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
 
         var relationType = await _databaseContext.KnowledgeGraphRelationTypes
-            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KgId == request.KgId, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken)
             ?? throw new BusinessException("关系类型不存在.") { StatusCode = 400 };
 
-        var source = await _store.GetNodeAsync(request.KgId, request.SourceNodeId, cancellationToken)
+        var source = await _store.GetNodeAsync(request.KnowledgeGraphId, request.SourceNodeId, cancellationToken)
             ?? throw new BusinessException("起点节点不存在.") { StatusCode = 400 };
-        var target = await _store.GetNodeAsync(request.KgId, request.TargetNodeId, cancellationToken)
+        var target = await _store.GetNodeAsync(request.KnowledgeGraphId, request.TargetNodeId, cancellationToken)
             ?? throw new BusinessException("终点节点不存在.") { StatusCode = 400 };
 
         if (relationType.SourceTypeId != null && relationType.SourceTypeId != source.EntityTypeId)
@@ -54,7 +54,7 @@ public class CreateKnowledgeGraphEdgeCommandHandler : IRequestHandler<CreateKnow
             throw new BusinessException("终点节点类型不符合关系约束.") { StatusCode = 400 };
         }
 
-        var edge = await _store.CreateEdgeAsync(request.KgId, request.RelationTypeId, request.SourceNodeId, request.TargetNodeId, cancellationToken);
+        var edge = await _store.CreateEdgeAsync(request.KnowledgeGraphId, request.RelationTypeId, request.SourceNodeId, request.TargetNodeId, cancellationToken);
         return new SimpleString { Value = edge.Id };
     }
 }

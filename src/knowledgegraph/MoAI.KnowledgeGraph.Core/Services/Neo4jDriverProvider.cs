@@ -12,7 +12,7 @@ namespace MoAI.KnowledgeGraph.Services;
 public sealed class Neo4jDriverProvider : IAsyncDisposable
 {
     private const string ConstraintCypher = "CREATE CONSTRAINT kg_node_id_unique IF NOT EXISTS FOR (n:KgNode) REQUIRE n.id IS UNIQUE";
-    private const string IndexCypher = "CREATE INDEX kg_node_kg_name IF NOT EXISTS FOR (n:KgNode) ON (n.kgId, n.name)";
+    private const string IndexCypher = "CREATE INDEX kg_node_kg_name IF NOT EXISTS FOR (n:KgNode) ON (n.KnowledgeGraphId, n.name)";
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly SemaphoreSlim _lock = new(1, 1);

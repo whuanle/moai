@@ -37,7 +37,7 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphCommand request, CancellationToken cancellationToken)
     {
-        var (graph, _) = await _authorizer.AuthorizeAsync(request.KgId, adminOnly: true, cancellationToken);
+        var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 
         // 能力开启时先清空图库节点与边；图库清理失败则整体失败，避免只删目录留下孤儿数据。
         // 能力未开启时无法连接 Neo4j（此时也不存在可访问的图数据），跳过清理，仅软删数据库元数据。
@@ -48,10 +48,10 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
         }
 
         var relationTypes = await _databaseContext.KnowledgeGraphRelationTypes
-            .Where(x => x.KgId == graph.Id)
+            .Where(x => x.KnowledgeGraphId == graph.Id)
             .ToListAsync(cancellationToken);
         var entityTypes = await _databaseContext.KnowledgeGraphEntityTypes
-            .Where(x => x.KgId == graph.Id)
+            .Where(x => x.KnowledgeGraphId == graph.Id)
             .ToListAsync(cancellationToken);
 
         _databaseContext.KnowledgeGraphRelationTypes.RemoveRange(relationTypes);

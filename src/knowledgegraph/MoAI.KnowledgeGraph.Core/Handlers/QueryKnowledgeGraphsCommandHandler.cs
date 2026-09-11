@@ -42,7 +42,7 @@ public class QueryKnowledgeGraphsCommandHandler : IRequestHandler<QueryKnowledge
             .OrderBy(x => x.Id)
             .Select(x => new KnowledgeGraphItem
             {
-                KgId = x.Id,
+                KnowledgeGraphId = x.Id,
                 TeamId = x.TeamId,
                 Name = x.Name,
                 Description = x.Description,

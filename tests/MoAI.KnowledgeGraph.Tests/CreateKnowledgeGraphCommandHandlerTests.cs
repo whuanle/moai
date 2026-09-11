@@ -185,13 +185,13 @@ public class CreateKnowledgeGraphCommandHandlerTests
             CancellationToken.None);
 
         var entityTypes = db.Context.KnowledgeGraphEntityTypes
-            .Where(x => x.KgId == result.Value)
+            .Where(x => x.KnowledgeGraphId == result.Value)
             .ToList();
         var peopleId = entityTypes.Single(x => x.Name == "人员").Id;
         var serviceId = entityTypes.Single(x => x.Name == "服务").Id;
 
         var relation = db.Context.KnowledgeGraphRelationTypes
-            .Single(x => x.KgId == result.Value && x.Name == "维护");
+            .Single(x => x.KnowledgeGraphId == result.Value && x.Name == "维护");
 
         Assert.NotNull(relation.SourceTypeId);
         Assert.NotNull(relation.TargetTypeId);

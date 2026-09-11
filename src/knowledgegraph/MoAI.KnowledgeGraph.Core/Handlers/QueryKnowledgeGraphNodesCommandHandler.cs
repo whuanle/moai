@@ -27,11 +27,11 @@ public class QueryKnowledgeGraphNodesCommandHandler : IRequestHandler<QueryKnowl
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphNodesCommandResponse> Handle(QueryKnowledgeGraphNodesCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var pageNo = request.PageNo < 1 ? 1 : request.PageNo;
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
-        var (items, total) = await _store.ListNodesAsync(request.KgId, request.EntityTypeId, request.Keyword, pageNo, pageSize, cancellationToken);
+        var (items, total) = await _store.ListNodesAsync(request.KnowledgeGraphId, request.EntityTypeId, request.Keyword, pageNo, pageSize, cancellationToken);
         return new QueryKnowledgeGraphNodesCommandResponse
         {
             Total = total,

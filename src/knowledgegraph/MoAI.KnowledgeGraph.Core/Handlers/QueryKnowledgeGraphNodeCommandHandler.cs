@@ -28,8 +28,8 @@ public class QueryKnowledgeGraphNodeCommandHandler : IRequestHandler<QueryKnowle
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphNodeCommandResponse> Handle(QueryKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
-        var node = await _store.GetNodeAsync(request.KgId, request.NodeId, cancellationToken)
+        await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
+        var node = await _store.GetNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken)
             ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };
 
         return new QueryKnowledgeGraphNodeCommandResponse

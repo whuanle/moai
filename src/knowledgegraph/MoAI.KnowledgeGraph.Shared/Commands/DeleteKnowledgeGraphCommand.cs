@@ -12,11 +12,11 @@ public class DeleteKnowledgeGraphCommand : IRequest<EmptyCommandResponse>, IMode
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KgId { get; init; }
+    public long KnowledgeGraphId { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<DeleteKnowledgeGraphCommand> validate)
     {
-        validate.RuleFor(x => x.KgId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
     }
 }

@@ -17,7 +17,7 @@ namespace MoAI.KnowledgeGraph.Tests;
 
 public class KnowledgeGraphSchemaCommandHandlerTests
 {
-    private const long KgId = 7;
+    private const long KnowledgeGraphId = 7;
 
     [Fact]
     public async Task CreateRelationType_WithValidSourceAndTarget_Creates()
@@ -25,7 +25,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var people = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
             Description = string.Empty,
@@ -33,7 +33,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         };
         var service = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = string.Empty,
             Description = string.Empty,
@@ -50,7 +50,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var result = await sut.Handle(
             new CreateKnowledgeGraphRelationTypeCommand
             {
-                KgId = KgId,
+                KnowledgeGraphId = KnowledgeGraphId,
                 Name = "维护",
                 SourceTypeId = people.Id,
                 TargetTypeId = service.Id,
@@ -75,7 +75,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphRelationTypeCommand
             {
-                KgId = KgId,
+                KnowledgeGraphId = KnowledgeGraphId,
                 Name = "维护",
                 SourceTypeId = 999,
             },
@@ -90,7 +90,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var entityType = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
             Description = string.Empty,
@@ -102,13 +102,13 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var authorizer = CreateAuthorizer();
         var settings = CreateSettings();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.CountNodesByEntityTypeAsync(KgId, entityType.Id, It.IsAny<CancellationToken>()))
+        store.Setup(x => x.CountNodesByEntityTypeAsync(KnowledgeGraphId, entityType.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
         var sut = new DeleteKnowledgeGraphEntityTypeCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new DeleteKnowledgeGraphEntityTypeCommand { KgId = KgId, EntityTypeId = entityType.Id },
+            new DeleteKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = entityType.Id },
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
@@ -120,7 +120,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var entityType = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
             Description = string.Empty,
@@ -131,7 +131,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
 
         db.Context.KnowledgeGraphRelationTypes.Add(new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "维护",
             Color = string.Empty,
             Description = string.Empty,
@@ -143,13 +143,13 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var authorizer = CreateAuthorizer();
         var settings = CreateSettings();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.CountNodesByEntityTypeAsync(KgId, entityType.Id, It.IsAny<CancellationToken>()))
+        store.Setup(x => x.CountNodesByEntityTypeAsync(KnowledgeGraphId, entityType.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
 
         var sut = new DeleteKnowledgeGraphEntityTypeCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new DeleteKnowledgeGraphEntityTypeCommand { KgId = KgId, EntityTypeId = entityType.Id },
+            new DeleteKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = entityType.Id },
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
@@ -167,7 +167,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var sut = new CreateKnowledgeGraphEntityTypeCommandHandler(db.Context, authorizer.Object, settings.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new CreateKnowledgeGraphEntityTypeCommand { KgId = KgId, Name = "人员" },
+            new CreateKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = KnowledgeGraphId, Name = "人员" },
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
@@ -179,7 +179,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         db.Context.KnowledgeGraphEntityTypes.Add(new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
             Description = string.Empty,
@@ -192,7 +192,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var sut = new CreateKnowledgeGraphEntityTypeCommandHandler(db.Context, authorizer.Object, settings.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new CreateKnowledgeGraphEntityTypeCommand { KgId = KgId, Name = "人员" },
+            new CreateKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = KnowledgeGraphId, Name = "人员" },
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
@@ -204,7 +204,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var relationType = new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "维护",
             Color = string.Empty,
             Description = string.Empty,
@@ -220,7 +220,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new UpdateKnowledgeGraphRelationTypeCommand
             {
-                KgId = KgId,
+                KnowledgeGraphId = KnowledgeGraphId,
                 RelationTypeId = relationType.Id,
                 Name = "维护",
                 SourceTypeId = 999,
@@ -236,7 +236,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var service = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = "#123456",
             Description = "服务描述",
@@ -244,7 +244,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         };
         var people = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = "#abcdef",
             Description = "人员描述",
@@ -256,7 +256,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
 
         var depends = new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "依赖",
             Color = "#111111",
             Description = "依赖关系",
@@ -264,7 +264,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         };
         var maintain = new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "维护",
             Color = "#222222",
             Description = "维护关系",
@@ -280,7 +280,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, store.Object);
 
-        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KgId = KgId }, CancellationToken.None);
+        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
 
         Assert.Equal(2, response.EntityTypes.Count);
         Assert.Equal(service.Id, response.EntityTypes[0].EntityTypeId);
@@ -307,8 +307,8 @@ public class KnowledgeGraphSchemaCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
-        authorizer.Setup(x => x.AuthorizeAsync(KgId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" }, MoAI.Database.Enums.TeamRole.Admin));
+        authorizer.Setup(x => x.AuthorizeAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" }, MoAI.Database.Enums.TeamRole.Admin));
 
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.IntrospectAsync("ext", It.IsAny<CancellationToken>()))
@@ -319,7 +319,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
 
         var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, store.Object);
 
-        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KgId = KgId }, CancellationToken.None);
+        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
 
         Assert.Equal(KnowledgeGraphModes.Connected, response.Mode);
         Assert.True(response.ReadOnly);
@@ -340,9 +340,9 @@ public class KnowledgeGraphSchemaCommandHandlerTests
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.AuthorizeAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         authorizer.Setup(x => x.AuthorizeManagedAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer;
     }
 

@@ -34,7 +34,7 @@ public class UpdateKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Upda
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphEntityTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {
@@ -42,11 +42,11 @@ public class UpdateKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Upda
         }
 
         var entity = await _databaseContext.KnowledgeGraphEntityTypes
-            .FirstOrDefaultAsync(x => x.Id == request.EntityTypeId && x.KgId == request.KgId, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == request.EntityTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken)
             ?? throw new BusinessException("实体类型不存在.") { StatusCode = 404 };
 
         var nameExist = await _databaseContext.KnowledgeGraphEntityTypes
-            .AnyAsync(x => x.KgId == request.KgId && x.Name == request.Name && x.Id != entity.Id, cancellationToken);
+            .AnyAsync(x => x.KnowledgeGraphId == request.KnowledgeGraphId && x.Name == request.Name && x.Id != entity.Id, cancellationToken);
         if (nameExist)
         {
             throw new BusinessException("实体类型名称已存在.") { StatusCode = 409 };

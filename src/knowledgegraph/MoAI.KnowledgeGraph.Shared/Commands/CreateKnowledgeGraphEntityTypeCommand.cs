@@ -12,7 +12,7 @@ public class CreateKnowledgeGraphEntityTypeCommand : IRequest<SimpleLong>, IMode
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KgId { get; init; }
+    public long KnowledgeGraphId { get; init; }
 
     /// <summary>
     /// 名称.
@@ -32,7 +32,7 @@ public class CreateKnowledgeGraphEntityTypeCommand : IRequest<SimpleLong>, IMode
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateKnowledgeGraphEntityTypeCommand> validate)
     {
-        validate.RuleFor(x => x.KgId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("类型名称不能为空.").MaximumLength(50).WithMessage("类型名称最长 50 个字符.");
         validate.RuleFor(x => x.Color).MaximumLength(20).WithMessage("颜色最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("描述最长 255 个字符.");

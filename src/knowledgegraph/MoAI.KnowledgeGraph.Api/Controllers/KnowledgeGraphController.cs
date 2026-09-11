@@ -62,7 +62,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>详情.</returns>
     [HttpGet("{id}")]
     public Task<QueryKnowledgeGraphCommandResponse> Detail(long id, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphCommand { KgId = id }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphCommand { KnowledgeGraphId = id }, ct);
 
     /// <summary>
     /// 更新图谱.
@@ -73,7 +73,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpPut("{id}")]
     public Task<EmptyCommandResponse> Update(long id, [FromBody] UpdateKnowledgeGraphCommand req, CancellationToken ct)
-        => _mediator.Send(new UpdateKnowledgeGraphCommand { KgId = id, Name = req.Name, Description = req.Description }, ct);
+        => _mediator.Send(new UpdateKnowledgeGraphCommand { KnowledgeGraphId = id, Name = req.Name, Description = req.Description }, ct);
 
     /// <summary>
     /// 删除图谱.
@@ -83,7 +83,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpDelete("{id}")]
     public Task<EmptyCommandResponse> Delete(long id, CancellationToken ct)
-        => _mediator.Send(new DeleteKnowledgeGraphCommand { KgId = id }, ct);
+        => _mediator.Send(new DeleteKnowledgeGraphCommand { KnowledgeGraphId = id }, ct);
 
     /// <summary>
     /// 查询 schema.
@@ -93,7 +93,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>schema.</returns>
     [HttpGet("{id}/schema")]
     public Task<QueryKnowledgeGraphSchemaCommandResponse> Schema(long id, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphSchemaCommand { KgId = id }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = id }, ct);
 
     /// <summary>
     /// 新增实体类型.
@@ -104,7 +104,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>类型 id.</returns>
     [HttpPost("{id}/entity-types")]
     public Task<SimpleLong> CreateEntityType(long id, [FromBody] CreateKnowledgeGraphEntityTypeCommand req, CancellationToken ct)
-        => _mediator.Send(new CreateKnowledgeGraphEntityTypeCommand { KgId = id, Name = req.Name, Color = req.Color, Description = req.Description }, ct);
+        => _mediator.Send(new CreateKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = id, Name = req.Name, Color = req.Color, Description = req.Description }, ct);
 
     /// <summary>
     /// 修改实体类型.
@@ -116,7 +116,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpPut("{id}/entity-types/{typeId}")]
     public Task<EmptyCommandResponse> UpdateEntityType(long id, long typeId, [FromBody] UpdateKnowledgeGraphEntityTypeCommand req, CancellationToken ct)
-        => _mediator.Send(new UpdateKnowledgeGraphEntityTypeCommand { KgId = id, EntityTypeId = typeId, Name = req.Name, Color = req.Color, Description = req.Description }, ct);
+        => _mediator.Send(new UpdateKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = id, EntityTypeId = typeId, Name = req.Name, Color = req.Color, Description = req.Description }, ct);
 
     /// <summary>
     /// 删除实体类型.
@@ -127,7 +127,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpDelete("{id}/entity-types/{typeId}")]
     public Task<EmptyCommandResponse> DeleteEntityType(long id, long typeId, CancellationToken ct)
-        => _mediator.Send(new DeleteKnowledgeGraphEntityTypeCommand { KgId = id, EntityTypeId = typeId }, ct);
+        => _mediator.Send(new DeleteKnowledgeGraphEntityTypeCommand { KnowledgeGraphId = id, EntityTypeId = typeId }, ct);
 
     /// <summary>
     /// 新增关系类型.
@@ -138,7 +138,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>类型 id.</returns>
     [HttpPost("{id}/relation-types")]
     public Task<SimpleLong> CreateRelationType(long id, [FromBody] CreateKnowledgeGraphRelationTypeCommand req, CancellationToken ct)
-        => _mediator.Send(new CreateKnowledgeGraphRelationTypeCommand { KgId = id, Name = req.Name, Color = req.Color, Description = req.Description, SourceTypeId = req.SourceTypeId, TargetTypeId = req.TargetTypeId }, ct);
+        => _mediator.Send(new CreateKnowledgeGraphRelationTypeCommand { KnowledgeGraphId = id, Name = req.Name, Color = req.Color, Description = req.Description, SourceTypeId = req.SourceTypeId, TargetTypeId = req.TargetTypeId }, ct);
 
     /// <summary>
     /// 修改关系类型.
@@ -150,7 +150,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpPut("{id}/relation-types/{typeId}")]
     public Task<EmptyCommandResponse> UpdateRelationType(long id, long typeId, [FromBody] UpdateKnowledgeGraphRelationTypeCommand req, CancellationToken ct)
-        => _mediator.Send(new UpdateKnowledgeGraphRelationTypeCommand { KgId = id, RelationTypeId = typeId, Name = req.Name, Color = req.Color, Description = req.Description, SourceTypeId = req.SourceTypeId, TargetTypeId = req.TargetTypeId }, ct);
+        => _mediator.Send(new UpdateKnowledgeGraphRelationTypeCommand { KnowledgeGraphId = id, RelationTypeId = typeId, Name = req.Name, Color = req.Color, Description = req.Description, SourceTypeId = req.SourceTypeId, TargetTypeId = req.TargetTypeId }, ct);
 
     /// <summary>
     /// 删除关系类型.
@@ -161,7 +161,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpDelete("{id}/relation-types/{typeId}")]
     public Task<EmptyCommandResponse> DeleteRelationType(long id, long typeId, CancellationToken ct)
-        => _mediator.Send(new DeleteKnowledgeGraphRelationTypeCommand { KgId = id, RelationTypeId = typeId }, ct);
+        => _mediator.Send(new DeleteKnowledgeGraphRelationTypeCommand { KnowledgeGraphId = id, RelationTypeId = typeId }, ct);
 
     /// <summary>
     /// 节点分页.
@@ -172,7 +172,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>分页结果.</returns>
     [HttpPost("{id}/nodes/list")]
     public Task<QueryKnowledgeGraphNodesCommandResponse> ListNodes(long id, [FromBody] QueryKnowledgeGraphNodesCommand req, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphNodesCommand { KgId = id, EntityTypeId = req.EntityTypeId, Keyword = req.Keyword, PageNo = req.PageNo, PageSize = req.PageSize }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphNodesCommand { KnowledgeGraphId = id, EntityTypeId = req.EntityTypeId, Keyword = req.Keyword, PageNo = req.PageNo, PageSize = req.PageSize }, ct);
 
     /// <summary>
     /// 新增节点.
@@ -183,7 +183,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>节点 id.</returns>
     [HttpPost("{id}/nodes")]
     public Task<SimpleString> CreateNode(long id, [FromBody] CreateKnowledgeGraphNodeCommand req, CancellationToken ct)
-        => _mediator.Send(new CreateKnowledgeGraphNodeCommand { KgId = id, EntityTypeId = req.EntityTypeId, Name = req.Name, Description = req.Description }, ct);
+        => _mediator.Send(new CreateKnowledgeGraphNodeCommand { KnowledgeGraphId = id, EntityTypeId = req.EntityTypeId, Name = req.Name, Description = req.Description }, ct);
 
     /// <summary>
     /// 节点详情.
@@ -194,7 +194,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>节点.</returns>
     [HttpGet("{id}/nodes/{nodeId}")]
     public Task<QueryKnowledgeGraphNodeCommandResponse> NodeDetail(long id, string nodeId, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphNodeCommand { KgId = id, NodeId = nodeId }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphNodeCommand { KnowledgeGraphId = id, NodeId = nodeId }, ct);
 
     /// <summary>
     /// 修改节点.
@@ -206,7 +206,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpPut("{id}/nodes/{nodeId}")]
     public Task<EmptyCommandResponse> UpdateNode(long id, string nodeId, [FromBody] UpdateKnowledgeGraphNodeCommand req, CancellationToken ct)
-        => _mediator.Send(new UpdateKnowledgeGraphNodeCommand { KgId = id, NodeId = nodeId, EntityTypeId = req.EntityTypeId, Name = req.Name, Description = req.Description }, ct);
+        => _mediator.Send(new UpdateKnowledgeGraphNodeCommand { KnowledgeGraphId = id, NodeId = nodeId, EntityTypeId = req.EntityTypeId, Name = req.Name, Description = req.Description }, ct);
 
     /// <summary>
     /// 删除节点.
@@ -217,7 +217,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpDelete("{id}/nodes/{nodeId}")]
     public Task<EmptyCommandResponse> DeleteNode(long id, string nodeId, CancellationToken ct)
-        => _mediator.Send(new DeleteKnowledgeGraphNodeCommand { KgId = id, NodeId = nodeId }, ct);
+        => _mediator.Send(new DeleteKnowledgeGraphNodeCommand { KnowledgeGraphId = id, NodeId = nodeId }, ct);
 
     /// <summary>
     /// 边分页.
@@ -228,7 +228,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>分页结果.</returns>
     [HttpPost("{id}/edges/list")]
     public Task<QueryKnowledgeGraphEdgesCommandResponse> ListEdges(long id, [FromBody] QueryKnowledgeGraphEdgesCommand req, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphEdgesCommand { KgId = id, RelationTypeId = req.RelationTypeId, NodeId = req.NodeId, PageNo = req.PageNo, PageSize = req.PageSize }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphEdgesCommand { KnowledgeGraphId = id, RelationTypeId = req.RelationTypeId, NodeId = req.NodeId, PageNo = req.PageNo, PageSize = req.PageSize }, ct);
 
     /// <summary>
     /// 新增边.
@@ -239,7 +239,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>边 id.</returns>
     [HttpPost("{id}/edges")]
     public Task<SimpleString> CreateEdge(long id, [FromBody] CreateKnowledgeGraphEdgeCommand req, CancellationToken ct)
-        => _mediator.Send(new CreateKnowledgeGraphEdgeCommand { KgId = id, RelationTypeId = req.RelationTypeId, SourceNodeId = req.SourceNodeId, TargetNodeId = req.TargetNodeId }, ct);
+        => _mediator.Send(new CreateKnowledgeGraphEdgeCommand { KnowledgeGraphId = id, RelationTypeId = req.RelationTypeId, SourceNodeId = req.SourceNodeId, TargetNodeId = req.TargetNodeId }, ct);
 
     /// <summary>
     /// 边详情.
@@ -250,7 +250,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>边.</returns>
     [HttpGet("{id}/edges/{edgeId}")]
     public Task<QueryKnowledgeGraphEdgeCommandResponse> EdgeDetail(long id, string edgeId, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphEdgeCommand { KgId = id, EdgeId = edgeId }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphEdgeCommand { KnowledgeGraphId = id, EdgeId = edgeId }, ct);
 
     /// <summary>
     /// 修改边.
@@ -262,7 +262,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpPut("{id}/edges/{edgeId}")]
     public Task<EmptyCommandResponse> UpdateEdge(long id, string edgeId, [FromBody] UpdateKnowledgeGraphEdgeCommand req, CancellationToken ct)
-        => _mediator.Send(new UpdateKnowledgeGraphEdgeCommand { KgId = id, EdgeId = edgeId, RelationTypeId = req.RelationTypeId }, ct);
+        => _mediator.Send(new UpdateKnowledgeGraphEdgeCommand { KnowledgeGraphId = id, EdgeId = edgeId, RelationTypeId = req.RelationTypeId }, ct);
 
     /// <summary>
     /// 删除边.
@@ -273,5 +273,5 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>空响应.</returns>
     [HttpDelete("{id}/edges/{edgeId}")]
     public Task<EmptyCommandResponse> DeleteEdge(long id, string edgeId, CancellationToken ct)
-        => _mediator.Send(new DeleteKnowledgeGraphEdgeCommand { KgId = id, EdgeId = edgeId }, ct);
+        => _mediator.Send(new DeleteKnowledgeGraphEdgeCommand { KnowledgeGraphId = id, EdgeId = edgeId }, ct);
 }

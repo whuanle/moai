@@ -15,7 +15,7 @@ namespace MoAI.KnowledgeGraph.Tests;
 
 public class KnowledgeGraphNodeEdgeCommandHandlerTests
 {
-    private const long KgId = 7;
+    private const long KnowledgeGraphId = 7;
 
     [Fact]
     public async Task CreateNode_WithEntityTypeNotInGraph_Throws400()
@@ -26,7 +26,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new CreateKnowledgeGraphNodeCommand { KgId = KgId, EntityTypeId = 999, Name = "节点" },
+            new CreateKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = 999, Name = "节点" },
             CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
@@ -39,7 +39,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var relationType = new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "维护",
             Color = string.Empty,
             Description = string.Empty,
@@ -50,7 +50,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
 
         var authorizer = CreateAuthorizer();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.GetNodeAsync(KgId, "missing", It.IsAny<CancellationToken>()))
+        store.Setup(x => x.GetNodeAsync(KnowledgeGraphId, "missing", It.IsAny<CancellationToken>()))
             .ReturnsAsync((KnowledgeGraphNodeRecord?)null);
 
         var sut = new CreateKnowledgeGraphEdgeCommandHandler(db.Context, authorizer.Object, store.Object);
@@ -58,7 +58,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphEdgeCommand
             {
-                KgId = KgId,
+                KnowledgeGraphId = KnowledgeGraphId,
                 RelationTypeId = relationType.Id,
                 SourceNodeId = "missing",
                 TargetNodeId = "target",
@@ -74,7 +74,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var people = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
             Description = string.Empty,
@@ -82,7 +82,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         };
         var service = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = string.Empty,
             Description = string.Empty,
@@ -94,7 +94,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
 
         var relationType = new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "维护",
             Color = string.Empty,
             Description = string.Empty,
@@ -107,17 +107,17 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
 
         var authorizer = CreateAuthorizer();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.GetNodeAsync(KgId, "source", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new KnowledgeGraphNodeRecord("source", KgId, service.Id, "起点", string.Empty));
-        store.Setup(x => x.GetNodeAsync(KgId, "target", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new KnowledgeGraphNodeRecord("target", KgId, service.Id, "终点", string.Empty));
+        store.Setup(x => x.GetNodeAsync(KnowledgeGraphId, "source", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("source", KnowledgeGraphId, service.Id, "起点", string.Empty));
+        store.Setup(x => x.GetNodeAsync(KnowledgeGraphId, "target", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("target", KnowledgeGraphId, service.Id, "终点", string.Empty));
 
         var sut = new CreateKnowledgeGraphEdgeCommandHandler(db.Context, authorizer.Object, store.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphEdgeCommand
             {
-                KgId = KgId,
+                KnowledgeGraphId = KnowledgeGraphId,
                 RelationTypeId = relationType.Id,
                 SourceNodeId = "source",
                 TargetNodeId = "target",
@@ -133,7 +133,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var people = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
             Description = string.Empty,
@@ -141,7 +141,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         };
         var service = new KnowledgeGraphEntityTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = string.Empty,
             Description = string.Empty,
@@ -153,7 +153,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
 
         var relationType = new KnowledgeGraphRelationTypeEntity
         {
-            KgId = KgId,
+            KnowledgeGraphId = KnowledgeGraphId,
             Name = "维护",
             Color = string.Empty,
             Description = string.Empty,
@@ -166,19 +166,19 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
 
         var authorizer = CreateAuthorizer();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.GetNodeAsync(KgId, "source", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new KnowledgeGraphNodeRecord("source", KgId, people.Id, "起点", string.Empty));
-        store.Setup(x => x.GetNodeAsync(KgId, "target", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new KnowledgeGraphNodeRecord("target", KgId, service.Id, "终点", string.Empty));
-        store.Setup(x => x.CreateEdgeAsync(KgId, relationType.Id, "source", "target", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new KnowledgeGraphEdgeRecord("edge-1", KgId, relationType.Id, "source", "target"));
+        store.Setup(x => x.GetNodeAsync(KnowledgeGraphId, "source", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("source", KnowledgeGraphId, people.Id, "起点", string.Empty));
+        store.Setup(x => x.GetNodeAsync(KnowledgeGraphId, "target", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("target", KnowledgeGraphId, service.Id, "终点", string.Empty));
+        store.Setup(x => x.CreateEdgeAsync(KnowledgeGraphId, relationType.Id, "source", "target", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphEdgeRecord("edge-1", KnowledgeGraphId, relationType.Id, "source", "target"));
 
         var sut = new CreateKnowledgeGraphEdgeCommandHandler(db.Context, authorizer.Object, store.Object);
 
         var result = await sut.Handle(
             new CreateKnowledgeGraphEdgeCommand
             {
-                KgId = KgId,
+                KnowledgeGraphId = KnowledgeGraphId,
                 RelationTypeId = relationType.Id,
                 SourceNodeId = "source",
                 TargetNodeId = "target",
@@ -194,13 +194,13 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var authorizer = CreateAuthorizer();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.DeleteNodeAsync(KgId, "missing", It.IsAny<CancellationToken>()))
+        store.Setup(x => x.DeleteNodeAsync(KnowledgeGraphId, "missing", It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var sut = new DeleteKnowledgeGraphNodeCommandHandler(authorizer.Object, store.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new DeleteKnowledgeGraphNodeCommand { KgId = KgId, NodeId = "missing" },
+            new DeleteKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, NodeId = "missing" },
             CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
@@ -212,18 +212,18 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var authorizer = CreateAuthorizer();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.ListNodesAsync(KgId, null, null, 1, 100, It.IsAny<CancellationToken>()))
+        store.Setup(x => x.ListNodesAsync(KnowledgeGraphId, null, null, 1, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync((
                 new List<KnowledgeGraphNodeRecord>
                 {
-                    new("n1", KgId, 3, "节点一", "描述一"),
+                    new("n1", KnowledgeGraphId, 3, "节点一", "描述一"),
                 },
                 42L));
 
         var sut = new QueryKnowledgeGraphNodesCommandHandler(authorizer.Object, store.Object);
 
         var response = await sut.Handle(
-            new QueryKnowledgeGraphNodesCommand { KgId = KgId, PageNo = 0, PageSize = 500 },
+            new QueryKnowledgeGraphNodesCommand { KnowledgeGraphId = KnowledgeGraphId, PageNo = 0, PageSize = 500 },
             CancellationToken.None);
 
         Assert.Equal(42, response.Total);
@@ -232,7 +232,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         Assert.Equal(3, item.EntityTypeId);
         Assert.Equal("节点一", item.Name);
         Assert.Equal("描述一", item.Description);
-        store.Verify(x => x.ListNodesAsync(KgId, null, null, 1, 100, It.IsAny<CancellationToken>()), Times.Once);
+        store.Verify(x => x.ListNodesAsync(KnowledgeGraphId, null, null, 1, 100, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -240,13 +240,13 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
-        authorizer.Setup(x => x.AuthorizeManagedAsync(KgId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        authorizer.Setup(x => x.AuthorizeManagedAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new BusinessException("外部接入图谱为只读.") { StatusCode = 409 });
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
-            new CreateKnowledgeGraphNodeCommand { KgId = KgId, EntityTypeId = 1, Name = "节点" },
+            new CreateKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = 1, Name = "节点" },
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
@@ -257,9 +257,9 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.AuthorizeAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         authorizer.Setup(x => x.AuthorizeManagedAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new KnowledgeGraphEntity { Id = KgId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer;
     }
 }

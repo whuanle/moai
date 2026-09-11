@@ -12,7 +12,7 @@ public class CreateKnowledgeGraphEdgeCommand : IRequest<SimpleString>, IModelVal
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KgId { get; init; }
+    public long KnowledgeGraphId { get; init; }
 
     /// <summary>
     /// 关系类型 id.
@@ -32,7 +32,7 @@ public class CreateKnowledgeGraphEdgeCommand : IRequest<SimpleString>, IModelVal
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateKnowledgeGraphEdgeCommand> validate)
     {
-        validate.RuleFor(x => x.KgId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
         validate.RuleFor(x => x.RelationTypeId).GreaterThan(0).WithMessage("关系类型 id 不正确.");
         validate.RuleFor(x => x.SourceNodeId).NotEmpty().WithMessage("起点节点不正确.");
         validate.RuleFor(x => x.TargetNodeId).NotEmpty().WithMessage("终点节点不正确.");

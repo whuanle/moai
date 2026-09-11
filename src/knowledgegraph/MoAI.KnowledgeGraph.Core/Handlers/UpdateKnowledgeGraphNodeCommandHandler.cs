@@ -33,19 +33,19 @@ public class UpdateKnowledgeGraphNodeCommandHandler : IRequestHandler<UpdateKnow
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
 
-        _ = await _store.GetNodeAsync(request.KgId, request.NodeId, cancellationToken)
+        _ = await _store.GetNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken)
             ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };
 
         var typeExists = await _databaseContext.KnowledgeGraphEntityTypes
-            .AnyAsync(x => x.Id == request.EntityTypeId && x.KgId == request.KgId, cancellationToken);
+            .AnyAsync(x => x.Id == request.EntityTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken);
         if (!typeExists)
         {
             throw new BusinessException("实体类型不存在.") { StatusCode = 400 };
         }
 
-        await _store.UpdateNodeAsync(request.KgId, request.NodeId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, cancellationToken);
+        await _store.UpdateNodeAsync(request.KnowledgeGraphId, request.NodeId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

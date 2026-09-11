@@ -29,12 +29,12 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
     /// <inheritdoc/>
     public async Task<QueryKnowledgeGraphCommandResponse> Handle(QueryKnowledgeGraphCommand request, CancellationToken cancellationToken)
     {
-        var (graph, role) = await _authorizer.AuthorizeAsync(request.KgId, adminOnly: false, cancellationToken);
+        var (graph, role) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
 
         return new QueryKnowledgeGraphCommandResponse
         {
-            KgId = graph.Id,
+            KnowledgeGraphId = graph.Id,
             TeamId = graph.TeamId,
             Name = graph.Name,
             Description = graph.Description,

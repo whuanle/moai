@@ -33,19 +33,19 @@ public class UpdateKnowledgeGraphEdgeCommandHandler : IRequestHandler<UpdateKnow
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
 
         var relationType = await _databaseContext.KnowledgeGraphRelationTypes
-            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KgId == request.KgId, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken)
             ?? throw new BusinessException("关系类型不存在.") { StatusCode = 400 };
 
-        var edge = await _store.GetEdgeAsync(request.KgId, request.EdgeId, cancellationToken)
+        var edge = await _store.GetEdgeAsync(request.KnowledgeGraphId, request.EdgeId, cancellationToken)
             ?? throw new BusinessException("边不存在.") { StatusCode = 404 };
 
         if (relationType.SourceTypeId != null || relationType.TargetTypeId != null)
         {
-            var source = await _store.GetNodeAsync(request.KgId, edge.SourceNodeId, cancellationToken);
-            var target = await _store.GetNodeAsync(request.KgId, edge.TargetNodeId, cancellationToken);
+            var source = await _store.GetNodeAsync(request.KnowledgeGraphId, edge.SourceNodeId, cancellationToken);
+            var target = await _store.GetNodeAsync(request.KnowledgeGraphId, edge.TargetNodeId, cancellationToken);
             if (source == null || target == null)
             {
                 throw new BusinessException("边端点节点不存在.") { StatusCode = 400 };
@@ -62,7 +62,7 @@ public class UpdateKnowledgeGraphEdgeCommandHandler : IRequestHandler<UpdateKnow
             }
         }
 
-        var updated = await _store.UpdateEdgeAsync(request.KgId, request.EdgeId, request.RelationTypeId, cancellationToken);
+        var updated = await _store.UpdateEdgeAsync(request.KnowledgeGraphId, request.EdgeId, request.RelationTypeId, cancellationToken);
         if (!updated)
         {
             throw new BusinessException("边不存在.") { StatusCode = 404 };

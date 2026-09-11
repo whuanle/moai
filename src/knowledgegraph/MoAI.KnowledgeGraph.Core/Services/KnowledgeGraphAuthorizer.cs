@@ -52,9 +52,9 @@ public class KnowledgeGraphAuthorizer : IKnowledgeGraphAuthorizer
     }
 
     /// <inheritdoc/>
-    public async Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeAsync(long kgId, bool adminOnly, CancellationToken cancellationToken)
+    public async Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeAsync(long KnowledgeGraphId, bool adminOnly, CancellationToken cancellationToken)
     {
-        var graph = await _databaseContext.KnowledgeGraphs.FirstOrDefaultAsync(x => x.Id == kgId, cancellationToken);
+        var graph = await _databaseContext.KnowledgeGraphs.FirstOrDefaultAsync(x => x.Id == KnowledgeGraphId, cancellationToken);
         if (graph == null)
         {
             throw new BusinessException("知识图谱不存在.") { StatusCode = 404 };
@@ -65,9 +65,9 @@ public class KnowledgeGraphAuthorizer : IKnowledgeGraphAuthorizer
     }
 
     /// <inheritdoc/>
-    public async Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeManagedAsync(long kgId, bool adminOnly, CancellationToken cancellationToken)
+    public async Task<(KnowledgeGraphEntity Graph, TeamRole Role)> AuthorizeManagedAsync(long KnowledgeGraphId, bool adminOnly, CancellationToken cancellationToken)
     {
-        var result = await AuthorizeAsync(kgId, adminOnly, cancellationToken);
+        var result = await AuthorizeAsync(KnowledgeGraphId, adminOnly, cancellationToken);
         if (string.Equals(result.Graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
         {
             throw new BusinessException("外部接入图谱为只读.") { StatusCode = 409 };

@@ -37,7 +37,7 @@ public class DeleteKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Dele
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphEntityTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {
@@ -45,17 +45,17 @@ public class DeleteKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<Dele
         }
 
         var entity = await _databaseContext.KnowledgeGraphEntityTypes
-            .FirstOrDefaultAsync(x => x.Id == request.EntityTypeId && x.KgId == request.KgId, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == request.EntityTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken)
             ?? throw new BusinessException("实体类型不存在.") { StatusCode = 404 };
 
-        var nodeCount = await _store.CountNodesByEntityTypeAsync(request.KgId, request.EntityTypeId, cancellationToken);
+        var nodeCount = await _store.CountNodesByEntityTypeAsync(request.KnowledgeGraphId, request.EntityTypeId, cancellationToken);
         if (nodeCount > 0)
         {
             throw new BusinessException("该实体类型下仍有节点，无法删除.") { StatusCode = 409 };
         }
 
         var referenced = await _databaseContext.KnowledgeGraphRelationTypes
-            .AnyAsync(x => x.KgId == request.KgId && (x.SourceTypeId == request.EntityTypeId || x.TargetTypeId == request.EntityTypeId), cancellationToken);
+            .AnyAsync(x => x.KnowledgeGraphId == request.KnowledgeGraphId && (x.SourceTypeId == request.EntityTypeId || x.TargetTypeId == request.EntityTypeId), cancellationToken);
         if (referenced)
         {
             throw new BusinessException("该实体类型仍被关系类型引用，无法删除.") { StatusCode = 409 };

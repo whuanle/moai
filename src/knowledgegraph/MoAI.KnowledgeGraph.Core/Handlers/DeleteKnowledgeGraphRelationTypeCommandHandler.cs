@@ -37,7 +37,7 @@ public class DeleteKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<De
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KgId, adminOnly: true, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {
@@ -45,10 +45,10 @@ public class DeleteKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<De
         }
 
         var entity = await _databaseContext.KnowledgeGraphRelationTypes
-            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KgId == request.KgId, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == request.RelationTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken)
             ?? throw new BusinessException("关系类型不存在.") { StatusCode = 404 };
 
-        var edgeCount = await _store.CountEdgesByRelationTypeAsync(request.KgId, request.RelationTypeId, cancellationToken);
+        var edgeCount = await _store.CountEdgesByRelationTypeAsync(request.KnowledgeGraphId, request.RelationTypeId, cancellationToken);
         if (edgeCount > 0)
         {
             throw new BusinessException("该关系类型下仍有关系，无法删除.") { StatusCode = 409 };
