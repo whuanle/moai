@@ -75,8 +75,10 @@ public class InfraExternalHttpModule : IModule
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
+        // 博查服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var boChaEndpoint = context.Configuration["MoAI:BoCha:Endpoint"];
         context.Services.AddRefitClient<IBoChaClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.bocha.cn"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(boChaEndpoint) ? "https://api.bocha.cn" : boChaEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 

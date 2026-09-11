@@ -7,6 +7,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

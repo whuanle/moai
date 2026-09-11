@@ -57,17 +57,17 @@ public interface IBoChaClient
         switch (response.Code)
         {
             case 400:
-                throw new BusinessException("请求参数错误: {0}", response.Msg);
+                throw new BusinessException(400, "请求参数错误: {0}", response.Msg);
             case 401:
-                throw new BusinessException("未授权: {0}", response.Msg);
+                throw new BusinessException(401, "未授权: {0}", response.Msg);
             case 403:
-                throw new BusinessException("余额不足: {0}", response.Msg);
+                throw new BusinessException(403, "余额不足: {0}", response.Msg);
             case 429:
-                throw new BusinessException("请求频率限制: {0}", response.Msg);
+                throw new BusinessException(429, "请求频率限制: {0}", response.Msg);
             case 500:
-                throw new BusinessException("服务器内部错误: {0}", response.Msg);
+                throw new BusinessException(500, "服务器内部错误: {0}", response.Msg);
             default:
-                throw new BusinessException("未知错误: {0}", response.Msg);
+                throw new BusinessException(500, "未知错误: {0}", response.Msg);
         }
     }
 }

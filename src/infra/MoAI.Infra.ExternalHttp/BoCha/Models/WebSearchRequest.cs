@@ -57,7 +57,7 @@ public class WebSearchRequest
     /// 例如：qq.com|m.163.com
     /// </summary>
     [JsonPropertyName("include")]
-    public string Include { get; init; }
+    public string? Include { get; init; }
 
     /// <summary>
     /// 排除搜索的网站范围。
@@ -68,5 +68,5 @@ public class WebSearchRequest
     /// 例如：qq.com|m.163.com
     /// </summary>
     [JsonPropertyName("exclude")]
-    public string Exclude { get; init; }
+    public string? Exclude { get; init; }
 }

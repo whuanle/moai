@@ -128,6 +128,10 @@ src/aiplugin/
 - **示例/内置插件**放 `MoAI.AIPlugin.Static`、`MoAI.AIPlugin.Dynamic`，模型放各自 `Models/`。
 - 新增插件**必须**在宿主 `src/MoAI/MainModule.cs` 通过 `[InjectModule<...>]` 挂载所在模块，否则程序集不参与扫描。
 - Handler 涉及 DB 时放 `MoAI.AIPlugin.Custom`（它引用 `MoAI.Database.Shared` 与 `MoAI.Classify.Shared`）；无 DB 的逻辑放 `MoAI.AIPlugin.Core`。
+- **插件需要调用外部 HTTP 接口时**：Refit 客户端实现放 `src/infra/MoAI.Infra.ExternalHttp/<厂商>/`（复用 `ExternalHttpMessageHandler` 的日志与遥测，典型：`BoCha`），插件项目加 `ProjectReference` 后**构造注入**该客户端（`PluginExecutor` 用 `ActivatorUtilities.CreateInstance` 从 DI 作用域解析），不要在插件内 `new HttpClient`。
+- **插件需要解析上游 JSON 字符串时**（很多厂商把结构化结果塞进 `content` 字符串）：不要用强类型直接反序列化，用 `JsonDocument` 逐层展开并写**容错**分支（字段缺失、形态变化、空对象都要能跳过而不是抛异常），并把「取不到任何有效字段」的条目丢弃。
+- 参考实现：动态插件 `Plugins/BoChaWebSearchPlugin.cs`（外部 HTTP + 实例配置校验）、`Plugins/BoChaAiSearchPlugin.cs`（外部 HTTP + `content` JSON 文本解析 + 多形态结果重组），静态插件 `Plugins/StaticEchoPlugin.cs`（无配置）。
+- **验证插件成功路径不要依赖真实 Key**：上游地址若能配置覆盖，用本地桩服务 + 真实后端跑端到端（见 `local-dev/bocha-search-e2e.mjs`）；桩服务只回放厂商文档的样例报文即可覆盖「请求下发 → 鉴权 → 解析 → 结果落库/返回」整条链路。
 
 ## 九、运行时流程（后端）
 
@@ -150,7 +154,7 @@ src/aiplugin/
 
 ## 十一、前端接入
 
-- 插件实现后需重新生成 Kiota 客户端（`cd ui && npm run syncapi`，需后端 :5210 运行中暴露 OpenAPI）。
+- 插件实现后需重新生成 Kiota 客户端（`cd ui && npm run syncapi`，需后端 :5000 运行中暴露 OpenAPI）。
 - 静态插件：`ui/src/pages/plugins/Plugins.tsx` 静态 Tab（复用 `PluginPanel` + `PluginRunDrawer`）。
 - 动态插件：`ui/src/pages/plugins/DynamicPluginPanel.tsx`（实例列表、新建/编辑弹窗 Monaco 配置、运行、删除），文案走 `ui/src/i18n/locales/{zh-CN,en-US}/common.json` 的 `plugins` 节点，zh/en 同步改。
 - 测试：`ui/src/pages/plugins/__tests__/` 下补对应 `*.test.tsx`。
@@ -160,6 +164,8 @@ src/aiplugin/
 ```bash
 dotnet build src/MoAI/MoAI.csproj          # 后端 0 error
 cd ui && npm run typecheck && npm run lint && npm run test   # 前端全绿
+node local-dev/dynamic-plugin-e2e.mjs      # 动态插件实例管理与失败路径（需后端 5000 运行中）
+node local-dev/bocha-search-e2e.mjs        # 调用外部 HTTP 的插件：桩服务覆盖成功路径（无需真实 Key）
 ```
 
 ## 常见问题

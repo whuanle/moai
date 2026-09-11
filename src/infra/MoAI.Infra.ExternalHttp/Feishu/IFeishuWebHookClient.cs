@@ -10,54 +10,47 @@ using Refit;
 namespace MoAI.Infra.Feishu;
 
 /// <summary>
-/// 飞书机器人.
+/// 飞书机器人 Webhook 客户端。路径模板里的 <c>{key}</c> 是机器人 token，由调用方传入.
 /// </summary>
 public interface IFeishuWebHookClient
 {
-    public HttpClient Client { get; }
+    /// <summary>
+    /// 推送消息.
+    /// </summary>
+    /// <param name="key">机器人 token（路径段）.</param>
+    /// <param name="request"></param>
+    [Post("/open-apis/bot/v2/hook/{key}")]
+    Task<FeishuCode> SendPostAsync(string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookPostRequest request);
 
     /// <summary>
     /// 推送消息.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="key">机器人 token（路径段）.</param>
     /// <param name="request"></param>
-    /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuCode> SendPostAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookPostRequest request);
+    Task<FeishuCode> SendTextAsync(string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookTextRequest request);
 
     /// <summary>
     /// 推送消息.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="key">机器人 token（路径段）.</param>
     /// <param name="request"></param>
-    /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuCode> SendTextAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookTextRequest request);
+    Task<FeishuCode> SendShareChatAsync(string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookShareChatRequest request);
 
     /// <summary>
     /// 推送消息.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="key">机器人 token（路径段）.</param>
     /// <param name="request"></param>
-    /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuCode> SendShareChatAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookShareChatRequest request);
+    Task<FeishuCode> SendImageAsync(string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookImageRequest request);
 
     /// <summary>
     /// 推送消息.
     /// </summary>
-    /// <param name="key"></param>
+    /// <param name="key">机器人 token（路径段）.</param>
     /// <param name="request"></param>
-    /// <returns></returns>
     [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuCode> SendImageAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookImageRequest request);
-
-    /// <summary>
-    /// 推送消息.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    [Post("/open-apis/bot/v2/hook/{key}")]
-    Task<FeishuCode> SendInteractiveAsync([Query] string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookInteractiveRequest request);
+    Task<FeishuCode> SendInteractiveAsync(string key, [Body(BodySerializationMethod.Serialized)] FeishuWebHookInteractiveRequest request);
 }
