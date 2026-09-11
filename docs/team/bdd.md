@@ -167,3 +167,38 @@ Scenario: 设置团队头像
   When Member 尝试设置头像
   Then 返回禁止
 ```
+
+## Feature: 管理员团队治理（后台）
+
+```gherkin
+@TM-S15 @auto:e2e
+Scenario: 管理员查看全部团队
+  Given 我是系统管理员
+  When 查看全部团队列表
+  Then 返回成功且包含非本人创建的团队
+  And 列表项含负责人与成员数
+  When 非管理员或未登录访问该列表
+  Then 返回禁止或未授权
+
+@TM-S15b @auto:e2e
+Scenario: 禁用与启用团队
+  Given 我是系统管理员
+  When 禁用不存在的团队
+  Then 返回不存在
+  When 普通用户禁用某个团队
+  Then 返回禁止
+  When 禁用某个团队
+  Then 返回成功，列表中该团队状态为已禁用，且按已禁用筛选仅返回该团队
+  When 启用该团队
+  Then 返回成功且状态恢复为正常
+
+@TM-S16 @auto:e2e
+Scenario: 管理员转让团队负责人
+  Given 我是系统管理员，目标用户不是该团队成员
+  When 非管理员执行转让，或目标用户/团队不存在
+  Then 返回禁止或不存在
+  When 转让给非团队成员
+  Then 返回成功，该用户自动加入团队并成为负责人，原负责人降为管理员
+  When 再次转让给当前负责人
+  Then 返回参数错误
+```

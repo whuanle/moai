@@ -154,6 +154,57 @@ async function main() {
     check('TM-14f 解散清理', (await api('DELETE', `/api/team/${TID3}`, { token: owner.token })).status === 200)
   }
 
+  // TM-15 管理员团队治理：查看全部团队 + 禁用/启用（@TM-S15）
+  {
+    check('TM-15a 未登录查管理列表 401', (await api('GET', '/api/admin/team/list')).status === 401)
+
+    const login = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    check('TM-15b 种子管理员登录 200', login.status === 200 && !!login.json?.accessToken, `${login.status} ${login.text.slice(0, 100)}`)
+    const adminToken = login.json?.accessToken
+
+    check('TM-15c 普通用户查管理列表 403', (await api('GET', '/api/admin/team/list', { token: owner.token })).status === 403)
+
+    const created = await api('POST', '/api/team', { token: owner.token, body: { name: 'adm-team-' + TS } })
+    check('TM-15d 建治理用团队 200', created.status === 200 && Number(created.json?.value) > 0, `${created.status}`)
+    const TID4 = Number(created.json?.value)
+
+    const list = await api('GET', `/api/admin/team/list?searchText=adm-team-${TS}`, { token: adminToken })
+    const row = (list.json?.items ?? []).find(i => Number(i.teamId) === TID4)
+    check('TM-15e 管理员可检索到任意团队（含非本人团队）', list.status === 200 && !!row && row.isDisable === false, `${list.status} ${list.text.slice(0, 120)}`)
+    check('TM-15f 列表项含负责人与成员数', !!row && Number(row.ownerUserId) === owner.userId && row.memberCount === 1, JSON.stringify(row))
+
+    check('TM-15g 禁用不存在的团队 404', (await api('PUT', '/api/admin/team/99999999/disable', { token: adminToken, body: { isDisable: true } })).status === 404)
+    check('TM-15h 普通用户禁用团队 403', (await api('PUT', `/api/admin/team/${TID4}/disable`, { token: owner.token, body: { isDisable: true } })).status === 403)
+    check('TM-15i 管理员禁用团队 200', (await api('PUT', `/api/admin/team/${TID4}/disable`, { token: adminToken, body: { isDisable: true } })).status === 200)
+    {
+      const r = await api('GET', `/api/admin/team/list?searchText=adm-team-${TS}`, { token: adminToken })
+      const t = (r.json?.items ?? []).find(i => Number(i.teamId) === TID4)
+      check('TM-15j 列表回显已禁用', t?.isDisable === true, JSON.stringify(t))
+    }
+    check('TM-15k 管理员启用团队 200', (await api('PUT', `/api/admin/team/${TID4}/disable`, { token: adminToken, body: { isDisable: false } })).status === 200)
+    {
+      const r = await api('GET', `/api/admin/team/list?searchText=adm-team-${TS}`, { token: adminToken })
+      const t = (r.json?.items ?? []).find(i => Number(i.teamId) === TID4)
+      check('TM-15l 列表回显已启用', t?.isDisable === false, JSON.stringify(t))
+    }
+    check('TM-15m 按禁用状态筛选仅返回禁用团队', (await api('GET', '/api/admin/team/list?isDisable=true', { token: adminToken })).json?.items?.every(i => i.isDisable === true) === true)
+
+    // TM-16 管理员转让负责人（@TM-S16）
+    const pick = await mkuser('ad')
+    check('TM-16a 非管理员转让负责人 403', (await api('PUT', `/api/admin/team/${TID4}/owner`, { token: owner.token, body: { userId: pick.userId } })).status === 403)
+    check('TM-16b 目标用户不存在 404', (await api('PUT', `/api/admin/team/${TID4}/owner`, { token: adminToken, body: { userId: 99999999 } })).status === 404)
+    check('TM-16c 团队不存在 404', (await api('PUT', '/api/admin/team/99999999/owner', { token: adminToken, body: { userId: pick.userId } })).status === 404)
+    check('TM-16d 管理员转让给非成员用户 200', (await api('PUT', `/api/admin/team/${TID4}/owner`, { token: adminToken, body: { userId: pick.userId } })).status === 200)
+    {
+      const members = (await api('GET', `/api/team/${TID4}/users`, { token: pick.token })).json?.items ?? []
+      const roles = Object.fromEntries(members.map(i => [Number(i.userId), i.role]))
+      check('TM-16e 非成员目标自动入团并成为负责人', roles[pick.userId] === 2, JSON.stringify(roles))
+      check('TM-16f 原负责人降为管理员', roles[owner.userId] === 1, JSON.stringify(roles))
+    }
+    check('TM-16g 重复转让给当前负责人 400', (await api('PUT', `/api/admin/team/${TID4}/owner`, { token: adminToken, body: { userId: pick.userId } })).status === 400)
+    check('TM-16h 清理：新负责人解散团队 200', (await api('DELETE', `/api/team/${TID4}`, { token: pick.token })).status === 200)
+  }
+
   console.log(`\n===== 团队 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
   process.exit(FAIL > 0 ? 1 : 0)
 }
