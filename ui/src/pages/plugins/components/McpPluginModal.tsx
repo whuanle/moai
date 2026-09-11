@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Col, Form, Modal, Row, Select, Spin, Switch } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PluginClassify } from '@/api/classify'
-import type { CustomPlugin, CustomKeyValue } from '@/api/plugin'
+import type { CustomPlugin, CustomPluginDetail, CustomKeyValue } from '@/api/plugin'
 import { customPluginApi } from '@/api/plugin'
 import { BaseFormFields } from './BaseFormFields'
 import { KeyValueConfig } from './KeyValueConfig'
@@ -39,6 +39,10 @@ interface McpPluginModalProps {
   classifies: PluginClassify[]
   onOk: (values: McpFormValues) => Promise<void>
   onCancel: () => void
+  /** 详情加载器，默认走管理员接口；团队场景注入团队接口. */
+  loadDetail?: (pluginId: string) => Promise<CustomPluginDetail | null>
+  /** 是否展示「公开」开关，团队插件恒为公开时传 false. */
+  allowIsPublic?: boolean
 }
 
 /** 将详情对象转为表单初始值（含 transportMode 回填）. */
@@ -72,10 +76,13 @@ export function McpPluginModal({
   classifies,
   onOk,
   onCancel,
+  loadDetail,
+  allowIsPublic = true,
 }: McpPluginModalProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<McpFormValues>()
   const [detailLoading, setDetailLoading] = useState(false)
+  const detailLoader = loadDetail ?? customPluginApi.getCustomPluginDetail
 
   // 打开时根据插件拉取详情回填（编辑模式）
   useEffect(() => {
@@ -83,12 +90,11 @@ export function McpPluginModal({
     form.resetFields()
     if (isEdit && editing?.pluginId) {
       setDetailLoading(true)
-      customPluginApi
-        .getCustomPluginDetail(editing.pluginId)
+      detailLoader(editing.pluginId)
         .then((detail) => form.setFieldsValue(toFormValues(detail)))
         .finally(() => setDetailLoading(false))
     }
-  }, [open, isEdit, editing, form])
+  }, [open, isEdit, editing, form, detailLoader])
 
   const handleOk = async () => {
     const values = await form.validateFields()
@@ -109,16 +115,18 @@ export function McpPluginModal({
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <BaseFormFields classifies={classifies} showServerUrl serverUrlLabel={t('plugins.formServerUrl')} showIsPublic={false} />
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={allowIsPublic ? 12 : 24}>
               <Form.Item name="httpTransportMode" label={t('plugins.formHttpTransportMode')}>
                 <Select placeholder={t('plugins.formHttpTransportModePlaceholder')} allowClear options={HTTP_TRANSPORT_MODE_OPTIONS} />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="isPublic" label={t('plugins.formIsPublic')} valuePropName="checked" initialValue={false}>
-                <Switch checkedChildren={t('plugins.isPublic')} unCheckedChildren={t('plugins.notPublic')} />
-              </Form.Item>
-            </Col>
+            {allowIsPublic && (
+              <Col span={12}>
+                <Form.Item name="isPublic" label={t('plugins.formIsPublic')} valuePropName="checked" initialValue={false}>
+                  <Switch checkedChildren={t('plugins.isPublic')} unCheckedChildren={t('plugins.notPublic')} />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
           <KeyValueConfig name="header" title="Header" />
           <KeyValueConfig name="query" title="Query" />

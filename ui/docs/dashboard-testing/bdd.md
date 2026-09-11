@@ -29,8 +29,12 @@ Feature: Dashboard 页面
   @FE-DT-S4 @manual
   Scenario: 快捷入口跳转落点
     Given 用户已进入概览页
-    When 点击「新建应用」「上传文档」「邀请成员」任一快捷条目
-    Then 最终被重定向回概览页（目标为占位路由，无业务页面）
+    When 点击「新建应用」快捷条目（或头部「新建应用」、「查看全部」）
+    Then 跳转到团队列表 `/team`（应用在团队内管理，侧边栏已无一级「应用」）
+    When 点击「上传文档」快捷条目
+    Then 跳转到知识库 `/wiki`
+    When 点击「邀请成员」快捷条目
+    Then 跳转到团队列表 `/team`
 
   @FE-DT-S5 @manual
   Scenario: 未登录访问被拦截

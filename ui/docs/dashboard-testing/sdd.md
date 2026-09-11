@@ -9,9 +9,9 @@
 
 ## Dashboard（`ui/src/pages/Dashboard.tsx`）
 
-结构自上而下：`Page` 头部（title「概览」+ subtitle 插值 `nickName ?? userName ?? app.name` + extra「新建应用」按钮）→ 渐变欢迎横幅（硬编码蓝渐变 + 白字 +「开始使用」按钮**未绑定点击事件**）→ 四张 StatCard → 快捷入口卡（三行：新建应用/上传文档/邀请成员，`navigate` 跳 `/app` `/wiki` `/team`）→ 最近动态卡（`Empty` 空态 +「查看全部」link）。
+结构自上而下：`Page` 头部（title「概览」+ subtitle 插值 `nickName ?? userName ?? app.name` + extra「新建应用」按钮）→ 渐变欢迎横幅（硬编码蓝渐变 + 白字 +「开始使用」按钮**未绑定点击事件**）→ 四张 StatCard → 快捷入口卡（三行：新建应用/上传文档/邀请成员，`navigate` 分别跳 `/team` `/wiki` `/team`）→ 最近动态卡（`Empty` 空态 +「查看全部」link）。
 
-数据边界（as-built）：挂载时 `refreshUserProfile().catch(() => undefined)` 刷新档案一次；**四个统计值与趋势（12/8/24/2048 与 8/12/4/22）全部为组件内写死的静态数字，未接任何 API**（[@FE-DT-S3](./bdd.md#fe-dt-s3)）；快捷入口指向的 `/app` `/wiki` `/team` 无路由，落 `*` 兜底回 `/dashboard`（占位导航，[@FE-DT-S4](./bdd.md#fe-dt-s4)）。
+数据边界（as-built）：挂载时 `refreshUserProfile().catch(() => undefined)` 刷新档案一次；**四个统计值与趋势（12/8/24/2048 与 8/12/4/22）全部为组件内写死的静态数字，未接任何 API**（[@FE-DT-S3](./bdd.md#fe-dt-s3)）；快捷入口与「查看全部」均为**真实路由**：新建应用/邀请成员/查看全部 → `/team`（应用在团队内管理，侧边栏已无一级「应用」），上传文档 → `/wiki`（[@FE-DT-S4](./bdd.md#fe-dt-s4)）。
 
 ## DesignSystemPreview（`/design-system`）
 

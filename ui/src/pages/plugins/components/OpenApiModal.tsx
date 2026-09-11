@@ -36,6 +36,12 @@ interface OpenApiModalProps {
   classifies: PluginClassify[]
   onOk: (values: OpenApiFormValues, file: File | null, fileId?: string) => Promise<void>
   onCancel: () => void
+  /** 详情加载器，默认走管理员接口；团队场景注入团队接口. */
+  loadDetail?: (pluginId: string) => Promise<CustomPluginDetail | null>
+  /** 文件预上传器，默认走管理员接口；团队场景注入团队接口. */
+  uploadFile?: (file: File, pluginName: string) => Promise<{ fileId: string }>
+  /** 是否展示「公开」开关，团队插件恒为公开时传 false. */
+  showIsPublic?: boolean
 }
 
 /** 将详情回填为表单初始值（OpenApi 编辑用）. */
@@ -62,6 +68,9 @@ export function OpenApiModal({
   classifies,
   onOk,
   onCancel,
+  loadDetail,
+  uploadFile,
+  showIsPublic = true,
 }: OpenApiModalProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<OpenApiFormValues>()
@@ -71,6 +80,8 @@ export function OpenApiModal({
   const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const detailLoader = loadDetail ?? customPluginApi.getCustomPluginDetail
+  const fileUploader = uploadFile ?? uploadOpenApiFile
 
   // 打开时根据插件拉取详情回填（编辑模式）
   useEffect(() => {
@@ -81,8 +92,7 @@ export function OpenApiModal({
     setProgress(0)
     if (isEdit && editing?.pluginId) {
       setDetailLoading(true)
-      customPluginApi
-        .getCustomPluginDetail(editing.pluginId)
+      detailLoader(editing.pluginId)
         .then((detail) => {
           setCurrentFileName(detail?.openapiFileName ?? undefined)
           form.setFieldsValue(fromDetail(detail))
@@ -91,7 +101,7 @@ export function OpenApiModal({
     } else {
       form.resetFields()
     }
-  }, [open, isEdit, editing, form])
+  }, [open, isEdit, editing, form, detailLoader])
 
   const handleCancel = useCallback(() => {
     setSelectedFile(null)
@@ -113,7 +123,7 @@ export function OpenApiModal({
     setProgress(10)
     try {
       const name = await form.getFieldValue('name')
-      const uploaded = await uploadOpenApiFile(file, name || '')
+      const uploaded = await fileUploader(file, name || '')
       setUploadedFileId(uploaded.fileId)
       setProgress(100)
       setSelectedFile((prev) => (prev ? { ...prev, status: 'done' } : prev))
@@ -127,7 +137,7 @@ export function OpenApiModal({
 
   const handleOk = async () => {
     const values = await form.validateFields()
-    if (!uploadedFileId) {
+    if (!uploadedFileId && !isEdit) {
       feedback.warning(t('plugins.formUploadOpenApiRequired'))
       return
     }
@@ -162,7 +172,7 @@ export function OpenApiModal({
     >
       <Spin spinning={detailLoading} tip={t('plugins.refresh')}>
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <BaseFormFields classifies={classifies} showServerUrl serverUrlLabel={t('plugins.formServerUrlExtra')} />
+          <BaseFormFields classifies={classifies} showServerUrl serverUrlLabel={t('plugins.formServerUrlExtra')} showIsPublic={showIsPublic} />
           <Form.Item label={isEdit ? t('plugins.formOpenApiUploadOptional') : t('plugins.formUploadOpenApi')} required={!isEdit}>
             {currentFileName && (
               <Alert message={t('plugins.formCurrentFile', { name: currentFileName })} type="info" showIcon style={{ marginBottom: 8 }} />

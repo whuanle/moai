@@ -12,22 +12,24 @@ interface FunctionListModalProps {
   open: boolean
   plugin: CustomPlugin | null
   onCancel: () => void
+  /** 函数列表加载器，默认走管理员接口；团队场景注入团队接口. */
+  loadFunctions?: (pluginId: string) => Promise<CustomPluginFunction[]>
 }
 
-export function FunctionListModal({ open, plugin, onCancel }: FunctionListModalProps) {
+export function FunctionListModal({ open, plugin, onCancel, loadFunctions }: FunctionListModalProps) {
   const { t } = useTranslation()
   const [functions, setFunctions] = useState<CustomPluginFunction[]>([])
   const [loading, setLoading] = useState(false)
+  const loader = loadFunctions ?? customPluginApi.getCustomPluginFunctions
 
   useEffect(() => {
     if (!open || !plugin?.pluginId) return
     setLoading(true)
-    customPluginApi
-      .getCustomPluginFunctions(plugin.pluginId)
+    loader(plugin.pluginId)
       .then((items) => setFunctions(items))
       .catch(() => setFunctions([]))
       .finally(() => setLoading(false))
-  }, [open, plugin?.pluginId])
+  }, [open, plugin?.pluginId, loader])
 
   const handleCancel = () => {
     setFunctions([])
@@ -86,8 +88,7 @@ export function FunctionListModal({ open, plugin, onCancel }: FunctionListModalP
         onRefresh={() => {
           if (plugin?.pluginId) {
             setLoading(true)
-            customPluginApi
-              .getCustomPluginFunctions(plugin.pluginId)
+            loader(plugin.pluginId)
               .then((items) => setFunctions(items))
               .finally(() => setLoading(false))
           }

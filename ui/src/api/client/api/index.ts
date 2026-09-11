@@ -4,7 +4,11 @@
 // @ts-ignore
 import { AccountRequestBuilderNavigationMetadata, type AccountRequestBuilder } from './account/index.js';
 // @ts-ignore
+import { AdminRequestBuilderNavigationMetadata, type AdminRequestBuilder } from './admin/index.js';
+// @ts-ignore
 import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
+// @ts-ignore
+import { AppRequestBuilderNavigationMetadata, AppRequestBuilderRequestsMetadata, type AppRequestBuilder } from './app/index.js';
 // @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
 // @ts-ignore
@@ -39,9 +43,17 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get account(): AccountRequestBuilder;
     /**
+     * The admin property
+     */
+    get admin(): AdminRequestBuilder;
+    /**
      * The ai property
      */
     get ai(): AiRequestBuilder;
+    /**
+     * The app property
+     */
+    get app(): AppRequestBuilder;
     /**
      * The auth property
      */
@@ -98,8 +110,15 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     account: {
         navigationMetadata: AccountRequestBuilderNavigationMetadata,
     },
+    admin: {
+        navigationMetadata: AdminRequestBuilderNavigationMetadata,
+    },
     ai: {
         navigationMetadata: AiRequestBuilderNavigationMetadata,
+    },
+    app: {
+        requestsMetadata: AppRequestBuilderRequestsMetadata,
+        navigationMetadata: AppRequestBuilderNavigationMetadata,
     },
     auth: {
         navigationMetadata: AuthRequestBuilderNavigationMetadata,

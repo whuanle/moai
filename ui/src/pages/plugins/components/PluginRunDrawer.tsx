@@ -19,18 +19,28 @@ function formatJson(text: string | null | undefined): string {
   }
 }
 
+/** 运行结果最小结构（兼容管理员/团队两套生成客户端）. */
+export interface PluginRunResultLike {
+  success?: boolean | null
+  dataJson?: string | null
+  errorEscaped?: string | null
+}
+
 export interface PluginRunDrawerProps {
   open: boolean
   onClose: () => void
   pluginKey?: string | null
   paramsExample?: string | null
+  /** 运行器，默认走管理员接口；团队场景注入团队接口. */
+  runPlugin?: (payload: { key: string; requestJson: string }) => Promise<PluginRunResultLike | null>
 }
 
-export function PluginRunDrawer({ open, onClose, pluginKey, paramsExample }: PluginRunDrawerProps) {
+export function PluginRunDrawer({ open, onClose, pluginKey, paramsExample, runPlugin }: PluginRunDrawerProps) {
   const { t } = useTranslation()
   const [value, setValue] = useState<string>(() => formatJson(paramsExample))
   const [result, setResult] = useState<string>('')
   const [running, setRunning] = useState(false)
+  const runner = runPlugin ?? pluginApi.runPlugin
 
   useEffect(() => {
     if (open) {
@@ -43,7 +53,7 @@ export function PluginRunDrawer({ open, onClose, pluginKey, paramsExample }: Plu
     if (!pluginKey) return
     setRunning(true)
     try {
-      const res = await pluginApi.runPlugin({ key: pluginKey, requestJson: value })
+      const res = await runner({ key: pluginKey, requestJson: value })
       if (res?.success) {
         setResult(formatJson(res.dataJson))
       } else {

@@ -37,7 +37,7 @@ vi.mock('@/api/settings', () => ({
 ## 3. Dashboard / 样册页维护注意
 
 - **统计是写死占位**（12/8/24/2048 + trend）：接真实 API 时 → `api/` 建封装 → Dashboard 数据驱动 + 加载态 → 顺手补 `__tests__`（mock 新 api）。
-- 快捷入口 `/app` `/wiki` `/team` 与「插件」`/plugin` 均为**占位路由**，当前落 `*` 兜底回 `/dashboard`；新增真实页面在 `router/index.tsx` 受保护 children 注册并同步 `AppSider.pathToKey`。
+- 快捷入口均为**真实路由**：新建应用/邀请成员/「查看全部」→ `/team`（进入团队后选左侧「应用」分区），上传文档 → `/wiki`；新增真实页面在 `router/index.tsx` 受保护 children 注册并同步 `AppSider.pathToKey`。
 - 欢迎横幅「开始使用」按钮**无 onClick**（as-built 现状），接入动作时补。
 - `/design-system` 是**公开路由**：不得放真实业务数据/敏感信息；新增演示区块可后补 `ds.*` 词条。
 
