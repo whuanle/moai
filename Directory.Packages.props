@@ -5,7 +5,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AngleSharp" Version="1.4.1-beta.502" />
+    <PackageVersion Include="AngleSharp" Version="1.5.2" />
     <PackageVersion Include="AngleSharp.Js" Version="1.0.0-beta.45" />
     <PackageVersion Include="Anthropic" Version="12.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.102.4" />
@@ -18,7 +18,7 @@
     <PackageVersion Include="Google.GenAI" Version="1.21.0" />
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.24" />
     <PackageVersion Include="Hangfire.Redis.StackExchange" Version="1.12.0" />
-    <PackageVersion Include="Jint" Version="4.5.0" />
+    <PackageVersion Include="Jint" Version="4.16.2" />
     <PackageVersion Include="JsonPath.Net" Version="2.2.0" />
     <PackageVersion Include="LinqKit.Core" Version="1.2.11" />
     <PackageVersion Include="Maomi.MQ.Instrumentation" Version="2.1.0" />

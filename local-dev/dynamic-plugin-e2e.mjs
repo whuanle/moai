@@ -1,6 +1,8 @@
 // 动态插件 E2E（场景 @DYN-Sn；后端默认 http://127.0.0.1:5000，可用 DYN_BASE 覆盖）
-// 覆盖：实例列表/创建/编辑/运行/删除/门禁（S1~S14）+ 内置模板注册与博查失败路径（S15/S17/S19~S21）。
-// S16/S22（博查真实检索成功）需真实 API Key 与外网，脚本内以 SKIP 标注。
+// 覆盖：实例列表/创建/编辑/运行/删除/门禁（S1~S14）+ 内置模板注册与各模板失败路径（S15/S17/S19~S21/S23~S31）
+//   + SQL 只读查询守卫（S30：拒绝写操作与多条语句、放行合法只读语句）。
+// S16/S22（博查真实检索成功）需真实 API Key 与外网，脚本内以 SKIP 标注；
+// S32/S33（PostgreSQL/MySQL 真实查询成功路径）用环境变量提供连接串（PG_E2E_CONNECTION / MYSQL_E2E_CONNECTION），未提供则 SKIP。
 import crypto from 'node:crypto'
 
 const BASE = process.env.DYN_BASE ?? 'http://127.0.0.1:5000'
@@ -10,6 +12,9 @@ const check = (name, cond, detail = '') => {
   else { FAIL++; console.log(`FAIL | ${name} ${detail ? '— ' + detail : ''}`) }
 }
 const skip = (name, why) => { SKIP++; console.log(`SKIP | ${name} — ${why}`) }
+// dataJson 是插件结果的 JSON 文本，其内部字符串里的引号会被序列化成 \u0022 —— 对内容断言一律解析后再比对，
+// 不要对转义形式写正则（易随序列化器行为变化而误报）。
+const safeParse = (s) => { try { return JSON.parse(s) } catch { return null } }
 
 let RSA_KEY = ''
 const rsa = (plain) => {
@@ -197,6 +202,188 @@ async function main() {
   console.log(`INFO | 飞书无效 token 的失败信息：${fBadKeyErr.slice(0, 300)}`)
   check('DYN-S24d 无效 WebhookKey 触发对外调用（非实例化失败）', fBadKey.json?.success === false && !/实例化失败/.test(fBadKeyErr) && fBadKeyErr.length > 0, `${fBadKey.status} ${fBadKeyErr.slice(0, 200)}`)
 
+  // ---- S25 内置 JS 执行器模板出现在注册表 ----
+  const jsTpl = items.find((x) => x.key === 'javascript_executor')
+  check('DYN-S25a 注册表含 javascript_executor 且为动态模板', Boolean(jsTpl) && jsTpl.isDynamic === true, templates.text.slice(0, 160))
+  check('DYN-S25b JS 执行器模板带配置/参数示例', Boolean(jsTpl) && /JavaScriptCode/.test(jsTpl.configExample ?? '') && /Parameters/.test(jsTpl.paramsExample ?? ''), jsTpl ? jsTpl.configExample : '')
+  check('DYN-S25c JS 执行器模板配置类型已解析', (jsTpl?.configType ?? '').includes('JavaScriptExecutorConfig'), jsTpl?.configType ?? '')
+
+  // ---- S26/S27/S28 JS 执行器实例：配置/脚本/运行返回值归一 ----
+  const JS = `dyn_js_${TS}`
+  const jsCode = "function run(parameter) { var obj = JSON.parse(parameter); return { id: obj.id, name: obj.name, echoed: parameter }; }"
+  const jc = await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: JSON.stringify({ JavaScriptCode: jsCode }) })
+  check('DYN-S27a 创建 JS 实例成功', jc.status === 200, `${jc.status} ${jc.text.slice(0, 160)}`)
+
+  // 空 JavaScriptCode → InitAsync 校验失败
+  const emptyCode = await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: '{"JavaScriptCode":""}' })
+  check('DYN-S27b 空 JavaScriptCode 落库成功', emptyCode.status === 200, `${emptyCode.status} ${emptyCode.text.slice(0, 160)}`)
+  const emptyCodeRun = await run(admin, JS, '{"Parameters":"{}"}')
+  check('DYN-S27c 空 JavaScriptCode 运行返回可读失败', emptyCodeRun.json?.success === false && /JavaScript 代码不能为空/.test(emptyCodeRun.json?.error ?? ''), `${emptyCodeRun.status} ${emptyCodeRun.text.slice(0, 200)}`)
+
+  // 恢复正常配置
+  await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: JSON.stringify({ JavaScriptCode: jsCode }) })
+
+  // S28a Parameters 回显（注意：单引号字符串里要写 \\" 才是 JSON 的转义引号；写成 \" 会拼出非法 JSON）
+  const jsParamIn = '{"id":7,"name":"MoAI"}'
+  const rJsObj = await run(admin, JS, JSON.stringify({ Parameters: jsParamIn }))
+  const objData = safeParse(rJsObj.json?.dataJson ?? '')
+  const objResult = safeParse(objData?.ResultJson ?? '')
+  check('DYN-S26a 对象返回归一为 object', rJsObj.json?.success === true && objData?.ResultKind === 'object', `${rJsObj.status} ${rJsObj.text.slice(0, 200)}`)
+  check('DYN-S26b 对象 ResultJson 为结构化 JSON 文本', objResult?.id === 7 && objResult?.name === 'MoAI' && objResult?.echoed === jsParamIn, rJsObj.json?.dataJson ?? '')
+  check('DYN-S28a Parameters 字段回显入参', objData?.Parameters === jsParamIn, rJsObj.json?.dataJson ?? '')
+
+  // S26c 不同返回类型：用不同 JS 代码覆盖 string/number/boolean/array/null/undefined
+  const codeByKind = {
+    string: "function run(p) { return 'hello'; }",
+    number: "function run(p) { return 42; }",
+    boolean: "function run(p) { return true; }",
+    array: "function run(p) { return [1, 2, 3]; }",
+    null: "function run(p) { return null; }",
+    undefined: "function run(p) { /* no return */ }",
+  }
+  const kindChecks = {
+    string: '"ResultKind"\\s*:\\s*"string"',
+    number: '"ResultKind"\\s*:\\s*"number"',
+    boolean: '"ResultKind"\\s*:\\s*"boolean"',
+    array: '"ResultKind"\\s*:\\s*"array"',
+    null: '"ResultKind"\\s*:\\s*"null"',
+    undefined: '"ResultKind"\\s*:\\s*"undefined"',
+  }
+  for (const [kind, code] of Object.entries(codeByKind)) {
+    await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: JSON.stringify({ JavaScriptCode: code }) })
+    const rr = await run(admin, JS, '{"Parameters":"{}"}')
+    const dataJson = rr.json?.dataJson ?? ''
+    const regex = new RegExp(kindChecks[kind])
+    check(`DYN-S26c-${kind} 返回类型归一为 ${kind}`, rr.json?.success === true && regex.test(dataJson), `${rr.status} ${rr.text.slice(0, 200)}`)
+    // ResultJson 按契约恒为 JSON 文本（对象/数组为结构 JSON，标量为字符串化的标量）→ 解析后比对
+    const kindData = safeParse(dataJson)
+    const rj = kindData?.ResultJson ?? null
+    const rjParsed = typeof rj === 'string' ? safeParse(rj) : null
+    if (kind === 'string') check('DYN-S26c-string ResultJson 为字符串化标量', rj === '"hello"', dataJson)
+    if (kind === 'number') check('DYN-S26c-number ResultJson 为字符串化标量', rj === '42', dataJson)
+    if (kind === 'boolean') check('DYN-S26c-boolean ResultJson 为字符串化标量', rj === 'true', dataJson)
+    if (kind === 'array') check('DYN-S26c-array ResultJson 为数组 JSON 文本', Array.isArray(rjParsed) && rjParsed.join(',') === '1,2,3', dataJson)
+    if (kind === 'null') check('DYN-S28b null 返回时 ResultJson 为 null', rj === null, dataJson)
+    if (kind === 'undefined') check('DYN-S28c undefined 返回时 ResultJson 为 null', rj === null, dataJson)
+  }
+
+  // S27d 缺 run 函数 → 必须定义 run(parameter)
+  await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: '{"JavaScriptCode":"var x = 1;"}' })
+  const noRun = await run(admin, JS, '{"Parameters":"{}"}')
+  check('DYN-S27d 未定义 run 函数返回可读失败', noRun.json?.success === false && /必须定义 run/.test(noRun.json?.error ?? ''), `${noRun.status} ${noRun.text.slice(0, 200)}`)
+
+  // S27e 语法错误
+  await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: '{"JavaScriptCode":"function run(p) { return ;;; "}' })
+  const syntax = await run(admin, JS, '{"Parameters":"{}"}')
+  check('DYN-S27e 语法错误返回可读失败', syntax.json?.success === false && /JavaScript/.test(syntax.json?.error ?? '') && !/实例化失败/.test(syntax.json?.error ?? ''), `${syntax.status} ${syntax.text.slice(0, 200)}`)
+
+  // S27f 运行时错误
+  await save(admin, { pluginKey: JS, templeteKey: 'javascript_executor', title: 'E2E JS 执行器', description: 'e2e', classifyId: 0, config: '{"JavaScriptCode":"function run(p) { throw new Error(\'boom\'); }"}' })
+  const runtime = await run(admin, JS, '{"Parameters":"{}"}')
+  check('DYN-S27f 运行时错误返回可读失败', runtime.json?.success === false && /boom/.test(runtime.json?.error ?? ''), `${runtime.status} ${runtime.text.slice(0, 200)}`)
+
+  await del(admin, JS)
+
+  // ---- S29 内置 SQL 只读查询模板出现在注册表 ----
+  const pgTpl = items.find((x) => x.key === 'postgres_query')
+  const myTpl = items.find((x) => x.key === 'mysql_query')
+  check('DYN-S29a 注册表含 postgres_query 且为动态模板', Boolean(pgTpl) && pgTpl.isDynamic === true, templates.text.slice(0, 160))
+  check('DYN-S29b 注册表含 mysql_query 且为动态模板', Boolean(myTpl) && myTpl.isDynamic === true, templates.text.slice(0, 160))
+  check('DYN-S29c PG 模板带连接串配置示例与 Sql 参数示例', Boolean(pgTpl) && /ConnectionString/.test(pgTpl.configExample ?? '') && /Sql/.test(pgTpl.paramsExample ?? ''), pgTpl ? pgTpl.configExample : '')
+  check('DYN-S29d MySQL 模板配置类型已解析', (myTpl?.configType ?? '').includes('MysqlQueryConfig'), myTpl?.configType ?? '')
+
+  // ---- S30 只读守卫：写操作/多条语句被拒（校验先于连接，不依赖数据库可达） ----
+  const PGQ = `dyn_pg_${TS}`
+  const MYQ = `dyn_my_${TS}`
+  const pgSave = await save(admin, { pluginKey: PGQ, templeteKey: 'postgres_query', title: 'E2E PG 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: 'Host=127.0.0.1;Port=1;Database=x;Username=x;Password=x;Timeout=2', MaxRows: 3, CommandTimeoutSeconds: 5 }) })
+  check('DYN-S30a 创建 PG 只读实例成功', pgSave.status === 200, `${pgSave.status} ${pgSave.text.slice(0, 160)}`)
+  const mySave = await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: 'Server=127.0.0.1;Port=1;Database=x;Uid=x;Pwd=x;Connection Timeout=2', MaxRows: 3, CommandTimeoutSeconds: 5 }) })
+  check('DYN-S30b 创建 MySQL 只读实例成功', mySave.status === 200, `${mySave.status} ${mySave.text.slice(0, 160)}`)
+
+  const forbiddenSql = [
+    ['UPDATE', "UPDATE demo SET name = 'x'"],
+    ['DELETE', 'DELETE FROM demo WHERE id = 1'],
+    ['INSERT', 'INSERT INTO demo (id) VALUES (1)'],
+    ['TRUNCATE', 'TRUNCATE TABLE demo'],
+    ['DROP', 'DROP TABLE demo'],
+    ['ALTER', 'ALTER TABLE demo ADD COLUMN c int'],
+    ['多语句', 'SELECT 1; SELECT 2'],
+    ['WITH 内嵌 DELETE', 'WITH d AS (DELETE FROM demo RETURNING id) SELECT * FROM d'],
+    ['SELECT INTO', 'SELECT 1 INTO new_table'],
+    ['SET 会话变量', 'SET SESSION TRANSACTION READ WRITE'],
+    ['行注释后的写操作', 'SELECT 1 -- 注释\n; DELETE FROM demo'],
+    ['MySQL 可执行注释', "SELECT 1 /*!50000 INTO OUTFILE '/tmp/x' */"],
+  ]
+  for (const [label, sql] of forbiddenSql) {
+    const r = await run(admin, PGQ, JSON.stringify({ Sql: sql }))
+    const err = r.json?.error ?? ''
+    check(`DYN-S30c 只读守卫拒绝 ${label}`, r.json?.success === false && /只读/.test(err) && !/实例化失败/.test(err), `${r.status} ${err.slice(0, 160)}`)
+  }
+  const myForbidden = await run(admin, MYQ, JSON.stringify({ Sql: 'DELETE FROM demo' }))
+  check('DYN-S30d MySQL 实例同样拒绝写操作', myForbidden.json?.success === false && /只读/.test(myForbidden.json?.error ?? ''), `${myForbidden.status} ${(myForbidden.json?.error ?? '').slice(0, 160)}`)
+
+  // 放行：合法只读语句应通过守卫；连接不可达 → 报「数据库连接失败」，即证明守卫已放行
+  const allowedSql = [
+    'SELECT 1',
+    "select id from demo where name = 'delete from demo'",
+    'SELECT "update" FROM demo',
+    'WITH x AS (SELECT 1 AS a) SELECT a FROM x',
+    'SHOW search_path',
+    'SELECT 1;',
+  ]
+  for (const sql of allowedSql) {
+    const r = await run(admin, PGQ, JSON.stringify({ Sql: sql }))
+    const err = r.json?.error ?? ''
+    check(`DYN-S30e 只读守卫放行合法查询（${sql.slice(0, 28)}）`, r.json?.success === false && /数据库连接失败/.test(err), `${r.status} ${err.slice(0, 160)}`)
+  }
+
+  // ---- S31 参数/配置不合规 ----
+  const emptySql = await run(admin, PGQ, '{"Sql":"   "}')
+  check('DYN-S31a 空 SQL 返回可读失败', emptySql.json?.success === false && /SQL 不能为空/.test(emptySql.json?.error ?? ''), `${emptySql.status} ${(emptySql.json?.error ?? '').slice(0, 160)}`)
+  await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: '{"ConnectionString":""}' })
+  const noConn = await run(admin, MYQ, '{"Sql":"SELECT 1"}')
+  check('DYN-S31b 空连接串返回可读失败', noConn.json?.success === false && /连接字符串不能为空/.test(noConn.json?.error ?? ''), `${noConn.status} ${(noConn.json?.error ?? '').slice(0, 160)}`)
+
+  // ---- S32/S33 真实查询成功路径（连接串由环境变量提供，避免把凭据写进仓库） ----
+  const PG_CONN = process.env.PG_E2E_CONNECTION
+  if (PG_CONN) {
+    await save(admin, { pluginKey: PGQ, templeteKey: 'postgres_query', title: 'E2E PG 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: PG_CONN, MaxRows: 3, CommandTimeoutSeconds: 15 }) })
+
+    const okRows = await run(admin, PGQ, JSON.stringify({ Sql: 'SELECT n FROM generate_series(1, 5) AS n' }))
+    const rowsJson = okRows.json?.dataJson ?? ''
+    check('DYN-S32a 查询成功并返回行', okRows.json?.success === true && /"RowCount"\s*:\s*3/.test(rowsJson), `${okRows.status} ${okRows.text.slice(0, 240)}`)
+    check('DYN-S32b 超过 MaxRows 被截断', /"Truncated"\s*:\s*true/.test(rowsJson), rowsJson.slice(0, 240))
+    check('DYN-S32c 响应含列名与行数据', /"Columns"\s*:\s*\[\s*"n"\s*\]/.test(rowsJson) && /"n"\s*:\s*1/.test(rowsJson), rowsJson.slice(0, 240))
+
+    const roSession = await run(admin, PGQ, JSON.stringify({ Sql: 'SHOW default_transaction_read_only' }))
+    check('DYN-S32d 会话被设为只读（服务端兜底生效）', roSession.json?.success === true && /"on"/.test(roSession.json?.dataJson ?? ''), `${roSession.status} ${roSession.text.slice(0, 240)}`)
+
+    const dupCols = await run(admin, PGQ, JSON.stringify({ Sql: 'SELECT t.id, t.id FROM (VALUES (1)) AS t(id)' }))
+    check('DYN-S32e 同名列自动去重', /"id_2"/.test(dupCols.json?.dataJson ?? ''), (dupCols.json?.dataJson ?? '').slice(0, 240))
+
+    const binCol = await run(admin, PGQ, JSON.stringify({ Sql: "SELECT '\\x00ff'::bytea AS blob, '{\"a\":1}'::jsonb AS doc, now() AS ts" }))
+    const binJson = binCol.json?.dataJson ?? ''
+    const binRow = safeParse(binJson)?.Rows?.[0]
+    check('DYN-S32f bytea/jsonb/时间类型可序列化', binCol.json?.success === true && binRow?.blob === 'AP8=' && /"a"\s*:\s*1/.test(binRow?.doc ?? '') && /^\d{4}-\d{2}-\d{2}T/.test(binRow?.ts ?? ''), `${binCol.status} ${binJson.slice(0, 320)}`)
+
+    const emptySet = await run(admin, PGQ, JSON.stringify({ Sql: 'SELECT 1 AS n WHERE 1 = 0' }))
+    const emptyJson = emptySet.json?.dataJson ?? ''
+    check('DYN-S32g 空结果集返回列名且零行', emptySet.json?.success === true && /"RowCount"\s*:\s*0/.test(emptyJson) && /"Columns"/.test(emptyJson), `${emptySet.status} ${emptyJson.slice(0, 240)}`)
+  } else {
+    skip('DYN-S32 PostgreSQL 只读查询成功路径', '需可达的 PostgreSQL，运行前设置 PG_E2E_CONNECTION=连接串')
+  }
+
+  const MY_CONN = process.env.MYSQL_E2E_CONNECTION
+  if (MY_CONN) {
+    await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: MY_CONN, MaxRows: 3, CommandTimeoutSeconds: 15 }) })
+    const myRows = await run(admin, MYQ, JSON.stringify({ Sql: 'SELECT 1 AS n' }))
+    check('DYN-S33a MySQL 查询成功返回行', myRows.json?.success === true && /"RowCount"\s*:\s*1/.test(myRows.json?.dataJson ?? ''), `${myRows.status} ${myRows.text.slice(0, 240)}`)
+    const myRo = await run(admin, MYQ, JSON.stringify({ Sql: "SHOW VARIABLES LIKE 'transaction_read_only'" }))
+    check('DYN-S33b MySQL 会话被设为只读', myRo.json?.success === true && /ON|"1"/.test(myRo.json?.dataJson ?? ''), `${myRo.status} ${myRo.text.slice(0, 240)}`)
+  } else {
+    skip('DYN-S33 MySQL 只读查询成功路径', '需可达的 MySQL，运行前设置 MYSQL_E2E_CONNECTION=连接串')
+  }
+
   // ---- S12/S13 删除 ----
   check('DYN-S12 删除实例成功', (await del(admin, GREET)).status === 200)
   const afterDel = await instances(admin)
@@ -206,6 +393,8 @@ async function main() {
   await del(admin, AISEARCH)
   await del(admin, FEISHU)
   await del(admin, DUP)
+  await del(admin, PGQ)
+  await del(admin, MYQ)
   await del(admin, 'dynamic_greet')
 
   console.log(`\n=== 动态插件 E2E: PASS ${PASS} / FAIL ${FAIL} / SKIP ${SKIP} ===`)

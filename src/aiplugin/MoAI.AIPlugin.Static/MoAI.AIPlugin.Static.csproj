@@ -7,9 +7,20 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AngleSharp" />
+		<PackageReference Include="Jint" />
+		<PackageReference Include="Maomi.ToMarkdown" />
+		<PackageReference Include="Markdig" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Helpers\" />
+		<Folder Include="Models\" />
 		<Folder Include="Plugins\" />
 	</ItemGroup>
 

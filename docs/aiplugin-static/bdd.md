@@ -82,3 +82,45 @@
 - Then 返回 403，提示「只有管理员可以管理插件」
 
 @STP-S9 @auto:e2e
+
+## Feature: 内置静态插件（迁移）
+
+### Scenario: 获取当前时间
+
+- Given 我是管理员，且内置静态插件「static_current_time」已注册
+- When 我请求运行{key:"static_current_time",requestJson:"{}"}
+- Then 返回 success=true，且 dataJson 的 currentTime 为当前系统时间字符串
+
+@STP-S10 @manual
+
+### Scenario: 流程等待拒绝负数
+
+- Given 我是管理员，且内置静态插件「static_flow_wait」已注册
+- When 我请求运行{key:"static_flow_wait",requestJson:"{\"WaitTimeInSeconds\":-1}"}
+- Then 返回 success=false，错误信息含「等待时间不能为负数」
+
+@STP-S11 @manual
+
+### Scenario: Markdown 转 HTML
+
+- Given 我是管理员，且内置静态插件「static_markdown_to_html」已注册
+- When 我请求运行{key:"static_markdown_to_html",requestJson:"{\"Markdown\":\"# 标题\"}"}
+- Then 返回 success=true，且 dataJson 的 html 含「<h1」
+
+@STP-S12 @manual
+
+### Scenario: 文本提取仅接受 http/https 地址
+
+- Given 我是管理员，且内置静态插件「static_text_extract」已注册
+- When 我请求运行{key:"static_text_extract",requestJson:"{\"FileName\":\"a.pdf\",\"Url\":\"not-a-url\"}"}
+- Then 返回 success=false，错误信息含「Url 必须为合法的 http/https 文件地址」
+
+@STP-S13 @manual
+
+### Scenario: 网页内容抓取默认提取纯文本
+
+- Given 我是管理员，且内置静态插件「static_web_content_fetch」已注册
+- When 我请求运行{key:"static_web_content_fetch",requestJson:"{\"Url\":\"https://example.com\"}"}
+- Then 返回 success=true，且 dataJson 的 content 为网页纯文本
+
+@STP-S14 @manual

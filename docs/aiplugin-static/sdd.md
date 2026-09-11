@@ -22,7 +22,15 @@ src/aiplugin/
 ├── MoAI.AIPlugin.Core/
 │   ├── Commands/SaveStaticPluginCommandHandler.cs  校验 + 写回/创建 DB
 │   └── Queries/QueryPluginManageListCommandHandler.cs  （增强：合并内存 + DB 去重）
-├── MoAI.AIPlugin.Static/                          （示例插件：StaticEchoPlugin 沿用）
+├── MoAI.AIPlugin.Static/                          内置静态插件（Models/ + Plugins/ + Helpers/）
+│   ├── Plugins/StaticEchoPlugin.cs                static_echo（示例）
+│   ├── Plugins/JavaScriptExecutorPlugin.cs        static_javascript_executor（Jint 沙箱）
+│   ├── Plugins/CurrentTimePlugin.cs               static_current_time（无参数）
+│   ├── Plugins/FlowWaitPlugin.cs                  static_flow_wait（等待秒数）
+│   ├── Plugins/MarkdownToHtmlPlugin.cs            static_markdown_to_html（Markdig）
+│   ├── Plugins/TextExtractPlugin.cs               static_text_extract（下载 + TextExtractionService）
+│   ├── Plugins/WebContentFetchPlugin.cs           static_web_content_fetch（下载 + AngleSharp）
+│   └── Helpers/AngleSharpHelper.cs                网页正文提取
 └── MoAI.AIPlugin.Api/
     └── Controllers/StaticPluginController.cs      [Route("/ai/plugin/static")]，门禁在 Controller
 ui/src/
@@ -57,6 +65,15 @@ ui/src/
 6. **前端编辑器**：`@monaco-editor/react`（Monaco）——与 VS Code 同款内核，支持 JSON 高亮/校验/折叠，符合「vscode 编辑器」诉求；抽屉 `maskClosable={false}`。
 7. **门禁位置**：权限只在 Controller 层（admin），Handler 层不注入用户上下文；目标数据规则（key 定位、分类校验）在 Handler 层。
 8. **i18n**：新增文案同时写 `zh-CN` 与 `en-US` `common.json`。
+
+## 内置插件（迁移）
+
+旧 `MoAI.Plugin.Tool` 的 5 个工具插件按最新静态机制迁移到 `MoAI.AIPlugin.Static`：`static_current_time`、`static_flow_wait`、`static_markdown_to_html`、`static_text_extract`、`static_web_content_fetch`；原 `javascript_executor_nohave_paramter` 已先行迁移为 `static_javascript_executor`。统一采用 `static_` 前缀 key、`IStaticPluginRuntime<TRequest,TResponse>` 强类型请求/响应模型。
+
+- 依赖：`Markdig`（Markdown→HTML）、`AngleSharp`（网页正文解析）、`Maomi.ToMarkdown`（`TextExtractionService` 按文件名后缀选抽取器，由 `WikiCoreModule.AddTextExtraction()` 注册）。
+- 外部下载统一走 infra 客户端 `IPutClient`（构造注入，复用 `ExternalHttpMessageHandler` 日志/遥测），不在插件内 `new HttpClient`。
+- 文本提取只接受 http/https 文件地址（旧实现 `new Uri(url)` 亦只支持绝对地址），不支持本地路径。
+- 行为场景见 [BDD @STP-S10~S14](./bdd.md#feature-内置静态插件迁移)；验证见 [TDD](./tdd.md)。
 
 ## 已知问题
 

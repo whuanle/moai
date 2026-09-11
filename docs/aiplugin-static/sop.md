@@ -26,4 +26,25 @@
 ## 种子说明
 
 - 静态插件默认无 DB 记录（无实例）；仅当用户编辑写回后才在 `plugin` + `plugin_static` 表生成记录。
-- 内置示例：`static_echo`（`StaticEchoPlugin`，`MoAI.AIPlugin.Static`）。
+- 内置插件（`MoAI.AIPlugin.Static`，key 统一 `static_` 前缀）：
+
+| key | 说明 | 请求示例 |
+|---|---|---|
+| `static_echo` | 回显（示例） | `{"Message":"hello"}` |
+| `static_javascript_executor` | Jint 执行 JS 的 `run()` | `{"Code":"function run(){return 1;}"}` |
+| `static_current_time` | 获取当前系统时间 | `{}` |
+| `static_flow_wait` | 等待指定秒数 | `{"WaitTimeInSeconds":10}` |
+| `static_markdown_to_html` | Markdown 转 HTML（Markdig） | `{"Markdown":"# 标题"}` |
+| `static_text_extract` | 下载 http/https 文件并提取文本 | `{"FileName":"a.pdf","Url":"https://.../a.pdf"}` |
+| `static_web_content_fetch` | 抓取网页（默认提取纯文本，AngleSharp） | `{"Url":"https://example.com","ExtractText":true}` |
+
+> 文本提取依赖 `Maomi.ToMarkdown`（由 `WikiCoreModule` 的 `AddTextExtraction()` 注册），网页抓取依赖 `AngleSharp`，二者包引用在 `MoAI.AIPlugin.Static.csproj`。外部下载复用 infra `IPutClient`。
+
+## 内置插件排障
+
+| 症状 | 原因 | 处理 |
+|---|---|---|
+| 文本提取报「Url 必须为合法的 http/https 文件地址」 | 传了本地路径或相对地址 | 改为可下载的 http/https 文件地址 |
+| 文本提取报「文本提取失败: 不支持的...」 | `FileName` 后缀与内容不符或缺扩展名 | 让 `FileName` 带真实扩展名（如 `.pdf`/`.docx`） |
+| 网页抓取报「抓取网页内容失败/超时」 | 目标站点拒绝、网络不通或超过 10 秒 | 换可达的静态页面；动态渲染页面不做脚本执行 |
+| 运行报「请求参数解析失败」 | requestJson 与请求模型不匹配 | 以 Monaco 示例为准修改参数 |

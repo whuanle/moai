@@ -131,6 +131,7 @@ src/aiplugin/
 - **插件需要调用外部 HTTP 接口时**：Refit 客户端实现放 `src/infra/MoAI.Infra.ExternalHttp/<厂商>/`（复用 `ExternalHttpMessageHandler` 的日志与遥测，典型：`BoCha`），插件项目加 `ProjectReference` 后**构造注入**该客户端（`PluginExecutor` 用 `ActivatorUtilities.CreateInstance` 从 DI 作用域解析），不要在插件内 `new HttpClient`。
 - **插件需要解析上游 JSON 字符串时**（很多厂商把结构化结果塞进 `content` 字符串）：不要用强类型直接反序列化，用 `JsonDocument` 逐层展开并写**容错**分支（字段缺失、形态变化、空对象都要能跳过而不是抛异常），并把「取不到任何有效字段」的条目丢弃。
 - 参考实现：动态插件 `Plugins/BoChaWebSearchPlugin.cs`（外部 HTTP + 实例配置校验）、`Plugins/BoChaAiSearchPlugin.cs`（外部 HTTP + `content` JSON 文本解析 + 多形态结果重组），静态插件 `Plugins/StaticEchoPlugin.cs`（无配置）。
+- 内置静态插件清单见 [静态插件 SOP 种子说明](./aiplugin-static/sop.md#种子说明)。新增静态插件可按形态挑选模板：`Plugins/CurrentTimePlugin.cs`（无参数）、`Plugins/FlowWaitPlugin.cs`（数值参数 + 业务校验 + `Task.Delay` 取消）、`Plugins/MarkdownToHtmlPlugin.cs`（第三方库转换）、`Plugins/TextExtractPlugin.cs`（构造注入 `Maomi.ToMarkdown.TextExtractionService` + `IPutClient` 下载）、`Plugins/WebContentFetchPlugin.cs`（外部 HTTP + AngleSharp 解析 + 超时/取消归一）。静态插件调用第三方库时需在 `MoAI.AIPlugin.Static.csproj` 显式加包引用（如 `Markdig`、`AngleSharp`、`Maomi.ToMarkdown`）。
 - **验证插件成功路径不要依赖真实 Key**：上游地址若能配置覆盖，用本地桩服务 + 真实后端跑端到端（见 `local-dev/bocha-search-e2e.mjs`）；桩服务只回放厂商文档的样例报文即可覆盖「请求下发 → 鉴权 → 解析 → 结果落库/返回」整条链路。
 
 ## 九、运行时流程（后端）

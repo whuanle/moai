@@ -14,6 +14,11 @@
 | @STP-S7 | local-dev/static-plugin-e2e.mjs#run-static | 待验证 |
 | @STP-S8 | local-dev/static-plugin-e2e.mjs#run-missing | 待验证 |
 | @STP-S9 | local-dev/static-plugin-e2e.mjs#non-admin | 待验证 |
+| @STP-S10 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S11 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S12 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S13 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S14 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 
 ## 前端测试
 
