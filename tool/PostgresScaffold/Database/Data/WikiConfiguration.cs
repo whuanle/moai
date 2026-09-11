@@ -48,7 +48,7 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasColumnName("description");
         entity.Property(e => e.EmbeddingDimensions)
             .HasDefaultValue(1024)
-            .HasComment("知识库向量维度")
+            .HasComment("知识库向量维度（1-2000，建 hnsw 索引的硬上限）")
             .HasColumnName("embedding_dimensions");
         entity.Property(e => e.EmbeddingModelId)
             .HasComment("向量化模型的id")
@@ -67,6 +67,9 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasMaxLength(20)
             .HasComment("知识库名称")
             .HasColumnName("name");
+        entity.Property(e => e.RerankModelId)
+            .HasComment("重排序模型的id，可选；为空表示不使用重排序（锁定后仍可修改）")
+            .HasColumnName("rerank_model_id");
         entity.Property(e => e.TeamId)
             .HasComment("团队id，不填则是个人知识库")
             .HasColumnName("team_id");

@@ -20,7 +20,7 @@
    SQL
    ```
 
-2. 逆向生成（前置：`src/MoAI/appsettings.Development.json` 含 MoAI:Database，gitignore 需本地自建，可从 `configs/system.json` 抽 MoAI 节）：`dotnet run --project tool/PostgresScaffold`。分发目标**先删后拷**（[@DB-S23](./bdd.md#db-s23)），跑前先提交工作区。
+2. 逆向生成（前置：`src/MoAI/appsettings.Development.json` 含 MoAI:Database，gitignore 需本地自建，可从 `configs/system.json` 抽 MoAI 节）：`dotnet run --project tool/PostgresScaffold`。分发目标**先删后拷**（[@DB-S23](./bdd.md#db-s23)），跑前先提交工作区。**以 `__` 开头的运行时动态表会自动跳过**（[@DB-S24](./bdd.md#db-s24)）；需要额外排除其他前缀时改 `Program.cs` 的 `IgnoredTableNamePrefixes`。
 3. 生成的实体类补 `: IFullAudited`（模板已自动 using MoAI.Database.Audits）；不补则无软删过滤与审计填充。
 4. （可选）加种子：`Seed/XxxSeed.Apply(modelBuilder)` 并注册进 SeedData，**显式指定 Id**（配合启动期序列重置，[@DB-S7](./bdd.md#db-s7)）。
 5. `dotnet build src/MoAI/MoAI.csproj` 0 错误；重建本地库（第 2 节）验证建表；业务模块注入 `DatabaseContext` 使用 `DbSet<DemoEntity>`。
@@ -53,6 +53,8 @@ docker compose down -v && docker compose up -d
 | 自增主键 duplicate key | 显式 Id 种子未推进序列 | 重启后端即自愈（启动 DO 块 setval，[@DB-S7](./bdd.md#db-s7)）；诊断比对 `last_value` 与 `max(id)` |
 | 新表/新列没出现 | EnsureCreated 对存量库零动作（[@DB-S2](./bdd.md#db-s2)） | 手写 DDL → 逆向生成（第 1 节） |
 | 工具报"未找到数据库连接字符串" | 缺 appsettings.Development.json（[@DB-S22](./bdd.md#db-s22)） | 本地自建该文件（gitignore） |
+| 工具报"没有需要生成实体的表，已中止以免清空 src/database" | 库为空，或全部表都在 `IgnoredTableNamePrefixes` 黑名单内（[@DB-S25](./bdd.md#db-s25)） | 确认库已连对；若表名确为动态表则应如此，先手工建静态表再跑 |
+| 动态表被生成为实体 | 表名前缀不在黑名单（[@DB-S24](./bdd.md#db-s24)） | 改 `Program.cs` 的 `IgnoredTableNamePrefixes` 补前缀后重跑；手写文件仍会被分发覆盖 |
 | 手改实体/配置丢失 | 分发先删后拷（[@DB-S23](./bdd.md#db-s23)） | 手改放 partial 或生成后立即提交 |
 
 ## 5. 日常运维速查
@@ -85,3 +87,4 @@ docker compose down -v && docker compose up -d
 |---|---|
 | 2026-09-01 | 初版（轮 10，as-built 回溯整理） |
 | 2026-09-02 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@DB-S1~S23）、四件互链、职责瘦身 |
+| 2026-09-11 | 新增动态表（`__` 前缀）不生成实体的规则：BDD @DB-S24/S25、SOP 第 1/4 节同步 |

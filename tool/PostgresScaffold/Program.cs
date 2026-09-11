@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Scaffolding;
+using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Design.Internal;
@@ -15,6 +16,15 @@ namespace MysqlScaffold;
 /// </summary>
 public class Program
 {
+    /// <summary>
+    /// 不参与实体生成的表名前缀。
+    /// </summary>
+    /// <remarks>
+    /// 以 <c>__</c> 开头的是运行时动态创建的表（如 wiki 的 <c>__wiki_1</c>），
+    /// 结构随业务数据变化，不属于数据库静态 schema，因此不生成实体。
+    /// </remarks>
+    private static readonly string[] IgnoredTableNamePrefixes = ["__"];
+
     private static async Task Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
@@ -128,9 +138,14 @@ public class Program
 
         // 添加操作报告器
         services.AddSingleton<IOperationReporter, ConsoleOperationReporter>();
+#pragma warning restore EF1001 // Internal EF Core API usage.
 
-        var scaffolder = services.BuildServiceProvider()
-            .GetRequiredService<IReverseEngineerScaffolder>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // 先算出需要生成实体的表清单，动态表在此被排除
+        var scaffoldTables = ResolveScaffoldTables(serviceProvider, connectionString);
+
+        var scaffolder = serviceProvider.GetRequiredService<IReverseEngineerScaffolder>();
 
         var codeOptions = new ModelCodeGenerationOptions
         {
@@ -151,7 +166,7 @@ public class Program
 
         var scaffoldedModel = scaffolder.ScaffoldModel(
             connectionString,
-            new DatabaseModelFactoryOptions(tables: null, schemas: null),
+            new DatabaseModelFactoryOptions(tables: scaffoldTables, schemas: null),
             new ModelReverseEngineerOptions(),
             codeOptions);
 
@@ -170,7 +185,52 @@ public class Program
         PrintInfo($"生成的实体文件数: {savedFiles.AdditionalFiles.Count}");
     }
 
-    /// <summary>删除 Shared/Entities 目录中已有的旧实体文件。</summary>
+    /// <summary>
+    /// 枚举数据库中需要生成实体的表名，剔除动态表。
+    /// </summary>
+    /// <remarks>
+    /// 传入明确的表名清单后，EF Core 会把不在清单中的表整体排除出 DatabaseModel，
+    /// 因此动态表与业务表之间的外键、导航属性也会一并跳过，不会生成编译不过的代码。
+    /// </remarks>
+    /// <param name="serviceProvider">已装配 Provider 设计时服务的容器。</param>
+    /// <param name="connectionString">数据库连接字符串。</param>
+    /// <returns>需要生成实体的表名（不含 schema，已去重）。</returns>
+    private static List<string> ResolveScaffoldTables(
+        IServiceProvider serviceProvider,
+        string connectionString)
+    {
+        var databaseModel = serviceProvider
+            .GetRequiredService<IDatabaseModelFactory>()
+            .Create(connectionString, new DatabaseModelFactoryOptions());
+
+        var allTables = databaseModel.Tables
+            .Select(x => x.Name)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var ignoredTables = allTables.Where(IsIgnoredTable).ToList();
+        var includedTables = allTables.Where(x => !IsIgnoredTable(x)).ToList();
+
+        PrintInfo($"数据库共 {allTables.Count} 张表，其中动态表 {ignoredTables.Count} 张。");
+
+        if (ignoredTables.Count > 0)
+        {
+            PrintInfo($"已跳过动态表: {string.Join(", ", ignoredTables)}");
+        }
+
+        if (includedTables.Count == 0)
+        {
+            throw new InvalidOperationException("没有需要生成实体的表，已中止以免清空 src/database。");
+        }
+
+        return includedTables;
+    }
+
+    /// <summary>判断表是否为运行时动态表（不生成实体）。</summary>
+    /// <param name="tableName">表名。</param>
+    private static bool IsIgnoredTable(string tableName)
+        => IgnoredTableNamePrefixes.Any(prefix => tableName.StartsWith(prefix, StringComparison.Ordinal));
+
     /// <summary>载入数据库连接字符串。</summary>
     private static string LoadConnectionString(string projectDir)
     {

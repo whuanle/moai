@@ -18,6 +18,7 @@
 | @DB-S18 | `docker exec moai-redis redis-cli --scan --pattern "moai:*"`（命中 hangfirejob 等，DBSIZE=7209） | PASS（2026-09-01） |
 | @DB-S19 | 配置走查（ConnectTimeout=5000） | PASS（2026-09-01，代码级） |
 | @DB-S20 ~ @DB-S23 | `dotnet build tool/PostgresScaffold/PostgresScaffold.csproj` 0 错误 + 生成物与分发目标一致性抽查（User/Setting/File）+ csproj 编译边界走查 | PASS（2026-09-01，见覆盖率说明） |
+| @DB-S24、@DB-S25 | `dotnet build tool/PostgresScaffold/PostgresScaffold.csproj --no-restore` 0 错误 + `ResolveScaffoldTables`/`IsIgnoredTable` 走查（前缀黑名单 → `DatabaseModelFactoryOptions.Tables` 白名单入参、空清单中止分支） | PASS（2026-09-11，代码级 + 构建级，见覆盖率说明） |
 
 ## 回归命令
 
@@ -32,3 +33,4 @@ docker exec moai-redis redis-cli --scan --pattern "moai:*" | head
 
 - 本模块无独立单测，全部为命令实测（psql/Redis/构建）+ 代码走查，故全部 @manual。
 - @DB-S20~S23 本轮**未实际执行逆向生成**（避免重写 `src/database/` 工作区），以「工具构建 0 错误 + 生成物/分发目标一致性 + 编译边界」替代；完整工具操作留待 schema 变更时按 [SOP 第 1 节](./sop.md) 执行。
+- @DB-S24/S25（动态表过滤）同样**未连库实跑**：工具构建 0 错误（无新增分析器警告），过滤链路依据 Npgsql Provider 行为走查——`DatabaseModelFactoryOptions.Tables` 非空时注入 `cls.relname IN (...)`（覆盖 `relkind IN ('r','v','m','f')`，即表/视图/物化视图/外部表），未选中的表不进入 `DatabaseModel`，其外键以 `MissingTableWarning` 级别告警而非报错。下次 schema 变更时按 [SOP 第 1 节](./sop.md) 一并实跑复验。

@@ -50,15 +50,9 @@ public partial class WikiEntity : IFullAudited
     public Guid EmbeddingModelId { get; set; }
 
     /// <summary>
-    /// 知识库向量维度.
+    /// 知识库向量维度（1-2000，建 hnsw 索引的硬上限）.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
-
-    /// <summary>
-    /// 重排序模型id，可选，为空表示不使用重排序.
-    /// 与向量化配置解耦：知识库锁定（已有文档向量化）后仍可修改.
-    /// </summary>
-    public Guid? RerankModelId { get; set; }
 
     /// <summary>
     /// 团队头像.
@@ -94,4 +88,9 @@ public partial class WikiEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 重排序模型的id，可选；为空表示不使用重排序（锁定后仍可修改）.
+    /// </summary>
+    public Guid? RerankModelId { get; set; }
 }

@@ -166,4 +166,21 @@ Feature: PostgresScaffold 逆向工程
     Given 生成产物目录存在未提交的手工修改
     When 再次运行工具
     Then 目标目录先删除后复制，未提交修改丢失
+
+  @DB-S24 @manual
+  Scenario: 动态表不生成实体（表名前缀黑名单）
+    Given 库中存在以 __ 开头的运行时动态表（如 wiki 的 __wiki_1）
+    And 动态表不属于数据库静态 schema，结构随业务数据变化
+    When 执行 dotnet run --project tool/PostgresScaffold
+    Then 动态表被整体排除出 DatabaseModel，不生成实体类、Configuration 与 DbSet
+    And 与动态表相关的外键与导航属性一并跳过，生成物不产生"类型不存在"的编译错误
+    And 控制台打印动态表总数与被跳过的表名
+    And 其余表的生成结果与未加规则前一致
+
+  @DB-S25 @manual
+  Scenario: 过滤后无表可用时中止（防误清库）
+    Given 库中没有任何非动态表（库为空，或全部表都在黑名单内）
+    When 运行工具
+    Then 报错 "没有需要生成实体的表，已中止以免清空 src/database"
+    And src/database 不被改写（分发步骤未执行）
 ```

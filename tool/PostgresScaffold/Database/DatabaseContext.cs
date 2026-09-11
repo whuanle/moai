@@ -53,6 +53,26 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelUsageLogEntity> AiModelUsageLogs { get; set; }
 
     /// <summary>
+    /// 应用.
+    /// </summary>
+    public virtual DbSet<AppEntity> Apps { get; set; }
+
+    /// <summary>
+    /// Agent 应用配置，与 app 一一对应（app_type=0）.
+    /// </summary>
+    public virtual DbSet<AppAgentConfigEntity> AppAgentConfigs { get; set; }
+
+    /// <summary>
+    /// Agent 应用会话消息（对话历史），追加写，按 seq 排序.
+    /// </summary>
+    public virtual DbSet<AppAgentMessageEntity> AppAgentMessages { get; set; }
+
+    /// <summary>
+    /// Agent 应用会话（会话列表），一个会话属于一个应用与一个用户.
+    /// </summary>
+    public virtual DbSet<AppAgentSessionEntity> AppAgentSessions { get; set; }
+
+    /// <summary>
     /// 分类.
     /// </summary>
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }
@@ -61,6 +81,12 @@ public partial class DatabaseContext : DbContext
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }
+
+    public virtual DbSet<KnowledgeGraphEntity> KnowledgeGraphs { get; set; }
+
+    public virtual DbSet<KnowledgeGraphEntityTypeEntity> KnowledgeGraphEntityTypes { get; set; }
+
+    public virtual DbSet<KnowledgeGraphRelationTypeEntity> KnowledgeGraphRelationTypes { get; set; }
 
     /// <summary>
     /// oauth2.0系统.
@@ -162,11 +188,16 @@ public partial class DatabaseContext : DbContext
     /// </summary>
     public virtual DbSet<WikiDocumentContentEntity> WikiDocumentContents { get; set; }
 
+    /// <summary>
+    /// 工作任务.
+    /// </summary>
+    public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         OnModelCreatingPartial(modelBuilder);
     }
 
-    protected static partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    protected partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

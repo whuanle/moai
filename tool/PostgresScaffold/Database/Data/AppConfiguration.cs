@@ -12,31 +12,39 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 知识库.
+/// 应用.
 /// </summary>
-internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
+internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
 {
     /// <inheritdoc/>
-    public void Configure(EntityTypeBuilder<WikiEntity> builder)
+    public void Configure(EntityTypeBuilder<AppEntity> builder)
     {
         var entity = builder;
-        entity.HasKey(e => e.Id).HasName("idx_wiki_primary");
+        entity.HasKey(e => e.Id).HasName("idx_65606_primary");
 
-        entity.ToTable("wiki", tb => tb.HasComment("知识库"));
+        entity.ToTable("app", tb => tb.HasComment("应用"));
+
+        entity.HasIndex(e => e.Name, "idx_app_name_index");
+
+        entity.HasIndex(e => e.TeamId, "idx_app_team_id_index");
 
         entity.Property(e => e.Id)
+            .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
-        entity.Property(e => e.AvatarPath)
+        entity.Property(e => e.AppType)
+            .HasComment("应用类型，普通应用=0,流程编排=1")
+            .HasColumnName("app_type");
+        entity.Property(e => e.Avatar)
             .HasMaxLength(255)
             .HasDefaultValueSql("''::character varying")
-            .HasComment("团队头像")
-            .HasColumnName("avatar_path");
-        entity.Property(e => e.Counter)
-            .HasComment("计数器")
-            .HasColumnName("counter");
+            .HasComment("头像 objectKey")
+            .HasColumnName("avatar");
+        entity.Property(e => e.ClassifyId)
+            .HasComment("分类id")
+            .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
-            .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
             .HasColumnName("create_time");
         entity.Property(e => e.CreateUserId)
@@ -44,45 +52,38 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
             .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
-            .HasComment("知识库描述")
+            .HasComment("描述")
             .HasColumnName("description");
-        entity.Property(e => e.EmbeddingDimensions)
-            .HasDefaultValue(1024)
-            .HasComment("知识库向量维度（1-2000，建 hnsw 索引的硬上限）")
-            .HasColumnName("embedding_dimensions");
-        entity.Property(e => e.EmbeddingModelId)
-            .HasComment("向量化模型的id")
-            .HasColumnName("embedding_model_id");
+        entity.Property(e => e.EnableForeign)
+            .HasComment("允许外部使用")
+            .HasColumnName("enable_foreign");
         entity.Property(e => e.IsDeleted)
             .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
-        entity.Property(e => e.IsLock)
-            .HasComment("是否已被锁定配置")
-            .HasColumnName("is_lock");
+        entity.Property(e => e.IsDisable)
+            .HasComment("禁用")
+            .HasColumnName("is_disable");
         entity.Property(e => e.IsPublic)
-            .HasComment("是否公开，公开后所有人都可以使用，但是不能进去操作")
+            .HasComment("公开到团队外使用")
             .HasColumnName("is_public");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
-            .HasComment("知识库名称")
+            .HasComment("应用名称")
             .HasColumnName("name");
-        entity.Property(e => e.RerankModelId)
-            .HasComment("重排序模型的id，可选；为空表示不使用重排序（锁定后仍可修改）")
-            .HasColumnName("rerank_model_id");
         entity.Property(e => e.TeamId)
-            .HasComment("团队id，不填则是个人知识库")
+            .HasComment("团队id")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")
             .HasColumnName("update_time");
         entity.Property(e => e.UpdateUserId)
-            .HasComment("最后修改人")
+            .HasComment("更新人")
             .HasColumnName("update_user_id");
 
         OnConfigurePartial(entity);
     }
 
-    partial void OnConfigurePartial(EntityTypeBuilder<WikiEntity> modelBuilder);
+    partial void OnConfigurePartial(EntityTypeBuilder<AppEntity> modelBuilder);
 }

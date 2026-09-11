@@ -10,9 +10,9 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 工作任务.
+/// 应用.
 /// </summary>
-public partial class WorkerTaskEntity : IFullAudited
+public partial class AppEntity : IFullAudited
 {
     /// <summary>
     /// id.
@@ -20,29 +20,49 @@ public partial class WorkerTaskEntity : IFullAudited
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 关联类型.
+    /// 应用名称.
     /// </summary>
-    public string BindType { get; set; } = default!;
+    public string Name { get; set; } = default!;
 
     /// <summary>
-    /// 关联对象id.
+    /// 描述.
     /// </summary>
-    public int BindId { get; set; }
+    public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 任务状态，不同的任务类型状态值规则不一样.
+    /// 团队id.
     /// </summary>
-    public int State { get; set; }
+    public int TeamId { get; set; }
 
     /// <summary>
-    /// 消息、错误信息.
+    /// 公开到团队外使用.
     /// </summary>
-    public string Message { get; set; } = default!;
+    public bool IsPublic { get; set; }
 
     /// <summary>
-    /// 自定义数据,json格式.
+    /// 禁用.
     /// </summary>
-    public string Data { get; set; } = default!;
+    public bool IsDisable { get; set; }
+
+    /// <summary>
+    /// 分类id.
+    /// </summary>
+    public int ClassifyId { get; set; }
+
+    /// <summary>
+    /// 允许外部使用.
+    /// </summary>
+    public bool EnableForeign { get; set; }
+
+    /// <summary>
+    /// 应用类型，普通应用=0,流程编排=1.
+    /// </summary>
+    public int AppType { get; set; }
+
+    /// <summary>
+    /// 头像 objectKey.
+    /// </summary>
+    public string Avatar { get; set; } = default!;
 
     /// <summary>
     /// 创建人.
@@ -55,7 +75,7 @@ public partial class WorkerTaskEntity : IFullAudited
     public DateTimeOffset CreateTime { get; set; }
 
     /// <summary>
-    /// 最后修改人.
+    /// 更新人.
     /// </summary>
     public long UpdateUserId { get; set; }
 
