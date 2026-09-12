@@ -52,6 +52,11 @@ public sealed class AppAgentBuildContext
     /// 绑定的插件 id.
     /// </summary>
     public IReadOnlyList<Guid> PluginIds { get; init; } = [];
+
+    /// <summary>
+    /// 绑定的技能 id.
+    /// </summary>
+    public IReadOnlyList<Guid> SkillIds { get; init; } = [];
 }
 
 /// <summary>

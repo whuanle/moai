@@ -62,6 +62,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         var modelId = await ValidateModelIdAsync(app.TeamId, request.ModelId, cancellationToken);
         var wikiIds = await ValidateWikiIdsAsync(app.TeamId, request.WikiIds, cancellationToken);
         var pluginIds = await ValidatePluginIdsAsync(app.TeamId, request.Plugins, cancellationToken);
+        var skillIds = await ValidateSkillIdsAsync(request.Skills, cancellationToken);
 
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
@@ -81,6 +82,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 ModelId = modelId,
                 WikiIds = wikiJson,
                 Plugins = pluginJson,
+                Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
                 ExecutionSettings = executionJson ?? "{}",
             };
             _databaseContext.AppAgentConfigs.Add(config);
@@ -91,6 +93,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             config.ModelId = modelId;
             config.WikiIds = wikiJson;
             config.Plugins = pluginJson;
+
+            // 仅在请求显式携带技能列表时覆盖，避免旧前端保存时清空技能配置
+            if (skillIds != null)
+            {
+                config.Skills = AppAgentConfigJson.SerializePluginIds(skillIds);
+            }
 
             // 仅在请求显式携带执行参数时覆盖，避免旧前端保存时清空沙箱等扩展配置
             if (executionJson != null)
@@ -222,6 +230,33 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         if (invalid.Count > 0)
         {
             throw new BusinessException("包含该团队无权使用的插件，请重新选择.") { StatusCode = 400 };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 校验技能：仅允许绑定启用中的技能，去重后返回；null 表示请求未携带技能字段（保持原值）.
+    /// </summary>
+    private async Task<List<Guid>?> ValidateSkillIdsAsync(IReadOnlyCollection<Guid>? skillIds, CancellationToken cancellationToken)
+    {
+        if (skillIds == null)
+        {
+            return null;
+        }
+
+        var ids = skillIds.Where(x => x != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        var validCount = await _databaseContext.Skills
+            .CountAsync(x => ids.Contains(x.Id) && !x.IsDisable, cancellationToken);
+
+        if (validCount != ids.Count)
+        {
+            throw new BusinessException("包含不存在或已禁用的技能，请重新选择.") { StatusCode = 400 };
         }
 
         return ids;

@@ -20,6 +20,7 @@ using MoAI.KnowledgeGraph;
 using MoAI.Modules;
 using MoAI.OauthConnect;
 using MoAI.Settings;
+using MoAI.Skill;
 using MoAI.Storage;
 using MoAI.Team;
 using MoAI.TeamPlugin;
@@ -46,6 +47,7 @@ namespace MoAI;
 [InjectModule<WikiCoreModule>]
 [InjectModule<KnowledgeGraphCoreModule>]
 [InjectModule<VariableCoreModule>]
+[InjectModule<SkillCoreModule>]
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<AiCoreModule>]

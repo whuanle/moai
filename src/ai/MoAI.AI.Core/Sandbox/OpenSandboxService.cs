@@ -98,6 +98,13 @@ public sealed class OpenSandboxService : IAppSandboxService
         }, cancellationToken);
 
     /// <inheritdoc/>
+    public Task<byte[]> ReadFileBytesAsync(SandboxSessionContext context, string path, CancellationToken cancellationToken)
+        => WithSandboxAsync(context, async (sandbox, ct) =>
+        {
+            return await sandbox.Files.ReadBytesAsync(path, cancellationToken: ct).ConfigureAwait(false);
+        }, cancellationToken);
+
+    /// <inheritdoc/>
     public Task<string> ListDirectoryAsync(SandboxSessionContext context, string? path, int? depth, CancellationToken cancellationToken)
         => WithSandboxAsync(context, async (sandbox, ct) =>
         {
@@ -198,7 +205,7 @@ public sealed class OpenSandboxService : IAppSandboxService
         return killed;
     }
 
-    private async Task<string> WithSandboxAsync(SandboxSessionContext context, Func<Sandbox, CancellationToken, Task<string>> action, CancellationToken cancellationToken)
+    private async Task<T> WithSandboxAsync<T>(SandboxSessionContext context, Func<Sandbox, CancellationToken, Task<T>> action, CancellationToken cancellationToken)
     {
         var entry = await GetOrCreateEntryAsync(context, cancellationToken).ConfigureAwait(false);
         try
@@ -230,12 +237,12 @@ public sealed class OpenSandboxService : IAppSandboxService
         }
     }
 
-    private async Task<string> ConnectAndRunAsync(string sandboxId, Func<Sandbox, CancellationToken, Task<string>> action, CancellationToken cancellationToken)
+    private async Task<T> ConnectAndRunAsync<T>(string sandboxId, Func<Sandbox, CancellationToken, Task<T>> action, CancellationToken cancellationToken)
     {
         await using var sandbox = await Sandbox.ConnectAsync(
             new SandboxConnectOptions { ConnectionConfig = BuildConnectionConfig(), SandboxId = sandboxId },
             cancellationToken).ConfigureAwait(false);
-        return await action(sandbox, cancellationToken).ConfigureAwait(false);
+        return await action(sandbox, cancellationToken);
     }
 
     private async Task<string> ConnectInterpreterAndRunAsync(string sandboxId, Func<CodeInterpreter, CancellationToken, Task<string>> action, CancellationToken cancellationToken)

@@ -77,6 +77,15 @@ public interface IAppSandboxService
     Task<string> ReadFileAsync(SandboxSessionContext context, string path, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 读取文件字节（二进制产物导出用，如 docx/pptx）.
+    /// </summary>
+    /// <param name="context">会话沙箱上下文.</param>
+    /// <param name="path">文件路径.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>文件字节.</returns>
+    Task<byte[]> ReadFileBytesAsync(SandboxSessionContext context, string path, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 列出目录.
     /// </summary>
     /// <param name="context">会话沙箱上下文.</param>

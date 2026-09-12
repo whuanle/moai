@@ -13,6 +13,7 @@ import {
   SunOutlined,
   TagsOutlined,
   TeamOutlined,
+  ThunderboltOutlined,
   TranslationOutlined,
   UserOutlined,
 } from '@ant-design/icons'
@@ -44,6 +45,7 @@ const mainNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { key: 'plugin', icon: <AppstoreAddOutlined />, labelKey: 'nav.plugin', path: '/plugin' },
+  { key: 'skills', icon: <ThunderboltOutlined />, labelKey: 'nav.skills', path: '/skills' },
   { key: 'classify', icon: <TagsOutlined />, labelKey: 'nav.classify', path: '/classify' },
   { key: 'users', icon: <UserOutlined />, labelKey: 'nav.users', path: '/users' },
   { key: 'adminTeams', icon: <ApartmentOutlined />, labelKey: 'nav.adminTeams', path: '/admin/teams' },
@@ -57,6 +59,7 @@ const pathToKey: Record<string, string> = {
   '/wiki': 'wiki',
   '/team': 'team',
   '/plugin': 'plugin',
+  '/skills': 'skills',
   '/classify': 'classify',
   '/users': 'users',
   '/admin/teams': 'adminTeams',

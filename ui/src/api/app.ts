@@ -103,6 +103,8 @@ export interface AppAgentConfig {
   wikiIds?: number[] | null
   /** 允许使用的插件 id 列表（元素为 plugin.id，uuid 字符串） */
   plugins?: string[] | null
+  /** 允许使用的技能 id 列表（元素为 skill.id，uuid 字符串） */
+  skills?: string[] | null
   /** 对话执行参数（自由 JSON，含沙箱等扩展配置） */
   executionSettings?: Record<string, unknown> | null
   /** 0=Member 1=Admin 2=Owner */
@@ -122,6 +124,7 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     // Kiota 把后端 long 生成为 string，前端统一收敛为 number 便于与 wikiId 比较
     wikiIds: (res?.wikiIds ?? []).map((id) => Number(id)),
     plugins: (res?.plugins ?? []).map((id) => String(id)),
+    skills: (res?.skills ?? []).map((id) => String(id)),
     executionSettings: (fromUntypedNode(res?.executionSettings) as Record<string, unknown> | undefined) ?? {},
     myRole: res?.myRole ?? null,
   }
@@ -138,6 +141,7 @@ export async function saveAppAgentConfig(
     prompt: string
     wikiIds: number[]
     plugins: string[]
+    skills?: string[] | null
     executionSettings?: Record<string, unknown>
   },
 ): Promise<void> {
@@ -148,6 +152,7 @@ export async function saveAppAgentConfig(
     // 后端 wiki_ids 为 long，Kiota 生成的请求体为 string[]，此处按生成类型传字符串
     wikiIds: payload.wikiIds.map((id) => String(id)),
     plugins: payload.plugins as Guid[],
+    skills: (payload.skills ?? null) as Guid[] | null,
     executionSettings: payload.executionSettings ? toUntypedNode(payload.executionSettings) : null,
   })
 }

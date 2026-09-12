@@ -72,6 +72,24 @@ public static class FileStoreHelper
     };
 
     /// <summary>
+    /// 技能包文件格式：加载进沙箱执行的脚本与资源.
+    /// </summary>
+    public static readonly IReadOnlyCollection<string> SkillPackageFormats = new string[]
+    {
+        ".py",    // Python 脚本
+        ".md",    // Markdown 参考文档
+        ".json",  // JSON 配置/数据
+        ".txt",   // 纯文本
+        ".csv",   // CSV 数据
+        ".yaml",  // YAML 配置
+        ".yml",   // YAML 配置
+        ".j2",    // Jinja2 模板
+        ".html",  // HTML 模板
+        ".css",   // 样式
+        ".js"     // JavaScript
+    };
+
+    /// <summary>
     /// 生成文件 ObjectKey.
     /// </summary>
     /// <param name="sha256">文件 sha256.</param>

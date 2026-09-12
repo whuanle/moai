@@ -102,6 +102,7 @@ public sealed class AppAgentFactory
             SessionId = sessionId,
             WikiIds = ParseWikiIds(config.WikiIds),
             PluginIds = ParsePluginIds(config.Plugins),
+            SkillIds = ParsePluginIds(config.Skills),
         };
         var contextProviders = await _contextProviderFactory.BuildAsync(buildContext, cancellationToken).ConfigureAwait(false);
 

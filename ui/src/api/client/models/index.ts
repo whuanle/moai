@@ -535,6 +535,19 @@ export interface CompleteFileUploadCommandResponse extends Parsable {
     objectKey?: string | null;
 }
 /**
+ * 完成技能包文件上传，仅平台管理员可调用.
+ */
+export interface CompleteSkillFileCommand extends Parsable {
+    /**
+     * 文件 id.
+     */
+    fileId?: string | null;
+    /**
+     * 上传成功或失败.
+     */
+    isSuccess?: boolean | null;
+}
+/**
  * 完成知识库文档上传.
  */
 export interface CompleteWikiDocumentCommand extends Parsable {
@@ -882,6 +895,15 @@ export function createCompleteFileUploadCommandResponseFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CompleteSkillFileCommand}
+ */
+// @ts-ignore
+export function createCompleteSkillFileCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCompleteSkillFileCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CompleteWikiDocumentCommand}
  */
 // @ts-ignore
@@ -995,6 +1017,15 @@ export function createCreateKnowledgeGraphRelationTypeCommandFromDiscriminatorVa
 // @ts-ignore
 export function createCreateOAuthConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateOAuthConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateSkillCommand}
+ */
+// @ts-ignore
+export function createCreateSkillCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateSkillCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1527,6 +1558,24 @@ export function createPreUploadOpenApiFilePluginCommandResponseFromDiscriminator
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadSkillFileCommand}
+ */
+// @ts-ignore
+export function createPreUploadSkillFileCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadSkillFileCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadSkillFileCommandResponse}
+ */
+// @ts-ignore
+export function createPreUploadSkillFileCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadSkillFileCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreUploadTeamOpenApiFileCommand}
  */
 // @ts-ignore
@@ -1941,6 +1990,33 @@ export function createQuerySettingsCommandResponseFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySkillCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySkillCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySkillCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySkillOptionsCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySkillOptionsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySkillOptionsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySkillsCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySkillsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySkillsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryTeamAllCommandResponse}
  */
 // @ts-ignore
@@ -2274,6 +2350,15 @@ export function createSaveTeamOpenApiPluginCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetSkillDisableRequest}
+ */
+// @ts-ignore
+export function createSetSkillDisableRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetSkillDisableRequest;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SettingItemResponse}
  */
 // @ts-ignore
@@ -2351,6 +2436,58 @@ export function createSimpleOfStringFromDiscriminatorValue(parseNode: ParseNode 
 // @ts-ignore
 export function createSimpleStringFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSimpleString;
+}
+/**
+ * 创建技能，仅平台管理员可调用.
+ */
+export interface CreateSkillCommand extends Parsable {
+    /**
+     * 技能描述，作为 Agent 工具列表中的能力说明.
+     */
+    description?: string | null;
+    /**
+     * 技能包文件清单.
+     */
+    files?: SkillFileItem[] | null;
+    /**
+     * 使用说明（markdown），技能加载时注入给 Agent.
+     */
+    instructions?: string | null;
+    /**
+     * 技能标识，全局唯一，蛇形命名，创建后不可变更.
+     */
+    key?: string | null;
+    /**
+     * 技能名称.
+     */
+    name?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SkillFileItem}
+ */
+// @ts-ignore
+export function createSkillFileItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSkillFileItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SkillListItem}
+ */
+// @ts-ignore
+export function createSkillListItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSkillListItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SkillOptionItem}
+ */
+// @ts-ignore
+export function createSkillOptionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSkillOptionItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2677,6 +2814,15 @@ export function createUpdateOpenApiPluginCommandFromDiscriminatorValue(parseNode
 // @ts-ignore
 export function createUpdatePluginTeamAuthorizationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdatePluginTeamAuthorizationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateSkillCommand}
+ */
+// @ts-ignore
+export function createUpdateSkillCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateSkillCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3258,6 +3404,17 @@ export function deserializeIntoCompleteFileUploadCommandResponse(completeFileUpl
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCompleteSkillFileCommand(completeSkillFileCommand: Partial<CompleteSkillFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { completeSkillFileCommand.fileId = n.getStringValue(); },
+        "isSuccess": n => { completeSkillFileCommand.isSuccess = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCompleteWikiDocumentCommand(completeWikiDocumentCommand: Partial<CompleteWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "fileId": n => { completeWikiDocumentCommand.fileId = n.getStringValue(); },
@@ -3426,6 +3583,20 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
         "provider": n => { createOAuthConnectionCommand.provider = n.getEnumValue<OAuthPrivider>(OAuthPrividerObject); },
         "secret": n => { createOAuthConnectionCommand.secret = n.getStringValue(); },
         "wellKnown": n => { createOAuthConnectionCommand.wellKnown = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateSkillCommand(createSkillCommand: Partial<CreateSkillCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { createSkillCommand.description = n.getStringValue(); },
+        "files": n => { createSkillCommand.files = n.getCollectionOfObjectValues<SkillFileItem>(createSkillFileItemFromDiscriminatorValue); },
+        "instructions": n => { createSkillCommand.instructions = n.getStringValue(); },
+        "key": n => { createSkillCommand.key = n.getStringValue(); },
+        "name": n => { createSkillCommand.name = n.getStringValue(); },
     }
 }
 /**
@@ -3975,6 +4146,32 @@ export function deserializeIntoPreUploadOpenApiFilePluginCommandResponse(preUplo
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPreUploadSkillFileCommand(preUploadSkillFileCommand: Partial<PreUploadSkillFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadSkillFileCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadSkillFileCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadSkillFileCommand.fileSize = n.getNumberValue(); },
+        "shA256": n => { preUploadSkillFileCommand.shA256 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadSkillFileCommandResponse(preUploadSkillFileCommandResponse: Partial<PreUploadSkillFileCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "expiration": n => { preUploadSkillFileCommandResponse.expiration = n.getStringValue(); },
+        "fileId": n => { preUploadSkillFileCommandResponse.fileId = n.getStringValue(); },
+        "isExist": n => { preUploadSkillFileCommandResponse.isExist = n.getBooleanValue(); },
+        "uploadUrl": n => { preUploadSkillFileCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPreUploadTeamOpenApiFileCommand(preUploadTeamOpenApiFileCommand: Partial<PreUploadTeamOpenApiFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "contentType": n => { preUploadTeamOpenApiFileCommand.contentType = n.getStringValue(); },
@@ -4222,6 +4419,7 @@ export function deserializeIntoQueryAppAgentConfigCommandResponse(queryAppAgentC
         "myRole": n => { queryAppAgentConfigCommandResponse.myRole = n.getNumberValue(); },
         "plugins": n => { queryAppAgentConfigCommandResponse.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { queryAppAgentConfigCommandResponse.prompt = n.getStringValue(); },
+        "skills": n => { queryAppAgentConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "teamId": n => { queryAppAgentConfigCommandResponse.teamId = n.getStringValue(); },
         "wikiIds": n => { queryAppAgentConfigCommandResponse.wikiIds = n.getCollectionOfPrimitiveValues<string>(); },
     }
@@ -4611,6 +4809,46 @@ export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCom
 export function deserializeIntoQuerySettingsCommandResponse(querySettingsCommandResponse: Partial<QuerySettingsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { querySettingsCommandResponse.items = n.getCollectionOfObjectValues<SettingItemResponse>(createSettingItemResponseFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySkillCommandResponse(querySkillCommandResponse: Partial<QuerySkillCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { querySkillCommandResponse.createTime = n.getStringValue(); },
+        "description": n => { querySkillCommandResponse.description = n.getStringValue(); },
+        "files": n => { querySkillCommandResponse.files = n.getCollectionOfObjectValues<SkillFileItem>(createSkillFileItemFromDiscriminatorValue); },
+        "id": n => { querySkillCommandResponse.id = n.getGuidValue(); },
+        "instructions": n => { querySkillCommandResponse.instructions = n.getStringValue(); },
+        "isDisable": n => { querySkillCommandResponse.isDisable = n.getBooleanValue(); },
+        "isSystem": n => { querySkillCommandResponse.isSystem = n.getBooleanValue(); },
+        "key": n => { querySkillCommandResponse.key = n.getStringValue(); },
+        "name": n => { querySkillCommandResponse.name = n.getStringValue(); },
+        "updateTime": n => { querySkillCommandResponse.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySkillOptionsCommandResponse(querySkillOptionsCommandResponse: Partial<QuerySkillOptionsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { querySkillOptionsCommandResponse.items = n.getCollectionOfObjectValues<SkillOptionItem>(createSkillOptionItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySkillsCommandResponse(querySkillsCommandResponse: Partial<QuerySkillsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { querySkillsCommandResponse.items = n.getCollectionOfObjectValues<SkillListItem>(createSkillListItemFromDiscriminatorValue); },
+        "totalCount": n => { querySkillsCommandResponse.totalCount = n.getNumberValue(); },
     }
 }
 /**
@@ -5039,6 +5277,7 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
         "modelId": n => { saveAppAgentConfigCommand.modelId = n.getGuidValue(); },
         "plugins": n => { saveAppAgentConfigCommand.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { saveAppAgentConfigCommand.prompt = n.getStringValue(); },
+        "skills": n => { saveAppAgentConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "wikiIds": n => { saveAppAgentConfigCommand.wikiIds = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
@@ -5138,6 +5377,16 @@ export function deserializeIntoSaveTeamOpenApiPluginCommand(saveTeamOpenApiPlugi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSetSkillDisableRequest(setSkillDisableRequest: Partial<SetSkillDisableRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isDisable": n => { setSkillDisableRequest.isDisable = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSettingItemResponse(settingItemResponse: Partial<SettingItemResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { settingItemResponse.description = n.getStringValue(); },
@@ -5224,6 +5473,50 @@ export function deserializeIntoSimpleOfString(simpleOfString: Partial<SimpleOfSt
 export function deserializeIntoSimpleString(simpleString: Partial<SimpleString> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoSimpleOfString(simpleString),
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSkillFileItem(skillFileItem: Partial<SkillFileItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { skillFileItem.fileId = n.getStringValue(); },
+        "fileName": n => { skillFileItem.fileName = n.getStringValue(); },
+        "path": n => { skillFileItem.path = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSkillListItem(skillListItem: Partial<SkillListItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { skillListItem.createTime = n.getStringValue(); },
+        "description": n => { skillListItem.description = n.getStringValue(); },
+        "fileCount": n => { skillListItem.fileCount = n.getNumberValue(); },
+        "id": n => { skillListItem.id = n.getGuidValue(); },
+        "isDisable": n => { skillListItem.isDisable = n.getBooleanValue(); },
+        "isSystem": n => { skillListItem.isSystem = n.getBooleanValue(); },
+        "key": n => { skillListItem.key = n.getStringValue(); },
+        "name": n => { skillListItem.name = n.getStringValue(); },
+        "updateTime": n => { skillListItem.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSkillOptionItem(skillOptionItem: Partial<SkillOptionItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { skillOptionItem.description = n.getStringValue(); },
+        "id": n => { skillOptionItem.id = n.getGuidValue(); },
+        "isSystem": n => { skillOptionItem.isSystem = n.getBooleanValue(); },
+        "key": n => { skillOptionItem.key = n.getStringValue(); },
+        "name": n => { skillOptionItem.name = n.getStringValue(); },
     }
 }
 /**
@@ -5680,6 +5973,20 @@ export function deserializeIntoUpdatePluginTeamAuthorizationCommand(updatePlugin
     return {
         "pluginId": n => { updatePluginTeamAuthorizationCommand.pluginId = n.getGuidValue(); },
         "teamIds": n => { updatePluginTeamAuthorizationCommand.teamIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateSkillCommand(updateSkillCommand: Partial<UpdateSkillCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { updateSkillCommand.description = n.getStringValue(); },
+        "files": n => { updateSkillCommand.files = n.getCollectionOfObjectValues<SkillFileItem>(createSkillFileItemFromDiscriminatorValue); },
+        "instructions": n => { updateSkillCommand.instructions = n.getStringValue(); },
+        "name": n => { updateSkillCommand.name = n.getStringValue(); },
+        "skillId": n => { updateSkillCommand.skillId = n.getGuidValue(); },
     }
 }
 /**
@@ -6677,6 +6984,48 @@ export interface PreUploadOpenApiFilePluginCommandResponse extends Parsable {
     uploadUrl?: string | null;
 }
 /**
+ * 预上传技能包文件，生成预签名上传地址，仅平台管理员可调用.
+ */
+export interface PreUploadSkillFileCommand extends Parsable {
+    /**
+     * 文件类型 (MIME Type).
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小（字节）.
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 SHA-256.
+     */
+    shA256?: string | null;
+}
+/**
+ * 预上传技能包文件响应.
+ */
+export interface PreUploadSkillFileCommandResponse extends Parsable {
+    /**
+     * 签名过期时间，当 IsExist = true 时为空.
+     */
+    expiration?: string | null;
+    /**
+     * 文件 ID.
+     */
+    fileId?: string | null;
+    /**
+     * 文件是否已存在，如已存在则无需再次上传.
+     */
+    isExist?: boolean | null;
+    /**
+     * 预签名上传地址，当 IsExist = true 时为空.
+     */
+    uploadUrl?: string | null;
+}
+/**
  * 预上传团队 OpenAPI 文件，支持 json、yaml，需团队 Owner/Admin.
  */
 export interface PreUploadTeamOpenApiFileCommand extends Parsable {
@@ -7148,6 +7497,10 @@ export interface QueryAppAgentConfigCommandResponse extends Parsable {
      * 系统提示词，未配置时为空串.
      */
     prompt?: string | null;
+    /**
+     * 绑定的技能 id 列表（元素为 skill.id，uuid）.
+     */
+    skills?: Guid[] | null;
     /**
      * 所属团队 id.
      */
@@ -7797,6 +8150,73 @@ export interface QuerySettingsCommandResponse extends Parsable {
      * 设置项集合.
      */
     items?: SettingItemResponse[] | null;
+}
+/**
+ * 技能详情响应.
+ */
+export interface QuerySkillCommandResponse extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 技能描述.
+     */
+    description?: string | null;
+    /**
+     * 技能包文件清单.
+     */
+    files?: SkillFileItem[] | null;
+    /**
+     * 技能 id.
+     */
+    id?: Guid | null;
+    /**
+     * 使用说明（markdown）.
+     */
+    instructions?: string | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 是否系统内置技能.
+     */
+    isSystem?: boolean | null;
+    /**
+     * 技能标识.
+     */
+    key?: string | null;
+    /**
+     * 技能名称.
+     */
+    name?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+}
+/**
+ * 可挂载技能选项列表响应.
+ */
+export interface QuerySkillOptionsCommandResponse extends Parsable {
+    /**
+     * 技能选项列表.
+     */
+    items?: SkillOptionItem[] | null;
+}
+/**
+ * 技能列表响应.
+ */
+export interface QuerySkillsCommandResponse extends Parsable {
+    /**
+     * 技能列表.
+     */
+    items?: SkillListItem[] | null;
+    /**
+     * 总数量.
+     */
+    totalCount?: number | null;
 }
 /**
  * 全部团队列表响应（管理员）.
@@ -8545,6 +8965,10 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      */
     prompt?: string | null;
     /**
+     * 允许使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的技能；null 表示保持已保存的技能不变.
+     */
+    skills?: Guid[] | null;
+    /**
      * 允许使用的知识库 id 列表（元素为 wiki.id），须属于本团队.
      */
     wikiIds?: string[] | null;
@@ -9033,6 +9457,17 @@ export function serializeCompleteFileUploadCommandResponse(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCompleteSkillFileCommand(writer: SerializationWriter, completeSkillFileCommand: Partial<CompleteSkillFileCommand> | undefined | null = {}) : void {
+    if (completeSkillFileCommand) {
+        writer.writeStringValue("fileId", completeSkillFileCommand.fileId);
+        writer.writeBooleanValue("isSuccess", completeSkillFileCommand.isSuccess);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCompleteWikiDocumentCommand(writer: SerializationWriter, completeWikiDocumentCommand: Partial<CompleteWikiDocumentCommand> | undefined | null = {}) : void {
     if (completeWikiDocumentCommand) {
         writer.writeStringValue("fileId", completeWikiDocumentCommand.fileId);
@@ -9201,6 +9636,20 @@ export function serializeCreateOAuthConnectionCommand(writer: SerializationWrite
         writer.writeEnumValue<OAuthPrivider>("provider", createOAuthConnectionCommand.provider);
         writer.writeStringValue("secret", createOAuthConnectionCommand.secret);
         writer.writeStringValue("wellKnown", createOAuthConnectionCommand.wellKnown);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateSkillCommand(writer: SerializationWriter, createSkillCommand: Partial<CreateSkillCommand> | undefined | null = {}) : void {
+    if (createSkillCommand) {
+        writer.writeStringValue("description", createSkillCommand.description);
+        writer.writeCollectionOfObjectValues<SkillFileItem>("files", createSkillCommand.files, serializeSkillFileItem);
+        writer.writeStringValue("instructions", createSkillCommand.instructions);
+        writer.writeStringValue("key", createSkillCommand.key);
+        writer.writeStringValue("name", createSkillCommand.name);
     }
 }
 /**
@@ -9750,6 +10199,32 @@ export function serializePreUploadOpenApiFilePluginCommandResponse(writer: Seria
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePreUploadSkillFileCommand(writer: SerializationWriter, preUploadSkillFileCommand: Partial<PreUploadSkillFileCommand> | undefined | null = {}) : void {
+    if (preUploadSkillFileCommand) {
+        writer.writeStringValue("contentType", preUploadSkillFileCommand.contentType);
+        writer.writeStringValue("fileName", preUploadSkillFileCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadSkillFileCommand.fileSize);
+        writer.writeStringValue("shA256", preUploadSkillFileCommand.shA256);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadSkillFileCommandResponse(writer: SerializationWriter, preUploadSkillFileCommandResponse: Partial<PreUploadSkillFileCommandResponse> | undefined | null = {}) : void {
+    if (preUploadSkillFileCommandResponse) {
+        writer.writeStringValue("expiration", preUploadSkillFileCommandResponse.expiration);
+        writer.writeStringValue("fileId", preUploadSkillFileCommandResponse.fileId);
+        writer.writeBooleanValue("isExist", preUploadSkillFileCommandResponse.isExist);
+        writer.writeStringValue("uploadUrl", preUploadSkillFileCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePreUploadTeamOpenApiFileCommand(writer: SerializationWriter, preUploadTeamOpenApiFileCommand: Partial<PreUploadTeamOpenApiFileCommand> | undefined | null = {}) : void {
     if (preUploadTeamOpenApiFileCommand) {
         writer.writeStringValue("contentType", preUploadTeamOpenApiFileCommand.contentType);
@@ -9997,6 +10472,7 @@ export function serializeQueryAppAgentConfigCommandResponse(writer: Serializatio
         writer.writeNumberValue("myRole", queryAppAgentConfigCommandResponse.myRole);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", queryAppAgentConfigCommandResponse.plugins);
         writer.writeStringValue("prompt", queryAppAgentConfigCommandResponse.prompt);
+        writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppAgentConfigCommandResponse.skills);
         writer.writeStringValue("teamId", queryAppAgentConfigCommandResponse.teamId);
         writer.writeCollectionOfPrimitiveValues<string>("wikiIds", queryAppAgentConfigCommandResponse.wikiIds);
     }
@@ -10386,6 +10862,46 @@ export function serializeQueryServerInfoCommandResponse(writer: SerializationWri
 export function serializeQuerySettingsCommandResponse(writer: SerializationWriter, querySettingsCommandResponse: Partial<QuerySettingsCommandResponse> | undefined | null = {}) : void {
     if (querySettingsCommandResponse) {
         writer.writeCollectionOfObjectValues<SettingItemResponse>("items", querySettingsCommandResponse.items, serializeSettingItemResponse);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySkillCommandResponse(writer: SerializationWriter, querySkillCommandResponse: Partial<QuerySkillCommandResponse> | undefined | null = {}) : void {
+    if (querySkillCommandResponse) {
+        writer.writeStringValue("createTime", querySkillCommandResponse.createTime);
+        writer.writeStringValue("description", querySkillCommandResponse.description);
+        writer.writeCollectionOfObjectValues<SkillFileItem>("files", querySkillCommandResponse.files, serializeSkillFileItem);
+        writer.writeGuidValue("id", querySkillCommandResponse.id);
+        writer.writeStringValue("instructions", querySkillCommandResponse.instructions);
+        writer.writeBooleanValue("isDisable", querySkillCommandResponse.isDisable);
+        writer.writeBooleanValue("isSystem", querySkillCommandResponse.isSystem);
+        writer.writeStringValue("key", querySkillCommandResponse.key);
+        writer.writeStringValue("name", querySkillCommandResponse.name);
+        writer.writeStringValue("updateTime", querySkillCommandResponse.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySkillOptionsCommandResponse(writer: SerializationWriter, querySkillOptionsCommandResponse: Partial<QuerySkillOptionsCommandResponse> | undefined | null = {}) : void {
+    if (querySkillOptionsCommandResponse) {
+        writer.writeCollectionOfObjectValues<SkillOptionItem>("items", querySkillOptionsCommandResponse.items, serializeSkillOptionItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySkillsCommandResponse(writer: SerializationWriter, querySkillsCommandResponse: Partial<QuerySkillsCommandResponse> | undefined | null = {}) : void {
+    if (querySkillsCommandResponse) {
+        writer.writeCollectionOfObjectValues<SkillListItem>("items", querySkillsCommandResponse.items, serializeSkillListItem);
+        writer.writeNumberValue("totalCount", querySkillsCommandResponse.totalCount);
     }
 }
 /**
@@ -10814,6 +11330,7 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
         writer.writeGuidValue("modelId", saveAppAgentConfigCommand.modelId);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", saveAppAgentConfigCommand.plugins);
         writer.writeStringValue("prompt", saveAppAgentConfigCommand.prompt);
+        writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppAgentConfigCommand.skills);
         writer.writeCollectionOfPrimitiveValues<string>("wikiIds", saveAppAgentConfigCommand.wikiIds);
     }
 }
@@ -10913,6 +11430,16 @@ export function serializeSaveTeamOpenApiPluginCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSetSkillDisableRequest(writer: SerializationWriter, setSkillDisableRequest: Partial<SetSkillDisableRequest> | undefined | null = {}) : void {
+    if (setSkillDisableRequest) {
+        writer.writeBooleanValue("isDisable", setSkillDisableRequest.isDisable);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSettingItemResponse(writer: SerializationWriter, settingItemResponse: Partial<SettingItemResponse> | undefined | null = {}) : void {
     if (settingItemResponse) {
         writer.writeStringValue("description", settingItemResponse.description);
@@ -10999,6 +11526,50 @@ export function serializeSimpleOfString(writer: SerializationWriter, simpleOfStr
 export function serializeSimpleString(writer: SerializationWriter, simpleString: Partial<SimpleString> | undefined | null = {}) : void {
     if (simpleString) {
         serializeSimpleOfString(writer, simpleString)
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSkillFileItem(writer: SerializationWriter, skillFileItem: Partial<SkillFileItem> | undefined | null = {}) : void {
+    if (skillFileItem) {
+        writer.writeStringValue("fileId", skillFileItem.fileId);
+        writer.writeStringValue("fileName", skillFileItem.fileName);
+        writer.writeStringValue("path", skillFileItem.path);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSkillListItem(writer: SerializationWriter, skillListItem: Partial<SkillListItem> | undefined | null = {}) : void {
+    if (skillListItem) {
+        writer.writeStringValue("createTime", skillListItem.createTime);
+        writer.writeStringValue("description", skillListItem.description);
+        writer.writeNumberValue("fileCount", skillListItem.fileCount);
+        writer.writeGuidValue("id", skillListItem.id);
+        writer.writeBooleanValue("isDisable", skillListItem.isDisable);
+        writer.writeBooleanValue("isSystem", skillListItem.isSystem);
+        writer.writeStringValue("key", skillListItem.key);
+        writer.writeStringValue("name", skillListItem.name);
+        writer.writeStringValue("updateTime", skillListItem.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSkillOptionItem(writer: SerializationWriter, skillOptionItem: Partial<SkillOptionItem> | undefined | null = {}) : void {
+    if (skillOptionItem) {
+        writer.writeStringValue("description", skillOptionItem.description);
+        writer.writeGuidValue("id", skillOptionItem.id);
+        writer.writeBooleanValue("isSystem", skillOptionItem.isSystem);
+        writer.writeStringValue("key", skillOptionItem.key);
+        writer.writeStringValue("name", skillOptionItem.name);
     }
 }
 /**
@@ -11462,6 +12033,20 @@ export function serializeUpdatePluginTeamAuthorizationCommand(writer: Serializat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateSkillCommand(writer: SerializationWriter, updateSkillCommand: Partial<UpdateSkillCommand> | undefined | null = {}) : void {
+    if (updateSkillCommand) {
+        writer.writeStringValue("description", updateSkillCommand.description);
+        writer.writeCollectionOfObjectValues<SkillFileItem>("files", updateSkillCommand.files, serializeSkillFileItem);
+        writer.writeStringValue("instructions", updateSkillCommand.instructions);
+        writer.writeStringValue("name", updateSkillCommand.name);
+        writer.writeGuidValue("skillId", updateSkillCommand.skillId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateTeamAvatarCommand(writer: SerializationWriter, updateTeamAvatarCommand: Partial<UpdateTeamAvatarCommand> | undefined | null = {}) : void {
     if (updateTeamAvatarCommand) {
         writer.writeStringValue("objectKey", updateTeamAvatarCommand.objectKey);
@@ -11724,6 +12309,15 @@ export function serializeWikiModelOptionItem(writer: SerializationWriter, wikiMo
     }
 }
 /**
+ * 启用/禁用技能请求体.
+ */
+export interface SetSkillDisableRequest extends Parsable {
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+}
+/**
  * 设置项.
  */
 export interface SettingItemResponse extends Parsable {
@@ -11799,6 +12393,89 @@ export interface SimpleOfString extends Parsable {
  * SimpleString.
  */
 export interface SimpleString extends Parsable, SimpleOfString {
+}
+/**
+ * 技能包文件项，序列化为 skill.files JSON 列.
+ */
+export interface SkillFileItem extends Parsable {
+    /**
+     * MinIO 文件 id（file 表）.
+     */
+    fileId?: string | null;
+    /**
+     * 原始文件名.
+     */
+    fileName?: string | null;
+    /**
+     * 技能包内相对路径，如 scripts/generate_docx.py，加载时按此路径写入沙箱.
+     */
+    path?: string | null;
+}
+/**
+ * 技能列表项.
+ */
+export interface SkillListItem extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 技能描述.
+     */
+    description?: string | null;
+    /**
+     * 技能包文件数量.
+     */
+    fileCount?: number | null;
+    /**
+     * 技能 id.
+     */
+    id?: Guid | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 是否系统内置技能.
+     */
+    isSystem?: boolean | null;
+    /**
+     * 技能标识.
+     */
+    key?: string | null;
+    /**
+     * 技能名称.
+     */
+    name?: string | null;
+    /**
+     * 更新时间.
+     */
+    updateTime?: string | null;
+}
+/**
+ * 可挂载技能选项.
+ */
+export interface SkillOptionItem extends Parsable {
+    /**
+     * 技能描述.
+     */
+    description?: string | null;
+    /**
+     * 技能 id.
+     */
+    id?: Guid | null;
+    /**
+     * 是否系统内置技能.
+     */
+    isSystem?: boolean | null;
+    /**
+     * 技能标识.
+     */
+    key?: string | null;
+    /**
+     * 技能名称.
+     */
+    name?: string | null;
 }
 /**
  * 对文本执行 ${key} 变量替换（含私密变量解密），仅团队 Admin 及以上可调用；插件运行时应使用服务端内部的 IVariableService，避免将私密值回传给成员.
@@ -12628,6 +13305,31 @@ export interface UpdatePluginTeamAuthorizationCommand extends Parsable {
      * 授权团队 id 集合（全量替换），取消授权的团队将无法继续使用该私有插件.
      */
     teamIds?: number[] | null;
+}
+/**
+ * 更新技能，仅平台管理员可调用；技能标识不可修改.
+ */
+export interface UpdateSkillCommand extends Parsable {
+    /**
+     * 技能描述.
+     */
+    description?: string | null;
+    /**
+     * 技能包文件清单，整体替换.
+     */
+    files?: SkillFileItem[] | null;
+    /**
+     * 使用说明（markdown），技能加载时注入给 Agent.
+     */
+    instructions?: string | null;
+    /**
+     * 技能名称.
+     */
+    name?: string | null;
+    /**
+     * 技能 id.
+     */
+    skillId?: Guid | null;
 }
 /**
  * 设置团队头像，仅 Owner/Admin 可操作；objectKey 需为已完成上传并登记的文件.

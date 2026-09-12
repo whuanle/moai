@@ -24,6 +24,8 @@ import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestB
 // @ts-ignore
 import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
 // @ts-ignore
+import { SkillRequestBuilderNavigationMetadata, SkillRequestBuilderRequestsMetadata, type SkillRequestBuilder } from './skill/index.js';
+// @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
 import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadata, type TeamRequestBuilder } from './team/index.js';
@@ -84,6 +86,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The settings property
      */
     get settings(): SettingsRequestBuilder;
+    /**
+     * The skill property
+     */
+    get skill(): SkillRequestBuilder;
     /**
      * The storage property
      */
@@ -148,6 +154,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     settings: {
         requestsMetadata: SettingsRequestBuilderRequestsMetadata,
+    },
+    skill: {
+        requestsMetadata: SkillRequestBuilderRequestsMetadata,
+        navigationMetadata: SkillRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

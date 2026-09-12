@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
 using MoAI.AI.Models;
+using MoAI.Storage.Commands;
+using MoAI.Storage.Helpers;
+using MoAI.Storage.Services;
 
 namespace MoAI.AI.Services;
 
@@ -15,15 +20,22 @@ namespace MoAI.AI.Services;
 [InjectOnScoped]
 public sealed class SandboxAppToolProvider : IAppToolProvider
 {
+    private static readonly TimeSpan ArtifactDownloadExpiry = TimeSpan.FromHours(1);
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     private readonly IAppSandboxService _sandboxService;
+    private readonly IStorageService _storageService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SandboxAppToolProvider"/> class.
     /// </summary>
     /// <param name="sandboxService">会话沙箱服务.</param>
-    public SandboxAppToolProvider(IAppSandboxService sandboxService)
+    /// <param name="storageService">存储领域服务.</param>
+    public SandboxAppToolProvider(IAppSandboxService sandboxService, IStorageService storageService)
     {
         _sandboxService = sandboxService;
+        _storageService = storageService;
     }
 
     /// <inheritdoc/>
@@ -172,14 +184,84 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
                     return AppToolResult.Ok(await _sandboxService.SearchFilesAsync(session, path!, pattern!, ct).ConfigureAwait(false));
                 },
             },
+            new AppTool
+            {
+                Name = "sandbox_save_artifact",
+                Title = "保存产物文件",
+                Description = "把沙箱中生成的文件（如 docx/pptx/xlsx 等二进制产物）保存为可下载文件，返回下载链接。生成文件后如需交付给用户，必须先调用本工具再把链接发给用户。",
+                Kind = "sandbox",
+                ParametersExample = "{\"path\":\"/workspace/output.docx\",\"fileName\":\"报告.docx\"}",
+                InvokeAsync = async (args, ct) =>
+                {
+                    if (!TryRead(args, "path", out var path) || string.IsNullOrWhiteSpace(path))
+                    {
+                        return AppToolResult.Fail("缺少参数 path.");
+                    }
+
+                    var fileName = TryRead(args, "fileName", out var name) && !string.IsNullOrWhiteSpace(name)
+                        ? Path.GetFileName(name!)
+                        : Path.GetFileName(path!);
+                    if (string.IsNullOrWhiteSpace(fileName))
+                    {
+                        return AppToolResult.Fail("无法从路径推导文件名，请传 fileName.");
+                    }
+
+                    return await SaveArtifactAsync(session, path!, fileName, ct).ConfigureAwait(false);
+                },
+            },
         ];
 
         return Task.FromResult(tools);
     }
 
-    private static bool TryRead(string? argsJson, string name, out string? value)
+    /// <summary>
+    /// 从沙箱读取产物字节并上传 MinIO，返回下载链接.
+    /// </summary>
+    private async Task<AppToolResult> SaveArtifactAsync(SandboxSessionContext session, string path, string fileName, CancellationToken cancellationToken)
     {
-        value = null;
+        try
+        {
+            var bytes = await _sandboxService.ReadFileBytesAsync(session, path, cancellationToken).ConfigureAwait(false);
+            if (bytes.Length == 0)
+            {
+                return AppToolResult.Fail("文件为空或不存在.");
+            }
+
+            var sha256 = Convert.ToHexStringLower(SHA256.HashData(bytes));
+            var objectKey = FileStoreHelper.GetObjectKey(sha256: sha256, fileName: fileName, prefix: $"appagent/{session.SessionId:N}");
+
+            using var stream = new MemoryStream(bytes);
+            var upload = await _storageService.UploadStreamAsync(new UploadStreamFileCommand
+            {
+                FileStream = stream,
+                ContentType = FileStoreHelper.GetMimeType(fileName, "application/octet-stream"),
+                FileSize = bytes.Length,
+                SHA256 = sha256,
+                ObjectKey = objectKey,
+            }, cancellationToken).ConfigureAwait(false);
+
+            var downloadUrl = await _storageService.GetDownloadUrlAsync(objectKey, fileName, ArtifactDownloadExpiry, cancellationToken).ConfigureAwait(false);
+
+            return AppToolResult.Ok(JsonSerializer.Serialize(new
+            {
+                success = true,
+                fileId = upload.FileId,
+                fileName,
+                path,
+                downloadUrl = downloadUrl.ToString(),
+                expiresInMinutes = (int)ArtifactDownloadExpiry.TotalMinutes,
+            }, JsonOptions));
+        }
+#pragma warning disable CA1031 // 产物保存失败以工具错误返回，不中断对话
+        catch (Exception ex)
+        {
+            return AppToolResult.Fail($"保存产物失败: {ex.Message}");
+        }
+#pragma warning restore CA1031
+    }
+
+    private static bool TryRead(string? argsJson, string name, out string? value)
+    {        value = null;
         if (string.IsNullOrWhiteSpace(argsJson) || argsJson!.Trim() == "{}")
         {
             return false;
