@@ -79,6 +79,34 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
+    /// 发布应用，发布后团队成员可进入应用进行对话；需要团队 Admin 及以上角色，仅 Agent 应用可发布.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("{id:guid}/publish")]
+    public async Task<EmptyCommandResponse> PublishApp([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new PublishAppCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 取消发布应用；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("{id:guid}/unpublish")]
+    public async Task<EmptyCommandResponse> UnpublishApp([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new UnpublishAppCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 查询 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），仅团队成员可访问；未保存过配置时返回空配置.
     /// </summary>
     /// <param name="id">应用 id.</param>
@@ -109,7 +137,8 @@ public class AppController : ControllerBase
             ModelId = req.ModelId,
             Prompt = req.Prompt,
             WikiIds = req.WikiIds,
-            Plugins = req.Plugins
+            Plugins = req.Plugins,
+            ExecutionSettings = req.ExecutionSettings
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

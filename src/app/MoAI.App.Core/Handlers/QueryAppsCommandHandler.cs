@@ -51,6 +51,8 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
                 x.AppType,
                 x.Avatar,
                 x.EnableForeign,
+                x.PublishStatus,
+                x.PublishTime,
                 x.CreateTime
             })
             .ToListAsync(cancellationToken);
@@ -65,6 +67,8 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
                 AppType = (AppType)x.AppType,
                 AvatarPath = x.Avatar,
                 EnableForeign = x.EnableForeign,
+                PublishStatus = x.PublishStatus,
+                PublishTime = x.PublishTime,
                 CreateTime = x.CreateTime
             })
             .ToList();

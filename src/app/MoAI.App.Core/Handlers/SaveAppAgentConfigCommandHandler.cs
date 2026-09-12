@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.Text.Json;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -67,6 +68,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
 
         var wikiJson = AppAgentConfigJson.SerializeWikiIds(wikiIds);
         var pluginJson = AppAgentConfigJson.SerializePluginIds(pluginIds);
+        var executionJson = NormalizeExecutionSettings(request.ExecutionSettings);
 
         if (config == null)
         {
@@ -79,7 +81,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 ModelId = modelId,
                 WikiIds = wikiJson,
                 Plugins = pluginJson,
-                ExecutionSettings = "{}",
+                ExecutionSettings = executionJson ?? "{}",
             };
             _databaseContext.AppAgentConfigs.Add(config);
         }
@@ -89,6 +91,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             config.ModelId = modelId;
             config.WikiIds = wikiJson;
             config.Plugins = pluginJson;
+
+            // 仅在请求显式携带执行参数时覆盖，避免旧前端保存时清空沙箱等扩展配置
+            if (executionJson != null)
+            {
+                config.ExecutionSettings = executionJson;
+            }
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
@@ -217,5 +225,23 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         }
 
         return ids;
+    }
+
+    /// <summary>
+    /// 规范化执行参数 JSON：null / Null 值返回 null（表示不覆盖），对象返回其原始文本.
+    /// </summary>
+    private static string? NormalizeExecutionSettings(JsonElement? executionSettings)
+    {
+        if (executionSettings is null || executionSettings.Value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (executionSettings.Value.ValueKind != JsonValueKind.Object)
+        {
+            throw new BusinessException("执行参数必须是 JSON 对象.") { StatusCode = 400 };
+        }
+
+        return executionSettings.Value.GetRawText();
     }
 }

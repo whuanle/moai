@@ -1,4 +1,5 @@
 using MoAI;
+using MoAI.AI;
 using MoAI.Gateway;
 using Scalar.AspNetCore;
 
@@ -77,6 +78,9 @@ app.MapControllers();
 
 // 团队模型网关（OpenAI/Anthropic 兼容 /v1 端点）
 app.MapGatewayEndpoints();
+
+// Agent 应用对话（AG-UI SSE 端点 /api/app/{appId}/chat）
+app.MapAppAgentEndpoints();
 
 // SPA 回退：未匹配的路由返回 index.html（放在最后，以免抢在认证分发之前）
 app.MapFallbackToFile("index.html");

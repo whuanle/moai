@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.AI</RootNamespace>
+		<NoWarn>$(NoWarn);MAAI001</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\..\aichannel\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
+		<ProjectReference Include="..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
+		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
+		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
+		<ProjectReference Include="..\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Alibaba.OpenSandbox" />
+		<PackageReference Include="Alibaba.OpenSandbox.CodeInterpreter" />
+		<PackageReference Include="Hangfire.Core" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting.AGUI.AspNetCore" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Services\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>MoAI.AI.Core.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+</Project>

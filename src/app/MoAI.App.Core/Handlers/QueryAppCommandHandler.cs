@@ -55,6 +55,8 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             AppType = (AppType)app.AppType,
             AvatarPath = app.Avatar,
             EnableForeign = app.EnableForeign,
+            PublishStatus = app.PublishStatus,
+            PublishTime = app.PublishTime,
             MyRole = (int)myRole.Value,
             CreateTime = app.CreateTime,
             UpdateTime = app.UpdateTime

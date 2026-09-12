@@ -1,0 +1,642 @@
+/* Agent 应用对话页样式：颜色全部取自 antd token（由组件注入 CSS 变量），支持明暗主题 */
+
+.moai-chat {
+  --mc-primary: #2970ff;
+  --mc-primary-bg: #eff4ff;
+  --mc-primary-border: #b2ccff;
+  --mc-info: #0ba5ec;
+  --mc-bg: #ffffff;
+  --mc-bg-layout: #f9fafb;
+  --mc-bg-elevated: #ffffff;
+  --mc-text: #101828;
+  --mc-text-secondary: #475467;
+  --mc-text-tertiary: #667085;
+  --mc-border: #eaecf0;
+  --mc-border-strong: #e5e7eb;
+  --mc-fill: #f2f4f7;
+  --mc-fill-secondary: #f9fafb;
+  --mc-code-bg: #f2f4f7;
+  --mc-radius: 16px;
+  --mc-radius-sm: 8px;
+  --mc-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --mc-shadow-lg: 0 8px 32px rgba(16, 24, 40, 0.1);
+
+  display: flex;
+  height: calc(100vh - 48px);
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  background: var(--mc-bg);
+  box-shadow: var(--mc-shadow);
+}
+
+/* ---------------- 侧边栏 ---------------- */
+
+.moai-chat__sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 288px;
+  flex-shrink: 0;
+  background: var(--mc-bg-layout);
+  border-right: 1px solid var(--mc-border);
+}
+
+.moai-chat__sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+}
+
+.moai-chat__sidebar-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mc-text-tertiary);
+  text-transform: uppercase;
+}
+
+.moai-chat__new-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--mc-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.moai-chat__new-btn:hover {
+  filter: brightness(1.06);
+}
+
+.moai-chat__new-btn:active {
+  transform: scale(0.98);
+}
+
+.moai-chat__sessions {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.moai-chat__session {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.moai-chat__session:hover {
+  background: var(--mc-fill);
+}
+
+.moai-chat__session.is-active {
+  background: var(--mc-primary-bg);
+}
+
+.moai-chat__session-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.moai-chat__session-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--mc-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moai-chat__session.is-active .moai-chat__session-title {
+  color: var(--mc-primary);
+}
+
+.moai-chat__session-time {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--mc-text-tertiary);
+}
+
+.moai-chat__session-del {
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.moai-chat__session:hover .moai-chat__session-del,
+.moai-chat__session:focus-within .moai-chat__session-del {
+  opacity: 1;
+}
+
+.moai-chat__sessions-empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--mc-text-tertiary);
+  font-size: 13px;
+}
+
+/* ---------------- 主区域 ---------------- */
+
+.moai-chat__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--mc-bg);
+}
+
+.moai-chat__topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--mc-border);
+  flex-shrink: 0;
+}
+
+.moai-chat__menu-btn {
+  display: none;
+}
+
+.moai-chat__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.moai-chat__brand-avatar {
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--mc-shadow);
+}
+
+.moai-chat__brand-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mc-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moai-chat__topbar-spacer {
+  flex: 1;
+}
+
+.moai-chat__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 20px 8px;
+}
+
+.moai-chat__stream {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* ---------------- 空态 / 欢迎 ---------------- */
+
+.moai-chat__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 68px 16px 24px;
+}
+
+.moai-chat__hero-badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 32px;
+  background: linear-gradient(135deg, var(--mc-primary) 0%, var(--mc-info) 100%);
+  box-shadow: 0 10px 30px rgba(41, 112, 255, 0.28);
+}
+
+.moai-chat__hero-title {
+  margin: 22px 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--mc-text);
+}
+
+.moai-chat__hero-subtitle {
+  margin: 0;
+  max-width: 460px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mc-text-secondary);
+}
+
+.moai-chat__suggestions {
+  margin-top: 32px;
+  width: 100%;
+  max-width: 640px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.moai-chat__suggestion {
+  text-align: left;
+  padding: 16px;
+  border: 1px solid var(--mc-border);
+  border-radius: 14px;
+  background: var(--mc-bg-elevated);
+  color: var(--mc-text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.moai-chat__suggestion:hover {
+  border-color: var(--mc-primary-border);
+  box-shadow: var(--mc-shadow);
+  transform: translateY(-1px);
+}
+
+.moai-chat__suggestion-icon {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 18px;
+  color: var(--mc-primary);
+}
+
+/* ---------------- 消息 ---------------- */
+
+.moai-chat__row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.moai-chat__row--user {
+  flex-direction: row-reverse;
+}
+
+.moai-chat__avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.moai-chat__avatar--ai {
+  background: linear-gradient(135deg, var(--mc-primary) 0%, var(--mc-info) 100%);
+}
+
+.moai-chat__avatar--user {
+  background: var(--mc-fill);
+  color: var(--mc-text-secondary);
+}
+
+.moai-chat__msg {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.moai-chat__row--user .moai-chat__msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 76%;
+}
+
+.moai-chat__bubble {
+  padding: 11px 15px;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--mc-primary);
+  color: #fff;
+  font-size: 14.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.moai-chat__assistant {
+  padding-top: 3px;
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--mc-text);
+}
+
+.moai-chat__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.moai-chat__tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--mc-fill);
+  color: var(--mc-text-secondary);
+  font-size: 12px;
+}
+
+.moai-chat__actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.moai-chat__row:hover .moai-chat__actions {
+  opacity: 1;
+}
+
+/* 打字指示 */
+.moai-chat__typing {
+  display: inline-flex;
+  gap: 5px;
+  padding: 6px 2px;
+}
+
+.moai-chat__typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mc-text-tertiary);
+  animation: moai-chat-bounce 1.2s infinite ease-in-out;
+}
+
+.moai-chat__typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.moai-chat__typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes moai-chat-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ---------------- Markdown ---------------- */
+
+.moai-chat__markdown > *:first-child {
+  margin-top: 0;
+}
+
+.moai-chat__markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.moai-chat__markdown p {
+  margin: 0 0 12px;
+}
+
+.moai-chat__markdown h1,
+.moai-chat__markdown h2,
+.moai-chat__markdown h3,
+.moai-chat__markdown h4 {
+  margin: 20px 0 10px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.moai-chat__markdown h1 { font-size: 20px; }
+.moai-chat__markdown h2 { font-size: 17px; }
+.moai-chat__markdown h3 { font-size: 15.5px; }
+
+.moai-chat__markdown ul,
+.moai-chat__markdown ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.moai-chat__markdown li {
+  margin: 4px 0;
+}
+
+.moai-chat__markdown a {
+  color: var(--mc-primary);
+  text-decoration: none;
+}
+
+.moai-chat__markdown a:hover {
+  text-decoration: underline;
+}
+
+.moai-chat__markdown blockquote {
+  margin: 0 0 12px;
+  padding: 2px 14px;
+  border-left: 3px solid var(--mc-primary-border);
+  color: var(--mc-text-secondary);
+}
+
+.moai-chat__markdown code {
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  background: var(--mc-code-bg);
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.86em;
+}
+
+.moai-chat__markdown pre {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--mc-code-bg);
+  overflow-x: auto;
+}
+
+.moai-chat__markdown pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.moai-chat__markdown table {
+  width: 100%;
+  margin: 0 0 12px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.moai-chat__markdown th,
+.moai-chat__markdown td {
+  padding: 8px 12px;
+  border: 1px solid var(--mc-border);
+  text-align: left;
+}
+
+.moai-chat__markdown th {
+  background: var(--mc-fill-secondary);
+  font-weight: 600;
+}
+
+.moai-chat__markdown hr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--mc-border);
+}
+
+.moai-chat__caret {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  background: var(--mc-primary);
+  animation: moai-chat-blink 1s steps(2, start) infinite;
+}
+
+@keyframes moai-chat-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ---------------- 输入区 ---------------- */
+
+.moai-chat__composer-wrap {
+  flex-shrink: 0;
+  padding: 12px 20px 18px;
+}
+
+.moai-chat__composer-inner {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.moai-chat__composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 10px 10px 16px;
+  border: 1px solid var(--mc-border-strong);
+  border-radius: 18px;
+  background: var(--mc-bg-elevated);
+  box-shadow: var(--mc-shadow);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.moai-chat__composer:focus-within {
+  border-color: var(--mc-primary-border);
+  box-shadow: 0 0 0 3px var(--mc-primary-bg);
+}
+
+.moai-chat__composer .ant-input {
+  font-size: 14.5px;
+  line-height: 1.6;
+  padding: 4px 0;
+}
+
+.moai-chat__send {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 12px;
+  background: var(--mc-primary);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.moai-chat__send:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.moai-chat__send:disabled {
+  background: var(--mc-fill);
+  color: var(--mc-text-tertiary);
+  cursor: not-allowed;
+}
+
+.moai-chat__hint {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mc-text-tertiary);
+}
+
+.moai-chat__overlay {
+  display: none;
+}
+
+/* ---------------- 响应式 ---------------- */
+
+@media (max-width: 900px) {
+  .moai-chat__menu-btn {
+    display: inline-flex;
+  }
+
+  .moai-chat__sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--mc-shadow-lg);
+  }
+
+  .moai-chat {
+    position: relative;
+  }
+
+  .moai-chat__sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .moai-chat__overlay {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 19;
+    background: rgba(16, 24, 40, 0.35);
+  }
+
+  .moai-chat__suggestions {
+    grid-template-columns: 1fr;
+  }
+}

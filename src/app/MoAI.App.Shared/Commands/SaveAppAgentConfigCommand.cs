@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
@@ -36,6 +37,11 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     /// 允许使用的插件 id 列表（元素为 plugin.id，uuid），须为本团队可访问插件.
     /// </summary>
     public IReadOnlyCollection<Guid> Plugins { get; init; } = Array.Empty<Guid>();
+
+    /// <summary>
+    /// 对话执行参数（JSON 对象，含沙箱等扩展配置）；为空表示不修改已保存的执行参数.
+    /// </summary>
+    public JsonElement? ExecutionSettings { get; init; }
 
     /// <inheritdoc/>
     [JsonIgnore]

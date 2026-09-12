@@ -54,6 +54,11 @@ public class SystemOptions
     public string RabbitMQ { get; init; } = string.Empty;
 
     /// <summary>
+    /// OpenSandBox 沙箱配置.
+    /// </summary>
+    public SystemOptionSandBox OpenSandBox { get; init; } = new();
+
+    /// <summary>
     /// Storage.
     /// </summary>
     public required SystemOptionStorage Storage { get; init; }

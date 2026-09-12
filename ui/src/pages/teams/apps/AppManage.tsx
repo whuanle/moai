@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { Alert, Avatar, Button, Col, Form, Input, Row, Select, Space, Spin, Switch, Tag, Typography, Upload } from 'antd'
+import { Alert, Avatar, Button, Col, Divider, Form, Input, InputNumber, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Typography, Upload } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Card as DSCard, feedback, Page } from '@/design-system'
@@ -9,7 +9,9 @@ import { spacing } from '@/design-system/theme'
 import {
   getAppAgentConfig,
   getAppDetail,
+  publishApp,
   saveAppAgentConfig,
+  unpublishApp,
   updateApp,
   uploadAppAvatar,
   type AppKind,
@@ -35,6 +37,8 @@ interface AppDetail {
   appType?: AppKind | null
   avatarPath?: string | null
   enableForeign?: boolean | null
+  publishStatus?: number | null
+  publishTime?: string | null
   myRole?: number | null
 }
 
@@ -62,6 +66,14 @@ export function AppManage() {
   const [prompt, setPrompt] = useState('')
   const [wikiIds, setWikiIds] = useState<number[]>([])
   const [pluginIds, setPluginIds] = useState<string[]>([])
+  const [sandboxEnabled, setSandboxEnabled] = useState(false)
+  const [sandboxTimeout, setSandboxTimeout] = useState<number | null>(null)
+  const [sandboxRenew, setSandboxRenew] = useState(true)
+  const [sandboxCpu, setSandboxCpu] = useState('')
+  const [sandboxMemory, setSandboxMemory] = useState('')
+  const [sandboxNetworkAction, setSandboxNetworkAction] = useState<string>()
+  const [sandboxEgress, setSandboxEgress] = useState('')
+  const [executionSettings, setExecutionSettings] = useState<Record<string, unknown>>({})
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
   const [modelOptions, setModelOptions] = useState<{ value: string; label: string }[]>([])
@@ -69,10 +81,12 @@ export function AppManage() {
   const [savingInfo, setSavingInfo] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [publishing, setPublishing] = useState(false)
   const [infoForm] = Form.useForm<InfoFormValues>()
 
   const isAgent = detail?.appType !== 'workflow'
   const canManage = detail?.myRole != null && detail.myRole !== ROLE_MEMBER
+  const isPublished = detail?.publishStatus === 1
 
   const load = useCallback(async () => {
     if (!appId) return
@@ -87,6 +101,20 @@ export function AppManage() {
         setPrompt(config.prompt ?? '')
         setWikiIds(config.wikiIds ?? [])
         setPluginIds(config.plugins ?? [])
+        const settings = config.executionSettings ?? {}
+        setExecutionSettings(settings)
+        const sandbox = (settings.sandbox ?? {}) as Record<string, unknown>
+        setSandboxEnabled(Boolean(sandbox.enabled))
+        setSandboxTimeout(typeof sandbox.timeoutSeconds === 'number' ? (sandbox.timeoutSeconds as number) : null)
+        setSandboxRenew(sandbox.renewOnAccess !== false)
+        const resource = (sandbox.resource ?? {}) as Record<string, unknown>
+        setSandboxCpu(typeof resource.cpu === 'string' ? (resource.cpu as string) : '')
+        setSandboxMemory(typeof resource.memory === 'string' ? (resource.memory as string) : '')
+        const network = (sandbox.network ?? {}) as Record<string, unknown>
+        setSandboxNetworkAction(typeof network.defaultAction === 'string' ? (network.defaultAction as string) : undefined)
+        setSandboxEgress(
+          Array.isArray(network.egress) ? (network.egress as unknown[]).map((x) => String(x)).join('\n') : '',
+        )
       }
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -165,11 +193,32 @@ export function AppManage() {
     if (!appId) return
     setSavingConfig(true)
     try {
+      const sandbox: Record<string, unknown> = { enabled: sandboxEnabled, renewOnAccess: sandboxRenew }
+      if (sandboxTimeout && sandboxTimeout > 0) sandbox.timeoutSeconds = sandboxTimeout
+      if (sandboxCpu.trim() || sandboxMemory.trim()) {
+        sandbox.resource = {
+          ...(sandboxCpu.trim() ? { cpu: sandboxCpu.trim() } : {}),
+          ...(sandboxMemory.trim() ? { memory: sandboxMemory.trim() } : {}),
+        }
+      }
+      const egress = sandboxEgress
+        .split('\n')
+        .map((x) => x.trim())
+        .filter(Boolean)
+      if (sandboxNetworkAction || egress.length) {
+        sandbox.network = {
+          ...(sandboxNetworkAction ? { defaultAction: sandboxNetworkAction } : {}),
+          egress,
+        }
+      }
+
       await saveAppAgentConfig(appId, {
         modelId: modelId ?? null,
         prompt,
         wikiIds,
         plugins: pluginIds,
+        // 与已加载的执行参数合并，避免覆盖压缩等其他扩展配置
+        executionSettings: { ...executionSettings, sandbox },
       })
       feedback.success(t('appManage.configSaveSuccess'))
     } catch {
@@ -179,8 +228,35 @@ export function AppManage() {
     }
   }
 
-  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
-    if (!file.type.startsWith('image/')) {
+  const handlePublish = async () => {
+    if (!appId) return
+    setPublishing(true)
+    try {
+      await publishApp(appId)
+      feedback.success(t('appManage.publishSuccess'))
+      await load()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const handleUnpublish = async () => {
+    if (!appId) return
+    setPublishing(true)
+    try {
+      await unpublishApp(appId)
+      feedback.success(t('appManage.unpublishSuccess'))
+      await load()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {    if (!file.type.startsWith('image/')) {
       feedback.error(t('appManage.avatarTypeError'))
       return Upload.LIST_IGNORE
     }
@@ -217,7 +293,30 @@ export function AppManage() {
         { title: appName },
       ]}
       extra={
-        <Button onClick={() => navigate(`/team/${teamId}/apps`)}>{t('appManage.backToList')}</Button>
+        <Space>
+          {isAgent &&
+            (isPublished ? (
+              <Tag color="green">{t('appManage.published')}</Tag>
+            ) : (
+              <Tag>{t('appManage.unpublished')}</Tag>
+            ))}
+          {isAgent && canManage && (
+            <Popconfirm
+              title={isPublished ? t('appManage.unpublishConfirm') : t('appManage.publishConfirm')}
+              onConfirm={() => void (isPublished ? handleUnpublish() : handlePublish())}
+              okText={t('appManage.confirm')}
+              cancelText={t('appManage.cancel')}
+            >
+              <Button type="primary" loading={publishing}>
+                {isPublished ? t('appManage.unpublish') : t('appManage.publish')}
+              </Button>
+            </Popconfirm>
+          )}
+          {isAgent && isPublished && (
+            <Button onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)}>{t('appManage.enterChat')}</Button>
+          )}
+          <Button onClick={() => navigate(`/team/${teamId}/apps`)}>{t('appManage.backToList')}</Button>
+        </Space>
       }
     >
       {loading ? (
@@ -355,8 +454,86 @@ export function AppManage() {
                       />
                     </Form.Item>
                   </Form>
+                  <Divider style={{ margin: `${spacing.md}px 0` }} />
+                  <Form layout="vertical" disabled={!canManage}>
+                    <Form.Item label={t('appManage.sandboxEnabled')} valuePropName="checked" extra={t('appManage.sandboxHint')}>
+                      <Switch checked={sandboxEnabled} onChange={setSandboxEnabled} />
+                    </Form.Item>
+                    {sandboxEnabled && (
+                      <>
+                        <Row gutter={spacing.md}>
+                          <Col xs={24} md={12}>
+                            <Form.Item label={t('appManage.sandboxTimeout')} extra={t('appManage.sandboxTimeoutHint')}>
+                              <InputNumber
+                                min={60}
+                                max={86400}
+                                style={{ width: '100%' }}
+                                value={sandboxTimeout ?? undefined}
+                                onChange={(value) => setSandboxTimeout(typeof value === 'number' ? value : null)}
+                                placeholder="900"
+                                addonAfter={t('appManage.sandboxSeconds')}
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <Form.Item label={t('appManage.sandboxRenew')} valuePropName="checked" extra={t('appManage.sandboxRenewHint')}>
+                              <Switch checked={sandboxRenew} onChange={setSandboxRenew} />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                        <Row gutter={spacing.md}>
+                          <Col xs={24} md={12}>
+                            <Form.Item label={t('appManage.sandboxCpu')} extra={t('appManage.sandboxCpuHint')}>
+                              <Input
+                                value={sandboxCpu}
+                                onChange={(e) => setSandboxCpu(e.target.value)}
+                                placeholder="1"
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <Form.Item label={t('appManage.sandboxMemory')} extra={t('appManage.sandboxMemoryHint')}>
+                              <Input
+                                value={sandboxMemory}
+                                onChange={(e) => setSandboxMemory(e.target.value)}
+                                placeholder="2Gi"
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                        <Form.Item label={t('appManage.sandboxNetwork')} extra={t('appManage.sandboxNetworkHint')}>
+                          <Select
+                            allowClear
+                            style={{ width: '100%', maxWidth: 360 }}
+                            placeholder={t('appManage.sandboxNetworkPlaceholder')}
+                            value={sandboxNetworkAction}
+                            onChange={setSandboxNetworkAction}
+                            options={[
+                              { value: 'allow', label: t('appManage.sandboxNetworkAllow') },
+                              { value: 'deny', label: t('appManage.sandboxNetworkDeny') },
+                            ]}
+                          />
+                        </Form.Item>
+                        {sandboxNetworkAction && (
+                          <Form.Item label={t('appManage.sandboxEgress')} extra={t('appManage.sandboxEgressHint')}>
+                            <Input.TextArea
+                              value={sandboxEgress}
+                              onChange={(e) => setSandboxEgress(e.target.value)}
+                              placeholder={'pypi.org\n*.github.com'}
+                              autoSize={{ minRows: 2, maxRows: 6 }}
+                            />
+                          </Form.Item>
+                        )}
+                      </>
+                    )}
+                  </Form>
                   {canManage && (
-                    <Button type="primary" loading={savingConfig} onClick={() => void handleSaveConfig()}>
+                    <Button
+                      type="primary"
+                      style={{ marginTop: spacing.md }}
+                      loading={savingConfig}
+                      onClick={() => void handleSaveConfig()}
+                    >
                       {t('appManage.saveConfig')}
                     </Button>
                   )}

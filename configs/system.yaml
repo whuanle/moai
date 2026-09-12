@@ -14,6 +14,9 @@ MoAI:
       Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search
       Path=public
   RabbitMQ: 'amqp://guest:guest@127.0.0.1:5672'
+  OpenSandBox:
+    Address: 'http://192.168.50.199:18123'
+    TimeoutSeconds: 900
   Storage:
     LocalPath: 'E:\configs\maomi'
   OTLP:

@@ -59,6 +59,7 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             ModelId = config?.ModelId ?? Guid.Empty,
             WikiIds = AppAgentConfigJson.ParseLongList(config?.WikiIds),
             Plugins = AppAgentConfigJson.ParseGuidList(config?.Plugins),
+            ExecutionSettings = AppAgentConfigJson.ParseJsonObject(config?.ExecutionSettings),
             MyRole = (int)myRole.Value
         };
     }

@@ -76,4 +76,29 @@ internal static class AppAgentConfigJson
     /// <returns>JSON 文本.</returns>
     public static string SerializePluginIds(IEnumerable<Guid> pluginIds)
         => JsonSerializer.Serialize(pluginIds.Select(x => x.ToString()).ToList());
+
+    /// <summary>
+    /// 解析 JSON 对象文本为 <see cref="JsonElement"/>；空串/非法内容返回空对象 <c>{}</c>.
+    /// </summary>
+    /// <param name="json">JSON 文本.</param>
+    /// <returns>JSON 对象元素.</returns>
+    public static JsonElement ParseJsonObject(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return JsonSerializer.SerializeToElement(new Dictionary<string, object?>());
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                ? document.RootElement.Clone()
+                : JsonSerializer.SerializeToElement(new Dictionary<string, object?>());
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.SerializeToElement(new Dictionary<string, object?>());
+        }
+    }
 }

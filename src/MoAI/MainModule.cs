@@ -1,6 +1,7 @@
 using Maomi;
 using Maomi.I18n;
 using MoAI.Account;
+using MoAI.AI;
 using MoAI.AIChannel;
 using MoAI.AIPlugin;
 using MoAI.AIPlugin.Custom;
@@ -47,6 +48,7 @@ namespace MoAI;
 [InjectModule<VariableCoreModule>]
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]
+[InjectModule<AiCoreModule>]
 [InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]
 [InjectModule<DynamicPluginsModule>]

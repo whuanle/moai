@@ -1,4 +1,5 @@
-﻿using MoAI.Database.Enums;
+﻿using System.Text.Json;
+using MoAI.Database.Enums;
 
 namespace MoAI.App.Queries.Responses;
 
@@ -41,6 +42,11 @@ public class QueryAppAgentConfigCommandResponse
     /// 绑定的插件 id 列表（元素为 plugin.id，uuid）.
     /// </summary>
     public IReadOnlyList<Guid> Plugins { get; set; } = new List<Guid>();
+
+    /// <summary>
+    /// 对话执行参数（JSON 对象，含沙箱等扩展配置）.
+    /// </summary>
+    public JsonElement ExecutionSettings { get; set; }
 
     /// <summary>
     /// 我在所属团队中的角色：0=Member 1=Admin 2=Owner.

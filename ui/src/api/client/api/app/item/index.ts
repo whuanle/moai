@@ -8,6 +8,12 @@ import { AgentConfigRequestBuilderRequestsMetadata, type AgentConfigRequestBuild
 // @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
 // @ts-ignore
+import { PublishRequestBuilderRequestsMetadata, type PublishRequestBuilder } from './publish/index.js';
+// @ts-ignore
+import { SessionRequestBuilderNavigationMetadata, SessionRequestBuilderRequestsMetadata, type SessionRequestBuilder } from './session/index.js';
+// @ts-ignore
+import { type UnpublishRequestBuilder, UnpublishRequestBuilderRequestsMetadata } from './unpublish/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -22,6 +28,18 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * The avatar property
      */
     get avatar(): AvatarRequestBuilder;
+    /**
+     * The publish property
+     */
+    get publish(): PublishRequestBuilder;
+    /**
+     * The session property
+     */
+    get session(): SessionRequestBuilder;
+    /**
+     * The unpublish property
+     */
+    get unpublish(): UnpublishRequestBuilder;
     /**
      * 查询应用详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -72,6 +90,16 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     },
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
+    publish: {
+        requestsMetadata: PublishRequestBuilderRequestsMetadata,
+    },
+    session: {
+        requestsMetadata: SessionRequestBuilderRequestsMetadata,
+        navigationMetadata: SessionRequestBuilderNavigationMetadata,
+    },
+    unpublish: {
+        requestsMetadata: UnpublishRequestBuilderRequestsMetadata,
     },
 };
 /**

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -66,6 +67,7 @@ public class UserContextProvider : IUserContextProvider
         var userName = user.FindFirstValue(ClaimTypes.Name);
         var nickName = user.FindFirstValue(JwtRegisteredClaimNames.Nickname);
         var email = user.FindFirstValue(ClaimTypes.Email);
+        var userTypeRaw = user.FindFirstValue(JwtRegisteredClaimNames.Typ);
 
         return new DefaultUserContext
         {
@@ -73,7 +75,8 @@ public class UserContextProvider : IUserContextProvider
             UserId = int.TryParse(userId, out var guid) ? guid : throw new BusinessException("Token 格式错误") { StatusCode = 401 },
             UserName = userName ?? string.Empty,
             NickName = nickName ?? string.Empty,
-            Email = email ?? string.Empty
+            Email = email ?? string.Empty,
+            UserType = string.IsNullOrWhiteSpace(userTypeRaw) ? UserType.None : userTypeRaw.JsonToObject<UserType>()
         };
     }
 }

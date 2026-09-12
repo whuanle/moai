@@ -1,5 +1,6 @@
 import { type Guid } from '@microsoft/kiota-abstractions'
 import { getApiClient } from '@/api/kiota'
+import { fromUntypedNode, toUntypedNode } from '@/api/untyped'
 import { uploadImageWithKey } from '@/utils/storage'
 
 /** 应用类型：agent=Agent 应用，workflow=流程应用（对齐后端 AppType 枚举） */
@@ -17,6 +18,10 @@ export interface AppItem {
   avatarPath?: string | null
   /** 允许外部使用；对应后端 app.enable_foreign（外部用户使用能力本身待交付，此处仅存取） */
   enableForeign?: boolean | null
+  /** 发布状态：0=草稿（未发布）1=已发布 */
+  publishStatus?: number | null
+  /** 发布时间，未发布为 null */
+  publishTime?: string | null
   createTime?: string | null
 }
 
@@ -98,6 +103,8 @@ export interface AppAgentConfig {
   wikiIds?: number[] | null
   /** 允许使用的插件 id 列表（元素为 plugin.id，uuid 字符串） */
   plugins?: string[] | null
+  /** 对话执行参数（自由 JSON，含沙箱等扩展配置） */
+  executionSettings?: Record<string, unknown> | null
   /** 0=Member 1=Admin 2=Owner */
   myRole?: number | null
 }
@@ -115,6 +122,7 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     // Kiota 把后端 long 生成为 string，前端统一收敛为 number 便于与 wikiId 比较
     wikiIds: (res?.wikiIds ?? []).map((id) => Number(id)),
     plugins: (res?.plugins ?? []).map((id) => String(id)),
+    executionSettings: (fromUntypedNode(res?.executionSettings) as Record<string, unknown> | undefined) ?? {},
     myRole: res?.myRole ?? null,
   }
 }
@@ -125,7 +133,13 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
  */
 export async function saveAppAgentConfig(
   appId: string,
-  payload: { modelId?: string | null; prompt: string; wikiIds: number[]; plugins: string[] },
+  payload: {
+    modelId?: string | null
+    prompt: string
+    wikiIds: number[]
+    plugins: string[]
+    executionSettings?: Record<string, unknown>
+  },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).agentConfig.put({
@@ -134,5 +148,79 @@ export async function saveAppAgentConfig(
     // 后端 wiki_ids 为 long，Kiota 生成的请求体为 string[]，此处按生成类型传字符串
     wikiIds: payload.wikiIds.map((id) => String(id)),
     plugins: payload.plugins as Guid[],
+    executionSettings: payload.executionSettings ? toUntypedNode(payload.executionSettings) : null,
   })
+}
+
+// ==================== 应用发布 ====================
+
+/** 发布应用（发布后团队成员可进入对话），仅团队 Admin+ 且仅 Agent 应用 */
+export async function publishApp(appId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.byId(appId).publish.post()
+}
+
+/** 取消发布应用，仅团队 Admin+ */
+export async function unpublishApp(appId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.byId(appId).unpublish.post()
+}
+
+// ==================== Agent 会话 ====================
+
+export interface AppSessionItem {
+  sessionId?: string | null
+  appId?: string | null
+  title?: string | null
+  userType?: number | null
+  inputTokens?: number | null
+  outTokens?: number | null
+  totalTokens?: number | null
+  lastMessageTime?: string | null
+  createTime?: string | null
+}
+
+export interface AspAppSessionMessageItem {
+  messageId?: string | null
+  seq?: number | null
+  role?: string | null
+  content?: string | null
+  toolCalls?: string | null
+  toolCallId?: string | null
+  reasoning?: string | null
+  completionsId?: string | null
+  createTime?: string | null
+}
+
+/** 查询当前用户在某个应用下的会话列表（倒序） */
+export async function getAppSessions(appId: string): Promise<AppSessionItem[]> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).session.list.get()
+  return (res?.items ?? []) as AppSessionItem[]
+}
+
+/** 创建 Agent 应用会话，返回会话 id（前端 threadId） */
+export async function createAppSession(appId: string, title?: string): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).session.post({ title })
+  return String(res?.value ?? '')
+}
+
+/** 查询会话消息（落库为压缩后视图，按 seq 升序） */
+export async function getAppSessionMessages(sessionId: string): Promise<AspAppSessionMessageItem[]> {
+  const client = getApiClient()
+  const res = await client.api.app.session.bySessionId(sessionId).messages.get()
+  return (res?.items ?? []) as AspAppSessionMessageItem[]
+}
+
+/** 重命名会话 */
+export async function renameAppSession(sessionId: string, title: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.session.bySessionId(sessionId).title.put({ title })
+}
+
+/** 删除会话（软删除，连同消息） */
+export async function deleteAppSession(sessionId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.session.bySessionId(sessionId).delete()
 }

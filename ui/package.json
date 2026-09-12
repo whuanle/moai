@@ -15,6 +15,8 @@
     "syncapi": "node scripts/sync-api.mjs"
   },
   "dependencies": {
+    "@ag-ui/client": "^0.0.59",
+    "@ag-ui/core": "^0.0.59",
     "@ant-design/icons": "^6.1.0",
     "@microsoft/kiota-abstractions": "1.0.0-preview.93",
     "@microsoft/kiota-http-fetchlibrary": "1.0.0-preview.93",
@@ -23,17 +25,19 @@
     "@microsoft/kiota-serialization-multipart": "1.0.0-preview.93",
     "@microsoft/kiota-serialization-text": "1.0.0-preview.93",
     "@monaco-editor/react": "^4.7.0",
-    "monaco-editor": "0.56.0",
     "antd": "^5.24.8",
     "dayjs": "^1.11.13",
     "i18next": "^23.16.8",
     "i18next-browser-languagedetector": "^8.0.2",
     "jsencrypt": "^3.3.2",
     "jwt-decode": "^4.0.0",
+    "monaco-editor": "0.56.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^15.4.1",
+    "react-markdown": "^10.1.0",
     "react-router": "^7.5.2",
+    "remark-gfm": "^4.0.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

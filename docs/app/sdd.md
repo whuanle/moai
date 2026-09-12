@@ -3,7 +3,7 @@
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/app-e2e.mjs](../../local-dev/app-e2e.mjs)
 
 - 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与「允许外部使用」开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择）
-- 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页）已实现**并全链路验证**；Agent 应用的**会话运行**（对话/外部使用）为下阶段
+- 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页）已实现**并全链路验证**；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；外部用户使用仍为下阶段
 - 领域：`src/app`（Shared/Core/Api），前端 `ui/src/pages/teams/apps`（团队页「应用」分区 + 应用管理页）
 - Schema 真源：库表现状 + `src/database/MoAI.Database.Postgres/Data/App*.cs`（脚手架逆向生成）；原 `asserts/app.sql` / 库表 `app_agent_*` 已随仓库 DDL 清理移除
 

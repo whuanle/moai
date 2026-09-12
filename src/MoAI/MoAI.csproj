@@ -53,6 +53,7 @@
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Static\MoAI.AIPlugin.Static.csproj" />
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Dynamic\MoAI.AIPlugin.Dynamic.csproj" />
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
+		<ProjectReference Include="..\ai\MoAI.AI.Core\MoAI.AI.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

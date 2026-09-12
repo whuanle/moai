@@ -134,6 +134,11 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
     navigate(`/team/${teamId}/app/${item.appId}`)
   }
 
+  const openChat = (item: AppItem) => {
+    if (!item.appId) return
+    navigate(`/team/${teamId}/app/${item.appId}/chat`)
+  }
+
   return (
     <>
       <div
@@ -217,6 +222,11 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
                       >
                         {item.description || '-'}
                       </Paragraph>
+                      {item.appType !== 'workflow' && item.publishStatus === 1 && (
+                        <Button type="primary" size="small" block onClick={() => openChat(item)}>
+                          {t('appManage.enterChat')}
+                        </Button>
+                      )}
                       <div
                         style={{
                           display: 'flex',
@@ -231,14 +241,21 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
                         }}
                       >
                         <span>{formatDateTime(item.createTime)}</span>
-                        <Tooltip title={t('appManage.enableForeign')}>
-                          <Tag
-                            color={item.enableForeign ? 'green' : undefined}
-                            style={{ marginInlineEnd: 0 }}
-                          >
-                            {item.enableForeign ? t('appManage.externalOn') : t('appManage.externalOff')}
-                          </Tag>
-                        </Tooltip>
+                        <Space size={4}>
+                          {item.appType !== 'workflow' && (
+                            <Tag
+                              color={item.publishStatus === 1 ? 'green' : undefined}
+                              style={{ marginInlineEnd: 0 }}
+                            >
+                              {item.publishStatus === 1 ? t('appManage.published') : t('appManage.unpublished')}
+                            </Tag>
+                          )}
+                          <Tooltip title={t('appManage.enableForeign')}>
+                            <Tag color={item.enableForeign ? 'green' : undefined} style={{ marginInlineEnd: 0 }}>
+                              {item.enableForeign ? t('appManage.externalOn') : t('appManage.externalOff')}
+                            </Tag>
+                          </Tooltip>
+                        </Space>
                       </div>
                     </div>
                   </Card>

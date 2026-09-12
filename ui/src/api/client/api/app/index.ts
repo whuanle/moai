@@ -8,6 +8,8 @@ import { AppItemRequestBuilderNavigationMetadata, AppItemRequestBuilderRequestsM
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { SessionRequestBuilderNavigationMetadata, type SessionRequestBuilder } from './session/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -18,6 +20,10 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The session property
+     */
+    get session(): SessionRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.app.item collection
      * @param id 应用 id.
@@ -59,6 +65,9 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    session: {
+        navigationMetadata: SessionRequestBuilderNavigationMetadata,
     },
 };
 /**

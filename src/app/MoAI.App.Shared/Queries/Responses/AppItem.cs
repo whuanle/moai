@@ -43,6 +43,16 @@ public class AppItem
     public bool EnableForeign { get; set; }
 
     /// <summary>
+    /// 发布状态：0=草稿（未发布）1=已发布.
+    /// </summary>
+    public short PublishStatus { get; set; }
+
+    /// <summary>
+    /// 发布时间，未发布为 null.
+    /// </summary>
+    public DateTimeOffset? PublishTime { get; set; }
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }

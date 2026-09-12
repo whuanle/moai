@@ -107,6 +107,38 @@ describe('AppManage（应用管理页，单页左右分栏）', () => {
     await waitFor(() => expect(getTeamGatewayModels).toHaveBeenCalledWith(3))
   })
 
+  it('开启沙箱后展示存活时间、资源与网络等参数', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+      executionSettings: {
+        sandbox: {
+          enabled: true,
+          timeoutSeconds: 1200,
+          renewOnAccess: false,
+          resource: { cpu: '1', memory: '2Gi' },
+          network: { defaultAction: 'deny', egress: ['pypi.org'] },
+        },
+      },
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('启用沙箱')).toBeTruthy()
+    expect(screen.getByText('沙箱存活时间')).toBeTruthy()
+    expect(screen.getByText('CPU 限制')).toBeTruthy()
+    expect(screen.getByText('内存限制')).toBeTruthy()
+    expect(screen.getByText('出站网络默认动作')).toBeTruthy()
+    await waitFor(() => expect(screen.getByDisplayValue('2Gi')).toBeTruthy())
+    expect(screen.queryByText('沙箱镜像')).toBeNull()
+  })
+
   it('提示词、插件、知识库与模型同页保存，一次提交完整配置', async () => {
     renderPage()
 
@@ -122,6 +154,7 @@ describe('AppManage（应用管理页，单页左右分栏）', () => {
         prompt: '你是售前客服',
         wikiIds: [7],
         plugins: ['p1'],
+        executionSettings: { sandbox: { enabled: false, renewOnAccess: true } },
       }),
     )
   })

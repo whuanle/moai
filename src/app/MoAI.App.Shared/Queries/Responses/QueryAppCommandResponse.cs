@@ -43,6 +43,16 @@ public class QueryAppCommandResponse
     public bool EnableForeign { get; set; }
 
     /// <summary>
+    /// 发布状态：0=草稿（未发布）1=已发布.
+    /// </summary>
+    public short PublishStatus { get; set; }
+
+    /// <summary>
+    /// 发布时间，未发布为 null.
+    /// </summary>
+    public DateTimeOffset? PublishTime { get; set; }
+
+    /// <summary>
     /// 我在所属团队中的角色：0=Member 1=Admin 2=Owner.
     /// </summary>
     public int MyRole { get; set; }
