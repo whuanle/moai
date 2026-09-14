@@ -44,6 +44,11 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<Guid> Plugins { get; set; } = new List<Guid>();
 
     /// <summary>
+    /// 绑定的技能 id 列表（元素为 skill.id，uuid）.
+    /// </summary>
+    public IReadOnlyList<Guid> Skills { get; set; } = new List<Guid>();
+
+    /// <summary>
     /// 对话执行参数（JSON 对象，含沙箱等扩展配置）.
     /// </summary>
     public JsonElement ExecutionSettings { get; set; }

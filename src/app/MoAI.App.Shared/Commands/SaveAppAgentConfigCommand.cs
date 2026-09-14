@@ -39,6 +39,11 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public IReadOnlyCollection<Guid> Plugins { get; init; } = Array.Empty<Guid>();
 
     /// <summary>
+    /// 允许使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的技能；null 表示保持已保存的技能不变.
+    /// </summary>
+    public IReadOnlyCollection<Guid>? Skills { get; init; }
+
+    /// <summary>
     /// 对话执行参数（JSON 对象，含沙箱等扩展配置）；为空表示不修改已保存的执行参数.
     /// </summary>
     public JsonElement? ExecutionSettings { get; init; }

@@ -77,6 +77,10 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("'[]'::text")
             .HasComment("绑定的知识库ID列表，JSON 数组文本，元素为 wiki.id（整数），如 '[1,2]'")
             .HasColumnName("wiki_ids");
+        entity.Property(e => e.Skills)
+            .HasDefaultValueSql("'[]'::text")
+            .HasComment("绑定的技能ID列表，JSON 数组文本，元素为 skill.id（uuid 字符串），如 '[\"...\"]'")
+            .HasColumnName("skills");
 
         OnConfigurePartial(entity);
     }

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Skill</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Skill.Api\MoAI.Skill.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Handlers\" />
+		<Folder Include="Services\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 系统内置技能脚本，按 Resources/skills/{key}/xx.py 放置，
+		     运行时以 MoAI.Skill.Resources.skills.{key}.{file} 资源名读取 -->
+		<EmbeddedResource Include="Resources\skills\**\*.py" />
+		<EmbeddedResource Include="Resources\skills\**\*.md" />
+		<EmbeddedResource Include="Resources\skills\**\*.json" />
+		<EmbeddedResource Include="Resources\skills\**\*.txt" />
+		<EmbeddedResource Include="Resources\skills\**\*.yaml" />
+		<EmbeddedResource Include="Resources\skills\**\*.j2" />
+	</ItemGroup>
+
+</Project>

@@ -50,6 +50,11 @@ public partial class AppAgentConfigEntity : IFullAudited
     public string Plugins { get; set; } = default!;
 
     /// <summary>
+    /// 绑定的技能ID列表，JSON 数组文本，元素为 skill.id（uuid 字符串），如 &apos;[&quot;...&quot;]&apos;.
+    /// </summary>
+    public string Skills { get; set; } = default!;
+
+    /// <summary>
     /// 对话影响参数，JSON 对象文本（temperature/topP/maxTokens 等），空为 &apos;{}&apos;.
     /// </summary>
     public string ExecutionSettings { get; set; } = default!;

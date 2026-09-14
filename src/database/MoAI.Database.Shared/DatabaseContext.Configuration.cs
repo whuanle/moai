@@ -114,6 +114,7 @@ public partial class DatabaseContext
         UserSeed.Apply(modelBuilder);
         ClassifySeed.Apply(modelBuilder);
         SettingSeed.Apply(modelBuilder);
+        SkillSeed.Apply(modelBuilder);
     }
 
     /// <summary>

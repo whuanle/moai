@@ -134,6 +134,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<SettingEntity> Settings { get; set; }
 
     /// <summary>
+    /// 技能.
+    /// </summary>
+    public virtual DbSet<SkillEntity> Skills { get; set; }
+
+    /// <summary>
     /// 团队，知识库/插件等资源的管理单元.
     /// </summary>
     public virtual DbSet<TeamEntity> Teams { get; set; }

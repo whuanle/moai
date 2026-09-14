@@ -22,6 +22,7 @@ import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
 import { Plugins } from '@/pages/plugins/Plugins'
 import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
+import { Skills } from '@/pages/skills/Skills'
 import { ClassifyPage } from '@/pages/classify/Classify'
 
 export const router = createBrowserRouter([
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
       { path: 'models', element: <Models /> },
       { path: 'plugin', element: <Plugins /> },
       { path: 'plugin/templates', element: <PluginTemplates /> },
+      { path: 'skills', element: <Skills /> },
       { path: 'classify', element: <ClassifyPage /> },
       // 其它专用页面（/xxx）在此追加
       { path: '*', element: <Navigate to="/dashboard" replace /> },

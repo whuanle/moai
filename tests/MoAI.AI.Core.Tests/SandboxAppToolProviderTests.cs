@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MoAI.AI.Services;
 using MoAI.Database.Entities;
+using MoAI.Storage.Services;
 using Moq;
 using Xunit;
 
@@ -23,7 +24,7 @@ public class SandboxAppToolProviderTests
         Config = new AppAgentConfigEntity { ExecutionSettings = executionSettings },
     };
 
-    private static SandboxAppToolProvider CreateProvider() => new(Mock.Of<IAppSandboxService>());
+    private static SandboxAppToolProvider CreateProvider() => new(Mock.Of<IAppSandboxService>(), Mock.Of<IStorageService>());
 
     [Fact]
     public async Task GetTools_Disabled_ReturnsEmpty()
@@ -60,6 +61,7 @@ public class SandboxAppToolProviderTests
         Assert.Contains("sandbox_list_dir", names);
         Assert.Contains("sandbox_delete_file", names);
         Assert.Contains("sandbox_search_files", names);
+        Assert.Contains("sandbox_save_artifact", names);
         Assert.All(tools, t => Assert.Equal("sandbox", t.Kind));
     }
 
