@@ -7,6 +7,7 @@ import {
   AppstoreOutlined,
   ApiOutlined,
   BookOutlined,
+  ClusterOutlined,
   GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
@@ -31,6 +32,7 @@ import { TeamAccessApps } from '@/pages/teams/apps/TeamAccessApps'
 import { TeamGateway } from '@/pages/teams/TeamGateway'
 import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
 import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
+import { TeamKnowledgeGraphs } from '@/pages/teams/knowledgegraph/TeamKnowledgeGraphs'
 import {
   addTeamUser,
   dissolveTeam,
@@ -55,7 +57,7 @@ const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
-const SECTION_KEYS = ['info', 'apps', 'externalApps', 'accessApps', 'members', 'gateway', 'knowledge', 'plugins', 'variables', 'settings'] as const
+const SECTION_KEYS = ['info', 'apps', 'externalApps', 'accessApps', 'members', 'gateway', 'knowledge', 'knowledgegraph', 'plugins', 'variables', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /**
@@ -376,6 +378,7 @@ export function TeamManage() {
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
     { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
+    { key: 'knowledgegraph', icon: <ClusterOutlined />, label: t('team.knowledgeGraph') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
@@ -475,8 +478,12 @@ export function TeamManage() {
           ) : activeSection === 'gateway' ? (
             <TeamGateway teamId={teamId} canManage={isOwner || detail?.myRole === ROLE_ADMIN} />
           ) : activeSection === 'knowledge' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamWikis teamId={teamId} />
+            </DSCard>
+          ) : activeSection === 'knowledgegraph' ? (
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamKnowledgeGraphs teamId={teamId} />
             </DSCard>
           ) : activeSection === 'plugins' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>

@@ -26,7 +26,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
@@ -47,7 +47,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.ProbeDatabaseAsync("ext", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
@@ -69,7 +69,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.ProbeDatabaseAsync("ext", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
@@ -93,7 +93,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.ProbeDatabaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
@@ -118,7 +118,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = false });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = false });
 
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
@@ -137,7 +137,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = " " });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = " " });
 
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
@@ -156,7 +156,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Owner);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
@@ -176,7 +176,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
         var store = new Mock<IKnowledgeGraphStore>();
         var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
@@ -214,7 +214,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(TeamRole.Admin);
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         var store = new Mock<IKnowledgeGraphStore>();
 
         var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);

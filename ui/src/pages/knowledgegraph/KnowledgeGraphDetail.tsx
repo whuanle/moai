@@ -3,10 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, Layout, Menu, Tag } from 'antd'
 import type { MenuProps } from 'antd'
-import { ApartmentOutlined, DeploymentUnitOutlined, ProfileOutlined, SettingOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, ClusterOutlined, DeploymentUnitOutlined, ProfileOutlined, SettingOutlined } from '@ant-design/icons'
 import { Card, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getKnowledgeGraphDetail, type KnowledgeGraphDetail as GraphDetail } from '@/api/knowledgeGraph'
+import { KnowledgeGraphCanvas } from './KnowledgeGraphCanvas'
 import { KnowledgeGraphEntities } from './KnowledgeGraphEntities'
 import { KnowledgeGraphRelations } from './KnowledgeGraphRelations'
 import { KnowledgeGraphSchema } from './KnowledgeGraphSchema'
@@ -14,7 +15,7 @@ import { KnowledgeGraphSettings } from './KnowledgeGraphSettings'
 
 const { Sider, Content } = Layout
 
-const SECTION_KEYS = ['entities', 'relations', 'schema', 'settings'] as const
+const SECTION_KEYS = ['canvas', 'entities', 'relations', 'schema', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 const CONNECTED_SECTIONS: SectionKey[] = ['schema', 'settings']
 
@@ -39,7 +40,7 @@ export function KnowledgeGraphDetail() {
   useEffect(() => { void load() }, [load])
 
   const isConnected = graph?.mode === 'connected'
-  const defaultSection: SectionKey = isConnected ? 'schema' : 'entities'
+  const defaultSection: SectionKey = isConnected ? 'schema' : 'canvas'
   const section: SectionKey =
     rawSection &&
     SECTION_KEYS.includes(rawSection as SectionKey) &&
@@ -55,6 +56,7 @@ export function KnowledgeGraphDetail() {
             { key: 'settings', icon: <SettingOutlined />, label: t('knowledgegraph.menuSettings') },
           ]
         : [
+            { key: 'canvas', icon: <ClusterOutlined />, label: t('knowledgegraph.menuCanvas') },
             { key: 'entities', icon: <ProfileOutlined />, label: t('knowledgegraph.menuEntities') },
             { key: 'relations', icon: <DeploymentUnitOutlined />, label: t('knowledgegraph.menuRelations') },
             { key: 'schema', icon: <ApartmentOutlined />, label: t('knowledgegraph.menuSchema') },
@@ -90,13 +92,17 @@ export function KnowledgeGraphDetail() {
             {isConnected && (
               <Tag color="blue" style={{ marginBottom: spacing.md }}>{t('knowledgegraph.connectedBadge')}</Tag>
             )}
-            {section === 'entities' ? (
+            {section === 'canvas' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphEntities graphId={graphId} graphEnabled={graph?.enabled !== false} />
+                <KnowledgeGraphCanvas graphId={graphId} />
+              </Card>
+            ) : section === 'entities' ? (
+              <Card styles={{ body: { padding: spacing.lg } }}>
+                <KnowledgeGraphEntities graphId={graphId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
               </Card>
             ) : section === 'relations' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphRelations graphId={graphId} graphEnabled={graph?.enabled !== false} />
+                <KnowledgeGraphRelations graphId={graphId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
               </Card>
             ) : section === 'schema' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>

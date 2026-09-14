@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface ChatRequestBuilder extends BaseRequestBuilder<ChatRequestBuilder> {
     /**
-     * @param body Input payload for running an AG-UI agent.
+     * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<ArrayBuffer>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,7 +22,7 @@ export interface ChatRequestBuilder extends BaseRequestBuilder<ChatRequestBuilde
      */
      post(body: RunAgentInput, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<ArrayBuffer | undefined>;
     /**
-     * @param body Input payload for running an AG-UI agent.
+     * @param body The request body
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

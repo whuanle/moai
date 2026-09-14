@@ -162,7 +162,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         var authorizer = CreateAuthorizer();
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = false });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = false });
 
         var sut = new CreateKnowledgeGraphEntityTypeCommandHandler(db.Context, authorizer.Object, settings.Object);
 
@@ -350,7 +350,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
     {
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         return settings;
     }
 }

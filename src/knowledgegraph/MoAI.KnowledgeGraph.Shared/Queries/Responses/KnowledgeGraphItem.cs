@@ -10,7 +10,7 @@ public class KnowledgeGraphItem
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public long KnowledgeGraphId { get; init; }
+    public long KgId { get; init; }
 
     /// <summary>
     /// 团队 id.

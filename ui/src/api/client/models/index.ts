@@ -64,16 +64,13 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
-/**
- * Represents a context entry providing additional information to the agent.
- */
 export interface AGUIContext extends Parsable {
     /**
-     * Gets or sets the description of the context entry.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets the value of the context entry.
+     * The value property
      */
     value?: string | null;
 }
@@ -101,24 +98,21 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
-/**
- * Represents a tool available for the agent to use.
- */
 export interface AGUITool extends Parsable {
     /**
-     * Gets or sets the description of the tool.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
+     * The metadata property
      */
     metadata?: UntypedNode | null;
     /**
-     * Gets or sets the name of the tool.
+     * The name property
      */
     name?: string | null;
     /**
-     * Gets or sets the JSON Schema describing the tool's parameters.
+     * The parameters property
      */
     parameters?: UntypedNode | null;
 }
@@ -2305,6 +2299,24 @@ export function createQueryExternalAuthorizedAppsCommandResponseFromDiscriminato
 // @ts-ignore
 export function createQueryFeishuAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryFeishuAppsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphCanvasCommand}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphCanvasCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphCanvasCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphCanvasCommandResponse}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphCanvasCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphCanvasCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4620,7 +4632,7 @@ export function deserializeIntoKnowledgeGraphItem(knowledgeGraphItem: Partial<Kn
         "createTime": n => { knowledgeGraphItem.createTime = n.getStringValue(); },
         "database": n => { knowledgeGraphItem.database = n.getStringValue(); },
         "description": n => { knowledgeGraphItem.description = n.getStringValue(); },
-        "knowledgeGraphId": n => { knowledgeGraphItem.knowledgeGraphId = n.getStringValue(); },
+        "kgId": n => { knowledgeGraphItem.kgId = n.getStringValue(); },
         "mode": n => { knowledgeGraphItem.mode = n.getStringValue(); },
         "name": n => { knowledgeGraphItem.name = n.getStringValue(); },
         "readOnly": n => { knowledgeGraphItem.readOnly = n.getBooleanValue(); },
@@ -5415,13 +5427,39 @@ export function deserializeIntoQueryFeishuAppsCommandResponse(queryFeishuAppsCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphCanvasCommand(queryKnowledgeGraphCanvasCommand: Partial<QueryKnowledgeGraphCanvasCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "entityTypeId": n => { queryKnowledgeGraphCanvasCommand.entityTypeId = n.getStringValue(); },
+        "keyword": n => { queryKnowledgeGraphCanvasCommand.keyword = n.getStringValue(); },
+        "knowledgeGraphId": n => { queryKnowledgeGraphCanvasCommand.knowledgeGraphId = n.getStringValue(); },
+        "limit": n => { queryKnowledgeGraphCanvasCommand.limit = n.getNumberValue(); },
+        "relationTypeId": n => { queryKnowledgeGraphCanvasCommand.relationTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphCanvasCommandResponse(queryKnowledgeGraphCanvasCommandResponse: Partial<QueryKnowledgeGraphCanvasCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "edges": n => { queryKnowledgeGraphCanvasCommandResponse.edges = n.getCollectionOfObjectValues<KnowledgeGraphEdgeItem>(createKnowledgeGraphEdgeItemFromDiscriminatorValue); },
+        "nodes": n => { queryKnowledgeGraphCanvasCommandResponse.nodes = n.getCollectionOfObjectValues<KnowledgeGraphNodeItem>(createKnowledgeGraphNodeItemFromDiscriminatorValue); },
+        "truncated": n => { queryKnowledgeGraphCanvasCommandResponse.truncated = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryKnowledgeGraphCommandResponse(queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "createTime": n => { queryKnowledgeGraphCommandResponse.createTime = n.getStringValue(); },
         "database": n => { queryKnowledgeGraphCommandResponse.database = n.getStringValue(); },
         "description": n => { queryKnowledgeGraphCommandResponse.description = n.getStringValue(); },
         "enabled": n => { queryKnowledgeGraphCommandResponse.enabled = n.getBooleanValue(); },
-        "knowledgeGraphId": n => { queryKnowledgeGraphCommandResponse.knowledgeGraphId = n.getStringValue(); },
+        "kgId": n => { queryKnowledgeGraphCommandResponse.kgId = n.getStringValue(); },
         "mode": n => { queryKnowledgeGraphCommandResponse.mode = n.getStringValue(); },
         "myRole": n => { queryKnowledgeGraphCommandResponse.myRole = n.getNumberValue(); },
         "name": n => { queryKnowledgeGraphCommandResponse.name = n.getStringValue(); },
@@ -7247,7 +7285,7 @@ export interface ExternalAccessPointResponse extends Parsable {
      */
     placeholder?: string | null;
     /**
-     * 悬浮位置：bottom-right / bottom-left.
+     * 悬浮位置：bottomRight / bottomLeft（全局 CamelCase 枚举策略）.
      */
     position?: string | null;
     /**
@@ -7586,7 +7624,7 @@ export interface KnowledgeGraphItem extends Parsable {
     /**
      * 图谱 id.
      */
-    knowledgeGraphId?: string | null;
+    kgId?: string | null;
     /**
      * 来源：managed / connected.
      */
@@ -8949,6 +8987,48 @@ export interface QueryFeishuAppsCommandResponse extends Parsable {
     teamId?: string | null;
 }
 /**
+ * 画布有界子图查询：按实体类型/关系类型/关键字取节点子集，边仅返回节点集内部的边.
+ */
+export interface QueryKnowledgeGraphCanvasCommand extends Parsable {
+    /**
+     * 实体类型筛选（节点）.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 节点名称关键字.
+     */
+    keyword?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 节点数量上限（1~500，默认 200）.
+     */
+    limit?: number | null;
+    /**
+     * 关系类型筛选（边）.
+     */
+    relationTypeId?: string | null;
+}
+/**
+ * 画布/邻接子图响应.
+ */
+export interface QueryKnowledgeGraphCanvasCommandResponse extends Parsable {
+    /**
+     * 边列表（仅节点集内部的边）.
+     */
+    edges?: KnowledgeGraphEdgeItem[] | null;
+    /**
+     * 节点列表.
+     */
+    nodes?: KnowledgeGraphNodeItem[] | null;
+    /**
+     * 是否因数量上限被截断.
+     */
+    truncated?: boolean | null;
+}
+/**
  * 图谱详情响应.
  */
 export interface QueryKnowledgeGraphCommandResponse extends Parsable {
@@ -8971,7 +9051,7 @@ export interface QueryKnowledgeGraphCommandResponse extends Parsable {
     /**
      * 图谱 id.
      */
-    knowledgeGraphId?: string | null;
+    kgId?: string | null;
     /**
      * 来源：managed / connected.
      */
@@ -10086,44 +10166,41 @@ export interface ResetUserPasswordCommand extends Parsable {
      */
     userId?: string | null;
 }
-/**
- * Input payload for running an AG-UI agent.
- */
 export interface RunAgentInput extends Parsable {
     /**
-     * Gets or sets contextual information for the agent.
+     * The context property
      */
     context?: AGUIContext[] | null;
     /**
-     * Gets or sets additional forwarded properties from the client.
+     * The forwardedProps property
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * Gets or sets the conversation messages.
+     * The messages property
      */
     messages?: AGUIMessage[] | null;
     /**
-     * Gets or sets the parent run identifier for branching/time travel.
+     * The parentRunId property
      */
     parentRunId?: string | null;
     /**
-     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
+     * The resume property
      */
     resume?: AGUIResume[] | null;
     /**
-     * Gets or sets the run identifier.
+     * The runId property
      */
     runId?: string | null;
     /**
-     * Gets or sets the state to pass to the agent.
+     * The state property
      */
     state?: UntypedNode | null;
     /**
-     * Gets or sets the thread identifier.
+     * The threadId property
      */
     threadId?: string | null;
     /**
-     * Gets or sets the tools available to the agent.
+     * The tools property
      */
     tools?: AGUITool[] | null;
 }
@@ -11425,7 +11502,7 @@ export function serializeKnowledgeGraphItem(writer: SerializationWriter, knowled
         writer.writeStringValue("createTime", knowledgeGraphItem.createTime);
         writer.writeStringValue("database", knowledgeGraphItem.database);
         writer.writeStringValue("description", knowledgeGraphItem.description);
-        writer.writeStringValue("knowledgeGraphId", knowledgeGraphItem.knowledgeGraphId);
+        writer.writeStringValue("kgId", knowledgeGraphItem.kgId);
         writer.writeStringValue("mode", knowledgeGraphItem.mode);
         writer.writeStringValue("name", knowledgeGraphItem.name);
         writer.writeBooleanValue("readOnly", knowledgeGraphItem.readOnly);
@@ -12220,13 +12297,39 @@ export function serializeQueryFeishuAppsCommandResponse(writer: SerializationWri
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryKnowledgeGraphCanvasCommand(writer: SerializationWriter, queryKnowledgeGraphCanvasCommand: Partial<QueryKnowledgeGraphCanvasCommand> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphCanvasCommand) {
+        writer.writeStringValue("entityTypeId", queryKnowledgeGraphCanvasCommand.entityTypeId);
+        writer.writeStringValue("keyword", queryKnowledgeGraphCanvasCommand.keyword);
+        writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphCanvasCommand.knowledgeGraphId);
+        writer.writeNumberValue("limit", queryKnowledgeGraphCanvasCommand.limit);
+        writer.writeStringValue("relationTypeId", queryKnowledgeGraphCanvasCommand.relationTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphCanvasCommandResponse(writer: SerializationWriter, queryKnowledgeGraphCanvasCommandResponse: Partial<QueryKnowledgeGraphCanvasCommandResponse> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphCanvasCommandResponse) {
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEdgeItem>("edges", queryKnowledgeGraphCanvasCommandResponse.edges, serializeKnowledgeGraphEdgeItem);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphNodeItem>("nodes", queryKnowledgeGraphCanvasCommandResponse.nodes, serializeKnowledgeGraphNodeItem);
+        writer.writeBooleanValue("truncated", queryKnowledgeGraphCanvasCommandResponse.truncated);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryKnowledgeGraphCommandResponse(writer: SerializationWriter, queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphCommandResponse) {
         writer.writeStringValue("createTime", queryKnowledgeGraphCommandResponse.createTime);
         writer.writeStringValue("database", queryKnowledgeGraphCommandResponse.database);
         writer.writeStringValue("description", queryKnowledgeGraphCommandResponse.description);
         writer.writeBooleanValue("enabled", queryKnowledgeGraphCommandResponse.enabled);
-        writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphCommandResponse.knowledgeGraphId);
+        writer.writeStringValue("kgId", queryKnowledgeGraphCommandResponse.kgId);
         writer.writeStringValue("mode", queryKnowledgeGraphCommandResponse.mode);
         writer.writeNumberValue("myRole", queryKnowledgeGraphCommandResponse.myRole);
         writer.writeStringValue("name", queryKnowledgeGraphCommandResponse.name);

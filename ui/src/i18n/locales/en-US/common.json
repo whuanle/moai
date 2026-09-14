@@ -36,7 +36,8 @@
     "channel": "Model Channels",
     "admin": "Admin",
     "variable": "Variables",
-    "skills": "Skills"
+    "skills": "Skills",
+    "knowledgeGraph": "Knowledge Graphs"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -141,23 +142,29 @@
     "save": "Save",
     "saveSuccess": "Saved successfully",
     "knowledgeGraph": {
-      "title": "Knowledge Graph (Neo4j)",
+      "title": "Knowledge Graph (Graph Database)",
       "enable": {
-        "name": "Enable Neo4j knowledge graph",
-        "desc": "When enabled, knowledge bases can use knowledge graph capabilities; connection details are not required when disabled."
+        "name": "Enable knowledge graph",
+        "desc": "Once enabled, teams can use knowledge graphs; no connection info needed otherwise."
       },
       "uri": {
         "name": "Connection URI",
-        "placeholder": "e.g. neo4j://127.0.0.1:7687"
+        "placeholder": "e.g. bolt://127.0.0.1:7687"
       },
       "username": {
         "name": "Username",
-        "placeholder": "Enter the Neo4j username"
+        "placeholder": "Enter graph database username"
       },
       "password": {
         "name": "Password",
-        "placeholder": "Enter the Neo4j password"
-      }
+        "placeholder": "Enter graph database password"
+      },
+      "dialect": {
+        "name": "Dialect",
+        "desc": "Use memgraph for Memgraph community; choose neo4j for external Neo4j instances. Affects introspection and index statements."
+      },
+      "dialectMemgraph": "Memgraph",
+      "dialectNeo4j": "Neo4j"
     }
   },
   "oauthconnect": {
@@ -672,7 +679,8 @@
     "managePlugins": "Plugins",
     "manageVariables": "Variables",
     "gateway": "Model Gateway",
-    "pluginsMemberHint": "This team has {{count}} owned plugins; system plugins are opened by admins"
+    "pluginsMemberHint": "This team has {{count}} owned plugins; system plugins are opened by admins",
+    "knowledgeGraph": "Knowledge Graphs"
   },
   "wiki": {
     "title": "Knowledge Base",
@@ -986,7 +994,13 @@
       "createTime": "Created"
     },
     "tabLabel": "Knowledge Graph",
-    "noPermission": "Only team admins can manage knowledge graphs and schema"
+    "noPermission": "Only team admins can manage knowledge graphs and schema",
+    "menuCanvas": "Canvas",
+    "canvasTruncated": "Truncated at the limit; narrow the result with filters",
+    "canvasEmpty": "No graph data yet. Add nodes on the Entities page first.",
+    "canvasExpand": "Expand neighbors",
+    "canvasReload": "Reload",
+    "canvasOnlyManaged": "Connected graphs do not support the canvas view yet"
   },
   "variable": {
     "title": "Variables",

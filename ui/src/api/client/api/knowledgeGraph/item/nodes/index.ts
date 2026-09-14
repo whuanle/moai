@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleStringFromDiscriminatorValue, serializeCreateKnowledgeGraphNodeCommand, serializeSimpleString, type BusinessValidationResult, type CreateKnowledgeGraphNodeCommand, type SimpleString } from '../../../../models/index.js';
 // @ts-ignore
-import { type WithNodeItemRequestBuilder, WithNodeItemRequestBuilderRequestsMetadata } from './item/index.js';
+import { type WithNodeItemRequestBuilder, WithNodeItemRequestBuilderNavigationMetadata, WithNodeItemRequestBuilderRequestsMetadata } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -54,6 +54,7 @@ export const NodesRequestBuilderUriTemplate = "{+baseurl}/api/knowledge-graph/{i
 export const NodesRequestBuilderNavigationMetadata: Record<Exclude<keyof NodesRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byNodeId: {
         requestsMetadata: WithNodeItemRequestBuilderRequestsMetadata,
+        navigationMetadata: WithNodeItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["nodeId"],
     },
     list: {

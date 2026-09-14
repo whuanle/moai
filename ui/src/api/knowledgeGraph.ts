@@ -248,3 +248,32 @@ export async function deleteKnowledgeGraphEdge(kgId: number, edgeId: string): Pr
   const client = getApiClient()
   await client.api.knowledgeGraph.byId(String(kgId)).edges.byEdgeId(edgeId).delete()
 }
+
+/** 画布/邻接子图响应 */
+export interface KnowledgeGraphSubgraph {
+  nodes: KnowledgeGraphNodeItem[]
+  edges: KnowledgeGraphEdgeItem[]
+  truncated: boolean
+}
+
+/** 画布有界子图查询（仅托管图） */
+export async function getKnowledgeGraphCanvas(
+  kgId: number,
+  params: { entityTypeId?: number | null; relationTypeId?: number | null; keyword?: string; limit?: number },
+): Promise<KnowledgeGraphSubgraph> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).canvas.post({
+    entityTypeId: params.entityTypeId != null ? String(params.entityTypeId) : undefined,
+    relationTypeId: params.relationTypeId != null ? String(params.relationTypeId) : undefined,
+    keyword: params.keyword,
+    limit: params.limit ?? 200,
+  })
+  return { nodes: res?.nodes ?? [], edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+}
+
+/** 节点一跳邻接展开（仅托管图） */
+export async function getKnowledgeGraphNodeNeighbors(kgId: number, nodeId: string, limit = 100): Promise<KnowledgeGraphSubgraph> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).nodes.byNodeId(nodeId).neighbors.get({ queryParameters: { limit } })
+  return { nodes: res?.nodes ?? [], edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+}

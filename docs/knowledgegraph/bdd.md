@@ -77,13 +77,14 @@ Scenario: 删除托管图谱清空图数据
 
 ```gherkin
 @KG-S10 @auto:e2e
-Scenario: 接入不存在的数据库被拒
-  When 管理员接入一个不存在的数据库
-  Then 返回参数错误
+Scenario: 接入未知库名按方言处理
+  When 管理员接入一个未知的库名
+  Then neo4j 方言（多库实例）返回参数错误
+  And memgraph 方言（社区版单库）登记成功且库名仅作标识，随后可删除
 
 @KG-S11 @auto:e2e
 Scenario: 接入现有数据库并内省模型
-  Given 目标 Neo4j 实例可达
+  Given 目标图数据库实例可达
   When 管理员接入其默认数据库
   Then 返回图谱 id
   And 模型来源为接入、只读为真且库名正确
@@ -97,4 +98,36 @@ Scenario: 接入图谱只读
   Then 返回冲突且提示只读
   When 尝试新增实体类型
   Then 返回冲突且提示只读
+```
+
+## Feature: 图览画布与权限（v2）
+
+```gherkin
+@KG-S13 @auto:e2e
+Scenario: 画布有界子图
+  Given 托管图谱已有节点与边
+  When 查询画布子图
+  Then 返回节点与节点集内部的边
+  When 按名称关键字过滤
+  Then 仅返回命中的节点
+
+@KG-S14 @auto:e2e
+Scenario: 一跳邻接展开
+  Given 图谱中存在一条维护边
+  When 对起点节点查询一跳邻接
+  Then 返回邻居节点与相连的边
+  When 对不存在的节点查询邻接
+  Then 返回不存在
+
+@KG-S15 @manual
+Scenario: 成员对图谱全只读
+  Given 普通成员可浏览图谱、模型与节点
+  When 成员尝试新增节点或边
+  Then 返回禁止（v2 权限收紧：节点/边写操作仅限管理员及以上，v1 曾放开成员）
+
+@KG-S16 @auto:e2e
+Scenario: 图谱名称全局唯一
+  Given 其他团队已存在同名图谱
+  When 本团队使用该名称建图
+  Then 返回冲突
 ```

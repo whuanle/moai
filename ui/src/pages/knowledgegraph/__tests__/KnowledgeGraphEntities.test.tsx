@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import '@/i18n'
 import { KnowledgeGraphEntities } from '../KnowledgeGraphEntities'
@@ -14,8 +14,8 @@ vi.mock('@/api/knowledgeGraph', () => ({
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
-function renderEntities(graphEnabled = true) {
-  return render(<KnowledgeGraphEntities graphId={1} graphEnabled={graphEnabled} />)
+function renderEntities(graphEnabled = true, myRole: number | null = 1) {
+  return render(<KnowledgeGraphEntities graphId={1} graphEnabled={graphEnabled} myRole={myRole} />)
 }
 
 describe('KnowledgeGraphEntities', () => {
@@ -51,10 +51,17 @@ describe('KnowledgeGraphEntities', () => {
     expect(button).toBeEnabled()
   })
 
-  it('能力未开启时「新建实体」禁用', async () => {
-    renderEntities(false)
-    const button = await screen.findByRole('button', { name: /新建实体/ })
-    expect(button).toBeDisabled()
+  it('能力未开启时不显示「新建实体」入口', async () => {
+    renderEntities(false, 1)
+    expect(await screen.findByText('支付服务')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /新建实体/ })).not.toBeInTheDocument()
+  })
+
+  it('普通成员对节点数据只读（不显示写入口）', async () => {
+    renderEntities(true, 0)
+    expect(await screen.findByText('支付服务')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /新建实体/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^编辑$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^删除$/ })).not.toBeInTheDocument()
   })
 })
-

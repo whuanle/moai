@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, Switch, Typography } from 'antd'
+import { Button, Input, Select, Switch, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { getSettings, saveSetting, SettingKeys } from '@/api/settings'
@@ -39,6 +39,7 @@ export function Settings() {
   const [graphUri, setGraphUri] = useState('')
   const [graphUsername, setGraphUsername] = useState('')
   const [graphPassword, setGraphPassword] = useState('')
+  const [graphDialect, setGraphDialect] = useState<'memgraph' | 'neo4j'>('memgraph')
   const [graphDirty, setGraphDirty] = useState(false)
 
   useEffect(() => {
@@ -51,10 +52,11 @@ export function Settings() {
       const res = await getSettings()
       const items: SettingItem[] = res?.items ?? []
       const valueOf = (key: string) => items.find((s) => s.key === key)?.value ?? ''
-      setGraphEnabled(valueOf(SettingKeys.neo4jEnabled) === 'true')
-      setGraphUri(valueOf(SettingKeys.neo4jUri))
-      setGraphUsername(valueOf(SettingKeys.neo4jUsername))
-      setGraphPassword(valueOf(SettingKeys.neo4jPassword))
+      setGraphEnabled(valueOf(SettingKeys.kgEnabled) === 'true')
+      setGraphUri(valueOf(SettingKeys.kgUri))
+      setGraphUsername(valueOf(SettingKeys.kgUsername))
+      setGraphPassword(valueOf(SettingKeys.kgPassword))
+      setGraphDialect(valueOf(SettingKeys.kgDialect) === 'neo4j' ? 'neo4j' : 'memgraph')
       setGraphDirty(false)
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -66,11 +68,12 @@ export function Settings() {
   async function handleSaveGraph() {
     setSavingGraph(true)
     try {
-      await saveSetting(SettingKeys.neo4jEnabled, graphEnabled ? 'true' : 'false')
+      await saveSetting(SettingKeys.kgEnabled, graphEnabled ? 'true' : 'false')
       if (graphEnabled) {
-        await saveSetting(SettingKeys.neo4jUri, graphUri)
-        await saveSetting(SettingKeys.neo4jUsername, graphUsername)
-        await saveSetting(SettingKeys.neo4jPassword, graphPassword)
+        await saveSetting(SettingKeys.kgUri, graphUri)
+        await saveSetting(SettingKeys.kgUsername, graphUsername)
+        await saveSetting(SettingKeys.kgPassword, graphPassword)
+        await saveSetting(SettingKeys.kgDialect, graphDialect)
       }
       feedback.success(t('settings.saveSuccess'))
       setGraphDirty(false)
@@ -121,6 +124,23 @@ export function Settings() {
               marginTop: spacing.lg,
             }}
           >
+            <Field label={t('settings.knowledgeGraph.dialect.name')}>
+              <Select
+                value={graphDialect}
+                aria-label={t('settings.knowledgeGraph.dialect.name')}
+                onChange={(value) => {
+                  setGraphDialect(value)
+                  setGraphDirty(true)
+                }}
+                options={[
+                  { value: 'memgraph', label: t('settings.knowledgeGraph.dialectMemgraph') },
+                  { value: 'neo4j', label: t('settings.knowledgeGraph.dialectNeo4j') },
+                ]}
+                style={{ width: 200 }}
+              />
+              <br />
+              <Text type="secondary">{t('settings.knowledgeGraph.dialect.desc')}</Text>
+            </Field>
             <Field label={t('settings.knowledgeGraph.uri.name')}>
               <Input
                 value={graphUri}

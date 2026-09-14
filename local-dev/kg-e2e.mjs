@@ -1,6 +1,6 @@
 // 知识图谱模块 E2E（真实 HTTP，复用 wiki/team-e2e 同款登录/断言；后端 127.0.0.1:5210）
-// 场景编号与 docs/knowledgegraph/bdd.md 对应（@KG-S1..S12）
-// 需后端 + Neo4j + OPEN_NEO4J=true；未开启/连不上时打印 SKIP 并退出码 0（CI 无 Neo4j 不失败）
+// 场景编号与 docs/knowledgegraph/bdd.md 对应（@KG-S1..S16）
+// 需后端 + Memgraph/图数据库 + KG_ENABLED=true；未开启/连不上时打印 SKIP 并退出码 0（CI 无图数据库不失败）
 import crypto from 'node:crypto'
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
@@ -12,7 +12,7 @@ const check = (name, cond, detail = '') => {
 
 const skip = (reason) => {
   console.warn(`\nSKIP | 知识图谱 E2E 未执行: ${reason}`)
-  console.warn('      需要后端 + Neo4j 可达 且 OPEN_NEO4J=true（设置页开启并配置 NEO4J_URI）。')
+  console.warn('      需要后端 + 图数据库可达 且 KG_ENABLED=true（设置页开启并配置 KG_URI）。')
   process.exit(0)
 }
 
@@ -37,9 +37,9 @@ const kg = (id) => `/api/knowledge-graph/${id}`
 
 async function main() {
   // 能力开关的本地快速短路；真正以服务端 list.enabled 为准
-  const envFlag = process.env.OPEN_NEO4J
+  const envFlag = process.env.KG_ENABLED
   if (envFlag !== undefined && !['true', '1'].includes(String(envFlag).toLowerCase())) {
-    skip(`环境变量 OPEN_NEO4J=${envFlag}`)
+    skip(`环境变量 KG_ENABLED=${envFlag}`)
   }
 
   const si = await api('GET', '/api/common/serverinfo')
@@ -67,10 +67,10 @@ async function main() {
     skip(`list.enabled=${list0.json?.enabled}`)
   }
 
-  // Neo4j 可达性探针：用默认库 neo4j 建一个 connected 图，成功即证明可达，随后清理
+  // 图数据库可达性探针：建一个 connected 图，成功即证明可达，随后清理
   const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-probe-' + TS, mode: 'connected', database: 'neo4j' } })
   if (probe.status !== 200) {
-    skip(`Neo4j 探活失败 (${probe.status}): ${probe.text.slice(0, 160)}`)
+    skip(`图数据库探活失败 (${probe.status}): ${probe.text.slice(0, 160)}`)
   }
   await api('DELETE', kg(Number(probe.json.value)), { token })
 
@@ -140,7 +140,7 @@ async function main() {
   {
     const s = await api('GET', `${kg(G1)}/schema`, { token })
     const rel = (s.json?.relationTypes ?? []).find(x => x.name === '维护')
-    check('KG-S4c schema 回显关系类型约束', s.status === 200 && rel?.sourceTypeId === PPL && rel?.targetTypeId === SVC, JSON.stringify(rel))
+    check('KG-S4c schema 回显关系类型约束', s.status === 200 && Number(rel?.sourceTypeId) === PPL && Number(rel?.targetTypeId) === SVC, JSON.stringify(rel))
   }
 
   // ===== KG-S5 新增节点（类型不符/不存在 400）=====
@@ -169,14 +169,14 @@ async function main() {
     await api('POST', `${kg(G1)}/edges`, { token, body: { relationTypeId: MAINT, sourceNodeId: n2.json?.value, targetNodeId: N.SVC } })
 
     const p1 = await api('POST', `${kg(G1)}/nodes/list`, { token, body: { pageNo: 1, pageSize: 2 } })
-    check('KG-S7a 节点分页 pageSize=2 截断且 total=5', p1.status === 200 && (p1.json?.items ?? []).length === 2 && p1.json?.total === 5, JSON.stringify({ n: (p1.json?.items ?? []).length, total: p1.json?.total }))
+    check('KG-S7a 节点分页 pageSize=2 截断且 total=5', p1.status === 200 && (p1.json?.items ?? []).length === 2 && Number(p1.json?.total) === 5, JSON.stringify({ n: (p1.json?.items ?? []).length, total: p1.json?.total }))
     const p3 = await api('POST', `${kg(G1)}/nodes/list`, { token, body: { pageNo: 3, pageSize: 2 } })
-    check('KG-S7b 节点分页 pageNo=3 剩 1 条', p3.status === 200 && (p3.json?.items ?? []).length === 1 && p3.json?.total === 5, JSON.stringify({ n: (p3.json?.items ?? []).length, total: p3.json?.total }))
+    check('KG-S7b 节点分页 pageNo=3 剩 1 条', p3.status === 200 && (p3.json?.items ?? []).length === 1 && Number(p3.json?.total) === 5, JSON.stringify({ n: (p3.json?.items ?? []).length, total: p3.json?.total }))
 
     const e1 = await api('POST', `${kg(G1)}/edges/list`, { token, body: { pageNo: 1, pageSize: 1 } })
-    check('KG-S7c 边分页 pageSize=1 且 total=2', e1.status === 200 && (e1.json?.items ?? []).length === 1 && e1.json?.total === 2, JSON.stringify({ n: (e1.json?.items ?? []).length, total: e1.json?.total }))
+    check('KG-S7c 边分页 pageSize=1 且 total=2', e1.status === 200 && (e1.json?.items ?? []).length === 1 && Number(e1.json?.total) === 2, JSON.stringify({ n: (e1.json?.items ?? []).length, total: e1.json?.total }))
     const e2 = await api('POST', `${kg(G1)}/edges/list`, { token, body: { relationTypeId: MAINT, pageNo: 1, pageSize: 20 } })
-    check('KG-S7d 边按关系类型筛选 total=2', e2.status === 200 && e2.json?.total === 2, JSON.stringify({ total: e2.json?.total }))
+    check('KG-S7d 边按关系类型筛选 total=2', e2.status === 200 && Number(e2.json?.total) === 2, JSON.stringify({ total: e2.json?.total }))
   }
 
   // ===== KG-S8 删除仍有节点的实体类型 409 =====
@@ -188,11 +188,15 @@ async function main() {
     check('KG-S9a 删除图谱 200', del.status === 200, `${del.status} ${del.text.slice(0, 120)}`)
     check('KG-S9b 删除后详情 404', (await api('GET', kg(G1), { token })).status === 404)
     const after = await api('GET', `/api/knowledge-graph/list?teamId=${TID}`, { token })
-    check('KG-S9c 删除后列表不含该图谱', after.status === 200 && !(after.json?.items ?? []).some(i => Number(i.kgId) === G1))
+    check('KG-S9c 删除后列表不含该图谱且仍含 G2', after.status === 200 && !(after.json?.items ?? []).some(i => Number(i.kgId) === G1) && (after.json?.items ?? []).some(i => Number(i.kgId) === G2), JSON.stringify({ ids: (after.json?.items ?? []).map(i => i.kgId) }))
   }
 
-  // ===== KG-S10 接入不存在的数据库 400 =====
-  check('KG-S10 接入不存在数据库 400', (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-miss-' + TS, mode: 'connected', database: 'kg_missing_db_' + TS } })).status === 400)
+  // ===== KG-S10 接入未知库名（方言语义：neo4j 多库→400 拒绝；memgraph 单库→200 仅登记名，随后清理）=====
+  {
+    const s10 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-miss-' + TS, mode: 'connected', database: 'kg_missing_db_' + TS } })
+    check('KG-S10 接入未知库名按方言处理（neo4j=400 / memgraph=200）', s10.status === 400 || s10.status === 200, `${s10.status}`)
+    if (s10.status === 200 && Number(s10.json?.value)) await api('DELETE', kg(Number(s10.json.value)), { token })
+  }
 
   // ===== KG-S11 接入真实数据库 neo4j（内省 schema）=====
   const c11 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-' + TS, mode: 'connected', database: 'neo4j' } })
@@ -214,6 +218,30 @@ async function main() {
   // ===== KG-S12 connected 图谱写操作 409 只读 =====
   check('KG-S12a connected 图谱新增节点 409 只读', (await api('POST', `${kg(CONN)}/nodes`, { token, body: { entityTypeId: 1, name: 'readonly' } })).status === 409)
   check('KG-S12b connected 图谱新增实体类型 409 只读', (await api('POST', `${kg(CONN)}/entity-types`, { token, body: { name: 'x' } })).status === 409)
+
+  // ===== KG-S13 画布有界子图（托管图 G2 已有 2 节点 1 边）=====
+  {
+    const cv = await api('POST', `${kg(G2)}/canvas`, { token, body: { limit: 200 } })
+    check('KG-S13a 画布返回节点与节点集内部的边', cv.status === 200 && (cv.json?.nodes ?? []).length >= 2 && (cv.json?.edges ?? []).length >= 1, JSON.stringify({ n: cv.json?.nodes?.length, e: cv.json?.edges?.length }))
+    const cvf = await api('POST', `${kg(G2)}/canvas`, { token, body: { keyword: 'seed-svc-' + TS } })
+    check('KG-S13b 关键字过滤仅命中 1 节点', cvf.status === 200 && (cvf.json?.nodes ?? []).length === 1, JSON.stringify(cvf.json?.nodes))
+
+    // ===== KG-S14 一跳邻接展开 =====
+    const listR = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { keyword: 'seed-ppl-' + TS, pageNo: 1, pageSize: 5 } })
+    const pplNode = (listR.json?.items ?? [])[0]
+    const nb = await api('GET', `${kg(G2)}/nodes/${pplNode?.nodeId}/neighbors?limit=50`, { token })
+    check('KG-S14a 邻接含 seed-svc 且带维护边', nb.status === 200 && (nb.json?.nodes ?? []).some(x => x.name === 'seed-svc-' + TS) && (nb.json?.edges ?? []).length >= 1, JSON.stringify(nb.json).slice(0, 200))
+    const nbGhost = await api('GET', `${kg(G2)}/nodes/ghost/neighbors`, { token })
+    check('KG-S14b 不存在节点邻接 404', nbGhost.status === 404, `${nbGhost.status}`)
+  }
+
+  // ===== KG-S16 图谱名称全局唯一（跨团队重名 409）=====
+  {
+    const team2 = await api('POST', '/api/team', { token, body: { name: 'kg-team2-' + TS } })
+    const TID2 = Number(team2.json?.value)
+    check('KG-S16a 跨团队同名建图 409', Number.isFinite(TID2) && (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID2, name: opsName, templateKey: 'blank' } })).status === 409)
+    await api('DELETE', `/api/team/${TID2}`, { token })
+  }
 
   // 清理
   await api('DELETE', kg(G2), { token })

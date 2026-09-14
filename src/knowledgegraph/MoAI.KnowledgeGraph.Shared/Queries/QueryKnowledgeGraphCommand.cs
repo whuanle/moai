@@ -17,6 +17,6 @@ public class QueryKnowledgeGraphCommand : IRequest<QueryKnowledgeGraphCommandRes
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryKnowledgeGraphCommand> validate)
     {
-        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
     }
 }

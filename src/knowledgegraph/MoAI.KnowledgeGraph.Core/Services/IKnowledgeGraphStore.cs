@@ -3,10 +3,22 @@ using MoAI.KnowledgeGraph.Models;
 namespace MoAI.KnowledgeGraph.Services;
 
 /// <summary>
-/// 知识图谱图数据存储（Neo4j）.
+/// 知识图谱图数据存储（openCypher，方言：memgraph / neo4j）.
 /// </summary>
 public interface IKnowledgeGraphStore
 {
+    /// <summary>
+    /// 有界子图查询（画布）：按实体类型/关键字取节点子集，边仅返回节点集内部的边.
+    /// </summary>
+    /// <returns>返回节点、边与是否被截断.</returns>
+    Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphEdgeRecord> Edges, bool Truncated)> QueryCanvasAsync(long KnowledgeGraphId, long? entityTypeId, long? relationTypeId, string? keyword, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一跳邻接展开：返回指定节点的邻居节点与相连的边.
+    /// </summary>
+    /// <returns>返回邻居节点、边与是否被截断.</returns>
+    Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphEdgeRecord> Edges, bool Truncated)> GetNeighborsAsync(long KnowledgeGraphId, string nodeId, int limit, CancellationToken cancellationToken);
+
     /// <summary>
     /// 统计某实体类型下的节点数.
     /// </summary>

@@ -10,54 +10,66 @@ namespace MoAI.Database.Seed;
 public static class SettingDefinitions
 {
     /// <summary>
-    /// 是否开启 Neo4j 知识图谱.
+    /// 是否开启知识图谱图数据库.
     /// </summary>
-    public const string Neo4jEnabledKey = "OPEN_NEO4J";
+    public const string GraphEnabledKey = "KG_ENABLED";
 
     /// <summary>
-    /// Neo4j 连接地址.
+    /// 图数据库连接地址.
     /// </summary>
-    public const string Neo4jUriKey = "NEO4J_URI";
+    public const string GraphUriKey = "KG_URI";
 
     /// <summary>
-    /// Neo4j 用户名.
+    /// 图数据库登录用户名.
     /// </summary>
-    public const string Neo4jUsernameKey = "NEO4J_USERNAME";
+    public const string GraphUsernameKey = "KG_USERNAME";
 
     /// <summary>
-    /// Neo4j 密码.
+    /// 图数据库登录密码.
     /// </summary>
-    public const string Neo4jPasswordKey = "NEO4J_PASSWORD";
+    public const string GraphPasswordKey = "KG_PASSWORD";
+
+    /// <summary>
+    /// 图数据库方言（memgraph / neo4j）.
+    /// </summary>
+    public const string GraphDialectKey = "KG_DIALECT";
 
     private static readonly List<SettingDefinition> BackingField = new()
     {
         new SettingDefinition
         {
-            Key = Neo4jEnabledKey,
-            Name = "Neo4j 知识图谱",
-            Description = "开启后，知识库可以使用知识图谱能力；关闭时无需填写连接信息.",
+            Key = GraphEnabledKey,
+            Name = "知识图谱",
+            Description = "开启后，团队可以使用知识图谱能力；关闭时无需填写连接信息.",
             DefaultValue = "false"
         },
         new SettingDefinition
         {
-            Key = Neo4jUriKey,
-            Name = "Neo4j 连接地址",
-            Description = "Neo4j 数据库连接地址，例如 neo4j://127.0.0.1:7687.",
+            Key = GraphUriKey,
+            Name = "图数据库连接地址",
+            Description = "图数据库 Bolt 连接地址，例如 neo4j://127.0.0.1:7687 或 bolt://127.0.0.1:7687.",
             DefaultValue = string.Empty
         },
         new SettingDefinition
         {
-            Key = Neo4jUsernameKey,
-            Name = "Neo4j 用户名",
-            Description = "Neo4j 数据库登录用户名.",
+            Key = GraphUsernameKey,
+            Name = "图数据库用户名",
+            Description = "图数据库登录用户名.",
             DefaultValue = string.Empty
         },
         new SettingDefinition
         {
-            Key = Neo4jPasswordKey,
-            Name = "Neo4j 密码",
-            Description = "Neo4j 数据库登录密码.",
+            Key = GraphPasswordKey,
+            Name = "图数据库密码",
+            Description = "图数据库登录密码.",
             DefaultValue = string.Empty
+        },
+        new SettingDefinition
+        {
+            Key = GraphDialectKey,
+            Name = "图数据库方言",
+            Description = "memgraph 或 neo4j，影响内省与索引语句；外部接入 Neo4j 实例时选 neo4j.",
+            DefaultValue = "memgraph"
         }
     };
 

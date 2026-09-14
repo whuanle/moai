@@ -34,7 +34,7 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
 
         return new QueryKnowledgeGraphCommandResponse
         {
-            KnowledgeGraphId = graph.Id,
+            KgId = graph.Id,
             TeamId = graph.TeamId,
             Name = graph.Name,
             Description = graph.Description,

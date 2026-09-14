@@ -16,8 +16,8 @@ vi.mock('@/api/knowledgeGraph', () => ({
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
-function renderRelations(graphEnabled = true) {
-  return render(<KnowledgeGraphRelations graphId={1} graphEnabled={graphEnabled} />)
+function renderRelations(graphEnabled = true, myRole: number | null = 1) {
+  return render(<KnowledgeGraphRelations graphId={1} graphEnabled={graphEnabled} myRole={myRole} />)
 }
 
 describe('KnowledgeGraphRelations', () => {
@@ -54,17 +54,26 @@ describe('KnowledgeGraphRelations', () => {
     expect(getKnowledgeGraphEdges).toHaveBeenCalledWith(1, { pageNo: 1, pageSize: 20 })
   })
 
-  it('能力未开启时禁用新建/编辑/删除', async () => {
-    renderRelations(false)
-    expect(await screen.findByRole('button', { name: /新建关系/ })).toBeDisabled()
-    expect(await screen.findByRole('button', { name: /^编辑$/ })).toBeDisabled()
-    expect(await screen.findByRole('button', { name: /^删除$/ })).toBeDisabled()
-  })
-
-  it('能力开启时新建/编辑/删除可用', async () => {
-    renderRelations()
+  it('管理员（能力开启）新建/编辑/删除可用', async () => {
+    renderRelations(true, 1)
     expect(await screen.findByRole('button', { name: /新建关系/ })).toBeEnabled()
     expect(await screen.findByRole('button', { name: /^编辑$/ })).toBeEnabled()
     expect(await screen.findByRole('button', { name: /^删除$/ })).toBeEnabled()
+  })
+
+  it('能力未开启时不显示新建/编辑/删除入口', async () => {
+    renderRelations(false, 1)
+    expect(await screen.findByText('依赖')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /新建关系/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^编辑$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^删除$/ })).not.toBeInTheDocument()
+  })
+
+  it('普通成员对关系数据只读（不显示写入口）', async () => {
+    renderRelations(true, 0)
+    expect(await screen.findByText('依赖')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /新建关系/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^编辑$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^删除$/ })).not.toBeInTheDocument()
   })
 })

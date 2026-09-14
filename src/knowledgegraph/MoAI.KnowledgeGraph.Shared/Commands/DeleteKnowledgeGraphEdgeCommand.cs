@@ -22,7 +22,7 @@ public class DeleteKnowledgeGraphEdgeCommand : IRequest<EmptyCommandResponse>, I
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<DeleteKnowledgeGraphEdgeCommand> validate)
     {
-        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
         validate.RuleFor(x => x.EdgeId).NotEmpty().WithMessage("边 id 不正确.");
     }
 }

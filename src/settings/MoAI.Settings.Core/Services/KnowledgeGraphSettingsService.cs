@@ -7,16 +7,17 @@ using MoAI.Settings.Services;
 namespace MoAI.Settings.Services;
 
 /// <summary>
-/// 知识图谱配置读取服务.
+/// 知识图谱图数据库配置读取服务.
 /// </summary>
 public class KnowledgeGraphSettingsService : IKnowledgeGraphSettingsService
 {
     private static readonly string[] Keys =
     {
-        SettingDefinitions.Neo4jEnabledKey,
-        SettingDefinitions.Neo4jUriKey,
-        SettingDefinitions.Neo4jUsernameKey,
-        SettingDefinitions.Neo4jPasswordKey
+        SettingDefinitions.GraphEnabledKey,
+        SettingDefinitions.GraphUriKey,
+        SettingDefinitions.GraphUsernameKey,
+        SettingDefinitions.GraphPasswordKey,
+        SettingDefinitions.GraphDialectKey
     };
 
     private readonly DatabaseContext _databaseContext;
@@ -31,7 +32,7 @@ public class KnowledgeGraphSettingsService : IKnowledgeGraphSettingsService
     }
 
     /// <inheritdoc/>
-    public async Task<Neo4jKnowledgeGraphSettings> GetAsync(CancellationToken cancellationToken)
+    public async Task<KnowledgeGraphStoreSettings> GetAsync(CancellationToken cancellationToken)
     {
         var values = await _databaseContext.Settings
             .Where(s => Keys.Contains(s.Key))
@@ -47,18 +48,25 @@ public class KnowledgeGraphSettingsService : IKnowledgeGraphSettingsService
             return SettingDefinitions.Find(key)?.DefaultValue ?? string.Empty;
         }
 
-        var enabled = string.Equals(Resolve(SettingDefinitions.Neo4jEnabledKey), "true", StringComparison.OrdinalIgnoreCase);
+        var enabled = string.Equals(Resolve(SettingDefinitions.GraphEnabledKey), "true", StringComparison.OrdinalIgnoreCase);
         if (!enabled)
         {
-            return new Neo4jKnowledgeGraphSettings { Enabled = false };
+            return new KnowledgeGraphStoreSettings { Enabled = false };
         }
 
-        return new Neo4jKnowledgeGraphSettings
+        var dialect = Resolve(SettingDefinitions.GraphDialectKey).Trim().ToLowerInvariant();
+        if (dialect != KnowledgeGraphStoreSettings.DialectMemgraph && dialect != KnowledgeGraphStoreSettings.DialectNeo4j)
+        {
+            dialect = KnowledgeGraphStoreSettings.DialectMemgraph;
+        }
+
+        return new KnowledgeGraphStoreSettings
         {
             Enabled = true,
-            Uri = Resolve(SettingDefinitions.Neo4jUriKey),
-            Username = Resolve(SettingDefinitions.Neo4jUsernameKey),
-            Password = Resolve(SettingDefinitions.Neo4jPasswordKey)
+            Uri = Resolve(SettingDefinitions.GraphUriKey),
+            Username = Resolve(SettingDefinitions.GraphUsernameKey),
+            Password = Resolve(SettingDefinitions.GraphPasswordKey),
+            Dialect = dialect
         };
     }
 }

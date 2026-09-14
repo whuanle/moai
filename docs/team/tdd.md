@@ -36,6 +36,7 @@
 | @TM-S15b | team-e2e.mjs（TM-15g-m：禁用/启用/状态筛选） | 待执行（同上） |
 | @TM-S16 | team-e2e.mjs（TM-16a-h：转让非成员自动入团+角色降级） | 待执行（同上） |
 | @TM-S15 / @TM-S15b / @TM-S16（前端） | ui/src/pages/admin/__tests__/AdminTeams.test.tsx | PASS 3/3（2026-09-10） |
+| @TM-S16b | @manual（代码走查：两个列表 Handler 的 Owner 字典改 GroupBy 首条容错；MoAI.Team.Core 构建 0 错误） | PASS（2026-09-14） |
 | 前端页面 | ui/src/pages/teams/__tests__/Teams.test.tsx | PASS 4/4（2026-09-02） |
 | 浏览器走查 | @manual（登录 → 团队菜单 → 建团/成员管理） | PASS（2026-09-02） |
 

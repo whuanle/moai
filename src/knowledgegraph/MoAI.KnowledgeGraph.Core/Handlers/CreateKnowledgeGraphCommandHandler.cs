@@ -17,7 +17,7 @@ namespace MoAI.KnowledgeGraph.Handlers;
 /// </summary>
 public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledgeGraphCommand, SimpleLong>
 {
-    private const string NameUniqueConstraintName = "idx_kg_team_name_live_uindex";
+    private const string NameUniqueConstraintName = "idx_knowledge_graph_name_live_uindex";
 
     private readonly DatabaseContext _databaseContext;
     private readonly IKnowledgeGraphAuthorizer _authorizer;
@@ -47,12 +47,12 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {
-            throw new BusinessException("未开启知识图谱能力，请先在系统设置中配置 Neo4j.") { StatusCode = 409 };
+            throw new BusinessException("未开启知识图谱能力，请先在系统设置中配置图数据库.") { StatusCode = 409 };
         }
 
         if (string.IsNullOrWhiteSpace(settings.Uri))
         {
-            throw new BusinessException("知识图谱已开启但未配置 Neo4j 连接地址，请先在系统设置中完善.") { StatusCode = 409 };
+            throw new BusinessException("知识图谱已开启但未配置图数据库连接地址，请先在系统设置中完善.") { StatusCode = 409 };
         }
 
         // 模板复制（图谱 + 实体类型 + 关系类型）必须整体成功或整体回滚
@@ -67,7 +67,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             }
 
             var connectedNameExist = await _databaseContext.KnowledgeGraphs
-                .AnyAsync(x => x.TeamId == request.TeamId && x.Name == request.Name, cancellationToken);
+                .AnyAsync(x => x.Name == request.Name, cancellationToken);
             if (connectedNameExist)
             {
                 throw new BusinessException("知识图谱名称已存在，请更换后重试.") { StatusCode = 409 };
@@ -109,7 +109,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
         }
 
         var nameExist = await _databaseContext.KnowledgeGraphs
-            .AnyAsync(x => x.TeamId == request.TeamId && x.Name == request.Name, cancellationToken);
+            .AnyAsync(x => x.Name == request.Name, cancellationToken);
         if (nameExist)
         {
             throw new BusinessException("知识图谱名称已存在，请更换后重试.") { StatusCode = 409 };

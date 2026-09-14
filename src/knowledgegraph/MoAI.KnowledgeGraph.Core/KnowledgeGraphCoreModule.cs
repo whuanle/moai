@@ -14,9 +14,9 @@ public class KnowledgeGraphCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
-        context.Services.AddSingleton<Neo4jDriverProvider>();
-        context.Services.AddScoped<Neo4jKnowledgeGraphStore>();
-        context.Services.AddScoped<IKnowledgeGraphStore>(sp => sp.GetRequiredService<Neo4jKnowledgeGraphStore>());
+        context.Services.AddSingleton<GraphDriverProvider>();
+        context.Services.AddScoped<CypherKnowledgeGraphStore>();
+        context.Services.AddScoped<IKnowledgeGraphStore>(sp => sp.GetRequiredService<CypherKnowledgeGraphStore>());
         context.Services.AddScoped<IKnowledgeGraphAuthorizer>(sp => sp.GetRequiredService<KnowledgeGraphAuthorizer>());
     }
 }

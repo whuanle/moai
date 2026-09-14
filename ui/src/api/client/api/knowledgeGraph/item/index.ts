@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryKnowledgeGraphCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateKnowledgeGraphCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryKnowledgeGraphCommandResponse, type UpdateKnowledgeGraphCommand } from '../../../models/index.js';
 // @ts-ignore
+import { CanvasRequestBuilderRequestsMetadata, type CanvasRequestBuilder } from './canvas/index.js';
+// @ts-ignore
 import { EdgesRequestBuilderNavigationMetadata, EdgesRequestBuilderRequestsMetadata, type EdgesRequestBuilder } from './edges/index.js';
 // @ts-ignore
 import { EntityTypesRequestBuilderNavigationMetadata, EntityTypesRequestBuilderRequestsMetadata, type EntityTypesRequestBuilder } from './entityTypes/index.js';
@@ -20,6 +22,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/knowledge-graph/{id}
  */
 export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<KnowledgeGraphItemRequestBuilder> {
+    /**
+     * The canvas property
+     */
+    get canvas(): CanvasRequestBuilder;
     /**
      * The edges property
      */
@@ -102,6 +108,9 @@ export const KnowledgeGraphItemRequestBuilderUriTemplate = "{+baseurl}/api/knowl
  * Metadata for all the navigation properties in the request builder.
  */
 export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<keyof KnowledgeGraphItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    canvas: {
+        requestsMetadata: CanvasRequestBuilderRequestsMetadata,
+    },
     edges: {
         requestsMetadata: EdgesRequestBuilderRequestsMetadata,
         navigationMetadata: EdgesRequestBuilderNavigationMetadata,

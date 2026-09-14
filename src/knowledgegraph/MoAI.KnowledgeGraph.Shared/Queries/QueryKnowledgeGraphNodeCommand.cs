@@ -22,7 +22,7 @@ public class QueryKnowledgeGraphNodeCommand : IRequest<QueryKnowledgeGraphNodeCo
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryKnowledgeGraphNodeCommand> validate)
     {
-        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
         validate.RuleFor(x => x.NodeId).NotEmpty().WithMessage("节点 id 不能为空.");
     }
 }

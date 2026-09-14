@@ -75,11 +75,15 @@ public class QueryAdminTeamListCommandHandler : IRequestHandler<QueryAdminTeamLi
             .Select(g => new { TeamId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.TeamId, x => x.Count, cancellationToken);
 
-        // 查询各团队负责人（Owner）的用户信息
-        var owners = await _databaseContext.TeamUsers
+        // 查询各团队负责人（Owner）的用户信息；正常一个团队只有一个 Owner，脏数据出现多个时取 UserId 最小的
+        var ownerRows = await _databaseContext.TeamUsers
             .Where(x => teamIds.Contains(x.TeamId) && x.Role == (int)TeamRole.Owner)
             .Join(_databaseContext.Users, tu => tu.UserId, u => u.Id, (tu, u) => new { tu.TeamId, u.Id, u.UserName, u.NickName, u.AvatarPath })
-            .ToDictionaryAsync(x => x.TeamId, x => x, cancellationToken);
+            .ToListAsync(cancellationToken);
+
+        var owners = ownerRows
+            .GroupBy(x => x.TeamId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Id).First());
 
         var items = teams.Select(x =>
         {

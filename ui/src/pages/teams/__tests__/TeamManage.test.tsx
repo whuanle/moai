@@ -7,6 +7,15 @@ import { dissolveTeam, getTeamDetail, getTeamUsers, updateTeamUserRole } from '@
 import { getVariables } from '@/api/variable'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getWikis } from '@/api/wiki'
+import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
+
+vi.mock('@/api/knowledgeGraph', () => ({
+  getKnowledgeGraphs: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] }),
+  getKnowledgeGraphTemplates: vi.fn().mockResolvedValue([]),
+  createKnowledgeGraph: vi.fn().mockResolvedValue(1),
+  updateKnowledgeGraph: vi.fn().mockResolvedValue(undefined),
+  deleteKnowledgeGraph: vi.fn().mockResolvedValue(undefined),
+}))
 
 vi.mock('@/api/wiki', () => ({
   getWikis: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, items: [] }),
@@ -146,6 +155,15 @@ describe('TeamManage', () => {
     expect(await screen.findByText('owner')).toBeInTheDocument()
     expect(screen.getByText('member')).toBeInTheDocument()
     expect(getTeamUsers).toHaveBeenCalledWith(7)
+  })
+
+  it('切换到知识图谱菜单后加载图谱列表并展示新建入口', async () => {
+    renderManage('7', 'knowledgegraph')
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    await waitFor(() => expect(getKnowledgeGraphs).toHaveBeenCalledWith(7))
+    expect(screen.getByText('新建知识图谱')).toBeInTheDocument()
+    expect(screen.getByText('知识图谱')).toBeInTheDocument()
   })
 
   it('角色列只展示角色标签，不出现角色下拉框', async () => {

@@ -5,6 +5,7 @@ import {
   AppstoreOutlined,
   BookOutlined,
   CloudServerOutlined,
+  ClusterOutlined,
   DashboardOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -42,6 +43,7 @@ const mainNav: NavItem[] = [
   { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
   { key: 'apps', icon: <AppstoreOutlined />, labelKey: 'nav.apps', path: '/apps' },
   { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
+  { key: 'knowledgegraph', icon: <ClusterOutlined />, labelKey: 'nav.knowledgeGraph', path: '/knowledge-graph' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
 ]
 
@@ -60,6 +62,7 @@ const pathToKey: Record<string, string> = {
   '/dashboard': 'dashboard',
   '/apps': 'apps',
   '/wiki': 'wiki',
+  '/knowledge-graph': 'knowledgegraph',
   '/team': 'team',
   '/plugin': 'plugin',
   '/skills': 'skills',
@@ -93,7 +96,10 @@ export function AppSider() {
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
   const [collapsed, setCollapsed] = useState(false)
-  const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
+  // 图谱详情（/team/:teamId/kg/**）高亮「知识图谱」；其余按精确路径映射
+  const selectedKey = /\/kg\//.test(location.pathname)
+    ? 'knowledgegraph'
+    : pathToKey[location.pathname] ?? 'dashboard'
   const isDark = themeKey === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
 

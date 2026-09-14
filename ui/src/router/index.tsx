@@ -20,6 +20,8 @@ import { AppChat } from '@/pages/teams/apps/AppChat'
 import { Wiki } from '@/pages/wiki/Wiki'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
+import { KnowledgeGraphList } from '@/pages/knowledgegraph/KnowledgeGraphList'
+import { KnowledgeGraphDetail } from '@/pages/knowledgegraph/KnowledgeGraphDetail'
 import { Plugins } from '@/pages/plugins/Plugins'
 import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
 import { Skills } from '@/pages/skills/Skills'
@@ -50,7 +52,9 @@ export const router = createBrowserRouter([
       { path: 'team/:teamId/app/:appId/chat', element: <AppChat /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
+      { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },
       { path: 'wiki', element: <Wiki /> },
+      { path: 'knowledge-graph', element: <KnowledgeGraphList /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },

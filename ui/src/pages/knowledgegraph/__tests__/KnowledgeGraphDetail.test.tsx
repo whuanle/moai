@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphDetail } from '../KnowledgeGraphDetail'
-import { getKnowledgeGraphDetail } from '@/api/knowledgeGraph'
+import { getKnowledgeGraphCanvas, getKnowledgeGraphDetail } from '@/api/knowledgeGraph'
 
 vi.mock('@/api/knowledgeGraph', () => ({
   getKnowledgeGraphDetail: vi.fn(),
@@ -24,9 +24,27 @@ vi.mock('@/api/knowledgeGraph', () => ({
   deleteRelationType: vi.fn(),
   updateKnowledgeGraph: vi.fn(),
   deleteKnowledgeGraph: vi.fn(),
+  getKnowledgeGraphCanvas: vi.fn().mockResolvedValue({ nodes: [], edges: [], truncated: false }),
+  getKnowledgeGraphNodeNeighbors: vi.fn().mockResolvedValue({ nodes: [], edges: [], truncated: false }),
 }))
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
+
+// jsdom 无真实 canvas，stub 掉 G6 的渲染管线
+vi.mock('@antv/g6', () => {
+  const graphStub = {
+    setData: vi.fn(),
+    render: vi.fn().mockResolvedValue(undefined),
+    destroy: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+  }
+  return {
+    Graph: function MockGraph() {
+      return graphStub
+    },
+  }
+})
 
 function renderShell(initialEntry = '/team/7/kg/1/entities') {
   return render(
@@ -50,13 +68,15 @@ describe('KnowledgeGraphDetail', () => {
     })
   })
 
-  it('渲染四段菜单', async () => {
-    renderShell()
+  it('渲染五段菜单且托管图默认进入图览', async () => {
+    renderShell('/team/7/kg/1')
     await screen.findByText('支付域图谱')
+    expect(screen.getByText('图览')).toBeInTheDocument()
     expect(screen.getByText('实体')).toBeInTheDocument()
     expect(screen.getByText('关系')).toBeInTheDocument()
     expect(screen.getByText('模型')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
+    await waitFor(() => expect(getKnowledgeGraphCanvas).toHaveBeenCalledWith(1, expect.objectContaining({ limit: 200 })))
   })
 
   it('按 graphId 拉取详情并展示名称', async () => {

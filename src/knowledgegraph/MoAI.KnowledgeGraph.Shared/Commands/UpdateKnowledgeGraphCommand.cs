@@ -27,7 +27,7 @@ public class UpdateKnowledgeGraphCommand : IRequest<EmptyCommandResponse>, IMode
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateKnowledgeGraphCommand> validate)
     {
-        validate.RuleFor(x => x.KnowledgeGraphId).GreaterThan(0).WithMessage("图谱 id 不正确.");
+        // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("简介最长 255 个字符.");
     }

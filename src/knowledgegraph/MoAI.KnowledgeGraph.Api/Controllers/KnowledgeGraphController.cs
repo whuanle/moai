@@ -274,4 +274,27 @@ public class KnowledgeGraphController : ControllerBase
     [HttpDelete("{id}/edges/{edgeId}")]
     public Task<EmptyCommandResponse> DeleteEdge(long id, string edgeId, CancellationToken ct)
         => _mediator.Send(new DeleteKnowledgeGraphEdgeCommand { KnowledgeGraphId = id, EdgeId = edgeId }, ct);
+
+    /// <summary>
+    /// 画布有界子图查询（仅托管图）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">查询请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>子图节点与边.</returns>
+    [HttpPost("{id}/canvas")]
+    public Task<QueryKnowledgeGraphCanvasCommandResponse> Canvas(long id, [FromBody] QueryKnowledgeGraphCanvasCommand req, CancellationToken ct)
+        => _mediator.Send(new QueryKnowledgeGraphCanvasCommand { KnowledgeGraphId = id, EntityTypeId = req.EntityTypeId, RelationTypeId = req.RelationTypeId, Keyword = req.Keyword, Limit = req.Limit }, ct);
+
+    /// <summary>
+    /// 节点一跳邻接展开（仅托管图）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="nodeId">节点 id.</param>
+    /// <param name="limit">邻居数量上限（0=默认 100）.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>邻居节点与相连的边.</returns>
+    [HttpGet("{id}/nodes/{nodeId}/neighbors")]
+    public Task<QueryKnowledgeGraphCanvasCommandResponse> NodeNeighbors(long id, string nodeId, [FromQuery] int limit, CancellationToken ct)
+        => _mediator.Send(new QueryKnowledgeGraphNodeNeighborsCommand { KnowledgeGraphId = id, NodeId = nodeId, Limit = limit }, ct);
 }

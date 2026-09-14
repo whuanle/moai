@@ -77,7 +77,7 @@ export function KnowledgeGraphList() {
               key={String(item.kgId)}
               hoverable
               style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/team/${item.teamId}/kg/${item.kgId}/entities`)}
+              onClick={() => navigate(`/team/${item.teamId}/kg/${item.kgId}`)}
             >
               <div style={{ fontSize: fontSize.lg, fontWeight: 600 }}>{item.name}</div>
               <div style={{ color: neutralColors.textSecondary, marginTop: spacing.xs }}>{item.description || '-'}</div>

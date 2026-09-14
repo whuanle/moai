@@ -24,9 +24,13 @@ interface FormValues {
 interface KnowledgeGraphEntitiesProps {
   graphId: number
   graphEnabled?: boolean
+  myRole?: number | null
 }
 
-export function KnowledgeGraphEntities({ graphId, graphEnabled = true }: KnowledgeGraphEntitiesProps) {
+/** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举）；节点/边写操作仅限 Admin+ */
+const ROLE_MEMBER = 0
+
+export function KnowledgeGraphEntities({ graphId, graphEnabled = true, myRole = null }: KnowledgeGraphEntitiesProps) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<KnowledgeGraphNodeItem[]>([])
@@ -39,6 +43,7 @@ export function KnowledgeGraphEntities({ graphId, graphEnabled = true }: Knowled
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm<FormValues>()
   const pageSize = 20
+  const canWrite = graphEnabled && myRole !== null && myRole !== ROLE_MEMBER
 
   const load = useCallback(async () => {
     if (!Number.isFinite(graphId) || graphId <= 0) return
@@ -139,37 +144,43 @@ export function KnowledgeGraphEntities({ graphId, graphEnabled = true }: Knowled
       ellipsis: true,
       render: (value: string | null | undefined) => value || '-',
     },
-    {
-      title: '',
-      key: 'action',
-      width: 130,
-      fixed: 'right',
-      render: (_, record) => (
-        <Space size={4}>
-          <Button type="link" size="small" disabled={!graphEnabled} onClick={() => openEdit(record)}>
-            {t('knowledgegraph.edit')}
-          </Button>
-          <Popconfirm title={t('knowledgegraph.entity.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-            <Button type="link" size="small" danger disabled={!graphEnabled}>
-              {t('knowledgegraph.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
+    ...(canWrite
+      ? [
+          {
+            title: '',
+            key: 'action',
+            width: 130,
+            fixed: 'right' as const,
+            render: (_: unknown, record: KnowledgeGraphNodeItem) => (
+              <Space size={4}>
+                <Button type="link" size="small" onClick={() => openEdit(record)}>
+                  {t('knowledgegraph.edit')}
+                </Button>
+                <Popconfirm title={t('knowledgegraph.entity.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
+                  <Button type="link" size="small" danger>
+                    {t('knowledgegraph.delete')}
+                  </Button>
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
     <>
       <Space style={{ marginBottom: spacing.md }} wrap>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          disabled={!graphEnabled || entityTypes.length === 0}
-          onClick={openCreate}
-        >
-          {t('knowledgegraph.entity.create')}
-        </Button>
+        {canWrite && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={entityTypes.length === 0}
+            onClick={openCreate}
+          >
+            {t('knowledgegraph.entity.create')}
+          </Button>
+        )}
         <Input.Search
           allowClear
           placeholder={t('knowledgegraph.searchPlaceholder')}

@@ -36,7 +36,8 @@
     "channel": "模型渠道",
     "admin": "管理",
     "variable": "变量",
-    "skills": "技能"
+    "skills": "技能",
+    "knowledgeGraph": "知识图谱"
   },
   "auth": {
     "loginTitle": "登录",
@@ -141,23 +142,29 @@
     "save": "保存",
     "saveSuccess": "保存成功",
     "knowledgeGraph": {
-      "title": "知识图谱（Neo4j）",
+      "title": "知识图谱（图数据库）",
       "enable": {
-        "name": "开启 Neo4j 知识图谱",
-        "desc": "开启后，知识库可以使用知识图谱能力；不开启时无需填写连接信息。"
+        "name": "开启知识图谱",
+        "desc": "开启后，团队可以使用知识图谱能力；不开启时无需填写连接信息。"
       },
       "uri": {
         "name": "连接地址",
-        "placeholder": "例如：neo4j://127.0.0.1:7687"
+        "placeholder": "例如：bolt://127.0.0.1:7687"
       },
       "username": {
         "name": "用户名",
-        "placeholder": "请输入 Neo4j 用户名"
+        "placeholder": "请输入图数据库用户名"
       },
       "password": {
         "name": "密码",
-        "placeholder": "请输入 Neo4j 密码"
-      }
+        "placeholder": "请输入图数据库密码"
+      },
+      "dialect": {
+        "name": "方言",
+        "desc": "Memgraph（社区版）选 memgraph；接入外部 Neo4j 选 neo4j，影响内省与索引语句。"
+      },
+      "dialectMemgraph": "Memgraph",
+      "dialectNeo4j": "Neo4j"
     }
   },
   "oauthconnect": {
@@ -501,7 +508,8 @@
     "managePlugins": "插件",
     "manageVariables": "环境变量",
     "gateway": "模型网关",
-    "pluginsMemberHint": "本团队共有 {{count}} 个私有插件；系统插件由管理员统一开放"
+    "pluginsMemberHint": "本团队共有 {{count}} 个私有插件；系统插件由管理员统一开放",
+    "knowledgeGraph": "知识图谱"
   },
   "wiki": {
     "title": "知识库",
@@ -815,7 +823,13 @@
       "createTime": "创建时间"
     },
     "tabLabel": "知识图谱",
-    "noPermission": "仅团队管理员可管理知识图谱与模型"
+    "noPermission": "仅团队管理员可管理知识图谱与模型",
+    "menuCanvas": "图览",
+    "canvasTruncated": "已按数量上限截断，可用筛选缩小范围",
+    "canvasEmpty": "暂无图数据，先到「实体」页新增节点",
+    "canvasExpand": "展开邻接",
+    "canvasReload": "重新加载",
+    "canvasOnlyManaged": "外部接入图谱暂不支持画布视图"
   },
   "variable": {
     "title": "变量",

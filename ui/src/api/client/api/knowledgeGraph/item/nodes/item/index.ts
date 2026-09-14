@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryKnowledgeGraphNodeCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateKnowledgeGraphNodeCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryKnowledgeGraphNodeCommandResponse, type UpdateKnowledgeGraphNodeCommand } from '../../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { NeighborsRequestBuilderRequestsMetadata, type NeighborsRequestBuilder } from './neighbors/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/knowledge-graph/{id}/nodes/{nodeId}
  */
 export interface WithNodeItemRequestBuilder extends BaseRequestBuilder<WithNodeItemRequestBuilder> {
+    /**
+     * The neighbors property
+     */
+    get neighbors(): NeighborsRequestBuilder;
     /**
      * 删除节点.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -68,6 +74,14 @@ export interface WithNodeItemRequestBuilder extends BaseRequestBuilder<WithNodeI
  * Uri template for the request builder.
  */
 export const WithNodeItemRequestBuilderUriTemplate = "{+baseurl}/api/knowledge-graph/{id}/nodes/{nodeId}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const WithNodeItemRequestBuilderNavigationMetadata: Record<Exclude<keyof WithNodeItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    neighbors: {
+        requestsMetadata: NeighborsRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

@@ -26,9 +26,13 @@ interface FormValues {
 interface KnowledgeGraphRelationsProps {
   graphId: number
   graphEnabled?: boolean
+  myRole?: number | null
 }
 
-export function KnowledgeGraphRelations({ graphId, graphEnabled = true }: KnowledgeGraphRelationsProps) {
+/** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举）；节点/边写操作仅限 Admin+ */
+const ROLE_MEMBER = 0
+
+export function KnowledgeGraphRelations({ graphId, graphEnabled = true, myRole = null }: KnowledgeGraphRelationsProps) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<KnowledgeGraphEdgeItem[]>([])
@@ -41,6 +45,7 @@ export function KnowledgeGraphRelations({ graphId, graphEnabled = true }: Knowle
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm<FormValues>()
   const pageSize = 20
+  const canWrite = graphEnabled && myRole !== null && myRole !== ROLE_MEMBER
 
   const load = useCallback(async () => {
     if (!Number.isFinite(graphId) || graphId <= 0) return
@@ -165,32 +170,38 @@ export function KnowledgeGraphRelations({ graphId, graphEnabled = true }: Knowle
       key: 'target',
       render: (_, record) => nodeName.get(record.targetNodeId ?? '') || record.targetNodeId || '-',
     },
-    {
-      title: '',
-      key: 'action',
-      width: 130,
-      fixed: 'right',
-      render: (_, record) => (
-        <Space size={4}>
-          <Button type="link" size="small" disabled={!graphEnabled} onClick={() => openEdit(record)}>
-            {t('knowledgegraph.edit')}
-          </Button>
-          <Popconfirm title={t('knowledgegraph.relation.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-            <Button type="link" size="small" danger disabled={!graphEnabled}>
-              {t('knowledgegraph.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
+    ...(canWrite
+      ? [
+          {
+            title: '',
+            key: 'action',
+            width: 130,
+            fixed: 'right' as const,
+            render: (_: unknown, record: KnowledgeGraphEdgeItem) => (
+              <Space size={4}>
+                <Button type="link" size="small" onClick={() => openEdit(record)}>
+                  {t('knowledgegraph.edit')}
+                </Button>
+                <Popconfirm title={t('knowledgegraph.relation.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
+                  <Button type="link" size="small" danger>
+                    {t('knowledgegraph.delete')}
+                  </Button>
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
     <>
       <Space style={{ marginBottom: spacing.md }}>
-        <Button type="primary" icon={<PlusOutlined />} disabled={!graphEnabled} onClick={openCreate}>
-          {t('knowledgegraph.relation.create')}
-        </Button>
+        {canWrite && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            {t('knowledgegraph.relation.create')}
+          </Button>
+        )}
       </Space>
       <DataTable<KnowledgeGraphEdgeItem>
         rowKey={(record) => String(record.edgeId)}

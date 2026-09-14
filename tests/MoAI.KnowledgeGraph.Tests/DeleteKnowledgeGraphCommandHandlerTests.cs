@@ -66,7 +66,7 @@ public class DeleteKnowledgeGraphCommandHandlerTests
             .ReturnsAsync((graph, MoAI.Database.Enums.TeamRole.Admin));
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Neo4jKnowledgeGraphSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
+            .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         return new DeleteKnowledgeGraphCommandHandler(db.Context, authorizer.Object, store, settings.Object);
     }
 }

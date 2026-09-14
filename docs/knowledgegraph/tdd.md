@@ -4,10 +4,10 @@
 
 ## 自检记录
 
-- 构建：`dotnet build src/MoAI/MoAI.csproj` → **0 错误**（2026-09-10）
-- 单测：`dotnet test tests/MoAI.KnowledgeGraph.Tests/MoAI.KnowledgeGraph.Tests.csproj` → **PASS 33/33**（2026-09-10，覆盖模板映射、探活 / 内省、能力门禁、角色判定、只读拦截、类型引用拦截、分页钳制、删图清库分支）
-- E2E：`node local-dev/kg-e2e.mjs` → **未执行（PENDING）**。脚本需后端 + Neo4j 可达且 `OPEN_NEO4J=true`；当前环境无 Neo4j 实例，脚本会打印 `SKIP` 并退出码 0（CI 友好），故不记为 PASS。下表 E2E 列均为待跑，单测列已绿。
-- 前端：本期后端交付，`ui/src/pages/kg` 与 `ui/src/api/knowledgeGraph.ts` 未落地，无 vitest 映射。
+- 构建：`dotnet build src/MoAI/MoAI.csproj` → **0 错误**（2026-09-14，v2）
+- 单测：`dotnet test tests/MoAI.KnowledgeGraph.Tests/MoAI.KnowledgeGraph.Tests.csproj` → **PASS 39/39**（2026-09-14，新增跨团队重名 409、Member 写节点 403；存量覆盖模板映射、探活 / 内省、能力门禁、角色判定、只读拦截、类型引用拦截、分页钳制、删图清库分支）
+- E2E：`node local-dev/kg-e2e.mjs http://127.0.0.1:5020` → **PASS 40/40**（2026-09-14，真实 Memgraph 3.13.0 @ 192.168.50.199:7687，`KG_ENABLED=true`；覆盖托管图全流程、画布 / 邻接真库查询、接入内省、只读拦截、全局唯一）。脚本无图数据库时打印 `SKIP` 并退出码 0（CI 友好）。
+- 前端：`npx tsc --noEmit` 0 错误；`npm run lint` 0 错误（3 个 skills 既有警告）；`npm run test` **265/265**（2026-09-14，含 knowledgegraph 页面/封装与 Settings 用例）。
 
 ## 映射表
 
@@ -25,6 +25,18 @@
 | @KG-S10 | `CreateKnowledgeGraphCommandHandlerTests.Handle_Connected_WhenProbeFails_Throws400` | kg-e2e.mjs#KG-S10 | 单测 PASS；E2E 未执行 |
 | @KG-S11 | `CreateKnowledgeGraphCommandHandlerTests.Handle_Connected_WhenProbeSucceeds_PersistsModeAndDatabase`、`KnowledgeGraphSchemaCommandHandlerTests.QuerySchema_WhenConnected_UsesIntrospection` | kg-e2e.mjs#KG-S11a…f | 单测 PASS；E2E 未执行 |
 | @KG-S12 | `KnowledgeGraphAuthorizerTests.AuthorizeManagedAsync_WhenConnected_Throws409`、`KnowledgeGraphNodeEdgeCommandHandlerTests.CreateNode_OnConnectedGraph_Throws409` | kg-e2e.mjs#KG-S12a/b | 单测 PASS；E2E 未执行 |
+| @KG-S13 | —（画布查询走真库 Cypher，拦截层由 Detail 页 vitest 覆盖调用） | kg-e2e.mjs#KG-S13a/b | **E2E PASS 40/40（2026-09-14）** |
+| @KG-S14 | —（同上） | kg-e2e.mjs#KG-S14a/b | **E2E PASS（2026-09-14）** |
+| @KG-S15 | `KnowledgeGraphNodeEdgeCommandHandlerTests.CreateNode_AsMember_Throws403`（Member 全只读） | @manual（需 Member 账号，浏览器走查见 sop §5） | 单测 PASS（2026-09-14） |
+| @KG-S16 | `CreateKnowledgeGraphCommandHandlerTests.Handle_WhenNameDuplicatedAcrossTeams_Throws409` | kg-e2e.mjs#KG-S16a | 单测 PASS；**E2E PASS（2026-09-14）** |
+
+## v2 前端映射（vitest）
+
+| 验证物 | 覆盖 | 结果 |
+|---|---|---|
+| `ui/src/pages/knowledgegraph/__tests__/KnowledgeGraphDetail.test.tsx` | 五段菜单、托管图默认图览（调 canvas 接口）、接入图只读徽标 | PASS（2026-09-14） |
+| `ui/src/pages/knowledgegraph/__tests__/KnowledgeGraphEntities.test.tsx` / `KnowledgeGraphRelations.test.tsx` | Admin 可写、Member 只读（写入口不渲染）、能力未开启不渲染 | PASS（2026-09-14） |
+| `ui/src/pages/settings/__tests__/Settings.test.tsx` | KG_* 设置键、方言保存、关闭时不提交连接信息 | PASS（2026-09-14） |
 
 ## 备注
 

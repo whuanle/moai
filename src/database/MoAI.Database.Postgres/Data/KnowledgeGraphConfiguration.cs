@@ -23,7 +23,7 @@ internal partial class KnowledgeGraphConfiguration : IEntityTypeConfiguration<Kn
 
         entity.HasIndex(e => e.TeamId, "idx_knowledge_graph_team_id");
 
-        entity.HasIndex(e => new { e.TeamId, e.Name }, "idx_knowledge_graph_team_name_live_uindex")
+        entity.HasIndex(e => e.Name, "idx_knowledge_graph_name_live_uindex")
             .IsUnique()
             .HasFilter("(is_deleted = 0)");
 

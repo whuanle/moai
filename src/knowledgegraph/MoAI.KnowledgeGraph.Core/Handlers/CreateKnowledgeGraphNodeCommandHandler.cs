@@ -33,7 +33,7 @@ public class CreateKnowledgeGraphNodeCommandHandler : IRequestHandler<CreateKnow
     /// <inheritdoc/>
     public async Task<SimpleString> Handle(CreateKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
+        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 
         var typeExists = await _databaseContext.KnowledgeGraphEntityTypes
             .AnyAsync(x => x.Id == request.EntityTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken);
