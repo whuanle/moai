@@ -1,0 +1,42 @@
+# 技能（Skill）模块运维规程（SOP）
+
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ 沙箱配置：[../ai/sop.md](../ai/sop.md)
+
+## 新增内置技能（开发者）
+
+1. 脚本放 `src/skill/MoAI.Skill.Core/Resources/skills/{key}/`（仅白名单扩展名，csproj EmbeddedResource 自动收录）。
+2. `BuiltinSkills.GetFiles` 登记 `{key}` 与文件清单（新增 case）。
+3. `SkillSeed` 增加种子行（**固定 Guid**、key 蛇形、Instructions 写明调用步骤，路径用 `/workspace/skills/{key}/`）。
+4. 重建库后自动生效；已有库需手工 INSERT 或重跑删库重建（EnsureCreated 不补种子）。
+
+## 自定义技能（管理员）
+
+`/skills` 页新建：标识（蛇形、创建后不可改）→ 上传包文件（文件名即包内路径）→ 填说明与描述。文件先 preupload（SHA256 去重）→ PUT 预签名 → complete → 保存时校验 fileId 已上传。删除仅自定义技能；内置技能只能禁用。
+
+## 沙箱（技能执行的前提）
+
+- 全局：`MoAI:OpenSandBox`（Address/ApiKey/Image/TimeoutSeconds/RenewThresholdSeconds）。
+- 本地开发参考：`uvx opensandbox-server`（`~/.sandbox.toml`：port=55900、api_key、`[docker] network_mode="bridge"` + `host_ip="127.0.0.1"`）；镜像 `opensandbox/code-interpreter:v1.1.0`、execd `opensandbox/execd:v1.0.22`。
+- 应用级：AppManage「启用沙箱」写 `execution_settings.sandbox`。
+- **镜像未预装 python-docx/python-pptx**：技能脚本 `_ensure` 自动 `pip install --break-system-packages`（需沙箱出站网络；默认无策略=放开）。若后续收紧网络，需放行 pypi.org 或改自建镜像。
+- 未配置/未启用沙箱时：技能仍可挂载与加载说明，但脚本不执行（工具结果有明确提示）。
+
+## 154 部署要点（154.8.214.31，SSH 密钥 `~/.ssh/sms_ci_deploy`，ubuntu）
+
+1. 本地交叉发布产物打包 → `/tmp/moai154-app.tar.gz` 上传 → 替换 `~/moai154/app/`（先备份旧目录与 DB：`app.bak-*`、`backup-*.sql`）。
+2. **DB schema 变更必须删库重建**（EnsureCreated 不做增量）：
+   `docker exec moai154-postgres psql -U postgres -d moai -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"`
+3. `docker compose build moai && docker compose up -d moai`；启动即建表+种子。
+4. 审计（服务器内）：serverinfo/login（openssl pkeyutl RSA 加密）→ `/api/skill/options|list` → `/api/ai/plugin/run`。
+5. **154 不部署 OpenSandbox**（整机 1.9G 内存，code-interpreter 容器跑不动）：沙箱执行类功能在该环境不可用；如需端到端验证技能生成，用本地沙箱或换更高配实例。
+6. 已知噪音：容器启动日志出现一次 `libgssapi_krb5.so.2` 缺失告警（.NET HTTP 栈 Kerberos 探测，非致命；镜像内禁 apt，勿尝试安装）。
+
+## 故障排查
+
+| 症状 | 处置 |
+|---|---|
+| 技能工具未出现在 list_tools | 应用是否挂载且技能未禁用；`SkillAppToolProvider` Order=14 装配日志 |
+| 加载提示未启用沙箱 | AppManage 开启沙箱 + 后端配置 `MoAI:OpenSandBox.Address` |
+| 脚本执行报 externally-managed | 技能脚本 `_ensure` 是否带 `--break-system-packages` |
+| 产物下载 403/过期 | 预签名 1 小时；重新让 Agent 生成或再调 save_artifact |
+| skill 表 id 非默认 uuid | 检查 `SkillConfiguration` 被 rescaffold 覆盖（Guid 主键 + `HasDefaultValueSql("uuid_generate_v4()")`） |
