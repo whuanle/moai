@@ -38,6 +38,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // 自定义鉴权中间件
+app.UseMiddleware<MoAI.App.ExternalAuthenticationMiddleware>();
 app.UseMoAI();
 
 // 配置静态文件服务（支持 SPA）

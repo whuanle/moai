@@ -233,6 +233,98 @@ Scenario: 应用接入增删改查与授权校验
   Then 返回成功且列表不再包含
 ```
 
+## Feature: 外部应用接入 token（/api/external）
+
+```gherkin
+@EA-S1 @auto:e2e
+Scenario: 外部接口必须持外部 token 访问
+  When 未携带令牌查询外部授权应用列表
+  Then 返回未认证
+  When 以内部用户令牌查询外部授权应用列表
+  Then 返回未认证（内部 JWT 与外部 token 的 audience 不同，互不通用）
+
+@EA-S2 @auto:e2e
+Scenario: 应用接入 key 换取应用 token
+  When 第三方应用仅凭应用接入 key 请求外部 token
+  Then 返回 access_token、refresh_token、有效期与类型为「应用」
+  When 以该应用 token 查询外部授权应用列表
+  Then 返回该接入授权的全部已发布外部应用，不含授权范围外的应用
+
+@EA-S3 @auto:e2e
+Scenario: 外部 token 不能访问内部接口
+  When 以外部应用 token 调用内部应用列表接口
+  Then 返回未认证
+
+@EA-S4 @auto:e2e
+Scenario: 凭 key 为外部用户签发用户 token（绑定单应用）
+  When 第三方应用凭 key、目标应用 id 与外部用户标识请求外部 token
+  Then 返回类型为「用户」的 token 对与外部用户 id
+  When 同一接入下用相同外部用户标识再次申请
+  Then 复用同一外部用户 id（继承同一身份）
+  When 以该用户 token 查询外部授权应用列表
+  Then 仅返回其绑定的单个应用
+
+@EA-S5 @auto:e2e
+Scenario: 授权范围与请求校验
+  When 用户 token 的目标应用不在接入授权范围内
+  Then 返回禁止
+  When 凭 key 换用户 token 但缺少应用 id 或外部用户标识等必要参数
+  Then 返回参数错误
+  When 不带 key 直接换取需授权应用的外部 token，或使用无效 key
+  Then 分别返回禁止与未认证
+
+@EA-S6 @auto:e2e
+Scenario: 免授权外部应用匿名换取 token
+  When 仅凭应用 id 请求外部 token，且该应用为需授权=false 的外部应用
+  Then 返回类型为「用户」的 token 对与随机临时外部用户标识
+
+@EA-S7 @auto:e2e
+Scenario: 外部 token 刷新
+  When 以 refresh_token 请求刷新
+  Then 返回新的 access_token 与 refresh_token，且身份不变
+  When 以刷新后的 access_token 查询外部授权应用列表
+  Then 返回 200
+  When 以 access_token 冒充 refresh_token 刷新
+  Then 返回未认证
+  When 刷新应用 token
+  Then 返回类型为「应用」的 token 对，授权范围以接入当前配置为准
+
+@EA-S8 @auto:e2e
+Scenario: 删除应用接入即吊销其全部外部 token
+  When 管理员删除应用接入后，其应用 token 与用户 token 分别请求刷新
+  Then 均返回未认证
+  When 以已删除接入的 key 再次换取 token
+  Then 返回未认证
+```
+
+## Feature: 外部会话与对话（/api/external/agent）
+
+```gherkin
+@EA-S9 @auto:e2e
+Scenario: 外部用户创建并查看自己的会话
+  When 外部用户 token 对其授权范围内已发布的 Agent 外部应用创建会话
+  Then 返回会话 id
+  When 查询该应用的会话列表
+  Then 返回 200 且包含该会话
+  When 查询该会话的消息
+  Then 返回 200 且消息列表为空
+
+@EA-S10 @auto:e2e
+Scenario: 外部会话与对话端点的鉴权与范围
+  When 应用 token（无用户身份）创建会话
+  Then 返回禁止
+  When 外部用户 token 对授权范围外的应用创建会话
+  Then 返回禁止
+  When 无 token、无效 token 或内部用户 token 访问外部会话/对话端点
+  Then 返回未认证
+  When 其他外部用户查询该会话的消息
+  Then 返回不存在（不泄露会话存在性）
+  When 外部用户 token 对授权范围外的应用发起对话
+  Then 返回禁止
+  When 外部用户 token 以会话 id 发起对话
+  Then 请求被受理（会话归属校验通过，进入派发链路）
+```
+
 ## Feature: 应用工作台与调试会话
 
 ```gherkin
@@ -281,4 +373,28 @@ Scenario: 查看应用用量监控
   Then 分别返回禁止与不存在
   When 查询不存在应用的用量
   Then 返回不存在
+```
+
+## Feature: 访问点配置（app_access_point）
+
+```gherkin
+@EA-S11 @auto:e2e
+Scenario: 团队管理员维护外部应用的访问点配置
+  When 未保存过配置时查询访问点配置
+  Then 返回默认值（面板宽 380、高 560、启用）而不返回不存在
+  When 管理员保存标题/主题色/位置/面板尺寸/启用等配置
+  Then 保存成功且回读一致
+  When 主题色不是 #RRGGBB 或面板尺寸越界
+  Then 返回参数错误
+  When 对内部应用保存访问点配置
+  Then 返回参数错误
+
+@EA-S12 @auto:e2e
+Scenario: 悬浮组件的公开配置与脚本托管
+  When 匿名查询外部应用的访问点公开配置
+  Then 返回 200 且包含应用名、生效后的标题/位置/尺寸与 isAuth/enabled
+  When 应用不存在或非外部应用
+  Then 返回不存在
+  When 匿名请求 /embed/moai-widget.js
+  Then 返回 200 的 JavaScript 脚本
 ```

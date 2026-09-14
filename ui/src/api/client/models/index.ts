@@ -33,6 +33,7 @@ export interface AccessAppItem extends Parsable {
      */
     name?: string | null;
 }
+export type AccessPointPosition = (typeof AccessPointPositionObject)[keyof typeof AccessPointPositionObject];
 /**
  * 添加团队成员，仅 Owner/Admin 可操作；授予 Admin 角色需要 Owner.
  */
@@ -265,6 +266,59 @@ export interface AiPartitionDocumentCommand extends Parsable {
     wikiId?: string | null;
 }
 export type AIProtocolFamily = (typeof AIProtocolFamilyObject)[keyof typeof AIProtocolFamilyObject];
+/**
+ * 访问点配置（内部管理视图，未保存过时返回默认值）.
+ */
+export interface AppAccessPointConfigResponse extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 头像 objectKey.
+     */
+    avatar?: string | null;
+    /**
+     * 是否默认展开.
+     */
+    defaultOpen?: boolean | null;
+    /**
+     * 是否启用访问点.
+     */
+    enabled?: boolean | null;
+    /**
+     * 悬浮按钮文案，空则用图标.
+     */
+    launcherText?: string | null;
+    /**
+     * 面板高度 px.
+     */
+    panelHeight?: number | null;
+    /**
+     * 面板宽度 px.
+     */
+    panelWidth?: number | null;
+    /**
+     * 输入框占位文案.
+     */
+    placeholder?: string | null;
+    /**
+     * 悬浮位置.
+     */
+    position?: string | null;
+    /**
+     * 主题色，#RRGGBB.
+     */
+    primaryColor?: string | null;
+    /**
+     * 欢迎语/副标题.
+     */
+    subtitle?: string | null;
+    /**
+     * 面板标题，空则用应用名.
+     */
+    title?: string | null;
+}
 /**
  * 应用项.
  */
@@ -538,6 +592,23 @@ export interface BatchUpdateAIModelCommand extends Parsable {
      * 模型 id 集合.
      */
     modelIds?: Guid[] | null;
+}
+/**
+ * 绑定飞书应用到渠道（应用/知识库等），需要团队 Admin 及以上角色；同一飞书应用同时只能绑定一个渠道，绑定冲突时返回 409.
+ */
+export interface BindFeishuAppCommand extends Parsable {
+    /**
+     * 渠道记录 id 字符串，应用为 app.id（uuid），知识库为 wiki.id（数字）.
+     */
+    channelId?: string | null;
+    /**
+     * 渠道类型.
+     */
+    channelType?: FeishuChannelType | null;
+    /**
+     * 飞书应用记录 id（来自路由）.
+     */
+    feishuAppId?: Guid | null;
 }
 /**
  * 已绑定的第三方账号信息.
@@ -888,6 +959,15 @@ export interface CreateApiKeyRequest extends Parsable {
     name?: string | null;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppAccessPointConfigResponse}
+ */
+// @ts-ignore
+export function createAppAccessPointConfigResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppAccessPointConfigResponse;
+}
+/**
  * 创建团队应用，需要团队 Admin 及以上角色.
  */
 export interface CreateAppCommand extends Parsable {
@@ -1017,6 +1097,15 @@ export function createBatchDeleteAIModelCommandFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createBatchUpdateAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoBatchUpdateAIModelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BindFeishuAppCommand}
+ */
+// @ts-ignore
+export function createBindFeishuAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBindFeishuAppCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1191,6 +1280,24 @@ export function createCreateClassifyCommandFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalAgentSessionCommand}
+ */
+// @ts-ignore
+export function createCreateExternalAgentSessionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalAgentSessionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateFeishuAppCommand}
+ */
+// @ts-ignore
+export function createCreateFeishuAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateFeishuAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateKnowledgeGraphCommand}
  */
 // @ts-ignore
@@ -1349,6 +1456,93 @@ export function createEmbeddingDocumentCommandResponseFromDiscriminatorValue(par
 // @ts-ignore
 export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoEmptyCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalAccessPointResponse}
+ */
+// @ts-ignore
+export function createExternalAccessPointResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalAccessPointResponse;
+}
+/**
+ * 创建外部会话：外部用户 token 对其授权范围内已发布的 Agent 外部应用发起会话.会话归属 external_user.id（user_type=External），后续对话以此校验归属.
+ */
+export interface CreateExternalAgentSessionCommand extends Parsable {
+    /**
+     * 目标应用 id（路由参数）.
+     */
+    appId?: Guid | null;
+    /**
+     * 会话标题，可选（默认「未命名标题」）.
+     */
+    title?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalAppItem}
+ */
+// @ts-ignore
+export function createExternalAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalAppItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalTokenCommand}
+ */
+// @ts-ignore
+export function createExternalTokenCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalTokenCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalTokenCommandResponse}
+ */
+// @ts-ignore
+export function createExternalTokenCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalTokenCommandResponse;
+}
+/**
+ * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
+ */
+export interface CreateFeishuAppCommand extends Parsable {
+    /**
+     * 飞书开放平台 AppID，形如 cli_xxx.
+     */
+    appId?: string | null;
+    /**
+     * 飞书开放平台 AppSecret.
+     */
+    appSecret?: string | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 接入域名，可为空；为空表示飞书默认 https://open.feishu.cn，Lark 填 https://open.larksuite.com.
+     */
+    domain?: string | null;
+    /**
+     * 连接名称，团队内唯一.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {FeishuAppItem}
+ */
+// @ts-ignore
+export function createFeishuAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoFeishuAppItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2088,6 +2282,33 @@ export function createQueryCustomPluginListCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalAgentSessionsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryExternalAgentSessionsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalAgentSessionsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalAuthorizedAppsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryExternalAuthorizedAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalAuthorizedAppsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryFeishuAppsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryFeishuAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryFeishuAppsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryKnowledgeGraphCommandResponse}
  */
 // @ts-ignore
@@ -2466,6 +2687,15 @@ export function createQueryWikisCommandResponseFromDiscriminatorValue(parseNode:
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {RefreshExternalTokenCommand}
+ */
+// @ts-ignore
+export function createRefreshExternalTokenCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoRefreshExternalTokenCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshMcpServerPluginCommand}
  */
 // @ts-ignore
@@ -2552,6 +2782,15 @@ export function createRunPluginCommandFromDiscriminatorValue(parseNode: ParseNod
 // @ts-ignore
 export function createRunTeamPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoRunTeamPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveAppAccessPointCommand}
+ */
+// @ts-ignore
+export function createSaveAppAccessPointCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveAppAccessPointCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3011,6 +3250,15 @@ export function createUpdateAppSessionTitleCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createUpdateClassifyCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateClassifyCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateFeishuAppCommand}
+ */
+// @ts-ignore
+export function createUpdateFeishuAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateFeishuAppCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3521,6 +3769,27 @@ export function deserializeIntoAiPartitionDocumentCommand(aiPartitionDocumentCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAppAccessPointConfigResponse(appAccessPointConfigResponse: Partial<AppAccessPointConfigResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { appAccessPointConfigResponse.appId = n.getGuidValue(); },
+        "avatar": n => { appAccessPointConfigResponse.avatar = n.getStringValue(); },
+        "defaultOpen": n => { appAccessPointConfigResponse.defaultOpen = n.getBooleanValue(); },
+        "enabled": n => { appAccessPointConfigResponse.enabled = n.getBooleanValue(); },
+        "launcherText": n => { appAccessPointConfigResponse.launcherText = n.getStringValue(); },
+        "panelHeight": n => { appAccessPointConfigResponse.panelHeight = n.getNumberValue(); },
+        "panelWidth": n => { appAccessPointConfigResponse.panelWidth = n.getNumberValue(); },
+        "placeholder": n => { appAccessPointConfigResponse.placeholder = n.getStringValue(); },
+        "position": n => { appAccessPointConfigResponse.position = n.getStringValue(); },
+        "primaryColor": n => { appAccessPointConfigResponse.primaryColor = n.getStringValue(); },
+        "subtitle": n => { appAccessPointConfigResponse.subtitle = n.getStringValue(); },
+        "title": n => { appAccessPointConfigResponse.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAppItem(appItem: Partial<AppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { appItem.appId = n.getGuidValue(); },
@@ -3653,6 +3922,18 @@ export function deserializeIntoBatchUpdateAIModelCommand(batchUpdateAIModelComma
     return {
         "enabled": n => { batchUpdateAIModelCommand.enabled = n.getBooleanValue(); },
         "modelIds": n => { batchUpdateAIModelCommand.modelIds = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBindFeishuAppCommand(bindFeishuAppCommand: Partial<BindFeishuAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "channelId": n => { bindFeishuAppCommand.channelId = n.getStringValue(); },
+        "channelType": n => { bindFeishuAppCommand.channelType = n.getEnumValue<FeishuChannelType>(FeishuChannelTypeObject); },
+        "feishuAppId": n => { bindFeishuAppCommand.feishuAppId = n.getGuidValue(); },
     }
 }
 /**
@@ -3867,6 +4148,32 @@ export function deserializeIntoCreateClassifyCommand(createClassifyCommand: Part
         "description": n => { createClassifyCommand.description = n.getStringValue(); },
         "name": n => { createClassifyCommand.name = n.getStringValue(); },
         "type": n => { createClassifyCommand.type = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalAgentSessionCommand(createExternalAgentSessionCommand: Partial<CreateExternalAgentSessionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { createExternalAgentSessionCommand.appId = n.getGuidValue(); },
+        "title": n => { createExternalAgentSessionCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateFeishuAppCommand(createFeishuAppCommand: Partial<CreateFeishuAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { createFeishuAppCommand.appId = n.getStringValue(); },
+        "appSecret": n => { createFeishuAppCommand.appSecret = n.getStringValue(); },
+        "description": n => { createFeishuAppCommand.description = n.getStringValue(); },
+        "domain": n => { createFeishuAppCommand.domain = n.getStringValue(); },
+        "name": n => { createFeishuAppCommand.name = n.getStringValue(); },
+        "teamId": n => { createFeishuAppCommand.teamId = n.getStringValue(); },
     }
 }
 /**
@@ -4091,6 +4398,91 @@ export function deserializeIntoEmbeddingDocumentCommandResponse(embeddingDocumen
 // @ts-ignore
 export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partial<EmptyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalAccessPointResponse(externalAccessPointResponse: Partial<ExternalAccessPointResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appName": n => { externalAccessPointResponse.appName = n.getStringValue(); },
+        "avatarUrl": n => { externalAccessPointResponse.avatarUrl = n.getStringValue(); },
+        "defaultOpen": n => { externalAccessPointResponse.defaultOpen = n.getBooleanValue(); },
+        "enabled": n => { externalAccessPointResponse.enabled = n.getBooleanValue(); },
+        "isAuth": n => { externalAccessPointResponse.isAuth = n.getBooleanValue(); },
+        "launcherText": n => { externalAccessPointResponse.launcherText = n.getStringValue(); },
+        "panelHeight": n => { externalAccessPointResponse.panelHeight = n.getNumberValue(); },
+        "panelWidth": n => { externalAccessPointResponse.panelWidth = n.getNumberValue(); },
+        "placeholder": n => { externalAccessPointResponse.placeholder = n.getStringValue(); },
+        "position": n => { externalAccessPointResponse.position = n.getStringValue(); },
+        "primaryColor": n => { externalAccessPointResponse.primaryColor = n.getStringValue(); },
+        "subtitle": n => { externalAccessPointResponse.subtitle = n.getStringValue(); },
+        "title": n => { externalAccessPointResponse.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalAppItem(externalAppItem: Partial<ExternalAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { externalAppItem.appId = n.getGuidValue(); },
+        "appType": n => { externalAppItem.appType = n.getNumberValue(); },
+        "avatar": n => { externalAppItem.avatar = n.getStringValue(); },
+        "description": n => { externalAppItem.description = n.getStringValue(); },
+        "name": n => { externalAppItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalTokenCommand(externalTokenCommand: Partial<ExternalTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessAppKey": n => { externalTokenCommand.accessAppKey = n.getStringValue(); },
+        "appId": n => { externalTokenCommand.appId = n.getGuidValue(); },
+        "externalUserId": n => { externalTokenCommand.externalUserId = n.getStringValue(); },
+        "nickname": n => { externalTokenCommand.nickname = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalTokenCommandResponse(externalTokenCommandResponse: Partial<ExternalTokenCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessToken": n => { externalTokenCommandResponse.accessToken = n.getStringValue(); },
+        "expiresIn": n => { externalTokenCommandResponse.expiresIn = n.getNumberValue(); },
+        "externalId": n => { externalTokenCommandResponse.externalId = n.getStringValue(); },
+        "externalUserId": n => { externalTokenCommandResponse.externalUserId = n.getStringValue(); },
+        "refreshToken": n => { externalTokenCommandResponse.refreshToken = n.getStringValue(); },
+        "tokenType": n => { externalTokenCommandResponse.tokenType = n.getEnumValue<ExternalTokenType>(ExternalTokenTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoFeishuAppItem(feishuAppItem: Partial<FeishuAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(feishuAppItem),
+        "appId": n => { feishuAppItem.appId = n.getStringValue(); },
+        "bindChannelId": n => { feishuAppItem.bindChannelId = n.getStringValue(); },
+        "bindChannelType": n => { feishuAppItem.bindChannelType = n.getEnumValue<FeishuChannelType>(FeishuChannelTypeObject); },
+        "bindTime": n => { feishuAppItem.bindTime = n.getStringValue(); },
+        "description": n => { feishuAppItem.description = n.getStringValue(); },
+        "domain": n => { feishuAppItem.domain = n.getStringValue(); },
+        "feishuAppId": n => { feishuAppItem.feishuAppId = n.getGuidValue(); },
+        "isDisable": n => { feishuAppItem.isDisable = n.getBooleanValue(); },
+        "isOnline": n => { feishuAppItem.isOnline = n.getBooleanValue(); },
+        "name": n => { feishuAppItem.name = n.getStringValue(); },
+        "teamId": n => { feishuAppItem.teamId = n.getStringValue(); },
     }
 }
 /**
@@ -4990,6 +5382,39 @@ export function deserializeIntoQueryCustomPluginListCommand(queryCustomPluginLis
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryExternalAgentSessionsCommandResponse(queryExternalAgentSessionsCommandResponse: Partial<QueryExternalAgentSessionsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { queryExternalAgentSessionsCommandResponse.appId = n.getGuidValue(); },
+        "items": n => { queryExternalAgentSessionsCommandResponse.items = n.getCollectionOfObjectValues<AppSessionItem>(createAppSessionItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryExternalAuthorizedAppsCommandResponse(queryExternalAuthorizedAppsCommandResponse: Partial<QueryExternalAuthorizedAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryExternalAuthorizedAppsCommandResponse.items = n.getCollectionOfObjectValues<ExternalAppItem>(createExternalAppItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryFeishuAppsCommandResponse(queryFeishuAppsCommandResponse: Partial<QueryFeishuAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryFeishuAppsCommandResponse.items = n.getCollectionOfObjectValues<FeishuAppItem>(createFeishuAppItemFromDiscriminatorValue); },
+        "myRole": n => { queryFeishuAppsCommandResponse.myRole = n.getNumberValue(); },
+        "teamId": n => { queryFeishuAppsCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryKnowledgeGraphCommandResponse(queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "createTime": n => { queryKnowledgeGraphCommandResponse.createTime = n.getStringValue(); },
@@ -5567,6 +5992,16 @@ export function deserializeIntoQueryWikisCommandResponse(queryWikisCommandRespon
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoRefreshExternalTokenCommand(refreshExternalTokenCommand: Partial<RefreshExternalTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "refreshToken": n => { refreshExternalTokenCommand.refreshToken = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshMcpServerPluginCommand(refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pluginId": n => { refreshMcpServerPluginCommand.pluginId = n.getGuidValue(); },
@@ -5691,6 +6126,26 @@ export function deserializeIntoRunTeamPluginCommand(runTeamPluginCommand: Partia
         "key": n => { runTeamPluginCommand.key = n.getStringValue(); },
         "requestJson": n => { runTeamPluginCommand.requestJson = n.getStringValue(); },
         "teamId": n => { runTeamPluginCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSaveAppAccessPointCommand(saveAppAccessPointCommand: Partial<SaveAppAccessPointCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatar": n => { saveAppAccessPointCommand.avatar = n.getStringValue(); },
+        "defaultOpen": n => { saveAppAccessPointCommand.defaultOpen = n.getBooleanValue(); },
+        "enabled": n => { saveAppAccessPointCommand.enabled = n.getBooleanValue(); },
+        "launcherText": n => { saveAppAccessPointCommand.launcherText = n.getStringValue(); },
+        "panelHeight": n => { saveAppAccessPointCommand.panelHeight = n.getNumberValue(); },
+        "panelWidth": n => { saveAppAccessPointCommand.panelWidth = n.getNumberValue(); },
+        "placeholder": n => { saveAppAccessPointCommand.placeholder = n.getStringValue(); },
+        "position": n => { saveAppAccessPointCommand.position = n.getEnumValue<AccessPointPosition>(AccessPointPositionObject); },
+        "primaryColor": n => { saveAppAccessPointCommand.primaryColor = n.getStringValue(); },
+        "subtitle": n => { saveAppAccessPointCommand.subtitle = n.getStringValue(); },
+        "title": n => { saveAppAccessPointCommand.title = n.getStringValue(); },
     }
 }
 /**
@@ -6295,6 +6750,21 @@ export function deserializeIntoUpdateClassifyCommand(updateClassifyCommand: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateFeishuAppCommand(updateFeishuAppCommand: Partial<UpdateFeishuAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appSecret": n => { updateFeishuAppCommand.appSecret = n.getStringValue(); },
+        "description": n => { updateFeishuAppCommand.description = n.getStringValue(); },
+        "domain": n => { updateFeishuAppCommand.domain = n.getStringValue(); },
+        "feishuAppId": n => { updateFeishuAppCommand.feishuAppId = n.getGuidValue(); },
+        "isDisable": n => { updateFeishuAppCommand.isDisable = n.getBooleanValue(); },
+        "name": n => { updateFeishuAppCommand.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateKnowledgeGraphCommand(updateKnowledgeGraphCommand: Partial<UpdateKnowledgeGraphCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { updateKnowledgeGraphCommand.description = n.getStringValue(); },
@@ -6736,6 +7206,189 @@ export interface EmbeddingDocumentCommandResponse extends Parsable {
  */
 export interface EmptyCommandResponse extends Parsable {
 }
+/**
+ * 访问点公开配置（悬浮组件用，匿名可访问，仅只读字段）.
+ */
+export interface ExternalAccessPointResponse extends Parsable {
+    /**
+     * 应用名.
+     */
+    appName?: string | null;
+    /**
+     * 头像完整 URL（未设置时为空串）.
+     */
+    avatarUrl?: string | null;
+    /**
+     * 是否默认展开.
+     */
+    defaultOpen?: boolean | null;
+    /**
+     * 是否启用访问点（应用已发布未禁用 且 配置启用）.
+     */
+    enabled?: boolean | null;
+    /**
+     * 应用是否需要授权访问（is_auth=true 时组件必须提供接入 key）.
+     */
+    isAuth?: boolean | null;
+    /**
+     * 悬浮按钮文案，空则用图标.
+     */
+    launcherText?: string | null;
+    /**
+     * 面板高度 px.
+     */
+    panelHeight?: number | null;
+    /**
+     * 面板宽度 px.
+     */
+    panelWidth?: number | null;
+    /**
+     * 输入框占位文案.
+     */
+    placeholder?: string | null;
+    /**
+     * 悬浮位置：bottom-right / bottom-left.
+     */
+    position?: string | null;
+    /**
+     * 主题色，#RRGGBB.
+     */
+    primaryColor?: string | null;
+    /**
+     * 欢迎语/副标题.
+     */
+    subtitle?: string | null;
+    /**
+     * 面板标题（未配置时用应用名）.
+     */
+    title?: string | null;
+}
+/**
+ * 外部可见的应用信息.
+ */
+export interface ExternalAppItem extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 应用类型，普通应用=0,流程编排=1.
+     */
+    appType?: number | null;
+    /**
+     * 头像 objectKey.
+     */
+    avatar?: string | null;
+    /**
+     * 应用描述.
+     */
+    description?: string | null;
+    /**
+     * 应用名称.
+     */
+    name?: string | null;
+}
+/**
+ * 外部应用换取 token：第三方应用使用应用接入 key 换取应用 token 或用户 token，也支持 is_auth=false 应用的匿名换 token.三种调用形态：1. 应用 token：只提供 AccessAppKey，授权范围为该接入配置的全部应用；2. 用户 token：提供 AccessAppKey + AppId + ExternalUserId，绑定外部用户且仅授权单个应用；3. 匿名 token：只提供 AppId（应用须 is_external=true 且 is_auth=false），生成/复用临时外部身份.
+ */
+export interface ExternalTokenCommand extends Parsable {
+    /**
+     * 应用接入 key（moai-ac- 前缀），应用 token 与用户 token 必填.
+     */
+    accessAppKey?: string | null;
+    /**
+     * 目标应用 id，用户 token 与匿名 token 必填.
+     */
+    appId?: Guid | null;
+    /**
+     * 外部用户标识（第三方系统的用户唯一 id），用户 token 必填；匿名 token 可选，提供时复用同一外部身份.
+     */
+    externalUserId?: string | null;
+    /**
+     * 外部用户显示名，可选.
+     */
+    nickname?: string | null;
+}
+/**
+ * 外部 token 换取结果.
+ */
+export interface ExternalTokenCommandResponse extends Parsable {
+    /**
+     * 访问令牌，请求 /api/external 接口时以 Authorization: Bearer 携带.
+     */
+    accessToken?: string | null;
+    /**
+     * access token 有效秒数.
+     */
+    expiresIn?: number | null;
+    /**
+     * 外部用户 id（用户 token / 匿名 token），应用 token 为 null.
+     */
+    externalId?: string | null;
+    /**
+     * 外部身份标识（用户 token / 匿名 token），应用 token 为 null.
+     */
+    externalUserId?: string | null;
+    /**
+     * 刷新令牌，用于换取新的 access_token 与 refresh_token.
+     */
+    refreshToken?: string | null;
+    /**
+     * token 类型：应用 token 或用户 token.
+     */
+    tokenType?: ExternalTokenType | null;
+}
+export type ExternalTokenType = (typeof ExternalTokenTypeObject)[keyof typeof ExternalTokenTypeObject];
+/**
+ * 飞书应用连接项.
+ */
+export interface FeishuAppItem extends AuditsInfo, Parsable {
+    /**
+     * 飞书开放平台 AppID.
+     */
+    appId?: string | null;
+    /**
+     * 绑定的渠道记录 id 字符串，未绑定为 null.
+     */
+    bindChannelId?: string | null;
+    /**
+     * 绑定的渠道类型，未绑定为 null.
+     */
+    bindChannelType?: FeishuChannelType | null;
+    /**
+     * 绑定时间，未绑定为 null.
+     */
+    bindTime?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 接入域名.
+     */
+    domain?: string | null;
+    /**
+     * 飞书应用记录 id.
+     */
+    feishuAppId?: Guid | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 长连接是否在线（禁用时恒为 false）.
+     */
+    isOnline?: boolean | null;
+    /**
+     * 连接名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+export type FeishuChannelType = (typeof FeishuChannelTypeObject)[keyof typeof FeishuChannelTypeObject];
 /**
  * 为知识库文档切片生成元数据，仅团队成员可操作.
  */
@@ -8257,6 +8910,45 @@ export interface QueryCustomPluginListCommand extends Parsable {
     type?: PluginType | null;
 }
 /**
+ * 外部用户会话列表响应.
+ */
+export interface QueryExternalAgentSessionsCommandResponse extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 会话集合（按最后消息时间倒序）.
+     */
+    items?: AppSessionItem[] | null;
+}
+/**
+ * 外部 token 授权范围内的应用列表.
+ */
+export interface QueryExternalAuthorizedAppsCommandResponse extends Parsable {
+    /**
+     * 应用列表.
+     */
+    items?: ExternalAppItem[] | null;
+}
+/**
+ * 飞书应用连接列表响应.
+ */
+export interface QueryFeishuAppsCommandResponse extends Parsable {
+    /**
+     * 飞书应用连接集合.
+     */
+    items?: FeishuAppItem[] | null;
+    /**
+     * 我在该团队中的角色：0=Member 1=Admin 2=Owner.
+     */
+    myRole?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 图谱详情响应.
  */
 export interface QueryKnowledgeGraphCommandResponse extends Parsable {
@@ -9255,6 +9947,15 @@ export interface QueryWikisCommandResponse extends Parsable {
     teamId?: string | null;
 }
 /**
+ * 刷新外部 token：使用 refresh_token 换取新的 access_token 与 refresh_token（旋转），授权范围以数据库当前配置为准.
+ */
+export interface RefreshExternalTokenCommand extends Parsable {
+    /**
+     * 换取 token 时返回的 refresh_token.
+     */
+    refreshToken?: string | null;
+}
+/**
  * 刷新 MCP 服务器的工具列表，也就是重新从 mcp 服务器拉取这个服务的 tool 列表.
  */
 export interface RefreshMcpServerPluginCommand extends Parsable {
@@ -9467,6 +10168,55 @@ export interface RunTeamPluginCommand extends Parsable {
      * 团队 id.
      */
     teamId?: string | null;
+}
+/**
+ * 保存外部应用访问点配置（整体替换），需要团队 Admin 及以上角色，仅外部应用.
+ */
+export interface SaveAppAccessPointCommand extends Parsable {
+    /**
+     * 头像 objectKey，可为空；必须是由存储直传管线完成上传并登记的文件.
+     */
+    avatar?: string | null;
+    /**
+     * 是否默认展开.
+     */
+    defaultOpen?: boolean | null;
+    /**
+     * 是否启用访问点.
+     */
+    enabled?: boolean | null;
+    /**
+     * 悬浮按钮文案，空则用图标.
+     */
+    launcherText?: string | null;
+    /**
+     * 面板高度 px（360~900）.
+     */
+    panelHeight?: number | null;
+    /**
+     * 面板宽度 px（280~640）.
+     */
+    panelWidth?: number | null;
+    /**
+     * 输入框占位文案.
+     */
+    placeholder?: string | null;
+    /**
+     * 悬浮位置.
+     */
+    position?: AccessPointPosition | null;
+    /**
+     * 主题色，#RRGGBB，可为空.
+     */
+    primaryColor?: string | null;
+    /**
+     * 欢迎语/副标题.
+     */
+    subtitle?: string | null;
+    /**
+     * 面板标题，空则用应用名.
+     */
+    title?: string | null;
 }
 /**
  * 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库必须在该团队有权使用的范围内.
@@ -9824,6 +10574,27 @@ export function serializeAiPartitionDocumentCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAppAccessPointConfigResponse(writer: SerializationWriter, appAccessPointConfigResponse: Partial<AppAccessPointConfigResponse> | undefined | null = {}) : void {
+    if (appAccessPointConfigResponse) {
+        writer.writeGuidValue("appId", appAccessPointConfigResponse.appId);
+        writer.writeStringValue("avatar", appAccessPointConfigResponse.avatar);
+        writer.writeBooleanValue("defaultOpen", appAccessPointConfigResponse.defaultOpen);
+        writer.writeBooleanValue("enabled", appAccessPointConfigResponse.enabled);
+        writer.writeStringValue("launcherText", appAccessPointConfigResponse.launcherText);
+        writer.writeNumberValue("panelHeight", appAccessPointConfigResponse.panelHeight);
+        writer.writeNumberValue("panelWidth", appAccessPointConfigResponse.panelWidth);
+        writer.writeStringValue("placeholder", appAccessPointConfigResponse.placeholder);
+        writer.writeStringValue("position", appAccessPointConfigResponse.position);
+        writer.writeStringValue("primaryColor", appAccessPointConfigResponse.primaryColor);
+        writer.writeStringValue("subtitle", appAccessPointConfigResponse.subtitle);
+        writer.writeStringValue("title", appAccessPointConfigResponse.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAppItem(writer: SerializationWriter, appItem: Partial<AppItem> | undefined | null = {}) : void {
     if (appItem) {
         writer.writeGuidValue("appId", appItem.appId);
@@ -9956,6 +10727,18 @@ export function serializeBatchUpdateAIModelCommand(writer: SerializationWriter, 
     if (batchUpdateAIModelCommand) {
         writer.writeBooleanValue("enabled", batchUpdateAIModelCommand.enabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("modelIds", batchUpdateAIModelCommand.modelIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBindFeishuAppCommand(writer: SerializationWriter, bindFeishuAppCommand: Partial<BindFeishuAppCommand> | undefined | null = {}) : void {
+    if (bindFeishuAppCommand) {
+        writer.writeStringValue("channelId", bindFeishuAppCommand.channelId);
+        writer.writeEnumValue<FeishuChannelType>("channelType", bindFeishuAppCommand.channelType);
+        writer.writeGuidValue("feishuAppId", bindFeishuAppCommand.feishuAppId);
     }
 }
 /**
@@ -10170,6 +10953,32 @@ export function serializeCreateClassifyCommand(writer: SerializationWriter, crea
         writer.writeStringValue("description", createClassifyCommand.description);
         writer.writeStringValue("name", createClassifyCommand.name);
         writer.writeStringValue("type", createClassifyCommand.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalAgentSessionCommand(writer: SerializationWriter, createExternalAgentSessionCommand: Partial<CreateExternalAgentSessionCommand> | undefined | null = {}) : void {
+    if (createExternalAgentSessionCommand) {
+        writer.writeGuidValue("appId", createExternalAgentSessionCommand.appId);
+        writer.writeStringValue("title", createExternalAgentSessionCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateFeishuAppCommand(writer: SerializationWriter, createFeishuAppCommand: Partial<CreateFeishuAppCommand> | undefined | null = {}) : void {
+    if (createFeishuAppCommand) {
+        writer.writeStringValue("appId", createFeishuAppCommand.appId);
+        writer.writeStringValue("appSecret", createFeishuAppCommand.appSecret);
+        writer.writeStringValue("description", createFeishuAppCommand.description);
+        writer.writeStringValue("domain", createFeishuAppCommand.domain);
+        writer.writeStringValue("name", createFeishuAppCommand.name);
+        writer.writeStringValue("teamId", createFeishuAppCommand.teamId);
     }
 }
 /**
@@ -10394,6 +11203,91 @@ export function serializeEmbeddingDocumentCommandResponse(writer: SerializationW
 // @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalAccessPointResponse(writer: SerializationWriter, externalAccessPointResponse: Partial<ExternalAccessPointResponse> | undefined | null = {}) : void {
+    if (externalAccessPointResponse) {
+        writer.writeStringValue("appName", externalAccessPointResponse.appName);
+        writer.writeStringValue("avatarUrl", externalAccessPointResponse.avatarUrl);
+        writer.writeBooleanValue("defaultOpen", externalAccessPointResponse.defaultOpen);
+        writer.writeBooleanValue("enabled", externalAccessPointResponse.enabled);
+        writer.writeBooleanValue("isAuth", externalAccessPointResponse.isAuth);
+        writer.writeStringValue("launcherText", externalAccessPointResponse.launcherText);
+        writer.writeNumberValue("panelHeight", externalAccessPointResponse.panelHeight);
+        writer.writeNumberValue("panelWidth", externalAccessPointResponse.panelWidth);
+        writer.writeStringValue("placeholder", externalAccessPointResponse.placeholder);
+        writer.writeStringValue("position", externalAccessPointResponse.position);
+        writer.writeStringValue("primaryColor", externalAccessPointResponse.primaryColor);
+        writer.writeStringValue("subtitle", externalAccessPointResponse.subtitle);
+        writer.writeStringValue("title", externalAccessPointResponse.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalAppItem(writer: SerializationWriter, externalAppItem: Partial<ExternalAppItem> | undefined | null = {}) : void {
+    if (externalAppItem) {
+        writer.writeGuidValue("appId", externalAppItem.appId);
+        writer.writeNumberValue("appType", externalAppItem.appType);
+        writer.writeStringValue("avatar", externalAppItem.avatar);
+        writer.writeStringValue("description", externalAppItem.description);
+        writer.writeStringValue("name", externalAppItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalTokenCommand(writer: SerializationWriter, externalTokenCommand: Partial<ExternalTokenCommand> | undefined | null = {}) : void {
+    if (externalTokenCommand) {
+        writer.writeStringValue("accessAppKey", externalTokenCommand.accessAppKey);
+        writer.writeGuidValue("appId", externalTokenCommand.appId);
+        writer.writeStringValue("externalUserId", externalTokenCommand.externalUserId);
+        writer.writeStringValue("nickname", externalTokenCommand.nickname);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalTokenCommandResponse(writer: SerializationWriter, externalTokenCommandResponse: Partial<ExternalTokenCommandResponse> | undefined | null = {}) : void {
+    if (externalTokenCommandResponse) {
+        writer.writeStringValue("accessToken", externalTokenCommandResponse.accessToken);
+        writer.writeNumberValue("expiresIn", externalTokenCommandResponse.expiresIn);
+        writer.writeStringValue("externalId", externalTokenCommandResponse.externalId);
+        writer.writeStringValue("externalUserId", externalTokenCommandResponse.externalUserId);
+        writer.writeStringValue("refreshToken", externalTokenCommandResponse.refreshToken);
+        writer.writeEnumValue<ExternalTokenType>("tokenType", externalTokenCommandResponse.tokenType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeFeishuAppItem(writer: SerializationWriter, feishuAppItem: Partial<FeishuAppItem> | undefined | null = {}) : void {
+    if (feishuAppItem) {
+        serializeAuditsInfo(writer, feishuAppItem)
+        writer.writeStringValue("appId", feishuAppItem.appId);
+        writer.writeStringValue("bindChannelId", feishuAppItem.bindChannelId);
+        writer.writeEnumValue<FeishuChannelType>("bindChannelType", feishuAppItem.bindChannelType);
+        writer.writeStringValue("bindTime", feishuAppItem.bindTime);
+        writer.writeStringValue("description", feishuAppItem.description);
+        writer.writeStringValue("domain", feishuAppItem.domain);
+        writer.writeGuidValue("feishuAppId", feishuAppItem.feishuAppId);
+        writer.writeBooleanValue("isDisable", feishuAppItem.isDisable);
+        writer.writeBooleanValue("isOnline", feishuAppItem.isOnline);
+        writer.writeStringValue("name", feishuAppItem.name);
+        writer.writeStringValue("teamId", feishuAppItem.teamId);
     }
 }
 /**
@@ -11293,6 +12187,39 @@ export function serializeQueryCustomPluginListCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryExternalAgentSessionsCommandResponse(writer: SerializationWriter, queryExternalAgentSessionsCommandResponse: Partial<QueryExternalAgentSessionsCommandResponse> | undefined | null = {}) : void {
+    if (queryExternalAgentSessionsCommandResponse) {
+        writer.writeGuidValue("appId", queryExternalAgentSessionsCommandResponse.appId);
+        writer.writeCollectionOfObjectValues<AppSessionItem>("items", queryExternalAgentSessionsCommandResponse.items, serializeAppSessionItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryExternalAuthorizedAppsCommandResponse(writer: SerializationWriter, queryExternalAuthorizedAppsCommandResponse: Partial<QueryExternalAuthorizedAppsCommandResponse> | undefined | null = {}) : void {
+    if (queryExternalAuthorizedAppsCommandResponse) {
+        writer.writeCollectionOfObjectValues<ExternalAppItem>("items", queryExternalAuthorizedAppsCommandResponse.items, serializeExternalAppItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryFeishuAppsCommandResponse(writer: SerializationWriter, queryFeishuAppsCommandResponse: Partial<QueryFeishuAppsCommandResponse> | undefined | null = {}) : void {
+    if (queryFeishuAppsCommandResponse) {
+        writer.writeCollectionOfObjectValues<FeishuAppItem>("items", queryFeishuAppsCommandResponse.items, serializeFeishuAppItem);
+        writer.writeNumberValue("myRole", queryFeishuAppsCommandResponse.myRole);
+        writer.writeStringValue("teamId", queryFeishuAppsCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryKnowledgeGraphCommandResponse(writer: SerializationWriter, queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphCommandResponse) {
         writer.writeStringValue("createTime", queryKnowledgeGraphCommandResponse.createTime);
@@ -11870,6 +12797,16 @@ export function serializeQueryWikisCommandResponse(writer: SerializationWriter, 
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeRefreshExternalTokenCommand(writer: SerializationWriter, refreshExternalTokenCommand: Partial<RefreshExternalTokenCommand> | undefined | null = {}) : void {
+    if (refreshExternalTokenCommand) {
+        writer.writeStringValue("refreshToken", refreshExternalTokenCommand.refreshToken);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshMcpServerPluginCommand(writer: SerializationWriter, refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined | null = {}) : void {
     if (refreshMcpServerPluginCommand) {
         writer.writeGuidValue("pluginId", refreshMcpServerPluginCommand.pluginId);
@@ -11994,6 +12931,26 @@ export function serializeRunTeamPluginCommand(writer: SerializationWriter, runTe
         writer.writeStringValue("key", runTeamPluginCommand.key);
         writer.writeStringValue("requestJson", runTeamPluginCommand.requestJson);
         writer.writeStringValue("teamId", runTeamPluginCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSaveAppAccessPointCommand(writer: SerializationWriter, saveAppAccessPointCommand: Partial<SaveAppAccessPointCommand> | undefined | null = {}) : void {
+    if (saveAppAccessPointCommand) {
+        writer.writeStringValue("avatar", saveAppAccessPointCommand.avatar);
+        writer.writeBooleanValue("defaultOpen", saveAppAccessPointCommand.defaultOpen);
+        writer.writeBooleanValue("enabled", saveAppAccessPointCommand.enabled);
+        writer.writeStringValue("launcherText", saveAppAccessPointCommand.launcherText);
+        writer.writeNumberValue("panelHeight", saveAppAccessPointCommand.panelHeight);
+        writer.writeNumberValue("panelWidth", saveAppAccessPointCommand.panelWidth);
+        writer.writeStringValue("placeholder", saveAppAccessPointCommand.placeholder);
+        writer.writeEnumValue<AccessPointPosition>("position", saveAppAccessPointCommand.position);
+        writer.writeStringValue("primaryColor", saveAppAccessPointCommand.primaryColor);
+        writer.writeStringValue("subtitle", saveAppAccessPointCommand.subtitle);
+        writer.writeStringValue("title", saveAppAccessPointCommand.title);
     }
 }
 /**
@@ -12591,6 +13548,21 @@ export function serializeUpdateClassifyCommand(writer: SerializationWriter, upda
         writer.writeNumberValue("classifyId", updateClassifyCommand.classifyId);
         writer.writeStringValue("description", updateClassifyCommand.description);
         writer.writeStringValue("name", updateClassifyCommand.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateFeishuAppCommand(writer: SerializationWriter, updateFeishuAppCommand: Partial<UpdateFeishuAppCommand> | undefined | null = {}) : void {
+    if (updateFeishuAppCommand) {
+        writer.writeStringValue("appSecret", updateFeishuAppCommand.appSecret);
+        writer.writeStringValue("description", updateFeishuAppCommand.description);
+        writer.writeStringValue("domain", updateFeishuAppCommand.domain);
+        writer.writeGuidValue("feishuAppId", updateFeishuAppCommand.feishuAppId);
+        writer.writeBooleanValue("isDisable", updateFeishuAppCommand.isDisable);
+        writer.writeStringValue("name", updateFeishuAppCommand.name);
     }
 }
 /**
@@ -13800,6 +14772,35 @@ export interface UpdateClassifyCommand extends Parsable {
     name?: string | null;
 }
 /**
+ * 更新飞书应用连接，需要团队 Admin 及以上角色；AppSecret 为空表示保持不变，更新后自动重连.
+ */
+export interface UpdateFeishuAppCommand extends Parsable {
+    /**
+     * 飞书开放平台 AppSecret，为空表示保持不变.
+     */
+    appSecret?: string | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 接入域名，为空表示保持不变.
+     */
+    domain?: string | null;
+    /**
+     * 飞书应用记录 id（来自路由）.
+     */
+    feishuAppId?: Guid | null;
+    /**
+     * 是否禁用，禁用后断开长连接且不再接收事件.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 连接名称，团队内唯一.
+     */
+    name?: string | null;
+}
+/**
  * 更新知识图谱，需要团队 Admin 及以上角色.
  */
 export interface UpdateKnowledgeGraphCommand extends Parsable {
@@ -14495,6 +15496,13 @@ export interface WikiModelOptionItem extends Parsable {
     name?: string | null;
 }
 /**
+ * 访问点悬浮位置.
+ */
+export const AccessPointPositionObject = {
+    BottomRight: "bottomRight",
+    BottomLeft: "bottomLeft",
+} as const;
+/**
  * AI 协议（协议族 + 协议风格组合）.
  */
 export const AIProtocolFamilyObject = {
@@ -14534,6 +15542,19 @@ export const DocumentPartitionSplitModeObject = {
     Sentence: "sentence",
     Paragraph: "paragraph",
     Markdown: "markdown",
+} as const;
+/**
+ * 外部 token 类型.
+ */
+export const ExternalTokenTypeObject = {
+    App: "app",
+    User: "user",
+} as const;
+/**
+ * 飞书应用绑定的渠道类型；当前仅应用渠道（群聊/私聊消息回复），后续渠道（如知识库）扩展枚举值.
+ */
+export const FeishuChannelTypeObject = {
+    App: "app",
 } as const;
 /**
  * 文档切片元数据生成策略类型.

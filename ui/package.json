@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -b --noEmit",
-    "syncapi": "node scripts/sync-api.mjs"
+    "syncapi": "node scripts/sync-api.mjs",
+    "build:embed": "vite build --config embed.vite.config.ts"
   },
   "dependencies": {
     "@ag-ui/client": "^0.0.59",

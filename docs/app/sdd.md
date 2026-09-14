@@ -2,8 +2,8 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/app-e2e.mjs](../../local-dev/app-e2e.mjs)
 
-- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量））
-- 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页 + 外部应用分区 + 应用广场）已实现；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；**应用接入 key 与外部用户 token**为下阶段（见 [外部应用/接入设计](../superpowers/specs/2026-09-13-external-app-and-access-design.md)）
+- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33））
+- 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页 + 外部应用分区 + 应用广场）已实现；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；**外部 token 体系与外部会话/对话端点（/api/external/agent/*）**已实现（D39，见 [外部应用/接入设计](../superpowers/specs/2026-09-13-external-app-and-access-design.md) 与 [访问点设计](../superpowers/specs/2026-09-14-access-point-design.md)）
 - 领域：`src/app`（Shared/Core/Api），前端 `ui/src/pages/teams/apps`（团队页「应用」分区 + 应用管理页）
 - Schema 真源：库表现状 + `src/database/MoAI.Database.Postgres/Data/App*.cs`（脚手架逆向生成）；原 `asserts/app.sql` / 库表 `app_agent_*` 已随仓库 DDL 清理移除
 
@@ -79,7 +79,16 @@
 
 **绑定关系**：`wiki_ids` / `plugins` 在配置表内以 JSON 文本承载（一表搞定，不建关联表）。绑定对象必须是**该团队有权访问**的知识库/插件——校验放在应用层（wiki 按 `team_id`、plugin 按 `plugin.is_public` 或 `plugin_team_authorization` 授权），**不建物理外键**（仓库约定）。
 
+### 2.2 外部用户（库表 `external_user`）与外部 token（D30~D33）
+
+- `external_user`：`id(bigserial)` / `team_id(int)` / `app_id(uuid null, 授权应用)` / `access_app_id(uuid null, 来源接入)` / `external_user_id(varchar128)` / `nickname(varchar100)` / 审计五件套。partial 唯一索引 `(access_app_id, external_user_id) WHERE access_app_id IS NOT NULL AND is_deleted=0`——同一接入下同一外部身份复用同一行（继承会话与消费）；匿名身份（无接入）不受约束。DDL：[asserts/external_app.sql](../../asserts/external_app.sql)。
+- **双 audience 隔离（D30）**：外部 token 与内部 JWT 同一 RSA 私钥签发，但 audience 为 `SystemOptions.Server + "|external"`；内部 JwtBearer（aud=Server）天然拒绝外部 token，外部 scheme 也拒绝内部 token——**两类 token 都不能互串**（EA-S1/S3）。
+- **三类 token（D31）**：①**应用 token**（`typ=externalapp`）：仅凭 key 签发，主体=接入 id，授权范围=接入 `app_ids` 全部；②**用户 token**（`typ=external`）：key+appId+externalUserId 签发，主体=`external_user.id`，claim `appid` 指定**唯一授权应用**（换绑应用即更新 `external.app_id`）；③**匿名 token**：仅凭 `is_auth=false` 应用 id 签发，生成/复用临时 `external_user` 行。access_token 有效 2h（DEBUG 7d）、refresh_token 7d，响应 `{accessToken, refreshToken, expiresIn, tokenType(app/user), externalId?, externalUserId?}`（long 序列化为字符串）。
+- **刷新即重建授权（D32）**：refresh_token 只携带主体（sub/typ），刷新时按库重建 claims——管理员改接入 `app_ids` / 换绑应用 / 删除接入（吊销）在下次刷新即生效；刷新旋转出新 token 对。
+- **拦截器（D33）**：`ExternalController` 整体 `[AllowAnonymous]`（规避 convention 自动补 `[Authorize]` 与内部用户态中间件对外部 principal 的误判）+ 独立认证方案 `ExternalJwt`（`ExternalJwtBearerAuthenticationHandler`，AppApiModule 注册）；受保护端点标 `[ExternalAuthorize]`（`IAsyncAuthorizationFilter`，`AuthenticateAsync(ExternalJwt)`，解析出的 `ExternalTokenContext` 放 `HttpContext.Items`）。Handler 不感知 HTTP，授权范围校验以 `ExternalTokenContext.AppIds` 判定。
+
 ## 3. 角色与权限矩阵（Handler 层判定，依赖 team_user 事实）
+
 
 | 操作 | Owner/Admin | Member | 非成员（内部用户） |
 |---|---|---|---|
@@ -122,6 +131,16 @@
 | POST | `/api/access-app` | 创建应用接入 `{teamId, name, description?, appIds[]}`，key 原文仅返回一次 | `CreateAccessAppCommandResponse` |
 | PUT | `/api/access-app/{id}` | 更新接入 `{name, description?, appIds[]}`（key 不可改） | Empty |
 | DELETE | `/api/access-app/{id}` | 删除接入（软删除） | Empty |
+| POST | `/api/external/token` | 换取外部 token：`{accessAppKey}` 应用 token；`{accessAppKey, appId, externalUserId, nickname?}` 用户 token；`{appId}` 匿名 token（需 `is_auth=false`） | `ExternalTokenCommandResponse` |
+| POST | `/api/external/token/refresh` | 刷新外部 token `{refreshToken}`，授权范围以库为准重建 | `ExternalTokenCommandResponse` |
+| GET | `/api/external/app/list` | 当前外部 token 授权范围内的已发布应用列表（需外部 token，`[ExternalAuthorize]`） | `QueryExternalAuthorizedAppsCommandResponse` |
+| POST | `/api/external/agent/{appId}/session` | 外部用户创建会话（需外部**用户** token；应用在授权范围、已发布 Agent 应用） | `SimpleGuid`（会话 id） |
+| GET | `/api/external/agent/{appId}/session/list` | 该外部用户在某应用下的会话列表（按最后消息时间倒序） | `QueryExternalAgentSessionsCommandResponse` |
+| GET | `/api/external/session/{sessionId}/messages` | 外部会话消息（按 seq 升序；仅归属外部用户且应用在授权范围，否则 404） | `QueryAppSessionMessagesCommandResponse` |
+| POST | `/api/external/agent/{appId}/chat` | 外部对话（AG-UI SSE，与内部 `/api/agent/{appId}/chat` 同一 Agent/会话存储）；认证与授权范围由 `ExternalAuthenticationMiddleware` 在管道完成 | SSE 流 |
+| GET | `/api/app/{id}/access-point` | 查询访问点配置（内部管理视图，未保存过返回默认值；Admin+） | `AppAccessPointConfigResponse` |
+| PUT | `/api/app/{id}/access-point` | 保存访问点配置（整体替换；仅外部应用，Admin+） | Empty |
+| GET | `/api/external/app/{appId}/access-point` | 访问点**公开**配置（匿名，悬浮组件用；含 appName/avatarUrl/isAuth/enabled） | `ExternalAccessPointResponse` |
 
 > `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`。
 
@@ -224,6 +243,11 @@
 - **D27 工作台分区用左侧菜单**：修订原 D21「管理页不做左侧菜单」——分区由 1 个增至 4 个后必须有导航，采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，配置分区内部再左右分栏（左配置、右调试）。
 - **D28 调试会话复用现有对话链路 + Redis 注册表**：不新建 AG-UI 端点与 store；dispatcher 在 DB 无会话行时回落 `IDebugSessionRegistry` 解析，判定归属后按调试装配。
 - **D29 调试不落库靠「无 session 行」自然成立**：`AppChatFlushService.FlushAsync` 查不到会话行即 return，无需新增 `is_draft` 字段；`isDebug=true` 时工厂跳过用量计数器（不计用量）。
+- **D30（双 audience 隔离）**：外部 token audience = `Server|external`（`ExternalAuthDefaults.BuildAudience`），与内部 JWT（aud=Server）同钥不同 aud，双向天然拒绝；这是「外部 token 不能访问正常接口」与「内部 token 不能访问外部接口」的唯一守卫，无需逐接口判断。
+- **D31（应用/用户/匿名三类 token 统一出口）**：均由 `ExternalTokenProvider`（接口在 App.Shared，实现 `[InjectOnScoped]` 于 Core）签发；应用 token 对象是接入本身（不落 external 行），用户/匿名 token 主体是 `external_user.id`。用户 token 用 claim `appid` 圈定**单应用**授权（用户要求「只能访问一个应用」），授权判断统一走 `ExternalTokenContext.AppIds`。
+- **D32（refresh 旋转 + 库内重建授权）**：refresh_token 无状态 JWT 只存主体；每次刷新查库恢复最新授权并签发新 token 对——接入的 `app_ids` 收窄、外部用户换绑应用、接入被删（吊销）都即时反映。access token 剩余有效期内的已签发凭据不做即时吊销（无状态 JWT 的既有取舍，见已知问题）。
+- **D33（/api/external 拦截器形态）**：采用与网关一致的「`[AllowAnonymous]` + 显式认证」而非 `[Authorize(AuthenticationSchemes=...)]`——因为 `ApiApplicationModelConvention` 会给无 `[AllowAnonymous]` 的端点自动补默认 scheme 的 `[Authorize]`，且 `CustomAuthorizaMiddleware` 只认内部 JWT 的用户态。外部身份经 `ExternalTokenContext`（claims 解析产物）显式传给 Handler，不注入 `IUserContextProvider`。
+- **D39（外部会话复用内部派发链路）**：`ExternalAuthenticationMiddleware`（注册于 `CustomAuthorizaMiddleware` 之前）对 `/api/external` + Bearer 用外部 scheme 认证并把 `external_user.id` 写入 `ClaimTypes.NameIdentifier`——`UserContextProvider` 沿用内部解析得到 `UserId=external_user.id`，`AppAgentDispatcher` 的「会话归属 = CreateUserId」校验与 `AppAgentFactory` 装配**零改动**复用（会话行 `user_type=External`、`create_user_id=external_user.id`）。外部对话端点在 `AppAgentEndpointMapper` 挂同一 `AgentName`（同 `AppAgentSessionStore`）；AG-UI 端点**不经 MVC `/api` 前缀 convention**，模板需写完整路径。应用 token（`typ=externalapp`）无数值主体，`NameIdentifier` 固定 0，不能发起会话等用户级操作（403）。
 - **D30 调试会话 TTL 独立**：注册表 2h 滑动续期；前端刷新即弃用 id；残留热态键靠既有 24h TTL 清理。
 - **D31 日志为压缩后视图**（Phase 2）：不做原始消息留存；外部身份按 `user_type` 区分展示。
 - **D32 监控基于聚合用量表（无趋势）**（Phase 3 已交付）：直接查 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId`，该列为 Guid，无需 D6 字符串化迁移）交付汇总 + 按模型分布；**不含按日趋势**（聚合表逐维一行、无时间分桶），趋势需逐次用量日志或按日聚合，留后续。
@@ -242,7 +266,9 @@
 - 流程应用的应用级配置（`app_workflow_design` 等）未实现；管理页对流程应用只开放基础信息。
 - 消息表未落 `status`（生成中/完成/失败）与逐条 token；会话表已按会话维度累计 token。
 - `app` 表未建 partial 唯一索引，并发创建同名应用存在极小概率穿透（Handler 先查后写）。
-- **访问点为占位**：工作台 `access` 分区仅展示「后续版本提供」文案，Phase 4 交付。
+- **访问点组件走查待做**：工作台 `access` 分区（配置表单/端点/嵌入片段）与 `/embed/moai-widget.js` 已交付；浏览器真实悬浮对话走查（需配置桩模型渠道）随 4c 收尾。
+- **外部对话端点的会话范围守卫在中间件**：`ExternalAuthenticationMiddleware` 对 `/api/external/agent/{appId}/chat` 校验 `appId ∈ token 授权范围` + 应用可用（已发布、未禁用）；对话中未配模型时派发器以 SSE 文本返回装配错误（HTTP 200），不计费。真实模型对话的端到端 E2E（需自建桩模型与渠道配置）随访问点 4c 交付。
+- **外部 access token 无即时吊销**：吊销接入/换绑应用依赖 refresh（≤7d）或 access 自然过期（2h）；期间已签发 access token 仍有效（无状态 JWT 取舍）。
 - **监控无按日趋势**：用量数据来自聚合表 `ai_model_token_audit`，无时间分桶，无法画日趋势；趋势需逐次用量日志或按日聚合表，留后续迭代。
 - **监控最多滞后约 1 分钟**：应用对话只累加 Redis 计数器，由 Hangfire 每分钟 flush 到 `ai_model_token_audit`。
 - **日志为压缩后视图**：`app_agent_message` 只保留压缩后视图，被压缩掉的历史原文不可回溯；调试会话不落库，故不出现在日志中。

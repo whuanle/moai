@@ -1,7 +1,7 @@
 # 外部应用 · 应用接入 · 外部用户 Token 设计
 
 - 日期：2026-09-13
-- 状态：待评审
+- 状态：一期、二期已交付；**三期部分交付**（2026-09-14）：`external_user` 表、`/external/token`（应用/用户/匿名三类 token，access+refresh 双令牌）、`/external/token/refresh`、`/external/app/list` 与 `/api/external` 拦截器已实现并 E2E 28/28 全绿；**外部会话与对话端点（`/external/agent/*`、`/external/session/*`）为下阶段**。落地细节见 [app SDD §2.2](../../app/sdd.md) 与 [@EA-S*](../../app/bdd.md)。
 - 关联：[应用 SDD](../../app/sdd.md) ｜ [团队 SDD](../../team/sdd.md) ｜ [CQRS 规范](../../cqrs-conventions.md) ｜ [前端规范](../../../ui/docs/frontend-conventions.md) ｜ [数据库脚手架](../../database-scaffold/sdd.md) ｜ [应用接口真源](../../api_interface.md)
 
 ## 背景与目标
@@ -20,7 +20,7 @@
 **包含：**
 1. 外部应用：`app.is_external / is_auth / is_public` 语义落地、团队「外部应用」菜单、可见性过滤、平台公开应用列表。
 2. 应用接入：团队下 `access_app`（授权 key + 可访问外部应用列表）的增删改查。
-3. 外部用户访问：`external` 表、`/external/token` 换取临时 token、`/external/...` 外部对话端点、用量归属。
+3. 外部用户访问：`external_user` 表、`/external/token` 换取临时 token、`/external/...` 外部对话端点、用量归属。
 4. 用量表类型修复：`ai_model_usage_log.use_resource_id`、`ai_model_token_audit.use_resource_id` 统一为字符串；`ai_model_token_audit.user_id` 改 bigint。
 
 **不包含（后续迭代）：**
@@ -35,7 +35,7 @@
 |---|---|
 | `app` | 应用。`is_external=false` 内部应用，`true` 外部应用；`is_auth` 仅外部应用有意义；`is_public` 仅内部应用有意义。 |
 | `access_app` | **应用接入**。团队下创建的一把 key，授权它可访问哪些外部应用（`app_ids`）。**不含 `is_auth` 字段**（`is_auth` 属于 `app`）。 |
-| `external` | **外部用户**。一次访问所对应的外部身份记录；`id` 承载会话归属与用量归属。 |
+| `external_user` | **外部用户**。一次访问所对应的外部身份记录；`id` 承载会话归属与用量归属。 |
 
 ## 数据模型（DB-first）
 
@@ -65,10 +65,12 @@ schema 走手写 DDL + PostgresScaffold 逆向；`EnsureCreated` 不演进既有
 - key 生成规则：`moai-ac-` + 32 位随机串（展示用前缀 `moai-ac-` + 8 位）。
 - 约束：`app_ids` 中每个应用必须属于本团队且 `is_external=true`；否则 400。
 
-### 3. `external`（新建，外部用户）
+### 3. `external_user`（新建，外部用户）
+
+> 落地更名（2026-09-14）：原设计表名 `external` 过于泛化、难以辨识，落地时更名为 `external_user`；实体 `ExternalUserEntity`、DbSet `ExternalUsers` 同步命名。
 
 | 列 | 类型 | 说明 |
-|---|---|---|
+|---|---|---|---|
 | `id` | bigint identity | 主键；承载会话 `create_user_id` 与用量 `user_id` |
 | `team_id` | int | 归属团队 |
 | `app_id` | uuid null | 匿名访问（`is_auth=false`）时的来源应用 |
@@ -100,18 +102,20 @@ schema 走手写 DDL + PostgresScaffold 逆向；`EnsureCreated` 不演进既有
 
 ### Token 获取（`POST /external/token`，匿名）
 
+> **2026-09-14 实现修订**：应外部接入需求，token 体系在原「短时外部 JWT」基础上扩展为 **OAuth 风格双令牌**（`access_token` 2h + `refresh_token` 7d，刷新旋转），并区分**应用 token / 用户 token** 两类主体（应用 token 授权=接入 `app_ids` 全部；用户 token 绑定 `external_user.id` 且以 claim `appid` 圈定**单个应用**）；匿名路径保留原设计。refresh 仅携带主体，**刷新时按库重建授权范围**——接入 `app_ids` 收窄、换绑应用、删除接入（吊销）即时生效。外部 token 与内部 JWT 同钥不同 audience（`Server|external`）双向隔离；`/api/external/*` 受保护端点经 `ExternalJwt` 独立认证方案 + `[ExternalAuthorize]` 拦截器校验。
+
 请求体（二选一）：
 
-- `{ accessAppKey, externalUserId?, nickname? }`：`is_auth=true` 路径。校验 key 存在、未删除；取出该接入的 `team_id/app_ids`。若提供 `externalUserId`，按 `(access_app_id, external_user_id)` upsert `external` 行（复用 id → 继承历史）；否则生成临时 `external_user_id` 新建行。
-- `{ appId, externalUserId?, nickname? }`：`is_auth=false` 匿名路径。校验 `app.is_external=true && app.is_auth=false`、已发布、未禁用；生成临时 `external` 行（`app_id` 记为来源）。
+- `{ accessAppKey, externalUserId?, nickname? }`：`is_auth=true` 路径。校验 key 存在、未删除；取出该接入的 `team_id/app_ids`。若提供 `externalUserId`，按 `(access_app_id, external_user_id)` upsert `external_user` 行（复用 id → 继承历史）；否则生成临时 `external_user_id` 新建行。
+- `{ appId, externalUserId?, nickname? }`：`is_auth=false` 匿名路径。校验 `app.is_external=true && app.is_auth=false`、已发布、未禁用；生成临时 `external_user` 行（`app_id` 记为来源）。
 
 响应：短时外部 JWT（`typ=external`、`sub=external.id`、`team_id`、可选 `access_app_id`、`app_ids`、`external_user_id`），有效期默认 2 小时（可配）。不落库用户信息。
 
 ### 外部对话（`/external` 路由组）
 
 - `POST /external/agent/{appId:guid}/session`：创建外部会话。校验 appId 在 token 的 `app_ids` 内（`is_auth=false` 时等于本次 token 的 app）；写入 `AppAgentSession`，`user_type=External`、`create_user_id=external.id`。
-- `POST /external/agent/{appId:guid}/chat`：AG-UI SSE 对话。复用 `AppAgentDispatcher`（启动时以独立 agent name 注册同一 dispatcher），端点鉴权要求外部 scheme + `appId ∈ app_ids` + `app.is_external=true`；会话归属按 `external.id` 校验。
-- `GET /external/agent/{appId:guid}/session/list`、`GET /external/session/{sessionId:guid}/messages`：返回该 `external` 身份的会话与消息，实现「继承聊天记录」。
+- `POST /external/agent/{appId:guid}/chat`：AG-UI SSE 对话。复用 `AppAgentDispatcher`（启动时以独立 agent name 注册同一 dispatcher），端点鉴权要求外部 scheme + `appId ∈ app_ids` + `app.is_external=true`；会话归属按 `external_user.id` 校验。
+- `GET /external/agent/{appId:guid}/session/list`、`GET /external/session/{sessionId:guid}/messages`：返回该 `external_user` 身份的会话与消息，实现「继承聊天记录」。
 - 内部 `POST /api/agent/{appId}/chat` 不变，且不接受外部 token。
 
 ### 公开内部应用（`is_public`）
@@ -157,14 +161,14 @@ schema 走手写 DDL + PostgresScaffold 逆向；`EnsureCreated` 不演进既有
 | PUT | `/access-app/{id}` | 改名称/描述/授权 `appIds`（不改 key） |
 | DELETE | `/access-app/{id}` | 软删除 |
 
-### 三期：外部 Token 与对话（`ExternalController`，路由 `external`）
+### 三期：外部 Token 与对话（`ExternalController`，路由 `external_user`）
 
 | 方法 | 路由 | 说明 |
 |---|---|---|
 | POST | `/external/token` | 见上；匿名 |
 | POST | `/external/agent/{appId:guid}/session` | 建外部会话 |
 | POST | `/external/agent/{appId:guid}/chat` | AG-UI SSE 外部对话 |
-| GET | `/external/agent/{appId:guid}/session/list` | 外部会话列表（按 `external.id`） |
+| GET | `/external/agent/{appId:guid}/session/list` | 外部会话列表（按 `external_user.id`） |
 | GET | `/external/session/{sessionId:guid}/messages` | 外部会话消息 |
 
 请求模型实现 `IModelValidator<T>` 并写 `static Validate`；枚举带 `JsonPropertyName`；列表 DTO 继承 `AuditsInfo` 并用 `IUserInfoFillService.FillAsync` 填充人名；时间用 `DateTimeOffset`；Guid 用 `Guid.CreateVersion7()`；`BusinessException` 显式设 `StatusCode`；DI 用 Maomi 特性。
@@ -198,7 +202,7 @@ schema 走手写 DDL + PostgresScaffold 逆向；`EnsureCreated` 不演进既有
 
 - **D1 字段语义**：`is_external` 唯一区分内外；`is_auth` 仅外部；`is_public` 仅内部；废弃 `enable_foreign`。
 - **D2 `access_app` 即应用接入**：授权 key 携带 `app_ids`；本身不含 `is_auth`；key 明文列（沿用用户已建结构），仅在创建响应返回一次。
-- **D3 `external` 外部用户表**：以 `(access_app_id, external_user_id)` 绑定复用、继承聊天/消费；匿名路径生成临时身份。
+- **D3 `external_user` 外部用户表**：以 `(access_app_id, external_user_id)` 绑定复用、继承聊天/消费；匿名路径生成临时身份。
 - **D4 双 audience 隔离**：外部 token 用独立 `aud`，内部端点天然拒绝；外部能力独立 `/external` 路由组。
 - **D5 `is_auth=false` 也走临时 token**：统一身份链路，保证会话与用量可归属；调用方无需 key。
 - **D6 用量资源 id 统一为字符串**：顺带修 `ai_model_token_audit.user_id` 为 bigint；不新增 `resource_type`。
@@ -209,7 +213,7 @@ schema 走手写 DDL + PostgresScaffold 逆向；`EnsureCreated` 不演进既有
 
 1. **外部应用**：DDL（drop `enable_foreign`）+ 字段/命令/DTO/前端 + 可见性过滤 + 公开列表 + E2E。
 2. **应用接入**：`access_app` 四件套 + key 生成/一次性返回 + 前端页 + E2E。
-3. **外部 token 与对话**：`external` 表 + `/external/token` + `/external` 对话与会话端点 + 用量类型修复 + E2E。
+3. **外部 token 与对话**：`external_user` 表 + `/external/token` + `/external` 对话与会话端点 + 用量类型修复 + E2E。
 
 每期独立可验证后再进入下一期。
 

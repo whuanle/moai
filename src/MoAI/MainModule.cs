@@ -12,6 +12,7 @@ using MoAI.Auth;
 using MoAI.Classify;
 using MoAI.Common;
 using MoAI.Database;
+using MoAI.Feishu;
 using MoAI.Filters;
 using MoAI.Gateway;
 using MoAI.Hangfire;
@@ -51,6 +52,7 @@ namespace MoAI;
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<AiCoreModule>]
+[InjectModule<FeishuCoreModule>]
 [InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]
 [InjectModule<DynamicPluginsModule>]

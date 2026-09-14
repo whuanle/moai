@@ -1215,7 +1215,8 @@
     "sectionSkills": "技能",
     "skillsHint": "Agent 按需加载的能力包（脚本+使用说明），在沙箱中执行；需同时启用沙箱才能执行脚本",
     "skillsPlaceholder": "选择可用的技能",
-    "skillsEmpty": "暂无可挂载的技能"
+    "skillsEmpty": "暂无可挂载的技能",
+    "notFound": "应用不存在"
   },
   "skills": {
     "searchPlaceholder": "搜索技能标识/名称/描述",
@@ -1254,8 +1255,6 @@
     "formFiles": "技能包文件",
     "filesExtra": "脚本与资源文件，加载时写入会话沙箱；文件名即包内路径",
     "addFile": "添加文件"
-    "saveConfig": "保存配置",
-    "notFound": "应用不存在"
   },
   "accessApp": {
     "create": "新建接入",
@@ -1336,6 +1335,38 @@
     "stop": "停止",
     "runError": "对话运行失败，请稍后重试。",
     "adminOnly": "调试需要团队管理员权限。"
+  },
+  "accessPoint": {
+    "internalAppHint": "只有外部应用可以配置访问点",
+    "configTitle": "访问点配置",
+    "fieldTitle": "面板标题",
+    "titlePlaceholder": "留空则使用应用名",
+    "fieldLauncherText": "悬浮按钮文案",
+    "launcherPlaceholder": "留空则显示图标",
+    "fieldSubtitle": "欢迎语 / 副标题",
+    "fieldPlaceholder": "输入框占位文案",
+    "fieldPrimaryColor": "主题色",
+    "colorInvalid": "主题色必须为 #RRGGBB 格式",
+    "fieldPosition": "悬浮位置",
+    "positionBottomRight": "右下角",
+    "positionBottomLeft": "左下角",
+    "fieldAvatar": "头像",
+    "avatarEmpty": "未设置头像",
+    "avatarSuccess": "头像上传成功",
+    "avatarFailed": "头像上传失败",
+    "fieldPanelWidth": "面板宽度",
+    "fieldPanelHeight": "面板高度",
+    "fieldDefaultOpen": "默认展开",
+    "fieldEnabled": "启用访问点",
+    "save": "保存配置",
+    "saved": "访问点配置已保存",
+    "endpointTitle": "对话端点",
+    "endpointHint": "第三方自建前端按 AG-UI 协议 POST 此端点；悬浮组件无需关心",
+    "embedTitle": "嵌入代码",
+    "keyHint": "该应用需要授权访问：请在 data-key 中填入团队「应用接入」的 key",
+    "copySnippet": "复制嵌入代码",
+    "copied": "已复制",
+    "adminOnly": "嵌入代码仅团队管理员可见"
   },
   "appPlaza": {
     "empty": "平台暂无公开应用",

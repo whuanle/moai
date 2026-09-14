@@ -22,6 +22,22 @@
 - 后端构建（应用监控轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-14）。
 - E2E：`node local-dev/app-e2e.mjs` → **101/101 PASS**（2026-09-14；新增 AP-43a~e 覆盖 用量汇总/按模型/权限）。
 - 前端：`npm run syncapi` 后 `npm run typecheck`/`npm run lint` → **0 error**；`npx vitest run src/pages/teams/apps` → **33/33 PASS（9 文件）**（2026-09-14；新增 `AppMonitorSection.test.tsx`）。
+- 后端构建（外部 token 轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-14）。
+- E2E：`node local-dev/external-app-e2e.mjs` → **28/28 PASS**（2026-09-14；新脚本，覆盖 @EA-S1~S8：应用/用户/匿名三类 token、双 audience 内外隔离、身份复用、范围校验、刷新旋转、删除接入吊销）。
+  - 修复 1：`ExternalTokenProvider` 校验时未关 `MapInboundClaims`，`sub/typ` 被映射为 ClaimTypes 长名导致主体类型解析失败（应用 token 刷新 401）——改为 `new JwtSecurityTokenHandler() { MapInboundClaims = false }`。
+  - 修复 2：`ConfigureAuthorizaModule` 的 `JwtBearerEvents.OnAuthenticationFailed` 直接改写 `Response.StatusCode = 401`，污染多认证方案场景（外部 token 请求返回正确数据但状态码 401）——改为仅记日志，401 交由 Challenge 兜底。
+  - 备注：存量库需执行 `asserts/external_app.sql` 建 `external_user` 表（新库 EnsureCreated 自动建）；本机 `psql`/`docker` 不可用，用临时 Npgsql console 执行 DDL 成功。
+- 后端构建（外部会话/对话轮）+ 实体脚手架回归：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-14）。
+  - 脚手架重生成以库为准删掉了 `Skills` DbSet 与实体，但开发库缺 `skill` 表系**库落后于代码**——恢复 `SkillEntity`/`SkillConfiguration`/DbSet 并新增 `asserts/skill.sql` 补建开发库表（已应用）。
+- E2E：`node local-dev/external-app-e2e.mjs` → **42/42 PASS**（2026-09-14；新增 EA-20~25 覆盖 @EA-S9/S10：外部建会话/会话列表/消息、应用 token 与范围外拒绝、他人会话 404、对话端点 401/403、AG-UI 真实请求归属校验通过）。
+  - 修复 3：`CreateExternalAgentSessionCommand.Validate` 的 `AppId NotEmpty` 在模型绑定阶段（路由参数注入前）执行导致 400——AppId 由路由 `:guid` 约束保证，删除该规则。
+  - 修复 4：AG-UI 端点不经 MVC `/api` 前缀 convention，外部对话端点模板需写全 `/api/external/agent/{appId}/chat`。
+- 回归：`node local-dev/app-e2e.mjs` → **101/101 PASS**（2026-09-14；验证外部认证中间件与 AG-UI 外部端点不影响内部链路）。
+- 后端构建（访问点轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-14）；`npm run syncapi` 重新生成 Kiota 客户端。
+- 访问点 E2E：`node local-dev/external-app-e2e.mjs` → **51/51 PASS**（2026-09-14；新增 EA-26~28 覆盖 @EA-S11/S12：默认配置/保存/非法颜色与尺寸 400/内部应用 400、公开配置生效与 404、/embed/moai-widget.js 托管）。
+  - 修复 5：`AccessPointPosition` 枚举字符串被全局 `JsonStringEnumConverter(CamelCase)` 处理，`bottom-right` 形式无法反序列化——统一为 `bottomRight/bottomLeft`（与 `AppType` 同机制），列默认值同步。
+  - 修复 6：`ExternalAuthenticationMiddleware` 的 Bearer 强制规则误拦访问点公开配置（匿名）——白名单补充 `/api/external/app/*/access-point`。
+- 前端（访问点轮）：`npm run typecheck`/`npm run lint` → **0 error**；`npm run test` 全量 **263/263（50 文件，含新增 `AppAccessSection.test.tsx` 5/5）**；`npm run build:embed` 产物 `src/MoAI/wwwroot/embed/moai-widget.js`（IIFE ~240KB）
 
 ## 映射表
 
@@ -64,6 +80,19 @@
 | 应用对话日志看板 | ui/src/pages/teams/apps/__tests__/AppLogsSection.test.tsx | PASS 3/3（2026-09-14） |
 | @AP-S43 | app-e2e.mjs（AP-43a-e） | PASS（2026-09-14） |
 | 应用用量监控看板 | ui/src/pages/teams/apps/__tests__/AppMonitorSection.test.tsx | PASS 3/3（2026-09-14） |
+| @EA-S1 | external-app-e2e.mjs（EA-01、EA-02） | PASS 28/28（2026-09-14） |
+| @EA-S2 | external-app-e2e.mjs（EA-03~EA-06） | PASS（2026-09-14） |
+| @EA-S3 | external-app-e2e.mjs（EA-07） | PASS（2026-09-14） |
+| @EA-S4 | external-app-e2e.mjs（EA-08~EA-10） | PASS（2026-09-14） |
+| @EA-S5 | external-app-e2e.mjs（EA-11~EA-13） | PASS（2026-09-14） |
+| @EA-S6 | external-app-e2e.mjs（EA-14） | PASS（2026-09-14） |
+| @EA-S7 | external-app-e2e.mjs（EA-15~EA-18） | PASS（2026-09-14） |
+| @EA-S8 | external-app-e2e.mjs（EA-19a-d） | PASS（2026-09-14） |
+| @EA-S9 | external-app-e2e.mjs（EA-20a/b、EA-21a/b） | PASS 42/42（2026-09-14） |
+| @EA-S10 | external-app-e2e.mjs（EA-22a-d、EA-23、EA-24a-d、EA-25） | PASS（2026-09-14） |
+| @EA-S11 | external-app-e2e.mjs（EA-26a-d） | PASS 51/51（2026-09-14） |
+| @EA-S12 | external-app-e2e.mjs（EA-27a-e、EA-28） | PASS（2026-09-14） |
+| 访问点配置分区 | ui/src/pages/teams/apps/__tests__/AppAccessSection.test.tsx | PASS 5/5（2026-09-14） |
 
 ## 复验命令
 
@@ -72,7 +101,8 @@
 dotnet build src/MoAI/MoAI.csproj          # 0 error
 cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
-node local-dev/app-e2e.mjs                 # 期望 82/82 PASS（含 AP-40 调试会话创建 / 角色与类型门禁 / 不落库）
+node local-dev/app-e2e.mjs                 # 期望 101/101 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量）
+node local-dev/external-app-e2e.mjs        # 期望 42/42 PASS（@EA-S1~S10 外部 token + 外部会话/对话，需先执行 asserts/external_app.sql）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test
 ```

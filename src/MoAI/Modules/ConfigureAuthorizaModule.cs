@@ -64,7 +64,8 @@ public class ConfigureAuthorizaModule : IModule
                     },
                     OnAuthenticationFailed = context =>
                     {
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        // 不在此处直接改写响应状态码：最终 401 由 Authorization 的 Challenge 决定，
+                        // 否则多认证方案场景（如 /api/external 的外部 token）会被内部方案误标 401
                         var logger = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigureAuthorizaModule>>();
                         logger.LogError(context.Exception, "JWT 认证失败，token 无法通过验证: {Message} / [NoToken] = {NoToken}",
                             context.Exception?.Message, context.Request.Headers.Authorization.Count == 0 ? "true(未携带Authorization头)" : "false");

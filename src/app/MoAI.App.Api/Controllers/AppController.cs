@@ -147,6 +147,49 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
+    /// 查询外部应用访问点配置（内部管理视图），需要团队 Admin 及以上角色；未保存过配置时返回默认值.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="AppAccessPointConfigResponse"/>.</returns>
+    [HttpGet("{id:guid}/access-point")]
+    public Task<AppAccessPointConfigResponse> QueryAppAccessPoint([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new QueryAppAccessPointCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 保存外部应用访问点配置（整体替换），需要团队 Admin 及以上角色，仅外部应用.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="req">配置请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id:guid}/access-point")]
+    public async Task<EmptyCommandResponse> SaveAppAccessPoint([FromRoute] Guid id, [FromBody] SaveAppAccessPointCommand req, CancellationToken ct)
+    {
+        var cmd = new SaveAppAccessPointCommand
+        {
+            AppId = id,
+            Title = req.Title,
+            Subtitle = req.Subtitle,
+            Placeholder = req.Placeholder,
+            PrimaryColor = req.PrimaryColor,
+            Position = req.Position,
+            LauncherText = req.LauncherText,
+            Avatar = req.Avatar,
+            PanelWidth = req.PanelWidth,
+            PanelHeight = req.PanelHeight,
+            DefaultOpen = req.DefaultOpen,
+            Enabled = req.Enabled,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 创建应用调试会话：仅存 Redis 热态、不落库、不计用量，未发布应用也可调试；需要团队 Admin 及以上角色.
     /// </summary>
     /// <param name="id">应用 id.</param>

@@ -1,12 +1,12 @@
 # 外部应用访问点设计（后端端点 + 悬浮 JS 组件）
 
 - 日期：2026-09-14
-- 状态：待评审
+- 状态：**4a/4b/4c 已全部交付**（2026-09-14）：`external_user` 表、`/api/external/token`（应用/用户/匿名三类 + refresh）、双 audience 隔离、`/api/external/agent/{appId}/session|chat`、`session/list`、`/session/{id}/messages` 均已实现并 E2E 42/42 全绿（@EA-S1~S10）。实现细节与 D39 见 [app SDD §2.2](../../app/sdd.md)。4a：`app_access_point` 表 + 内部 CRUD + `GET /api/external/app/{id}/access-point` 公开配置 + 工作台「访问点」分区（`AppAccessSection`）；4c：`ui/src/embed` 构建出 IIFE（`npm run build:embed`）由后端托管 `/embed/moai-widget.js`。E2E 51/51（@EA-S1~S12）+ 前端 vitest 263/263。落地细节与 D39 见 [app SDD §2.2](../../app/sdd.md)。
 - 关联：[应用工作台设计](./2026-09-14-app-workspace-design.md) ｜ [外部应用·应用接入设计（前置）](./2026-09-13-external-app-and-access-design.md) ｜ [应用 SDD](../../app/sdd.md) ｜ [CQRS 规范](../../cqrs-conventions.md) ｜ [前端规范](../../../ui/docs/frontend-conventions.md)
 
 ## 背景与目标
 
-外部应用当前只能创建/配置/发布，**没有任何对外调用链路**（`/external/token`、外部 JWT audience、`external` 用户表、`/external/agent/{id}/chat` 均未实现），工作台「访问点」只是占位。
+外部应用当前只能创建/配置/发布，**没有任何对外调用链路**（`/external/token`、外部 JWT audience、`external_user` 用户表、`/external/agent/{id}/chat` 均未实现），工作台「访问点」只是占位。
 
 本期交付「访问点」：
 1. **后端端点**：每个外部应用有一个 AI 对话后端地址，第三方可自行开发前端对接。
@@ -17,7 +17,7 @@
 ## 范围
 
 **包含：**
-1. 外部调用链路（采用前置设计 D3/D4/D5）：`external` 外部用户表、外部 JWT audience `<Server>|<external>` 与独立认证 scheme、`POST /external/token`、`/external/agent/{appId}/session|chat|session/list`、`/external/session/{sessionId}/messages`。
+1. 外部调用链路（采用前置设计 D3/D4/D5）：`external_user` 外部用户表、外部 JWT audience `<Server>|<external>` 与独立认证 scheme、`POST /external/token`、`/external/agent/{appId}/session|chat|session/list`、`/external/session/{sessionId}/messages`。
 2. 访问点配置：新表 `app_access_point` + 内部 CRUD（Admin+）+ 匿名公开配置端点。
 3. 通用悬浮组件：`ui/embed` 构建出单文件 IIFE，后端 `/embed/moai-widget.js` 托管；运行时拉配置、按授权模式换 token、流式对话。
 4. 工作台「访问点」分区：展示后端端点地址 + 嵌入代码片段（可复制）+ 配置表单。
@@ -32,7 +32,7 @@
 
 > 细节沿用 [前置设计](./2026-09-13-external-app-and-access-design.md) 的「鉴权与外部 Token」「外部对话」两节，此处只列落地要点。
 
-### `external` 外部用户表（新建）
+### `external_user` 外部用户表（新建）
 
 | 列 | 类型 | 说明 |
 |---|---|---|
@@ -50,7 +50,7 @@ partial 唯一索引 `(access_app_id, external_user_id) WHERE access_app_id IS N
 
 请求体二选一：
 - `{ accessAppKey, externalUserId?, nickname? }`（`is_auth=true`）：校验 key 存在、未删除，取该接入的 `team_id/app_ids`；`appIds` 必须都属本团队外部应用（创建接入时已保证）。提供 `externalUserId` 则按 `(access_app_id, external_user_id)` upsert；否则随机临时身份。
-- `{ appId, externalUserId?, nickname? }`（`is_auth=false`）：校验 `app.is_external && !app.is_auth && publish_status=1 && !is_disable`；生成临时/绑定 `external` 行（`app_id` 记来源）。
+- `{ appId, externalUserId?, nickname? }`（`is_auth=false`）：校验 `app.is_external && !app.is_auth && publish_status=1 && !is_disable`；生成临时/绑定 `external_user` 行（`app_id` 记来源）。
 
 响应：外部 JWT（`aud = "<Server>|<external>"`，`typ=external`，`sub=external.id`，附 `team_id`、`app_id?`、`access_app_id?`、`app_ids[]`、`external_user_id`），有效期 2 小时（可配）。
 
@@ -58,7 +58,7 @@ partial 唯一索引 `(access_app_id, external_user_id) WHERE access_app_id IS N
 
 - 内部 JWT 保持 `aud = Server`；外部 JWT `aud = "<Server>|<external>"`，同一 RSA 私钥签发。
 - `ConfigureAuthorizaModule` 增注册 `AddJwtBearer("External", ...)`（`ValidAudience = "<Server>|<external>"`，其余与内部一致），并加授权策略 `External`（要求该 scheme）。内部端点用默认 scheme，**天然拒绝**外部 token；外部端点用 `External` 策略。
-- `UserContextProvider.Parse()` 已按 `Typ` claim 还原 `UserType`（`external` 字符串）；`external.id` 落入 `UserId(long)`。
+- `UserContextProvider.Parse()` 已按 `Typ` claim 还原 `UserType`（`external` 字符串）；`external_user.id` 落入 `UserId(long)`。
 
 ### 外部对话端点
 
@@ -67,12 +67,12 @@ partial 唯一索引 `(access_app_id, external_user_id) WHERE access_app_id IS N
 | POST | `/external/token` | 匿名 | 见上 |
 | POST | `/external/agent/{appId:guid}/session` | External | 校验 `appId` 在 token 允许范围且 `app.is_external`；写 `app_agent_session`（`user_type=External`、`create_user_id=external.id`） |
 | POST | `/external/agent/{appId:guid}/chat` | External | AG-UI SSE，复用 `AppAgentDispatcher`（同一 keyed Agent + `AppAgentSessionStore`），端点要求 External 策略 + `appId ∈ app_ids` |
-| GET | `/external/agent/{appId:guid}/session/list` | External | 该 `external` 身份的会话列表 |
-| GET | `/external/session/{sessionId:guid}/messages` | External | 会话消息（按 `external.id` 归属校验） |
+| GET | `/external/agent/{appId:guid}/session/list` | External | 该 `external_user` 身份的会话列表 |
+| GET | `/external/session/{sessionId:guid}/messages` | External | 会话消息（按 `external_user.id` 归属校验） |
 | GET | `/external/app/{appId:guid}/access-point` | 匿名 | 组件用的公开配置（见 §三） |
 
 - 端点注册：在 `AppAgentEndpointMapper` 增 `MapAGUIServer(AgentName, "/external/agent/{appId:guid}/chat").RequireAuthorization("External")`（同一 Agent 名与 store）；其余外部端点由新的 `ExternalController` 提供。
-- 会话归属：`AppAgentDispatcher.ResolveInnerAsync` 的 `create_user_id == userId` 校验对 `external.id` 同样成立，无需改派发器。
+- 会话归属：`AppAgentDispatcher.ResolveInnerAsync` 的 `create_user_id == userId` 校验对 `external_user.id` 同样成立，无需改派发器。
 
 ## 二、访问点配置（新表 `app_access_point`）
 
@@ -158,7 +158,7 @@ partial 唯一索引 `(access_app_id, external_user_id) WHERE access_app_id IS N
 ## 八、分期
 
 1. **4a 访问点配置**：`app_access_point` 表 + 实体/配置 + 内部 CRUD + 公开配置端点 + 工作台「访问点」UI（端点/片段/表单）。
-2. **4b 外部链路**：`external` 表 + 双 audience/scheme + `/external/token` + `/external` 会话/对话端点 + E2E。
+2. **4b 外部链路**：`external_user` 表 + 双 audience/scheme + `/external/token` + `/external` 会话/对话端点 + E2E。
 3. **4c 悬浮组件**：`ui/embed` 构建 + 后端托管 + 鉴权/流式对话 + 手动走查 + E2E。
 
 每期独立可验证后再进入下一期。

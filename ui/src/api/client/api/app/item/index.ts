@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryAppCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateAppCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryAppCommandResponse, type UpdateAppCommand } from '../../../models/index.js';
 // @ts-ignore
+import { AccessPointRequestBuilderRequestsMetadata, type AccessPointRequestBuilder } from './accessPoint/index.js';
+// @ts-ignore
 import { AgentConfigRequestBuilderRequestsMetadata, type AgentConfigRequestBuilder } from './agentConfig/index.js';
 // @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
@@ -26,6 +28,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/app/{id}
  */
 export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequestBuilder> {
+    /**
+     * The accessPoint property
+     */
+    get accessPoint(): AccessPointRequestBuilder;
     /**
      * The agentConfig property
      */
@@ -103,6 +109,9 @@ export const AppItemRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}";
  * Metadata for all the navigation properties in the request builder.
  */
 export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    accessPoint: {
+        requestsMetadata: AccessPointRequestBuilderRequestsMetadata,
+    },
     agentConfig: {
         requestsMetadata: AgentConfigRequestBuilderRequestsMetadata,
     },

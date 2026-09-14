@@ -83,6 +83,21 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }
 
     /// <summary>
+    /// 外部用户（外部应用接入的身份记录）.
+    /// </summary>
+    public virtual DbSet<ExternalUserEntity> ExternalUsers { get; set; }
+
+    /// <summary>
+    /// 飞书应用，一个飞书开放平台应用对应一条长连接，事件统一接收后按绑定转发.
+    /// </summary>
+    public virtual DbSet<FeishuAppEntity> FeishuApps { get; set; }
+
+    /// <summary>
+    /// 飞书应用绑定，将飞书应用绑定到应用/知识库等渠道；同一飞书应用同时只能绑定一个渠道.
+    /// </summary>
+    public virtual DbSet<FeishuAppBindingEntity> FeishuAppBindings { get; set; }
+
+    /// <summary>
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }

@@ -1212,6 +1212,10 @@
     "modelEmpty": "No models available to this team",
     "saveInfo": "Save info",
     "saveConfig": "Save configuration",
+    "sectionSkills": "Skills",
+    "skillsHint": "Capability packages (scripts + instructions) loaded on demand by the agent and executed in the sandbox; enable sandbox to run scripts",
+    "skillsPlaceholder": "Select skills to mount",
+    "skillsEmpty": "No skills available",
     "notFound": "App not found"
   },
   "accessApp": {
@@ -1294,14 +1298,41 @@
     "runError": "Failed to run the conversation. Please try again.",
     "adminOnly": "Debugging requires team administrator permission."
   },
+  "accessPoint": {
+    "internalAppHint": "Only external apps can configure an access point",
+    "configTitle": "Access point configuration",
+    "fieldTitle": "Panel title",
+    "titlePlaceholder": "Leave empty to use the app name",
+    "fieldLauncherText": "Launcher text",
+    "launcherPlaceholder": "Leave empty to show an icon",
+    "fieldSubtitle": "Welcome message / subtitle",
+    "fieldPlaceholder": "Input placeholder",
+    "fieldPrimaryColor": "Primary color",
+    "colorInvalid": "Primary color must be in #RRGGBB format",
+    "fieldPosition": "Position",
+    "positionBottomRight": "Bottom right",
+    "positionBottomLeft": "Bottom left",
+    "fieldAvatar": "Avatar",
+    "avatarEmpty": "No avatar set",
+    "avatarSuccess": "Avatar uploaded",
+    "avatarFailed": "Avatar upload failed",
+    "fieldPanelWidth": "Panel width",
+    "fieldPanelHeight": "Panel height",
+    "fieldDefaultOpen": "Open by default",
+    "fieldEnabled": "Enable access point",
+    "save": "Save configuration",
+    "saved": "Access point configuration saved",
+    "endpointTitle": "Chat endpoint",
+    "endpointHint": "Custom frontends POST to this endpoint via the AG-UI protocol; the embed widget handles it for you",
+    "embedTitle": "Embed snippet",
+    "keyHint": "This app requires authorization: fill data-key with a team \"app access\" key",
+    "copySnippet": "Copy embed snippet",
+    "copied": "Copied",
+    "adminOnly": "The embed snippet is visible to team administrators only"
+  },
   "appPlaza": {
     "empty": "No public apps yet",
     "teamId": "Team #{{id}}"
-    "saveConfig": "Save configuration",
-    "sectionSkills": "Skills",
-    "skillsHint": "Capability packages (scripts + instructions) loaded on demand by the agent and executed in the sandbox; enable sandbox to run scripts",
-    "skillsPlaceholder": "Select skills to mount",
-    "skillsEmpty": "No skills available"
   },
   "skills": {
     "searchPlaceholder": "Search by key / name / description",

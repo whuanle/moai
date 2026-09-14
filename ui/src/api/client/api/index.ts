@@ -20,6 +20,10 @@ import { ClassifyRequestBuilderNavigationMetadata, ClassifyRequestBuilderRequest
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
+import { ExternalRequestBuilderNavigationMetadata, type ExternalRequestBuilder } from './external/index.js';
+// @ts-ignore
+import { Feishu_appRequestBuilderNavigationMetadata, Feishu_appRequestBuilderRequestsMetadata, type Feishu_appRequestBuilder } from './feishu_app/index.js';
+// @ts-ignore
 import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBuilderRequestsMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
 // @ts-ignore
 import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
@@ -80,6 +84,14 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The common property
      */
     get common(): CommonRequestBuilder;
+    /**
+     * The external property
+     */
+    get external(): ExternalRequestBuilder;
+    /**
+     * The feishu_app property
+     */
+    get feishu_app(): Feishu_appRequestBuilder;
     /**
      * The knowledgeGraph property
      */
@@ -154,6 +166,13 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
+    },
+    external: {
+        navigationMetadata: ExternalRequestBuilderNavigationMetadata,
+    },
+    feishu_app: {
+        requestsMetadata: Feishu_appRequestBuilderRequestsMetadata,
+        navigationMetadata: Feishu_appRequestBuilderNavigationMetadata,
     },
     knowledgeGraph: {
         requestsMetadata: KnowledgeGraphRequestBuilderRequestsMetadata,

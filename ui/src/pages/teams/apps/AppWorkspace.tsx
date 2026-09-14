@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getAppDetail, publishApp, unpublishApp } from '@/api/app'
+import { AppAccessSection } from './AppAccessSection'
 import { AppConfigSection, type AppDetail } from './AppConfigSection'
 import { AppLogsSection } from './AppLogsSection'
 import { AppMonitorSection } from './AppMonitorSection'
@@ -101,6 +102,17 @@ export function AppWorkspace() {
           loading={loading}
           canManage={canManage}
           onReload={() => load(true)}
+        />
+      )
+    }
+    if (validSection === 'access') {
+      return (
+        <AppAccessSection
+          appId={appId}
+          isExternal={detail?.isExternal ?? false}
+          isAuth={detail?.isAuth ?? false}
+          canManage={canManage}
+          userRole={detail?.myRole ?? -1}
         />
       )
     }

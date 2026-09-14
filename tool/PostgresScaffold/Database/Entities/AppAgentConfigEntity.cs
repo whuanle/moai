@@ -78,4 +78,9 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 软删除，0=未删除（legacy bigint 约定）.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 绑定的技能ID列表，JSON 数组文本，元素为 skill.id（uuid 字符串），如 [&quot;...&quot;].
+    /// </summary>
+    public string Skills { get; set; } = default!;
 }

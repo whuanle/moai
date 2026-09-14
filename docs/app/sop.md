@@ -26,11 +26,17 @@
 - **保存**：右栏四项共用一份配置与同一个「保存配置」按钮，**一次提交完整配置**；左栏基础信息用「保存信息」单独提交。
 - **头像**：新建弹窗与左栏「应用信息」都可上传，支持 png/jpg 等图片且 ≤ 5MB；走存储直传管线，仅接受已完成上传登记的文件。新建时是**先上传拿到 objectKey、随创建请求一次性提交**（此时应用还不存在）；管理页里选中即上传生效。
 - **公开到平台（内部应用）**：开关写入 `app.is_public`，卡片底部以 已公开/未公开 展示；**发布后**该应用会出现在任意用户的「应用广场」，平台内用户可进入对话。
-- **外部应用**：团队「外部应用」分区创建，卡片底部展示发布状态与「需授权/免授权」(`is_auth`)。外部应用**内部用户看不到**；是否可被外部调用还依赖下阶段的「应用接入 + 外部 token」。
+- **外部应用**：团队「外部应用」分区创建，卡片底部展示发布状态与「需授权/免授权」(`is_auth`)。外部应用**内部用户看不到**；`is_auth=true` 的应用必须经「应用接入」key 换 token 才能被第三方使用，`is_auth=false` 可匿名换取 token。
 - **普通成员（Member）**：分区菜单只有 信息 / 应用 / 知识库；应用分区为只读卡片（无新建按钮、无「管理」入口），直接改 URL 访问管理分区或应用管理页会回落到「信息」。后端同样以 403/404 兜底；成员可读配置（`GET /agent-config`）但保存返回 403。
 - **应用广场**：侧边栏「应用广场」列出平台内所有公开且已发布的内部应用，任意登录用户可进入对话（非成员凭公开应用可建会话）。
 - **应用接入**：团队「应用接入」分区创建 key 并勾选其可访问的外部应用（只能选本团队外部应用）。创建后弹窗展示 key；列表中 key 默认掩码，**点击即可查看完整 key 或复制**。编辑可改名称/描述/授权应用但**不能改 key**；删除后 key 立即失效。
-- **暂未开放**：启用/禁用、分类绑定、删除应用、执行参数（temperature/topP/maxTokens 等 `execution_settings`），以及**用接入 key 换取外部用户 token、外部应用的实际调用链路**（后续轮次交付）。
+- **第三方接入调用流程（外部 token，验收见 @EA-S*）**：
+  1. **换 token**：`POST /api/external/token`——只传 `accessAppKey` 得**应用 token**（授权 = 接入配置的全部应用）；传 `accessAppKey + appId + externalUserId`（nickname 可选）得**用户 token**（绑定外部用户 id、仅授权该单个应用）；对 `is_auth=false` 的外部应用只传 `appId` 即可匿名换取（生成临时身份）。
+  2. **调用外部接口**：以 `Authorization: Bearer <accessToken>` 访问 `/api/external/*`。外部 token **不能**访问 `/api/*` 内部接口，内部用户 token 也**不能**访问 `/api/external/*`（双 audience 隔离）。
+  3. **会话与对话**：`POST /api/external/agent/{appId}/session` 建会话（返回 sessionId，需外部**用户** token，应用 token 无用户身份会 403）；对话走 AG-UI SSE `POST /api/external/agent/{appId}/chat`（体为 AG-UI 协议，`threadId` = sessionId）；`GET /api/external/agent/{appId}/session/list` 与 `GET /api/external/session/{sessionId}/messages` 查会话与消息。会话归属按 `external_user.id` 校验，同一外部身份继承会话与消费记录。
+  4. **刷新**：`POST /api/external/token/refresh` 传 `refreshToken` 换新 token 对；管理员调整接入授权范围后，**下次刷新即按最新配置生效**（access token 默认 2 小时、refresh 7 天）。
+  5. **吊销**：删除应用接入后其 key 与全部 token 刷新即失效；已签发的 access token 在剩余有效期内仍可用。
+- **访问点（外部应用工作台 `access` 分区）**：配置面板标题/欢迎语/占位/主题色/位置/按钮文案/头像/尺寸/默认展开/启用；同页展示对话端点地址与 `<script>` 嵌入代码（需授权应用提示填 `data-key`，key 来自团队「应用接入」）。组件脚本由后端托管：宿主页引入 `{server}/embed/moai-widget.js` 即出现悬浮对话。
 
 ## 3. 常见问题
 
@@ -55,7 +61,7 @@
 | 内部应用设为「公开到平台」后广场仍看不到 | 需**先发布**（卡片/管理页发布按钮）；平台只列 已发布 且未禁用的公开内部应用 |
 | 「外部应用」菜单看不到 | 该分区仅团队 Owner/Admin 可见 |
 | 外部应用在内部应用列表里找不到 | 正常：内部/外部应用相互隔离，外部应用只在「外部应用」分区 |
-| 外部应用现在能被第三方调用吗 | 不能：应用接入 key / 外部用户 token / `/external` 端点尚未交付，当前只能创建、配置、发布 |
+| 外部应用现在能被第三方调用吗 | 能：先在「应用接入」分区创建 key 并授权该外部应用，第三方凭 key 调 `POST /api/external/token` 换 token 后访问 `/api/external/*`；免授权(`is_auth=false`)应用无需 key，直接凭 appId 匿名换取。会话/对话端点用外部用户 token 访问 `/api/external/agent/{appId}/session|chat` |
 | 应用接入 key 忘了保存 | 不会丢：列表里 key 默认掩码，点击即可查看完整 key 或复制 |
 | 删除应用接入后外部系统报错 | 正常：删除后 key 立即失效；如仍需访问请重建并更新外部系统配置 |
 | 应用类型填错 | 类型不可修改，暂需删除重建（删除能力待开放） |

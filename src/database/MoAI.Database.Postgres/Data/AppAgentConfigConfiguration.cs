@@ -63,6 +63,10 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("''::character varying")
             .HasComment("系统提示词，最长4000字符")
             .HasColumnName("prompt");
+        entity.Property(e => e.Skills)
+            .HasDefaultValueSql("'[]'::text")
+            .HasComment("绑定的技能ID列表，JSON 数组文本，元素为 skill.id（uuid 字符串），如 [\"...\"]")
+            .HasColumnName("skills");
         entity.Property(e => e.TeamId)
             .HasComment("所属团队ID，逻辑关联app.team_id，冗余用于团队维度过滤")
             .HasColumnName("team_id");
@@ -77,10 +81,6 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("'[]'::text")
             .HasComment("绑定的知识库ID列表，JSON 数组文本，元素为 wiki.id（整数），如 '[1,2]'")
             .HasColumnName("wiki_ids");
-        entity.Property(e => e.Skills)
-            .HasDefaultValueSql("'[]'::text")
-            .HasComment("绑定的技能ID列表，JSON 数组文本，元素为 skill.id（uuid 字符串），如 '[\"...\"]'")
-            .HasColumnName("skills");
 
         OnConfigurePartial(entity);
     }
