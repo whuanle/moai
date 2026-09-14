@@ -36,6 +36,8 @@ interface SkillFormValues {
   name: string
   description?: string
   instructions?: string
+  /** 搜索栏字段（与编辑表单共用实例） */
+  searchText?: string
 }
 
 interface SkillFileEntry extends SkillFileItem {
@@ -93,7 +95,7 @@ export function Skills() {
   const handleReset = () => {
     setPageNo(1)
     setQuerySearchText('')
-    form.setFieldValue('searchText', '')
+    form.setFieldValue('searchText', undefined)
   }
 
   const openCreate = () => {

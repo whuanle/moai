@@ -75,13 +75,14 @@ export async function createSkill(payload: {
     name: payload.name,
     description: payload.description ?? '',
     instructions: payload.instructions ?? '',
+    // Kiota 将后端 long 生成为 string，统一收敛为字符串
     files: payload.files.map((f) => ({
       path: f.path ?? '',
-      fileId: f.fileId != null ? Number(f.fileId) : 0,
+      fileId: f.fileId != null ? String(f.fileId) : '0',
       fileName: f.fileName ?? '',
     })),
   })
-  return res?.value
+  return res?.value ?? undefined
 }
 
 export async function updateSkill(
@@ -95,7 +96,7 @@ export async function updateSkill(
     instructions: payload.instructions ?? '',
     files: payload.files.map((f) => ({
       path: f.path ?? '',
-      fileId: f.fileId != null ? Number(f.fileId) : 0,
+      fileId: f.fileId != null ? String(f.fileId) : '0',
       fileName: f.fileName ?? '',
     })),
   })
@@ -158,6 +159,6 @@ export async function uploadSkillFile(file: File): Promise<number> {
   }
 
   const fileId = Number(pre.fileId)
-  await client.api.skill.file.complete.post({ fileId, isSuccess: true })
+  await client.api.skill.file.complete.post({ fileId: String(fileId), isSuccess: true })
   return fileId
 }
