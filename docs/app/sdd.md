@@ -2,8 +2,8 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/app-e2e.mjs](../../local-dev/app-e2e.mjs)
 
-- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与「允许外部使用」开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择）
-- 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页）已实现**并全链路验证**；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；外部用户使用仍为下阶段
+- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量））
+- 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页 + 外部应用分区 + 应用广场）已实现；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；**应用接入 key 与外部用户 token**为下阶段（见 [外部应用/接入设计](../superpowers/specs/2026-09-13-external-app-and-access-design.md)）
 - 领域：`src/app`（Shared/Core/Api），前端 `ui/src/pages/teams/apps`（团队页「应用」分区 + 应用管理页）
 - Schema 真源：库表现状 + `src/database/MoAI.Database.Postgres/Data/App*.cs`（脚手架逆向生成）；原 `asserts/app.sql` / 库表 `app_agent_*` 已随仓库 DDL 清理移除
 
@@ -15,10 +15,13 @@
 
 ## 2. 数据模型
 
-- `app`：`id(uuid) / name(20) / description(255) / team_id(int) / is_public / is_disable / classify_id / is_foreign / is_auth / app_type / avatar(255) / ` 审计四件 + `is_deleted(bigint)`。
+- `app`：`id(uuid) / name(20) / description(255) / team_id(int) / is_public / is_disable / classify_id / is_external / is_auth / app_type / avatar(255) / publish_status / publish_time / ` 审计四件 + `is_deleted(bigint)`。
 - **应用类型** `app_type`：`0=Agent 应用`、`1=流程应用`（`MoAI.Database.Enums.AppType`，成员带 `JsonPropertyName("agent"/"workflow")`，接口出参为字符串）。
-- **「允许外部使用」开关写 `enable_foreign`**（列注释即「允许外部使用」，见 D16）：创建与更新均可设置，列表/详情回读；**开关只落库**——团队外用户「使用应用」的能力本身未实现（无对外入口、无外部用户鉴权）。
-- `is_public`（公开到团队外使用）本期**未使用**（保持落库默认 false）；legacy 的 `is_foreign` / `is_auth` 两列已随库表调整移除（现为 `enable_foreign`）。
+- **内部/外部应用（D23）**：`is_external` 唯一区分——`false`=内部应用，`true`=外部应用。
+  - 内部应用：团队内使用；`is_public=true` 且已发布时，平台内任意登录用户可在**应用广场**发现与使用。
+  - 外部应用：仅外部用户/匿名使用，**内部用户不可见**（`QueryApps` 固定过滤 `is_external=false`）；`is_auth=true` 需经「应用接入」key 换外部 token（下阶段），`false` 则匿名可换临时 token。
+  - 组合约束：内部应用 `is_auth` 必须为 false、外部应用 `is_public` 必须为 false；创建/更新时校验（非法组合 400）。
+  - **废弃 `enable_foreign`**：已从实体/配置/命令/DTO/前端移除（库列一并删除）。
 - 名称在**团队未删除范围内唯一**（应用层校验，重名 409）；`app` 表无 partial 唯一索引（沿用既有表设计，冲突由 Handler 兜底）。
 - 审计属性由 `DatabaseContext` 审计钩子自动注入；`is_deleted` 沿用 legacy **bigint**（0=未删除）。
 - 与既有 `app_chatapp` / `app_workflow_design` 等 legacy 表无关联，本期不读写它们。
@@ -78,14 +81,20 @@
 
 ## 3. 角色与权限矩阵（Handler 层判定，依赖 team_user 事实）
 
-| 操作 | Owner/Admin | Member | 非成员 |
+| 操作 | Owner/Admin | Member | 非成员（内部用户） |
 |---|---|---|---|
-| 列表 / 详情 | ✅ | ✅ | 404（不泄露存在性） |
-| 创建（含指定应用类型、头像、允许外部使用） | ✅ | 403 | 404 |
-| 更新基础信息（名称/描述/允许外部使用） | ✅ | 403 | 404 |
+| 列表（内部应用） / 详情 | ✅ | ✅ | 404（公开应用详情除外，见下） |
+| 创建（含指定应用类型、头像、`is_external`/`is_auth`/`is_public`） | ✅ | 403 | 404 |
+| 更新基础信息（名称/描述/授权与公开开关） | ✅ | 403 | 404 |
 | 设置头像（独立接口，编辑时即时生效） | ✅ | 403 | 404 |
+| 外部应用列表 `/app/external/list` | ✅ | 403 | 404 |
+| 平台公开应用列表 `/app/public/list` | ✅ | ✅ | ✅（需登录） |
+| 查看已发布公开应用的详情 | ✅ | ✅ | ✅（`myRole=-1`） |
+| 对已发布公开应用建会话 / 对话 | ✅ | ✅ | ✅ |
 | 查询 Agent 应用配置 | ✅ | ✅ | 404 |
 | 保存 Agent 应用配置（插件/知识库/提示词） | ✅ | 403 | 404 |
+
+> 「非成员」列在**内部应用**上的旧规则是详情 404；新增例外：内部应用 `is_public=true` 且已发布、未禁用时，任意登录用户可只读详情、查自己的会话、建会话并对话。外部应用不进内部列表，走 `/external` 外部链路（下阶段）。
 
 关键规则：
 
@@ -100,13 +109,19 @@
 
 | 方法 | 路由 | 说明 | 出参 |
 |---|---|---|---|
-| POST | `/api/app` | 创建应用 `{teamId, name, description?, appType, avatar?, enableForeign?}` | `SimpleGuid`（应用 id） |
-| GET | `/api/app/list?teamId=` | 团队应用列表（含 myRole、enableForeign） | `QueryAppsCommandResponse` |
-| GET | `/api/app/{id}` | 应用详情 | `QueryAppCommandResponse` |
-| PUT | `/api/app/{id}` | 更新基础信息 `{name, description?, enableForeign?}`（应用类型不可改） | Empty |
+| POST | `/api/app` | 创建应用 `{teamId, name, description?, appType, avatar?, isExternal?, isAuth?, isPublic?}` | `SimpleGuid`（应用 id） |
+| GET | `/api/app/list?teamId=` | 团队**内部**应用列表（固定 `is_external=false`，含 myRole、`isExternal/isAuth/isPublic`） | `QueryAppsCommandResponse` |
+| GET | `/api/app/external/list?teamId=` | 团队**外部**应用列表（`is_external=true`，Admin+） | `QueryAppsCommandResponse` |
+| GET | `/api/app/public/list` | 平台公开应用列表（`is_external=false && is_public && 已发布 && 未禁用`，任意登录用户） | `QueryPublicAppsCommandResponse` |
+| GET | `/api/app/{id}` | 应用详情（外部应用对内部用户 404；公开应用非成员可读） | `QueryAppCommandResponse` |
+| PUT | `/api/app/{id}` | 更新基础信息 `{name, description?, isExternal?, isAuth?, isPublic?}`（应用类型不可改，`isExternal` 以库内为准） | Empty |
 | POST | `/api/app/{id}/avatar` | 设置头像 `{objectKey}`（须为已登记上传文件；编辑态使用） | Empty |
 | GET | `/api/app/{id}/agent-config` | 查询 Agent 应用配置（未保存过时返回空配置，不 404） | `QueryAppAgentConfigCommandResponse` |
 | PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[]}` | Empty |
+| GET | `/api/access-app/list?teamId=` | 团队应用接入列表（Admin+，回显完整 key，支持再次查看） | `QueryAccessAppsCommandResponse` |
+| POST | `/api/access-app` | 创建应用接入 `{teamId, name, description?, appIds[]}`，key 原文仅返回一次 | `CreateAccessAppCommandResponse` |
+| PUT | `/api/access-app/{id}` | 更新接入 `{name, description?, appIds[]}`（key 不可改） | Empty |
+| DELETE | `/api/access-app/{id}` | 删除接入（软删除） | Empty |
 
 > `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`。
 
@@ -130,13 +145,14 @@
 ## 5. 前端设计（团队页「应用」分区）
 
 - **入口唯一**：`/team/:id/apps`，即团队页左侧分区菜单的「应用」（`SectionKey = 'apps'`）。组件 `ui/src/pages/teams/apps/TeamApps.tsx`，与 `TeamWikis` / `TeamPlugins` 同构；`ui/src/api/app.ts` 为唯一封装层。
-- 分区菜单顺序：信息 / **应用** / 成员 / 模型网关 / 知识库 / 插件 / 环境变量 / 设置；默认落在「信息」。
+- 分区菜单顺序：信息 / **应用** / **外部应用** / 成员 / 模型网关 / 知识库 / 插件 / 环境变量 / 设置；默认落在「信息」。
 - **角色可见性（前端渲染层）**：
   - Owner/Admin：全部分区可见。
-  - Member：只保留 信息 / 应用 / 知识库；**成员、模型网关、插件、环境变量、设置被隐藏**，直接改 URL 访问也会回落到「信息」。
+  - Member：只保留 信息 / 应用 / 知识库；**外部应用、成员、模型网关、插件、环境变量、设置被隐藏**，直接改 URL 访问也会回落到「信息」。
   - 该收敛只影响渲染，真正的门禁仍在后端 Handler（Member 写操作 403、非成员 404）。
-- 分区内容（收窄为**单团队**）：**卡片网格**（`Row`/`Col`，与 `/wiki` 卡片同构）——卡片含 头像 + 名称 + 类型标签，描述（2 行省略），底部一行 创建时间 + 「外部使用」状态标签（已开启/未开启，`enableForeign`）；**卡片右上角「管理」**（仅 `canManage` 渲染）进入应用管理页。列表顶部左侧为说明文案（管理员为「卡片右上角管理」提示，Member 为只读说明），右侧为「新建应用」。
-- 新建弹窗：应用类型 + **头像** + 名称 + 描述 + **「允许外部使用」开关**；**团队由所在分区确定，不再选团队**。
+- 分区内容（收窄为**单团队**）：**卡片网格**（`Row`/`Col`，与 `/wiki` 卡片同构）——卡片含 头像 + 名称 + 类型标签，描述（2 行省略），底部一行 创建时间 + 发布状态 + 「公开到平台」状态标签（已公开/未公开，`isPublic`）；**卡片右上角「管理」**（仅 `canManage` 渲染）进入应用管理页。列表顶部左侧为说明文案（管理员为「卡片右上角管理」提示，Member 为只读说明），右侧为「新建应用」。
+- **「外部应用」分区**（`TeamExternalApps.tsx`，仅 Owner/Admin 可见）：列表展示 `isExternal=true` 的应用，卡片底部展示 发布状态 + 「需授权/免授权」(`isAuth`)；支持新建（含头像与 `isAuth` 开关）、发布/取消发布，并可进入应用管理页配置模型/提示词/插件/知识库。内部用户的应用分区看不到这些应用。
+- 新建弹窗（内部应用）：应用类型 + **头像** + 名称 + 描述 + **「公开到平台」开关**（`isPublic`）；**团队由所在分区确定，不再选团队**。外部应用分区的新建弹窗则为「需要授权访问」开关（`isAuth`），且固定 `isExternal=true`。
   - 头像「先直传、后提交」：选图即走 `uploadImageWithKey` 拿 `objectKey` 并在弹窗内预览，点确定时随创建请求一起提交。取消/关闭弹窗会丢弃已选头像，已上传的对象成为孤儿文件（与仓库其他「先传后用」场景一致，暂不做清理）。
 - Member 视图：只读卡片，顶部一行说明「只能查看与使用应用；创建与配置需要团队管理员」，不渲染新建按钮与「管理」入口。
 - 文案走 `t()`，zh-CN / en-US 同步（`appManage.*`、`team.apps`）。
@@ -145,7 +161,7 @@
 ### 5.1 应用管理页（`ui/src/pages/teams/apps/AppManage.tsx`）
 
 - **路由**：`/team/:teamId/app/:appId`（**无分区参数**）；页面为**单页左右分栏**（`Page` 面包屑 + `Row`/`Col`），**左侧「应用信息」、右侧「Agent 配置」**，不做左侧菜单/分区切换。
-- **左栏 应用信息**（`DSCard` 标题「应用信息」）：头像（选中即上传生效，走 `POST /{id}/avatar`）+ 类型（只读标签）+ 名称 + 描述 + 「允许外部使用」开关 + 「保存信息」（`PUT /{id}`）。即原编辑弹窗改为页内表单，`TeamApps` 不再有编辑入口。
+- **左栏 应用信息**（`DSCard` 标题「应用信息」）：头像（选中即上传生效，走 `POST /{id}/avatar`）+ 类型（只读标签）+ 名称 + 描述 + **（内部）「公开到平台」/（外部）「需要授权访问」开关** + 「保存信息」（`PUT /{id}`）。即原编辑弹窗改为页内表单，`TeamApps` 不再有编辑入口。
 - **右栏 Agent 配置**（`DSCard` 标题「Agent 配置」）：对话模型 + 提示词 + 允许使用的插件 + 允许使用的知识库 + 「保存配置」（`PUT /{id}/agent-config`）。四个字段**同一份配置状态、同一个保存按钮**，一次提交完整配置。
   - **对话模型**：`Select`（单选、可清空），选项来自 **`GET /api/team/{id}/gateway/models`**（团队可用网关模型：公开模型 + 已授权本团队的私有模型）——与团队「模型网关」分区同源，**取值范围天然等于「该团队有权使用」**。空值表示不指定模型（落空 Guid）。
   - **插件 / 知识库**：`Select mode="multiple"`，选项来自 **`GET /api/team/{id}/plugin/list`**（团队可访问插件）与 **`GET /api/wiki/list?teamId=`**（本团队知识库）；`PluginId` 为空 Guid 的内存静态插件（无 DB 记录）在展示层被过滤，不可绑定。
@@ -153,11 +169,34 @@
 - **流程应用**：右栏**不渲染配置项**，只展示「流程应用的配置能力尚未开放」提示；左栏仍是完整基础信息。
 - **Member 访问**：页面渲染为只读（表单 `disabled`、无保存按钮）并顶部提示；后端仍以 403 兜底。
 
+### 5.2 应用广场（`ui/src/pages/apps/AppPlaza.tsx`，路由 `/apps`）
+
+- 侧边栏一级「应用广场」（`nav.apps`），任意登录用户可见；数据来自 `GET /api/app/public/list`（跨团队公开内部应用）。
+- 卡片展示 头像/名称/类型/描述 + 所属团队；Agent 应用提供「进入对话」，跳 `/team/:teamId/app/:appId/chat`（非成员凭公开应用可建会话、对话）。
+- 文案 `appPlaza.*`、`nav.apps`，zh-CN / en-US 同步。
+
+### 5.3 应用接入（`ui/src/pages/teams/apps/TeamAccessApps.tsx`，团队页「应用接入」分区）
+
+- 分区菜单顺序：信息 / 内部应用 / 外部应用 / **应用接入** / 成员 / 模型网关 / 知识库 / 插件 / 环境变量 / 设置；「应用接入」仅 Owner/Admin 可见。
+- 列表：接入名称、**key（明文，回显完整 key；前端默认掩码，点击展开 / 复制）**、授权的外部应用标签、创建时间；支持新建 / 编辑 / 删除（`Popconfirm`）。
+- 新建/编辑弹窗：名称（≤20）+ 描述（≤255）+ 授权外部应用多选（选项来自 `GET /app/external/list`，即本团队外部应用）；创建后弹「接入 key」窗口，列表中可再次查看/复制。
+- 封装层 `ui/src/api/access-app.ts`；文案 `accessApp.*`、`team.accessApps`，zh-CN / en-US 同步。
+
+### 5.4 应用工作台（`ui/src/pages/teams/apps/AppWorkspace.tsx`，路由 `/team/:teamId/app/:appId/:section?`）
+
+- **左侧菜单**：`config`（配置）/ `logs`（日志）/ `monitor`（监控）；外部应用（`is_external=true`）额外 `access`（访问点）。采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，菜单项带图标（Setting/Profile/AreaChart/Api）；`section` 非法或缺省回落 `config`。原 `AppManage.tsx` 单页左右分栏已删除，配置内容迁入 `AppConfigSection`。
+- **分区可见性（前端渲染层）**：`logs`/`monitor` 仅团队 Owner/Admin 可见；`access` 仅 Owner/Admin 且外部应用可见；Member 只有 `config`（只读，无调试），深链 `/logs` 回落 `config`。
+- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=15`）为 应用信息 + Agent 配置（含沙箱）；右栏（`lg=9`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存信息/头像/发布后**静默刷新**（`load(true)`），不卸载调试面板。
+- **调试会话（Redis 临时会话）**：`POST /api/app/{id}/debug/session`（Admin+）生成 `Guid.CreateVersion7()` 会话 id 并写 Redis 注册表 `appagent:debug:{id}`（TTL 2h 滑动）；对话仍走 `/api/agent/{appId}/chat`，`AppAgentDispatcher` 在无 `app_agent_session` 行时回落注册表（校验 `UserId`），以 `isDebug=true` 装配（跳过 `UsageCapturingChatClient`）；`AppChatFlushService.FlushAsync` 无 session 行即 return → 调试对话**不落库**。前端刷新即弃用会话 id。
+- **日志分区**（`AppLogsSection.tsx`，Phase 2 已交付）：`GET /api/app/{id}/logs`（Admin+，分页，支持 标题关键字 / 用户类型 / 最后消息时间范围 过滤；数据源为全用户的正式会话 `app_agent_session`，即压缩后视图）+ `GET /api/app/{id}/logs/{sessionId}/messages`（Admin+，按 `seq` 返回该会话消息）。列表条目 `AppLogItem : AuditsInfo`，内部用户人名由 `IUserInfoFillService.FillAsync` 填充，外部用户按 `userType` + `ownerId` 展示（不填内部人名）。前端 `DataTable` + 详情 `Drawer`。
+- **监控分区**（`AppMonitorSection.tsx`，Phase 3 已交付）：`GET /api/app/{id}/usage`（Admin+），返回用量汇总（调用次数 / 输入 / 输出 / 合计 token）与按模型分布。数据源为聚合表 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId` Guid + `team_id`），**最多滞后约 1 分钟**；调试会话不计数。本期**不含按日趋势**（聚合表无时间分桶）。
+- **访问点**：仍为占位，Phase 4 交付。
+
 ## 6. 关键决策
 
 - **D1 应用类型语义**：`0=Agent 应用`、`1=流程应用`；同步修正 `app.app_type`、`AppEntity`、`AppConfiguration` 的旧注释（原为「普通应用/流程编排」）。
 - **D2 创建权归团队管理员**：应用是团队下的产物，与知识库/插件一致按团队角色门禁；Member 只读。
-- **D3（修订）本期交付基础信息 + 头像 + 「允许外部使用」开关**：名称/描述/头像与 `enable_foreign` 开关在**创建与编辑**时都可设置。**仍未开放**：启用/禁用（`is_disable`）、分类绑定（`classify_id`）、`is_public`、删除、列表分页与筛选。
+- **D3（修订）本期交付基础信息 + 头像 + 授权/公开开关**：名称/描述/头像与 `is_external`/`is_auth`/`is_public` 开关在**创建与编辑**时都可设置。**仍未开放**：启用/禁用（`is_disable`）、分类绑定（`classify_id`）、删除、列表分页与筛选。
 - **D4（修订）Agent 应用的配置/会话表已落地**：`app_agent_config` / `app_agent_session` / `app_agent_message`（库表 `app_agent_*`），取代 legacy `app_chatapp*`。**流程应用**的配置表仍暂缓，待流程引擎方案确定后再设计，避免先建表后返工。
 - **D5 头像防伪造**：`objectKey` 必须是 `file` 表中 `is_uploaded = true` 且未删除的记录，否则 404。
 - **D6 用户上下文经 IUserIdContext**：Handler 不注入 `IUserContextProvider`（仓库铁律）；上下文属性加 `[JsonIgnore]`，避免 `ContextUserId` 出现在 OpenAPI 查询参数/请求体中。
@@ -170,17 +209,29 @@
 - **D13 会话归属与外部访问预留**：`app_agent_session.create_user_id` 为会话归属用户，`user_type` 对齐 `MoAI.Infra.Models.UserType`，为「外部用户使用应用」预留；当前仅内部用户（`Normal=3`），不实现对外访问。
 - **D14（入口修正）应用管理只在团队内，成员只能用**：移除侧边栏一级「应用」与 `/app` 页面，改为团队页的「应用」分区（`/team/:id/apps`）。原跨团队聚合页把管理放到团队之外，方向错了。同时按角色收敛团队页分区——Member 只保留 信息 / 应用 / 知识库，管理分区与应用配置对成员不可见（URL 直达也回落信息页）；后端权限不变（Member 403 / 非成员 404），前端只是不渲染。
 - **D15（创建带头像）头像先直传、再随创建请求提交**：应用 id 要到创建成功才生成，无法先调 `POST /{id}/avatar`。因此在新建弹窗内选图即走存储直传拿 `objectKey`，点确定时作为 `CreateAppCommand.Avatar` 一并提交；服务端对 `avatar` 执行与头像接口**完全相同**的「必须已登记上传」校验（伪造 → 404）。这样避免了「先建空应用再补头像」的两段式失败态（应用建了但头像失败）；编辑态仍走独立的 `POST /{id}/avatar`（选中即生效）。
-- **D16（外部开关落哪一列）写 `enable_foreign`，不用 `is_public`**：`app` 表有两个都带「外部」语义的列——`is_public`（公开到团队外使用）、`enable_foreign`（允许外部使用）。本轮的「允许外部使用」与 `enable_foreign` 的列注释字面一致，因此写它；`is_public` 保持落库默认 false、不暴露设置入口。**开关只保存状态**，团队外用户使用应用的入口与鉴权未实现。
+- **D16（已废止，被 D23 取代）**：原 D16 决定「允许外部使用」写 `enable_foreign`。该列已删除，统一改用 `is_external` / `is_auth` / `is_public`，见 D23。
 - **D17（列表改卡片 + 管理页收口）**：应用列表由 `DataTable` 改为**卡片网格**，卡片右上角「管理」进入独立管理页；原编辑弹窗的职责（基础信息）并入管理页，`TeamApps` 只保留创建。理由：卡片更适合应用这类带图标的对象，且把「基础信息 + 资源配置」收口到一处，避免列表页同时承载编辑与配置两条入口。
 - **D18（配置读权限给成员）**：`GET /agent-config` 允许团队 **Member** 读（配置属于「使用应用」的一部分，与列表/详情同级），写仍限 Admin+。若后续需要隐藏提示词，再按角色裁剪响应字段即可，不改接口形状。
 - **D19（绑定校验在应用层，越权 400）**：`wiki_ids`/`plugins` 取值为「该团队有权使用」的资源，校验放在 `SaveAppAgentConfigCommandHandler`（wiki 按 `team_id`、plugin 按团队自有或系统公开/已授权），**不建物理外键**（沿用 D10）；内容越权返回 **400**（区别于角色的 403），且校验先于写入，失败不落库。
 - **D20（配置保存为整体替换）**：管理页所有配置项共用一个 `PUT /agent-config`，提交时携带完整 `{modelId, prompt, wikiIds, plugins}`。不做「按字段局部更新」的接口，避免并发/漏字段导致绑定被静默清空。
 - **D21（管理页不做左侧菜单，单页左右分栏）**：初版管理页照 `WikiDetail` 用「左 `Menu` 分区 + 右 `Content`」，把基础信息/插件/知识库/提示词拆成四个分区。实际使用中配置项只有四项、且互相有关联（模型 + 提示词 + 插件 + 知识库共同定义一次对话），分区切换反而要来回跳，于是**去掉左侧菜单**，改为**一页左右两栏**：左栏应用信息、右栏 Agent 配置。路由随之简化为 `/team/:teamId/app/:appId`（去掉 `:section?`），页面内不再有 URL 级的子状态。
 - **D22（对话模型取值范围 = 团队可用网关模型）**：`modelId` 写 `ai_model.id`（D9），取值来源**复用团队「模型网关」的既有查询** `GET /api/team/{id}/gateway/models`（公开模型 + `ai_model_authorization` 已授权本团队的私有模型，且模型与渠道均启用），不在应用模块另造一份模型可见性逻辑。服务端同样按这套口径复核（`SaveAppAgentConfigCommandHandler.ValidateModelIdAsync`）：模型不存在/未启用/渠道停用 → 400，私有模型未授权本团队 → 400。**未选模型允许**（落空 Guid），此时是否回落到默认模型属于会话运行阶段的事。
+- **D23（`is_external` 唯一区分内外，废弃 `enable_foreign`）**：`false`=内部应用、`true`=外部应用；`is_auth` 仅外部应用有意义（是否需要应用接入授权），`is_public` 仅内部应用有意义（是否公开到平台）。创建/更新校验组合：内部应用 `isAuth=true` 或外部应用 `isPublic=true` → 400。旧列 `enable_foreign` 从库与代码移除。
+- **D24（内部应用可见性隔离 + 公开广场）**：`QueryApps` 固定过滤 `is_external=false`（内部用户看不到外部应用）；外部应用走独立 `/app/external/list`（Admin+）。内部应用 `is_public && 已发布 && !is_disable` 时，`GET /app/public/list` 对任意登录用户可见，非成员可读详情（`myRole=-1`）、查/建自己的会话并对话；外部应用禁止走内部会话。
+- **D25（外部应用在团队内管理）**：外部应用仍属团队、由团队 Admin+ 在「外部应用」分区创建与配置，复用同一套 `app_agent_config`；是否可被外部访问由 `is_auth` 与发布状态决定，实际外部访问链路（应用接入 key、外部 token、`/external` 端点）为下阶段（见设计文档）。
+- **D26（应用接入放在 app 模块）**：`access_app` 的 CRUD 直接放 `MoAI.App`（Shared/Core/Api），不新开模块；原因：它只服务应用、依赖 `app.is_external`，且单表 CRUD，独立模块的装配成本不划算。key 明文列存储，创建时生成并在创建响应返回，**列表中回显完整 key（支持再次查看，前端默认掩码、点击展开/复制）**；授权 `appIds` 必须是本团队的外部应用，否则 400。**key 换外部 token 的链路（Phase 3）尚未实现**。
+
+- **D27 工作台分区用左侧菜单**：修订原 D21「管理页不做左侧菜单」——分区由 1 个增至 4 个后必须有导航，采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，配置分区内部再左右分栏（左配置、右调试）。
+- **D28 调试会话复用现有对话链路 + Redis 注册表**：不新建 AG-UI 端点与 store；dispatcher 在 DB 无会话行时回落 `IDebugSessionRegistry` 解析，判定归属后按调试装配。
+- **D29 调试不落库靠「无 session 行」自然成立**：`AppChatFlushService.FlushAsync` 查不到会话行即 return，无需新增 `is_draft` 字段；`isDebug=true` 时工厂跳过用量计数器（不计用量）。
+- **D30 调试会话 TTL 独立**：注册表 2h 滑动续期；前端刷新即弃用 id；残留热态键靠既有 24h TTL 清理。
+- **D31 日志为压缩后视图**（Phase 2）：不做原始消息留存；外部身份按 `user_type` 区分展示。
+- **D32 监控基于聚合用量表（无趋势）**（Phase 3 已交付）：直接查 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId`，该列为 Guid，无需 D6 字符串化迁移）交付汇总 + 按模型分布；**不含按日趋势**（聚合表逐维一行、无时间分桶），趋势需逐次用量日志或按日聚合，留后续。
+- **D33 访问点本期占位**（Phase 4）：仅外部应用可见，先定地址形态与授权口径。
 
 ## 7. 已知问题 / 下阶段
 
-- 「允许外部使用」**只保存开关状态**：团队外用户的入口、外部会话与鉴权均未实现（`app_agent_session.user_type` 已为其预留）。`is_public` 未使用。
+- **外部应用的实际访问链路未实现**：`is_external`/`is_auth` 已落库并可管理，但「应用接入 key」「外部用户 token」「`/external` 对话端点」分别为设计文档的第 2、3 期，尚未交付。当前外部应用只能被创建/配置/发布，不能真正被外部调用。
 - 新建弹窗取消或创建失败时，已直传的头像对象会成为**孤儿文件**（无引用、无清理）。
 - **库列注释与代码语义不一致**：`app.app_type` 的库注释仍是旧的「普通应用=0,流程编排=1」，而代码/文档已按 `AppType`（Agent=0 / 流程=1）执行。由于 `AppEntity` / `AppConfiguration` 由脚手架**按库注释逆向生成**，只改 C# 注释会在下次重跑时被覆盖——要彻底一致需先改库列注释（`comment on column app.app_type is ...`）再重跑脚手架。
 - 应用删除、启用/禁用、分类绑定、列表分页与关键字筛选未实现；当前列表为团队维度全量。
@@ -191,3 +242,10 @@
 - 流程应用的应用级配置（`app_workflow_design` 等）未实现；管理页对流程应用只开放基础信息。
 - 消息表未落 `status`（生成中/完成/失败）与逐条 token；会话表已按会话维度累计 token。
 - `app` 表未建 partial 唯一索引，并发创建同名应用存在极小概率穿透（Handler 先查后写）。
+- **访问点为占位**：工作台 `access` 分区仅展示「后续版本提供」文案，Phase 4 交付。
+- **监控无按日趋势**：用量数据来自聚合表 `ai_model_token_audit`，无时间分桶，无法画日趋势；趋势需逐次用量日志或按日聚合表，留后续迭代。
+- **监控最多滞后约 1 分钟**：应用对话只累加 Redis 计数器，由 Hangfire 每分钟 flush 到 `ai_model_token_audit`。
+- **日志为压缩后视图**：`app_agent_message` 只保留压缩后视图，被压缩掉的历史原文不可回溯；调试会话不落库，故不出现在日志中。
+- **日志仅 Admin+**：Member 查看返回 403、非成员 404；`AuditsInfo.CreateUserId` 为 `int`，外部用户 `long` id 仅作 `ownerId` 原样返回（非内部人名）。
+- **调试会话残留热态**：调试会话在 Redis 的消息/快照沿用 24h TTL，注册表 2h 过期后不可再解析，键随 TTL 自然清理；不做服务端即时销毁。
+- **调试会话归属仅按 UserId 校验**：注册表未存 `UserType`，与正式会话的归属校验等价；如后续需唯一用户类型可扩展。

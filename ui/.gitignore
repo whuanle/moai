@@ -4,6 +4,10 @@ logs
 npm-debug.log*
 pnpm-debug.log*
 
+# Kiota 生成的 logs 端点目录需入库，避免被上面的 logs 规则误伤
+!src/api/client/**/logs/
+!src/api/client/**/logs/**
+
 node_modules
 dist
 dist-ssr

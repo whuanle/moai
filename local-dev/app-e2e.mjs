@@ -80,6 +80,71 @@ async function main() {
   // AP-06 团队内名称唯一
   check('AP-06 同团队重名 409', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '客服助手', appType: 'agent' } })).status === 409)
 
+  // AP-40 调试会话：未发布也能创建、不落库、不计用量
+  {
+    const dbgOutsider = await api('POST', `/api/app/${AGENT_ID}/debug/session`, { token: outsider.token })
+    check('AP-40a 非成员创建调试会话 404', dbgOutsider.status === 404, `${dbgOutsider.status}`)
+
+    const dbgMember = await api('POST', `/api/app/${AGENT_ID}/debug/session`, { token: member.token })
+    check('AP-40b Member 创建调试会话 403', dbgMember.status === 403, `${dbgMember.status}`)
+
+    const dbgFlow = await api('POST', `/api/app/${WORKFLOW_ID}/debug/session`, { token: owner.token })
+    check('AP-40c 流程应用创建调试会话 400', dbgFlow.status === 400, `${dbgFlow.status}`)
+
+    const dbg = await api('POST', `/api/app/${AGENT_ID}/debug/session`, { token: owner.token })
+    check('AP-40d Owner 创建调试会话 200 且返回 Guid', dbg.status === 200 && isGuid(dbg.json?.value), `${dbg.status} ${dbg.text.slice(0, 140)}`)
+
+    const debugSessionId = String(dbg.json?.value ?? '')
+    const after = await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })
+    check('AP-40e 调试会话不进入正式会话列表', (after.json?.items ?? []).every((s) => String(s.sessionId) !== debugSessionId),
+      `after=${(after.json?.items ?? []).length}`)
+
+    const dbgNotFound = await api('POST', '/api/app/01924f5e-0000-7000-8000-00000000ffff/debug/session', { token: owner.token })
+    check('AP-40f 不存在应用调试会话 404', dbgNotFound.status === 404, `${dbgNotFound.status}`)
+  }
+
+  // AP-42 对话日志：分页列表 + 过滤 + 权限 + 消息详情
+  {
+    const sess = await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'log-e2e' } })
+    check('AP-42a 创建正式会话 200 且返回 Guid', sess.status === 200 && isGuid(sess.json?.value), `${sess.status} ${sess.text.slice(0, 140)}`)
+    const LOG_SESSION_ID = String(sess.json?.value ?? '')
+
+    const list = await api('GET', `/api/app/${AGENT_ID}/logs?pageNo=1&pageSize=20`, { token: owner.token })
+    const items = list.json?.items ?? []
+    check('AP-42b 管理员查日志 200 且含该会话', list.status === 200 && items.some((x) => String(x.sessionId) === LOG_SESSION_ID), `${list.status} ${list.text.slice(0, 160)}`)
+    check('AP-42c 日志返回分页字段', typeof list.json?.total === 'number' && list.json?.pageNo === 1 && list.json?.pageSize === 20, JSON.stringify({ total: list.json?.total, pageNo: list.json?.pageNo, pageSize: list.json?.pageSize }))
+
+    const kw = await api('GET', `/api/app/${AGENT_ID}/logs?keyword=${encodeURIComponent('log-e2e')}`, { token: owner.token })
+    check('AP-42d 标题关键字命中', (kw.json?.items ?? []).some((x) => String(x.sessionId) === LOG_SESSION_ID), kw.text.slice(0, 160))
+    const kwMiss = await api('GET', `/api/app/${AGENT_ID}/logs?keyword=${encodeURIComponent('no-such-title-zzz')}`, { token: owner.token })
+    check('AP-42e 标题关键字不命中返回空', (kwMiss.json?.items ?? []).length === 0, kwMiss.text.slice(0, 160))
+
+    const normal = await api('GET', `/api/app/${AGENT_ID}/logs?userType=normal`, { token: owner.token })
+    check('AP-42f 按内部用户过滤命中', (normal.json?.items ?? []).some((x) => String(x.sessionId) === LOG_SESSION_ID), normal.text.slice(0, 160))
+    const external = await api('GET', `/api/app/${AGENT_ID}/logs?userType=external`, { token: owner.token })
+    check('AP-42g 按外部用户过滤不含内部会话', !(external.json?.items ?? []).some((x) => String(x.sessionId) === LOG_SESSION_ID), external.text.slice(0, 160))
+
+    const msgs = await api('GET', `/api/app/${AGENT_ID}/logs/${LOG_SESSION_ID}/messages`, { token: owner.token })
+    check('AP-42h 会话消息详情 200', msgs.status === 200 && Array.isArray(msgs.json?.items), `${msgs.status} ${msgs.text.slice(0, 160)}`)
+    check('AP-42i 跨应用取消息 404', (await api('GET', `/api/app/${WORKFLOW_ID}/logs/${LOG_SESSION_ID}/messages`, { token: owner.token })).status === 404)
+    check('AP-42j 不存在会话消息 404', (await api('GET', `/api/app/${AGENT_ID}/logs/01924f5e-0000-7000-8000-00000000ffff/messages`, { token: owner.token })).status === 404)
+
+    check('AP-42k Member 查日志 403', (await api('GET', `/api/app/${AGENT_ID}/logs`, { token: member.token })).status === 403)
+    check('AP-42l 非成员查日志 404', (await api('GET', `/api/app/${AGENT_ID}/logs`, { token: outsider.token })).status === 404)
+    check('AP-42m 非成员查日志消息 404', (await api('GET', `/api/app/${AGENT_ID}/logs/${LOG_SESSION_ID}/messages`, { token: outsider.token })).status === 404)
+    check('AP-42n 不存在应用日志 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff/logs', { token: owner.token })).status === 404)
+  }
+
+  // AP-43 应用监控：用量汇总 + 按模型分布 + 权限
+  {
+    const usage = await api('GET', `/api/app/${AGENT_ID}/usage`, { token: owner.token })
+    check('AP-43a 管理员查用量 200 且含 summary/byModel', usage.status === 200 && usage.json?.summary != null && Array.isArray(usage.json?.byModel), `${usage.status} ${usage.text.slice(0, 160)}`)
+    check('AP-43b 汇总含调用次数与合计 token 字段', usage.json?.summary?.callCount !== undefined && usage.json?.summary?.totalTokens !== undefined, JSON.stringify(usage.json?.summary))
+    check('AP-43c Member 查用量 403', (await api('GET', `/api/app/${AGENT_ID}/usage`, { token: member.token })).status === 403)
+    check('AP-43d 非成员查用量 404', (await api('GET', `/api/app/${AGENT_ID}/usage`, { token: outsider.token })).status === 404)
+    check('AP-43e 不存在应用用量 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff/usage', { token: owner.token })).status === 404)
+  }
+
   // AP-07 列表（Member 可见 + myRole）
   {
     const r = await api('GET', `/api/app/list?teamId=${TID}`, { token: member.token })
@@ -95,8 +160,8 @@ async function main() {
   {
     const r = await api('GET', `/api/app/${AGENT_ID}`, { token: member.token })
     const d = r.json ?? {}
-    check('AP-08a 详情 200 且字段齐全', r.status === 200 && d.name === '客服助手' && d.appType === 'agent' && Number(d.teamId) === TID && !!d.createTime && typeof d.enableForeign === 'boolean',
-      `${r.status} name=${d.name} appType=${d.appType} teamId=${d.teamId}(${typeof d.teamId}) TID=${TID} createTime=${d.createTime} enableForeign=${d.enableForeign}(${typeof d.enableForeign})`)
+    check('AP-08a 详情 200 且字段齐全', r.status === 200 && d.name === '客服助手' && d.appType === 'agent' && Number(d.teamId) === TID && !!d.createTime && typeof d.isPublic === 'boolean' && d.isExternal === false,
+      `${r.status} name=${d.name} appType=${d.appType} teamId=${d.teamId}(${typeof d.teamId}) TID=${TID} createTime=${d.createTime} isPublic=${d.isPublic}(${typeof d.isPublic}) isExternal=${d.isExternal}`)
     check('AP-08b 非成员查详情 404', (await api('GET', `/api/app/${AGENT_ID}`, { token: outsider.token })).status === 404)
     check('AP-08c 不存在的应用详情 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff', { token: owner.token })).status === 404)
   }
@@ -137,24 +202,76 @@ async function main() {
     await fetch(pre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: payload })
     const comp = await api('POST', '/api/storage/complate_url', { token: owner.token, body: { isSuccess: true, fileId: pre.json.fileId } })
 
-    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '带头像应用', appType: 'agent', avatar: comp.json.objectKey, enableForeign: true } })
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '带头像应用', appType: 'agent', avatar: comp.json.objectKey, isPublic: true } })
     check('AP-12a 创建时带头像 200', c.status === 200 && isGuid(c.json?.value), `${c.status} ${c.text.slice(0, 140)}`)
     const NEW_ID = String(c.json?.value ?? '')
 
     const d = await api('GET', `/api/app/${NEW_ID}`, { token: owner.token })
     check('AP-12b 详情回填创建时提交的头像', d.json?.avatarPath === comp.json.objectKey, `${d.json?.avatarPath} vs ${comp.json.objectKey}`)
 
-    check('AP-13a 创建时 enableForeign=true 已落库', d.json?.enableForeign === true, String(d.json?.enableForeign))
+    check('AP-13a 创建时 isPublic=true 已落库', d.json?.isPublic === true, String(d.json?.isPublic))
     const list = await api('GET', `/api/app/list?teamId=${TID}`, { token: owner.token })
     const created = (list.json?.items ?? []).find(i => i.name === '带头像应用')
-    check('AP-13b 列表返回 enableForeign', created?.enableForeign === true, JSON.stringify(created))
+    check('AP-13b 列表返回 isPublic', created?.isPublic === true, JSON.stringify(created))
 
-    check('AP-13c 更新关闭 enableForeign 200', (await api('PUT', `/api/app/${NEW_ID}`, { token: owner.token, body: { name: '带头像应用', enableForeign: false } })).status === 200)
+    check('AP-13c 更新关闭 isPublic 200', (await api('PUT', `/api/app/${NEW_ID}`, { token: owner.token, body: { name: '带头像应用', isPublic: false } })).status === 200)
     const d2 = await api('GET', `/api/app/${NEW_ID}`, { token: owner.token })
-    check('AP-13d 关闭后详情 enableForeign=false', d2.json?.enableForeign === false, String(d2.json?.enableForeign))
+    check('AP-13d 关闭后详情 isPublic=false', d2.json?.isPublic === false, String(d2.json?.isPublic))
 
     const fake = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '伪造头像应用', appType: 'agent', avatar: 'public/fake-create-avatar.png' } })
     check('AP-14 创建时伪造 objectKey 404', fake.status === 404, `${fake.status} ${fake.text.slice(0, 120)}`)
+  }
+
+  // AP-13e ~ AP-13l 外部应用（is_external / is_auth）
+  {
+    const ext = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '对外助手', appType: 'agent', isExternal: true, isAuth: true } })
+    check('AP-13e 管理员创建外部应用 200', ext.status === 200 && isGuid(ext.json?.value), `${ext.status} ${ext.text.slice(0, 140)}`)
+    const EXT_ID = String(ext.json?.value ?? '')
+
+    const ed = await api('GET', `/api/app/${EXT_ID}`, { token: owner.token })
+    check('AP-13f 外部应用详情 isExternal/isAuth 正确', ed.json?.isExternal === true && ed.json?.isAuth === true, JSON.stringify(ed.json))
+
+    const internalList = await api('GET', `/api/app/list?teamId=${TID}`, { token: owner.token })
+    check('AP-13g 内部应用列表不包含外部应用', !(internalList.json?.items ?? []).some(i => i.appId === EXT_ID), JSON.stringify((internalList.json?.items ?? []).map(i => i.name)))
+
+    const extList = await api('GET', `/api/app/external/list?teamId=${TID}`, { token: owner.token })
+    check('AP-13h 外部应用列表包含新建外部应用', extList.status === 200 && (extList.json?.items ?? []).some(i => i.appId === EXT_ID), `${extList.status} ${extList.text.slice(0, 140)}`)
+    check('AP-13i 普通成员查外部列表 403', (await api('GET', `/api/app/external/list?teamId=${TID}`, { token: member.token })).status === 403)
+    check('AP-13j 非成员查外部列表 404', (await api('GET', `/api/app/external/list?teamId=${TID}`, { token: outsider.token })).status === 404)
+    check('AP-13k 内部应用设置 isAuth 被拒 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '非法内部应用', appType: 'agent', isAuth: true } })).status === 400)
+    check('AP-13l 外部应用设置 isPublic 被拒 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '非法外部应用', appType: 'agent', isExternal: true, isPublic: true } })).status === 400)
+
+    // AP-13s ~ AP-13y 应用接入（access_app）
+    const createAcc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP接入', description: '接入测试', appIds: [EXT_ID] } })
+    check('AP-13s 创建应用接入 200 且返回 key', createAcc.status === 200 && isGuid(createAcc.json?.accessAppId) && typeof createAcc.json?.key === 'string' && createAcc.json.key.startsWith('moai-ac-'), `${createAcc.status} ${createAcc.text.slice(0, 140)}`)
+    const ACC_ID = String(createAcc.json?.accessAppId ?? '')
+
+    const accList = await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })
+    const accItem = (accList.json?.items ?? []).find(i => i.accessAppId === ACC_ID)
+    check('AP-13t 接入列表回显完整 key（可再次查看）与授权应用', accList.status === 200 && !!accItem && accItem.key === createAcc.json?.key && (accItem.appIds ?? []).includes(EXT_ID), JSON.stringify(accItem))
+    check('AP-13u Member 查接入 403', (await api('GET', `/api/access-app/list?teamId=${TID}`, { token: member.token })).status === 403)
+    check('AP-13v 非成员查接入 404', (await api('GET', `/api/access-app/list?teamId=${TID}`, { token: outsider.token })).status === 404)
+    check('AP-13w 授权非外部应用 400', (await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: '非法接入', appIds: [AGENT_ID] } })).status === 400)
+    check('AP-13x 更新接入 200', (await api('PUT', `/api/access-app/${ACC_ID}`, { token: owner.token, body: { name: 'ERP接入2', appIds: [EXT_ID] } })).status === 200)
+    check('AP-13y 删除接入 200', (await api('DELETE', `/api/access-app/${ACC_ID}`, { token: owner.token })).status === 200)
+  }
+
+  // AP-13m ~ AP-13r 平台公开应用（is_public）
+  {
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '公开助手', appType: 'agent', isPublic: true } })
+    check('AP-13m 创建公开内部应用 200', c.status === 200 && isGuid(c.json?.value), `${c.status} ${c.text.slice(0, 140)}`)
+    const PUB_ID = String(c.json?.value ?? '')
+    check('AP-13n 非成员详情未发布 404', (await api('GET', `/api/app/${PUB_ID}`, { token: outsider.token })).status === 404)
+
+    check('AP-13o 发布公开应用 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
+    const od = await api('GET', `/api/app/${PUB_ID}`, { token: outsider.token })
+    check('AP-13p 非成员可看已发布公开应用详情', od.status === 200 && od.json?.isPublic === true && od.json?.myRole === -1, `${od.status} ${od.text.slice(0, 140)}`)
+
+    const pub = await api('GET', '/api/app/public/list', { token: outsider.token })
+    check('AP-13q 公开应用列表包含该应用', pub.status === 200 && (pub.json?.items ?? []).some(i => i.appId === PUB_ID), `${pub.status} ${pub.text.slice(0, 140)}`)
+
+    const sess = await api('POST', `/api/app/${PUB_ID}/session`, { token: outsider.token, body: {} })
+    check('AP-13r 非成员可对公开已发布应用建会话', sess.status === 200 && isGuid(sess.json?.value), `${sess.status} ${sess.text.slice(0, 140)}`)
   }
 
   // AP-15 ~ AP-19 Agent 应用配置（允许使用的插件/知识库 + 提示词）

@@ -54,9 +54,9 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasMaxLength(255)
             .HasComment("描述")
             .HasColumnName("description");
-        entity.Property(e => e.EnableForeign)
-            .HasComment("允许外部使用")
-            .HasColumnName("enable_foreign");
+        entity.Property(e => e.IsAuth)
+            .HasComment("是否需要授权访问，外部应用设置才有效")
+            .HasColumnName("is_auth");
         entity.Property(e => e.IsDeleted)
             .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
@@ -64,6 +64,9 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
         entity.Property(e => e.IsDisable)
             .HasComment("禁用")
             .HasColumnName("is_disable");
+        entity.Property(e => e.IsExternal)
+            .HasComment("是否外部应用")
+            .HasColumnName("is_external");
         entity.Property(e => e.IsPublic)
             .HasComment("公开到团队外使用")
             .HasColumnName("is_public");
@@ -71,6 +74,12 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasMaxLength(20)
             .HasComment("应用名称")
             .HasColumnName("name");
+        entity.Property(e => e.PublishStatus)
+            .HasComment("发布状态，0=草稿 1=已发布")
+            .HasColumnName("publish_status");
+        entity.Property(e => e.PublishTime)
+            .HasComment("发布时间，未发布为 null")
+            .HasColumnName("publish_time");
         entity.Property(e => e.TeamId)
             .HasComment("团队id")
             .HasColumnName("team_id");

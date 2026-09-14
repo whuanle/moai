@@ -38,9 +38,19 @@ public class QueryAppCommandResponse
     public string AvatarPath { get; set; } = default!;
 
     /// <summary>
-    /// 允许外部使用.
+    /// 是否外部应用.
     /// </summary>
-    public bool EnableForeign { get; set; }
+    public bool IsExternal { get; set; }
+
+    /// <summary>
+    /// 是否需要授权访问（仅外部应用有效）.
+    /// </summary>
+    public bool IsAuth { get; set; }
+
+    /// <summary>
+    /// 是否公开到平台（仅内部应用有效）.
+    /// </summary>
+    public bool IsPublic { get; set; }
 
     /// <summary>
     /// 发布状态：0=草稿（未发布）1=已发布.

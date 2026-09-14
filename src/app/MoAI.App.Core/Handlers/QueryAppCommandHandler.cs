@@ -41,9 +41,22 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
 
-        if (myRole == null)
+        if (app.IsExternal)
         {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
+            // 外部应用不对普通内部用户暴露；团队 Admin+ 需要进入管理页配置，故放行
+            if (myRole != TeamRole.Admin && myRole != TeamRole.Owner)
+            {
+                throw new BusinessException("应用不存在.") { StatusCode = 404 };
+            }
+        }
+        else
+        {
+            // 非团队成员仅在「已发布且公开到平台」时可只读查看
+            var canViewAsPublic = app.IsPublic && app.PublishStatus == 1 && !app.IsDisable;
+            if (myRole == null && !canViewAsPublic)
+            {
+                throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
+            }
         }
 
         return new QueryAppCommandResponse
@@ -54,10 +67,12 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             Description = app.Description,
             AppType = (AppType)app.AppType,
             AvatarPath = app.Avatar,
-            EnableForeign = app.EnableForeign,
+            IsExternal = app.IsExternal,
+            IsAuth = app.IsAuth,
+            IsPublic = app.IsPublic,
             PublishStatus = app.PublishStatus,
             PublishTime = app.PublishTime,
-            MyRole = (int)myRole.Value,
+            MyRole = myRole == null ? -1 : (int)myRole.Value,
             CreateTime = app.CreateTime,
             UpdateTime = app.UpdateTime
         };

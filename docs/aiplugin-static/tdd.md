@@ -19,6 +19,9 @@
 | @STP-S12 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 | @STP-S13 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 | @STP-S14 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S15 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S16 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S17 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 
 ## 前端测试
 

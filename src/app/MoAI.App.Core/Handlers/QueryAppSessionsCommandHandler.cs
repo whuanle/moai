@@ -32,17 +32,19 @@ public class QueryAppSessionsCommandHandler : IRequestHandler<QueryAppSessionsCo
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)
-            .Select(x => new { x.Id, x.TeamId })
+            .Select(x => new { x.Id, x.TeamId, x.IsExternal, x.IsPublic, x.PublishStatus })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (app == null)
+        if (app == null || app.IsExternal)
         {
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
         }
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
 
-        if (myRole == null)
+        // 非团队成员仅在应用「已发布且公开到平台」时可查看自己的会话
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        if (myRole == null && !canUseAsPublic)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
         }
@@ -82,7 +84,7 @@ public class QueryAppSessionsCommandHandler : IRequestHandler<QueryAppSessionsCo
         return new QueryAppSessionsCommandResponse
         {
             AppId = request.AppId,
-            MyRole = (int)myRole.Value,
+            MyRole = myRole == null ? -1 : (int)myRole.Value,
             Items = items
         };
     }

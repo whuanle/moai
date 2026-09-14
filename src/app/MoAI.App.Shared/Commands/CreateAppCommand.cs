@@ -39,9 +39,19 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
     public string? Avatar { get; init; }
 
     /// <summary>
-    /// 允许外部使用；开启后团队外用户可通过「外部用户」能力使用该应用（能力本身待后续交付）.
+    /// 是否外部应用：false=内部应用（团队内使用，可公开到平台），true=外部应用（仅外部用户/匿名使用）.
     /// </summary>
-    public bool EnableForeign { get; init; }
+    public bool IsExternal { get; init; }
+
+    /// <summary>
+    /// 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
+    /// </summary>
+    public bool IsAuth { get; init; }
+
+    /// <summary>
+    /// 是否公开到平台；仅内部应用有效（平台内任意用户可用），外部应用必须为 false.
+    /// </summary>
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
     [JsonIgnore]
@@ -59,5 +69,9 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("应用描述最长 255 个字符.");
         validate.RuleFor(x => x.AppType).IsInEnum().WithMessage("应用类型不正确.");
         validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 最长 255 个字符.");
+        validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
+            .WithMessage("只有外部应用可以设置需要授权访问.");
+        validate.RuleFor(x => x.IsPublic).Must((cmd, isPublic) => !isPublic || !cmd.IsExternal)
+            .WithMessage("外部应用不支持公开到平台.");
     }
 }

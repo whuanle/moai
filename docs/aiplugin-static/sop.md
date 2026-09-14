@@ -36,9 +36,10 @@
 | `static_flow_wait` | 等待指定秒数 | `{"WaitTimeInSeconds":10}` |
 | `static_markdown_to_html` | Markdown 转 HTML（Markdig） | `{"Markdown":"# 标题"}` |
 | `static_text_extract` | 下载 http/https 文件并提取文本 | `{"FileName":"a.pdf","Url":"https://.../a.pdf"}` |
+| `static_file_to_markdown` | 下载 http/https 文件转 Markdown，FileName 留空时从 Url 自动识别文件名 | `{"Url":"https://.../report.pdf"}` |
 | `static_web_content_fetch` | 抓取网页（默认提取纯文本，AngleSharp） | `{"Url":"https://example.com","ExtractText":true}` |
 
-> 文本提取依赖 `Maomi.ToMarkdown`（由 `WikiCoreModule` 的 `AddTextExtraction()` 注册），网页抓取依赖 `AngleSharp`，二者包引用在 `MoAI.AIPlugin.Static.csproj`。外部下载复用 infra `IPutClient`。
+> 文本提取与文件转 Markdown 依赖 `Maomi.ToMarkdown`（由 `WikiCoreModule` 的 `AddTextExtraction()` 注册），网页抓取依赖 `AngleSharp`，二者包引用在 `MoAI.AIPlugin.Static.csproj`。外部下载复用 infra `IPutClient`。
 
 ## 内置插件排障
 
@@ -46,5 +47,7 @@
 |---|---|---|
 | 文本提取报「Url 必须为合法的 http/https 文件地址」 | 传了本地路径或相对地址 | 改为可下载的 http/https 文件地址 |
 | 文本提取报「文本提取失败: 不支持的...」 | `FileName` 后缀与内容不符或缺扩展名 | 让 `FileName` 带真实扩展名（如 `.pdf`/`.docx`） |
+| 文件转 Markdown 报「无法从 Url 识别文件扩展名」 | Url 路径末段无扩展名且未传 `FileName` | 传带扩展名的 `FileName`，或换可直接指向文件的地址 |
+| 文件转 Markdown 报「不支持的文件类型: .xxx」 | 后缀不在 `Maomi.ToMarkdown` 支持范围 | 换受支持格式（pdf/docx/xlsx/pptx/html/md/txt/json）或先转格式 |
 | 网页抓取报「抓取网页内容失败/超时」 | 目标站点拒绝、网络不通或超过 10 秒 | 换可达的静态页面；动态渲染页面不做脚本执行 |
 | 运行报「请求参数解析失败」 | requestJson 与请求模型不匹配 | 以 Monaco 示例为准修改参数 |

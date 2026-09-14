@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 import {
   ArrowLeftOutlined,
   BulbOutlined,
-  CopyOutlined,
   DeleteOutlined,
   MenuOutlined,
   PlusOutlined,
@@ -17,8 +15,6 @@ import { Button, Input, Popconfirm, Tag, Tooltip, theme } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import type { HttpAgent } from '@ag-ui/client'
 import { feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
@@ -33,14 +29,9 @@ import {
   type AppSessionItem,
 } from '@/api/app'
 import { abortAppChat, createAppChatAgent, runAppChat } from '@/api/agentChat'
+import { ChatMessageList, type DisplayMessage } from './chat/ChatMessageList'
+import { chatCssVars } from './chat/chatCssVars'
 import './app-chat.css'
-
-interface DisplayMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  toolCalls?: string[]
-}
 
 interface AppDetailLite {
   name?: string | null
@@ -80,31 +71,7 @@ export function AppChat() {
   const userName = userInfo?.nickName || userInfo?.userName || 'U'
   const userAvatar = resolveStorageUrl(userInfo?.avatar ?? null)
 
-  const cssVars = useMemo(
-    () =>
-      ({
-        '--mc-primary': token.colorPrimary,
-        '--mc-primary-bg': token.colorPrimaryBg,
-        '--mc-primary-border': token.colorPrimaryBorder,
-        '--mc-info': token.colorInfo,
-        '--mc-bg': token.colorBgContainer,
-        '--mc-bg-layout': token.colorBgLayout,
-        '--mc-bg-elevated': token.colorBgElevated,
-        '--mc-text': token.colorText,
-        '--mc-text-secondary': token.colorTextSecondary,
-        '--mc-text-tertiary': token.colorTextTertiary,
-        '--mc-border': token.colorBorderSecondary,
-        '--mc-border-strong': token.colorBorder,
-        '--mc-fill': token.colorFillQuaternary,
-        '--mc-fill-secondary': token.colorFillTertiary,
-        '--mc-code-bg': token.colorFillQuaternary,
-        '--mc-radius': `${token.borderRadiusLG}px`,
-        '--mc-radius-sm': `${token.borderRadius}px`,
-        '--mc-shadow': token.boxShadow,
-        '--mc-shadow-lg': token.boxShadowSecondary,
-      }) as CSSProperties,
-    [token],
-  )
+  const cssVars = useMemo(() => chatCssVars(token), [token])
 
   const suggestions = useMemo(
     () => [t('appChat.suggestion1'), t('appChat.suggestion2'), t('appChat.suggestion3')],
@@ -353,101 +320,35 @@ export function AppChat() {
         </header>
 
         <div className="moai-chat__scroll" ref={scrollRef}>
-          <div className="moai-chat__stream">
-            {loading ? null : messages.length === 0 ? (
-              <div className="moai-chat__hero">
-                <div className="moai-chat__hero-badge">
-                  <ThunderboltFilled />
-                </div>
-                <h2 className="moai-chat__hero-title">{t('appChat.welcomeTitle')}</h2>
-                <p className="moai-chat__hero-subtitle">{t('appChat.welcomeSubtitle', { name: appName || t('appChat.title') })}</p>
-                <div className="moai-chat__suggestions">
-                  {suggestions.map((text) => (
-                    <button
-                      key={text}
-                      type="button"
-                      className="moai-chat__suggestion"
-                      onClick={() => applySuggestion(text)}
-                    >
-                      <BulbOutlined className="moai-chat__suggestion-icon" />
-                      {text}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              messages.map((m, index) => {
-                const isLast = index === messages.length - 1
-                const streaming = sending && isLast && m.role === 'assistant'
-                return (
-                  <div key={m.id} className={`moai-chat__row moai-chat__row--${m.role}`}>
-                    {m.role === 'assistant' ? (
-                      <div className="moai-chat__avatar moai-chat__avatar--ai">
-                        {appAvatar ? (
-                          <img src={appAvatar} alt="" style={{ width: 34, height: 34, objectFit: 'cover' }} />
-                        ) : (
-                          <RobotFilled />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="moai-chat__avatar moai-chat__avatar--user">
-                        {userAvatar ? (
-                          <img src={userAvatar} alt="" style={{ width: 34, height: 34, objectFit: 'cover' }} />
-                        ) : (
-                          userName.slice(0, 1).toUpperCase()
-                        )}
-                      </div>
-                    )}
-
-                    <div className="moai-chat__msg">
-                      {m.role === 'assistant' ? (
-                        <>
-                          {(m.toolCalls?.length ?? 0) > 0 && (
-                            <div className="moai-chat__toolbar">
-                              {m.toolCalls!.map((name, i) => (
-                                <span key={`${name}-${i}`} className="moai-chat__tool-chip">
-                                  <ThunderboltFilled />
-                                  {name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="moai-chat__assistant">
-                            {m.content ? (
-                              <div className="moai-chat__markdown">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                              </div>
-                            ) : streaming ? (
-                              <span className="moai-chat__typing">
-                                <span />
-                                <span />
-                                <span />
-                              </span>
-                            ) : null}
-                            {streaming && m.content && <span className="moai-chat__caret" />}
-                          </div>
-                          {m.content && !streaming && (
-                            <div className="moai-chat__actions">
-                              <Tooltip title={t('appChat.copy')}>
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  icon={<CopyOutlined />}
-                                  onClick={() => void copyMessage(m.content)}
-                                />
-                              </Tooltip>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="moai-chat__bubble">{m.content}</div>
-                      )}
+          {loading ? null : (
+            <ChatMessageList
+              messages={messages}
+              sending={sending}
+              appAvatar={appAvatar}
+              userName={userName}
+              userAvatar={userAvatar}
+              onCopy={(text) => void copyMessage(text)}
+              emptyState={
+                <div className="moai-chat__stream">
+                  <div className="moai-chat__hero">
+                    <div className="moai-chat__hero-badge">
+                      <ThunderboltFilled />
+                    </div>
+                    <h2 className="moai-chat__hero-title">{t('appChat.welcomeTitle')}</h2>
+                    <p className="moai-chat__hero-subtitle">{t('appChat.welcomeSubtitle', { name: appName || t('appChat.title') })}</p>
+                    <div className="moai-chat__suggestions">
+                      {suggestions.map((text) => (
+                        <button key={text} type="button" className="moai-chat__suggestion" onClick={() => applySuggestion(text)}>
+                          <BulbOutlined className="moai-chat__suggestion-icon" />
+                          {text}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )
-              })
-            )}
-          </div>
+                </div>
+              }
+            />
+          )}
         </div>
 
         <div className="moai-chat__composer-wrap">

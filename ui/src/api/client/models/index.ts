@@ -5,6 +5,35 @@
 import { createUntypedNodeFromDiscriminatorValue, type ApiError, type Guid, type Parsable, type ParseNode, type SerializationWriter, type UntypedNode } from '@microsoft/kiota-abstractions';
 
 /**
+ * 应用接入项.
+ */
+export interface AccessAppItem extends Parsable {
+    /**
+     * 接入 id.
+     */
+    accessAppId?: Guid | null;
+    /**
+     * 允许访问的外部应用 id 列表.
+     */
+    appIds?: Guid[] | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 接入 key（明文；列表可回显，支持再次查看）.
+     */
+    key?: string | null;
+    /**
+     * 接入名称.
+     */
+    name?: string | null;
+}
+/**
  * 添加团队成员，仅 Owner/Admin 可操作；授予 Admin 角色需要 Owner.
  */
 export interface AddTeamUserCommand extends Parsable {
@@ -261,9 +290,17 @@ export interface AppItem extends Parsable {
      */
     description?: string | null;
     /**
-     * 允许外部使用.
+     * 是否需要授权访问（仅外部应用有效）.
      */
-    enableForeign?: boolean | null;
+    isAuth?: boolean | null;
+    /**
+     * 是否外部应用.
+     */
+    isExternal?: boolean | null;
+    /**
+     * 是否公开到平台（仅内部应用有效）.
+     */
+    isPublic?: boolean | null;
     /**
      * 应用名称.
      */
@@ -280,6 +317,43 @@ export interface AppItem extends Parsable {
      * 所属团队 id.
      */
     teamId?: string | null;
+}
+/**
+ * 应用对话日志条目（正式会话的压缩后视图）.
+ */
+export interface AppLogItem extends AuditsInfo, Parsable {
+    /**
+     * 输入 token.
+     */
+    inputTokens?: number | null;
+    /**
+     * 最后消息时间.
+     */
+    lastMessageTime?: string | null;
+    /**
+     * 输出 token.
+     */
+    outTokens?: number | null;
+    /**
+     * 会话归属用户原始 id（内部用户为 user.id，外部用户为 external.id）.
+     */
+    ownerId?: string | null;
+    /**
+     * 会话 id.
+     */
+    sessionId?: Guid | null;
+    /**
+     * 会话标题.
+     */
+    title?: string | null;
+    /**
+     * 合计 token.
+     */
+    totalTokens?: number | null;
+    /**
+     * 会话归属用户类型.
+     */
+    userType?: UserType | null;
 }
 /**
  * 会话消息项.
@@ -364,6 +438,56 @@ export interface AppSessionItem extends Parsable {
     userType?: number | null;
 }
 export type AppType = (typeof AppTypeObject)[keyof typeof AppTypeObject];
+/**
+ * 应用按模型用量.
+ */
+export interface AppUsageModelItem extends Parsable {
+    /**
+     * 调用次数.
+     */
+    callCount?: string | null;
+    /**
+     * 输出 token.
+     */
+    completionTokens?: string | null;
+    /**
+     * 模型 id.
+     */
+    modelId?: Guid | null;
+    /**
+     * 模型名称（模型已删除时回落为 id 字符串）.
+     */
+    modelName?: string | null;
+    /**
+     * 输入 token.
+     */
+    promptTokens?: string | null;
+    /**
+     * 合计 token.
+     */
+    totalTokens?: string | null;
+}
+/**
+ * 应用用量汇总.
+ */
+export interface AppUsageSummary extends Parsable {
+    /**
+     * 调用次数.
+     */
+    callCount?: string | null;
+    /**
+     * 输出 token.
+     */
+    completionTokens?: string | null;
+    /**
+     * 输入 token.
+     */
+    promptTokens?: string | null;
+    /**
+     * 合计 token.
+     */
+    totalTokens?: string | null;
+}
 /**
  * 数据子项.
  */
@@ -556,6 +680,53 @@ export interface CompleteWikiDocumentCommand extends Parsable {
     wikiId?: string | null;
 }
 /**
+ * 创建应用接入（团队下的 key，授权可访问哪些外部应用），需要团队 Admin 及以上角色.
+ */
+export interface CreateAccessAppCommand extends Parsable {
+    /**
+     * 允许访问的外部应用 id 列表，必须属于本团队且为外部应用.
+     */
+    appIds?: Guid[] | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 接入名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * 创建应用接入响应，密钥原文仅在创建时返回一次.
+ */
+export interface CreateAccessAppCommandResponse extends Parsable {
+    /**
+     * 接入 id.
+     */
+    accessAppId?: Guid | null;
+    /**
+     * 密钥原文（仅此一次）.
+     */
+    key?: string | null;
+    /**
+     * 密钥展示前缀.
+     */
+    keyPrefix?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AccessAppItem}
+ */
+// @ts-ignore
+export function createAccessAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAccessAppItem;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AddTeamUserCommand}
@@ -720,9 +891,17 @@ export interface CreateAppCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 允许外部使用；开启后团队外用户可通过「外部用户」能力使用该应用（能力本身待后续交付）.
+     * 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
      */
-    enableForeign?: boolean | null;
+    isAuth?: boolean | null;
+    /**
+     * 是否外部应用：false=内部应用（团队内使用，可公开到平台），true=外部应用（仅外部用户/匿名使用）.
+     */
+    isExternal?: boolean | null;
+    /**
+     * 是否公开到平台；仅内部应用有效（平台内任意用户可用），外部应用必须为 false.
+     */
+    isPublic?: boolean | null;
     /**
      * 应用名称，团队内唯一.
      */
@@ -740,6 +919,15 @@ export interface CreateAppCommand extends Parsable {
 // @ts-ignore
 export function createAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAppItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppLogItem}
+ */
+// @ts-ignore
+export function createAppLogItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppLogItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -771,6 +959,24 @@ export interface CreateAppSessionCommand extends Parsable {
 // @ts-ignore
 export function createAppSessionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAppSessionItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppUsageModelItem}
+ */
+// @ts-ignore
+export function createAppUsageModelItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppUsageModelItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppUsageSummary}
+ */
+// @ts-ignore
+export function createAppUsageSummaryFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppUsageSummary;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -887,6 +1093,24 @@ export function createCompleteFileUploadCommandResponseFromDiscriminatorValue(pa
 // @ts-ignore
 export function createCompleteWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCompleteWikiDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateAccessAppCommand}
+ */
+// @ts-ignore
+export function createCreateAccessAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateAccessAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateAccessAppCommandResponse}
+ */
+// @ts-ignore
+export function createCreateAccessAppCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateAccessAppCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1563,6 +1787,15 @@ export function createPreUploadWikiDocumentCommandResponseFromDiscriminatorValue
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAccessAppsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAccessAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAccessAppsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAdminTeamListCommandResponse}
  */
 // @ts-ignore
@@ -1689,6 +1922,24 @@ export function createQueryAppCommandResponseFromDiscriminatorValue(parseNode: P
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppLogMessagesCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppLogMessagesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppLogMessagesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppLogsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppLogsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppLogsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAppsCommandResponse}
  */
 // @ts-ignore
@@ -1712,6 +1963,15 @@ export function createQueryAppSessionMessagesCommandResponseFromDiscriminatorVal
 // @ts-ignore
 export function createQueryAppSessionsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAppSessionsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppUsageCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppUsageCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppUsageCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1919,6 +2179,15 @@ export function createQueryPluginTeamAuthorizationCommandResponseFromDiscriminat
 // @ts-ignore
 export function createQueryPluginTeamAuthorizationCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryPluginTeamAuthorizationCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPublicAppsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPublicAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPublicAppsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2510,6 +2779,15 @@ export function createUnbindUserOAuthCommandFromDiscriminatorValue(parseNode: Pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAccessAppCommand}
+ */
+// @ts-ignore
+export function createUpdateAccessAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAccessAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateAIChannelCommand}
  */
 // @ts-ignore
@@ -2953,6 +3231,21 @@ export interface DeleteWikiDocumentsCommand extends Parsable {
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAccessAppItem(accessAppItem: Partial<AccessAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessAppId": n => { accessAppItem.accessAppId = n.getGuidValue(); },
+        "appIds": n => { accessAppItem.appIds = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "createTime": n => { accessAppItem.createTime = n.getStringValue(); },
+        "description": n => { accessAppItem.description = n.getStringValue(); },
+        "key": n => { accessAppItem.key = n.getStringValue(); },
+        "name": n => { accessAppItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAddTeamUserCommand(addTeamUserCommand: Partial<AddTeamUserCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "role": n => { addTeamUserCommand.role = n.getEnumValue<TeamRole>(TeamRoleObject); },
@@ -3089,11 +3382,31 @@ export function deserializeIntoAppItem(appItem: Partial<AppItem> | undefined = {
         "avatarPath": n => { appItem.avatarPath = n.getStringValue(); },
         "createTime": n => { appItem.createTime = n.getStringValue(); },
         "description": n => { appItem.description = n.getStringValue(); },
-        "enableForeign": n => { appItem.enableForeign = n.getBooleanValue(); },
+        "isAuth": n => { appItem.isAuth = n.getBooleanValue(); },
+        "isExternal": n => { appItem.isExternal = n.getBooleanValue(); },
+        "isPublic": n => { appItem.isPublic = n.getBooleanValue(); },
         "name": n => { appItem.name = n.getStringValue(); },
         "publishStatus": n => { appItem.publishStatus = n.getNumberValue(); },
         "publishTime": n => { appItem.publishTime = n.getStringValue(); },
         "teamId": n => { appItem.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAppLogItem(appLogItem: Partial<AppLogItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(appLogItem),
+        "inputTokens": n => { appLogItem.inputTokens = n.getNumberValue(); },
+        "lastMessageTime": n => { appLogItem.lastMessageTime = n.getStringValue(); },
+        "outTokens": n => { appLogItem.outTokens = n.getNumberValue(); },
+        "ownerId": n => { appLogItem.ownerId = n.getStringValue(); },
+        "sessionId": n => { appLogItem.sessionId = n.getGuidValue(); },
+        "title": n => { appLogItem.title = n.getStringValue(); },
+        "totalTokens": n => { appLogItem.totalTokens = n.getNumberValue(); },
+        "userType": n => { appLogItem.userType = n.getEnumValue<UserType>(UserTypeObject); },
     }
 }
 /**
@@ -3130,6 +3443,34 @@ export function deserializeIntoAppSessionItem(appSessionItem: Partial<AppSession
         "title": n => { appSessionItem.title = n.getStringValue(); },
         "totalTokens": n => { appSessionItem.totalTokens = n.getNumberValue(); },
         "userType": n => { appSessionItem.userType = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAppUsageModelItem(appUsageModelItem: Partial<AppUsageModelItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "callCount": n => { appUsageModelItem.callCount = n.getStringValue(); },
+        "completionTokens": n => { appUsageModelItem.completionTokens = n.getStringValue(); },
+        "modelId": n => { appUsageModelItem.modelId = n.getGuidValue(); },
+        "modelName": n => { appUsageModelItem.modelName = n.getStringValue(); },
+        "promptTokens": n => { appUsageModelItem.promptTokens = n.getStringValue(); },
+        "totalTokens": n => { appUsageModelItem.totalTokens = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAppUsageSummary(appUsageSummary: Partial<AppUsageSummary> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "callCount": n => { appUsageSummary.callCount = n.getStringValue(); },
+        "completionTokens": n => { appUsageSummary.completionTokens = n.getStringValue(); },
+        "promptTokens": n => { appUsageSummary.promptTokens = n.getStringValue(); },
+        "totalTokens": n => { appUsageSummary.totalTokens = n.getStringValue(); },
     }
 }
 /**
@@ -3271,6 +3612,31 @@ export function deserializeIntoCompleteWikiDocumentCommand(completeWikiDocumentC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateAccessAppCommand(createAccessAppCommand: Partial<CreateAccessAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appIds": n => { createAccessAppCommand.appIds = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "description": n => { createAccessAppCommand.description = n.getStringValue(); },
+        "name": n => { createAccessAppCommand.name = n.getStringValue(); },
+        "teamId": n => { createAccessAppCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateAccessAppCommandResponse(createAccessAppCommandResponse: Partial<CreateAccessAppCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessAppId": n => { createAccessAppCommandResponse.accessAppId = n.getGuidValue(); },
+        "key": n => { createAccessAppCommandResponse.key = n.getStringValue(); },
+        "keyPrefix": n => { createAccessAppCommandResponse.keyPrefix = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateAIChannelCommand(createAIChannelCommand: Partial<CreateAIChannelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "apiKey": n => { createAIChannelCommand.apiKey = n.getStringValue(); },
@@ -3316,7 +3682,9 @@ export function deserializeIntoCreateAppCommand(createAppCommand: Partial<Create
         "appType": n => { createAppCommand.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "avatar": n => { createAppCommand.avatar = n.getStringValue(); },
         "description": n => { createAppCommand.description = n.getStringValue(); },
-        "enableForeign": n => { createAppCommand.enableForeign = n.getBooleanValue(); },
+        "isAuth": n => { createAppCommand.isAuth = n.getBooleanValue(); },
+        "isExternal": n => { createAppCommand.isExternal = n.getBooleanValue(); },
+        "isPublic": n => { createAppCommand.isPublic = n.getBooleanValue(); },
         "name": n => { createAppCommand.name = n.getStringValue(); },
         "teamId": n => { createAppCommand.teamId = n.getStringValue(); },
     }
@@ -4032,6 +4400,18 @@ export function deserializeIntoPreUploadWikiDocumentCommandResponse(preUploadWik
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAccessAppsCommandResponse(queryAccessAppsCommandResponse: Partial<QueryAccessAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAccessAppsCommandResponse.items = n.getCollectionOfObjectValues<AccessAppItem>(createAccessAppItemFromDiscriminatorValue); },
+        "myRole": n => { queryAccessAppsCommandResponse.myRole = n.getNumberValue(); },
+        "teamId": n => { queryAccessAppsCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAdminTeamListCommandResponse(queryAdminTeamListCommandResponse: Partial<QueryAdminTeamListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAdminTeamListCommandResponse.items = n.getCollectionOfObjectValues<QueryAdminTeamListCommandResponseItem>(createQueryAdminTeamListCommandResponseItemFromDiscriminatorValue); },
@@ -4238,13 +4618,40 @@ export function deserializeIntoQueryAppCommandResponse(queryAppCommandResponse: 
         "avatarPath": n => { queryAppCommandResponse.avatarPath = n.getStringValue(); },
         "createTime": n => { queryAppCommandResponse.createTime = n.getStringValue(); },
         "description": n => { queryAppCommandResponse.description = n.getStringValue(); },
-        "enableForeign": n => { queryAppCommandResponse.enableForeign = n.getBooleanValue(); },
+        "isAuth": n => { queryAppCommandResponse.isAuth = n.getBooleanValue(); },
+        "isExternal": n => { queryAppCommandResponse.isExternal = n.getBooleanValue(); },
+        "isPublic": n => { queryAppCommandResponse.isPublic = n.getBooleanValue(); },
         "myRole": n => { queryAppCommandResponse.myRole = n.getNumberValue(); },
         "name": n => { queryAppCommandResponse.name = n.getStringValue(); },
         "publishStatus": n => { queryAppCommandResponse.publishStatus = n.getNumberValue(); },
         "publishTime": n => { queryAppCommandResponse.publishTime = n.getStringValue(); },
         "teamId": n => { queryAppCommandResponse.teamId = n.getStringValue(); },
         "updateTime": n => { queryAppCommandResponse.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppLogMessagesCommandResponse(queryAppLogMessagesCommandResponse: Partial<QueryAppLogMessagesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAppLogMessagesCommandResponse.items = n.getCollectionOfObjectValues<AppMessageItem>(createAppMessageItemFromDiscriminatorValue); },
+        "sessionId": n => { queryAppLogMessagesCommandResponse.sessionId = n.getGuidValue(); },
+        "title": n => { queryAppLogMessagesCommandResponse.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppLogsCommandResponse(queryAppLogsCommandResponse: Partial<QueryAppLogsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAppLogsCommandResponse.items = n.getCollectionOfObjectValues<AppLogItem>(createAppLogItemFromDiscriminatorValue); },
+        "pageNo": n => { queryAppLogsCommandResponse.pageNo = n.getNumberValue(); },
+        "pageSize": n => { queryAppLogsCommandResponse.pageSize = n.getNumberValue(); },
+        "total": n => { queryAppLogsCommandResponse.total = n.getNumberValue(); },
     }
 }
 /**
@@ -4281,6 +4688,17 @@ export function deserializeIntoQueryAppSessionsCommandResponse(queryAppSessionsC
         "appId": n => { queryAppSessionsCommandResponse.appId = n.getGuidValue(); },
         "items": n => { queryAppSessionsCommandResponse.items = n.getCollectionOfObjectValues<AppSessionItem>(createAppSessionItemFromDiscriminatorValue); },
         "myRole": n => { queryAppSessionsCommandResponse.myRole = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppUsageCommandResponse(queryAppUsageCommandResponse: Partial<QueryAppUsageCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "byModel": n => { queryAppUsageCommandResponse.byModel = n.getCollectionOfObjectValues<AppUsageModelItem>(createAppUsageModelItemFromDiscriminatorValue); },
+        "summary": n => { queryAppUsageCommandResponse.summary = n.getObjectValue<AppUsageSummary>(createAppUsageSummaryFromDiscriminatorValue); },
     }
 }
 /**
@@ -4587,6 +5005,16 @@ export function deserializeIntoQueryPluginTeamAuthorizationCommandResponseItem(q
     return {
         "teamId": n => { queryPluginTeamAuthorizationCommandResponseItem.teamId = n.getNumberValue(); },
         "teamName": n => { queryPluginTeamAuthorizationCommandResponseItem.teamName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPublicAppsCommandResponse(queryPublicAppsCommandResponse: Partial<QueryPublicAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPublicAppsCommandResponse.items = n.getCollectionOfObjectValues<AppItem>(createAppItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -5436,6 +5864,19 @@ export function deserializeIntoUnbindUserOAuthCommand(unbindUserOAuthCommand: Pa
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateAccessAppCommand(updateAccessAppCommand: Partial<UpdateAccessAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "accessAppId": n => { updateAccessAppCommand.accessAppId = n.getGuidValue(); },
+        "appIds": n => { updateAccessAppCommand.appIds = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "description": n => { updateAccessAppCommand.description = n.getStringValue(); },
+        "name": n => { updateAccessAppCommand.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateAIChannelCommand(updateAIChannelCommand: Partial<UpdateAIChannelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "apiKey": n => { updateAIChannelCommand.apiKey = n.getStringValue(); },
@@ -5527,7 +5968,9 @@ export function deserializeIntoUpdateAppCommand(updateAppCommand: Partial<Update
     return {
         "appId": n => { updateAppCommand.appId = n.getGuidValue(); },
         "description": n => { updateAppCommand.description = n.getStringValue(); },
-        "enableForeign": n => { updateAppCommand.enableForeign = n.getBooleanValue(); },
+        "isAuth": n => { updateAppCommand.isAuth = n.getBooleanValue(); },
+        "isExternal": n => { updateAppCommand.isExternal = n.getBooleanValue(); },
+        "isPublic": n => { updateAppCommand.isPublic = n.getBooleanValue(); },
         "name": n => { updateAppCommand.name = n.getStringValue(); },
     }
 }
@@ -6781,6 +7224,23 @@ export interface PreUploadWikiDocumentCommandResponse extends Parsable {
     uploadUrl?: string | null;
 }
 /**
+ * 应用接入列表响应.
+ */
+export interface QueryAccessAppsCommandResponse extends Parsable {
+    /**
+     * 接入集合.
+     */
+    items?: AccessAppItem[] | null;
+    /**
+     * 我在该团队中的角色：0=Member 1=Admin 2=Owner.
+     */
+    myRole?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 全部团队分页查询结果（管理员）.
  */
 export interface QueryAdminTeamListCommandResponse extends Parsable {
@@ -7182,9 +7642,17 @@ export interface QueryAppCommandResponse extends Parsable {
      */
     description?: string | null;
     /**
-     * 允许外部使用.
+     * 是否需要授权访问（仅外部应用有效）.
      */
-    enableForeign?: boolean | null;
+    isAuth?: boolean | null;
+    /**
+     * 是否外部应用.
+     */
+    isExternal?: boolean | null;
+    /**
+     * 是否公开到平台（仅内部应用有效）.
+     */
+    isPublic?: boolean | null;
     /**
      * 我在所属团队中的角色：0=Member 1=Admin 2=Owner.
      */
@@ -7209,6 +7677,44 @@ export interface QueryAppCommandResponse extends Parsable {
      * 更新时间.
      */
     updateTime?: string | null;
+}
+/**
+ * 应用对话日志消息响应（压缩后视图）.
+ */
+export interface QueryAppLogMessagesCommandResponse extends Parsable {
+    /**
+     * 消息集合（按 seq 升序）.
+     */
+    items?: AppMessageItem[] | null;
+    /**
+     * 会话 id.
+     */
+    sessionId?: Guid | null;
+    /**
+     * 会话标题.
+     */
+    title?: string | null;
+}
+/**
+ * 应用对话日志分页结果.
+ */
+export interface QueryAppLogsCommandResponse extends Parsable {
+    /**
+     * 日志条目.
+     */
+    items?: AppLogItem[] | null;
+    /**
+     * 页码.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页数量.
+     */
+    pageSize?: number | null;
+    /**
+     * 总数量.
+     */
+    total?: number | null;
 }
 /**
  * 应用列表响应.
@@ -7260,6 +7766,19 @@ export interface QueryAppSessionsCommandResponse extends Parsable {
      * 我在该团队中的角色：0=Member 1=Admin 2=Owner.
      */
     myRole?: number | null;
+}
+/**
+ * 应用用量统计结果（汇总 + 按模型分布）.
+ */
+export interface QueryAppUsageCommandResponse extends Parsable {
+    /**
+     * 按模型分布（按合计 token 倒序）.
+     */
+    byModel?: AppUsageModelItem[] | null;
+    /**
+     * 用量汇总.
+     */
+    summary?: AppUsageSummary | null;
 }
 /**
  * 分类列表查询响应.
@@ -7763,6 +8282,15 @@ export interface QueryPluginTeamAuthorizationCommandResponseItem extends Parsabl
      * 团队名称.
      */
     teamName?: string | null;
+}
+/**
+ * 平台公开应用列表响应.
+ */
+export interface QueryPublicAppsCommandResponse extends Parsable {
+    /**
+     * 应用集合.
+     */
+    items?: AppItem[] | null;
 }
 /**
  * 服务器信息.
@@ -8728,6 +9256,21 @@ export interface SaveTeamOpenApiPluginCommand extends Parsable {
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAccessAppItem(writer: SerializationWriter, accessAppItem: Partial<AccessAppItem> | undefined | null = {}) : void {
+    if (accessAppItem) {
+        writer.writeGuidValue("accessAppId", accessAppItem.accessAppId);
+        writer.writeCollectionOfPrimitiveValues<Guid>("appIds", accessAppItem.appIds);
+        writer.writeStringValue("createTime", accessAppItem.createTime);
+        writer.writeStringValue("description", accessAppItem.description);
+        writer.writeStringValue("key", accessAppItem.key);
+        writer.writeStringValue("name", accessAppItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAddTeamUserCommand(writer: SerializationWriter, addTeamUserCommand: Partial<AddTeamUserCommand> | undefined | null = {}) : void {
     if (addTeamUserCommand) {
         writer.writeEnumValue<TeamRole>("role", addTeamUserCommand.role);
@@ -8864,11 +9407,31 @@ export function serializeAppItem(writer: SerializationWriter, appItem: Partial<A
         writer.writeStringValue("avatarPath", appItem.avatarPath);
         writer.writeStringValue("createTime", appItem.createTime);
         writer.writeStringValue("description", appItem.description);
-        writer.writeBooleanValue("enableForeign", appItem.enableForeign);
+        writer.writeBooleanValue("isAuth", appItem.isAuth);
+        writer.writeBooleanValue("isExternal", appItem.isExternal);
+        writer.writeBooleanValue("isPublic", appItem.isPublic);
         writer.writeStringValue("name", appItem.name);
         writer.writeNumberValue("publishStatus", appItem.publishStatus);
         writer.writeStringValue("publishTime", appItem.publishTime);
         writer.writeStringValue("teamId", appItem.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAppLogItem(writer: SerializationWriter, appLogItem: Partial<AppLogItem> | undefined | null = {}) : void {
+    if (appLogItem) {
+        serializeAuditsInfo(writer, appLogItem)
+        writer.writeNumberValue("inputTokens", appLogItem.inputTokens);
+        writer.writeStringValue("lastMessageTime", appLogItem.lastMessageTime);
+        writer.writeNumberValue("outTokens", appLogItem.outTokens);
+        writer.writeStringValue("ownerId", appLogItem.ownerId);
+        writer.writeGuidValue("sessionId", appLogItem.sessionId);
+        writer.writeStringValue("title", appLogItem.title);
+        writer.writeNumberValue("totalTokens", appLogItem.totalTokens);
+        writer.writeEnumValue<UserType>("userType", appLogItem.userType);
     }
 }
 /**
@@ -8905,6 +9468,34 @@ export function serializeAppSessionItem(writer: SerializationWriter, appSessionI
         writer.writeStringValue("title", appSessionItem.title);
         writer.writeNumberValue("totalTokens", appSessionItem.totalTokens);
         writer.writeNumberValue("userType", appSessionItem.userType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAppUsageModelItem(writer: SerializationWriter, appUsageModelItem: Partial<AppUsageModelItem> | undefined | null = {}) : void {
+    if (appUsageModelItem) {
+        writer.writeStringValue("callCount", appUsageModelItem.callCount);
+        writer.writeStringValue("completionTokens", appUsageModelItem.completionTokens);
+        writer.writeGuidValue("modelId", appUsageModelItem.modelId);
+        writer.writeStringValue("modelName", appUsageModelItem.modelName);
+        writer.writeStringValue("promptTokens", appUsageModelItem.promptTokens);
+        writer.writeStringValue("totalTokens", appUsageModelItem.totalTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAppUsageSummary(writer: SerializationWriter, appUsageSummary: Partial<AppUsageSummary> | undefined | null = {}) : void {
+    if (appUsageSummary) {
+        writer.writeStringValue("callCount", appUsageSummary.callCount);
+        writer.writeStringValue("completionTokens", appUsageSummary.completionTokens);
+        writer.writeStringValue("promptTokens", appUsageSummary.promptTokens);
+        writer.writeStringValue("totalTokens", appUsageSummary.totalTokens);
     }
 }
 /**
@@ -9046,6 +9637,31 @@ export function serializeCompleteWikiDocumentCommand(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateAccessAppCommand(writer: SerializationWriter, createAccessAppCommand: Partial<CreateAccessAppCommand> | undefined | null = {}) : void {
+    if (createAccessAppCommand) {
+        writer.writeCollectionOfPrimitiveValues<Guid>("appIds", createAccessAppCommand.appIds);
+        writer.writeStringValue("description", createAccessAppCommand.description);
+        writer.writeStringValue("name", createAccessAppCommand.name);
+        writer.writeStringValue("teamId", createAccessAppCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateAccessAppCommandResponse(writer: SerializationWriter, createAccessAppCommandResponse: Partial<CreateAccessAppCommandResponse> | undefined | null = {}) : void {
+    if (createAccessAppCommandResponse) {
+        writer.writeGuidValue("accessAppId", createAccessAppCommandResponse.accessAppId);
+        writer.writeStringValue("key", createAccessAppCommandResponse.key);
+        writer.writeStringValue("keyPrefix", createAccessAppCommandResponse.keyPrefix);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateAIChannelCommand(writer: SerializationWriter, createAIChannelCommand: Partial<CreateAIChannelCommand> | undefined | null = {}) : void {
     if (createAIChannelCommand) {
         writer.writeStringValue("apiKey", createAIChannelCommand.apiKey);
@@ -9091,7 +9707,9 @@ export function serializeCreateAppCommand(writer: SerializationWriter, createApp
         writer.writeEnumValue<AppType>("appType", createAppCommand.appType);
         writer.writeStringValue("avatar", createAppCommand.avatar);
         writer.writeStringValue("description", createAppCommand.description);
-        writer.writeBooleanValue("enableForeign", createAppCommand.enableForeign);
+        writer.writeBooleanValue("isAuth", createAppCommand.isAuth);
+        writer.writeBooleanValue("isExternal", createAppCommand.isExternal);
+        writer.writeBooleanValue("isPublic", createAppCommand.isPublic);
         writer.writeStringValue("name", createAppCommand.name);
         writer.writeStringValue("teamId", createAppCommand.teamId);
     }
@@ -9807,6 +10425,18 @@ export function serializePreUploadWikiDocumentCommandResponse(writer: Serializat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAccessAppsCommandResponse(writer: SerializationWriter, queryAccessAppsCommandResponse: Partial<QueryAccessAppsCommandResponse> | undefined | null = {}) : void {
+    if (queryAccessAppsCommandResponse) {
+        writer.writeCollectionOfObjectValues<AccessAppItem>("items", queryAccessAppsCommandResponse.items, serializeAccessAppItem);
+        writer.writeNumberValue("myRole", queryAccessAppsCommandResponse.myRole);
+        writer.writeStringValue("teamId", queryAccessAppsCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAdminTeamListCommandResponse(writer: SerializationWriter, queryAdminTeamListCommandResponse: Partial<QueryAdminTeamListCommandResponse> | undefined | null = {}) : void {
     if (queryAdminTeamListCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryAdminTeamListCommandResponseItem>("items", queryAdminTeamListCommandResponse.items, serializeQueryAdminTeamListCommandResponseItem);
@@ -10013,13 +10643,40 @@ export function serializeQueryAppCommandResponse(writer: SerializationWriter, qu
         writer.writeStringValue("avatarPath", queryAppCommandResponse.avatarPath);
         writer.writeStringValue("createTime", queryAppCommandResponse.createTime);
         writer.writeStringValue("description", queryAppCommandResponse.description);
-        writer.writeBooleanValue("enableForeign", queryAppCommandResponse.enableForeign);
+        writer.writeBooleanValue("isAuth", queryAppCommandResponse.isAuth);
+        writer.writeBooleanValue("isExternal", queryAppCommandResponse.isExternal);
+        writer.writeBooleanValue("isPublic", queryAppCommandResponse.isPublic);
         writer.writeNumberValue("myRole", queryAppCommandResponse.myRole);
         writer.writeStringValue("name", queryAppCommandResponse.name);
         writer.writeNumberValue("publishStatus", queryAppCommandResponse.publishStatus);
         writer.writeStringValue("publishTime", queryAppCommandResponse.publishTime);
         writer.writeStringValue("teamId", queryAppCommandResponse.teamId);
         writer.writeStringValue("updateTime", queryAppCommandResponse.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppLogMessagesCommandResponse(writer: SerializationWriter, queryAppLogMessagesCommandResponse: Partial<QueryAppLogMessagesCommandResponse> | undefined | null = {}) : void {
+    if (queryAppLogMessagesCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppMessageItem>("items", queryAppLogMessagesCommandResponse.items, serializeAppMessageItem);
+        writer.writeGuidValue("sessionId", queryAppLogMessagesCommandResponse.sessionId);
+        writer.writeStringValue("title", queryAppLogMessagesCommandResponse.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppLogsCommandResponse(writer: SerializationWriter, queryAppLogsCommandResponse: Partial<QueryAppLogsCommandResponse> | undefined | null = {}) : void {
+    if (queryAppLogsCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppLogItem>("items", queryAppLogsCommandResponse.items, serializeAppLogItem);
+        writer.writeNumberValue("pageNo", queryAppLogsCommandResponse.pageNo);
+        writer.writeNumberValue("pageSize", queryAppLogsCommandResponse.pageSize);
+        writer.writeNumberValue("total", queryAppLogsCommandResponse.total);
     }
 }
 /**
@@ -10056,6 +10713,17 @@ export function serializeQueryAppSessionsCommandResponse(writer: SerializationWr
         writer.writeGuidValue("appId", queryAppSessionsCommandResponse.appId);
         writer.writeCollectionOfObjectValues<AppSessionItem>("items", queryAppSessionsCommandResponse.items, serializeAppSessionItem);
         writer.writeNumberValue("myRole", queryAppSessionsCommandResponse.myRole);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppUsageCommandResponse(writer: SerializationWriter, queryAppUsageCommandResponse: Partial<QueryAppUsageCommandResponse> | undefined | null = {}) : void {
+    if (queryAppUsageCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppUsageModelItem>("byModel", queryAppUsageCommandResponse.byModel, serializeAppUsageModelItem);
+        writer.writeObjectValue<AppUsageSummary>("summary", queryAppUsageCommandResponse.summary, serializeAppUsageSummary);
     }
 }
 /**
@@ -10362,6 +11030,16 @@ export function serializeQueryPluginTeamAuthorizationCommandResponseItem(writer:
     if (queryPluginTeamAuthorizationCommandResponseItem) {
         writer.writeNumberValue("teamId", queryPluginTeamAuthorizationCommandResponseItem.teamId);
         writer.writeStringValue("teamName", queryPluginTeamAuthorizationCommandResponseItem.teamName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPublicAppsCommandResponse(writer: SerializationWriter, queryPublicAppsCommandResponse: Partial<QueryPublicAppsCommandResponse> | undefined | null = {}) : void {
+    if (queryPublicAppsCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppItem>("items", queryPublicAppsCommandResponse.items, serializeAppItem);
     }
 }
 /**
@@ -11211,6 +11889,19 @@ export function serializeUnbindUserOAuthCommand(writer: SerializationWriter, unb
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateAccessAppCommand(writer: SerializationWriter, updateAccessAppCommand: Partial<UpdateAccessAppCommand> | undefined | null = {}) : void {
+    if (updateAccessAppCommand) {
+        writer.writeGuidValue("accessAppId", updateAccessAppCommand.accessAppId);
+        writer.writeCollectionOfPrimitiveValues<Guid>("appIds", updateAccessAppCommand.appIds);
+        writer.writeStringValue("description", updateAccessAppCommand.description);
+        writer.writeStringValue("name", updateAccessAppCommand.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateAIChannelCommand(writer: SerializationWriter, updateAIChannelCommand: Partial<UpdateAIChannelCommand> | undefined | null = {}) : void {
     if (updateAIChannelCommand) {
         writer.writeStringValue("apiKey", updateAIChannelCommand.apiKey);
@@ -11302,7 +11993,9 @@ export function serializeUpdateAppCommand(writer: SerializationWriter, updateApp
     if (updateAppCommand) {
         writer.writeGuidValue("appId", updateAppCommand.appId);
         writer.writeStringValue("description", updateAppCommand.description);
-        writer.writeBooleanValue("enableForeign", updateAppCommand.enableForeign);
+        writer.writeBooleanValue("isAuth", updateAppCommand.isAuth);
+        writer.writeBooleanValue("isExternal", updateAppCommand.isExternal);
+        writer.writeBooleanValue("isPublic", updateAppCommand.isPublic);
         writer.writeStringValue("name", updateAppCommand.name);
     }
 }
@@ -12219,6 +12912,27 @@ export interface UnbindUserOAuthCommand extends Parsable {
     providerId?: Guid | null;
 }
 /**
+ * 更新应用接入（名称、描述、授权外部应用；key 不可改），需要团队 Admin 及以上角色.
+ */
+export interface UpdateAccessAppCommand extends Parsable {
+    /**
+     * 接入 id，由 Controller 从路由参数回填.
+     */
+    accessAppId?: Guid | null;
+    /**
+     * 允许访问的外部应用 id 列表.
+     */
+    appIds?: Guid[] | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 接入名称.
+     */
+    name?: string | null;
+}
+/**
  * 更新 AI 渠道.
  */
 export interface UpdateAIChannelCommand extends Parsable {
@@ -12362,9 +13076,17 @@ export interface UpdateAppCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 允许外部使用；开启后团队外用户可通过「外部用户」能力使用该应用（能力本身待后续交付）.
+     * 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
      */
-    enableForeign?: boolean | null;
+    isAuth?: boolean | null;
+    /**
+     * 是否外部应用：false=内部应用，true=外部应用；应用创建后类型不可更改，此处按创建时类型回传.
+     */
+    isExternal?: boolean | null;
+    /**
+     * 是否公开到平台；仅内部应用有效，外部应用必须为 false.
+     */
+    isPublic?: boolean | null;
     /**
      * 应用名称，团队内唯一.
      */

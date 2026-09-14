@@ -5,6 +5,7 @@ import { Login } from '@/pages/auth/Login'
 import { OAuthLogin } from '@/pages/auth/OAuthLogin'
 import { Register } from '@/pages/auth/Register'
 import { Dashboard } from '@/pages/Dashboard'
+import { AppPlaza } from '@/pages/apps/AppPlaza'
 import { DesignSystemPreview } from '@/pages/DesignSystemPreview'
 import { Settings } from '@/pages/settings/Settings'
 import { AccountSettings } from '@/pages/account/AccountSettings'
@@ -14,7 +15,7 @@ import { AdminTeams } from '@/pages/admin/AdminTeams'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
 import { TeamManage } from '@/pages/teams/TeamManage'
-import { AppManage } from '@/pages/teams/apps/AppManage'
+import { AppWorkspace } from '@/pages/teams/apps/AppWorkspace'
 import { AppChat } from '@/pages/teams/apps/AppChat'
 import { Wiki } from '@/pages/wiki/Wiki'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
@@ -38,12 +39,13 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <Dashboard /> },
+      { path: 'apps', element: <AppPlaza /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
       { path: 'admin/teams', element: <AdminTeams /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
-      { path: 'team/:teamId/app/:appId', element: <AppManage /> },
+      { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
       { path: 'team/:teamId/app/:appId/chat', element: <AppChat /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },

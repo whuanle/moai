@@ -36,21 +36,29 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
 
-        if (app == null)
+        // 外部应用不通过内部会话使用；内部用户也看不到外部应用
+        if (app == null || app.IsExternal)
         {
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
         }
 
-        var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
-
-        if (myRole == null)
+        if (app.IsDisable)
         {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
+            throw new BusinessException("应用已被禁用.") { StatusCode = 403 };
         }
 
         if (app.AppType != (int)AppType.Agent)
         {
             throw new BusinessException("只有 Agent 应用支持对话.") { StatusCode = 400 };
+        }
+
+        var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
+
+        // 非团队成员仅在应用「已发布且公开到平台」时可使用
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        if (myRole == null && !canUseAsPublic)
+        {
+            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
         }
 
         // Member 只能对已发布应用发起会话；管理员可直接测试未发布应用

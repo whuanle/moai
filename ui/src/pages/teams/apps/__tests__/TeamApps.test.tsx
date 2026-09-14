@@ -37,7 +37,7 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
           description: '售前售后问答',
           appType: 'agent',
           avatarPath: '',
-          enableForeign: true,
+          isPublic: true,
           createTime: '2026-09-10T02:00:00Z',
         },
         {
@@ -47,7 +47,7 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
           description: '',
           appType: 'workflow',
           avatarPath: '',
-          enableForeign: false,
+          isPublic: false,
           createTime: '2026-09-10T03:00:00Z',
         },
       ],
@@ -89,21 +89,21 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
     expect(screen.getByText(/创建与配置需要团队管理员/)).toBeTruthy()
   })
 
-  it('卡片展示「允许外部使用」状态', async () => {
+  it('卡片展示「公开到平台」状态', async () => {
     renderSection(true)
 
     expect(await screen.findByText('客服助手')).toBeTruthy()
-    expect(screen.getByText('已开启')).toBeTruthy()
-    expect(screen.getByText('未开启')).toBeTruthy()
+    expect(screen.getByText('已公开')).toBeTruthy()
+    expect(screen.getByText('未公开')).toBeTruthy()
   })
 
-  it('新建弹窗可设置头像与「允许外部使用」，提交时一并带上', async () => {
+  it('新建弹窗可设置头像与「公开到平台」，提交时一并带上', async () => {
     renderSection(true)
     await screen.findByText('客服助手')
 
     fireEvent.click(screen.getByRole('button', { name: /新建应用/ }))
 
-    expect(await screen.findByText('允许外部使用')).toBeTruthy()
+    expect(await screen.findByText('公开到平台')).toBeTruthy()
     expect(screen.getByRole('button', { name: /上传头像/ })).toBeTruthy()
 
     fireEvent.change(screen.getByPlaceholderText('请输入应用名称'), { target: { value: '新助手' } })
@@ -112,7 +112,7 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
 
     await waitFor(() =>
       expect(createApp).toHaveBeenCalledWith(
-        expect.objectContaining({ teamId: 1, name: '新助手', enableForeign: true }),
+        expect.objectContaining({ teamId: 1, name: '新助手', isPublic: true }),
       ),
     )
   })

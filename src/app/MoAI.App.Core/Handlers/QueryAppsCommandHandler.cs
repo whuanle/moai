@@ -40,7 +40,7 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
 
         // 先投影出列再在内存中映射 DTO，避免在 EF 表达式中做 int→枚举 转换
         var rows = await _databaseContext.Apps
-            .Where(x => x.TeamId == request.TeamId)
+            .Where(x => x.TeamId == request.TeamId && !x.IsExternal)
             .OrderByDescending(x => x.CreateTime)
             .Select(x => new
             {
@@ -50,7 +50,9 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
                 x.Description,
                 x.AppType,
                 x.Avatar,
-                x.EnableForeign,
+                x.IsExternal,
+                x.IsAuth,
+                x.IsPublic,
                 x.PublishStatus,
                 x.PublishTime,
                 x.CreateTime
@@ -66,7 +68,9 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
                 Description = x.Description,
                 AppType = (AppType)x.AppType,
                 AvatarPath = x.Avatar,
-                EnableForeign = x.EnableForeign,
+                IsExternal = x.IsExternal,
+                IsAuth = x.IsAuth,
+                IsPublic = x.IsPublic,
                 PublishStatus = x.PublishStatus,
                 PublishTime = x.PublishTime,
                 CreateTime = x.CreateTime

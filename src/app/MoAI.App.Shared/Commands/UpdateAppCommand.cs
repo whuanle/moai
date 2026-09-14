@@ -27,9 +27,19 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
     public string? Description { get; init; }
 
     /// <summary>
-    /// 允许外部使用；开启后团队外用户可通过「外部用户」能力使用该应用（能力本身待后续交付）.
+    /// 是否外部应用：false=内部应用，true=外部应用；应用创建后类型不可更改，此处按创建时类型回传.
     /// </summary>
-    public bool EnableForeign { get; init; }
+    public bool IsExternal { get; init; }
+
+    /// <summary>
+    /// 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
+    /// </summary>
+    public bool IsAuth { get; init; }
+
+    /// <summary>
+    /// 是否公开到平台；仅内部应用有效，外部应用必须为 false.
+    /// </summary>
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
     [JsonIgnore]
@@ -45,5 +55,9 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
         // AppId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("应用名称不能为空.").MaximumLength(20).WithMessage("应用名称最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("应用描述最长 255 个字符.");
+        validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
+            .WithMessage("只有外部应用可以设置需要授权访问.");
+        validate.RuleFor(x => x.IsPublic).Must((cmd, isPublic) => !isPublic || !cmd.IsExternal)
+            .WithMessage("外部应用不支持公开到平台.");
     }
 }

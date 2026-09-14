@@ -57,7 +57,9 @@ public class AppController : ControllerBase
             AppId = id,
             Name = req.Name,
             Description = req.Description,
-            EnableForeign = req.EnableForeign
+            IsExternal = req.IsExternal,
+            IsAuth = req.IsAuth,
+            IsPublic = req.IsPublic
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
@@ -145,7 +147,21 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
-    /// 查询团队下的应用列表，仅团队成员可访问.
+    /// 创建应用调试会话：仅存 Redis 热态、不落库、不计用量，未发布应用也可调试；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回调试会话 <see cref="SimpleGuid"/>.</returns>
+    [HttpPost("{id:guid}/debug/session")]
+    public async Task<SimpleGuid> CreateDebugSession([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new CreateDebugSessionCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询团队下的内部应用列表，仅团队成员可访问.
     /// </summary>
     /// <param name="req">查询参数.</param>
     /// <param name="ct">取消令牌.</param>
@@ -158,6 +174,32 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
+    /// 查询团队下的外部应用列表，需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="req">查询参数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppsCommandResponse"/>.</returns>
+    [HttpGet("external/list")]
+    public Task<QueryAppsCommandResponse> QueryExternalApps([FromQuery] QueryExternalAppsCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询平台公开应用（内部且已公开、已发布、未禁用），任意已登录用户可访问.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPublicAppsCommandResponse"/>.</returns>
+    [HttpGet("public/list")]
+    public Task<QueryPublicAppsCommandResponse> QueryPublicApps(CancellationToken ct)
+    {
+        var cmd = new QueryPublicAppsCommand();
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 查询应用详情，仅团队成员可访问.
     /// </summary>
     /// <param name="id">应用 id.</param>
@@ -167,6 +209,59 @@ public class AppController : ControllerBase
     public Task<QueryAppCommandResponse> QueryApp([FromRoute] Guid id, CancellationToken ct)
     {
         var cmd = new QueryAppCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 分页查询应用对话日志（全部用户的正式会话，压缩后视图）；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="req">查询参数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppLogsCommandResponse"/>.</returns>
+    [HttpGet("{id:guid}/logs")]
+    public Task<QueryAppLogsCommandResponse> QueryAppLogs([FromRoute] Guid id, [FromQuery] QueryAppLogsCommand req, CancellationToken ct)
+    {
+        var cmd = new QueryAppLogsCommand
+        {
+            AppId = id,
+            Keyword = req.Keyword,
+            UserType = req.UserType,
+            From = req.From,
+            To = req.To,
+            PageNo = req.PageNo,
+            PageSize = req.PageSize
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询指定会话的消息详情（压缩后视图）；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppLogMessagesCommandResponse"/>.</returns>
+    [HttpGet("{id:guid}/logs/{sessionId:guid}/messages")]
+    public Task<QueryAppLogMessagesCommandResponse> QueryAppLogMessages([FromRoute] Guid id, [FromRoute] Guid sessionId, CancellationToken ct)
+    {
+        var cmd = new QueryAppLogMessagesCommand { AppId = id, SessionId = sessionId };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询应用用量统计（调用次数与 token，汇总 + 按模型分布；基于聚合用量表，最多滞后约 1 分钟）；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppUsageCommandResponse"/>.</returns>
+    [HttpGet("{id:guid}/usage")]
+    public Task<QueryAppUsageCommandResponse> QueryAppUsage([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new QueryAppUsageCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }

@@ -83,4 +83,9 @@ public partial class AppAgentSessionEntity : IFullAudited
     /// 软删除，0=未删除（legacy bigint 约定）.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// Agent 会话冷快照（AgentSession 序列化，含上下文压缩索引），Redis 热态失效后恢复.
+    /// </summary>
+    public string? State { get; set; }
 }

@@ -65,9 +65,10 @@ public sealed class AppAgentFactory
     /// <param name="teamId">团队 id.</param>
     /// <param name="userId">用户 id.</param>
     /// <param name="sessionId">会话 id.</param>
+    /// <param name="isDebug">是否调试会话：true 时不包裹用量计数器（不计数）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>内层 Agent.</returns>
-    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, CancellationToken cancellationToken)
+    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == appId, cancellationToken).ConfigureAwait(false);
         if (app == null || app.TeamId != teamId)
@@ -88,7 +89,11 @@ public sealed class AppAgentFactory
         }
 
         var inner = await _chatClientProvider.GetChatClientAsync(pair.Value.Model, pair.Value.Channel, cancellationToken).ConfigureAwait(false);
-        IChatClient chatClient = new UsageCapturingChatClient(inner, _usageCounter, _hotStore, pair.Value.Model.Id, teamId, userId, appId, sessionId);
+
+        // 调试会话不计入用量，避免污染应用的监控统计
+        IChatClient chatClient = isDebug
+            ? inner
+            : new UsageCapturingChatClient(inner, _usageCounter, _hotStore, pair.Value.Model.Id, teamId, userId, appId, sessionId);
 
         var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
 

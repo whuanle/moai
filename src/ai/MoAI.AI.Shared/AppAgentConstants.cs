@@ -19,4 +19,9 @@ public static class AppAgentConstants
     /// 默认会话标题.
     /// </summary>
     public const string DefaultSessionTitle = "未命名标题";
+
+    /// <summary>
+    /// 会话解析失败时附加在提示文本前的标记，供前端识别并重建调试会话.
+    /// </summary>
+    public const string SessionResolveErrorMarker = "[[moai:session-not-found]]";
 }

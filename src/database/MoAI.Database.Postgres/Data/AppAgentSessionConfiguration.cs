@@ -57,6 +57,10 @@ internal partial class AppAgentSessionConfiguration : IEntityTypeConfiguration<A
         entity.Property(e => e.OutTokens)
             .HasComment("输出token累计")
             .HasColumnName("out_tokens");
+        entity.Property(e => e.State)
+            .HasComment("Agent 会话冷快照（AgentSession 序列化，含上下文压缩索引），Redis 热态失效后恢复")
+            .HasColumnType("jsonb")
+            .HasColumnName("state");
         entity.Property(e => e.TeamId)
             .HasComment("所属团队ID，逻辑关联app.team_id")
             .HasColumnName("team_id");

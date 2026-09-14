@@ -72,7 +72,9 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, SimpleG
             Description = request.Description ?? string.Empty,
             AppType = (int)request.AppType,
             Avatar = request.Avatar ?? string.Empty,
-            EnableForeign = request.EnableForeign,
+            IsExternal = request.IsExternal,
+            IsAuth = request.IsExternal && request.IsAuth,
+            IsPublic = !request.IsExternal && request.IsPublic,
         };
 
         _databaseContext.Apps.Add(app);

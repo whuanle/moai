@@ -18,9 +18,20 @@ vi.mock('@/api/wiki', () => ({
 
 vi.mock('@/api/app', () => ({
   getApps: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, items: [] }),
+  getExternalApps: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, items: [] }),
+  getPublicApps: vi.fn().mockResolvedValue([]),
   createApp: vi.fn().mockResolvedValue('01924f5e-0000-7000-8000-0000000000ff'),
   updateApp: vi.fn().mockResolvedValue(undefined),
+  publishApp: vi.fn().mockResolvedValue(undefined),
+  unpublishApp: vi.fn().mockResolvedValue(undefined),
   uploadAppAvatar: vi.fn().mockResolvedValue(''),
+}))
+
+vi.mock('@/api/access-app', () => ({
+  getAccessApps: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, items: [] }),
+  createAccessApp: vi.fn().mockResolvedValue({}),
+  updateAccessApp: vi.fn().mockResolvedValue(undefined),
+  deleteAccessApp: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/api/variable', () => ({
@@ -261,9 +272,11 @@ describe('TeamManage', () => {
     renderManage()
 
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
-    expect(screen.getByText('应用')).toBeInTheDocument()
+    expect(screen.getByText('内部应用')).toBeInTheDocument()
     expect(screen.getByText('知识库')).toBeInTheDocument()
     // 管理分区与应用配置入口对成员不可见
+    expect(screen.queryByText('外部应用')).not.toBeInTheDocument()
+    expect(screen.queryByText('应用接入')).not.toBeInTheDocument()
     expect(screen.queryByText('成员管理')).not.toBeInTheDocument()
     expect(screen.queryByText('模型网关')).not.toBeInTheDocument()
     expect(screen.queryByText('插件')).not.toBeInTheDocument()

@@ -29,6 +29,7 @@ src/aiplugin/
 │   ├── Plugins/FlowWaitPlugin.cs                  static_flow_wait（等待秒数）
 │   ├── Plugins/MarkdownToHtmlPlugin.cs            static_markdown_to_html（Markdig）
 │   ├── Plugins/TextExtractPlugin.cs               static_text_extract（下载 + TextExtractionService）
+│   ├── Plugins/FileToMarkdownPlugin.cs            static_file_to_markdown（Url 下载 + 自动识别文件名 + TextExtractionService）
 │   ├── Plugins/WebContentFetchPlugin.cs           static_web_content_fetch（下载 + AngleSharp）
 │   └── Helpers/AngleSharpHelper.cs                网页正文提取
 └── MoAI.AIPlugin.Api/
@@ -73,7 +74,8 @@ ui/src/
 - 依赖：`Markdig`（Markdown→HTML）、`AngleSharp`（网页正文解析）、`Maomi.ToMarkdown`（`TextExtractionService` 按文件名后缀选抽取器，由 `WikiCoreModule.AddTextExtraction()` 注册）。
 - 外部下载统一走 infra 客户端 `IPutClient`（构造注入，复用 `ExternalHttpMessageHandler` 日志/遥测），不在插件内 `new HttpClient`。
 - 文本提取只接受 http/https 文件地址（旧实现 `new Uri(url)` 亦只支持绝对地址），不支持本地路径。
-- 行为场景见 [BDD @STP-S10~S14](./bdd.md#feature-内置静态插件迁移)；验证见 [TDD](./tdd.md)。
+- 迁移清单之外新增 `static_file_to_markdown`：与 `static_text_extract` 同源（`TextExtractionService` + `IPutClient`），差异是只需 `Url`（`FileName` 留空时从 Url 路径末段自动识别并 URL 解码，传了 FileName 则要求带扩展名），并在**下载前**按扩展名预检 MIME（`MimeTypesDetection.TryGetFileType`），响应返回 `markdown` + `fileName` + `fileType`。
+- 行为场景见 [BDD @STP-S10~S17](./bdd.md#feature-内置静态插件)；验证见 [TDD](./tdd.md)。
 
 ## 已知问题
 

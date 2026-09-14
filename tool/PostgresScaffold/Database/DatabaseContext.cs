@@ -18,6 +18,11 @@ namespace MoAI.Database;
 public partial class DatabaseContext : DbContext
 {
     /// <summary>
+    /// 应用接入.
+    /// </summary>
+    public virtual DbSet<AccessAppEntity> AccessApps { get; set; }
+
+    /// <summary>
     /// 模型渠道.
     /// </summary>
     public virtual DbSet<AiChannelEntity> AiChannels { get; set; }

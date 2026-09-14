@@ -2,6 +2,7 @@ import {
   ApiOutlined,
   ApartmentOutlined,
   AppstoreAddOutlined,
+  AppstoreOutlined,
   BookOutlined,
   CloudServerOutlined,
   DashboardOutlined,
@@ -38,6 +39,7 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
+  { key: 'apps', icon: <AppstoreOutlined />, labelKey: 'nav.apps', path: '/apps' },
   { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
 ]
@@ -54,6 +56,7 @@ const adminNav: NavItem[] = [
 
 const pathToKey: Record<string, string> = {
   '/dashboard': 'dashboard',
+  '/apps': 'apps',
   '/wiki': 'wiki',
   '/team': 'team',
   '/plugin': 'plugin',

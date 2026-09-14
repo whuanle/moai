@@ -61,7 +61,10 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
 
         app.Name = request.Name;
         app.Description = request.Description ?? string.Empty;
-        app.EnableForeign = request.EnableForeign;
+
+        // 应用类型创建后不可更改，IsExternal 以库内为准
+        app.IsAuth = app.IsExternal && request.IsAuth;
+        app.IsPublic = !app.IsExternal && request.IsPublic;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

@@ -50,11 +50,6 @@ public partial class AppEntity : IFullAudited
     public int ClassifyId { get; set; }
 
     /// <summary>
-    /// 允许外部使用.
-    /// </summary>
-    public bool EnableForeign { get; set; }
-
-    /// <summary>
     /// 应用类型，普通应用=0,流程编排=1.
     /// </summary>
     public int AppType { get; set; }
@@ -88,4 +83,24 @@ public partial class AppEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 发布状态，0=草稿 1=已发布.
+    /// </summary>
+    public short PublishStatus { get; set; }
+
+    /// <summary>
+    /// 发布时间，未发布为 null.
+    /// </summary>
+    public DateTime? PublishTime { get; set; }
+
+    /// <summary>
+    /// 是否外部应用.
+    /// </summary>
+    public bool IsExternal { get; set; }
+
+    /// <summary>
+    /// 是否需要授权访问，外部应用设置才有效.
+    /// </summary>
+    public bool IsAuth { get; set; }
 }

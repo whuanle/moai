@@ -4,9 +4,13 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleGuidFromDiscriminatorValue, serializeCreateAppCommand, serializeSimpleGuid, type BusinessValidationResult, type CreateAppCommand, type SimpleGuid } from '../../models/index.js';
 // @ts-ignore
+import { ExternalRequestBuilderNavigationMetadata, type ExternalRequestBuilder } from './external/index.js';
+// @ts-ignore
 import { AppItemRequestBuilderNavigationMetadata, AppItemRequestBuilderRequestsMetadata, type AppItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
+// @ts-ignore
+import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
 // @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
@@ -17,9 +21,17 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder> {
     /**
+     * The external property
+     */
+    get external(): ExternalRequestBuilder;
+    /**
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The public property
+     */
+    get public(): PublicRequestBuilder;
     /**
      * The session property
      */
@@ -63,8 +75,14 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
         navigationMetadata: AppItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
+    external: {
+        navigationMetadata: ExternalRequestBuilderNavigationMetadata,
+    },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    public: {
+        navigationMetadata: PublicRequestBuilderNavigationMetadata,
     },
     session: {
         navigationMetadata: SessionRequestBuilderNavigationMetadata,

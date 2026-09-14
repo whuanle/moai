@@ -26,7 +26,7 @@ interface CreateFormValues {
   appType: AppKind
   name: string
   description?: string
-  enableForeign?: boolean
+  isPublic?: boolean
 }
 
 interface TeamAppsProps {
@@ -85,7 +85,7 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
 
   const openCreate = () => {
     createForm.resetFields()
-    createForm.setFieldsValue({ appType: 'agent', enableForeign: false })
+    createForm.setFieldsValue({ appType: 'agent', isPublic: false })
     setCreateAvatar(null)
     setCreateOpen(true)
   }
@@ -100,7 +100,7 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
         name: values.name,
         description: values.description,
         avatar: createAvatar?.objectKey,
-        enableForeign: values.enableForeign ?? false,
+        isPublic: values.isPublic ?? false,
       })
       feedback.success(t('appManage.createSuccess'))
       setCreateOpen(false)
@@ -250,9 +250,9 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
                               {item.publishStatus === 1 ? t('appManage.published') : t('appManage.unpublished')}
                             </Tag>
                           )}
-                          <Tooltip title={t('appManage.enableForeign')}>
-                            <Tag color={item.enableForeign ? 'green' : undefined} style={{ marginInlineEnd: 0 }}>
-                              {item.enableForeign ? t('appManage.externalOn') : t('appManage.externalOff')}
+                          <Tooltip title={t('appManage.isPublic')}>
+                            <Tag color={item.isPublic ? 'green' : undefined} style={{ marginInlineEnd: 0 }}>
+                              {item.isPublic ? t('appManage.publicOn') : t('appManage.publicOff')}
                             </Tag>
                           </Tooltip>
                         </Space>
@@ -321,11 +321,11 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
           <Form.Item name="description" label={t('appManage.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('appManage.descriptionPlaceholder')} maxLength={255} rows={3} />
           </Form.Item>
-          <Form.Item name="enableForeign" label={t('appManage.enableForeign')} valuePropName="checked">
-            <Switch checkedChildren={t('appManage.externalOn')} unCheckedChildren={t('appManage.externalOff')} />
+          <Form.Item name="isPublic" label={t('appManage.isPublic')} valuePropName="checked">
+            <Switch checkedChildren={t('appManage.publicOn')} unCheckedChildren={t('appManage.publicOff')} />
           </Form.Item>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('appManage.enableForeignHint')}
+            {t('appManage.isPublicHint')}
           </Text>
           <div style={{ marginTop: spacing.xs }}>
             <Text type="secondary" style={{ fontSize: 12 }}>

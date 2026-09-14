@@ -83,7 +83,7 @@
 
 @STP-S9 @auto:e2e
 
-## Feature: 内置静态插件（迁移）
+## Feature: 内置静态插件
 
 ### Scenario: 获取当前时间
 
@@ -124,3 +124,27 @@
 - Then 返回 success=true，且 dataJson 的 content 为网页纯文本
 
 @STP-S14 @manual
+
+### Scenario: 文件转 Markdown 且自动识别文件名
+
+- Given 我是管理员，且内置静态插件「static_file_to_markdown」已注册，且文件地址路径末段带扩展名
+- When 我请求运行{key:"static_file_to_markdown",requestJson:"{\"Url\":\"https://example.com/docs/report.pdf\"}"}
+- Then 返回 success=true，且 dataJson 的 fileName 为「report.pdf」、fileType 为对应 MIME 类型、markdown 为转换后的内容
+
+@STP-S15 @manual
+
+### Scenario: 文件转 Markdown 无法识别扩展名时要求补 FileName
+
+- Given 我是管理员，且文件地址路径末段无扩展名且未传 FileName
+- When 我请求运行{key:"static_file_to_markdown",requestJson:"{\"Url\":\"https://example.com/download/12345\"}"}
+- Then 返回 success=false，错误信息含「无法从 Url 识别文件扩展名」
+
+@STP-S16 @manual
+
+### Scenario: 文件转 Markdown 拒绝不支持的文件类型
+
+- Given 我是管理员，且文件地址文件名后缀为不受支持的类型
+- When 我请求运行{key:"static_file_to_markdown",requestJson:"{\"Url\":\"https://example.com/app.exe\"}"}
+- Then 返回 success=false，错误信息含「不支持的文件类型」
+
+@STP-S17 @manual

@@ -8,11 +8,17 @@ import { AgentConfigRequestBuilderRequestsMetadata, type AgentConfigRequestBuild
 // @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
 // @ts-ignore
+import { DebugRequestBuilderNavigationMetadata, type DebugRequestBuilder } from './debug/index.js';
+// @ts-ignore
+import { LogsRequestBuilderNavigationMetadata, LogsRequestBuilderRequestsMetadata, type LogsRequestBuilder } from './logs/index.js';
+// @ts-ignore
 import { PublishRequestBuilderRequestsMetadata, type PublishRequestBuilder } from './publish/index.js';
 // @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, SessionRequestBuilderRequestsMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
 import { type UnpublishRequestBuilder, UnpublishRequestBuilderRequestsMetadata } from './unpublish/index.js';
+// @ts-ignore
+import { type UsageRequestBuilder, UsageRequestBuilderRequestsMetadata } from './usage/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -29,6 +35,14 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      */
     get avatar(): AvatarRequestBuilder;
     /**
+     * The debug property
+     */
+    get debug(): DebugRequestBuilder;
+    /**
+     * The logs property
+     */
+    get logs(): LogsRequestBuilder;
+    /**
      * The publish property
      */
     get publish(): PublishRequestBuilder;
@@ -40,6 +54,10 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * The unpublish property
      */
     get unpublish(): UnpublishRequestBuilder;
+    /**
+     * The usage property
+     */
+    get usage(): UsageRequestBuilder;
     /**
      * 查询应用详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -91,6 +109,13 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
     },
+    debug: {
+        navigationMetadata: DebugRequestBuilderNavigationMetadata,
+    },
+    logs: {
+        requestsMetadata: LogsRequestBuilderRequestsMetadata,
+        navigationMetadata: LogsRequestBuilderNavigationMetadata,
+    },
     publish: {
         requestsMetadata: PublishRequestBuilderRequestsMetadata,
     },
@@ -100,6 +125,9 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     },
     unpublish: {
         requestsMetadata: UnpublishRequestBuilderRequestsMetadata,
+    },
+    usage: {
+        requestsMetadata: UsageRequestBuilderRequestsMetadata,
     },
 };
 /**

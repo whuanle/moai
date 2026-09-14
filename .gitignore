@@ -375,3 +375,7 @@ local-dev/system.local.json
 
 # IDE/工具工作目录（含 memory、skill、本地草稿等，不入库）
 .workbuddy/
+
+# Kiota 生成的 debug 端点目录需入库，避免被上面的 [Dd]ebug/ 构建产物规则误伤
+!ui/src/api/client/**/debug/
+!ui/src/api/client/**/debug/**

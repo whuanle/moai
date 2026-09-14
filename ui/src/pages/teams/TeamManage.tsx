@@ -7,6 +7,7 @@ import {
   AppstoreOutlined,
   ApiOutlined,
   BookOutlined,
+  GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
   SafetyCertificateOutlined,
@@ -25,6 +26,8 @@ import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import { Variables } from '@/pages/variables/Variables'
 import { TeamApps } from '@/pages/teams/apps/TeamApps'
+import { TeamExternalApps } from '@/pages/teams/apps/TeamExternalApps'
+import { TeamAccessApps } from '@/pages/teams/apps/TeamAccessApps'
 import { TeamGateway } from '@/pages/teams/TeamGateway'
 import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
 import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
@@ -52,14 +55,14 @@ const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
-const SECTION_KEYS = ['info', 'apps', 'members', 'gateway', 'knowledge', 'plugins', 'variables', 'settings'] as const
+const SECTION_KEYS = ['info', 'apps', 'externalApps', 'accessApps', 'members', 'gateway', 'knowledge', 'plugins', 'variables', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /**
  * 仅团队 Owner/Admin 可见的管理分区。
- * 普通成员进入团队只能「使用」：可见 信息 / 应用 / 知识库，看不到团队管理与应用配置入口。
+ * 普通成员进入团队只能「使用」：可见 信息 / 内部应用 / 知识库，看不到团队管理与应用配置入口。
  */
-const ADMIN_ONLY_SECTIONS: SectionKey[] = ['members', 'gateway', 'plugins', 'variables', 'settings']
+const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'settings']
 
 interface MemberFormValues {
   userId: number
@@ -368,6 +371,8 @@ export function TeamManage() {
   const menuItems: Required<MenuProps>['items'] = [
     { key: 'info', icon: <TeamOutlined />, label: t('team.info') },
     { key: 'apps', icon: <AppstoreOutlined />, label: t('team.apps') },
+    { key: 'externalApps', icon: <GlobalOutlined />, label: t('team.externalApps') },
+    { key: 'accessApps', icon: <KeyOutlined />, label: t('team.accessApps') },
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
     { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
@@ -419,6 +424,14 @@ export function TeamManage() {
           ) : activeSection === 'apps' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamApps teamId={teamId} canManage={isAdminPlus} />
+            </DSCard>
+          ) : activeSection === 'externalApps' ? (
+<DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamExternalApps teamId={teamId} canManage={isAdminPlus} />
+            </DSCard>
+          ) : activeSection === 'accessApps' ? (
+<DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamAccessApps teamId={teamId} canManage={isAdminPlus} />
             </DSCard>
           ) : activeSection === 'members' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>

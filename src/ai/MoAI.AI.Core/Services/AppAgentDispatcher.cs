@@ -48,7 +48,10 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         }
         catch (Exception ex)
         {
-            return new AgentResponse(new ChatMessage(ChatRole.Assistant, Describe(ex)));
+            var text = ex is BusinessException be && be.StatusCode == 404
+                ? AppAgentConstants.SessionResolveErrorMarker + Describe(ex)
+                : Describe(ex);
+            return new AgentResponse(new ChatMessage(ChatRole.Assistant, text));
         }
     }
 
@@ -63,6 +66,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
 
         AIAgent? inner = null;
         string? resolveError = null;
+        var resolveSessionMissing = false;
         try
         {
             inner = await ResolveInnerAsync(scope, session, cancellationToken).ConfigureAwait(false);
@@ -70,11 +74,13 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         catch (Exception ex)
         {
             resolveError = Describe(ex);
+            resolveSessionMissing = ex is BusinessException be && be.StatusCode == 404;
         }
 
         if (resolveError != null)
         {
-            yield return new AgentResponseUpdate(ChatRole.Assistant, resolveError);
+            var text = resolveSessionMissing ? AppAgentConstants.SessionResolveErrorMarker + resolveError : resolveError;
+            yield return new AgentResponseUpdate(ChatRole.Assistant, text);
             yield break;
         }
 
@@ -138,13 +144,27 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // 会话不属于当前用户时按不存在处理，避免越权续聊
-        if (row == null || row.CreateUserId != userId)
+        var factory = serviceProvider.GetRequiredService<AppAgentFactory>();
+
+        if (row != null)
+        {
+            // 正式会话：会话不属于当前用户时按不存在处理，避免越权续聊
+            if (row.CreateUserId != userId)
+            {
+                throw new BusinessException("会话不存在.") { StatusCode = 404 };
+            }
+
+            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, cancellationToken).ConfigureAwait(false);
+        }
+
+        // 无正式会话行：回落调试会话注册表（Redis）；命中且本人时按调试装配，不落库、不计数
+        var registry = serviceProvider.GetRequiredService<IDebugSessionRegistry>();
+        var debug = await registry.GetAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        if (debug == null || debug.UserId != userId)
         {
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }
 
-        var factory = serviceProvider.GetRequiredService<AppAgentFactory>();
-        return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, cancellationToken).ConfigureAwait(false);
+        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, cancellationToken).ConfigureAwait(false);
     }
 }
