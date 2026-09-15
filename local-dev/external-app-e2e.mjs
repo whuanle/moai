@@ -62,7 +62,10 @@ async function main() {
   const APP_AUTH = await mkExternalApp(owner, TID, '外部·需授权' + TS.slice(-4), true)
   const APP_FREE = await mkExternalApp(owner, TID, '外部·免授权' + TS.slice(-4), false)
   const APP_OUT = await mkExternalApp(owner, TID, '外部·未授权' + TS.slice(-4), true)
-  await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '内部应用' + TS.slice(-4), appType: 'agent' } })
+  const APP_IN = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '内部应用' + TS.slice(-4), appType: 'agent' } })).json.value)
+  // 其他团队的外部应用（用于跨团队 403 断言）
+  const TID2 = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'external-team2-' + TS } })).json.value)
+  const APP_OTHER_TEAM = await mkExternalApp(owner, TID2, '外部·他团队' + TS.slice(-4), true)
 
   // EA-01 未携带 token 访问外部接口
   check('EA-01 无 token 访问 /api/external/app/list 401', (await api('GET', '/api/external/app/list')).status === 401)
@@ -70,8 +73,8 @@ async function main() {
   // EA-02 内部用户 token 访问外部接口（audience 隔离：内部 aud 不被外部 scheme 接受）
   check('EA-02 内部用户 token 访问外部接口 401', (await api('GET', '/api/external/app/list', { token: owner.token })).status === 401)
 
-  // EA-03 创建应用接入，授权 APP_AUTH 与 APP_FREE
-  const acc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入', description: 'external e2e', appIds: [APP_AUTH, APP_FREE] } })
+  // EA-03 创建应用接入（团队级授权，无需绑定应用列表）
+  const acc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入', description: 'external e2e' } })
   check('EA-03 创建应用接入 200 且返回 key', acc.status === 200 && typeof acc.json?.key === 'string' && acc.json.key.startsWith('moai-ac-'), `${acc.status} ${acc.text.slice(0, 160)}`)
   const KEY = acc.json?.key
   const ACC_ID = acc.json?.accessAppId
@@ -84,10 +87,11 @@ async function main() {
   check('EA-05a 应用 token 签发 200 tokenType=app', appTok.status === 200 && appTok.json?.tokenType === 'app' && typeof appTok.json?.accessToken === 'string', `${appTok.status} ${appTok.text.slice(0, 160)}`)
   check('EA-05b expiresIn>0 且无 externalId', appTok.json?.expiresIn > 0 && appTok.json?.externalId == null)
 
-  // EA-06 应用 token 访问外部接口：返回授权的 2 个应用
+  // EA-06 应用 token 访问外部接口：团队级授权，返回归属团队全部外部应用
   const appList = await api('GET', '/api/external/app/list', { token: appTok.json.accessToken })
-  const appIds = (appList.json?.items ?? []).map((x) => x.appId)
-  check('EA-06 应用 token 查授权应用列表 200 含 2 应用', appList.status === 200 && appIds.includes(APP_AUTH) && appIds.includes(APP_FREE) && !appIds.includes(APP_OUT), `${appList.status} ${appList.text.slice(0, 200)}`)
+  const teamAppIds = (appList.json?.items ?? []).map((x) => x.appId)
+  check('EA-06 应用 token 查团队外部应用列表 200 含 3 个外部应用', appList.status === 200 && teamAppIds.includes(APP_AUTH) && teamAppIds.includes(APP_FREE) && teamAppIds.includes(APP_OUT), `${appList.status} ${appList.text.slice(0, 200)}`)
+  check('EA-06b 团队外部应用列表不含内部应用', !teamAppIds.includes(APP_IN), JSON.stringify(teamAppIds))
 
   // EA-07 外部 token 不能访问内部接口（audience 隔离）
   check('EA-07 外部 token 访问内部 /api/app/list 401', (await api('GET', `/api/app/list?teamId=${TID}`, { token: appTok.json.accessToken })).status === 401)
@@ -102,14 +106,14 @@ async function main() {
   const userTok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_AUTH, externalUserId: EXT_UID } })
   check('EA-09 重复申请复用 externalId', userTok2.status === 200 && userTok2.json?.externalId === userTok.json.externalId, `${userTok2.status}`)
 
-  // EA-10 用户 token 查应用列表：仅绑定应用
+  // EA-10 用户 token 查应用列表：团队级授权，含归属团队全部外部应用
   const userList = await api('GET', '/api/external/app/list', { token: userTok.json.accessToken })
   const userListIds = (userList.json?.items ?? []).map((x) => x.appId)
-  check('EA-10 用户 token 列表仅含绑定应用', userList.status === 200 && userListIds.length === 1 && userListIds[0] === APP_AUTH, `${userList.status} ${userList.text.slice(0, 200)}`)
+  check('EA-10 用户 token 列表含团队外部应用', userList.status === 200 && userListIds.includes(APP_AUTH) && userListIds.includes(APP_OUT), `${userList.status} ${userList.text.slice(0, 200)}`)
 
-  // EA-11 用户 token 申请授权范围外的应用
-  const outOfScope = await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_OUT, externalUserId: EXT_UID } })
-  check('EA-11 范围外应用 403', outOfScope.status === 403, `${outOfScope.status} ${outOfScope.text.slice(0, 160)}`)
+  // EA-11 用户 token 申请其他团队的应用（团队级授权拒绝）
+  const outOfScope = await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_OTHER_TEAM, externalUserId: EXT_UID } })
+  check('EA-11 跨团队应用 403', outOfScope.status === 403, `${outOfScope.status} ${outOfScope.text.slice(0, 160)}`)
 
   // EA-12 参数组合校验
   check('EA-12a key+appId 缺 externalUserId 400', (await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_AUTH } })).status === 400)
@@ -135,7 +139,7 @@ async function main() {
   // EA-17 access token 冒充 refresh token → 401
   check('EA-17 access token 冒充 refresh 401', (await api('POST', '/api/external/token/refresh', { body: { refreshToken: appTok.json.accessToken } })).status === 401)
 
-  // EA-18 刷新应用 token（以库中当前 app_ids 重建）
+  // EA-18 刷新应用 token（团队级授权，签发归属团队资源访问范围）
   const refreshedApp = await api('POST', '/api/external/token/refresh', { body: { refreshToken: appTok.json.refreshToken } })
   check('EA-18 应用 token 刷新 200 tokenType=app', refreshedApp.status === 200 && refreshedApp.json?.tokenType === 'app', `${refreshedApp.status} ${refreshedApp.text.slice(0, 160)}`)
 
@@ -147,7 +151,7 @@ async function main() {
   check('EA-19d 删除后 key 再换 token 401', (await api('POST', '/api/external/token', { body: { accessAppKey: KEY } })).status === 401)
 
   // ===== 外部会话与对话端点（@EA-S9/S10）：重新建接入并换新 token =====
-  const acc2 = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入2', description: 'session e2e', appIds: [APP_AUTH] } })
+  const acc2 = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入2', description: 'session e2e' } })
   const KEY2 = acc2.json?.key
 
   // EA-20 用户 token 建外部会话
@@ -167,7 +171,8 @@ async function main() {
 
   // EA-22 会话端点鉴权与范围
   check('EA-22a 应用 token 建会话 403', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: appTok2.json.accessToken, body: {} })).status === 403)
-  check('EA-22b 范围外应用建会话 403', (await api('POST', `/api/external/agent/${APP_OUT}/session`, { token: userTok3.json.accessToken, body: {} })).status === 403)
+  check('EA-22b 跨团队应用建会话 403', (await api('POST', `/api/external/agent/${APP_OTHER_TEAM}/session`, { token: userTok3.json.accessToken, body: {} })).status === 403)
+  check('EA-22b2 同团队其他应用建会话 200（团队级授权）', (await api('POST', `/api/external/agent/${APP_OUT}/session`, { token: userTok3.json.accessToken, body: {} })).status === 200)
   check('EA-22c 无 token 建会话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { body: {} })).status === 401)
   check('EA-22d 内部用户 token 建会话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: owner.token, body: {} })).status === 401)
 
@@ -179,7 +184,7 @@ async function main() {
   check('EA-24a 无 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { body: {} })).status === 401)
   check('EA-24b 无效 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { token: 'invalid-token', body: {} })).status === 401)
   check('EA-24c 内部用户 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { token: owner.token, body: {} })).status === 401)
-  check('EA-24d 范围外应用对话 403', (await api('POST', `/api/external/agent/${APP_OUT}/chat`, { token: userTok3.json.accessToken, body: {} })).status === 403)
+  check('EA-24d 跨团队应用对话 403', (await api('POST', `/api/external/agent/${APP_OTHER_TEAM}/chat`, { token: userTok3.json.accessToken, body: {} })).status === 403)
 
   // EA-25 真实对话链路：AG-UI 协议体，验证外部用户 id 通过派发器会话归属校验
   // （应用未配置模型时派发器以 SSE 文本返回装配错误，HTTP 200 即说明归属校验与派发链路通）

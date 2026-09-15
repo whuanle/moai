@@ -50,11 +50,8 @@ public class UpdateAccessAppCommandHandler : IRequestHandler<UpdateAccessAppComm
             throw new BusinessException("只有团队管理员可以管理应用接入.") { StatusCode = 403 };
         }
 
-        await AccessAppAuthorizedAppsValidator.ValidateAsync(_databaseContext, entity.TeamId, request.AppIds, cancellationToken);
-
         entity.Name = request.Name;
         entity.Description = request.Description ?? string.Empty;
-        entity.AppIds = request.AppIds.Distinct().ToList();
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

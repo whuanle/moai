@@ -3,7 +3,7 @@ using MoAI.Infra.Models;
 namespace MoAI.App.Models;
 
 /// <summary>
-/// 外部 token 上下文：从外部 token claims 解析出的调用方身份与授权范围.
+/// 外部 token 上下文：从外部 token claims 解析出的调用方身份与归属团队（团队级资源访问）.
 /// </summary>
 public class ExternalTokenContext
 {
@@ -33,14 +33,9 @@ public class ExternalTokenContext
     public Guid? AccessAppId { get; init; }
 
     /// <summary>
-    /// 授权单应用 id（用户 token），应用 token 为 null.
+    /// 当前绑定应用 id（用户 token），应用 token 为 null.
     /// </summary>
     public Guid? AppId { get; init; }
-
-    /// <summary>
-    /// 授权应用范围：应用 token 为接入配置的应用列表，用户 token 仅含其绑定的单个应用.
-    /// </summary>
-    public IReadOnlyList<Guid> AppIds { get; init; } = new List<Guid>();
 
     /// <summary>
     /// 外部身份标识（用户 token），应用 token 为 null.
@@ -51,11 +46,4 @@ public class ExternalTokenContext
     /// 外部用户显示名（用户 token）.
     /// </summary>
     public string? Nickname { get; init; }
-
-    /// <summary>
-    /// 判断 appId 是否在授权范围内.
-    /// </summary>
-    /// <param name="appId">应用 id.</param>
-    /// <returns>是否授权.</returns>
-    public bool IsAppAuthorized(Guid appId) => AppIds.Contains(appId);
 }

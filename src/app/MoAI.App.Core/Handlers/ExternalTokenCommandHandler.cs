@@ -68,7 +68,7 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
             throw new BusinessException("应用接入 key 无效.") { StatusCode = 401 };
         }
 
-        // 应用 token：以接入身份访问其授权范围内的全部应用
+        // 应用 token：以接入身份访问其所属团队的资源（团队级授权）
         if (string.IsNullOrWhiteSpace(request.ExternalUserId))
         {
             if (request.AppId != null)
@@ -92,14 +92,15 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
             throw new BusinessException("获取用户 token 必须指定应用 id.") { StatusCode = 400 };
         }
 
-        if (!accessApp.AppIds.Contains(request.AppId.Value))
-        {
-            throw new BusinessException("该应用不在接入授权范围内.") { StatusCode = 403 };
-        }
-
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId.Value, cancellationToken);
         ExternalAppAccessValidator.EnsureUsable(app);
+
+        // 团队级授权：应用必须属于接入点所在团队
+        if (app!.TeamId != accessApp.TeamId)
+        {
+            throw new BusinessException("应用不属于该接入点所在团队.") { StatusCode = 403 };
+        }
 
         var external = await UpsertExternalAsync(accessApp.TeamId, accessApp.Id, request.ExternalUserId!, request.AppId.Value, request.Nickname, cancellationToken);
         var tokens = _externalTokenProvider.GenerateUserTokens(external, accessApp);

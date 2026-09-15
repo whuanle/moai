@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
+import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -13,7 +13,6 @@ import {
   updateAccessApp,
   type AccessAppItem,
 } from '@/api/access-app'
-import { getExternalApps, type AppItem } from '@/api/app'
 
 const { Text, Paragraph } = Typography
 
@@ -63,7 +62,6 @@ function KeyCell({ value }: { value: string }) {
 interface AccessAppFormValues {
   name: string
   description?: string
-  appIds?: string[]
 }
 
 interface TeamAccessAppsProps {
@@ -74,13 +72,12 @@ interface TeamAccessAppsProps {
 }
 
 /**
- * 团队「应用接入」区块：创建 key 并授权其可访问哪些外部应用。
+ * 团队「应用接入」区块：创建 key，应用 token 可访问其所属团队的资源（团队级授权）。
  * key 原文仅在创建时返回一次；列表只回显前缀。
  */
 export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
   const { t } = useTranslation()
   const [items, setItems] = useState<AccessAppItem[]>([])
-  const [externalApps, setExternalApps] = useState<AppItem[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AccessAppItem | null>(null)
@@ -88,29 +85,12 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
   const [createdKey, setCreatedKey] = useState<string | null>(null)
   const [form] = Form.useForm<AccessAppFormValues>()
 
-  const appNameMap = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const app of externalApps) {
-      if (app.appId) map.set(String(app.appId), app.name ?? String(app.appId))
-    }
-    return map
-  }, [externalApps])
-
-  const options = useMemo(
-    () =>
-      externalApps
-        .filter((app) => app.appId)
-        .map((app) => ({ value: String(app.appId), label: app.name ?? String(app.appId) })),
-    [externalApps],
-  )
-
   const load = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setLoading(true)
     try {
-      const [accessRes, appRes] = await Promise.all([getAccessApps(teamId), getExternalApps(teamId)])
+      const accessRes = await getAccessApps(teamId)
       setItems(accessRes.items ?? [])
-      setExternalApps(appRes.items ?? [])
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -134,7 +114,6 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
     form.setFieldsValue({
       name: item.name ?? '',
       description: item.description ?? undefined,
-      appIds: (item.appIds ?? []).map((id) => String(id)),
     })
     setModalOpen(true)
   }
@@ -147,7 +126,6 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
         await updateAccessApp(editing.accessAppId, {
           name: values.name,
           description: values.description,
-          appIds: values.appIds ?? [],
         })
         feedback.success(t('accessApp.updateSuccess'))
       } else {
@@ -155,7 +133,6 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           teamId,
           name: values.name,
           description: values.description,
-          appIds: values.appIds ?? [],
         })
         if (res.key) setCreatedKey(res.key)
         feedback.success(t('accessApp.createSuccess'))
@@ -199,21 +176,6 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
         render: (v: string | null) => (v ? <KeyCell value={v} /> : '-'),
       },
       {
-        title: t('accessApp.colApps'),
-        key: 'apps',
-        render: (_, record) => {
-          const ids = (record.appIds ?? []).map((id) => String(id))
-          if (ids.length === 0) return <Text type="secondary">-</Text>
-          return (
-            <Space size={4} wrap>
-              {ids.map((id) => (
-                <Tag key={id}>{appNameMap.get(id) ?? id}</Tag>
-              ))}
-            </Space>
-          )
-        },
-      },
-      {
         title: t('accessApp.colCreateTime'),
         dataIndex: 'createTime',
         width: 170,
@@ -239,7 +201,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, appNameMap],
+    [t],
   )
 
   if (!canManage) {
@@ -286,17 +248,6 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           </Form.Item>
           <Form.Item name="description" label={t('accessApp.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('accessApp.descriptionPlaceholder')} maxLength={255} rows={3} />
-          </Form.Item>
-          <Form.Item name="appIds" label={t('accessApp.colApps')} extra={t('accessApp.appsHint')}>
-            <Select
-              mode="multiple"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              placeholder={t('accessApp.appsPlaceholder')}
-              options={options}
-              notFoundContent={t('accessApp.appsEmpty')}
-            />
           </Form.Item>
         </Form>
       </Modal>

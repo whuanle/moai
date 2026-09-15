@@ -1,4 +1,3 @@
-import { type Guid } from '@microsoft/kiota-abstractions'
 import { getApiClient } from '@/api/kiota'
 
 export interface AccessAppItem {
@@ -6,8 +5,6 @@ export interface AccessAppItem {
   accessAppId?: string | null
   name?: string | null
   description?: string | null
-  /** 授权可访问的外部应用 id（uuid 字符串） */
-  appIds?: string[] | null
   /** 接入 key（明文，可再次查看；前端默认掩码、点击展开） */
   key?: string | null
   createTime?: string | null
@@ -41,28 +38,25 @@ export async function createAccessApp(payload: {
   teamId: number
   name: string
   description?: string
-  appIds: string[]
 }): Promise<CreatedAccessApp> {
   const client = getApiClient()
   const res = await client.api.accessApp.post({
     teamId: String(payload.teamId),
     name: payload.name,
     description: payload.description,
-    appIds: payload.appIds as Guid[],
   })
   return { accessAppId: res?.accessAppId, key: res?.key, keyPrefix: res?.keyPrefix }
 }
 
-/** 更新应用接入（名称/描述/授权外部应用；key 不可改） */
+/** 更新应用接入（名称/描述；key 不可改） */
 export async function updateAccessApp(
   accessAppId: string,
-  payload: { name: string; description?: string; appIds: string[] },
+  payload: { name: string; description?: string },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.accessApp.byId(accessAppId).put({
     name: payload.name,
     description: payload.description,
-    appIds: payload.appIds as Guid[],
   })
 }
 

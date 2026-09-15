@@ -30,11 +30,11 @@ public class QueryExternalSessionMessagesCommandHandler : IRequestHandler<QueryE
 
         var session = await _databaseContext.AppAgentSessions
             .Where(x => x.Id == request.SessionId)
-            .Select(x => new { x.Id, x.Title, x.AppId, x.CreateUserId })
+            .Select(x => new { x.Id, x.Title, x.AppId, x.TeamId, x.CreateUserId })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // 非归属用户按不存在处理，避免泄露会话存在性；应用不在授权范围同样按不存在处理
-        if (session == null || session.CreateUserId != externalUserId || !request.Context.IsAppAuthorized(session.AppId))
+        // 非归属用户按不存在处理，避免泄露会话存在性；应用不属于 token 归属团队同样按不存在处理
+        if (session == null || session.CreateUserId != externalUserId || session.TeamId != request.Context.TeamId)
         {
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }

@@ -242,17 +242,16 @@ async function main() {
     check('AP-13l 外部应用设置 isPublic 被拒 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '非法外部应用', appType: 'agent', isExternal: true, isPublic: true } })).status === 400)
 
     // AP-13s ~ AP-13y 应用接入（access_app）
-    const createAcc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP接入', description: '接入测试', appIds: [EXT_ID] } })
+    const createAcc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP接入', description: '接入测试' } })
     check('AP-13s 创建应用接入 200 且返回 key', createAcc.status === 200 && isGuid(createAcc.json?.accessAppId) && typeof createAcc.json?.key === 'string' && createAcc.json.key.startsWith('moai-ac-'), `${createAcc.status} ${createAcc.text.slice(0, 140)}`)
     const ACC_ID = String(createAcc.json?.accessAppId ?? '')
 
     const accList = await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })
     const accItem = (accList.json?.items ?? []).find(i => i.accessAppId === ACC_ID)
-    check('AP-13t 接入列表回显完整 key（可再次查看）与授权应用', accList.status === 200 && !!accItem && accItem.key === createAcc.json?.key && (accItem.appIds ?? []).includes(EXT_ID), JSON.stringify(accItem))
+    check('AP-13t 接入列表回显完整 key（可再次查看）', accList.status === 200 && !!accItem && accItem.key === createAcc.json?.key, JSON.stringify(accItem))
     check('AP-13u Member 查接入 403', (await api('GET', `/api/access-app/list?teamId=${TID}`, { token: member.token })).status === 403)
     check('AP-13v 非成员查接入 404', (await api('GET', `/api/access-app/list?teamId=${TID}`, { token: outsider.token })).status === 404)
-    check('AP-13w 授权非外部应用 400', (await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: '非法接入', appIds: [AGENT_ID] } })).status === 400)
-    check('AP-13x 更新接入 200', (await api('PUT', `/api/access-app/${ACC_ID}`, { token: owner.token, body: { name: 'ERP接入2', appIds: [EXT_ID] } })).status === 200)
+    check('AP-13x 更新接入 200', (await api('PUT', `/api/access-app/${ACC_ID}`, { token: owner.token, body: { name: 'ERP接入2' } })).status === 200)
     check('AP-13y 删除接入 200', (await api('DELETE', `/api/access-app/${ACC_ID}`, { token: owner.token })).status === 200)
   }
 

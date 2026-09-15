@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using Maomi;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -52,7 +51,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
             accessApp.Name,
             accessApp.Id,
             appId: null,
-            appIds: accessApp.AppIds,
             externalUserId: null,
             nickname: null);
     }
@@ -67,7 +65,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
             external.Nickname ?? external.ExternalUserId,
             external.AccessAppId,
             external.AppId,
-            appIds: external.AppId != null ? new List<Guid> { external.AppId.Value } : new List<Guid>(),
             externalUserId: external.ExternalUserId,
             nickname: external.Nickname);
     }
@@ -123,17 +120,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
             appId = appIdGuid;
         }
 
-        var appIds = new List<Guid>();
-        if (claimMap.TryGetValue(ExternalAuthDefaults.ClaimAppIds, out var appIdsValue))
-        {
-            appIds = JsonSerializer.Deserialize<List<Guid>>(appIdsValue) ?? new List<Guid>();
-        }
-
-        if (appId != null && appIds.Count == 0)
-        {
-            appIds.Add(appId.Value);
-        }
-
         long teamId = claimMap.TryGetValue(ExternalAuthDefaults.ClaimTeamId, out var teamIdValue) && long.TryParse(teamIdValue, out var teamIdParsed) ? teamIdParsed : 0;
         long externalId = subjectType == UserType.External && long.TryParse(subjectId, out var externalIdParsed) ? externalIdParsed : 0;
 
@@ -145,7 +131,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
             TeamId = teamId,
             AccessAppId = accessAppId,
             AppId = appId,
-            AppIds = appIds,
             ExternalUserId = claimMap.GetValueOrDefault(ExternalAuthDefaults.ClaimExternalUserId),
             Nickname = claimMap.GetValueOrDefault(JwtRegisteredClaimNames.Nickname),
         };
@@ -189,7 +174,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
         string name,
         Guid? accessAppId,
         Guid? appId,
-        IReadOnlyList<Guid>? appIds,
         string? externalUserId,
         string? nickname)
     {
@@ -215,11 +199,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
             accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimAppId, appId.Value.ToString()));
         }
 
-        if (appIds is { Count: > 0 })
-        {
-            accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimAppIds, JsonSerializer.Serialize(appIds)));
-        }
-
         if (!string.IsNullOrEmpty(externalUserId))
         {
             accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimExternalUserId, externalUserId));
@@ -241,7 +220,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
         };
         var accessToken = _tokenHandler.CreateToken(accessTokenDescriptor);
 
-        // refresh token 仅保留主体信息，授权范围在刷新时以数据库当前配置为准重建
+        // refresh token 仅保留主体信息，授权在访问时按数据库团队级配置校验
         var refreshClaims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, subjectId),

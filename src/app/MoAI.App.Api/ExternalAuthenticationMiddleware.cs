@@ -62,7 +62,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
 
         context.User = authenticateResult.Principal;
 
-        // 外部对话端点（/external/agent/{appId}/chat）：校验 appId 在 token 授权范围内且应用可用；
+        // 外部对话端点（/external/agent/{appId}/chat）：校验 appId 属于 token 归属团队（团队级授权）且应用可用；
         // 会话归属由 AppAgentDispatcher 按外部用户 id 校验，此处只做授权范围守卫
         if (context.Request.RouteValues.TryGetValue("appId", out var appIdValue) && appIdValue != null)
         {
@@ -85,7 +85,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         }
 
         var tokenContext = context.Items.TryGetValue(ExternalAuthDefaults.TokenContextItemKey, out var value) ? value as ExternalTokenContext : null;
-        if (tokenContext == null || !tokenContext.IsAppAuthorized(appId))
+        if (tokenContext == null)
         {
             await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "You do not have access to this application.");
             return false;
@@ -94,12 +94,19 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         var databaseContext = context.RequestServices.GetRequiredService<DatabaseContext>();
         var app = await databaseContext.Apps
             .Where(x => x.Id == appId)
-            .Select(x => new { x.IsExternal, x.IsDisable, x.PublishStatus })
+            .Select(x => new { x.TeamId, x.IsExternal, x.IsDisable, x.PublishStatus })
             .FirstOrDefaultAsync(context.RequestAborted);
 
         if (app == null || !app.IsExternal)
         {
             await WriteErrorAsync(context, StatusCodes.Status404NotFound, "not_found_error", "app_not_found", "Application not found.");
+            return false;
+        }
+
+        // 团队级授权：appId 必须属于 token 归属团队
+        if (app.TeamId != tokenContext.TeamId)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "You do not have access to this application.");
             return false;
         }
 

@@ -7,7 +7,7 @@ using MoAI.Infra.Models;
 namespace MoAI.App.Queries;
 
 /// <summary>
-/// 查询当前外部 token 授权范围内的应用列表（已发布且未禁用），需要外部 token.
+/// 查询外部 token 归属团队下全部已发布且未禁用的外部应用（团队级授权），需要外部 token.
 /// </summary>
 public class QueryExternalAuthorizedAppsCommand : IRequest<QueryExternalAuthorizedAppsCommandResponse>
 {

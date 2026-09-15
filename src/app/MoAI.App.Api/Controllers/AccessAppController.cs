@@ -9,7 +9,7 @@ using MoAI.Infra.Services;
 namespace MoAI.App.Controllers;
 
 /// <summary>
-/// 应用接入接口：团队下创建的 key，授权其可访问哪些外部应用；增删改查需要团队 Admin 及以上角色.
+/// 应用接入接口：团队下创建的 key，应用 token 可访问其所属团队的资源；增删改查需要团队 Admin 及以上角色.
 /// </summary>
 [ApiController]
 [Route("/access-app")]
@@ -56,7 +56,7 @@ public class AccessAppController : ControllerBase
     }
 
     /// <summary>
-    /// 更新应用接入（名称、描述、授权外部应用；key 不可改），需要团队 Admin 及以上角色.
+    /// 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
     /// </summary>
     /// <param name="id">接入 id.</param>
     /// <param name="req">更新请求.</param>
@@ -70,7 +70,6 @@ public class AccessAppController : ControllerBase
             AccessAppId = id,
             Name = req.Name,
             Description = req.Description,
-            AppIds = req.AppIds,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

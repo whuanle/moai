@@ -28,16 +28,19 @@ public class QueryExternalAgentSessionsCommandHandler : IRequestHandler<QueryExt
     {
         var externalUserId = ExternalAppAccessValidator.EnsureExternalUser(request.Context);
 
-        if (!request.Context.IsAppAuthorized(request.AppId))
-        {
-            throw new BusinessException("该应用不在授权范围内.") { StatusCode = 403 };
-        }
-
-        var appExists = await _databaseContext.Apps
-            .AnyAsync(x => x.Id == request.AppId, cancellationToken);
-        if (!appExists)
+        var appTeamId = await _databaseContext.Apps
+            .Where(x => x.Id == request.AppId)
+            .Select(x => (long?)x.TeamId)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (appTeamId == null)
         {
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
+        }
+
+        // 团队级授权：应用必须属于 token 归属团队
+        if (appTeamId != request.Context.TeamId)
+        {
+            throw new BusinessException("该应用不属于 token 归属团队.") { StatusCode = 403 };
         }
 
         var rows = await _databaseContext.AppAgentSessions

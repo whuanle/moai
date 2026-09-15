@@ -41,11 +41,6 @@ public static class ExternalAuthDefaults
     public const string ClaimAppId = "appid";
 
     /// <summary>
-    /// 授权应用范围 claim（应用 token，JSON 数组）.
-    /// </summary>
-    public const string ClaimAppIds = "appids";
-
-    /// <summary>
     /// 外部身份标识 claim.
     /// </summary>
     public const string ClaimExternalUserId = "externaluserid";

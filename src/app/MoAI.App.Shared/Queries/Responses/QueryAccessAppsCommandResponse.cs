@@ -26,11 +26,6 @@ public class AccessAppItem
     public string Key { get; set; } = default!;
 
     /// <summary>
-    /// 允许访问的外部应用 id 列表.
-    /// </summary>
-    public List<Guid> AppIds { get; set; } = new();
-
-    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }

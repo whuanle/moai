@@ -1,5 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Queries.Responses;
 using MoAI.App.Services;
@@ -45,8 +44,6 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
             throw new BusinessException("只有团队管理员可以管理应用接入.") { StatusCode = 403 };
         }
 
-        await AccessAppAuthorizedAppsValidator.ValidateAsync(_databaseContext, (int)request.TeamId, request.AppIds, cancellationToken);
-
         var (secret, keyPrefix) = AccessAppKeyGenerator.New();
 
         var entity = new AccessAppEntity
@@ -56,7 +53,6 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             Key = secret,
-            AppIds = request.AppIds.Distinct().ToList(),
         };
 
         _databaseContext.AccessApps.Add(entity);

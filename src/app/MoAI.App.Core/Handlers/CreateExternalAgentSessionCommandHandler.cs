@@ -32,14 +32,15 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
     {
         var externalUserId = ExternalAppAccessValidator.EnsureExternalUser(request.Context);
 
-        if (!request.Context.IsAppAuthorized(request.AppId))
-        {
-            throw new BusinessException("该应用不在授权范围内.") { StatusCode = 403 };
-        }
-
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
         ExternalAppAccessValidator.EnsureUsable(app);
+
+        // 团队级授权：应用必须属于 token 归属团队
+        if (app!.TeamId != request.Context.TeamId)
+        {
+            throw new BusinessException("该应用不属于 token 归属团队.") { StatusCode = 403 };
+        }
 
         if (app!.AppType != (int)AppType.Agent)
         {
