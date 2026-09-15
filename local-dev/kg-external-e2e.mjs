@@ -35,6 +35,7 @@ async function api(method, path, { token, body } = {}) {
 const TS = Date.now().toString().slice(-8)
 const kg = (id) => `/api/knowledge-graph/${id}`
 const xkg = (id) => `/api/external/knowledge-graph/${id}`
+let kx07Skipped = false
 
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
@@ -148,6 +149,22 @@ async function main() {
       check('KX-03k schema 不再含已删关系类型', !(s.json?.relationTypes ?? []).some((x) => Number(x.relationTypeId) === RT2), JSON.stringify(s.json?.relationTypes?.map((x) => x.relationTypeId)))
     }
 
+    // 删除守卫与按序清理（专用临时类型/节点，不干扰下游场景的计数与分页断言）
+    const teC = await api('POST', xkg(G1) + '/entity-types', { token: AT1, body: { name: 'KX临时类型-' + TS } })
+    const ET_C = Number(teC.json?.value)
+    const trC = await api('POST', xkg(G1) + '/relation-types', { token: AT1, body: { name: 'KX引用关系-' + TS, sourceTypeId: ET_A, targetTypeId: ET_C } })
+    const RT_C = Number(trC.json?.value)
+    const nc = await api('POST', xkg(G1) + '/nodes', { token: AT1, body: { entityTypeId: ET_C, name: 'KX临时节点-' + TS } })
+    check('KX-03l 仍有节点的实体类型删除 409', teC.status === 200 && trC.status === 200 && nc.status === 200 && (await api('DELETE', `${xkg(G1)}/entity-types/${ET_C}`, { token: AT1 })).status === 409, `${teC.status}/${trC.status}/${nc.status}`)
+    check('KX-03m 删除临时节点 200（解除节点守卫）', (await api('DELETE', `${xkg(G1)}/nodes/${encodeURIComponent(nc.json?.value)}`, { token: AT1 })).status === 200)
+    check('KX-03n 被关系类型引用的实体类型删除 409', (await api('DELETE', `${xkg(G1)}/entity-types/${ET_C}`, { token: AT1 })).status === 409)
+    check('KX-03o 按序清理：先删引用它的关系类型 200', (await api('DELETE', `${xkg(G1)}/relation-types/${RT_C}`, { token: AT1 })).status === 200)
+    {
+      const delC = await api('DELETE', `${xkg(G1)}/entity-types/${ET_C}`, { token: AT1 })
+      const s = await api('GET', xkg(G1) + '/schema', { token: AT1 })
+      check('KX-03p 再删实体类型 200 且 schema 消失', delC.status === 200 && !((s.json?.entityTypes ?? []).some((x) => Number(x.entityTypeId) === ET_C)), `${delC.status}`)
+    }
+
     // ===== KX-04 节点 CRUD / 分页 / 邻接 =====
     const nAName = 'KX节点A-' + TS
     const na = await api('POST', xkg(G1) + '/nodes', { token: AT1, body: { entityTypeId: ET_A, name: nAName, description: '甲节点' } })
@@ -176,6 +193,25 @@ async function main() {
       const cntA = Number((s.json?.entityTypes ?? []).find((x) => Number(x.entityTypeId) === ET_A)?.count)
       const cntB = Number((s.json?.entityTypes ?? []).find((x) => Number(x.entityTypeId) === ET_B)?.count)
       check('KX-04h schema 计数随写入变化（ET_A=1, ET_B=1）', cntA === 1 && cntB === 1, JSON.stringify({ cntA, cntB }))
+    }
+
+    // 删除节点 + DETACH DELETE 级联（临时节点与边，删完恢复基线，不影响 KX-05/06 的计数断言）
+    // ND 用 ET_B：RT 约束为 ET_A→ET_B，NA→ND 才是合法边
+    const nd = await api('POST', xkg(G1) + '/nodes', { token: AT1, body: { entityTypeId: ET_B, name: 'KX节点D-' + TS } })
+    const ND = nd.json?.value
+    const edD = await api('POST', xkg(G1) + '/edges', { token: AT1, body: { relationTypeId: RT, sourceNodeId: NA, targetNodeId: ND } })
+    check('KX-04i 准备第 3 节点与一条边 200', nd.status === 200 && typeof ND === 'string' && edD.status === 200, `${nd.status}/${edD.status} ${edD.text.slice(0, 120)}`)
+    const delN = await api('DELETE', `${xkg(G1)}/nodes/${encodeURIComponent(ND)}`, { token: AT1 })
+    check('KX-04j 删除节点 200', delN.status === 200, `${delN.status} ${delN.text.slice(0, 120)}`)
+    check('KX-04k 删除后节点 GET 404', (await api('GET', `${xkg(G1)}/nodes/${encodeURIComponent(ND)}`, { token: AT1 })).status === 404)
+    {
+      const s = await api('GET', xkg(G1) + '/schema', { token: AT1 })
+      const cntB = Number((s.json?.entityTypes ?? []).find((x) => Number(x.entityTypeId) === ET_B)?.count)
+      check('KX-04l schema 计数回退（ET_B=1）', cntB === 1, JSON.stringify({ cntB }))
+      const el0 = await api('POST', xkg(G1) + '/edges/list', { token: AT1, body: { pageNo: 1, pageSize: 10 } })
+      check('KX-04m DETACH 级联：节点删除后其边连带消失（edges total=0）', Number(el0.json?.total) === 0, JSON.stringify(el0.json?.total))
+      const pl0 = await api('POST', xkg(G1) + '/nodes/list', { token: AT1, body: { pageNo: 1, pageSize: 10 } })
+      check('KX-04n 节点 total 回到 2', Number(pl0.json?.total) === 2, JSON.stringify(pl0.json?.total))
     }
 
     // ===== KX-05 边 CRUD（含约束校验）=====
@@ -245,6 +281,7 @@ async function main() {
       check('KX-07a connected 图谱外部写节点 409', (await api('POST', xkg(CONN) + '/nodes', { token: AT1, body: { entityTypeId: ET_A, name: 'kx-readonly-' + TS } })).status === 409)
       check('KX-07b connected 图谱外部建实体类型 409', (await api('POST', xkg(CONN) + '/entity-types', { token: AT1, body: { name: 'kx-readonly-type-' + TS } })).status === 409)
     } else {
+      kx07Skipped = true
       console.warn('WARN | KX-07 跳过：connected 图谱不可用（图数据库探活失败）')
     }
 
@@ -266,7 +303,8 @@ async function main() {
     await api('DELETE', `/api/team/${T2}`, { token })
   }
 
-  console.log(`\n===== 知识图谱外部接口 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
+  const skipNote = kx07Skipped ? ' | KX-07 skipped (connected 探活失败)' : ''
+  console.log(`\n===== 知识图谱外部接口 E2E 汇总: PASS=${PASS} FAIL=${FAIL}${skipNote} =====`)
   process.exit(FAIL > 0 ? 1 : 0)
 }
 
