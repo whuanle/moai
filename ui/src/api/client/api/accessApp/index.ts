@@ -26,7 +26,7 @@ export interface AccessAppRequestBuilder extends BaseRequestBuilder<AccessAppReq
      byId(id: Guid) : AccessAppItemRequestBuilder;
     /**
      * 创建应用接入，key 原文仅在创建响应返回一次；需要团队 Admin 及以上角色.
-     * @param body 创建应用接入（团队下的 key，授权可访问哪些外部应用），需要团队 Admin 及以上角色.
+     * @param body 创建应用接入（团队下的 key，应用 token 可访问其所属团队的资源），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<CreateAccessAppCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -38,7 +38,7 @@ export interface AccessAppRequestBuilder extends BaseRequestBuilder<AccessAppReq
      post(body: CreateAccessAppCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<CreateAccessAppCommandResponse | undefined>;
     /**
      * 创建应用接入，key 原文仅在创建响应返回一次；需要团队 Admin 及以上角色.
-     * @param body 创建应用接入（团队下的 key，授权可访问哪些外部应用），需要团队 Admin 及以上角色.
+     * @param body 创建应用接入（团队下的 key，应用 token 可访问其所属团队的资源），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

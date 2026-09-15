@@ -6,6 +6,8 @@ import { AgentRequestBuilderNavigationMetadata, type AgentRequestBuilder } from 
 // @ts-ignore
 import { AppRequestBuilderNavigationMetadata, type AppRequestBuilder } from './app/index.js';
 // @ts-ignore
+import { KnowledgeGraphRequestBuilderNavigationMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
+// @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
 import { TokenRequestBuilderNavigationMetadata, TokenRequestBuilderRequestsMetadata, type TokenRequestBuilder } from './token/index.js';
@@ -24,6 +26,10 @@ export interface ExternalRequestBuilder extends BaseRequestBuilder<ExternalReque
      * The app property
      */
     get app(): AppRequestBuilder;
+    /**
+     * The knowledgeGraph property
+     */
+    get knowledgeGraph(): KnowledgeGraphRequestBuilder;
     /**
      * The session property
      */
@@ -46,6 +52,9 @@ export const ExternalRequestBuilderNavigationMetadata: Record<Exclude<keyof Exte
     },
     app: {
         navigationMetadata: AppRequestBuilderNavigationMetadata,
+    },
+    knowledgeGraph: {
+        navigationMetadata: KnowledgeGraphRequestBuilderNavigationMetadata,
     },
     session: {
         navigationMetadata: SessionRequestBuilderNavigationMetadata,

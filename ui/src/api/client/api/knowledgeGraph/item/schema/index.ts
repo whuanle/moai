@@ -20,18 +20,27 @@ export interface SchemaRequestBuilder extends BaseRequestBuilder<SchemaRequestBu
      * @throws {BusinessValidationResult} error when the service returns a 409 status code
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
-     get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryKnowledgeGraphSchemaCommandResponse | undefined>;
+     get(requestConfiguration?: RequestConfiguration<SchemaRequestBuilderGetQueryParameters> | undefined) : Promise<QueryKnowledgeGraphSchemaCommandResponse | undefined>;
     /**
      * 查询 schema.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
-     toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
+     toGetRequestInformation(requestConfiguration?: RequestConfiguration<SchemaRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
+}
+/**
+ * 查询 schema.
+ */
+export interface SchemaRequestBuilderGetQueryParameters {
+    /**
+     * 强制刷新内省缓存（仅接入图）.
+     */
+    refresh?: boolean;
 }
 /**
  * Uri template for the request builder.
  */
-export const SchemaRequestBuilderUriTemplate = "{+baseurl}/api/knowledge-graph/{id}/schema";
+export const SchemaRequestBuilderUriTemplate = "{+baseurl}/api/knowledge-graph/{id}/schema{?refresh*}";
 /**
  * Metadata for all the requests in the request builder.
  */

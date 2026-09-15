@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface CanvasRequestBuilder extends BaseRequestBuilder<CanvasRequestBuilder> {
     /**
-     * 画布有界子图查询（仅托管图）.
+     * 画布有界子图查询（托管图按类型过滤，接入图按标签过滤）.
      * @param body 画布有界子图查询：按实体类型/关系类型/关键字取节点子集，边仅返回节点集内部的边.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryKnowledgeGraphCanvasCommandResponse>}
@@ -23,7 +23,7 @@ export interface CanvasRequestBuilder extends BaseRequestBuilder<CanvasRequestBu
      */
      post(body: QueryKnowledgeGraphCanvasCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryKnowledgeGraphCanvasCommandResponse | undefined>;
     /**
-     * 画布有界子图查询（仅托管图）.
+     * 画布有界子图查询（托管图按类型过滤，接入图按标签过滤）.
      * @param body 画布有界子图查询：按实体类型/关系类型/关键字取节点子集，边仅返回节点集内部的边.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

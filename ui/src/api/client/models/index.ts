@@ -13,10 +13,6 @@ export interface AccessAppItem extends Parsable {
      */
     accessAppId?: Guid | null;
     /**
-     * 允许访问的外部应用 id 列表.
-     */
-    appIds?: Guid[] | null;
-    /**
      * 创建时间.
      */
     createTime?: string | null;
@@ -64,13 +60,16 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
+/**
+ * Represents a context entry providing additional information to the agent.
+ */
 export interface AGUIContext extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the context entry.
      */
     description?: string | null;
     /**
-     * The value property
+     * Gets or sets the value of the context entry.
      */
     value?: string | null;
 }
@@ -98,21 +97,24 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
+/**
+ * Represents a tool available for the agent to use.
+ */
 export interface AGUITool extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the tool.
      */
     description?: string | null;
     /**
-     * The metadata property
+     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
      */
     metadata?: UntypedNode | null;
     /**
-     * The name property
+     * Gets or sets the name of the tool.
      */
     name?: string | null;
     /**
-     * The parameters property
+     * Gets or sets the JSON Schema describing the tool's parameters.
      */
     parameters?: UntypedNode | null;
 }
@@ -758,13 +760,9 @@ export interface CompleteWikiDocumentCommand extends Parsable {
     wikiId?: string | null;
 }
 /**
- * 创建应用接入（团队下的 key，授权可访问哪些外部应用），需要团队 Admin 及以上角色.
+ * 创建应用接入（团队下的 key，应用 token 可访问其所属团队的资源），需要团队 Admin 及以上角色.
  */
 export interface CreateAccessAppCommand extends Parsable {
-    /**
-     * 允许访问的外部应用 id 列表，必须属于本团队且为外部应用.
-     */
-    appIds?: Guid[] | null;
     /**
      * 描述，可为空.
      */
@@ -1283,6 +1281,69 @@ export function createCreateExternalAgentSessionCommandFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalEdgeCommand}
+ */
+// @ts-ignore
+export function createCreateExternalEdgeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalEdgeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalEdgesBatchCommand}
+ */
+// @ts-ignore
+export function createCreateExternalEdgesBatchCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalEdgesBatchCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalEntityTypeCommand}
+ */
+// @ts-ignore
+export function createCreateExternalEntityTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalEntityTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalNodeCommand_properties}
+ */
+// @ts-ignore
+export function createCreateExternalNodeCommand_propertiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalNodeCommand_properties;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalNodeCommand}
+ */
+// @ts-ignore
+export function createCreateExternalNodeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalNodeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalNodesBatchCommand}
+ */
+// @ts-ignore
+export function createCreateExternalNodesBatchCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalNodesBatchCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateExternalRelationTypeCommand}
+ */
+// @ts-ignore
+export function createCreateExternalRelationTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateExternalRelationTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateFeishuAppCommand}
  */
 // @ts-ignore
@@ -1315,6 +1376,15 @@ export function createCreateKnowledgeGraphEdgeCommandFromDiscriminatorValue(pars
 // @ts-ignore
 export function createCreateKnowledgeGraphEntityTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateKnowledgeGraphEntityTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateKnowledgeGraphNodeCommand_properties}
+ */
+// @ts-ignore
+export function createCreateKnowledgeGraphNodeCommand_propertiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateKnowledgeGraphNodeCommand_properties;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1481,6 +1551,182 @@ export interface CreateExternalAgentSessionCommand extends Parsable {
 // @ts-ignore
 export function createExternalAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoExternalAppItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalBatchItemResult}
+ */
+// @ts-ignore
+export function createExternalBatchItemResultFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalBatchItemResult;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalBatchResponse}
+ */
+// @ts-ignore
+export function createExternalBatchResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalBatchResponse;
+}
+/**
+ * 新增边（外部接口）.
+ */
+export interface CreateExternalEdgeCommand extends Parsable {
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 关系类型 id.
+     */
+    relationTypeId?: string | null;
+    /**
+     * 起点节点 id.
+     */
+    sourceNodeId?: string | null;
+    /**
+     * 终点节点 id.
+     */
+    targetNodeId?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalEdgeInput}
+ */
+// @ts-ignore
+export function createExternalEdgeInputFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalEdgeInput;
+}
+/**
+ * 批量新增边（外部接口）.
+ */
+export interface CreateExternalEdgesBatchCommand extends Parsable {
+    /**
+     * 边列表.
+     */
+    items?: ExternalEdgeInput[] | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+}
+/**
+ * 新增实体类型（外部接口）.
+ */
+export interface CreateExternalEntityTypeCommand extends Parsable {
+    /**
+     * 颜色.
+     */
+    color?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 属性定义.
+     */
+    properties?: KnowledgeGraphEntityTypeProperty[] | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalGraphItem}
+ */
+// @ts-ignore
+export function createExternalGraphItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalGraphItem;
+}
+/**
+ * 新增节点（外部接口）.
+ */
+export interface CreateExternalNodeCommand extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 实体类型 id.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+     */
+    properties?: CreateExternalNodeCommand_properties | null;
+}
+/**
+ * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+ */
+export interface CreateExternalNodeCommand_properties extends Parsable {
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalNodeInput}
+ */
+// @ts-ignore
+export function createExternalNodeInputFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalNodeInput;
+}
+/**
+ * 批量新增节点（外部接口）.
+ */
+export interface CreateExternalNodesBatchCommand extends Parsable {
+    /**
+     * 节点列表.
+     */
+    items?: ExternalNodeInput[] | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+}
+/**
+ * 新增关系类型（外部接口）.
+ */
+export interface CreateExternalRelationTypeCommand extends Parsable {
+    /**
+     * 颜色.
+     */
+    color?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 起点实体类型 id，null=任意.
+     */
+    sourceTypeId?: string | null;
+    /**
+     * 终点实体类型 id，null=任意.
+     */
+    targetTypeId?: string | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1689,6 +1935,10 @@ export interface CreateKnowledgeGraphEntityTypeCommand extends Parsable {
      * 名称.
      */
     name?: string | null;
+    /**
+     * 属性定义.
+     */
+    properties?: KnowledgeGraphEntityTypeProperty[] | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1698,6 +1948,24 @@ export interface CreateKnowledgeGraphEntityTypeCommand extends Parsable {
 // @ts-ignore
 export function createKnowledgeGraphEntityTypeItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoKnowledgeGraphEntityTypeItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KnowledgeGraphEntityTypeProperty}
+ */
+// @ts-ignore
+export function createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKnowledgeGraphEntityTypeProperty;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KnowledgeGraphIntrospectionDiff}
+ */
+// @ts-ignore
+export function createKnowledgeGraphIntrospectionDiffFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKnowledgeGraphIntrospectionDiff;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1728,6 +1996,24 @@ export interface CreateKnowledgeGraphNodeCommand extends Parsable {
      * 名称.
      */
     name?: string | null;
+    /**
+     * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+     */
+    properties?: CreateKnowledgeGraphNodeCommand_properties | null;
+}
+/**
+ * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+ */
+export interface CreateKnowledgeGraphNodeCommand_properties extends Parsable {
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KnowledgeGraphNodeItem_properties}
+ */
+// @ts-ignore
+export function createKnowledgeGraphNodeItem_propertiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKnowledgeGraphNodeItem_properties;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2294,6 +2580,42 @@ export function createQueryExternalAuthorizedAppsCommandResponseFromDiscriminato
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalEdgesCommand}
+ */
+// @ts-ignore
+export function createQueryExternalEdgesCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalEdgesCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalGraphSchemaCommandResponse}
+ */
+// @ts-ignore
+export function createQueryExternalGraphSchemaCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalGraphSchemaCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalGraphsResponse}
+ */
+// @ts-ignore
+export function createQueryExternalGraphsResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalGraphsResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalNodesCommand}
+ */
+// @ts-ignore
+export function createQueryExternalNodesCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalNodesCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryFeishuAppsCommandResponse}
  */
 // @ts-ignore
@@ -2353,6 +2675,15 @@ export function createQueryKnowledgeGraphEdgesCommandFromDiscriminatorValue(pars
 // @ts-ignore
 export function createQueryKnowledgeGraphEdgesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryKnowledgeGraphEdgesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphNodeCommandResponse_properties}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphNodeCommandResponse_propertiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphNodeCommandResponse_properties;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3266,11 +3597,65 @@ export function createUpdateClassifyCommandFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateExternalEdgeCommand}
+ */
+// @ts-ignore
+export function createUpdateExternalEdgeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateExternalEdgeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateExternalEntityTypeCommand}
+ */
+// @ts-ignore
+export function createUpdateExternalEntityTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateExternalEntityTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateExternalNodeCommand_properties}
+ */
+// @ts-ignore
+export function createUpdateExternalNodeCommand_propertiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateExternalNodeCommand_properties;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateExternalNodeCommand}
+ */
+// @ts-ignore
+export function createUpdateExternalNodeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateExternalNodeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateExternalRelationTypeCommand}
+ */
+// @ts-ignore
+export function createUpdateExternalRelationTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateExternalRelationTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateFeishuAppCommand}
  */
 // @ts-ignore
 export function createUpdateFeishuAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateFeishuAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateKnowledgeGraphAvatarCommand}
+ */
+// @ts-ignore
+export function createUpdateKnowledgeGraphAvatarCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateKnowledgeGraphAvatarCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3298,6 +3683,15 @@ export function createUpdateKnowledgeGraphEdgeCommandFromDiscriminatorValue(pars
 // @ts-ignore
 export function createUpdateKnowledgeGraphEntityTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateKnowledgeGraphEntityTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateKnowledgeGraphNodeCommand_properties}
+ */
+// @ts-ignore
+export function createUpdateKnowledgeGraphNodeCommand_propertiesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateKnowledgeGraphNodeCommand_properties;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3640,7 +4034,6 @@ export interface DeleteWikiDocumentsCommand extends Parsable {
 export function deserializeIntoAccessAppItem(accessAppItem: Partial<AccessAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "accessAppId": n => { accessAppItem.accessAppId = n.getGuidValue(); },
-        "appIds": n => { accessAppItem.appIds = n.getCollectionOfPrimitiveValues<Guid>(); },
         "createTime": n => { accessAppItem.createTime = n.getStringValue(); },
         "description": n => { accessAppItem.description = n.getStringValue(); },
         "key": n => { accessAppItem.key = n.getStringValue(); },
@@ -4064,7 +4457,6 @@ export function deserializeIntoCompleteWikiDocumentCommand(completeWikiDocumentC
 // @ts-ignore
 export function deserializeIntoCreateAccessAppCommand(createAccessAppCommand: Partial<CreateAccessAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "appIds": n => { createAccessAppCommand.appIds = n.getCollectionOfPrimitiveValues<Guid>(); },
         "description": n => { createAccessAppCommand.description = n.getStringValue(); },
         "name": n => { createAccessAppCommand.name = n.getStringValue(); },
         "teamId": n => { createAccessAppCommand.teamId = n.getStringValue(); },
@@ -4178,6 +4570,93 @@ export function deserializeIntoCreateExternalAgentSessionCommand(createExternalA
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreateExternalEdgeCommand(createExternalEdgeCommand: Partial<CreateExternalEdgeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "knowledgeGraphId": n => { createExternalEdgeCommand.knowledgeGraphId = n.getStringValue(); },
+        "relationTypeId": n => { createExternalEdgeCommand.relationTypeId = n.getStringValue(); },
+        "sourceNodeId": n => { createExternalEdgeCommand.sourceNodeId = n.getStringValue(); },
+        "targetNodeId": n => { createExternalEdgeCommand.targetNodeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalEdgesBatchCommand(createExternalEdgesBatchCommand: Partial<CreateExternalEdgesBatchCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { createExternalEdgesBatchCommand.items = n.getCollectionOfObjectValues<ExternalEdgeInput>(createExternalEdgeInputFromDiscriminatorValue); },
+        "knowledgeGraphId": n => { createExternalEdgesBatchCommand.knowledgeGraphId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalEntityTypeCommand(createExternalEntityTypeCommand: Partial<CreateExternalEntityTypeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "color": n => { createExternalEntityTypeCommand.color = n.getStringValue(); },
+        "description": n => { createExternalEntityTypeCommand.description = n.getStringValue(); },
+        "knowledgeGraphId": n => { createExternalEntityTypeCommand.knowledgeGraphId = n.getStringValue(); },
+        "name": n => { createExternalEntityTypeCommand.name = n.getStringValue(); },
+        "properties": n => { createExternalEntityTypeCommand.properties = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>(createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalNodeCommand(createExternalNodeCommand: Partial<CreateExternalNodeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { createExternalNodeCommand.description = n.getStringValue(); },
+        "entityTypeId": n => { createExternalNodeCommand.entityTypeId = n.getStringValue(); },
+        "knowledgeGraphId": n => { createExternalNodeCommand.knowledgeGraphId = n.getStringValue(); },
+        "name": n => { createExternalNodeCommand.name = n.getStringValue(); },
+        "properties": n => { createExternalNodeCommand.properties = n.getObjectValue<CreateExternalNodeCommand_properties>(createCreateExternalNodeCommand_propertiesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalNodeCommand_properties(createExternalNodeCommand_properties: Partial<CreateExternalNodeCommand_properties> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalNodesBatchCommand(createExternalNodesBatchCommand: Partial<CreateExternalNodesBatchCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { createExternalNodesBatchCommand.items = n.getCollectionOfObjectValues<ExternalNodeInput>(createExternalNodeInputFromDiscriminatorValue); },
+        "knowledgeGraphId": n => { createExternalNodesBatchCommand.knowledgeGraphId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateExternalRelationTypeCommand(createExternalRelationTypeCommand: Partial<CreateExternalRelationTypeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "color": n => { createExternalRelationTypeCommand.color = n.getStringValue(); },
+        "description": n => { createExternalRelationTypeCommand.description = n.getStringValue(); },
+        "knowledgeGraphId": n => { createExternalRelationTypeCommand.knowledgeGraphId = n.getStringValue(); },
+        "name": n => { createExternalRelationTypeCommand.name = n.getStringValue(); },
+        "sourceTypeId": n => { createExternalRelationTypeCommand.sourceTypeId = n.getStringValue(); },
+        "targetTypeId": n => { createExternalRelationTypeCommand.targetTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateFeishuAppCommand(createFeishuAppCommand: Partial<CreateFeishuAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { createFeishuAppCommand.appId = n.getStringValue(); },
@@ -4227,6 +4706,7 @@ export function deserializeIntoCreateKnowledgeGraphEntityTypeCommand(createKnowl
         "description": n => { createKnowledgeGraphEntityTypeCommand.description = n.getStringValue(); },
         "knowledgeGraphId": n => { createKnowledgeGraphEntityTypeCommand.knowledgeGraphId = n.getStringValue(); },
         "name": n => { createKnowledgeGraphEntityTypeCommand.name = n.getStringValue(); },
+        "properties": n => { createKnowledgeGraphEntityTypeCommand.properties = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>(createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue); },
     }
 }
 /**
@@ -4240,6 +4720,16 @@ export function deserializeIntoCreateKnowledgeGraphNodeCommand(createKnowledgeGr
         "entityTypeId": n => { createKnowledgeGraphNodeCommand.entityTypeId = n.getStringValue(); },
         "knowledgeGraphId": n => { createKnowledgeGraphNodeCommand.knowledgeGraphId = n.getStringValue(); },
         "name": n => { createKnowledgeGraphNodeCommand.name = n.getStringValue(); },
+        "properties": n => { createKnowledgeGraphNodeCommand.properties = n.getObjectValue<CreateKnowledgeGraphNodeCommand_properties>(createCreateKnowledgeGraphNodeCommand_propertiesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateKnowledgeGraphNodeCommand_properties(createKnowledgeGraphNodeCommand_properties: Partial<CreateKnowledgeGraphNodeCommand_properties> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -4453,6 +4943,68 @@ export function deserializeIntoExternalAppItem(externalAppItem: Partial<External
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoExternalBatchItemResult(externalBatchItemResult: Partial<ExternalBatchItemResult> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "id": n => { externalBatchItemResult.id = n.getStringValue(); },
+        "index": n => { externalBatchItemResult.index = n.getNumberValue(); },
+        "message": n => { externalBatchItemResult.message = n.getStringValue(); },
+        "ok": n => { externalBatchItemResult.ok = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalBatchResponse(externalBatchResponse: Partial<ExternalBatchResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "failedCount": n => { externalBatchResponse.failedCount = n.getNumberValue(); },
+        "results": n => { externalBatchResponse.results = n.getCollectionOfObjectValues<ExternalBatchItemResult>(createExternalBatchItemResultFromDiscriminatorValue); },
+        "successCount": n => { externalBatchResponse.successCount = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalEdgeInput(externalEdgeInput: Partial<ExternalEdgeInput> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "relationTypeId": n => { externalEdgeInput.relationTypeId = n.getStringValue(); },
+        "sourceNodeId": n => { externalEdgeInput.sourceNodeId = n.getStringValue(); },
+        "targetNodeId": n => { externalEdgeInput.targetNodeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalGraphItem(externalGraphItem: Partial<ExternalGraphItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { externalGraphItem.description = n.getStringValue(); },
+        "id": n => { externalGraphItem.id = n.getStringValue(); },
+        "mode": n => { externalGraphItem.mode = n.getStringValue(); },
+        "name": n => { externalGraphItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalNodeInput(externalNodeInput: Partial<ExternalNodeInput> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { externalNodeInput.description = n.getStringValue(); },
+        "entityTypeId": n => { externalNodeInput.entityTypeId = n.getStringValue(); },
+        "name": n => { externalNodeInput.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoExternalTokenCommand(externalTokenCommand: Partial<ExternalTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "accessAppKey": n => { externalTokenCommand.accessAppKey = n.getStringValue(); },
@@ -4603,6 +5155,7 @@ export function deserializeIntoKeyValueString(keyValueString: Partial<KeyValueSt
 export function deserializeIntoKnowledgeGraphEdgeItem(knowledgeGraphEdgeItem: Partial<KnowledgeGraphEdgeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "edgeId": n => { knowledgeGraphEdgeItem.edgeId = n.getStringValue(); },
+        "relationName": n => { knowledgeGraphEdgeItem.relationName = n.getStringValue(); },
         "relationTypeId": n => { knowledgeGraphEdgeItem.relationTypeId = n.getStringValue(); },
         "sourceNodeId": n => { knowledgeGraphEdgeItem.sourceNodeId = n.getStringValue(); },
         "targetNodeId": n => { knowledgeGraphEdgeItem.targetNodeId = n.getStringValue(); },
@@ -4620,6 +5173,34 @@ export function deserializeIntoKnowledgeGraphEntityTypeItem(knowledgeGraphEntity
         "description": n => { knowledgeGraphEntityTypeItem.description = n.getStringValue(); },
         "entityTypeId": n => { knowledgeGraphEntityTypeItem.entityTypeId = n.getStringValue(); },
         "name": n => { knowledgeGraphEntityTypeItem.name = n.getStringValue(); },
+        "properties": n => { knowledgeGraphEntityTypeItem.properties = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>(createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoKnowledgeGraphEntityTypeProperty(knowledgeGraphEntityTypeProperty: Partial<KnowledgeGraphEntityTypeProperty> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { knowledgeGraphEntityTypeProperty.description = n.getStringValue(); },
+        "name": n => { knowledgeGraphEntityTypeProperty.name = n.getStringValue(); },
+        "required": n => { knowledgeGraphEntityTypeProperty.required = n.getBooleanValue(); },
+        "type": n => { knowledgeGraphEntityTypeProperty.type = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoKnowledgeGraphIntrospectionDiff(knowledgeGraphIntrospectionDiff: Partial<KnowledgeGraphIntrospectionDiff> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "addedLabels": n => { knowledgeGraphIntrospectionDiff.addedLabels = n.getCollectionOfPrimitiveValues<string>(); },
+        "addedRelationTypes": n => { knowledgeGraphIntrospectionDiff.addedRelationTypes = n.getCollectionOfPrimitiveValues<string>(); },
+        "isEmpty": n => { knowledgeGraphIntrospectionDiff.isEmpty = n.getBooleanValue(); },
+        "removedLabels": n => { knowledgeGraphIntrospectionDiff.removedLabels = n.getCollectionOfPrimitiveValues<string>(); },
+        "removedRelationTypes": n => { knowledgeGraphIntrospectionDiff.removedRelationTypes = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
 /**
@@ -4629,6 +5210,7 @@ export function deserializeIntoKnowledgeGraphEntityTypeItem(knowledgeGraphEntity
 // @ts-ignore
 export function deserializeIntoKnowledgeGraphItem(knowledgeGraphItem: Partial<KnowledgeGraphItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { knowledgeGraphItem.avatarPath = n.getStringValue(); },
         "createTime": n => { knowledgeGraphItem.createTime = n.getStringValue(); },
         "database": n => { knowledgeGraphItem.database = n.getStringValue(); },
         "description": n => { knowledgeGraphItem.description = n.getStringValue(); },
@@ -4648,9 +5230,20 @@ export function deserializeIntoKnowledgeGraphItem(knowledgeGraphItem: Partial<Kn
 export function deserializeIntoKnowledgeGraphNodeItem(knowledgeGraphNodeItem: Partial<KnowledgeGraphNodeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { knowledgeGraphNodeItem.description = n.getStringValue(); },
+        "entityLabel": n => { knowledgeGraphNodeItem.entityLabel = n.getStringValue(); },
         "entityTypeId": n => { knowledgeGraphNodeItem.entityTypeId = n.getStringValue(); },
         "name": n => { knowledgeGraphNodeItem.name = n.getStringValue(); },
         "nodeId": n => { knowledgeGraphNodeItem.nodeId = n.getStringValue(); },
+        "properties": n => { knowledgeGraphNodeItem.properties = n.getObjectValue<KnowledgeGraphNodeItem_properties>(createKnowledgeGraphNodeItem_propertiesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoKnowledgeGraphNodeItem_properties(knowledgeGraphNodeItem_properties: Partial<KnowledgeGraphNodeItem_properties> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -5415,6 +6008,55 @@ export function deserializeIntoQueryExternalAuthorizedAppsCommandResponse(queryE
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryExternalEdgesCommand(queryExternalEdgesCommand: Partial<QueryExternalEdgesCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "knowledgeGraphId": n => { queryExternalEdgesCommand.knowledgeGraphId = n.getStringValue(); },
+        "nodeId": n => { queryExternalEdgesCommand.nodeId = n.getStringValue(); },
+        "pageNo": n => { queryExternalEdgesCommand.pageNo = n.getNumberValue(); },
+        "pageSize": n => { queryExternalEdgesCommand.pageSize = n.getNumberValue(); },
+        "relationTypeId": n => { queryExternalEdgesCommand.relationTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryExternalGraphSchemaCommandResponse(queryExternalGraphSchemaCommandResponse: Partial<QueryExternalGraphSchemaCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "entityTypes": n => { queryExternalGraphSchemaCommandResponse.entityTypes = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeItem>(createKnowledgeGraphEntityTypeItemFromDiscriminatorValue); },
+        "relationTypes": n => { queryExternalGraphSchemaCommandResponse.relationTypes = n.getCollectionOfObjectValues<KnowledgeGraphRelationTypeItem>(createKnowledgeGraphRelationTypeItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryExternalGraphsResponse(queryExternalGraphsResponse: Partial<QueryExternalGraphsResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryExternalGraphsResponse.items = n.getCollectionOfObjectValues<ExternalGraphItem>(createExternalGraphItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryExternalNodesCommand(queryExternalNodesCommand: Partial<QueryExternalNodesCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "entityTypeId": n => { queryExternalNodesCommand.entityTypeId = n.getStringValue(); },
+        "keyword": n => { queryExternalNodesCommand.keyword = n.getStringValue(); },
+        "knowledgeGraphId": n => { queryExternalNodesCommand.knowledgeGraphId = n.getStringValue(); },
+        "pageNo": n => { queryExternalNodesCommand.pageNo = n.getNumberValue(); },
+        "pageSize": n => { queryExternalNodesCommand.pageSize = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryFeishuAppsCommandResponse(queryFeishuAppsCommandResponse: Partial<QueryFeishuAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryFeishuAppsCommandResponse.items = n.getCollectionOfObjectValues<FeishuAppItem>(createFeishuAppItemFromDiscriminatorValue); },
@@ -5432,6 +6074,7 @@ export function deserializeIntoQueryKnowledgeGraphCanvasCommand(queryKnowledgeGr
         "entityTypeId": n => { queryKnowledgeGraphCanvasCommand.entityTypeId = n.getStringValue(); },
         "keyword": n => { queryKnowledgeGraphCanvasCommand.keyword = n.getStringValue(); },
         "knowledgeGraphId": n => { queryKnowledgeGraphCanvasCommand.knowledgeGraphId = n.getStringValue(); },
+        "label": n => { queryKnowledgeGraphCanvasCommand.label = n.getStringValue(); },
         "limit": n => { queryKnowledgeGraphCanvasCommand.limit = n.getNumberValue(); },
         "relationTypeId": n => { queryKnowledgeGraphCanvasCommand.relationTypeId = n.getStringValue(); },
     }
@@ -5455,6 +6098,7 @@ export function deserializeIntoQueryKnowledgeGraphCanvasCommandResponse(queryKno
 // @ts-ignore
 export function deserializeIntoQueryKnowledgeGraphCommandResponse(queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { queryKnowledgeGraphCommandResponse.avatarPath = n.getStringValue(); },
         "createTime": n => { queryKnowledgeGraphCommandResponse.createTime = n.getStringValue(); },
         "database": n => { queryKnowledgeGraphCommandResponse.database = n.getStringValue(); },
         "description": n => { queryKnowledgeGraphCommandResponse.description = n.getStringValue(); },
@@ -5517,6 +6161,16 @@ export function deserializeIntoQueryKnowledgeGraphNodeCommandResponse(queryKnowl
         "entityTypeId": n => { queryKnowledgeGraphNodeCommandResponse.entityTypeId = n.getStringValue(); },
         "name": n => { queryKnowledgeGraphNodeCommandResponse.name = n.getStringValue(); },
         "nodeId": n => { queryKnowledgeGraphNodeCommandResponse.nodeId = n.getStringValue(); },
+        "properties": n => { queryKnowledgeGraphNodeCommandResponse.properties = n.getObjectValue<QueryKnowledgeGraphNodeCommandResponse_properties>(createQueryKnowledgeGraphNodeCommandResponse_propertiesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphNodeCommandResponse_properties(queryKnowledgeGraphNodeCommandResponse_properties: Partial<QueryKnowledgeGraphNodeCommandResponse_properties> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -5551,8 +6205,10 @@ export function deserializeIntoQueryKnowledgeGraphNodesCommandResponse(queryKnow
 // @ts-ignore
 export function deserializeIntoQueryKnowledgeGraphSchemaCommandResponse(queryKnowledgeGraphSchemaCommandResponse: Partial<QueryKnowledgeGraphSchemaCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "changes": n => { queryKnowledgeGraphSchemaCommandResponse.changes = n.getObjectValue<KnowledgeGraphIntrospectionDiff>(createKnowledgeGraphIntrospectionDiffFromDiscriminatorValue); },
         "database": n => { queryKnowledgeGraphSchemaCommandResponse.database = n.getStringValue(); },
         "entityTypes": n => { queryKnowledgeGraphSchemaCommandResponse.entityTypes = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeItem>(createKnowledgeGraphEntityTypeItemFromDiscriminatorValue); },
+        "fromCache": n => { queryKnowledgeGraphSchemaCommandResponse.fromCache = n.getBooleanValue(); },
         "mode": n => { queryKnowledgeGraphSchemaCommandResponse.mode = n.getStringValue(); },
         "propertyKeys": n => { queryKnowledgeGraphSchemaCommandResponse.propertyKeys = n.getCollectionOfPrimitiveValues<string>(); },
         "readOnly": n => { queryKnowledgeGraphSchemaCommandResponse.readOnly = n.getBooleanValue(); },
@@ -6653,7 +7309,6 @@ export function deserializeIntoUnbindUserOAuthCommand(unbindUserOAuthCommand: Pa
 export function deserializeIntoUpdateAccessAppCommand(updateAccessAppCommand: Partial<UpdateAccessAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "accessAppId": n => { updateAccessAppCommand.accessAppId = n.getGuidValue(); },
-        "appIds": n => { updateAccessAppCommand.appIds = n.getCollectionOfPrimitiveValues<Guid>(); },
         "description": n => { updateAccessAppCommand.description = n.getStringValue(); },
         "name": n => { updateAccessAppCommand.name = n.getStringValue(); },
     }
@@ -6788,6 +7443,73 @@ export function deserializeIntoUpdateClassifyCommand(updateClassifyCommand: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateExternalEdgeCommand(updateExternalEdgeCommand: Partial<UpdateExternalEdgeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "edgeId": n => { updateExternalEdgeCommand.edgeId = n.getStringValue(); },
+        "knowledgeGraphId": n => { updateExternalEdgeCommand.knowledgeGraphId = n.getStringValue(); },
+        "relationTypeId": n => { updateExternalEdgeCommand.relationTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateExternalEntityTypeCommand(updateExternalEntityTypeCommand: Partial<UpdateExternalEntityTypeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "color": n => { updateExternalEntityTypeCommand.color = n.getStringValue(); },
+        "description": n => { updateExternalEntityTypeCommand.description = n.getStringValue(); },
+        "entityTypeId": n => { updateExternalEntityTypeCommand.entityTypeId = n.getStringValue(); },
+        "knowledgeGraphId": n => { updateExternalEntityTypeCommand.knowledgeGraphId = n.getStringValue(); },
+        "name": n => { updateExternalEntityTypeCommand.name = n.getStringValue(); },
+        "properties": n => { updateExternalEntityTypeCommand.properties = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>(createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateExternalNodeCommand(updateExternalNodeCommand: Partial<UpdateExternalNodeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { updateExternalNodeCommand.description = n.getStringValue(); },
+        "entityTypeId": n => { updateExternalNodeCommand.entityTypeId = n.getStringValue(); },
+        "knowledgeGraphId": n => { updateExternalNodeCommand.knowledgeGraphId = n.getStringValue(); },
+        "name": n => { updateExternalNodeCommand.name = n.getStringValue(); },
+        "nodeId": n => { updateExternalNodeCommand.nodeId = n.getStringValue(); },
+        "properties": n => { updateExternalNodeCommand.properties = n.getObjectValue<UpdateExternalNodeCommand_properties>(createUpdateExternalNodeCommand_propertiesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateExternalNodeCommand_properties(updateExternalNodeCommand_properties: Partial<UpdateExternalNodeCommand_properties> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateExternalRelationTypeCommand(updateExternalRelationTypeCommand: Partial<UpdateExternalRelationTypeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "color": n => { updateExternalRelationTypeCommand.color = n.getStringValue(); },
+        "description": n => { updateExternalRelationTypeCommand.description = n.getStringValue(); },
+        "knowledgeGraphId": n => { updateExternalRelationTypeCommand.knowledgeGraphId = n.getStringValue(); },
+        "name": n => { updateExternalRelationTypeCommand.name = n.getStringValue(); },
+        "relationTypeId": n => { updateExternalRelationTypeCommand.relationTypeId = n.getStringValue(); },
+        "sourceTypeId": n => { updateExternalRelationTypeCommand.sourceTypeId = n.getStringValue(); },
+        "targetTypeId": n => { updateExternalRelationTypeCommand.targetTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateFeishuAppCommand(updateFeishuAppCommand: Partial<UpdateFeishuAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appSecret": n => { updateFeishuAppCommand.appSecret = n.getStringValue(); },
@@ -6796,6 +7518,17 @@ export function deserializeIntoUpdateFeishuAppCommand(updateFeishuAppCommand: Pa
         "feishuAppId": n => { updateFeishuAppCommand.feishuAppId = n.getGuidValue(); },
         "isDisable": n => { updateFeishuAppCommand.isDisable = n.getBooleanValue(); },
         "name": n => { updateFeishuAppCommand.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateKnowledgeGraphAvatarCommand(updateKnowledgeGraphAvatarCommand: Partial<UpdateKnowledgeGraphAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "knowledgeGraphId": n => { updateKnowledgeGraphAvatarCommand.knowledgeGraphId = n.getStringValue(); },
+        "objectKey": n => { updateKnowledgeGraphAvatarCommand.objectKey = n.getStringValue(); },
     }
 }
 /**
@@ -6834,6 +7567,7 @@ export function deserializeIntoUpdateKnowledgeGraphEntityTypeCommand(updateKnowl
         "entityTypeId": n => { updateKnowledgeGraphEntityTypeCommand.entityTypeId = n.getStringValue(); },
         "knowledgeGraphId": n => { updateKnowledgeGraphEntityTypeCommand.knowledgeGraphId = n.getStringValue(); },
         "name": n => { updateKnowledgeGraphEntityTypeCommand.name = n.getStringValue(); },
+        "properties": n => { updateKnowledgeGraphEntityTypeCommand.properties = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>(createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue); },
     }
 }
 /**
@@ -6848,6 +7582,16 @@ export function deserializeIntoUpdateKnowledgeGraphNodeCommand(updateKnowledgeGr
         "knowledgeGraphId": n => { updateKnowledgeGraphNodeCommand.knowledgeGraphId = n.getStringValue(); },
         "name": n => { updateKnowledgeGraphNodeCommand.name = n.getStringValue(); },
         "nodeId": n => { updateKnowledgeGraphNodeCommand.nodeId = n.getStringValue(); },
+        "properties": n => { updateKnowledgeGraphNodeCommand.properties = n.getObjectValue<UpdateKnowledgeGraphNodeCommand_properties>(createUpdateKnowledgeGraphNodeCommand_propertiesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateKnowledgeGraphNodeCommand_properties(updateKnowledgeGraphNodeCommand_properties: Partial<UpdateKnowledgeGraphNodeCommand_properties> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -7327,6 +8071,99 @@ export interface ExternalAppItem extends Parsable {
     name?: string | null;
 }
 /**
+ * 批量写入逐条结果（外部接口）.
+ */
+export interface ExternalBatchItemResult extends Parsable {
+    /**
+     * 创建的节点/边 id（成功时有值，失败时为 null）.
+     */
+    id?: string | null;
+    /**
+     * 请求中的行下标（从 0 开始）.
+     */
+    index?: number | null;
+    /**
+     * 失败原因（整批拒绝语义下恒为 null，失败通过整批 400 返回）.
+     */
+    message?: string | null;
+    /**
+     * 是否成功.
+     */
+    ok?: boolean | null;
+}
+/**
+ * 批量写入响应（外部接口）.
+ */
+export interface ExternalBatchResponse extends Parsable {
+    /**
+     * 失败数量.
+     */
+    failedCount?: number | null;
+    /**
+     * 逐条结果：整批成功时按请求顺序返回全部行（Ok=true、Id 为创建 id）；任一条校验失败时整批以 400 拒绝，不产生写入.
+     */
+    results?: ExternalBatchItemResult[] | null;
+    /**
+     * 成功数量.
+     */
+    successCount?: number | null;
+}
+/**
+ * 批量新增边项.
+ */
+export interface ExternalEdgeInput extends Parsable {
+    /**
+     * 关系类型 id.
+     */
+    relationTypeId?: string | null;
+    /**
+     * 起点节点 id.
+     */
+    sourceNodeId?: string | null;
+    /**
+     * 终点节点 id.
+     */
+    targetNodeId?: string | null;
+}
+/**
+ * 图谱列表项（外部接口）.
+ */
+export interface ExternalGraphItem extends Parsable {
+    /**
+     * 简介.
+     */
+    description?: string | null;
+    /**
+     * 图谱 id.
+     */
+    id?: string | null;
+    /**
+     * 来源语义：managed（平台托管，可写）；外部列表当前仅返回 managed（connected 不对外暴露）.
+     */
+    mode?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+}
+/**
+ * 批量新增节点项.
+ */
+export interface ExternalNodeInput extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 实体类型 id.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+}
+/**
  * 外部应用换取 token：第三方应用使用应用接入 key 换取应用 token 或用户 token，也支持 is_auth=false 应用的匿名换 token.三种调用形态：1. 应用 token：只提供 AccessAppKey，授权范围为该接入配置的全部应用；2. 用户 token：提供 AccessAppKey + AppId + ExternalUserId，绑定外部用户且仅授权单个应用；3. 匿名 token：只提供 AppId（应用须 is_external=true 且 is_auth=false），生成/复用临时外部身份.
  */
 export interface ExternalTokenCommand extends Parsable {
@@ -7568,7 +8405,11 @@ export interface KnowledgeGraphEdgeItem extends Parsable {
      */
     edgeId?: string | null;
     /**
-     * 关系类型 id.
+     * 关系类型名（接入图为 type(r)；托管图为空）.
+     */
+    relationName?: string | null;
+    /**
+     * 关系类型 id（托管图；接入图为 0）.
      */
     relationTypeId?: string | null;
     /**
@@ -7604,11 +8445,65 @@ export interface KnowledgeGraphEntityTypeItem extends Parsable {
      * 名称.
      */
     name?: string | null;
+    /**
+     * 属性定义（托管图；connected 内省为空）.
+     */
+    properties?: KnowledgeGraphEntityTypeProperty[] | null;
+}
+/**
+ * 实体类型属性定义（模型页配置，实例录入时按此渲染并存储到图库节点）.
+ */
+export interface KnowledgeGraphEntityTypeProperty extends Parsable {
+    /**
+     * 属性说明.
+     */
+    description?: string | null;
+    /**
+     * 属性名.
+     */
+    name?: string | null;
+    /**
+     * 是否必填.
+     */
+    required?: boolean | null;
+    /**
+     * 属性类型：string / number / boolean / date.
+     */
+    type?: string | null;
+}
+/**
+ * 接入图内省相对上次基线的变化.
+ */
+export interface KnowledgeGraphIntrospectionDiff extends Parsable {
+    /**
+     * 新增节点标签.
+     */
+    addedLabels?: string[] | null;
+    /**
+     * 新增关系类型.
+     */
+    addedRelationTypes?: string[] | null;
+    /**
+     * 是否没有任何变化.
+     */
+    isEmpty?: boolean | null;
+    /**
+     * 消失节点标签.
+     */
+    removedLabels?: string[] | null;
+    /**
+     * 消失关系类型.
+     */
+    removedRelationTypes?: string[] | null;
 }
 /**
  * 图谱列表项.
  */
 export interface KnowledgeGraphItem extends Parsable {
+    /**
+     * 头像 ObjectKey（空串表示未设置，前端经 /static/{key} 解析）.
+     */
+    avatarPath?: string | null;
     /**
      * 创建时间.
      */
@@ -7655,7 +8550,11 @@ export interface KnowledgeGraphNodeItem extends Parsable {
      */
     description?: string | null;
     /**
-     * 实体类型 id.
+     * 实体类型名（接入图为节点首个标签；托管图为空）.
+     */
+    entityLabel?: string | null;
+    /**
+     * 实体类型 id（托管图；接入图为 0）.
      */
     entityTypeId?: string | null;
     /**
@@ -7666,6 +8565,15 @@ export interface KnowledgeGraphNodeItem extends Parsable {
      * 节点 id.
      */
     nodeId?: string | null;
+    /**
+     * 实例属性值（键为实体类型定义的属性名）.
+     */
+    properties?: KnowledgeGraphNodeItem_properties | null;
+}
+/**
+ * 实例属性值（键为实体类型定义的属性名）.
+ */
+export interface KnowledgeGraphNodeItem_properties extends Parsable {
 }
 /**
  * 关系类型项.
@@ -8970,6 +9878,78 @@ export interface QueryExternalAuthorizedAppsCommandResponse extends Parsable {
     items?: ExternalAppItem[] | null;
 }
 /**
+ * 分页查询边（外部接口）.
+ */
+export interface QueryExternalEdgesCommand extends Parsable {
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 端点节点筛选.
+     */
+    nodeId?: string | null;
+    /**
+     * 页码（从 1 开始）.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页数量.
+     */
+    pageSize?: number | null;
+    /**
+     * 关系类型筛选.
+     */
+    relationTypeId?: string | null;
+}
+/**
+ * 图谱 schema 响应（外部接口）：仅暴露实体类型与关系类型等业务负载，不包含接入数据库名/内省缓存等内部基础设施字段.
+ */
+export interface QueryExternalGraphSchemaCommandResponse extends Parsable {
+    /**
+     * 实体类型.
+     */
+    entityTypes?: KnowledgeGraphEntityTypeItem[] | null;
+    /**
+     * 关系类型.
+     */
+    relationTypes?: KnowledgeGraphRelationTypeItem[] | null;
+}
+/**
+ * 图谱列表响应（外部接口）.
+ */
+export interface QueryExternalGraphsResponse extends Parsable {
+    /**
+     * 列表.
+     */
+    items?: ExternalGraphItem[] | null;
+}
+/**
+ * 分页查询节点（外部接口）.
+ */
+export interface QueryExternalNodesCommand extends Parsable {
+    /**
+     * 实体类型筛选.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 名称关键字.
+     */
+    keyword?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 页码（从 1 开始）.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页数量.
+     */
+    pageSize?: number | null;
+}
+/**
  * 飞书应用连接列表响应.
  */
 export interface QueryFeishuAppsCommandResponse extends Parsable {
@@ -8991,7 +9971,7 @@ export interface QueryFeishuAppsCommandResponse extends Parsable {
  */
 export interface QueryKnowledgeGraphCanvasCommand extends Parsable {
     /**
-     * 实体类型筛选（节点）.
+     * 实体类型筛选（节点，托管图）.
      */
     entityTypeId?: string | null;
     /**
@@ -9002,6 +9982,10 @@ export interface QueryKnowledgeGraphCanvasCommand extends Parsable {
      * 图谱 id.
      */
     knowledgeGraphId?: string | null;
+    /**
+     * 标签筛选（节点，接入图）.
+     */
+    label?: string | null;
     /**
      * 节点数量上限（1~500，默认 200）.
      */
@@ -9032,6 +10016,10 @@ export interface QueryKnowledgeGraphCanvasCommandResponse extends Parsable {
  * 图谱详情响应.
  */
 export interface QueryKnowledgeGraphCommandResponse extends Parsable {
+    /**
+     * 头像 ObjectKey（空串表示未设置，前端经 /static/{key} 解析）.
+     */
+    avatarPath?: string | null;
     /**
      * 创建时间.
      */
@@ -9156,6 +10144,15 @@ export interface QueryKnowledgeGraphNodeCommandResponse extends Parsable {
      * 节点 id.
      */
     nodeId?: string | null;
+    /**
+     * 实例属性值（键为实体类型定义的属性名）.
+     */
+    properties?: QueryKnowledgeGraphNodeCommandResponse_properties | null;
+}
+/**
+ * 实例属性值（键为实体类型定义的属性名）.
+ */
+export interface QueryKnowledgeGraphNodeCommandResponse_properties extends Parsable {
 }
 /**
  * 分页查询节点.
@@ -9200,6 +10197,10 @@ export interface QueryKnowledgeGraphNodesCommandResponse extends Parsable {
  */
 export interface QueryKnowledgeGraphSchemaCommandResponse extends Parsable {
     /**
+     * 内省相对上次基线的变化（仅 connected 且为新鲜内省时返回）.
+     */
+    changes?: KnowledgeGraphIntrospectionDiff | null;
+    /**
      * 接入数据库名.
      */
     database?: string | null;
@@ -9207,6 +10208,10 @@ export interface QueryKnowledgeGraphSchemaCommandResponse extends Parsable {
      * 实体类型.
      */
     entityTypes?: KnowledgeGraphEntityTypeItem[] | null;
+    /**
+     * 本次内省结果是否来自缓存（仅 connected 有意义）.
+     */
+    fromCache?: boolean | null;
     /**
      * 来源.
      */
@@ -10166,41 +11171,44 @@ export interface ResetUserPasswordCommand extends Parsable {
      */
     userId?: string | null;
 }
+/**
+ * Input payload for running an AG-UI agent.
+ */
 export interface RunAgentInput extends Parsable {
     /**
-     * The context property
+     * Gets or sets contextual information for the agent.
      */
     context?: AGUIContext[] | null;
     /**
-     * The forwardedProps property
+     * Gets or sets additional forwarded properties from the client.
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * The messages property
+     * Gets or sets the conversation messages.
      */
     messages?: AGUIMessage[] | null;
     /**
-     * The parentRunId property
+     * Gets or sets the parent run identifier for branching/time travel.
      */
     parentRunId?: string | null;
     /**
-     * The resume property
+     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
      */
     resume?: AGUIResume[] | null;
     /**
-     * The runId property
+     * Gets or sets the run identifier.
      */
     runId?: string | null;
     /**
-     * The state property
+     * Gets or sets the state to pass to the agent.
      */
     state?: UntypedNode | null;
     /**
-     * The threadId property
+     * Gets or sets the thread identifier.
      */
     threadId?: string | null;
     /**
-     * The tools property
+     * Gets or sets the tools available to the agent.
      */
     tools?: AGUITool[] | null;
 }
@@ -10510,7 +11518,6 @@ export interface SaveTeamOpenApiPluginCommand extends Parsable {
 export function serializeAccessAppItem(writer: SerializationWriter, accessAppItem: Partial<AccessAppItem> | undefined | null = {}) : void {
     if (accessAppItem) {
         writer.writeGuidValue("accessAppId", accessAppItem.accessAppId);
-        writer.writeCollectionOfPrimitiveValues<Guid>("appIds", accessAppItem.appIds);
         writer.writeStringValue("createTime", accessAppItem.createTime);
         writer.writeStringValue("description", accessAppItem.description);
         writer.writeStringValue("key", accessAppItem.key);
@@ -10934,7 +11941,6 @@ export function serializeCompleteWikiDocumentCommand(writer: SerializationWriter
 // @ts-ignore
 export function serializeCreateAccessAppCommand(writer: SerializationWriter, createAccessAppCommand: Partial<CreateAccessAppCommand> | undefined | null = {}) : void {
     if (createAccessAppCommand) {
-        writer.writeCollectionOfPrimitiveValues<Guid>("appIds", createAccessAppCommand.appIds);
         writer.writeStringValue("description", createAccessAppCommand.description);
         writer.writeStringValue("name", createAccessAppCommand.name);
         writer.writeStringValue("teamId", createAccessAppCommand.teamId);
@@ -11048,6 +12054,93 @@ export function serializeCreateExternalAgentSessionCommand(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreateExternalEdgeCommand(writer: SerializationWriter, createExternalEdgeCommand: Partial<CreateExternalEdgeCommand> | undefined | null = {}) : void {
+    if (createExternalEdgeCommand) {
+        writer.writeStringValue("knowledgeGraphId", createExternalEdgeCommand.knowledgeGraphId);
+        writer.writeStringValue("relationTypeId", createExternalEdgeCommand.relationTypeId);
+        writer.writeStringValue("sourceNodeId", createExternalEdgeCommand.sourceNodeId);
+        writer.writeStringValue("targetNodeId", createExternalEdgeCommand.targetNodeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalEdgesBatchCommand(writer: SerializationWriter, createExternalEdgesBatchCommand: Partial<CreateExternalEdgesBatchCommand> | undefined | null = {}) : void {
+    if (createExternalEdgesBatchCommand) {
+        writer.writeCollectionOfObjectValues<ExternalEdgeInput>("items", createExternalEdgesBatchCommand.items, serializeExternalEdgeInput);
+        writer.writeStringValue("knowledgeGraphId", createExternalEdgesBatchCommand.knowledgeGraphId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalEntityTypeCommand(writer: SerializationWriter, createExternalEntityTypeCommand: Partial<CreateExternalEntityTypeCommand> | undefined | null = {}) : void {
+    if (createExternalEntityTypeCommand) {
+        writer.writeStringValue("color", createExternalEntityTypeCommand.color);
+        writer.writeStringValue("description", createExternalEntityTypeCommand.description);
+        writer.writeStringValue("knowledgeGraphId", createExternalEntityTypeCommand.knowledgeGraphId);
+        writer.writeStringValue("name", createExternalEntityTypeCommand.name);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>("properties", createExternalEntityTypeCommand.properties, serializeKnowledgeGraphEntityTypeProperty);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalNodeCommand(writer: SerializationWriter, createExternalNodeCommand: Partial<CreateExternalNodeCommand> | undefined | null = {}) : void {
+    if (createExternalNodeCommand) {
+        writer.writeStringValue("description", createExternalNodeCommand.description);
+        writer.writeStringValue("entityTypeId", createExternalNodeCommand.entityTypeId);
+        writer.writeStringValue("knowledgeGraphId", createExternalNodeCommand.knowledgeGraphId);
+        writer.writeStringValue("name", createExternalNodeCommand.name);
+        writer.writeObjectValue<CreateExternalNodeCommand_properties>("properties", createExternalNodeCommand.properties, serializeCreateExternalNodeCommand_properties);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalNodeCommand_properties(writer: SerializationWriter, createExternalNodeCommand_properties: Partial<CreateExternalNodeCommand_properties> | undefined | null = {}) : void {
+    if (createExternalNodeCommand_properties) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalNodesBatchCommand(writer: SerializationWriter, createExternalNodesBatchCommand: Partial<CreateExternalNodesBatchCommand> | undefined | null = {}) : void {
+    if (createExternalNodesBatchCommand) {
+        writer.writeCollectionOfObjectValues<ExternalNodeInput>("items", createExternalNodesBatchCommand.items, serializeExternalNodeInput);
+        writer.writeStringValue("knowledgeGraphId", createExternalNodesBatchCommand.knowledgeGraphId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateExternalRelationTypeCommand(writer: SerializationWriter, createExternalRelationTypeCommand: Partial<CreateExternalRelationTypeCommand> | undefined | null = {}) : void {
+    if (createExternalRelationTypeCommand) {
+        writer.writeStringValue("color", createExternalRelationTypeCommand.color);
+        writer.writeStringValue("description", createExternalRelationTypeCommand.description);
+        writer.writeStringValue("knowledgeGraphId", createExternalRelationTypeCommand.knowledgeGraphId);
+        writer.writeStringValue("name", createExternalRelationTypeCommand.name);
+        writer.writeStringValue("sourceTypeId", createExternalRelationTypeCommand.sourceTypeId);
+        writer.writeStringValue("targetTypeId", createExternalRelationTypeCommand.targetTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateFeishuAppCommand(writer: SerializationWriter, createFeishuAppCommand: Partial<CreateFeishuAppCommand> | undefined | null = {}) : void {
     if (createFeishuAppCommand) {
         writer.writeStringValue("appId", createFeishuAppCommand.appId);
@@ -11097,6 +12190,7 @@ export function serializeCreateKnowledgeGraphEntityTypeCommand(writer: Serializa
         writer.writeStringValue("description", createKnowledgeGraphEntityTypeCommand.description);
         writer.writeStringValue("knowledgeGraphId", createKnowledgeGraphEntityTypeCommand.knowledgeGraphId);
         writer.writeStringValue("name", createKnowledgeGraphEntityTypeCommand.name);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>("properties", createKnowledgeGraphEntityTypeCommand.properties, serializeKnowledgeGraphEntityTypeProperty);
     }
 }
 /**
@@ -11110,6 +12204,16 @@ export function serializeCreateKnowledgeGraphNodeCommand(writer: SerializationWr
         writer.writeStringValue("entityTypeId", createKnowledgeGraphNodeCommand.entityTypeId);
         writer.writeStringValue("knowledgeGraphId", createKnowledgeGraphNodeCommand.knowledgeGraphId);
         writer.writeStringValue("name", createKnowledgeGraphNodeCommand.name);
+        writer.writeObjectValue<CreateKnowledgeGraphNodeCommand_properties>("properties", createKnowledgeGraphNodeCommand.properties, serializeCreateKnowledgeGraphNodeCommand_properties);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateKnowledgeGraphNodeCommand_properties(writer: SerializationWriter, createKnowledgeGraphNodeCommand_properties: Partial<CreateKnowledgeGraphNodeCommand_properties> | undefined | null = {}) : void {
+    if (createKnowledgeGraphNodeCommand_properties) {
     }
 }
 /**
@@ -11323,6 +12427,68 @@ export function serializeExternalAppItem(writer: SerializationWriter, externalAp
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeExternalBatchItemResult(writer: SerializationWriter, externalBatchItemResult: Partial<ExternalBatchItemResult> | undefined | null = {}) : void {
+    if (externalBatchItemResult) {
+        writer.writeStringValue("id", externalBatchItemResult.id);
+        writer.writeNumberValue("index", externalBatchItemResult.index);
+        writer.writeStringValue("message", externalBatchItemResult.message);
+        writer.writeBooleanValue("ok", externalBatchItemResult.ok);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalBatchResponse(writer: SerializationWriter, externalBatchResponse: Partial<ExternalBatchResponse> | undefined | null = {}) : void {
+    if (externalBatchResponse) {
+        writer.writeNumberValue("failedCount", externalBatchResponse.failedCount);
+        writer.writeCollectionOfObjectValues<ExternalBatchItemResult>("results", externalBatchResponse.results, serializeExternalBatchItemResult);
+        writer.writeNumberValue("successCount", externalBatchResponse.successCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalEdgeInput(writer: SerializationWriter, externalEdgeInput: Partial<ExternalEdgeInput> | undefined | null = {}) : void {
+    if (externalEdgeInput) {
+        writer.writeStringValue("relationTypeId", externalEdgeInput.relationTypeId);
+        writer.writeStringValue("sourceNodeId", externalEdgeInput.sourceNodeId);
+        writer.writeStringValue("targetNodeId", externalEdgeInput.targetNodeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalGraphItem(writer: SerializationWriter, externalGraphItem: Partial<ExternalGraphItem> | undefined | null = {}) : void {
+    if (externalGraphItem) {
+        writer.writeStringValue("description", externalGraphItem.description);
+        writer.writeStringValue("id", externalGraphItem.id);
+        writer.writeStringValue("mode", externalGraphItem.mode);
+        writer.writeStringValue("name", externalGraphItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalNodeInput(writer: SerializationWriter, externalNodeInput: Partial<ExternalNodeInput> | undefined | null = {}) : void {
+    if (externalNodeInput) {
+        writer.writeStringValue("description", externalNodeInput.description);
+        writer.writeStringValue("entityTypeId", externalNodeInput.entityTypeId);
+        writer.writeStringValue("name", externalNodeInput.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeExternalTokenCommand(writer: SerializationWriter, externalTokenCommand: Partial<ExternalTokenCommand> | undefined | null = {}) : void {
     if (externalTokenCommand) {
         writer.writeStringValue("accessAppKey", externalTokenCommand.accessAppKey);
@@ -11473,6 +12639,7 @@ export function serializeKeyValueString(writer: SerializationWriter, keyValueStr
 export function serializeKnowledgeGraphEdgeItem(writer: SerializationWriter, knowledgeGraphEdgeItem: Partial<KnowledgeGraphEdgeItem> | undefined | null = {}) : void {
     if (knowledgeGraphEdgeItem) {
         writer.writeStringValue("edgeId", knowledgeGraphEdgeItem.edgeId);
+        writer.writeStringValue("relationName", knowledgeGraphEdgeItem.relationName);
         writer.writeStringValue("relationTypeId", knowledgeGraphEdgeItem.relationTypeId);
         writer.writeStringValue("sourceNodeId", knowledgeGraphEdgeItem.sourceNodeId);
         writer.writeStringValue("targetNodeId", knowledgeGraphEdgeItem.targetNodeId);
@@ -11490,6 +12657,34 @@ export function serializeKnowledgeGraphEntityTypeItem(writer: SerializationWrite
         writer.writeStringValue("description", knowledgeGraphEntityTypeItem.description);
         writer.writeStringValue("entityTypeId", knowledgeGraphEntityTypeItem.entityTypeId);
         writer.writeStringValue("name", knowledgeGraphEntityTypeItem.name);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>("properties", knowledgeGraphEntityTypeItem.properties, serializeKnowledgeGraphEntityTypeProperty);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeKnowledgeGraphEntityTypeProperty(writer: SerializationWriter, knowledgeGraphEntityTypeProperty: Partial<KnowledgeGraphEntityTypeProperty> | undefined | null = {}) : void {
+    if (knowledgeGraphEntityTypeProperty) {
+        writer.writeStringValue("description", knowledgeGraphEntityTypeProperty.description);
+        writer.writeStringValue("name", knowledgeGraphEntityTypeProperty.name);
+        writer.writeBooleanValue("required", knowledgeGraphEntityTypeProperty.required);
+        writer.writeStringValue("type", knowledgeGraphEntityTypeProperty.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeKnowledgeGraphIntrospectionDiff(writer: SerializationWriter, knowledgeGraphIntrospectionDiff: Partial<KnowledgeGraphIntrospectionDiff> | undefined | null = {}) : void {
+    if (knowledgeGraphIntrospectionDiff) {
+        writer.writeCollectionOfPrimitiveValues<string>("addedLabels", knowledgeGraphIntrospectionDiff.addedLabels);
+        writer.writeCollectionOfPrimitiveValues<string>("addedRelationTypes", knowledgeGraphIntrospectionDiff.addedRelationTypes);
+        writer.writeBooleanValue("isEmpty", knowledgeGraphIntrospectionDiff.isEmpty);
+        writer.writeCollectionOfPrimitiveValues<string>("removedLabels", knowledgeGraphIntrospectionDiff.removedLabels);
+        writer.writeCollectionOfPrimitiveValues<string>("removedRelationTypes", knowledgeGraphIntrospectionDiff.removedRelationTypes);
     }
 }
 /**
@@ -11499,6 +12694,7 @@ export function serializeKnowledgeGraphEntityTypeItem(writer: SerializationWrite
 // @ts-ignore
 export function serializeKnowledgeGraphItem(writer: SerializationWriter, knowledgeGraphItem: Partial<KnowledgeGraphItem> | undefined | null = {}) : void {
     if (knowledgeGraphItem) {
+        writer.writeStringValue("avatarPath", knowledgeGraphItem.avatarPath);
         writer.writeStringValue("createTime", knowledgeGraphItem.createTime);
         writer.writeStringValue("database", knowledgeGraphItem.database);
         writer.writeStringValue("description", knowledgeGraphItem.description);
@@ -11518,9 +12714,20 @@ export function serializeKnowledgeGraphItem(writer: SerializationWriter, knowled
 export function serializeKnowledgeGraphNodeItem(writer: SerializationWriter, knowledgeGraphNodeItem: Partial<KnowledgeGraphNodeItem> | undefined | null = {}) : void {
     if (knowledgeGraphNodeItem) {
         writer.writeStringValue("description", knowledgeGraphNodeItem.description);
+        writer.writeStringValue("entityLabel", knowledgeGraphNodeItem.entityLabel);
         writer.writeStringValue("entityTypeId", knowledgeGraphNodeItem.entityTypeId);
         writer.writeStringValue("name", knowledgeGraphNodeItem.name);
         writer.writeStringValue("nodeId", knowledgeGraphNodeItem.nodeId);
+        writer.writeObjectValue<KnowledgeGraphNodeItem_properties>("properties", knowledgeGraphNodeItem.properties, serializeKnowledgeGraphNodeItem_properties);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeKnowledgeGraphNodeItem_properties(writer: SerializationWriter, knowledgeGraphNodeItem_properties: Partial<KnowledgeGraphNodeItem_properties> | undefined | null = {}) : void {
+    if (knowledgeGraphNodeItem_properties) {
     }
 }
 /**
@@ -12285,6 +13492,55 @@ export function serializeQueryExternalAuthorizedAppsCommandResponse(writer: Seri
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryExternalEdgesCommand(writer: SerializationWriter, queryExternalEdgesCommand: Partial<QueryExternalEdgesCommand> | undefined | null = {}) : void {
+    if (queryExternalEdgesCommand) {
+        writer.writeStringValue("knowledgeGraphId", queryExternalEdgesCommand.knowledgeGraphId);
+        writer.writeStringValue("nodeId", queryExternalEdgesCommand.nodeId);
+        writer.writeNumberValue("pageNo", queryExternalEdgesCommand.pageNo);
+        writer.writeNumberValue("pageSize", queryExternalEdgesCommand.pageSize);
+        writer.writeStringValue("relationTypeId", queryExternalEdgesCommand.relationTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryExternalGraphSchemaCommandResponse(writer: SerializationWriter, queryExternalGraphSchemaCommandResponse: Partial<QueryExternalGraphSchemaCommandResponse> | undefined | null = {}) : void {
+    if (queryExternalGraphSchemaCommandResponse) {
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeItem>("entityTypes", queryExternalGraphSchemaCommandResponse.entityTypes, serializeKnowledgeGraphEntityTypeItem);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphRelationTypeItem>("relationTypes", queryExternalGraphSchemaCommandResponse.relationTypes, serializeKnowledgeGraphRelationTypeItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryExternalGraphsResponse(writer: SerializationWriter, queryExternalGraphsResponse: Partial<QueryExternalGraphsResponse> | undefined | null = {}) : void {
+    if (queryExternalGraphsResponse) {
+        writer.writeCollectionOfObjectValues<ExternalGraphItem>("items", queryExternalGraphsResponse.items, serializeExternalGraphItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryExternalNodesCommand(writer: SerializationWriter, queryExternalNodesCommand: Partial<QueryExternalNodesCommand> | undefined | null = {}) : void {
+    if (queryExternalNodesCommand) {
+        writer.writeStringValue("entityTypeId", queryExternalNodesCommand.entityTypeId);
+        writer.writeStringValue("keyword", queryExternalNodesCommand.keyword);
+        writer.writeStringValue("knowledgeGraphId", queryExternalNodesCommand.knowledgeGraphId);
+        writer.writeNumberValue("pageNo", queryExternalNodesCommand.pageNo);
+        writer.writeNumberValue("pageSize", queryExternalNodesCommand.pageSize);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryFeishuAppsCommandResponse(writer: SerializationWriter, queryFeishuAppsCommandResponse: Partial<QueryFeishuAppsCommandResponse> | undefined | null = {}) : void {
     if (queryFeishuAppsCommandResponse) {
         writer.writeCollectionOfObjectValues<FeishuAppItem>("items", queryFeishuAppsCommandResponse.items, serializeFeishuAppItem);
@@ -12302,6 +13558,7 @@ export function serializeQueryKnowledgeGraphCanvasCommand(writer: SerializationW
         writer.writeStringValue("entityTypeId", queryKnowledgeGraphCanvasCommand.entityTypeId);
         writer.writeStringValue("keyword", queryKnowledgeGraphCanvasCommand.keyword);
         writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphCanvasCommand.knowledgeGraphId);
+        writer.writeStringValue("label", queryKnowledgeGraphCanvasCommand.label);
         writer.writeNumberValue("limit", queryKnowledgeGraphCanvasCommand.limit);
         writer.writeStringValue("relationTypeId", queryKnowledgeGraphCanvasCommand.relationTypeId);
     }
@@ -12325,6 +13582,7 @@ export function serializeQueryKnowledgeGraphCanvasCommandResponse(writer: Serial
 // @ts-ignore
 export function serializeQueryKnowledgeGraphCommandResponse(writer: SerializationWriter, queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphCommandResponse) {
+        writer.writeStringValue("avatarPath", queryKnowledgeGraphCommandResponse.avatarPath);
         writer.writeStringValue("createTime", queryKnowledgeGraphCommandResponse.createTime);
         writer.writeStringValue("database", queryKnowledgeGraphCommandResponse.database);
         writer.writeStringValue("description", queryKnowledgeGraphCommandResponse.description);
@@ -12387,6 +13645,16 @@ export function serializeQueryKnowledgeGraphNodeCommandResponse(writer: Serializ
         writer.writeStringValue("entityTypeId", queryKnowledgeGraphNodeCommandResponse.entityTypeId);
         writer.writeStringValue("name", queryKnowledgeGraphNodeCommandResponse.name);
         writer.writeStringValue("nodeId", queryKnowledgeGraphNodeCommandResponse.nodeId);
+        writer.writeObjectValue<QueryKnowledgeGraphNodeCommandResponse_properties>("properties", queryKnowledgeGraphNodeCommandResponse.properties, serializeQueryKnowledgeGraphNodeCommandResponse_properties);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphNodeCommandResponse_properties(writer: SerializationWriter, queryKnowledgeGraphNodeCommandResponse_properties: Partial<QueryKnowledgeGraphNodeCommandResponse_properties> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphNodeCommandResponse_properties) {
     }
 }
 /**
@@ -12421,8 +13689,10 @@ export function serializeQueryKnowledgeGraphNodesCommandResponse(writer: Seriali
 // @ts-ignore
 export function serializeQueryKnowledgeGraphSchemaCommandResponse(writer: SerializationWriter, queryKnowledgeGraphSchemaCommandResponse: Partial<QueryKnowledgeGraphSchemaCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphSchemaCommandResponse) {
+        writer.writeObjectValue<KnowledgeGraphIntrospectionDiff>("changes", queryKnowledgeGraphSchemaCommandResponse.changes, serializeKnowledgeGraphIntrospectionDiff);
         writer.writeStringValue("database", queryKnowledgeGraphSchemaCommandResponse.database);
         writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeItem>("entityTypes", queryKnowledgeGraphSchemaCommandResponse.entityTypes, serializeKnowledgeGraphEntityTypeItem);
+        writer.writeBooleanValue("fromCache", queryKnowledgeGraphSchemaCommandResponse.fromCache);
         writer.writeStringValue("mode", queryKnowledgeGraphSchemaCommandResponse.mode);
         writer.writeCollectionOfPrimitiveValues<string>("propertyKeys", queryKnowledgeGraphSchemaCommandResponse.propertyKeys);
         writer.writeBooleanValue("readOnly", queryKnowledgeGraphSchemaCommandResponse.readOnly);
@@ -13523,7 +14793,6 @@ export function serializeUnbindUserOAuthCommand(writer: SerializationWriter, unb
 export function serializeUpdateAccessAppCommand(writer: SerializationWriter, updateAccessAppCommand: Partial<UpdateAccessAppCommand> | undefined | null = {}) : void {
     if (updateAccessAppCommand) {
         writer.writeGuidValue("accessAppId", updateAccessAppCommand.accessAppId);
-        writer.writeCollectionOfPrimitiveValues<Guid>("appIds", updateAccessAppCommand.appIds);
         writer.writeStringValue("description", updateAccessAppCommand.description);
         writer.writeStringValue("name", updateAccessAppCommand.name);
     }
@@ -13658,6 +14927,73 @@ export function serializeUpdateClassifyCommand(writer: SerializationWriter, upda
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateExternalEdgeCommand(writer: SerializationWriter, updateExternalEdgeCommand: Partial<UpdateExternalEdgeCommand> | undefined | null = {}) : void {
+    if (updateExternalEdgeCommand) {
+        writer.writeStringValue("edgeId", updateExternalEdgeCommand.edgeId);
+        writer.writeStringValue("knowledgeGraphId", updateExternalEdgeCommand.knowledgeGraphId);
+        writer.writeStringValue("relationTypeId", updateExternalEdgeCommand.relationTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateExternalEntityTypeCommand(writer: SerializationWriter, updateExternalEntityTypeCommand: Partial<UpdateExternalEntityTypeCommand> | undefined | null = {}) : void {
+    if (updateExternalEntityTypeCommand) {
+        writer.writeStringValue("color", updateExternalEntityTypeCommand.color);
+        writer.writeStringValue("description", updateExternalEntityTypeCommand.description);
+        writer.writeStringValue("entityTypeId", updateExternalEntityTypeCommand.entityTypeId);
+        writer.writeStringValue("knowledgeGraphId", updateExternalEntityTypeCommand.knowledgeGraphId);
+        writer.writeStringValue("name", updateExternalEntityTypeCommand.name);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>("properties", updateExternalEntityTypeCommand.properties, serializeKnowledgeGraphEntityTypeProperty);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateExternalNodeCommand(writer: SerializationWriter, updateExternalNodeCommand: Partial<UpdateExternalNodeCommand> | undefined | null = {}) : void {
+    if (updateExternalNodeCommand) {
+        writer.writeStringValue("description", updateExternalNodeCommand.description);
+        writer.writeStringValue("entityTypeId", updateExternalNodeCommand.entityTypeId);
+        writer.writeStringValue("knowledgeGraphId", updateExternalNodeCommand.knowledgeGraphId);
+        writer.writeStringValue("name", updateExternalNodeCommand.name);
+        writer.writeStringValue("nodeId", updateExternalNodeCommand.nodeId);
+        writer.writeObjectValue<UpdateExternalNodeCommand_properties>("properties", updateExternalNodeCommand.properties, serializeUpdateExternalNodeCommand_properties);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateExternalNodeCommand_properties(writer: SerializationWriter, updateExternalNodeCommand_properties: Partial<UpdateExternalNodeCommand_properties> | undefined | null = {}) : void {
+    if (updateExternalNodeCommand_properties) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateExternalRelationTypeCommand(writer: SerializationWriter, updateExternalRelationTypeCommand: Partial<UpdateExternalRelationTypeCommand> | undefined | null = {}) : void {
+    if (updateExternalRelationTypeCommand) {
+        writer.writeStringValue("color", updateExternalRelationTypeCommand.color);
+        writer.writeStringValue("description", updateExternalRelationTypeCommand.description);
+        writer.writeStringValue("knowledgeGraphId", updateExternalRelationTypeCommand.knowledgeGraphId);
+        writer.writeStringValue("name", updateExternalRelationTypeCommand.name);
+        writer.writeStringValue("relationTypeId", updateExternalRelationTypeCommand.relationTypeId);
+        writer.writeStringValue("sourceTypeId", updateExternalRelationTypeCommand.sourceTypeId);
+        writer.writeStringValue("targetTypeId", updateExternalRelationTypeCommand.targetTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateFeishuAppCommand(writer: SerializationWriter, updateFeishuAppCommand: Partial<UpdateFeishuAppCommand> | undefined | null = {}) : void {
     if (updateFeishuAppCommand) {
         writer.writeStringValue("appSecret", updateFeishuAppCommand.appSecret);
@@ -13666,6 +15002,17 @@ export function serializeUpdateFeishuAppCommand(writer: SerializationWriter, upd
         writer.writeGuidValue("feishuAppId", updateFeishuAppCommand.feishuAppId);
         writer.writeBooleanValue("isDisable", updateFeishuAppCommand.isDisable);
         writer.writeStringValue("name", updateFeishuAppCommand.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateKnowledgeGraphAvatarCommand(writer: SerializationWriter, updateKnowledgeGraphAvatarCommand: Partial<UpdateKnowledgeGraphAvatarCommand> | undefined | null = {}) : void {
+    if (updateKnowledgeGraphAvatarCommand) {
+        writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphAvatarCommand.knowledgeGraphId);
+        writer.writeStringValue("objectKey", updateKnowledgeGraphAvatarCommand.objectKey);
     }
 }
 /**
@@ -13704,6 +15051,7 @@ export function serializeUpdateKnowledgeGraphEntityTypeCommand(writer: Serializa
         writer.writeStringValue("entityTypeId", updateKnowledgeGraphEntityTypeCommand.entityTypeId);
         writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphEntityTypeCommand.knowledgeGraphId);
         writer.writeStringValue("name", updateKnowledgeGraphEntityTypeCommand.name);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>("properties", updateKnowledgeGraphEntityTypeCommand.properties, serializeKnowledgeGraphEntityTypeProperty);
     }
 }
 /**
@@ -13718,6 +15066,16 @@ export function serializeUpdateKnowledgeGraphNodeCommand(writer: SerializationWr
         writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphNodeCommand.knowledgeGraphId);
         writer.writeStringValue("name", updateKnowledgeGraphNodeCommand.name);
         writer.writeStringValue("nodeId", updateKnowledgeGraphNodeCommand.nodeId);
+        writer.writeObjectValue<UpdateKnowledgeGraphNodeCommand_properties>("properties", updateKnowledgeGraphNodeCommand.properties, serializeUpdateKnowledgeGraphNodeCommand_properties);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateKnowledgeGraphNodeCommand_properties(writer: SerializationWriter, updateKnowledgeGraphNodeCommand_properties: Partial<UpdateKnowledgeGraphNodeCommand_properties> | undefined | null = {}) : void {
+    if (updateKnowledgeGraphNodeCommand_properties) {
     }
 }
 /**
@@ -14664,17 +16022,13 @@ export interface UnbindUserOAuthCommand extends Parsable {
     providerId?: Guid | null;
 }
 /**
- * 更新应用接入（名称、描述、授权外部应用；key 不可改），需要团队 Admin 及以上角色.
+ * 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
  */
 export interface UpdateAccessAppCommand extends Parsable {
     /**
      * 接入 id，由 Controller 从路由参数回填.
      */
     accessAppId?: Guid | null;
-    /**
-     * 允许访问的外部应用 id 列表.
-     */
-    appIds?: Guid[] | null;
     /**
      * 描述，可为空.
      */
@@ -14875,6 +16229,119 @@ export interface UpdateClassifyCommand extends Parsable {
     name?: string | null;
 }
 /**
+ * 修改边（外部接口）.
+ */
+export interface UpdateExternalEdgeCommand extends Parsable {
+    /**
+     * 边 id.
+     */
+    edgeId?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 关系类型 id.
+     */
+    relationTypeId?: string | null;
+}
+/**
+ * 修改实体类型（外部接口）.
+ */
+export interface UpdateExternalEntityTypeCommand extends Parsable {
+    /**
+     * 颜色.
+     */
+    color?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 实体类型 id.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 属性定义.
+     */
+    properties?: KnowledgeGraphEntityTypeProperty[] | null;
+}
+/**
+ * 修改节点（外部接口）.
+ */
+export interface UpdateExternalNodeCommand extends Parsable {
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 实体类型 id.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 节点 id.
+     */
+    nodeId?: string | null;
+    /**
+     * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+     */
+    properties?: UpdateExternalNodeCommand_properties | null;
+}
+/**
+ * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+ */
+export interface UpdateExternalNodeCommand_properties extends Parsable {
+}
+/**
+ * 修改关系类型（外部接口）.
+ */
+export interface UpdateExternalRelationTypeCommand extends Parsable {
+    /**
+     * 颜色.
+     */
+    color?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 关系类型 id.
+     */
+    relationTypeId?: string | null;
+    /**
+     * 起点实体类型 id，null=任意.
+     */
+    sourceTypeId?: string | null;
+    /**
+     * 终点实体类型 id，null=任意.
+     */
+    targetTypeId?: string | null;
+}
+/**
  * 更新飞书应用连接，需要团队 Admin 及以上角色；AppSecret 为空表示保持不变，更新后自动重连.
  */
 export interface UpdateFeishuAppCommand extends Parsable {
@@ -14902,6 +16369,19 @@ export interface UpdateFeishuAppCommand extends Parsable {
      * 连接名称，团队内唯一.
      */
     name?: string | null;
+}
+/**
+ * 设置知识图谱头像，仅 Owner/Admin 可操作；objectKey 需为已完成上传并登记的文件.
+ */
+export interface UpdateKnowledgeGraphAvatarCommand extends Parsable {
+    /**
+     * 图谱 id，由 Controller 从路由参数回填.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 头像文件的 ObjectKey.
+     */
+    objectKey?: string | null;
 }
 /**
  * 更新知识图谱，需要团队 Admin 及以上角色.
@@ -14961,6 +16441,10 @@ export interface UpdateKnowledgeGraphEntityTypeCommand extends Parsable {
      * 名称.
      */
     name?: string | null;
+    /**
+     * 属性定义.
+     */
+    properties?: KnowledgeGraphEntityTypeProperty[] | null;
 }
 /**
  * 修改节点.
@@ -14986,6 +16470,15 @@ export interface UpdateKnowledgeGraphNodeCommand extends Parsable {
      * 节点 id.
      */
     nodeId?: string | null;
+    /**
+     * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+     */
+    properties?: UpdateKnowledgeGraphNodeCommand_properties | null;
+}
+/**
+ * 实例属性值（键为实体类型定义的属性名，值以字符串存储）.
+ */
+export interface UpdateKnowledgeGraphNodeCommand_properties extends Parsable {
 }
 /**
  * 修改关系类型，需要团队 Admin 及以上角色.
