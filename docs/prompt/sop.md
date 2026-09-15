@@ -7,7 +7,8 @@
 
 | 操作 | 入口 | 说明 |
 |---|---|---|
-| 创建个人提示词 | 一级菜单「我的提示词」→ 新建提示词 | team_id=0，仅本人可见可用 |
+| 创建个人提示词 | 一级菜单「我的提示词」→ 新建提示词 | 进入独立编辑器页，左侧 Markdown 编辑、右侧实时预览 |
+| 上传提示词头像 | 编辑器页头像位上传图片 | JPG/PNG ≤5MB，走存储直传，详情/列表/市场展示 |
 | 创建团队提示词 | 团队详情 → 提示词 → 新建提示词 | 仅团队 Owner/Admin，成员只读可用 |
 | 申请上架 | 列表行「申请上架」→ 填申请说明 | 个人提示词创建人本人；团队提示词 Admin+ |
 | 撤回上架申请 | 列表行「撤回申请」（待审核状态） | 仅待审核可撤回，权限同申请 |
@@ -35,16 +36,16 @@ docker exec -i moai-postgres psql -U postgres -d moai < asserts/prompt.sql
 ## 3. 验收流程（对应 [@PT-S17](./bdd.md#pt-s17) 走查）
 
 1. 后端 `cd src/MoAI && dotnet run`，前端 `cd ui && npm run dev`。
-2. 普通账号登录 → 「我的提示词」新建一条 → 列表出现「未上架」。
+2. 普通账号登录 → 「我的提示词」新建 → 进入编辑器页，输入 `# 标题` 右侧实时渲染，上传头像后保存 → 列表出现「未上架」且带头像。
 3. 点「申请上架」→ admin 在「审批上架」通过 → 刷新出现「已上架」，「提示词市场」可见。
-4. 另一普通账号打开市场 → 使用（复制内容）→ 计数 +1。
-5. 团队 Owner 在团队详情「提示词」分区新建 → Member 只读可见；Owner 申请上架走同一审批链。
+4. 另一普通账号打开市场 → 使用（复制内容，详情 Markdown 渲染）→ 计数 +1。
+5. 团队 Owner 在团队详情「提示词」分区新建（同一编辑器页）→ Member 只读可见；Owner 申请上架走同一审批链。
 
 ## 4. 回归命令
 
 ```bash
 dotnet build src/MoAI/MoAI.csproj
 cd ui && npm run typecheck && npm run lint && npm run test
-node local-dev/prompt-e2e.mjs          # PT 40/40
+node local-dev/prompt-e2e.mjs          # PT 46/46
 node local-dev/publication-e2e.mjs     # PB 34/34（上架链路回归）
 ```

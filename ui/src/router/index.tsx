@@ -27,6 +27,7 @@ import { Skills } from '@/pages/skills/Skills'
 import { ClassifyPage } from '@/pages/classify/Classify'
 import { Prompts } from '@/pages/prompts/Prompts'
 import { PromptMarket } from '@/pages/prompts/PromptMarket'
+import { PromptEditor } from '@/pages/prompts/PromptEditor'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -45,6 +46,8 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'apps', element: <AppPlaza /> },
       { path: 'prompts', element: <Prompts /> },
+      { path: 'prompts/new', element: <PromptEditor /> },
+      { path: 'prompts/:promptId/edit', element: <PromptEditor /> },
       { path: 'prompt-market', element: <PromptMarket /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
@@ -52,6 +55,8 @@ export const router = createBrowserRouter([
       { path: 'publications', element: <Publications /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
+      { path: 'team/:teamId/prompt/new', element: <PromptEditor /> },
+      { path: 'team/:teamId/prompt/:promptId/edit', element: <PromptEditor /> },
       { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
       { path: 'team/:teamId/app/:appId/chat', element: <AppChat /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },

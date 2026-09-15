@@ -54,7 +54,7 @@
 | [skill](./skill/) | SKL | 技能（可装载技能包：管理/应用挂载/Agent 沙箱加载执行；内置 docx·ppt 生成，产物 save_artifact 交付；沙箱依赖见 ai 模块） |
 | [feishu](./feishu/) | FS | 飞书通知基座（Maomi.FeishuWss 长连接复用：一个飞书应用一条 WSS 连接；绑定 app 渠道且同一飞书应用同时只能绑一个渠道；事件去重后转发 `IFeishuEventHandler`，应用渠道已落地**群聊/私聊消息→应用 Agent→回复**；知识库渠道后续独立模块接入） |
 | [publication](./publication/) | PB | 上架审核（应用/提示词公开改审批制：团队申请上架 → `publication_review` 审核表 → 系统管理员「审批上架」菜单审批；**通过后系统才将目标资源 is_public 置为 true**；撤回/驳回/重新申请、pending 唯一约束） |
-| [prompt](./prompt/) | PT | 提示词库（个人提示词仅本人可用；团队提示词 Admin 创建、成员可用；申请上架走 publication 审批，通过后进入「提示词市场」对所有用户开放；市场查看计数） |
+| [prompt](./prompt/) | PT | 提示词库（个人提示词仅本人可用；团队提示词 Admin 创建、成员可用；独立编辑器页 Markdown 实时预览 + 头像上传；申请上架走 publication 审批，通过后进入「提示词市场」对所有用户开放；市场查看计数） |
 
 ### 前端（ui/docs/）
 

@@ -12,6 +12,7 @@
 - `src/prompt/MoAI.Prompt.Shared|Core|Api` 三层，Maomi 模块 `PromptCoreModule` 注册进 `MainModule`，依赖 `Team.Shared`（角色事实）、`Account.Shared`（人名填充）、`Classify.Shared`（分类类型常量）。
 - 接口（Controller 门禁外全部在 Handler 校验资源归属/角色）：
   - `POST /api/prompt`、`PUT /api/prompt/{id}`、`DELETE /api/prompt/{id}`
+  - `POST /api/prompt/{id}/avatar`（设置头像，objectKey 需已登记，权限同更新）
   - `GET /api/prompt/my_list`（个人）、`GET /api/prompt/team_list`（团队成员）、`GET /api/prompt/{id}`（详情含内容）、`GET /api/prompt/market_list`（公开）
 - 上架复用 [publication 模块](../publication/sdd.md)（`resource_type=prompt`，`resource_id=prompt.id` 数字字符串）；本模块仅消费，不改其状态机。
 
@@ -30,9 +31,15 @@
 
 ## 前端
 
-- 一级菜单「我的提示词」`/prompts`（个人 CRUD + 上架/撤回）与「提示词市场」`/prompt-market`（浏览/详情复制/计数）。
-- 团队详情新增「提示词」分区（成员可见，`TeamPrompts` 按 `canManage` 收敛管理入口）。
-- 封装层 `ui/src/api/prompt.ts`，上架复用 `ui/src/api/publication.ts`；分类选项复用 `classifyApi.getClassifies('prompt')`。
+- 一级菜单「我的提示词」`/prompts`（个人列表 + 上架/撤回）与「提示词市场」`/prompt-market`（浏览/详情复制/计数）。
+- **独立编辑器页** `PromptEditor`：新建/编辑不再用弹窗，路由 `/prompts/new`、`/prompts/:promptId/edit`、`/team/:teamId/prompt/new`、`/team/:teamId/prompt/:promptId/edit`；左栏 Markdown 编辑（等宽 TextArea）、右栏 `react-markdown + remark-gfm` 实时预览；头像在编辑器内上传（新建先传存储拿 objectKey 随创建提交，编辑直接调 avatar 接口）。
+- 团队详情「提示词」分区（成员可见，`TeamPrompts` 按 `canManage` 收敛管理入口）。
+- 共享 `PromptDetailModal`（头像 + Markdown 渲染内容）供我的/团队/市场三处复用。
+- 封装层 `ui/src/api/prompt.ts`，头像走 `uploadImageWithKey`（存储三段直传）+ `setPromptAvatar`；上架复用 `ui/src/api/publication.ts`；分类选项复用 `classifyApi.getClassifies('prompt')`。
+
+## 关键决策（补充）
+
+7. **头像存 objectKey**：与团队/用户头像同规则——数据库只存 `avatar_path`（objectKey 或绝对地址），前端 `resolveStorageUrl` 拼展示地址；后端校验 objectKey 必须是已完成上传并登记（`files.is_uploaded`）的文件，防伪造。
 
 ## 已知问题
 

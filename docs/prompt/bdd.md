@@ -151,10 +151,10 @@ Background:
 
 @PT-S16 @auto:vitest
 
-### Scenario: 新建、申请上架与删除交互
+### Scenario: 新建入口进入独立编辑器、申请上架与删除交互
 
-- When 在新建弹窗填写名称与内容并确定
-- Then 以 teamId=0 调用创建接口
+- When 点击「新建提示词」
+- Then 跳转到独立编辑器页（/prompts/new）
 - When 点击未上架提示词的「申请上架」并提交
 - Then 以 resourceType=prompt 调用上架申请接口
 - When 点击删除并确认
@@ -162,7 +162,31 @@ Background:
 
 @PT-S17 @manual
 
-### Scenario: 浏览器走查市场与团队分区
+### Scenario: 浏览器走查编辑器、市场与团队分区
 
-- When 在浏览器中访问「提示词市场」与团队详情「提示词」分区
-- Then 市场可按分类/关键字筛选、查看详情并复制内容；团队分区成员只读、管理员可创建/编辑/删除/申请上架
+- When 在浏览器中访问独立编辑器、「提示词市场」与团队详情「提示词」分区
+- Then 编辑器左侧 Markdown 编辑、右侧实时预览；市场可按分类/关键字筛选、查看详情（Markdown 渲染）并复制内容；团队分区成员只读、管理员可创建/编辑/删除/申请上架
+
+## Feature: 提示词编辑器与头像
+
+@PT-S18 @auto:vitest
+
+### Scenario: 编辑器实时预览与保存
+
+- Given 打开独立编辑器页（新建或编辑）
+- When 在左侧输入 Markdown 内容（如一级标题）
+- Then 右侧实时渲染出对应 Markdown 元素
+- When 保存
+- Then 新建以路由团队 id（个人为 0）调用创建接口，编辑调用更新接口且回填详情
+
+@PT-S19 @auto:e2e
+
+### Scenario: 上传提示词头像
+
+- Given 提示词已存在，且图片已通过存储三段直传完成登记
+- When 他人设置该个人提示词头像
+- Then 返回 403
+- When 创建人（团队提示词为 Admin+）设置头像
+- Then 成功且详情返回该头像 objectKey
+- When 使用未登记的 objectKey 设置头像
+- Then 返回 404

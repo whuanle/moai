@@ -107,3 +107,9 @@ export async function deletePrompt(promptId: number): Promise<void> {
   const client = getApiClient()
   await client.api.prompt.byId(promptId).delete()
 }
+
+/** 设置提示词头像（objectKey 需已通过存储直传管线登记），个人仅创建人、团队需 Admin+ */
+export async function setPromptAvatar(promptId: number, objectKey: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.prompt.byId(promptId).avatar.post({ objectKey })
+}

@@ -5,22 +5,24 @@
 
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
-| @PT-S1 | local-dev/prompt-e2e.mjs#PT-01~03 | PASS 40/40（2026-09-15） |
-| @PT-S2 | local-dev/prompt-e2e.mjs#PT-02 | PASS 40/40（2026-09-15） |
-| @PT-S3 | local-dev/prompt-e2e.mjs#PT-04~05 | PASS 40/40（2026-09-15） |
-| @PT-S4 | local-dev/prompt-e2e.mjs#PT-06 | PASS 40/40（2026-09-15） |
-| @PT-S5 | local-dev/prompt-e2e.mjs#PT-15a/b | PASS 40/40（2026-09-15） |
-| @PT-S6 | local-dev/prompt-e2e.mjs#PT-07 | PASS 40/40（2026-09-15） |
-| @PT-S7 | local-dev/prompt-e2e.mjs#PT-08~09a/b | PASS 40/40（2026-09-15） |
-| @PT-S8 | local-dev/prompt-e2e.mjs#PT-09c/d | PASS 40/40（2026-09-15） |
-| @PT-S9 | local-dev/prompt-e2e.mjs#PT-10 | PASS 40/40（2026-09-15） |
-| @PT-S10 | local-dev/prompt-e2e.mjs#PT-11 | PASS 40/40（2026-09-15） |
-| @PT-S11 | local-dev/prompt-e2e.mjs#PT-12 | PASS 40/40（2026-09-15） |
-| @PT-S12 | local-dev/prompt-e2e.mjs#PT-13 | PASS 40/40（2026-09-15） |
-| @PT-S13 | local-dev/prompt-e2e.mjs#PT-14 | PASS 40/40（2026-09-15） |
-| @PT-S14 | local-dev/prompt-e2e.mjs#PT-15c/d | PASS 40/40（2026-09-15） |
-| @PT-S15 | ui/src/pages/prompts/__tests__/Prompts.test.tsx#渲染我的提示词列表 | PASS 4/4（2026-09-15，全仓 vitest 263/263） |
-| @PT-S16 | ui/src/pages/prompts/__tests__/Prompts.test.tsx#新建/申请上架/删除 | PASS 4/4（2026-09-15，全仓 vitest 263/263） |
+| @PT-S1 | local-dev/prompt-e2e.mjs#PT-01~03 | PASS 46/46（2026-09-15） |
+| @PT-S2 | local-dev/prompt-e2e.mjs#PT-02 | PASS 46/46（2026-09-15） |
+| @PT-S3 | local-dev/prompt-e2e.mjs#PT-04~05 | PASS 46/46（2026-09-15） |
+| @PT-S4 | local-dev/prompt-e2e.mjs#PT-06 | PASS 46/46（2026-09-15） |
+| @PT-S5 | local-dev/prompt-e2e.mjs#PT-15a/b | PASS 46/46（2026-09-15） |
+| @PT-S6 | local-dev/prompt-e2e.mjs#PT-07 | PASS 46/46（2026-09-15） |
+| @PT-S7 | local-dev/prompt-e2e.mjs#PT-08~09a/b | PASS 46/46（2026-09-15） |
+| @PT-S8 | local-dev/prompt-e2e.mjs#PT-09c/d | PASS 46/46（2026-09-15） |
+| @PT-S9 | local-dev/prompt-e2e.mjs#PT-10 | PASS 46/46（2026-09-15） |
+| @PT-S10 | local-dev/prompt-e2e.mjs#PT-11 | PASS 46/46（2026-09-15） |
+| @PT-S11 | local-dev/prompt-e2e.mjs#PT-12 | PASS 46/46（2026-09-15） |
+| @PT-S12 | local-dev/prompt-e2e.mjs#PT-13 | PASS 46/46（2026-09-15） |
+| @PT-S13 | local-dev/prompt-e2e.mjs#PT-14 | PASS 46/46（2026-09-15） |
+| @PT-S14 | local-dev/prompt-e2e.mjs#PT-15c/d | PASS 46/46（2026-09-15） |
+| @PT-S15 | ui/src/pages/prompts/__tests__/Prompts.test.tsx#渲染我的提示词列表 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
+| @PT-S16 | ui/src/pages/prompts/__tests__/Prompts.test.tsx#新建入口跳转/申请上架/删除 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
+| @PT-S18 | ui/src/pages/prompts/__tests__/PromptEditor.test.tsx#实时预览/新建/编辑回填/团队新建 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
+| @PT-S19 | local-dev/prompt-e2e.mjs#PT-16 | PASS 46/46（2026-09-15） |
 | @PT-S17 | @manual（浏览器走查，见 sop.md 第 3 节） | PASS（2026-09-15） |
 
 ## 构建与回归

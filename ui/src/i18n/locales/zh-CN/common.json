@@ -1537,6 +1537,15 @@
     "applySuccess": "已提交上架申请，等待管理员审批",
     "withdrawSuccess": "已撤回上架申请",
     "marketHint": "市场展示所有已上架的提示词，查看详情即可复制使用",
-    "use": "使用"
+    "use": "使用",
+    "editorCreate": "新建提示词",
+    "editorEdit": "编辑提示词",
+    "preview": "实时预览",
+    "previewEmpty": "输入 Markdown 内容后此处实时预览",
+    "editorPlaceholder": "支持 Markdown 语法，右侧实时预览…",
+    "avatar": "上传头像",
+    "avatarTypeError": "仅支持图片文件",
+    "avatarSizeError": "头像不能超过 5MB",
+    "avatarSuccess": "头像已上传"
   }
 }

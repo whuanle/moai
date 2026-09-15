@@ -1537,6 +1537,15 @@
     "applySuccess": "Submitted for review",
     "withdrawSuccess": "Publication request withdrawn",
     "marketHint": "The market lists all published prompts; open details to copy and use",
-    "use": "Use"
+    "use": "Use",
+    "editorCreate": "New Prompt",
+    "editorEdit": "Edit Prompt",
+    "preview": "Live Preview",
+    "previewEmpty": "Type Markdown on the left to preview it here",
+    "editorPlaceholder": "Markdown supported, live preview on the right…",
+    "avatar": "Upload Avatar",
+    "avatarTypeError": "Only image files are allowed",
+    "avatarSizeError": "Avatar must be no larger than 5MB",
+    "avatarSuccess": "Avatar uploaded"
   }
 }

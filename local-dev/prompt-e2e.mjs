@@ -39,6 +39,21 @@ async function mkuser(p) {
   return { name, userId: Number(l.json.userId), token: l.json.accessToken }
 }
 
+/** 走存储三段直传管线（预上传 → PUT → 完成），返回登记后的 objectKey */
+async function uploadImage(token, fileName, contentType = 'image/png') {
+  const bytes = crypto.randomBytes(64)
+  const sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
+  const pre = await api('POST', '/api/storage/public/pre_upload_image', { token, body: { fileName, contentType, fileSize: bytes.length, sha256 } })
+  if (pre.status !== 200 || !pre.json?.objectKey) throw new Error(`预上传失败: ${pre.status} ${pre.text.slice(0, 160)}`)
+  if (!pre.json.isExist) {
+    const put = await fetch(pre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: bytes })
+    if (!put.ok) throw new Error(`直传失败: ${put.status}`)
+    const complete = await api('POST', '/api/storage/complate_url', { token, body: { fileId: pre.json.fileId, isSuccess: true } })
+    if (complete.status !== 200) throw new Error(`完成上传失败: ${complete.status}`)
+  }
+  return String(pre.json.objectKey)
+}
+
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
   RSA_KEY = si.json.rsaPublic
@@ -171,6 +186,15 @@ async function main() {
   check('PT-15c 删除后待审核申请同步移除', !(adminList.json?.items ?? []).some(i => String(i.resourceId) === String(TEMPID)))
   const marketAfterDel = await api('GET', '/api/prompt/market_list', { token: bob.token })
   check('PT-15d 已上架个人提示词删除后市场不再新增（团队提示词仍在）', (marketAfterDel.json?.items ?? []).some(i => Number(i.promptId) === TPID))
+
+  // PT-16 提示词头像（存储三段直传 + objectKey 登记）
+  const avatarKey = await uploadImage(alice.token, 'avatar-' + TS + '.png')
+  check('PT-16a 他人设置个人提示词头像 403', (await api('POST', `/api/prompt/${PID}/avatar`, { token: bob.token, body: { objectKey: avatarKey } })).status === 403)
+  check('PT-16b 创建人设置个人提示词头像 200', (await api('POST', `/api/prompt/${PID}/avatar`, { token: alice.token, body: { objectKey: avatarKey } })).status === 200)
+  check('PT-16c 详情返回头像 objectKey', (await api('GET', `/api/prompt/${PID}`, { token: alice.token })).json?.avatarPath === avatarKey)
+  check('PT-16d 未登记 objectKey 404', (await api('POST', `/api/prompt/${PID}/avatar`, { token: alice.token, body: { objectKey: 'fake/not-registered.png' } })).status === 404)
+  check('PT-16e Member 设置团队提示词头像 403', (await api('POST', `/api/prompt/${TPID}/avatar`, { token: tMember.token, body: { objectKey: avatarKey } })).status === 403)
+  check('PT-16f Owner 设置团队提示词头像 200', (await api('POST', `/api/prompt/${TPID}/avatar`, { token: tOwner.token, body: { objectKey: avatarKey } })).status === 200)
 
   console.log(`\n结果：PASS ${PASS} / FAIL ${FAIL}`)
   if (FAIL > 0) process.exit(1)

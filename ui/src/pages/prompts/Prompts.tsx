@@ -3,29 +3,23 @@ import { DeleteOutlined, EditOutlined, EyeOutlined, SearchOutlined, SendOutlined
 import { Avatar, Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { Page, DataTable, QueryBar, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { resolveStorageUrl } from '@/utils/storage'
 import { classifyApi, ClassifyType, type Classify } from '@/api/classify'
 import { applyPublication, withdrawPublication } from '@/api/publication'
 import {
-  createPrompt,
   deletePrompt,
   getMyPrompts,
   getPromptDetail,
-  updatePrompt,
   type PromptDetail,
   type PromptItem,
 } from '@/api/prompt'
+import { PromptDetailModal } from './PromptDetailModal'
 
-const { Text, Paragraph } = Typography
-
-interface PromptFormValues {
-  name?: string
-  promptClassId?: number
-  description?: string
-  content?: string
-}
+const { Text } = Typography
 
 interface PromptFilters extends Record<string, unknown> {
   keywords?: string
@@ -35,21 +29,18 @@ interface PromptFilters extends Record<string, unknown> {
 /** 我的提示词：个人创建，仅本人可见可用，支持申请上架到提示词市场 */
 export function Prompts() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<PromptItem[]>([])
   const [classifies, setClassifies] = useState<Classify[]>([])
   const [keywords, setKeywords] = useState<string | undefined>(undefined)
   const [promptClassId, setPromptClassId] = useState<number | undefined>(undefined)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<PromptItem | null>(null)
-  const [saving, setSaving] = useState(false)
   const [detail, setDetail] = useState<PromptDetail | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [applyRecord, setApplyRecord] = useState<PromptItem | null>(null)
   const [applying, setApplying] = useState(false)
   const [applyForm] = Form.useForm<{ applyReason?: string }>()
-  const [form] = Form.useForm<PromptFormValues>()
   const [filterForm] = Form.useForm<PromptFilters>()
 
   const classOptions = useMemo(
@@ -88,28 +79,6 @@ export function Prompts() {
     void load()
   }, [load])
 
-  const openCreate = () => {
-    setEditing(null)
-    form.resetFields()
-    setFormOpen(true)
-  }
-
-  const openEdit = async (record: PromptItem) => {
-    try {
-      const detailRes = await getPromptDetail(Number(record.promptId))
-      setEditing(record)
-      form.setFieldsValue({
-        name: record.name ?? undefined,
-        promptClassId: record.promptClassId || undefined,
-        description: record.description ?? undefined,
-        content: detailRes?.content ?? undefined,
-      })
-      setFormOpen(true)
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
   const openDetail = async (record: PromptItem) => {
     try {
       const detailRes = await getPromptDetail(Number(record.promptId))
@@ -117,36 +86,6 @@ export function Prompts() {
       setDetailOpen(true)
     } catch {
       // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const handleSubmit = async () => {
-    const values = await form.validateFields()
-    setSaving(true)
-    try {
-      if (editing) {
-        await updatePrompt(Number(editing.promptId), {
-          name: values.name!,
-          description: values.description,
-          content: values.content!,
-          promptClassId: values.promptClassId ?? 0,
-        })
-      } else {
-        await createPrompt({
-          teamId: 0,
-          name: values.name!,
-          description: values.description,
-          content: values.content!,
-          promptClassId: values.promptClassId ?? 0,
-        })
-      }
-      feedback.success(t(editing ? 'prompt.saveSuccess' : 'prompt.createSuccess'))
-      setFormOpen(false)
-      void load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -211,7 +150,7 @@ export function Prompts() {
         key: 'name',
         render: (_, record) => (
           <Space size={spacing.sm}>
-            <Avatar size={32} src={record.avatarPath || undefined}>
+            <Avatar size={32} src={record.avatarPath ? resolveStorageUrl(record.avatarPath) : undefined}>
               {(record.name ?? '?').slice(0, 1).toUpperCase()}
             </Avatar>
             <span style={{ fontWeight: 500 }}>{record.name || '-'}</span>
@@ -241,7 +180,13 @@ export function Prompts() {
         render: (_, record) => (
           <Space size={0}>
             <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('prompt.view')} onClick={() => void openDetail(record)} />
-            <Button type="text" size="small" icon={<EditOutlined />} aria-label={t('prompt.edit')} onClick={() => void openEdit(record)} />
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              aria-label={t('prompt.edit')}
+              onClick={() => navigate(`/prompts/${record.promptId}/edit`)}
+            />
             {record.isPublic ? null : record.pendingPublicationId ? (
               <Popconfirm title={t('prompt.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
                 <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('prompt.withdraw')} />
@@ -266,7 +211,7 @@ export function Prompts() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, classNameMap],
+    [t, classNameMap, navigate],
   )
 
   return (
@@ -294,7 +239,7 @@ export function Prompts() {
         scroll={{ x: 1000 }}
         toolbar={
           <Space size={12}>
-            <Button type="primary" onClick={openCreate}>
+            <Button type="primary" onClick={() => navigate('/prompts/new')}>
               {t('prompt.create')}
             </Button>
             <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
@@ -303,75 +248,7 @@ export function Prompts() {
         onRefresh={() => void load()}
         refreshLoading={loading}
       />
-      <Modal
-        open={formOpen}
-        title={editing ? t('prompt.editTitle') : t('prompt.createTitle')}
-        onOk={() => void handleSubmit()}
-        onCancel={() => setFormOpen(false)}
-        okText={editing ? t('prompt.save') : t('prompt.confirm')}
-        cancelText={t('prompt.cancel')}
-        confirmLoading={saving}
-        destroyOnHidden
-        maskClosable={false}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label={t('prompt.name')}
-            rules={[{ required: true, message: t('prompt.namePlaceholder') }, { max: 20, message: `${t('prompt.name')} ≤ 20` }]}
-          >
-            <Input placeholder={t('prompt.namePlaceholder')} maxLength={20} />
-          </Form.Item>
-          <Form.Item name="promptClassId" label={t('prompt.class')}>
-            <Select allowClear placeholder={t('prompt.classAll')} options={classOptions} />
-          </Form.Item>
-          <Form.Item name="description" label={t('prompt.desc')} rules={[{ max: 255 }]}>
-            <Input placeholder={t('prompt.descPlaceholder')} maxLength={255} />
-          </Form.Item>
-          <Form.Item
-            name="content"
-            label={t('prompt.content')}
-            rules={[{ required: true, message: t('prompt.contentPlaceholder') }]}
-          >
-            <Input.TextArea
-              placeholder={t('prompt.contentPlaceholder')}
-              rows={8}
-              maxLength={10000}
-              showCount
-              styles={{ textarea: { fontFamily: 'monospace' } }}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        open={detailOpen}
-        title={detail?.name ?? t('prompt.detailTitle')}
-        onCancel={() => setDetailOpen(false)}
-        footer={null}
-        width={640}
-        maskClosable={false}
-      >
-        {detail && (
-          <>
-            {detail.description && (
-              <Paragraph type="secondary" style={{ marginBottom: spacing.md }}>
-                {detail.description}
-              </Paragraph>
-            )}
-            <Paragraph>
-              <Text copyable={{ text: detail.content ?? '', tooltips: [t('common.copy'), t('common.copySuccess')] }} strong>
-                {t('prompt.content')}
-              </Text>
-            </Paragraph>
-            <Input.TextArea
-              value={detail.content ?? ''}
-              readOnly
-              rows={10}
-              styles={{ textarea: { fontFamily: 'monospace' } }}
-            />
-          </>
-        )}
-      </Modal>
+      <PromptDetailModal open={detailOpen} detail={detail} onClose={() => setDetailOpen(false)} />
       <Modal
         open={!!applyRecord}
         title={t('prompt.applyTitle')}
@@ -392,3 +269,4 @@ export function Prompts() {
     </Page>
   )
 }
+

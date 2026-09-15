@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EyeOutlined, FireOutlined, SearchOutlined } from '@ant-design/icons'
-import { Avatar, Button, Form, Input, Modal, Select, Space, Typography } from 'antd'
+import { Avatar, Button, Form, Input, Select, Space, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Page, DataTable, QueryBar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { resolveStorageUrl } from '@/utils/storage'
 import { classifyApi, ClassifyType, type Classify } from '@/api/classify'
 import { getPromptDetail, getPromptMarketList, type PromptDetail, type PromptItem } from '@/api/prompt'
+import { PromptDetailModal } from './PromptDetailModal'
 
-const { Text, Paragraph } = Typography
+const { Text } = Typography
 
 interface PromptFilters extends Record<string, unknown> {
   keywords?: string
@@ -89,7 +91,7 @@ export function PromptMarket() {
         key: 'name',
         render: (_, record) => (
           <Space size={spacing.sm}>
-            <Avatar size={32} src={record.avatarPath || undefined}>
+            <Avatar size={32} src={record.avatarPath ? resolveStorageUrl(record.avatarPath) : undefined}>
               {(record.name ?? '?').slice(0, 1).toUpperCase()}
             </Avatar>
             <span style={{ fontWeight: 500 }}>{record.name || '-'}</span>
@@ -168,35 +170,7 @@ export function PromptMarket() {
         onRefresh={() => void load()}
         refreshLoading={loading}
       />
-      <Modal
-        open={detailOpen}
-        title={detail?.name ?? t('prompt.detailTitle')}
-        onCancel={() => setDetailOpen(false)}
-        footer={null}
-        width={640}
-        maskClosable={false}
-      >
-        {detail && (
-          <>
-            {detail.description && (
-              <Paragraph type="secondary" style={{ marginBottom: spacing.md }}>
-                {detail.description}
-              </Paragraph>
-            )}
-            <Paragraph>
-              <Text copyable={{ text: detail.content ?? '', tooltips: [t('common.copy'), t('common.copySuccess')] }} strong>
-                {t('prompt.content')}
-              </Text>
-            </Paragraph>
-            <Input.TextArea
-              value={detail.content ?? ''}
-              readOnly
-              rows={10}
-              styles={{ textarea: { fontFamily: 'monospace' } }}
-            />
-          </>
-        )}
-      </Modal>
-    </Page>
+      <PromptDetailModal open={detailOpen} detail={detail} onClose={() => setDetailOpen(false)} />
+</Page>
   )
 }

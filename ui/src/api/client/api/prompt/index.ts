@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleIntFromDiscriminatorValue, serializeCreatePromptCommand, serializeSimpleInt, type BusinessValidationResult, type CreatePromptCommand, type SimpleInt } from '../../models/index.js';
 // @ts-ignore
-import { PromptItemRequestBuilderRequestsMetadata, type PromptItemRequestBuilder } from './item/index.js';
+import { PromptItemRequestBuilderNavigationMetadata, PromptItemRequestBuilderRequestsMetadata, type PromptItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { Market_listRequestBuilderRequestsMetadata, type Market_listRequestBuilder } from './market_list/index.js';
 // @ts-ignore
@@ -66,6 +66,7 @@ export const PromptRequestBuilderUriTemplate = "{+baseurl}/api/prompt";
 export const PromptRequestBuilderNavigationMetadata: Record<Exclude<keyof PromptRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
         requestsMetadata: PromptItemRequestBuilderRequestsMetadata,
+        navigationMetadata: PromptItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
     market_list: {

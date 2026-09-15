@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { Prompts } from '../Prompts'
-import { getMyPrompts, createPrompt, deletePrompt } from '@/api/prompt'
+import { getMyPrompts, deletePrompt } from '@/api/prompt'
 import { applyPublication } from '@/api/publication'
 import { classifyApi } from '@/api/classify'
 
@@ -61,19 +61,19 @@ describe('Prompts', () => {
     expect(screen.getByText('待审核')).toBeInTheDocument()
   })
 
-  it('新建提示词提交时创建个人提示词（teamId=0）', async () => {
+  it('点击新建提示词跳转独立编辑器页', async () => {
     vi.mocked(getMyPrompts).mockResolvedValue([])
-    renderPrompts()
+    render(
+      <MemoryRouter initialEntries={['/prompts']}>
+        <Routes>
+          <Route path="/prompts" element={<Prompts />} />
+          <Route path="/prompts/new" element={<div data-testid="editor-page">editor-page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
 
     fireEvent.click(await screen.findByRole('button', { name: '新建提示词' }))
-    const modal = await screen.findByRole('dialog')
-    fireEvent.change(within(modal).getByPlaceholderText('请输入提示词名称'), { target: { value: '代码评审' } })
-    fireEvent.change(within(modal).getByPlaceholderText('请输入提示词内容'), { target: { value: '请评审以下代码' } })
-    fireEvent.click(within(modal).getByRole('button', { name: /确\s*定/ }))
-
-    await waitFor(() => {
-      expect(createPrompt).toHaveBeenCalledWith(expect.objectContaining({ teamId: 0, name: '代码评审' }))
-    })
+    expect(await screen.findByTestId('editor-page')).toBeInTheDocument()
   })
 
   it('未上架提示词可申请上架，提交走 publication（resourceType=prompt）', async () => {

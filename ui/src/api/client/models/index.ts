@@ -3981,6 +3981,15 @@ export function createUpdatePluginTeamAuthorizationCommandFromDiscriminatorValue
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdatePromptAvatarCommand}
+ */
+// @ts-ignore
+export function createUpdatePromptAvatarCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdatePromptAvatarCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdatePromptCommand}
  */
 // @ts-ignore
@@ -8158,6 +8167,17 @@ export function deserializeIntoUpdatePluginTeamAuthorizationCommand(updatePlugin
     return {
         "pluginId": n => { updatePluginTeamAuthorizationCommand.pluginId = n.getGuidValue(); },
         "teamIds": n => { updatePluginTeamAuthorizationCommand.teamIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdatePromptAvatarCommand(updatePromptAvatarCommand: Partial<UpdatePromptAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "objectKey": n => { updatePromptAvatarCommand.objectKey = n.getStringValue(); },
+        "promptId": n => { updatePromptAvatarCommand.promptId = n.getNumberValue(); },
     }
 }
 /**
@@ -16164,6 +16184,17 @@ export function serializeUpdatePluginTeamAuthorizationCommand(writer: Serializat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdatePromptAvatarCommand(writer: SerializationWriter, updatePromptAvatarCommand: Partial<UpdatePromptAvatarCommand> | undefined | null = {}) : void {
+    if (updatePromptAvatarCommand) {
+        writer.writeStringValue("objectKey", updatePromptAvatarCommand.objectKey);
+        writer.writeNumberValue("promptId", updatePromptAvatarCommand.promptId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdatePromptCommand(writer: SerializationWriter, updatePromptCommand: Partial<UpdatePromptCommand> | undefined | null = {}) : void {
     if (updatePromptCommand) {
         writer.writeStringValue("avatarPath", updatePromptCommand.avatarPath);
@@ -17667,6 +17698,19 @@ export interface UpdatePluginTeamAuthorizationCommand extends Parsable {
      * 授权团队 id 集合（全量替换），取消授权的团队将无法继续使用该私有插件.
      */
     teamIds?: number[] | null;
+}
+/**
+ * 设置提示词头像；个人提示词仅创建人可设置，团队提示词需要团队 Admin 及以上角色；objectKey 需为已完成上传并登记的文件.
+ */
+export interface UpdatePromptAvatarCommand extends Parsable {
+    /**
+     * 头像文件的 ObjectKey.
+     */
+    objectKey?: string | null;
+    /**
+     * 提示词 id，由 Controller 从路由参数回填.
+     */
+    promptId?: number | null;
 }
 /**
  * 更新提示词；个人提示词仅创建人可改，团队提示词需要团队 Admin 及以上角色.

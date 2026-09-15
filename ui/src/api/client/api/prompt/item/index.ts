@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryPromptCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdatePromptCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryPromptCommandResponse, type UpdatePromptCommand } from '../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/prompt/{id}
  */
 export interface PromptItemRequestBuilder extends BaseRequestBuilder<PromptItemRequestBuilder> {
+    /**
+     * The avatar property
+     */
+    get avatar(): AvatarRequestBuilder;
     /**
      * 删除提示词；个人提示词仅创建人可删，团队提示词需要团队 Admin 及以上角色；同步移除该提示词待审核的上架申请.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -68,6 +74,14 @@ export interface PromptItemRequestBuilder extends BaseRequestBuilder<PromptItemR
  * Uri template for the request builder.
  */
 export const PromptItemRequestBuilderUriTemplate = "{+baseurl}/api/prompt/{id}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const PromptItemRequestBuilderNavigationMetadata: Record<Exclude<keyof PromptItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    avatar: {
+        requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

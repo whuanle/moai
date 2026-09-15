@@ -85,7 +85,7 @@ node local-dev/wiki-e2e.mjs              # WK 23
 node local-dev/variable-e2e.mjs          # VR 26
 node local-dev/app-e2e.mjs               # AP 28
 node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/撤回，is_public 审批制）
-node local-dev/prompt-e2e.mjs            # PT 40（提示词：个人/团队 CRUD + 上架审批 + 市场）
+node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 102（实例管理 + 失败路径 + 内置模板注册 dynamic_greet/bocha_web_search/bocha_ai_search/feishu_web_hook_text/javascript_executor/postgres_query/mysql_query）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/paddleocr-e2e.mjs         # DYN 36~42（PaddleOCR 三模板成功路径 + 响应解析，自建桩服务，无需真实 PaddleOCR）
