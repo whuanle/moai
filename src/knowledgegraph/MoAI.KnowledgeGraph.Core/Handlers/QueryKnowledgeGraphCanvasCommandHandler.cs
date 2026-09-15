@@ -30,32 +30,57 @@ public class QueryKnowledgeGraphCanvasCommandHandler : IRequestHandler<QueryKnow
     public async Task<QueryKnowledgeGraphCanvasCommandResponse> Handle(QueryKnowledgeGraphCanvasCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
-        if (!string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))
+        var limit = request.Limit < 1 ? 200 : Math.Min(request.Limit, 500);
+
+        if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
         {
-            throw new BusinessException("外部接入图谱暂不支持画布视图.") { StatusCode = 409 };
+            if (string.IsNullOrWhiteSpace(graph.Database))
+            {
+                throw new BusinessException("接入图谱缺少数据库配置.") { StatusCode = 409 };
+            }
+
+            var (nodes, edges, truncated) = await _store.QueryConnectedCanvasAsync(graph.Database, request.Label, request.Keyword, limit, cancellationToken);
+            return new QueryKnowledgeGraphCanvasCommandResponse
+            {
+                Nodes = nodes.Select(x => new KnowledgeGraphNodeItem
+                {
+                    NodeId = x.Id,
+                    EntityLabel = x.Label,
+                    Name = x.Name,
+                    Description = x.Description,
+                }).ToList(),
+                Edges = edges.Select(x => new KnowledgeGraphEdgeItem
+                {
+                    EdgeId = x.Id,
+                    RelationName = x.RelationType,
+                    SourceNodeId = x.SourceNodeId,
+                    TargetNodeId = x.TargetNodeId,
+                }).ToList(),
+                Truncated = truncated,
+            };
         }
 
-        var limit = request.Limit < 1 ? 200 : Math.Min(request.Limit, 500);
-        var (nodes, edges, truncated) = await _store.QueryCanvasAsync(
+        var (managedNodes, managedEdges, managedTruncated) = await _store.QueryCanvasAsync(
             request.KnowledgeGraphId, request.EntityTypeId, request.RelationTypeId, request.Keyword, limit, cancellationToken);
 
         return new QueryKnowledgeGraphCanvasCommandResponse
         {
-            Nodes = nodes.Select(x => new KnowledgeGraphNodeItem
+            Nodes = managedNodes.Select(x => new KnowledgeGraphNodeItem
             {
                 NodeId = x.Id,
                 EntityTypeId = x.EntityTypeId,
                 Name = x.Name,
                 Description = x.Description,
+                Properties = KnowledgeGraphPropertyJson.ParseValues(x.PropsJson),
             }).ToList(),
-            Edges = edges.Select(x => new KnowledgeGraphEdgeItem
+            Edges = managedEdges.Select(x => new KnowledgeGraphEdgeItem
             {
                 EdgeId = x.Id,
                 RelationTypeId = x.RelationTypeId,
                 SourceNodeId = x.SourceNodeId,
                 TargetNodeId = x.TargetNodeId,
             }).ToList(),
-            Truncated = truncated,
+            Truncated = managedTruncated,
         };
     }
 }

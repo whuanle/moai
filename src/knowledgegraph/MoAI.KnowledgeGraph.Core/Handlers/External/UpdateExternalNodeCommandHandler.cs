@@ -3,37 +3,37 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.KnowledgeGraph.Commands;
+using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
 
 namespace MoAI.KnowledgeGraph.Handlers;
 
 /// <summary>
-/// <inheritdoc cref="UpdateKnowledgeGraphNodeCommand"/>
+/// <inheritdoc cref="UpdateExternalNodeCommand"/>
 /// </summary>
-public class UpdateKnowledgeGraphNodeCommandHandler : IRequestHandler<UpdateKnowledgeGraphNodeCommand, EmptyCommandResponse>
+public class UpdateExternalNodeCommandHandler : IRequestHandler<UpdateExternalNodeCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IKnowledgeGraphAuthorizer _authorizer;
+    private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphStore _store;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateKnowledgeGraphNodeCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="UpdateExternalNodeCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="authorizer">权限判定.</param>
+    /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="store">图存储.</param>
-    public UpdateKnowledgeGraphNodeCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store)
+    public UpdateExternalNodeCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store)
     {
         _databaseContext = databaseContext;
-        _authorizer = authorizer;
+        _externalAuthorizer = externalAuthorizer;
         _store = store;
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
+    public async Task<EmptyCommandResponse> Handle(UpdateExternalNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
+        await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 
         _ = await _store.GetNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken)
             ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };

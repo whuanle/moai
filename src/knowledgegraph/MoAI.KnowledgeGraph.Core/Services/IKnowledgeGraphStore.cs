@@ -32,12 +32,22 @@ public interface IKnowledgeGraphStore
     /// <summary>
     /// 创建节点.
     /// </summary>
-    Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, CancellationToken cancellationToken);
+    Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 批量创建节点（单语句 UNWIND，单事务），返回记录顺序与输入一致.
+    /// </summary>
+    Task<IReadOnlyList<KnowledgeGraphNodeRecord>> CreateNodesBatchAsync(long KnowledgeGraphId, IReadOnlyList<KnowledgeGraphNodeInput> nodes, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 批量创建边（单语句 UNWIND，单事务），返回记录顺序与输入一致.
+    /// </summary>
+    Task<IReadOnlyList<KnowledgeGraphEdgeRecord>> CreateEdgesBatchAsync(long KnowledgeGraphId, IReadOnlyList<KnowledgeGraphEdgeInput> edges, CancellationToken cancellationToken);
 
     /// <summary>
     /// 更新节点.
     /// </summary>
-    Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, CancellationToken cancellationToken);
+    Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken);
 
     /// <summary>
     /// 删除节点（连带其边），返回是否删除成功.
@@ -93,4 +103,16 @@ public interface IKnowledgeGraphStore
     /// 内省指定数据库的标签 / 关系类型 / 属性键.
     /// </summary>
     Task<KnowledgeGraphIntrospection> IntrospectAsync(string database, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 接入图有界子图查询（画布）：外部图库全量节点（按标签/关键字过滤），边仅返回节点集内部的边.
+    /// </summary>
+    /// <returns>返回节点、边与是否被截断.</returns>
+    Task<(IReadOnlyList<KnowledgeGraphConnectedNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphConnectedEdgeRecord> Edges, bool Truncated)> QueryConnectedCanvasAsync(string database, string? label, string? keyword, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 接入图节点一跳邻接展开（按 elementId 定位）.
+    /// </summary>
+    /// <returns>返回邻居节点、边与是否被截断.</returns>
+    Task<(IReadOnlyList<KnowledgeGraphConnectedNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphConnectedEdgeRecord> Edges, bool Truncated)> GetConnectedNeighborsAsync(string database, string nodeId, int limit, CancellationToken cancellationToken);
 }

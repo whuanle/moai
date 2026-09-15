@@ -8,4 +8,5 @@ namespace MoAI.KnowledgeGraph.Services;
 /// <param name="EntityTypeId">实体类型 id.</param>
 /// <param name="Name">名称.</param>
 /// <param name="Description">描述.</param>
-public sealed record KnowledgeGraphNodeRecord(string Id, long KnowledgeGraphId, long EntityTypeId, string Name, string Description);
+/// <param name="PropsJson">实例属性值 JSON（键值对，可为 null）.</param>
+public sealed record KnowledgeGraphNodeRecord(string Id, long KnowledgeGraphId, long EntityTypeId, string Name, string Description, string? PropsJson = null);

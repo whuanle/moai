@@ -81,6 +81,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                 TemplateKey = null,
                 Mode = KnowledgeGraphModes.Connected,
                 Database = database,
+                AvatarPath = string.Empty,
             };
             _databaseContext.KnowledgeGraphs.Add(connectedGraph);
             try
@@ -123,6 +124,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             TemplateKey = request.TemplateKey,
             Mode = KnowledgeGraphModes.Managed,
             Database = null,
+            AvatarPath = string.Empty,
         };
         _databaseContext.KnowledgeGraphs.Add(graph);
         try

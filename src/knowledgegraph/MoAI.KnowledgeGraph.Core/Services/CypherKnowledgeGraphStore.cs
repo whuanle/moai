@@ -10,7 +10,7 @@ namespace MoAI.KnowledgeGraph.Services;
 /// </summary>
 public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
 {
-    private const string NodeReturn = "n.id AS id, n.kgId AS kgId, n.entityTypeId AS entityTypeId, n.name AS name, n.description AS description";
+    private const string NodeReturn = "n.id AS id, n.kgId AS kgId, n.entityTypeId AS entityTypeId, n.name AS name, n.description AS description, n.propsJson AS propsJson";
     private const string EdgeReturn = "r.id AS id, r.kgId AS kgId, r.relationTypeId AS relationTypeId, s.id AS sourceNodeId, t.id AS targetNodeId";
 
     private readonly GraphDriverProvider _provider;
@@ -110,23 +110,101 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
     }
 
     /// <inheritdoc/>
-    public async Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, CancellationToken cancellationToken)
+    public async Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken)
     {
         await _provider.EnsureInitializedAsync(cancellationToken);
         var id = Guid.CreateVersion7().ToString();
         await WriteAsync(
-            "CREATE (n:KgNode {id: $id, kgId: $kgId, entityTypeId: $entityTypeId, name: $name, description: $description})",
-            new { id, kgId = KnowledgeGraphId, entityTypeId, name, description },
+            "CREATE (n:KgNode {id: $id, kgId: $kgId, entityTypeId: $entityTypeId, name: $name, description: $description, propsJson: $propsJson})",
+            new { id, kgId = KnowledgeGraphId, entityTypeId, name, description, propsJson = propsJson ?? string.Empty },
             cancellationToken);
-        return new KnowledgeGraphNodeRecord(id, KnowledgeGraphId, entityTypeId, name, description);
+        return new KnowledgeGraphNodeRecord(id, KnowledgeGraphId, entityTypeId, name, description, propsJson);
     }
 
     /// <inheritdoc/>
-    public async Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<KnowledgeGraphNodeRecord>> CreateNodesBatchAsync(long KnowledgeGraphId, IReadOnlyList<KnowledgeGraphNodeInput> nodes, CancellationToken cancellationToken)
+    {
+        if (nodes.Count == 0)
+        {
+            return Array.Empty<KnowledgeGraphNodeRecord>();
+        }
+
+        await _provider.EnsureInitializedAsync(cancellationToken);
+        var items = nodes.Select((node, index) => new
+        {
+            idx = (long)index,
+            id = Guid.CreateVersion7().ToString(),
+            entityTypeId = node.EntityTypeId,
+            name = node.Name,
+            description = node.Description,
+            propsJson = string.Empty,
+        }).ToList();
+
+        // 单语句 UNWIND + CREATE 在单事务内执行，RETURN item.idx 保证返回行与输入序号对应.
+        var records = await WriteReadAsync(
+            "UNWIND $items AS item " +
+            "CREATE (n:KgNode {id: item.id, kgId: $kgId, entityTypeId: item.entityTypeId, name: item.name, description: item.description, propsJson: item.propsJson}) " +
+            "RETURN item.idx AS idx, n.id AS id",
+            new { kgId = KnowledgeGraphId, items },
+            cancellationToken);
+        var idByIdx = records.ToDictionary(x => x["idx"].As<long>(), x => x["id"].As<string>());
+
+        return nodes.Select((node, index) => new KnowledgeGraphNodeRecord(
+            idByIdx[index],
+            KnowledgeGraphId,
+            node.EntityTypeId,
+            node.Name,
+            node.Description,
+            null)).ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<KnowledgeGraphEdgeRecord>> CreateEdgesBatchAsync(long KnowledgeGraphId, IReadOnlyList<KnowledgeGraphEdgeInput> edges, CancellationToken cancellationToken)
+    {
+        if (edges.Count == 0)
+        {
+            return Array.Empty<KnowledgeGraphEdgeRecord>();
+        }
+
+        await _provider.EnsureInitializedAsync(cancellationToken);
+        var items = edges.Select((edge, index) => new
+        {
+            idx = (long)index,
+            id = Guid.CreateVersion7().ToString(),
+            relationTypeId = edge.RelationTypeId,
+            sourceNodeId = edge.SourceNodeId,
+            targetNodeId = edge.TargetNodeId,
+        }).ToList();
+
+        // 单语句 UNWIND + MATCH + CREATE 在单事务内执行，RETURN item.idx 保证返回行与输入序号对应.
+        var records = await WriteReadAsync(
+            "UNWIND $items AS item " +
+            "MATCH (s:KgNode {kgId: $kgId, id: item.sourceNodeId}) " +
+            "MATCH (t:KgNode {kgId: $kgId, id: item.targetNodeId}) " +
+            "CREATE (s)-[r:KG_REL {id: item.id, kgId: $kgId, relationTypeId: item.relationTypeId}]->(t) " +
+            "RETURN item.idx AS idx, r.id AS id",
+            new { kgId = KnowledgeGraphId, items },
+            cancellationToken);
+        if (records.Count != edges.Count)
+        {
+            throw new BusinessException("部分边的起点或终点节点不存在.") { StatusCode = 400 };
+        }
+
+        var idByIdx = records.ToDictionary(x => x["idx"].As<long>(), x => x["id"].As<string>());
+        return edges.Select((edge, index) => new KnowledgeGraphEdgeRecord(
+            idByIdx[index],
+            KnowledgeGraphId,
+            edge.RelationTypeId,
+            edge.SourceNodeId,
+            edge.TargetNodeId)).ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken)
     {
         await WriteAsync(
-            "MATCH (n:KgNode {kgId: $kgId, id: $id}) SET n.entityTypeId = $entityTypeId, n.name = $name, n.description = $description",
-            new { kgId = KnowledgeGraphId, id = nodeId, entityTypeId, name, description },
+            "MATCH (n:KgNode {kgId: $kgId, id: $id}) SET n.entityTypeId = $entityTypeId, n.name = $name, n.description = $description, n.propsJson = $propsJson",
+            new { kgId = KnowledgeGraphId, id = nodeId, entityTypeId, name, description, propsJson = propsJson ?? string.Empty },
             cancellationToken);
     }
 
@@ -356,6 +434,61 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
         return new KnowledgeGraphIntrospection(labels, relations, keys);
     }
 
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<KnowledgeGraphConnectedNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphConnectedEdgeRecord> Edges, bool Truncated)> QueryConnectedCanvasAsync(string database, string? label, string? keyword, int limit, CancellationToken cancellationToken)
+    {
+        // 外部节点无统一 schema：elementId 定位、name/title/id 属性启发式取名、首个标签做实体类型.
+        var nameExpr = "coalesce(toString(n.name), toString(n.title), toString(n.id), elementId(n))";
+        var match = string.IsNullOrWhiteSpace(label) ? "MATCH (n) " : $"MATCH (n:`{EscapeIdentifier(label)}`) ";
+        var nodeCypher =
+            $"{match}WHERE ($keyword IS NULL OR toLower({nameExpr}) CONTAINS toLower($keyword)) " +
+            $"RETURN elementId(n) AS id, labels(n) AS labels, {nameExpr} AS name, coalesce(toString(n.description), '') AS description " +
+            "ORDER BY name, id LIMIT $limitPlus1";
+
+        var nodeRecords = await ReadDatabaseAsync(database, nodeCypher, new { keyword = string.IsNullOrWhiteSpace(keyword) ? null : keyword, limitPlus1 = limit + 1 }, cancellationToken);
+        var truncated = nodeRecords.Count > limit;
+        var nodes = nodeRecords.Take(limit).Select(MapConnectedNode).ToList();
+        if (nodes.Count == 0)
+        {
+            return (nodes, Array.Empty<KnowledgeGraphConnectedEdgeRecord>(), truncated);
+        }
+
+        var ids = nodes.Select(x => x.Id).ToList();
+        var edgeCypher =
+            "MATCH (s)-[r]->(t) " +
+            "WHERE elementId(s) IN $ids AND elementId(t) IN $ids " +
+            "RETURN elementId(r) AS id, type(r) AS relationType, elementId(s) AS sourceNodeId, elementId(t) AS targetNodeId " +
+            "ORDER BY id LIMIT $edgeLimit";
+        var edgeRecords = await ReadDatabaseAsync(database, edgeCypher, new { ids, edgeLimit = Math.Min(limit * 5, 5000) }, cancellationToken);
+        var edges = edgeRecords.Select(MapConnectedEdge).ToList();
+        return (nodes, edges, truncated);
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<KnowledgeGraphConnectedNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphConnectedEdgeRecord> Edges, bool Truncated)> GetConnectedNeighborsAsync(string database, string nodeId, int limit, CancellationToken cancellationToken)
+    {
+        var nameExpr = "coalesce(toString(n.name), toString(n.title), toString(n.id), elementId(n))";
+        var cypher =
+            "MATCH (n) WHERE elementId(n) = $nodeId " +
+            "MATCH (n)-[r]-(m) " +
+            $"RETURN elementId(m) AS id, labels(m) AS labels, {nameExpr} AS name, coalesce(toString(m.description), '') AS description, " +
+            "elementId(r) AS edgeId, type(r) AS relationType, elementId(startNode(r)) AS sourceNodeId, elementId(endNode(r)) AS targetNodeId " +
+            "ORDER BY name, id LIMIT $limitPlus1";
+        var records = await ReadDatabaseAsync(database, cypher, new { nodeId, limitPlus1 = limit + 1 }, cancellationToken);
+
+        var truncated = records.Count > limit;
+        var nodeMap = new Dictionary<string, KnowledgeGraphConnectedNodeRecord>(StringComparer.Ordinal);
+        var edgeMap = new Dictionary<string, KnowledgeGraphConnectedEdgeRecord>(StringComparer.Ordinal);
+        foreach (var record in records.Take(limit))
+        {
+            var connectedNode = MapConnectedNode(record);
+            nodeMap[connectedNode.Id] = connectedNode;
+            edgeMap[record["edgeId"].As<string>()] = MapConnectedEdge(record);
+        }
+
+        return (nodeMap.Values.ToList(), edgeMap.Values.ToList(), truncated);
+    }
+
     private static string ProbeCypher(string dialect)
         => string.Equals(dialect, KnowledgeGraphStoreSettings.DialectNeo4j, StringComparison.OrdinalIgnoreCase)
             ? "CALL db.labels()"
@@ -392,7 +525,68 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
     }
 
     private static KnowledgeGraphNodeRecord MapNode(IRecord record)
-        => new(record["id"].As<string>(), record["kgId"].As<long>(), record["entityTypeId"].As<long>(), record["name"].As<string>(), record["description"].As<string>() ?? string.Empty);
+        => new(
+            record["id"].As<string>(),
+            record["kgId"].As<long>(),
+            record["entityTypeId"].As<long>(),
+            record["name"].As<string>(),
+            record["description"].As<string>() ?? string.Empty,
+            record["propsJson"] is { } pj ? pj.As<string>() : null);
+
+    private static KnowledgeGraphConnectedNodeRecord MapConnectedNode(IRecord record)
+    {
+        var label = NormalizeLabelValues(record["labels"]).FirstOrDefault() ?? string.Empty;
+        return new KnowledgeGraphConnectedNodeRecord(
+            record["id"].As<string>(),
+            label,
+            record["name"].As<string>(),
+            record["description"].As<string>() ?? string.Empty);
+    }
+
+    private static KnowledgeGraphConnectedEdgeRecord MapConnectedEdge(IRecord record)
+        => new(record["id"].As<string>(), record["relationType"].As<string>(), record["sourceNodeId"].As<string>(), record["targetNodeId"].As<string>());
+
+    /// <summary>
+    /// 反引号转义：label 来自内省结果（含反引号的已被内省过滤），此处兜底拒绝，防 Cypher 注入.
+    /// </summary>
+    private static string EscapeIdentifier(string label)
+    {
+        if (label.Contains('`', StringComparison.Ordinal))
+        {
+            throw new BusinessException("标签名包含非法字符.") { StatusCode = 400 };
+        }
+
+        return label;
+    }
+
+    /// <summary>
+    /// 按数据库名路由的读取（外部接入库），错误语义与默认库读取一致.
+    /// </summary>
+    private async Task<List<IRecord>> ReadDatabaseAsync(string database, string cypher, object parameters, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var (driver, dialect) = await _provider.GetRuntimeAsync(cancellationToken);
+            await using var session = OpenSession(driver, database, dialect);
+            return await session.ExecuteReadAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(cypher, parameters);
+                return await cursor.ToListAsync();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (BusinessException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is ServiceUnavailableException || (ex is Neo4jException and not ClientException))
+        {
+            throw new BusinessException("无法连接图数据库，请检查系统设置中的连接配置。") { StatusCode = 503 };
+        }
+    }
 
     private static KnowledgeGraphEdgeRecord MapEdge(IRecord record)
         => new(record["id"].As<string>(), record["kgId"].As<long>(), record["relationTypeId"].As<long>(), record["sourceNodeId"].As<string>(), record["targetNodeId"].As<string>());

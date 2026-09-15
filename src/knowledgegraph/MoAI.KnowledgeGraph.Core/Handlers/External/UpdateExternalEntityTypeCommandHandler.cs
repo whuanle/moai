@@ -3,38 +3,38 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.KnowledgeGraph.Commands;
+using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
 using MoAI.Settings.Services;
 
 namespace MoAI.KnowledgeGraph.Handlers;
 
 /// <summary>
-/// <inheritdoc cref="UpdateKnowledgeGraphEntityTypeCommand"/>
+/// <inheritdoc cref="UpdateExternalEntityTypeCommand"/>
 /// </summary>
-public class UpdateKnowledgeGraphEntityTypeCommandHandler : IRequestHandler<UpdateKnowledgeGraphEntityTypeCommand, EmptyCommandResponse>
+public class UpdateExternalEntityTypeCommandHandler : IRequestHandler<UpdateExternalEntityTypeCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IKnowledgeGraphAuthorizer _authorizer;
+    private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphSettingsService _settingsService;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateKnowledgeGraphEntityTypeCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="UpdateExternalEntityTypeCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="authorizer">权限判定.</param>
+    /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="settingsService">知识图谱设置.</param>
-    public UpdateKnowledgeGraphEntityTypeCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphSettingsService settingsService)
+    public UpdateExternalEntityTypeCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphSettingsService settingsService)
     {
         _databaseContext = databaseContext;
-        _authorizer = authorizer;
+        _externalAuthorizer = externalAuthorizer;
         _settingsService = settingsService;
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphEntityTypeCommand request, CancellationToken cancellationToken)
+    public async Task<EmptyCommandResponse> Handle(UpdateExternalEntityTypeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
+        await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
         if (!settings.Enabled)
         {

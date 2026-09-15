@@ -30,34 +30,64 @@ public class QueryKnowledgeGraphNodeNeighborsCommandHandler : IRequestHandler<Qu
     public async Task<QueryKnowledgeGraphCanvasCommandResponse> Handle(QueryKnowledgeGraphNodeNeighborsCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
-        if (!string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))
+        var limit = request.Limit < 1 ? 100 : Math.Min(request.Limit, 500);
+
+        if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal))
         {
-            throw new BusinessException("外部接入图谱暂不支持画布视图.") { StatusCode = 409 };
+            if (string.IsNullOrWhiteSpace(graph.Database))
+            {
+                throw new BusinessException("接入图谱缺少数据库配置.") { StatusCode = 409 };
+            }
+
+            var (nodes, edges, truncated) = await _store.GetConnectedNeighborsAsync(graph.Database, request.NodeId, limit, cancellationToken);
+            if (nodes.Count == 0)
+            {
+                throw new BusinessException("节点不存在.") { StatusCode = 404 };
+            }
+
+            return new QueryKnowledgeGraphCanvasCommandResponse
+            {
+                Nodes = nodes.Select(x => new KnowledgeGraphNodeItem
+                {
+                    NodeId = x.Id,
+                    EntityLabel = x.Label,
+                    Name = x.Name,
+                    Description = x.Description,
+                }).ToList(),
+                Edges = edges.Select(x => new KnowledgeGraphEdgeItem
+                {
+                    EdgeId = x.Id,
+                    RelationName = x.RelationType,
+                    SourceNodeId = x.SourceNodeId,
+                    TargetNodeId = x.TargetNodeId,
+                }).ToList(),
+                Truncated = truncated,
+            };
         }
 
         _ = await _store.GetNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken)
             ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };
 
-        var limit = request.Limit < 1 ? 100 : Math.Min(request.Limit, 500);
-        var (nodes, edges, truncated) = await _store.GetNeighborsAsync(request.KnowledgeGraphId, request.NodeId, limit, cancellationToken);
+        var (managedNodes, managedEdges, managedTruncated) = await _store.GetNeighborsAsync(request.KnowledgeGraphId, request.NodeId, limit, cancellationToken);
 
         return new QueryKnowledgeGraphCanvasCommandResponse
         {
-            Nodes = nodes.Select(x => new KnowledgeGraphNodeItem
+            Nodes = managedNodes.Select(x => new KnowledgeGraphNodeItem
             {
                 NodeId = x.Id,
                 EntityTypeId = x.EntityTypeId,
                 Name = x.Name,
                 Description = x.Description,
+                Properties = KnowledgeGraphPropertyJson.ParseValues(x.PropsJson),
             }).ToList(),
-            Edges = edges.Select(x => new KnowledgeGraphEdgeItem
+            Edges = managedEdges.Select(x => new KnowledgeGraphEdgeItem
             {
                 EdgeId = x.Id,
                 RelationTypeId = x.RelationTypeId,
                 SourceNodeId = x.SourceNodeId,
                 TargetNodeId = x.TargetNodeId,
             }).ToList(),
-            Truncated = truncated,
+            Truncated = managedTruncated,
         };
     }
 }

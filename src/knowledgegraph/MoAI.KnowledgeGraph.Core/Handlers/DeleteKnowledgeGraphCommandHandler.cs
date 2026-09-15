@@ -18,6 +18,7 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
     private readonly IKnowledgeGraphAuthorizer _authorizer;
     private readonly IKnowledgeGraphStore _store;
     private readonly IKnowledgeGraphSettingsService _settingsService;
+    private readonly IKnowledgeGraphIntrospectionCache _introspectionCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteKnowledgeGraphCommandHandler"/> class.
@@ -26,12 +27,14 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
     /// <param name="authorizer">权限判定.</param>
     /// <param name="store">图存储.</param>
     /// <param name="settingsService">知识图谱设置.</param>
-    public DeleteKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store, IKnowledgeGraphSettingsService settingsService)
+    /// <param name="introspectionCache">接入图内省缓存.</param>
+    public DeleteKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store, IKnowledgeGraphSettingsService settingsService, IKnowledgeGraphIntrospectionCache introspectionCache)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
         _store = store;
         _settingsService = settingsService;
+        _introspectionCache = introspectionCache;
     }
 
     /// <inheritdoc/>
@@ -58,6 +61,12 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
         _databaseContext.KnowledgeGraphEntityTypes.RemoveRange(entityTypes);
         _databaseContext.KnowledgeGraphs.Remove(graph);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(graph.Database))
+        {
+            await _introspectionCache.RemoveAsync(graph.Id, graph.Database, cancellationToken);
+        }
+
         return EmptyCommandResponse.Default;
     }
 }

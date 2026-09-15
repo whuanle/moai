@@ -50,6 +50,7 @@ public class QueryKnowledgeGraphsCommandHandler : IRequestHandler<QueryKnowledge
                 Mode = x.Mode,
                 Database = x.Database,
                 ReadOnly = x.Mode == KnowledgeGraphModes.Connected,
+                AvatarPath = x.AvatarPath,
                 CreateTime = x.CreateTime,
             })
             .ToListAsync(cancellationToken);

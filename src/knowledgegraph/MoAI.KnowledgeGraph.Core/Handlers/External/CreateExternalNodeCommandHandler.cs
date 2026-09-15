@@ -3,37 +3,37 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.KnowledgeGraph.Commands;
+using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
 
 namespace MoAI.KnowledgeGraph.Handlers;
 
 /// <summary>
-/// <inheritdoc cref="CreateKnowledgeGraphNodeCommand"/>
+/// <inheritdoc cref="CreateExternalNodeCommand"/>
 /// </summary>
-public class CreateKnowledgeGraphNodeCommandHandler : IRequestHandler<CreateKnowledgeGraphNodeCommand, SimpleString>
+public class CreateExternalNodeCommandHandler : IRequestHandler<CreateExternalNodeCommand, SimpleString>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IKnowledgeGraphAuthorizer _authorizer;
+    private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphStore _store;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreateKnowledgeGraphNodeCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="CreateExternalNodeCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="authorizer">权限判定.</param>
+    /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="store">图存储.</param>
-    public CreateKnowledgeGraphNodeCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store)
+    public CreateExternalNodeCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store)
     {
         _databaseContext = databaseContext;
-        _authorizer = authorizer;
+        _externalAuthorizer = externalAuthorizer;
         _store = store;
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(CreateKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
+    public async Task<SimpleString> Handle(CreateExternalNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
+        await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 
         var typeExists = await _databaseContext.KnowledgeGraphEntityTypes
             .AnyAsync(x => x.Id == request.EntityTypeId && x.KnowledgeGraphId == request.KnowledgeGraphId, cancellationToken);

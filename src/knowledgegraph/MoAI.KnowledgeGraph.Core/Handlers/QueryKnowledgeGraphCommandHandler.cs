@@ -44,6 +44,7 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
             Mode = graph.Mode,
             Database = graph.Database,
             ReadOnly = graph.Mode == KnowledgeGraphModes.Connected,
+            AvatarPath = graph.AvatarPath,
             CreateTime = graph.CreateTime,
         };
     }

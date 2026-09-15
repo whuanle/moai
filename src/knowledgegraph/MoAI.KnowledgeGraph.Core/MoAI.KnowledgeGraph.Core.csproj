@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<PackageReference Include="Neo4j.Driver" />
 		<PackageReference Include="Npgsql" />
+		<PackageReference Include="StackExchange.Redis.Extensions.Core" />
 	</ItemGroup>
 
 	<ItemGroup>

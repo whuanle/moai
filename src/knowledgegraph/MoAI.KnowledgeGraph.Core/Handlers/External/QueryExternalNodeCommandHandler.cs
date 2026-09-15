@@ -1,34 +1,34 @@
 using MediatR;
 using MoAI.Infra.Exceptions;
-using MoAI.KnowledgeGraph.Queries;
+using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Queries.Responses;
 using MoAI.KnowledgeGraph.Services;
 
 namespace MoAI.KnowledgeGraph.Handlers;
 
 /// <summary>
-/// <inheritdoc cref="QueryKnowledgeGraphNodeCommand"/>
+/// <inheritdoc cref="QueryExternalNodeCommand"/>
 /// </summary>
-public class QueryKnowledgeGraphNodeCommandHandler : IRequestHandler<QueryKnowledgeGraphNodeCommand, QueryKnowledgeGraphNodeCommandResponse>
+public class QueryExternalNodeCommandHandler : IRequestHandler<QueryExternalNodeCommand, QueryKnowledgeGraphNodeCommandResponse>
 {
-    private readonly IKnowledgeGraphAuthorizer _authorizer;
+    private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphStore _store;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueryKnowledgeGraphNodeCommandHandler"/> class.
+    /// Initializes a new instance of the <see cref="QueryExternalNodeCommandHandler"/> class.
     /// </summary>
-    /// <param name="authorizer">权限判定.</param>
+    /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="store">图存储.</param>
-    public QueryKnowledgeGraphNodeCommandHandler(IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store)
+    public QueryExternalNodeCommandHandler(IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store)
     {
-        _authorizer = authorizer;
+        _externalAuthorizer = externalAuthorizer;
         _store = store;
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphNodeCommandResponse> Handle(QueryKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
+    public async Task<QueryKnowledgeGraphNodeCommandResponse> Handle(QueryExternalNodeCommand request, CancellationToken cancellationToken)
     {
-        await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
+        await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         var node = await _store.GetNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken)
             ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };
 
