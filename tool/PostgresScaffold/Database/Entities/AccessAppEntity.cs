@@ -63,9 +63,4 @@ public partial class AccessAppEntity : IFullAudited
     /// key.
     /// </summary>
     public string Key { get; set; } = default!;
-
-    /// <summary>
-    /// 允许访问的应用id列表.
-    /// </summary>
-    public List<Guid> AppIds { get; set; } = default!;
 }
