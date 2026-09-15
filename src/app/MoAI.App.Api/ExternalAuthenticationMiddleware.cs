@@ -62,8 +62,8 @@ public class ExternalAuthenticationMiddleware : IMiddleware
 
         context.User = authenticateResult.Principal;
 
-        // 外部对话端点（/external/agent/{appId}/chat）：校验 appId 属于 token 归属团队（团队级授权）且应用可用；
-        // 会话归属由 AppAgentDispatcher 按外部用户 id 校验，此处只做授权范围守卫
+        // 所有携带 appId 路由值的外部端点（/api/external/agent/{appId}/...：建会话、会话列表、对话等）：
+        // 校验 appId 属于 token 归属团队（团队级授权）且应用可用；会话归属由各 Handler/AppAgentDispatcher 按外部用户 id 校验，此处只做授权范围守卫
         if (context.Request.RouteValues.TryGetValue("appId", out var appIdValue) && appIdValue != null)
         {
             var allowed = await IsChatAllowedAsync(context, appIdValue.ToString());
@@ -104,7 +104,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         }
 
         // 团队级授权：appId 必须属于 token 归属团队
-        if (app.TeamId != tokenContext.TeamId)
+        if ((long)app.TeamId != tokenContext.TeamId)
         {
             await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "You do not have access to this application.");
             return false;

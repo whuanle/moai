@@ -27,7 +27,7 @@ public class QueryExternalAuthorizedAppsCommandHandler : IRequestHandler<QueryEx
     {
         // 团队级授权：返回 token 归属团队下全部已发布且未禁用的外部应用
         var rows = await _databaseContext.Apps
-            .Where(x => x.TeamId == (int)request.Context.TeamId && x.IsExternal && !x.IsDisable && x.PublishStatus == 1)
+            .Where(x => (long?)x.TeamId == request.Context.TeamId && x.IsExternal && !x.IsDisable && x.PublishStatus == 1)
             .OrderByDescending(x => x.PublishTime)
             .Select(x => new
             {

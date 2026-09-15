@@ -180,6 +180,11 @@ async function main() {
   const otherTok = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, appId: APP_AUTH, externalUserId: 'erp-other-' + TS } })
   check('EA-23 他人查会话消息 404', otherTok.status === 200 && (await api('GET', `/api/external/session/${SESSION_ID}/messages`, { token: otherTok.json.accessToken })).status === 404)
 
+  // EA-23b 他团队 token 不能读本团队会话（团队级隔离，QueryExternalSessionMessagesCommandHandler 404 兜底）
+  const accOtherTeam = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID2, name: 'e2e接入他团队', description: 'cross-team e2e' } })
+  const otherTeamTok = await api('POST', '/api/external/token', { body: { accessAppKey: accOtherTeam.json?.key, appId: APP_OTHER_TEAM, externalUserId: EXT_UID2 } })
+  check('EA-23b 他团队 token 查会话消息 404', otherTeamTok.status === 200 && (await api('GET', `/api/external/session/${SESSION_ID}/messages`, { token: otherTeamTok.json.accessToken })).status === 404, `${otherTeamTok.status}`)
+
   // EA-24 对话端点（AG-UI SSE）鉴权与范围
   check('EA-24a 无 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { body: {} })).status === 401)
   check('EA-24b 无效 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { token: 'invalid-token', body: {} })).status === 401)

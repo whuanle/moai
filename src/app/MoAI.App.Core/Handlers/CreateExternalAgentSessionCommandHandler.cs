@@ -37,7 +37,7 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
         ExternalAppAccessValidator.EnsureUsable(app);
 
         // 团队级授权：应用必须属于 token 归属团队
-        if (app!.TeamId != request.Context.TeamId)
+        if ((long)app!.TeamId != request.Context.TeamId)
         {
             throw new BusinessException("该应用不属于 token 归属团队.") { StatusCode = 403 };
         }

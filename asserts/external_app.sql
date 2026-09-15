@@ -30,3 +30,7 @@ comment on column "external_user".nickname is '外部用户显示名，可选';
 create unique index if not exists idx_external_user_accessapp_user_uindex
     on "external_user" (access_app_id, external_user_id)
     where access_app_id is not null and is_deleted = 0;
+
+-- 团队级授权改造：接入点不再绑定应用白名单，移除 access_app.app_ids 列
+-- （存量库执行；新库 EnsureCreated 已无此列，不执行会导致存量库 INSERT access_app 因该列 not null 且无默认值而失败）
+alter table "access_app" drop column if exists app_ids;

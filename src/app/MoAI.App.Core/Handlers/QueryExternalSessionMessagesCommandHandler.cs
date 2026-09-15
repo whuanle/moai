@@ -34,7 +34,7 @@ public class QueryExternalSessionMessagesCommandHandler : IRequestHandler<QueryE
             .FirstOrDefaultAsync(cancellationToken);
 
         // 非归属用户按不存在处理，避免泄露会话存在性；应用不属于 token 归属团队同样按不存在处理
-        if (session == null || session.CreateUserId != externalUserId || session.TeamId != request.Context.TeamId)
+        if (session == null || session.CreateUserId != externalUserId || (long)session.TeamId != request.Context.TeamId)
         {
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }
