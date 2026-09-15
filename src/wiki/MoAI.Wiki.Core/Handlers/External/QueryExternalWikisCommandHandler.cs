@@ -28,7 +28,7 @@ public class QueryExternalWikisCommandHandler : IRequestHandler<QueryExternalWik
     {
         // 外部接口按 token 归属团队过滤；应用 token 对团队知识库权限等价团队 Admin，MyRole 固定返回 Admin.
         var items = await _databaseContext.Wikis
-            .Where(x => x.TeamId == request.Caller.TeamId && x.IsDeleted == 0)
+            .Where(x => x.TeamId == request.Caller.TeamId)
             .OrderBy(x => x.Id)
             .Select(x => new WikiItem
             {

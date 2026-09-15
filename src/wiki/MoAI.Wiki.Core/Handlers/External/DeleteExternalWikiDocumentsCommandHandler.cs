@@ -38,7 +38,7 @@ public class DeleteExternalWikiDocumentsCommandHandler : IRequestHandler<DeleteE
 
         var documentIds = request.DocumentIds.ToHashSet();
         var documents = await _databaseContext.WikiDocuments
-            .Where(x => x.WikiId == request.WikiId && documentIds.Contains(x.Id) && x.IsDeleted == 0)
+            .Where(x => x.WikiId == request.WikiId && documentIds.Contains(x.Id))
             .ToArrayAsync(cancellationToken);
 
         if (documents.Length == 0)

@@ -26,7 +26,7 @@ public class ExternalWikiAuthorizer : IExternalWikiAuthorizer
     /// <inheritdoc/>
     public async Task<WikiEntity> AuthorizeAsync(long wikiId, long teamId, CancellationToken cancellationToken)
     {
-        var wiki = await _databaseContext.Wikis.FirstOrDefaultAsync(x => x.Id == wikiId && x.IsDeleted == 0, cancellationToken);
+        var wiki = await _databaseContext.Wikis.FirstOrDefaultAsync(x => x.Id == wikiId, cancellationToken);
         if (wiki == null || wiki.TeamId != teamId)
         {
             throw new BusinessException("知识库不存在.") { StatusCode = 404 };

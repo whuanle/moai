@@ -22,7 +22,7 @@ public partial class WorkerTaskEntity : IFullAudited
     /// <summary>
     /// 关联类型.
     /// </summary>
-    public string BindType { get; set; } = default!;
+    public string BindType { get; set; } = string.Empty;
 
     /// <summary>
     /// 关联对象id.
@@ -37,12 +37,12 @@ public partial class WorkerTaskEntity : IFullAudited
     /// <summary>
     /// 消息、错误信息.
     /// </summary>
-    public string Message { get; set; } = default!;
+    public string Message { get; set; } = string.Empty;
 
     /// <summary>
     /// 自定义数据,json格式.
     /// </summary>
-    public string Data { get; set; } = default!;
+    public string Data { get; set; } = "{}";
 
     /// <summary>
     /// 创建人.

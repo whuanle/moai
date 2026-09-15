@@ -70,6 +70,12 @@ public class CompleteExternalWikiDocumentCommandHandler : IRequestHandler<Comple
                 throw new BusinessException("上传文件出错.") { StatusCode = 404 };
             }
 
+            // 外部接口防御：文件必须属于该知识库（ObjectKey 由预上传按 wiki/{wikiId} 前缀生成），防止跨知识库/跨团队 FileId 被借用.
+            if (!fileEntity.ObjectKey.StartsWith($"wiki/{request.WikiId}/", StringComparison.Ordinal))
+            {
+                throw new BusinessException("上传文件出错.") { StatusCode = 404 };
+            }
+
             var documentFile = await _databaseContext.WikiDocuments.AddAsync(new WikiDocumentEntity
             {
                 WikiId = (int)request.WikiId,

@@ -48,7 +48,7 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
 
         // 同一个知识库下不能有同 key 文件
         var existDocument = await _databaseContext.WikiDocuments
-            .AnyAsync(x => x.WikiId == request.WikiId && x.ObjectKey == objectKey && x.IsDeleted == 0, cancellationToken);
+            .AnyAsync(x => x.WikiId == request.WikiId && x.ObjectKey == objectKey, cancellationToken);
         if (existDocument)
         {
             throw new BusinessException("知识库已上传过该文件.") { StatusCode = 409 };
@@ -66,7 +66,7 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
         if (result.IsExist)
         {
             var existWikiDocument = await _databaseContext.WikiDocuments
-                .FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.FileId == result.FileId && x.IsDeleted == 0, cancellationToken);
+                .FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.FileId == result.FileId, cancellationToken);
             if (existWikiDocument != null)
             {
                 throw new BusinessException("同一个知识库下不能有相同文件.") { StatusCode = 409 };

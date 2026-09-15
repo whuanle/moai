@@ -33,7 +33,7 @@ public class RenameExternalWikiDocumentCommandHandler : IRequestHandler<RenameEx
         await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 
         var document = await _databaseContext.WikiDocuments
-            .FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.Id == request.DocumentId && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.WikiId == request.WikiId && x.Id == request.DocumentId, cancellationToken);
 
         if (document == null)
         {

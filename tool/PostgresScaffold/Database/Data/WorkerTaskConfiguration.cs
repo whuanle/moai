@@ -24,6 +24,11 @@ internal partial class WorkerTaskConfiguration : IEntityTypeConfiguration<Worker
 
         entity.ToTable("worker_task", tb => tb.HasComment("工作任务"));
 
+        entity
+            .HasIndex(e => new { e.BindType, e.BindId }, "ux_worker_task_bind_active")
+            .IsUnique()
+            .HasFilter("is_deleted = 0 AND state IN (1, 2)");
+
         entity.Property(e => e.Id)
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")

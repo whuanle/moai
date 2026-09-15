@@ -46,7 +46,7 @@ public class AiPartitionExternalDocumentCommandHandler : IRequestHandler<AiParti
         await _externalWikiAuthorizer.AuthorizeAsync(wikiId, teamId, cancellationToken);
 
         var document = await _databaseContext.WikiDocuments
-            .FirstOrDefaultAsync(x => x.Id == documentId && x.WikiId == wikiId && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == documentId && x.WikiId == wikiId, cancellationToken);
         if (document == null)
         {
             throw new BusinessException("知识库文档不存在.") { StatusCode = 404 };

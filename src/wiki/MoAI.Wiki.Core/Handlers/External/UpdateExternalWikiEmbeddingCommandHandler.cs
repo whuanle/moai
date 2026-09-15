@@ -50,7 +50,7 @@ public class UpdateExternalWikiEmbeddingCommandHandler : IRequestHandler<UpdateE
     private async Task EnsureEmbeddingModelAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
     {
         var model = await _databaseContext.AiModels
-            .FirstOrDefaultAsync(x => x.Id == modelId && x.Enabled && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == modelId && x.Enabled, cancellationToken);
         if (model == null)
         {
             throw new BusinessException("向量化模型不存在或未启用.") { StatusCode = 404 };

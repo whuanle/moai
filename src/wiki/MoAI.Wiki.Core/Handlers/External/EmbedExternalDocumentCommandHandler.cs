@@ -56,14 +56,14 @@ public class EmbedExternalDocumentCommandHandler : IRequestHandler<EmbedExternal
         }
 
         var document = await _databaseContext.WikiDocuments
-            .FirstOrDefaultAsync(x => x.Id == request.DocumentId && x.WikiId == request.WikiId && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.DocumentId && x.WikiId == request.WikiId, cancellationToken);
         if (document == null)
         {
             throw new BusinessException("知识库文档不存在.") { StatusCode = 404 };
         }
 
         var documentContents = await _databaseContext.WikiDocumentContents
-            .Where(x => x.DocumentId == document.Id && x.WikiId == document.WikiId && x.IsDeleted == 0)
+            .Where(x => x.DocumentId == document.Id && x.WikiId == document.WikiId)
             .Select(x => x.Content)
             .ToListAsync(cancellationToken);
         var hasContent = documentContents.Any(content => !string.IsNullOrWhiteSpace(content));
@@ -75,7 +75,7 @@ public class EmbedExternalDocumentCommandHandler : IRequestHandler<EmbedExternal
         if (request.IsEmbedSourceText)
         {
             var hasChunks = await _databaseContext.WikiDocumentChunkContents
-                .AnyAsync(x => x.DocumentId == document.Id && x.WikiId == document.WikiId && x.IsDeleted == 0, cancellationToken);
+                .AnyAsync(x => x.DocumentId == document.Id && x.WikiId == document.WikiId, cancellationToken);
             if (!hasChunks)
             {
                 throw new BusinessException("文档尚未切割，请先执行文档切割.") { StatusCode = 409 };
@@ -93,10 +93,8 @@ public class EmbedExternalDocumentCommandHandler : IRequestHandler<EmbedExternal
                 .AnyAsync(
                     x => x.Metadata.DocumentId == document.Id
                          && x.Metadata.WikiId == document.WikiId
-                         && x.Metadata.IsDeleted == 0
                          && x.Chunk.DocumentId == document.Id
-                         && x.Chunk.WikiId == document.WikiId
-                         && x.Chunk.IsDeleted == 0,
+                         && x.Chunk.WikiId == document.WikiId,
                     cancellationToken);
             if (!hasMetadata)
             {
@@ -108,7 +106,6 @@ public class EmbedExternalDocumentCommandHandler : IRequestHandler<EmbedExternal
             .AnyAsync(
                 x => x.BindType == EmbeddingBindType
                     && x.BindId == document.Id
-                    && x.IsDeleted == 0
                     && (x.State == (int)WorkerState.Wait || x.State == (int)WorkerState.Processing),
                 cancellationToken);
         if (hasActiveTask)

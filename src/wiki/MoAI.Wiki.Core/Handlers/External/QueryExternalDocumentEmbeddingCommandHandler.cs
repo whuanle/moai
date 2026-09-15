@@ -50,7 +50,7 @@ public class QueryExternalDocumentEmbeddingCommandHandler : IRequestHandler<Quer
         var wiki = await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 
         var document = await _databaseContext.WikiDocuments
-            .FirstOrDefaultAsync(x => x.Id == request.DocumentId && x.WikiId == request.WikiId && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.DocumentId && x.WikiId == request.WikiId, cancellationToken);
         if (document == null)
         {
             throw new BusinessException("知识库文档不存在.") { StatusCode = 404 };
@@ -62,13 +62,13 @@ public class QueryExternalDocumentEmbeddingCommandHandler : IRequestHandler<Quer
             .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
 
         var chunks = await _databaseContext.WikiDocumentChunkContents
-            .Where(x => x.DocumentId == document.Id && x.WikiId == wiki.Id && x.IsDeleted == 0)
+            .Where(x => x.DocumentId == document.Id && x.WikiId == wiki.Id)
             .OrderBy(x => x.SliceOrder)
             .ToListAsync(cancellationToken);
 
         var chunkIds = chunks.Select(x => x.Id).ToArray();
         var metadataByChunk = await _databaseContext.WikiDocumentChunkMetadata
-            .Where(x => chunkIds.Contains(x.ChunkId) && x.IsDeleted == 0)
+            .Where(x => chunkIds.Contains(x.ChunkId))
             .GroupBy(x => x.ChunkId)
             .ToDictionaryAsync(
                 x => x.Key,
@@ -82,7 +82,7 @@ public class QueryExternalDocumentEmbeddingCommandHandler : IRequestHandler<Quer
         var embeddingCount = await _vectorStore.CountDocumentVectorsAsync(wiki.Id, document.Id, cancellationToken);
 
         var content = await _databaseContext.WikiDocumentContents
-            .FirstOrDefaultAsync(x => x.DocumentId == document.Id && x.WikiId == wiki.Id && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.DocumentId == document.Id && x.WikiId == wiki.Id, cancellationToken);
 
         var (chunkSize, chunkOverlap, splitMode, overlapUnit, sizeUnit, tokenEncodingOrModel) = ReadSliceConfig(document.SliceConfig);
 
@@ -134,7 +134,7 @@ public class QueryExternalDocumentEmbeddingCommandHandler : IRequestHandler<Quer
     {
         var baseQuery = _databaseContext.WorkerTasks
             .AsNoTracking()
-            .Where(x => x.BindType == EmbeddingTaskBindType && x.BindId == documentId && x.IsDeleted == 0)
+            .Where(x => x.BindType == EmbeddingTaskBindType && x.BindId == documentId)
             .Select(x => new WorkerTaskView
             {
                 Id = x.Id,

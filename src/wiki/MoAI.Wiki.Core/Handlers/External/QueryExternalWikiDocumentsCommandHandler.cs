@@ -36,7 +36,7 @@ public class QueryExternalWikiDocumentsCommandHandler : IRequestHandler<QueryExt
         await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 
         var query = _databaseContext.WikiDocuments
-            .Where(x => x.WikiId == request.WikiId && x.IsDeleted == 0);
+            .Where(x => x.WikiId == request.WikiId);
 
         if (!string.IsNullOrWhiteSpace(request.Query))
         {
