@@ -653,7 +653,7 @@ public class ExternalBatchResponse
     public int FailedCount { get; init; }
 
     /// <summary>
-    /// 逐条结果：包含全部行（成功与失败），按请求顺序排列，数量与请求 Items 一致.
+    /// 逐条结果：整批成功时按请求顺序返回全部行（Ok=true、Id 为创建 id）；任一条校验失败时整批以 400 拒绝，不产生写入.
     /// </summary>
     public IReadOnlyList<ExternalBatchItemResult> Results { get; init; } = new List<ExternalBatchItemResult>();
 }
@@ -679,7 +679,7 @@ public class ExternalBatchItemResult
     public string? Id { get; init; }
 
     /// <summary>
-    /// 失败原因（成功时为 null）.
+    /// 失败原因（整批拒绝语义下恒为 null，失败通过整批 400 返回）.
     /// </summary>
     public string? Message { get; init; }
 }

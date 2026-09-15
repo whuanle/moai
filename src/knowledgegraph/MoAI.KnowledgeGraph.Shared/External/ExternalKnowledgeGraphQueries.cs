@@ -56,7 +56,7 @@ public class ExternalGraphItem
     public string Description { get; init; } = string.Empty;
 
     /// <summary>
-    /// 来源：managed（平台托管，可写）/ connected（外部接入，只读）.
+    /// 来源语义：managed（平台托管，可写）；外部列表当前仅返回 managed（connected 不对外暴露）.
     /// </summary>
     public string Mode { get; init; } = KnowledgeGraphModes.Managed;
 }

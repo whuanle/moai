@@ -176,7 +176,8 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
             targetNodeId = edge.TargetNodeId,
         }).ToList();
 
-        // 单语句 UNWIND + MATCH + CREATE 在单事务内执行，RETURN item.idx 保证返回行与输入序号对应.
+        // 单语句 UNWIND + MATCH + CREATE 在单事务内执行，RETURN item.idx 保证返回行与输入序号对应；
+        // 行数断言在事务内进行，MATCH 不到的行（并发删除端点）触发回滚.
         var records = await WriteReadAsync(
             "UNWIND $items AS item " +
             "MATCH (s:KgNode {kgId: $kgId, id: item.sourceNodeId}) " +
@@ -184,11 +185,14 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
             "CREATE (s)-[r:KG_REL {id: item.id, kgId: $kgId, relationTypeId: item.relationTypeId}]->(t) " +
             "RETURN item.idx AS idx, r.id AS id",
             new { kgId = KnowledgeGraphId, items },
-            cancellationToken);
-        if (records.Count != edges.Count)
-        {
-            throw new BusinessException("部分边的起点或终点节点不存在.") { StatusCode = 400 };
-        }
+            cancellationToken,
+            assert: rows =>
+            {
+                if (rows.Count != edges.Count)
+                {
+                    throw new BusinessException("部分边的起点或终点节点不存在.") { StatusCode = 400 };
+                }
+            });
 
         var idByIdx = records.ToDictionary(x => x["idx"].As<long>(), x => x["id"].As<string>());
         return edges.Select((edge, index) => new KnowledgeGraphEdgeRecord(
@@ -226,6 +230,21 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
             new { kgId = KnowledgeGraphId, id = nodeId },
             cancellationToken);
         return records.Count == 0 ? null : MapNode(records[0]);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Dictionary<string, long>> GetNodeTypesByIdsAsync(long KnowledgeGraphId, IReadOnlyList<string> nodeIds, CancellationToken cancellationToken)
+    {
+        if (nodeIds.Count == 0)
+        {
+            return new Dictionary<string, long>(StringComparer.Ordinal);
+        }
+
+        var records = await ReadAsync(
+            "MATCH (n:KgNode {kgId: $kgId}) WHERE n.id IN $ids RETURN n.id AS id, n.entityTypeId AS entityTypeId",
+            new { kgId = KnowledgeGraphId, ids = nodeIds },
+            cancellationToken);
+        return records.ToDictionary(x => x["id"].As<string>(), x => x["entityTypeId"].As<long>(), StringComparer.Ordinal);
     }
 
     /// <inheritdoc/>
@@ -489,6 +508,18 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
         return (nodeMap.Values.ToList(), edgeMap.Values.ToList(), truncated);
     }
 
+    /// <inheritdoc/>
+    public async Task<KnowledgeGraphConnectedNodeRecord?> GetConnectedNodeAsync(string database, string nodeId, CancellationToken cancellationToken)
+    {
+        var nameExpr = "coalesce(toString(n.name), toString(n.title), toString(n.id), elementId(n))";
+        var cypher =
+            "MATCH (n) WHERE elementId(n) = $nodeId " +
+            $"RETURN elementId(n) AS id, labels(n) AS labels, {nameExpr} AS name, coalesce(toString(n.description), '') AS description " +
+            "LIMIT 1";
+        var records = await ReadDatabaseAsync(database, cypher, new { nodeId }, cancellationToken);
+        return records.Count == 0 ? null : MapConnectedNode(records[0]);
+    }
+
     private static string ProbeCypher(string dialect)
         => string.Equals(dialect, KnowledgeGraphStoreSettings.DialectNeo4j, StringComparison.OrdinalIgnoreCase)
             ? "CALL db.labels()"
@@ -617,7 +648,7 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
         }
     }
 
-    private async Task<List<IRecord>> WriteReadAsync(string cypher, object parameters, CancellationToken cancellationToken)
+    private async Task<List<IRecord>> WriteReadAsync(string cypher, object parameters, CancellationToken cancellationToken, Action<List<IRecord>>? assert = null)
     {
         try
         {
@@ -628,6 +659,8 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
             {
                 var cursor = await tx.RunAsync(cypher, parameters);
                 records.AddRange(await cursor.ToListAsync());
+                // 断言在事务内执行：抛出异常即回滚，避免并发写导致的局部提交.
+                assert?.Invoke(records);
             });
             return records;
         }

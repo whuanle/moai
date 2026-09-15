@@ -34,33 +34,46 @@ public class CreateExternalEdgesBatchCommandHandler : IRequestHandler<CreateExte
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 
-        // 逐条业务校验，任一失败整批拒绝（不触发图库写入）.
-        var relationTypeIds = await _databaseContext.KnowledgeGraphRelationTypes
+        // 逐条业务校验，任一失败整批拒绝（不触发图库写入）；校验语义与单条创建一致（含关系类型端点约束）.
+        var relationTypes = await _databaseContext.KnowledgeGraphRelationTypes
             .Where(x => x.KnowledgeGraphId == request.KnowledgeGraphId)
-            .Select(x => x.Id)
+            .Select(x => new { x.Id, x.SourceTypeId, x.TargetTypeId })
             .ToListAsync(cancellationToken);
-        var relationTypeIdSet = relationTypeIds.ToHashSet();
+        var relationTypeMap = relationTypes.ToDictionary(x => x.Id);
 
-        // 端点预检：分页拉取该图谱全部节点 id 集合，一次集合判断完成端点存在校验.
-        var nodeIds = await ListAllNodeIdsAsync(request.KnowledgeGraphId, cancellationToken);
-        var nodeIdSet = nodeIds.ToHashSet(StringComparer.Ordinal);
+        // 端点预检：一次查询取回相关节点（存在性 + 实体类型，供关系约束校验），缺失 key 即节点不存在.
+        var endpointIds = request.Items
+            .SelectMany(x => new[] { x.SourceNodeId, x.TargetNodeId })
+            .Distinct()
+            .ToList();
+        var nodeTypes = await _store.GetNodeTypesByIdsAsync(request.KnowledgeGraphId, endpointIds, cancellationToken);
 
         for (var index = 0; index < request.Items.Count; index++)
         {
             var item = request.Items[index];
-            if (!relationTypeIdSet.Contains(item.RelationTypeId))
+            if (!relationTypeMap.TryGetValue(item.RelationTypeId, out var relationType))
             {
                 throw new BusinessException($"第 {index} 条校验失败：关系类型不存在.") { StatusCode = 400 };
             }
 
-            if (!nodeIdSet.Contains(item.SourceNodeId))
+            if (!nodeTypes.TryGetValue(item.SourceNodeId, out var sourceEntityTypeId))
             {
                 throw new BusinessException($"第 {index} 条校验失败：起点节点不存在.") { StatusCode = 400 };
             }
 
-            if (!nodeIdSet.Contains(item.TargetNodeId))
+            if (!nodeTypes.TryGetValue(item.TargetNodeId, out var targetEntityTypeId))
             {
                 throw new BusinessException($"第 {index} 条校验失败：终点节点不存在.") { StatusCode = 400 };
+            }
+
+            if (relationType.SourceTypeId != null && relationType.SourceTypeId != sourceEntityTypeId)
+            {
+                throw new BusinessException($"第 {index} 条校验失败：起点节点类型不符合关系约束.") { StatusCode = 400 };
+            }
+
+            if (relationType.TargetTypeId != null && relationType.TargetTypeId != targetEntityTypeId)
+            {
+                throw new BusinessException($"第 {index} 条校验失败：终点节点类型不符合关系约束.") { StatusCode = 400 };
             }
         }
 
@@ -81,30 +94,5 @@ public class CreateExternalEdgesBatchCommandHandler : IRequestHandler<CreateExte
                 Message = null,
             }).ToList(),
         };
-    }
-
-    private async Task<IReadOnlyCollection<string>> ListAllNodeIdsAsync(long KnowledgeGraphId, CancellationToken cancellationToken)
-    {
-        var nodeIds = new List<string>();
-        const int pageSize = 500;
-        var pageNo = 1;
-        while (true)
-        {
-            var (items, total) = await _store.ListNodesAsync(KnowledgeGraphId, null, null, pageNo, pageSize, cancellationToken);
-            if (items.Count == 0)
-            {
-                break;
-            }
-
-            nodeIds.AddRange(items.Select(x => x.Id));
-            if (nodeIds.Count >= total)
-            {
-                break;
-            }
-
-            pageNo++;
-        }
-
-        return nodeIds;
     }
 }

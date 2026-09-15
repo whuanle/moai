@@ -39,11 +39,11 @@ public class QueryKnowledgeGraphNodeNeighborsCommandHandler : IRequestHandler<Qu
                 throw new BusinessException("接入图谱缺少数据库配置.") { StatusCode = 409 };
             }
 
+            // 先判定节点存在（孤立节点无邻居也应返回空画布而非 404），再展开一跳邻接.
+            _ = await _store.GetConnectedNodeAsync(graph.Database, request.NodeId, cancellationToken)
+                ?? throw new BusinessException("节点不存在.") { StatusCode = 404 };
+
             var (nodes, edges, truncated) = await _store.GetConnectedNeighborsAsync(graph.Database, request.NodeId, limit, cancellationToken);
-            if (nodes.Count == 0)
-            {
-                throw new BusinessException("节点不存在.") { StatusCode = 404 };
-            }
 
             return new QueryKnowledgeGraphCanvasCommandResponse
             {

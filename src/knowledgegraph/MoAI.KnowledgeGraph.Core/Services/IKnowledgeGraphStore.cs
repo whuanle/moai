@@ -60,6 +60,11 @@ public interface IKnowledgeGraphStore
     Task<KnowledgeGraphNodeRecord?> GetNodeAsync(long KnowledgeGraphId, string nodeId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 批量获取指定节点的实体类型 id（仅返回存在的节点），用于批量端点预检与关系约束校验.
+    /// </summary>
+    Task<Dictionary<string, long>> GetNodeTypesByIdsAsync(long KnowledgeGraphId, IReadOnlyList<string> nodeIds, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 分页查询节点.
     /// </summary>
     Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Items, long Total)> ListNodesAsync(long KnowledgeGraphId, long? entityTypeId, string? keyword, int pageNo, int pageSize, CancellationToken cancellationToken);
@@ -115,4 +120,9 @@ public interface IKnowledgeGraphStore
     /// </summary>
     /// <returns>返回邻居节点、边与是否被截断.</returns>
     Task<(IReadOnlyList<KnowledgeGraphConnectedNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphConnectedEdgeRecord> Edges, bool Truncated)> GetConnectedNeighborsAsync(string database, string nodeId, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 获取接入图节点（按 elementId 定位），用于邻接查询前的存在性判定（有边无邻居≠不存在）.
+    /// </summary>
+    Task<KnowledgeGraphConnectedNodeRecord?> GetConnectedNodeAsync(string database, string nodeId, CancellationToken cancellationToken);
 }
