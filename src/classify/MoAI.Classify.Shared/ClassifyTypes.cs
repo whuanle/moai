@@ -22,7 +22,12 @@ public static class ClassifyTypes
     public const string Kb = "kb";
 
     /// <summary>
+    /// 提示词类型.
+    /// </summary>
+    public const string Prompt = "prompt";
+
+    /// <summary>
     /// 所有合法分类类型.
     /// </summary>
-    public static readonly string[] All = [Plugin, App, Kb];
+    public static readonly string[] All = [Plugin, App, Kb, Prompt];
 }

@@ -17,6 +17,7 @@ vi.mock('@/api/classify', () => ({
     Plugin: 'plugin',
     App: 'app',
     Kb: 'kb',
+    Prompt: 'prompt',
   },
 }))
 
@@ -71,6 +72,15 @@ describe('ClassifyPage', () => {
     renderPage()
 
     expect(await screen.findByText('暂无分类')).toBeInTheDocument()
+  })
+
+  it('按类型渲染四个分类页签', () => {
+    renderPage()
+
+    expect(screen.getByRole('tab', { name: '插件' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '应用' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '知识库' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '提示词' })).toBeInTheDocument()
   })
 
   it('删除需确认，确认后调用删除接口', async () => {

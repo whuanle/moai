@@ -118,13 +118,14 @@ Scenario: 创建应用时可设置头像
   Then 分别返回禁止 / 不存在
 
 @AP-S14 @auto:e2e @auto:unit
-Scenario: 内部应用「公开到平台」开关（创建与编辑均可设置）
-  When Admin 创建内部应用时开启「公开到平台」
-  Then 详情与列表均返回已公开
-  When Admin 更新为关闭
-  Then 详情返回未公开
-  And 列表以卡片底部标签展示开关状态（前端）
+Scenario: 公开（is_public）不再提供直接开关，仅上架审核可设置
+  When Admin 创建内部应用（创建接口不含 is_public）
+  Then 创建成功且详情与列表均返回未公开
+  When Admin 更新基础信息（更新接口不含 is_public）
+  Then 更新成功且 is_public 保持未公开
+  And 列表以卡片底部标签展示公开状态（前端）
   And 申请「需要授权访问」的内部应用返回参数错误
+  And 公开的申请与审批流转见 [@PB-S4](../publication/bdd.md#pb-s4)~[@PB-S11](../publication/bdd.md#pb-s11)
 ```
 
 ## Feature: 应用卡片与管理入口
@@ -141,7 +142,7 @@ Scenario: 应用以卡片展示，管理入口在卡片右上角
 @AP-S16 @auto:unit
 Scenario: 应用管理页为单页左右分栏
   When 管理员打开 Agent 应用的管理页
-  Then 左栏是「应用信息」（头像/类型/名称/描述/公开到平台或授权开关）
+  Then 左栏是「应用信息」（头像/类型/名称/描述/上架状态或授权开关）
   And 右栏是「Agent 配置」（对话模型/提示词/插件/知识库）
   And 页面没有左侧分区菜单
   When 打开流程应用的管理页
@@ -196,14 +197,17 @@ Scenario: 外部应用隔离与创建
   Then 返回 200 且包含该应用
   When Member / 非成员查询外部应用列表
   Then 分别返回禁止 / 不存在
-  When 为内部应用设置需要授权，或为外部应用设置公开到平台
+  When 为内部应用设置需要授权
   Then 返回参数错误
+  And 公开（is_public）只能经上架审核设置，创建/更新接口不再提供该字段（见 @AP-S14）
 
 @AP-S21 @auto:e2e @auto:unit
 Scenario: 平台公开应用可被平台内非成员使用
-  When 非成员查看未发布的公开内部应用详情
+  When 非成员查看未发布的内部应用详情
   Then 返回不存在
-  When Admin 发布该公开应用后，非成员再次查看
+  When Admin 发布该应用，团队申请上架并由系统管理员审批通过（[@PB-S11](../publication/bdd.md#pb-s11)）
+  Then 应用 is_public 变为 true
+  When 非成员再次查看
   Then 返回 200 且 myRole 为 -1
   And 公开应用列表包含该应用
   And 非成员可为该应用创建会话

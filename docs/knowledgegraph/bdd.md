@@ -1,6 +1,6 @@
 # 知识图谱模块行为场景（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)
 
 ## Feature: 托管图谱（managed）
 
@@ -130,4 +130,117 @@ Scenario: 图谱名称全局唯一
   Given 其他团队已存在同名图谱
   When 本团队使用该名称建图
   Then 返回冲突
+```
+
+## Feature: 接入图动态识别（v2.1）
+
+```gherkin
+@KG-S17 @auto:e2e
+Scenario: 接入图画布有界子图
+  Given 外部服务已向图库写入节点与边
+  When 查询接入图画布子图
+  Then 返回带标签（entityLabel）的节点与带关系类型名（relationName）的边
+  When 按标签过滤
+  Then 仅返回该标签的节点
+
+@KG-S18 @auto:e2e
+Scenario: 接入图一跳邻接展开
+  Given 接入图画布已返回节点
+  When 对某节点按 elementId 查询一跳邻接
+  Then 返回邻居节点与相连的边
+  When 对不存在的节点查询邻接
+  Then 返回不存在
+
+@KG-S19 @auto:e2e
+Scenario: 内省缓存与强制刷新
+  Given 接入图 schema 已查询过一次
+  When 五分钟内再次查询 schema
+  Then 命中 Redis 缓存（fromCache=true）
+  When 以 refresh=true 强制刷新
+  Then 跳过缓存重新内省（fromCache=false），并与基线 diff 出新增/消失的标签与关系类型
+```
+
+## Feature: 图谱头像（v2.2）
+
+```gherkin
+@KG-S20 @auto:e2e
+Scenario: 设置图谱头像
+  Given Owner/Admin 已通过存储直传完成图片上传并登记
+  When 以 objectKey 设置图谱头像
+  Then 设置成功，详情与列表回显 avatarPath
+  When 以未登记的 objectKey 设置头像
+  Then 返回不存在（404，防伪造 objectKey）
+```
+
+## Feature: 模型属性设置（v2.3）
+
+```gherkin
+@KG-S21 @auto:e2e
+Scenario: 实体类型属性定义与实例属性
+  Given Owner/Admin 在模型页为实体类型定义属性（名称/类型/必填/说明）
+  When 查询 schema
+  Then 回显属性定义；属性名重复或类型非法返回 400
+  When 录入实例并填写属性值
+  Then 属性值以 JSON 存储在图库节点（propsJson）并在实例列表回显
+  When 编辑实例属性
+  Then 新值覆盖旧值并回显
+```
+
+> 外部开放接口（`/api/external/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-08），不复用 KG-\*。授权模型：应用 token 即团队级授权（等价团队 Admin 作用于本团队托管图谱），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
+
+## Feature: 外部开放接口（应用 token，KX-*）
+
+```gherkin
+@KX-01 @auto:e2e
+Scenario: 应用 token 换取与团队级图谱列表
+  When 以应用接入 key 换取应用 token
+  Then 返回类型为「应用」的 token 对
+  When 查询外部图谱列表
+  Then 仅返回本团队托管（managed）图谱，不含他团队与接入图
+  When 另一团队的应用 token 查询列表
+  Then 仅返回该团队自己的图谱
+
+@KX-02 @auto:e2e
+Scenario: 跨团队与不存在资源一律不存在
+  When 对他团队图谱发起任意读写
+  Then 返回不存在（404，不泄露资源存在性）
+  When 以随机 id 查询 schema 或节点列表
+  Then 返回不存在
+
+@KX-03 @auto:e2e
+Scenario: 实体类型与关系类型维护
+  When 新增实体类型与带起止约束的关系类型
+  Then schema 回显类型与约束
+  When 更新与删除类型
+  Then schema 同步且仍被引用的类型删除返回冲突（409）
+
+@KX-04 @auto:e2e
+Scenario: 节点增删改查与分页邻接
+  When 新增节点、分页查询、查详情与一跳邻接、更新、删除
+  Then 全部成功且 schema 计数随写入回退
+  And 删除节点连带其边（DETACH 级联）
+
+@KX-05 @auto:e2e
+Scenario: 边增删改查与起止约束
+  When 新增符合约束的边
+  Then 返回边 id 且分页/详情正确
+  When 新增违反起止约束的边
+  Then 返回参数错误（400）
+
+@KX-06 @auto:e2e
+Scenario: 节点与边批量导入整批拒绝
+  When 批量导入 ≤200 条且全部合法
+  Then 逐条落库并回写 id
+  When 任一条类型/端点非法或超过 200 条上限
+  Then 整批拒绝（400）且已有数据不变
+
+@KX-07 @auto:e2e
+Scenario: 接入图对外部只读
+  When 对接入（connected）图谱发起节点或类型写操作
+  Then 返回冲突（409，接入图只读）
+
+@KX-08 @auto:e2e
+Scenario: 外部接口仅接受应用 token
+  When 无 token、伪造 token 或内部用户 JWT 调用外部接口
+  Then 分别返回未认证/未认证/未认证或禁止
 ```

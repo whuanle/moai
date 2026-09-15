@@ -36,4 +36,14 @@ public class QueryKnowledgeGraphSchemaCommandResponse
     /// 属性键（仅 connected）.
     /// </summary>
     public List<string> PropertyKeys { get; init; } = new();
+
+    /// <summary>
+    /// 内省相对上次基线的变化（仅 connected 且为新鲜内省时返回）.
+    /// </summary>
+    public KnowledgeGraphIntrospectionDiff? Changes { get; init; }
+
+    /// <summary>
+    /// 本次内省结果是否来自缓存（仅 connected 有意义）.
+    /// </summary>
+    public bool FromCache { get; init; }
 }

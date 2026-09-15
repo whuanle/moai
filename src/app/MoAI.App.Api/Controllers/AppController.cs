@@ -58,8 +58,7 @@ public class AppController : ControllerBase
             Name = req.Name,
             Description = req.Description,
             IsExternal = req.IsExternal,
-            IsAuth = req.IsAuth,
-            IsPublic = req.IsPublic
+            IsAuth = req.IsAuth
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

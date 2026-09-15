@@ -30,7 +30,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
             CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
-        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
-        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static Mock<IKnowledgeGraphAuthorizer> CreateAuthorizer()

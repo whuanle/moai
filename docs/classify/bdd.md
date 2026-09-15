@@ -29,6 +29,14 @@
 
 @CLS-S3 @auto:e2e
 
+### Scenario: 查询 prompt 类型分类列表
+
+- Given 我是管理员，且存在 prompt 类型分类
+- When 我请求查询 prompt 类型分类列表
+- Then 返回 prompt 类型全部分类，且每项含 name 与 description
+
+@CLS-S12 @auto:vitest
+
 ## Feature: 分类维护（管理员）
 
 ### Scenario: 新增分类

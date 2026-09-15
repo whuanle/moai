@@ -202,21 +202,22 @@ async function main() {
     await fetch(pre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: payload })
     const comp = await api('POST', '/api/storage/complate_url', { token: owner.token, body: { isSuccess: true, fileId: pre.json.fileId } })
 
-    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '带头像应用', appType: 'agent', avatar: comp.json.objectKey, isPublic: true } })
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '带头像应用', appType: 'agent', avatar: comp.json.objectKey } })
     check('AP-12a 创建时带头像 200', c.status === 200 && isGuid(c.json?.value), `${c.status} ${c.text.slice(0, 140)}`)
     const NEW_ID = String(c.json?.value ?? '')
 
     const d = await api('GET', `/api/app/${NEW_ID}`, { token: owner.token })
     check('AP-12b 详情回填创建时提交的头像', d.json?.avatarPath === comp.json.objectKey, `${d.json?.avatarPath} vs ${comp.json.objectKey}`)
 
-    check('AP-13a 创建时 isPublic=true 已落库', d.json?.isPublic === true, String(d.json?.isPublic))
+    // is_public 只能通过上架审核（/api/publication）由管理员审批设置，创建/更新接口不再提供该字段
+    check('AP-13a 创建后详情 isPublic=false（无直接公开通道）', d.json?.isPublic === false, String(d.json?.isPublic))
     const list = await api('GET', `/api/app/list?teamId=${TID}`, { token: owner.token })
     const created = (list.json?.items ?? []).find(i => i.name === '带头像应用')
-    check('AP-13b 列表返回 isPublic', created?.isPublic === true, JSON.stringify(created))
+    check('AP-13b 列表返回 isPublic', created?.isPublic === false, JSON.stringify(created))
 
-    check('AP-13c 更新关闭 isPublic 200', (await api('PUT', `/api/app/${NEW_ID}`, { token: owner.token, body: { name: '带头像应用', isPublic: false } })).status === 200)
+    check('AP-13c 更新基础信息 200（更新接口不再接受 isPublic）', (await api('PUT', `/api/app/${NEW_ID}`, { token: owner.token, body: { name: '带头像应用' } })).status === 200)
     const d2 = await api('GET', `/api/app/${NEW_ID}`, { token: owner.token })
-    check('AP-13d 关闭后详情 isPublic=false', d2.json?.isPublic === false, String(d2.json?.isPublic))
+    check('AP-13d 更新后 isPublic 仍为 false', d2.json?.isPublic === false, String(d2.json?.isPublic))
 
     const fake = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '伪造头像应用', appType: 'agent', avatar: 'public/fake-create-avatar.png' } })
     check('AP-14 创建时伪造 objectKey 404', fake.status === 404, `${fake.status} ${fake.text.slice(0, 120)}`)
@@ -239,7 +240,6 @@ async function main() {
     check('AP-13i 普通成员查外部列表 403', (await api('GET', `/api/app/external/list?teamId=${TID}`, { token: member.token })).status === 403)
     check('AP-13j 非成员查外部列表 404', (await api('GET', `/api/app/external/list?teamId=${TID}`, { token: outsider.token })).status === 404)
     check('AP-13k 内部应用设置 isAuth 被拒 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '非法内部应用', appType: 'agent', isAuth: true } })).status === 400)
-    check('AP-13l 外部应用设置 isPublic 被拒 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '非法外部应用', appType: 'agent', isExternal: true, isPublic: true } })).status === 400)
 
     // AP-13s ~ AP-13y 应用接入（access_app）
     const createAcc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP接入', description: '接入测试' } })
@@ -255,14 +255,27 @@ async function main() {
     check('AP-13y 删除接入 200', (await api('DELETE', `/api/access-app/${ACC_ID}`, { token: owner.token })).status === 200)
   }
 
-  // AP-13m ~ AP-13r 平台公开应用（is_public）
+  // AP-13m ~ AP-13r 平台公开应用（is_public 只能通过上架审核由管理员审批设置）
   {
-    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '公开助手', appType: 'agent', isPublic: true } })
-    check('AP-13m 创建公开内部应用 200', c.status === 200 && isGuid(c.json?.value), `${c.status} ${c.text.slice(0, 140)}`)
+    const pubAdminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const pubAdminToken = pubAdminLogin.json?.accessToken
+
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '公开助手', appType: 'agent' } })
+    check('AP-13m 创建内部应用 200', c.status === 200 && isGuid(c.json?.value), `${c.status} ${c.text.slice(0, 140)}`)
     const PUB_ID = String(c.json?.value ?? '')
     check('AP-13n 非成员详情未发布 404', (await api('GET', `/api/app/${PUB_ID}`, { token: outsider.token })).status === 404)
 
-    check('AP-13o 发布公开应用 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
+    check('AP-13o 发布应用 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
+
+    if (pubAdminToken) {
+      const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: PUB_ID, applyReason: 'e2e 申请上架' } })
+      check('AP-13o2 团队申请上架 200', apply.status === 200, `${apply.status} ${apply.text.slice(0, 140)}`)
+      const review = await api('POST', '/api/publication/review', { token: pubAdminToken, body: { publicationId: apply.json?.value, isApprove: true } })
+      check('AP-13o3 管理员审批通过 200', review.status === 200, `${review.status} ${review.text.slice(0, 140)}`)
+    } else {
+      console.log('SKIP | AP-13o2/o3 无 admin 账号（admin/abcd123456），无法走上架审核')
+    }
+
     const od = await api('GET', `/api/app/${PUB_ID}`, { token: outsider.token })
     check('AP-13p 非成员可看已发布公开应用详情', od.status === 200 && od.json?.isPublic === true && od.json?.myRole === -1, `${od.status} ${od.text.slice(0, 140)}`)
 

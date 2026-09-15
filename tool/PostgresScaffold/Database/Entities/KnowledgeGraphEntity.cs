@@ -34,4 +34,9 @@ public partial class KnowledgeGraphEntity : IFullAudited
     public long UpdateUserId { get; set; }
 
     public DateTimeOffset UpdateTime { get; set; }
+
+    /// <summary>
+    /// 头像地址.
+    /// </summary>
+    public string AvatarPath { get; set; } = default!;
 }

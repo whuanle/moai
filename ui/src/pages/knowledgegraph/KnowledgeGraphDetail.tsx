@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Alert, Layout, Menu, Tag } from 'antd'
+import { Alert, Layout, Menu, Steps, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import { ApartmentOutlined, ClusterOutlined, DeploymentUnitOutlined, ProfileOutlined, SettingOutlined } from '@ant-design/icons'
 import { Card, Page } from '@/design-system'
@@ -15,9 +15,9 @@ import { KnowledgeGraphSettings } from './KnowledgeGraphSettings'
 
 const { Sider, Content } = Layout
 
-const SECTION_KEYS = ['canvas', 'entities', 'relations', 'schema', 'settings'] as const
+const SECTION_KEYS = ['canvas', 'schema', 'entities', 'relations', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
-const CONNECTED_SECTIONS: SectionKey[] = ['schema', 'settings']
+const CONNECTED_SECTIONS: SectionKey[] = ['canvas', 'schema', 'settings']
 
 export function KnowledgeGraphDetail() {
   const { t } = useTranslation()
@@ -52,14 +52,15 @@ export function KnowledgeGraphDetail() {
     () =>
       isConnected
         ? [
+            { key: 'canvas', icon: <ClusterOutlined />, label: t('knowledgegraph.menuCanvas') },
             { key: 'schema', icon: <ApartmentOutlined />, label: t('knowledgegraph.menuSchema') },
             { key: 'settings', icon: <SettingOutlined />, label: t('knowledgegraph.menuSettings') },
           ]
         : [
             { key: 'canvas', icon: <ClusterOutlined />, label: t('knowledgegraph.menuCanvas') },
+            { key: 'schema', icon: <ApartmentOutlined />, label: t('knowledgegraph.menuSchema') },
             { key: 'entities', icon: <ProfileOutlined />, label: t('knowledgegraph.menuEntities') },
             { key: 'relations', icon: <DeploymentUnitOutlined />, label: t('knowledgegraph.menuRelations') },
-            { key: 'schema', icon: <ApartmentOutlined />, label: t('knowledgegraph.menuSchema') },
             { key: 'settings', icon: <SettingOutlined />, label: t('knowledgegraph.menuSettings') },
           ],
     [t, isConnected],
@@ -92,21 +93,37 @@ export function KnowledgeGraphDetail() {
             {isConnected && (
               <Tag color="blue" style={{ marginBottom: spacing.md }}>{t('knowledgegraph.connectedBadge')}</Tag>
             )}
+            {/* 托管图四步使用引导：模型 → 实体 → 关系 → 图览，点步骤可直接跳转 */}
+            {!isConnected && (
+              <Steps
+                size="small"
+                type="navigation"
+                style={{ marginBottom: spacing.md }}
+                current={section === 'schema' ? 0 : section === 'entities' ? 1 : section === 'relations' ? 2 : 3}
+                onChange={(current) => navigate(`/team/${teamId}/kg/${graphId}/${['schema', 'entities', 'relations', 'canvas'][current]}`)}
+                items={[
+                  { title: t('knowledgegraph.guide.step1') },
+                  { title: t('knowledgegraph.guide.step2') },
+                  { title: t('knowledgegraph.guide.step3') },
+                  { title: t('knowledgegraph.guide.step4') },
+                ]}
+              />
+            )}
             {section === 'canvas' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphCanvas graphId={graphId} />
+                <KnowledgeGraphCanvas graphId={graphId} teamId={teamId} mode={graph.mode} myRole={graph?.myRole ?? null} graphEnabled={graph?.enabled !== false} />
               </Card>
             ) : section === 'entities' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphEntities graphId={graphId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
+                <KnowledgeGraphEntities graphId={graphId} teamId={teamId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
               </Card>
             ) : section === 'relations' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphRelations graphId={graphId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
+                <KnowledgeGraphRelations graphId={graphId} teamId={teamId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
               </Card>
             ) : section === 'schema' ? (
               <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphSchema graphId={graphId} myRole={graph?.myRole ?? null} mode={graph.mode} />
+                <KnowledgeGraphSchema graphId={graphId} teamId={teamId} myRole={graph?.myRole ?? null} mode={graph.mode} />
               </Card>
             ) : (
               <KnowledgeGraphSettings graph={graph} onChanged={load} />

@@ -277,8 +277,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         await db.Context.SaveChangesAsync(CancellationToken.None);
 
         var authorizer = CreateAuthorizer();
-        var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, store.Object);
+        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, CreateIntrospectionCache().Object);
 
         var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
 
@@ -308,16 +307,17 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
         authorizer.Setup(x => x.AuthorizeAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" }, MoAI.Database.Enums.TeamRole.Admin));
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext", AvatarPath = string.Empty }, MoAI.Database.Enums.TeamRole.Admin));
 
-        var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.IntrospectAsync("ext", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new KnowledgeGraphIntrospection(
-                new List<KnowledgeGraphIntrospectedItem> { new("Person", 3) },
-                new List<KnowledgeGraphIntrospectedItem> { new("KNOWS", 2) },
-                new List<string> { "name", "age" }));
+        var introspection = new KnowledgeGraphIntrospection(
+            new List<KnowledgeGraphIntrospectedItem> { new("Person", 3) },
+            new List<KnowledgeGraphIntrospectedItem> { new("KNOWS", 2) },
+            new List<string> { "name", "age" });
+        var cache = new Mock<IKnowledgeGraphIntrospectionCache>();
+        cache.Setup(x => x.GetAsync(KnowledgeGraphId, "ext", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((introspection, (KnowledgeGraphIntrospectionDiff?)null, false));
 
-        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, store.Object);
+        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, cache.Object);
 
         var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
 
@@ -333,7 +333,34 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         Assert.Equal("KNOWS", relationType.Name);
         Assert.Equal(2, relationType.Count);
         Assert.Equal(new[] { "name", "age" }, response.PropertyKeys);
-        store.Verify(x => x.IntrospectAsync("ext", It.IsAny<CancellationToken>()), Times.Once);
+        cache.Verify(x => x.GetAsync(KnowledgeGraphId, "ext", false, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task QuerySchema_WhenConnectedWithRefresh_ForwardsRefresh()
+    {
+        using var db = TestSqliteContext.Create();
+        var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
+        authorizer.Setup(x => x.AuthorizeAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext", AvatarPath = string.Empty }, MoAI.Database.Enums.TeamRole.Admin));
+
+        var cache = new Mock<IKnowledgeGraphIntrospectionCache>();
+        cache.Setup(x => x.GetAsync(KnowledgeGraphId, "ext", true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new KnowledgeGraphIntrospection(
+                new List<KnowledgeGraphIntrospectedItem> { new("Person", 3) },
+                new List<KnowledgeGraphIntrospectedItem>(),
+                new List<string>()),
+                new KnowledgeGraphIntrospectionDiff(new List<string> { "Person" }, new List<string>(), new List<string>(), new List<string>()),
+                false));
+
+        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, cache.Object);
+
+        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = KnowledgeGraphId, Refresh = true }, CancellationToken.None);
+
+        Assert.NotNull(response.Changes);
+        Assert.Equal(new[] { "Person" }, response.Changes!.AddedLabels);
+        Assert.True(response.Changes.IsEmpty is false);
+        cache.Verify(x => x.GetAsync(KnowledgeGraphId, "ext", true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static Mock<IKnowledgeGraphAuthorizer> CreateAuthorizer()
@@ -344,6 +371,39 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         authorizer.Setup(x => x.AuthorizeManagedAsync(It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer;
+    }
+
+    [Fact]
+    public async Task QuerySchema_ReturnsEntityTypeProperties()
+    {
+        using var db = TestSqliteContext.Create();
+        db.Context.KnowledgeGraphEntityTypes.Add(new KnowledgeGraphEntityTypeEntity
+        {
+            KnowledgeGraphId = KnowledgeGraphId,
+            Name = "人员",
+            Color = string.Empty,
+            Description = string.Empty,
+            Properties = "[{\"name\":\"年龄\",\"type\":\"number\",\"required\":true,\"description\":\"周岁\"}]",
+            Sort = 0,
+        });
+        await db.Context.SaveChangesAsync(CancellationToken.None);
+
+        var authorizer = CreateAuthorizer();
+        var sut = new QueryKnowledgeGraphSchemaCommandHandler(db.Context, authorizer.Object, CreateIntrospectionCache().Object);
+
+        var response = await sut.Handle(new QueryKnowledgeGraphSchemaCommand { KnowledgeGraphId = KnowledgeGraphId }, CancellationToken.None);
+
+        var entityType = Assert.Single(response.EntityTypes);
+        var prop = Assert.Single(entityType.Properties);
+        Assert.Equal("年龄", prop.Name);
+        Assert.Equal("number", prop.Type);
+        Assert.True(prop.Required);
+        Assert.Equal("周岁", prop.Description);
+    }
+
+    private static Mock<IKnowledgeGraphIntrospectionCache> CreateIntrospectionCache()
+    {
+        return new Mock<IKnowledgeGraphIntrospectionCache>();
     }
 
     private static Mock<IKnowledgeGraphSettingsService> CreateSettings()

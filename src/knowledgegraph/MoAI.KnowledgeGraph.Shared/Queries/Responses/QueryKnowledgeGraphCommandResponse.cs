@@ -58,6 +58,11 @@ public class QueryKnowledgeGraphCommandResponse
     public bool ReadOnly { get; init; }
 
     /// <summary>
+    /// 头像 ObjectKey（空串表示未设置，前端经 /static/{key} 解析）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; init; }

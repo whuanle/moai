@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AppstoreAddOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography, Upload } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Tag, Tooltip, Typography, Upload } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, feedback } from '@/design-system'
@@ -26,7 +26,6 @@ interface CreateFormValues {
   appType: AppKind
   name: string
   description?: string
-  isPublic?: boolean
 }
 
 interface TeamAppsProps {
@@ -85,7 +84,7 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
 
   const openCreate = () => {
     createForm.resetFields()
-    createForm.setFieldsValue({ appType: 'agent', isPublic: false })
+    createForm.setFieldsValue({ appType: 'agent' })
     setCreateAvatar(null)
     setCreateOpen(true)
   }
@@ -100,7 +99,6 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
         name: values.name,
         description: values.description,
         avatar: createAvatar?.objectKey,
-        isPublic: values.isPublic ?? false,
       })
       feedback.success(t('appManage.createSuccess'))
       setCreateOpen(false)
@@ -321,12 +319,6 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
           <Form.Item name="description" label={t('appManage.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('appManage.descriptionPlaceholder')} maxLength={255} rows={3} />
           </Form.Item>
-          <Form.Item name="isPublic" label={t('appManage.isPublic')} valuePropName="checked">
-            <Switch checkedChildren={t('appManage.publicOn')} unCheckedChildren={t('appManage.publicOff')} />
-          </Form.Item>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('appManage.isPublicHint')}
-          </Text>
           <div style={{ marginTop: spacing.xs }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
               {t('appManage.createHint')}

@@ -53,6 +53,7 @@ public class DeleteKnowledgeGraphCommandHandlerTests
             Name = "图谱",
             Description = string.Empty,
             Mode = mode,
+            AvatarPath = string.Empty,
         };
         db.Context.KnowledgeGraphs.Add(graph);
         await db.Context.SaveChangesAsync(CancellationToken.None);
@@ -67,6 +68,6 @@ public class DeleteKnowledgeGraphCommandHandlerTests
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
-        return new DeleteKnowledgeGraphCommandHandler(db.Context, authorizer.Object, store, settings.Object);
+        return new DeleteKnowledgeGraphCommandHandler(db.Context, authorizer.Object, store, settings.Object, new Mock<IKnowledgeGraphIntrospectionCache>().Object);
     }
 }

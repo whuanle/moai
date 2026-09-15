@@ -97,22 +97,21 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
     expect(screen.getByText('未公开')).toBeTruthy()
   })
 
-  it('新建弹窗可设置头像与「公开到平台」，提交时一并带上', async () => {
+  it('新建弹窗可设置头像，提交创建请求（公开需走上架审核，弹窗不再提供公开开关）', async () => {
     renderSection(true)
     await screen.findByText('客服助手')
 
     fireEvent.click(screen.getByRole('button', { name: /新建应用/ }))
 
-    expect(await screen.findByText('公开到平台')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /上传头像/ })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: /上传头像/ })).toBeTruthy()
+    expect(screen.queryByText('公开到平台')).toBeNull()
 
     fireEvent.change(screen.getByPlaceholderText('请输入应用名称'), { target: { value: '新助手' } })
-    fireEvent.click(screen.getByRole('switch'))
     fireEvent.click(screen.getByRole('button', { name: /确\s*定/ }))
 
     await waitFor(() =>
       expect(createApp).toHaveBeenCalledWith(
-        expect.objectContaining({ teamId: 1, name: '新助手', isPublic: true }),
+        expect.objectContaining({ teamId: 1, name: '新助手' }),
       ),
     )
   })

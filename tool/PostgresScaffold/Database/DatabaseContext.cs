@@ -63,6 +63,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppEntity> Apps { get; set; }
 
     /// <summary>
+    /// 外部应用访问点配置，与外部应用 1:1.
+    /// </summary>
+    public virtual DbSet<AppAccessPointEntity> AppAccessPoints { get; set; }
+
+    /// <summary>
     /// Agent 应用配置，与 app 一一对应（app_type=0）.
     /// </summary>
     public virtual DbSet<AppAgentConfigEntity> AppAgentConfigs { get; set; }
@@ -144,9 +149,19 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginTeamAuthorizationEntity> PluginTeamAuthorizations { get; set; }
 
     /// <summary>
+    /// 提示词.
+    /// </summary>
+    public virtual DbSet<PromptEntity> Prompts { get; set; }
+
+    /// <summary>
     /// 系统设置.
     /// </summary>
     public virtual DbSet<SettingEntity> Settings { get; set; }
+
+    /// <summary>
+    /// 技能.
+    /// </summary>
+    public virtual DbSet<SkillEntity> Skills { get; set; }
 
     /// <summary>
     /// 团队，知识库/插件等资源的管理单元.

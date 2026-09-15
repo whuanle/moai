@@ -1,6 +1,6 @@
 # 知识库模块行为场景（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)、[local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)
 
 ## Feature: 访问控制
 
@@ -213,4 +213,56 @@ Scenario: 向量化复用已有内容与切片
   Given 文档已提取内容并切割
   When 团队成员勾选原文切片/已有元数据并触发向量化
   Then 任务接受并写入消息队列，wiki 实体不发生变更
+```
+
+> 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-06），不复用 WK-\*。授权模型：应用 token 即团队级授权，设计见 [sdd.md §4.1](./sdd.md#41-外部开放接口apexternalwiki)。
+
+## Feature: 外部开放接口（应用 token，WX-*）
+
+```gherkin
+@WX-01 @auto:e2e
+Scenario: 团队级知识库可见性
+  When 以应用接入 key 换取应用 token 并查询外部知识库列表
+  Then 仅返回 token 所属团队的知识库
+  When 访问他团队知识库详情或文档列表
+  Then 返回不存在（404，不泄露存在性）
+
+@WX-02 @auto:e2e
+Scenario: 绑定向量化配置
+  When 设置维度 0 或 2001
+  Then 返回参数错误
+  When 绑定团队可用 embedding 模型与合法维度
+  Then 成功且详情回显；未授权给团队的模型返回禁止
+
+@WX-03 @auto:e2e
+Scenario: 文件三段式上传与删除
+  When 预上传获取预签名 URL 并直传后完成登记
+  Then 文档出现在列表且同 SHA 重复上传走秒传
+  When 上传非法格式文件或完成他团队 fileId 的登记
+  Then 分别返回参数错误与不存在
+  When 删除文档后以同 SHA 重新上传
+  Then 可重新入库
+
+@WX-04 @auto:e2e
+Scenario: 重命名与内容提取
+  When 重命名文档
+  Then 列表回显新名
+  When 未提取内容时读取正文
+  Then 返回不存在
+  When 触发提取
+  Then 提取成功后正文可读
+
+@WX-05 @auto:e2e
+Scenario: 切割与向量化全链路
+  When 普通切割已提取文档
+  Then 切片生成
+  When 触发向量化
+  Then 返回任务 id；进行中重复触发返回冲突
+  When 轮询任务状态
+  Then 完成后切片数大于 0、顺序连续且含原文片段（向量化复用既有 WorkerTask 管线）
+
+@WX-06 @auto:e2e
+Scenario: 外部接口仅接受应用 token
+  When 无 token、伪造 token 或内部用户 JWT 调用外部接口
+  Then 分别返回未认证/未认证/未认证或禁止
 ```

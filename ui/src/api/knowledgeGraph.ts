@@ -1,4 +1,5 @@
 import { getApiClient } from '@/api/kiota'
+import { uploadImageWithKey } from '@/utils/storage'
 
 export interface KnowledgeGraphItem {
   kgId?: string | number | null
@@ -9,6 +10,7 @@ export interface KnowledgeGraphItem {
   mode?: string | null
   database?: string | null
   readOnly?: boolean | null
+  avatarPath?: string | null
   createTime?: string | null
 }
 
@@ -30,6 +32,7 @@ export interface KnowledgeGraphDetail {
   readOnly?: boolean | null
   myRole?: number | null
   enabled?: boolean | null
+  avatarPath?: string | null
   createTime?: string | null
 }
 
@@ -47,6 +50,17 @@ export interface KnowledgeGraphEntityTypeItem {
   color?: string | null
   description?: string | null
   count?: string | number | null
+  /** 属性定义（托管图） */
+  properties?: KnowledgeGraphEntityTypeProperty[] | null
+}
+
+/** 实体类型属性定义 */
+export interface KnowledgeGraphEntityTypeProperty {
+  name?: string | null
+  /** string / number / boolean / date */
+  type?: string | null
+  required?: boolean | null
+  description?: string | null
 }
 
 export interface KnowledgeGraphRelationTypeItem {
@@ -66,18 +80,35 @@ export interface KnowledgeGraphSchema {
   entityTypes?: KnowledgeGraphEntityTypeItem[] | null
   relationTypes?: KnowledgeGraphRelationTypeItem[] | null
   propertyKeys?: string[] | null
+  /** 内省相对上次基线的变化（仅接入图新鲜内省时返回） */
+  changes?: KnowledgeGraphIntrospectionDiff | null
+  fromCache?: boolean | null
+}
+
+/** 接入图内省变化 */
+export interface KnowledgeGraphIntrospectionDiff {
+  addedLabels?: string[] | null
+  removedLabels?: string[] | null
+  addedRelationTypes?: string[] | null
+  removedRelationTypes?: string[] | null
 }
 
 export interface KnowledgeGraphNodeItem {
   nodeId?: string | null
   entityTypeId?: string | number | null
+  /** 接入图：节点首个标签 */
+  entityLabel?: string | null
   name?: string | null
   description?: string | null
+  /** 实例属性值（键为实体类型定义的属性名，值均为字符串） */
+  properties?: Record<string, string> | null
 }
 
 export interface KnowledgeGraphEdgeItem {
   edgeId?: string | null
   relationTypeId?: string | number | null
+  /** 接入图：关系类型名 */
+  relationName?: string | null
   sourceNodeId?: string | null
   targetNodeId?: string | null
 }
@@ -119,7 +150,7 @@ export async function getKnowledgeGraphTemplates(): Promise<KnowledgeGraphTempla
 export async function getKnowledgeGraphDetail(kgId: number): Promise<KnowledgeGraphDetail> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).get()
-  return res ?? {}
+  return { ...res, avatarPath: res?.avatarPath ?? '' } as KnowledgeGraphDetail
 }
 
 export async function updateKnowledgeGraph(kgId: number, payload: { name: string; description?: string }): Promise<void> {
@@ -132,9 +163,21 @@ export async function deleteKnowledgeGraph(kgId: number): Promise<void> {
   await client.api.knowledgeGraph.byId(String(kgId)).delete()
 }
 
-export async function getKnowledgeGraphSchema(kgId: number): Promise<KnowledgeGraphSchema> {
+export async function setKnowledgeGraphAvatar(kgId: number, objectKey: string): Promise<void> {
   const client = getApiClient()
-  const res = await client.api.knowledgeGraph.byId(String(kgId)).schema.get()
+  await client.api.knowledgeGraph.byId(String(kgId)).avatar.post({ objectKey })
+}
+
+/** 上传图片并设为图谱头像（走存储直传管线），返回公开访问地址 */
+export async function uploadKnowledgeGraphAvatar(kgId: number, file: File): Promise<string> {
+  const { objectKey, url } = await uploadImageWithKey(file)
+  await setKnowledgeGraphAvatar(kgId, objectKey)
+  return url
+}
+
+export async function getKnowledgeGraphSchema(kgId: number, refresh = false): Promise<KnowledgeGraphSchema> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).schema.get({ queryParameters: { refresh } })
   return {
     mode: res?.mode,
     database: res?.database,
@@ -142,18 +185,44 @@ export async function getKnowledgeGraphSchema(kgId: number): Promise<KnowledgeGr
     entityTypes: res?.entityTypes ?? [],
     relationTypes: res?.relationTypes ?? [],
     propertyKeys: res?.propertyKeys ?? [],
+    changes: res?.changes
+      ? {
+          addedLabels: res.changes.addedLabels ?? [],
+          removedLabels: res.changes.removedLabels ?? [],
+          addedRelationTypes: res.changes.addedRelationTypes ?? [],
+          removedRelationTypes: res.changes.removedRelationTypes ?? [],
+        }
+      : null,
+    fromCache: res?.fromCache ?? false,
   }
 }
 
-export async function createEntityType(kgId: number, payload: { name: string; color?: string; description?: string }): Promise<number> {
+export async function createEntityType(
+  kgId: number,
+  payload: { name: string; color?: string; description?: string; properties?: KnowledgeGraphEntityTypeProperty[] },
+): Promise<number> {
   const client = getApiClient()
-  const res = await client.api.knowledgeGraph.byId(String(kgId)).entityTypes.post(payload)
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).entityTypes.post({
+    name: payload.name,
+    color: payload.color,
+    description: payload.description,
+    properties: payload.properties?.map((x) => ({ name: x.name ?? '', type: x.type ?? 'string', required: x.required ?? false, description: x.description ?? '' })),
+  })
   return Number(res?.value ?? 0)
 }
 
-export async function updateEntityType(kgId: number, entityTypeId: number, payload: { name: string; color?: string; description?: string }): Promise<void> {
+export async function updateEntityType(
+  kgId: number,
+  entityTypeId: number,
+  payload: { name: string; color?: string; description?: string; properties?: KnowledgeGraphEntityTypeProperty[] },
+): Promise<void> {
   const client = getApiClient()
-  await client.api.knowledgeGraph.byId(String(kgId)).entityTypes.byTypeId(String(entityTypeId)).put(payload)
+  await client.api.knowledgeGraph.byId(String(kgId)).entityTypes.byTypeId(String(entityTypeId)).put({
+    name: payload.name,
+    color: payload.color,
+    description: payload.description,
+    properties: payload.properties?.map((x) => ({ name: x.name ?? '', type: x.type ?? 'string', required: x.required ?? false, description: x.description ?? '' })),
+  })
 }
 
 export async function deleteEntityType(kgId: number, entityTypeId: number): Promise<void> {
@@ -196,18 +265,35 @@ export async function getKnowledgeGraphNodes(
     pageNo: params.pageNo ?? 1,
     pageSize: params.pageSize ?? 20,
   })
-  return { items: res?.items ?? [], total: Number(res?.total ?? 0) }
+  return { items: (res?.items ?? []).map((x) => ({ ...x, properties: x.properties ?? {} }) as KnowledgeGraphNodeItem), total: Number(res?.total ?? 0) }
 }
 
-export async function createKnowledgeGraphNode(kgId: number, payload: { entityTypeId: number; name: string; description?: string }): Promise<string> {
+export async function createKnowledgeGraphNode(
+  kgId: number,
+  payload: { entityTypeId: number; name: string; description?: string; properties?: Record<string, string> },
+): Promise<string> {
   const client = getApiClient()
-  const res = await client.api.knowledgeGraph.byId(String(kgId)).nodes.post({ entityTypeId: String(payload.entityTypeId), name: payload.name, description: payload.description })
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).nodes.post({
+    entityTypeId: String(payload.entityTypeId),
+    name: payload.name,
+    description: payload.description,
+    properties: payload.properties,
+  })
   return String(res?.value ?? '')
 }
 
-export async function updateKnowledgeGraphNode(kgId: number, nodeId: string, payload: { entityTypeId: number; name: string; description?: string }): Promise<void> {
+export async function updateKnowledgeGraphNode(
+  kgId: number,
+  nodeId: string,
+  payload: { entityTypeId: number; name: string; description?: string; properties?: Record<string, string> },
+): Promise<void> {
   const client = getApiClient()
-  await client.api.knowledgeGraph.byId(String(kgId)).nodes.byNodeId(nodeId).put({ entityTypeId: String(payload.entityTypeId), name: payload.name, description: payload.description })
+  await client.api.knowledgeGraph.byId(String(kgId)).nodes.byNodeId(nodeId).put({
+    entityTypeId: String(payload.entityTypeId),
+    name: payload.name,
+    description: payload.description,
+    properties: payload.properties,
+  })
 }
 
 export async function deleteKnowledgeGraphNode(kgId: number, nodeId: string): Promise<void> {
@@ -256,24 +342,25 @@ export interface KnowledgeGraphSubgraph {
   truncated: boolean
 }
 
-/** 画布有界子图查询（仅托管图） */
+/** 画布有界子图查询（托管图按类型过滤，接入图按标签过滤） */
 export async function getKnowledgeGraphCanvas(
   kgId: number,
-  params: { entityTypeId?: number | null; relationTypeId?: number | null; keyword?: string; limit?: number },
+  params: { entityTypeId?: number | null; label?: string | null; relationTypeId?: number | null; keyword?: string; limit?: number },
 ): Promise<KnowledgeGraphSubgraph> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).canvas.post({
     entityTypeId: params.entityTypeId != null ? String(params.entityTypeId) : undefined,
+    label: params.label ?? undefined,
     relationTypeId: params.relationTypeId != null ? String(params.relationTypeId) : undefined,
     keyword: params.keyword,
     limit: params.limit ?? 200,
   })
-  return { nodes: res?.nodes ?? [], edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+  return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: x.properties ?? {} }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
 }
 
-/** 节点一跳邻接展开（仅托管图） */
+/** 节点一跳邻接展开（托管图按节点 id，接入图按 elementId） */
 export async function getKnowledgeGraphNodeNeighbors(kgId: number, nodeId: string, limit = 100): Promise<KnowledgeGraphSubgraph> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).nodes.byNodeId(nodeId).neighbors.get({ queryParameters: { limit } })
-  return { nodes: res?.nodes ?? [], edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+  return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: x.properties ?? {} }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
 }

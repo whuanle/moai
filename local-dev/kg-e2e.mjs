@@ -235,6 +235,100 @@ async function main() {
     check('KG-S14b 不存在节点邻接 404', nbGhost.status === 404, `${nbGhost.status}`)
   }
 
+  // ===== KG-S17 接入图画布（外部图库全量查询，elementId 定位 + label 展示）=====
+  {
+    const cv = await api('POST', `${kg(CONN)}/canvas`, { token, body: { keyword: 'seed-svc-' + TS, limit: 50 } })
+    const nodes = cv.json?.nodes ?? []
+    const node = nodes[0]
+    check('KG-S17a 接入图画布返回带 entityLabel 的节点', cv.status === 200 && nodes.length >= 1 && typeof node?.entityLabel === 'string' && node.entityLabel.length > 0, JSON.stringify(nodes).slice(0, 200))
+    const cvLabel = await api('POST', `${kg(CONN)}/canvas`, { token, body: { label: 'KgNode', limit: 50 } })
+    check('KG-S17b 接入图按标签过滤命中 KgNode', cvLabel.status === 200 && (cvLabel.json?.nodes ?? []).some(x => x.entityLabel === 'KgNode'), JSON.stringify({ n: cvLabel.json?.nodes?.length }))
+    const cvEdges = cvLabel.json?.edges ?? []
+    check('KG-S17c 接入图画布边带 relationName', cvEdges.length === 0 || typeof cvEdges[0]?.relationName === 'string', JSON.stringify(cvEdges).slice(0, 200))
+
+    // ===== KG-S18 接入图一跳邻接（elementId）=====
+    if (node?.nodeId) {
+      const nb = await api('GET', `${kg(CONN)}/nodes/${encodeURIComponent(node.nodeId)}/neighbors?limit=50`, { token })
+      check('KG-S18a 接入图邻接 200', nb.status === 200, `${nb.status} ${nb.text.slice(0, 120)}`)
+    } else {
+      check('KG-S18a 接入图邻接 200', false, '缺少可展开节点')
+    }
+    const nbGhost = await api('GET', `${kg(CONN)}/nodes/ghost/neighbors`, { token })
+    check('KG-S18b 接入图不存在节点邻接 404', nbGhost.status === 404, `${nbGhost.status}`)
+  }
+
+  // ===== KG-S19 内省缓存与强制刷新 =====
+  {
+    const cached = await api('GET', `${kg(CONN)}/schema`, { token })
+    check('KG-S19a 二次查询命中缓存 fromCache=true', cached.status === 200 && cached.json?.fromCache === true, JSON.stringify({ fromCache: cached.json?.fromCache }))
+    const refreshed = await api('GET', `${kg(CONN)}/schema?refresh=true`, { token })
+    check('KG-S19b refresh=true 跳过缓存 fromCache=false', refreshed.status === 200 && refreshed.json?.fromCache === false, JSON.stringify({ fromCache: refreshed.json?.fromCache }))
+  }
+
+  // ===== KG-S20 图谱头像（真实上传管线 + 设置 + 回显 + 未登记拦截）=====
+  {
+    // 1x1 PNG
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+    const sha256 = crypto.createHash('sha256').update(png).digest('hex')
+    const pre = await api('POST', '/api/storage/public/pre_upload_image', { token, body: { fileName: `kg-avatar-${TS}.png`, contentType: 'image/png', fileSize: png.length, SHA256: sha256 } })
+    let objectKey = pre.json?.objectKey
+    if (pre.status === 200 && pre.json?.isExist === false && pre.json?.uploadUrl) {
+      const put = await fetch(pre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png })
+      const complete = await api('POST', '/api/storage/complate_url', { token, body: { isSuccess: true, fileId: pre.json.fileId } })
+      check('KG-S20a 图片预上传+直传+完成 200', put.status === 200 && complete.status === 200, JSON.stringify({ put: put.status, complete: complete.status }))
+      objectKey = objectKey ?? complete.json?.objectKey
+    } else {
+      check('KG-S20a 图片预上传+直传+完成 200', pre.status === 200 && pre.json?.isExist === true, JSON.stringify(pre).slice(0, 160))
+    }
+
+    if (objectKey) {
+      const set = await api('POST', `${kg(G2)}/avatar`, { token, body: { objectKey } })
+      check('KG-S20b 设置图谱头像 200', set.status === 200, `${set.status} ${set.text.slice(0, 120)}`)
+      const det = await api('GET', kg(G2), { token })
+      check('KG-S20c 详情回显 avatarPath', det.json?.avatarPath === objectKey, JSON.stringify({ avatarPath: det.json?.avatarPath, objectKey }))
+      const list = await api('GET', `/api/knowledge-graph/list?teamId=${TID}`, { token })
+      const item = (list.json?.items ?? []).find(i => Number(i.kgId) === G2)
+      check('KG-S20d 列表回显 avatarPath', item?.avatarPath === objectKey, JSON.stringify({ avatarPath: item?.avatarPath }))
+    } else {
+      check('KG-S20b 设置图谱头像 200', false, '未取得 objectKey')
+      check('KG-S20c 详情回显 avatarPath', false, '未取得 objectKey')
+      check('KG-S20d 列表回显 avatarPath', false, '未取得 objectKey')
+    }
+    const ghost = await api('POST', `${kg(G2)}/avatar`, { token, body: { objectKey: 'ghost/kg-avatar.png' } })
+    check('KG-S20e 未登记 objectKey 设置头像 404', ghost.status === 404, `${ghost.status}`)
+  }
+
+
+  // ===== KG-S21 模型属性设置（实体类型属性定义 → 实例属性值存储 → 回显）=====
+  {
+    const props = [
+      { name: '年龄', type: 'number', required: true, description: '周岁' },
+      { name: '入职日期', type: 'date', required: false, description: '' },
+      { name: '在职', type: 'boolean', required: false, description: '' },
+      { name: '备注', type: 'string', required: false, description: '' },
+    ]
+    const ct = await api('POST', `${kg(G2)}/entity-types`, { token, body: { name: '属性人员-' + TS, properties: props } })
+    const propsTypeId = Number(ct.json?.value)
+    check('KG-S21a 创建带属性的实体类型 200', ct.status === 200 && propsTypeId > 0, `${ct.status} ${ct.text.slice(0, 120)}`)
+    const schema = await api('GET', `${kg(G2)}/schema`, { token })
+    const createdType = (schema.json?.entityTypes ?? []).find(x => x.name === '属性人员-' + TS)
+    check('KG-S21b schema 回显属性定义', createdType && (createdType.properties ?? []).length === 4 && createdType.properties[0].name === '年龄' && createdType.properties[0].type === 'number' && createdType.properties[0].required === true, JSON.stringify(createdType?.properties).slice(0, 200))
+    const dup = await api('POST', `${kg(G2)}/entity-types`, { token, body: { name: '重复属性-' + TS, properties: [{ name: 'a', type: 'string' }, { name: 'a', type: 'string' }] } })
+    check('KG-S21c 属性名重复 400', dup.status === 400, `${dup.status}`)
+    const badType = await api('POST', `${kg(G2)}/entity-types`, { token, body: { name: '坏类型-' + TS, properties: [{ name: 'a', type: 'float' }] } })
+    check('KG-S21d 非法属性类型 400', badType.status === 400, `${badType.status}`)
+    const node = await api('POST', `${kg(G2)}/nodes`, { token, body: { entityTypeId: propsTypeId, name: '属性实例-' + TS, properties: { '年龄': '30', '入职日期': '2026-01-01T00:00:00Z', '在职': 'true', '备注': '核心' } } })
+    const propsNodeId = node.json?.value
+    check('KG-S21e 创建带属性值的实例 200', node.status === 200 && propsNodeId, `${node.status} ${node.text.slice(0, 120)}`)
+    const list = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { keyword: '属性实例-' + TS, pageNo: 1, pageSize: 5 } })
+    const item = (list.json?.items ?? [])[0]
+    check('KG-S21f 实例列表回显属性值', item && item.properties && item.properties['年龄'] === '30' && item.properties['在职'] === 'true' && item.properties['备注'] === '核心', JSON.stringify(item?.properties))
+    const upd = await api('PUT', `${kg(G2)}/nodes/${propsNodeId}`, { token, body: { entityTypeId: propsTypeId, name: '属性实例-' + TS, description: '', properties: { '年龄': '31', '在职': 'false' } } })
+    const list2 = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { keyword: '属性实例-' + TS, pageNo: 1, pageSize: 5 } })
+    const item2 = (list2.json?.items ?? [])[0]
+    check('KG-S21g 更新实例属性生效', upd.status === 200 && item2?.properties?.['年龄'] === '31' && item2?.properties?.['在职'] === 'false', JSON.stringify(item2?.properties))
+  }
+
   // ===== KG-S16 图谱名称全局唯一（跨团队重名 409）=====
   {
     const team2 = await api('POST', '/api/team', { token, body: { name: 'kg-team2-' + TS } })

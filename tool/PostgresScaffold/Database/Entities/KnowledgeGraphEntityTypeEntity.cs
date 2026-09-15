@@ -32,4 +32,9 @@ public partial class KnowledgeGraphEntityTypeEntity : IFullAudited
     public long UpdateUserId { get; set; }
 
     public DateTimeOffset UpdateTime { get; set; }
+
+    /// <summary>
+    /// 属性定义 JSON.
+    /// </summary>
+    public string Properties { get; set; } = default!;
 }

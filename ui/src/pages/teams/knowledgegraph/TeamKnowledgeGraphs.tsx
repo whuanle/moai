@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Button, Col, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag } from 'antd'
+import { ClusterOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+import { resolveStorageUrl } from '@/utils/storage'
 import {
   createKnowledgeGraph,
   deleteKnowledgeGraph,
@@ -129,7 +130,10 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
               style={{ cursor: 'pointer' }}
               onClick={() => navigate(`/team/${teamId}/kg/${item.kgId}/entities`)}
             >
-              <div style={{ fontWeight: 600 }}>{item.name}</div>
+              <Space size={spacing.sm} align="start">
+                <Avatar shape="square" size={40} icon={<ClusterOutlined />} src={item.avatarPath?.trim() ? resolveStorageUrl(item.avatarPath) : undefined} />
+                <div style={{ fontWeight: 600 }}>{item.name}</div>
+              </Space>
               {item.mode === 'connected' && (
                 <div style={{ marginTop: spacing.xs }}>
                   <Tag color="blue">{t('knowledgegraph.connectedBadge')}</Tag>

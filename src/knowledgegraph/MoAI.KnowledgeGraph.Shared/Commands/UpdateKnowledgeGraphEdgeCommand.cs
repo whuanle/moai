@@ -28,7 +28,6 @@ public class UpdateKnowledgeGraphEdgeCommand : IRequest<EmptyCommandResponse>, I
     public static void Validate(AbstractValidator<UpdateKnowledgeGraphEdgeCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
-        validate.RuleFor(x => x.EdgeId).NotEmpty().WithMessage("边 id 不正确.");
-        validate.RuleFor(x => x.RelationTypeId).GreaterThan(0).WithMessage("关系类型 id 不正确.");
+        // EdgeId/RelationTypeId 为路由字段回填，自动校验发生在回填之前，不在此校验（v1 遗留：校验路由字段导致编辑 400，v2.3 修复）。
     }
 }

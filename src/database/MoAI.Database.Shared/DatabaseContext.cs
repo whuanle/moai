@@ -149,6 +149,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<PluginTeamAuthorizationEntity> PluginTeamAuthorizations { get; set; }
 
     /// <summary>
+    /// 提示词.
+    /// </summary>
+    public virtual DbSet<PromptEntity> Prompts { get; set; }
+
+    /// <summary>
     /// 系统设置.
     /// </summary>
     public virtual DbSet<SettingEntity> Settings { get; set; }
@@ -222,6 +227,11 @@ public partial class DatabaseContext : DbContext
     /// 工作任务.
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
+
+    /// <summary>
+    /// 上架审核.
+    /// </summary>
+    public virtual DbSet<PublicationReviewEntity> PublicationReviews { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

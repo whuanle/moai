@@ -112,3 +112,21 @@ Feature: 页面级权限（页面内自判）
     When 直接访问用户管理页
     Then 被重定向到仪表盘（且不拉取数据）
 ```
+
+Feature: 知识库/知识图谱入口收敛到团队
+  @FE-LR-S19 @manual
+  Scenario: 一级侧边栏不展示知识库与知识图谱
+    Given 任意角色用户已登录（含平台管理员/root）
+    Then 一级侧边栏不出现「知识库」「知识图谱」菜单项
+    And 仪表盘快捷入口不出现「新建知识库」
+
+  @FE-LR-S20 @manual
+  Scenario: 直连全局路由被重定向
+    Given 任意角色用户已登录
+    When 直接访问 /wiki 或 /knowledge-graph
+    Then 被重定向到 /team（知识库/知识图谱仅可从团队详情分区进入）
+
+  @FE-LR-S21 @manual
+  Scenario: 团队详情分区入口不受影响
+    Given 团队成员进入团队详情
+    Then 「知识库」「知识图谱」分区按角色规则正常展示与访问

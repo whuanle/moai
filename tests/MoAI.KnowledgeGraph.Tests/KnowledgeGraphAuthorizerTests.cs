@@ -63,7 +63,7 @@ public class KnowledgeGraphAuthorizerTests
     public async Task AuthorizeManagedAsync_WhenConnected_Throws409()
     {
         using var db = TestSqliteContext.Create();
-        db.Context.KnowledgeGraphs.Add(new KnowledgeGraphEntity { Id = 7, TeamId = 1, Name = "外部图", Description = string.Empty, Mode = KnowledgeGraphModes.Connected, Database = "ext" });
+        db.Context.KnowledgeGraphs.Add(new KnowledgeGraphEntity { Id = 7, TeamId = 1, Name = "外部图", Description = string.Empty, Mode = KnowledgeGraphModes.Connected, Database = "ext", AvatarPath = string.Empty });
         await db.Context.SaveChangesAsync(CancellationToken.None);
         var teamService = new Mock<ITeamService>();
         teamService.Setup(x => x.GetMyRoleAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
@@ -80,7 +80,7 @@ public class KnowledgeGraphAuthorizerTests
     public async Task AuthorizeManagedAsync_WhenManaged_ReturnsGraph()
     {
         using var db = TestSqliteContext.Create();
-        db.Context.KnowledgeGraphs.Add(new KnowledgeGraphEntity { Id = 7, TeamId = 1, Name = "托管图", Description = string.Empty, Mode = KnowledgeGraphModes.Managed });
+        db.Context.KnowledgeGraphs.Add(new KnowledgeGraphEntity { Id = 7, TeamId = 1, Name = "托管图", Description = string.Empty, Mode = KnowledgeGraphModes.Managed, AvatarPath = string.Empty });
         await db.Context.SaveChangesAsync(CancellationToken.None);
         var teamService = new Mock<ITeamService>();
         teamService.Setup(x => x.GetMyRoleAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))

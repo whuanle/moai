@@ -12,7 +12,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 飞书应用绑定，将飞书应用绑定到应用等渠道；同一飞书应用同时只能绑定一个渠道.
+/// 飞书应用绑定，将飞书应用绑定到应用/知识库等渠道；同一飞书应用同时只能绑定一个渠道.
 /// </summary>
 internal partial class FeishuAppBindingConfiguration : IEntityTypeConfiguration<FeishuAppBindingEntity>
 {
@@ -22,7 +22,7 @@ internal partial class FeishuAppBindingConfiguration : IEntityTypeConfiguration<
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("feishu_app_binding_pkey");
 
-        entity.ToTable("feishu_app_binding", tb => tb.HasComment("飞书应用绑定，将飞书应用绑定到应用等渠道；同一飞书应用同时只能绑定一个渠道"));
+        entity.ToTable("feishu_app_binding", tb => tb.HasComment("飞书应用绑定，将飞书应用绑定到应用/知识库等渠道；同一飞书应用同时只能绑定一个渠道"));
 
         entity.HasIndex(e => new { e.ChannelType, e.ChannelId }, "idx_feishu_app_binding_channel_index");
 
@@ -35,7 +35,7 @@ internal partial class FeishuAppBindingConfiguration : IEntityTypeConfiguration<
             .HasColumnName("id");
         entity.Property(e => e.ChannelId)
             .HasMaxLength(64)
-            .HasComment("渠道记录 id 字符串，应用渠道为 app.id（uuid）")
+            .HasComment("渠道记录 id 字符串，应用为 app.id（uuid），知识库为 wiki.id（数字）")
             .HasColumnName("channel_id");
         entity.Property(e => e.ChannelType)
             .HasComment("渠道类型，见 FeishuChannelType")

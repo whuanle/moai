@@ -32,11 +32,11 @@
 - E2E：`node local-dev/external-app-e2e.mjs` → **42/42 PASS**（2026-09-14；新增 EA-20~25 覆盖 @EA-S9/S10：外部建会话/会话列表/消息、应用 token 与范围外拒绝、他人会话 404、对话端点 401/403、AG-UI 真实请求归属校验通过）。
   - 修复 3：`CreateExternalAgentSessionCommand.Validate` 的 `AppId NotEmpty` 在模型绑定阶段（路由参数注入前）执行导致 400——AppId 由路由 `:guid` 约束保证，删除该规则。
   - 修复 4：AG-UI 端点不经 MVC `/api` 前缀 convention，外部对话端点模板需写全 `/api/external/agent/{appId}/chat`。
-- 回归：`node local-dev/app-e2e.mjs` → **101/101 PASS**（2026-09-14；验证外部认证中间件与 AG-UI 外部端点不影响内部链路）。
-- 后端构建（访问点轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-14）；`npm run syncapi` 重新生成 Kiota 客户端。
-- 访问点 E2E：`node local-dev/external-app-e2e.mjs` → **51/51 PASS**（2026-09-14；新增 EA-26~28 覆盖 @EA-S11/S12：默认配置/保存/非法颜色与尺寸 400/内部应用 400、公开配置生效与 404、/embed/moai-widget.js 托管）。
-  - 修复 5：`AccessPointPosition` 枚举字符串被全局 `JsonStringEnumConverter(CamelCase)` 处理，`bottom-right` 形式无法反序列化——统一为 `bottomRight/bottomLeft`（与 `AppType` 同机制），列默认值同步。
-  - 修复 6：`ExternalAuthenticationMiddleware` 的 Bearer 强制规则误拦访问点公开配置（匿名）——白名单补充 `/api/external/app/*/access-point`。
+- 回归：`node local-dev/app-e2e.mjs` → **101/101 PASS**（2026-09-14；验证外部认证中间件与 AG-UI 外部端点不影响内部链路）。
+- 后端构建（访问点轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-14）；`npm run syncapi` 重新生成 Kiota 客户端。
+- 访问点 E2E：`node local-dev/external-app-e2e.mjs` → **51/51 PASS**（2026-09-14；新增 EA-26~28 覆盖 @EA-S11/S12：默认配置/保存/非法颜色与尺寸 400/内部应用 400、公开配置生效与 404、/embed/moai-widget.js 托管）。
+  - 修复 5：`AccessPointPosition` 枚举字符串被全局 `JsonStringEnumConverter(CamelCase)` 处理，`bottom-right` 形式无法反序列化——统一为 `bottomRight/bottomLeft`（与 `AppType` 同机制），列默认值同步。
+  - 修复 6：`ExternalAuthenticationMiddleware` 的 Bearer 强制规则误拦访问点公开配置（匿名）——白名单补充 `/api/external/app/*/access-point`。
 - 前端（访问点轮）：`npm run typecheck`/`npm run lint` → **0 error**；`npm run test` 全量 **263/263（50 文件，含新增 `AppAccessSection.test.tsx` 5/5）**；`npm run build:embed` 产物 `src/MoAI/wwwroot/embed/moai-widget.js`（IIFE ~240KB）
 
 ## 映射表
@@ -56,9 +56,9 @@
 | @AP-S11 | TeamApps.test.tsx（卡片渲染、「管理」入口、新建按钮）+ 侧边栏与路由已无 `/app` | PASS（2026-09-11） |
 | @AP-S12 | TeamManage.test.tsx（成员只剩 信息/应用/知识库）+ TeamApps.test.tsx（Member 无新建/无「管理」） | PASS（2026-09-11） |
 | @AP-S13 | app-e2e.mjs（AP-12a/b、AP-14）+ TeamApps.test.tsx（新建弹窗含头像上传） | PASS（2026-09-11） |
-| @AP-S14 | app-e2e.mjs（AP-13a-d）+ TeamApps.test.tsx（卡片状态标签、新建开关随提交带上） | PASS（2026-09-11） |
-| @AP-S20 | app-e2e.mjs（AP-13e-l）+ TeamExternalApps.test.tsx | PASS（2026-09-13） |
-| @AP-S21 | app-e2e.mjs（AP-13m-r）+ AppPlaza.test.tsx | PASS（2026-09-13） |
+| @AP-S14 | app-e2e.mjs（AP-13a-d，公开改经上架审核）+ TeamApps.test.tsx（卡片状态标签、新建弹窗无公开开关） | PASS 101/101（2026-09-15） |
+| @AP-S20 | app-e2e.mjs（AP-13e-k）+ TeamExternalApps.test.tsx | PASS 101/101（2026-09-15） |
+| @AP-S21 | app-e2e.mjs（AP-13m-r、AP-13o2/o3 走上架审核）+ AppPlaza.test.tsx | PASS 101/101（2026-09-15） |
 | @AP-S22 | TeamExternalApps.test.tsx + AppPlaza.test.tsx + TeamManage.test.tsx（分区与导航） | PASS（2026-09-13） |
 | @AP-S23 | app-e2e.mjs（AP-13s~y）+ TeamAccessApps.test.tsx | PASS（2026-09-13） |
 | @AP-S15 | TeamApps.test.tsx（卡片 + 卡片右上角「管理」点击进入管理页；Member 只读） | PASS 6/6（2026-09-11） |
@@ -89,9 +89,9 @@
 | @EA-S7 | external-app-e2e.mjs（EA-15~EA-18） | PASS（2026-09-14） |
 | @EA-S8 | external-app-e2e.mjs（EA-19a-d） | PASS（2026-09-14） |
 | @EA-S9 | external-app-e2e.mjs（EA-20a/b、EA-21a/b） | PASS 42/42（2026-09-14） |
-| @EA-S10 | external-app-e2e.mjs（EA-22a-d、EA-23、EA-24a-d、EA-25） | PASS（2026-09-14） |
-| @EA-S11 | external-app-e2e.mjs（EA-26a-d） | PASS 51/51（2026-09-14） |
-| @EA-S12 | external-app-e2e.mjs（EA-27a-e、EA-28） | PASS（2026-09-14） |
+| @EA-S10 | external-app-e2e.mjs（EA-22a-d、EA-23、EA-24a-d、EA-25） | PASS（2026-09-14） |
+| @EA-S11 | external-app-e2e.mjs（EA-26a-d） | PASS 51/51（2026-09-14） |
+| @EA-S12 | external-app-e2e.mjs（EA-27a-e、EA-28） | PASS（2026-09-14） |
 | 访问点配置分区 | ui/src/pages/teams/apps/__tests__/AppAccessSection.test.tsx | PASS 5/5（2026-09-14） |
 
 ## 复验命令

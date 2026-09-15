@@ -22,6 +22,13 @@ vi.mock('@/api/agentChat', () => ({
   abortAppChat: vi.fn(),
 }))
 
+vi.mock('@/api/publication', () => ({
+  applyPublication: vi.fn().mockResolvedValue('1'),
+  getTeamPublicationList: vi.fn().mockResolvedValue([]),
+  withdrawPublication: vi.fn().mockResolvedValue(undefined),
+  reviewPublication: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@/api/gateway', () => ({
   getTeamGatewayModels: vi.fn(),
 }))

@@ -12,6 +12,8 @@ import { SessionRequestBuilderNavigationMetadata, type SessionRequestBuilder } f
 // @ts-ignore
 import { TokenRequestBuilderNavigationMetadata, TokenRequestBuilderRequestsMetadata, type TokenRequestBuilder } from './token/index.js';
 // @ts-ignore
+import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata } from './wiki/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -38,6 +40,10 @@ export interface ExternalRequestBuilder extends BaseRequestBuilder<ExternalReque
      * The token property
      */
     get token(): TokenRequestBuilder;
+    /**
+     * The wiki property
+     */
+    get wiki(): WikiRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -62,6 +68,9 @@ export const ExternalRequestBuilderNavigationMetadata: Record<Exclude<keyof Exte
     token: {
         requestsMetadata: TokenRequestBuilderRequestsMetadata,
         navigationMetadata: TokenRequestBuilderNavigationMetadata,
+    },
+    wiki: {
+        navigationMetadata: WikiRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

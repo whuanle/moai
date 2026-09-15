@@ -8,7 +8,7 @@
 |---|---|---|
 | L0 导航 | 本页 | — |
 | L1 全局规范 | 后端 CQRS / 文档标准 / 前端约定 / 设计系统 | 见下「全局规范」 |
-| L2 领域四件套 | 22 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
+| L2 领域四件套 | 26 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
 | L3 证据 | 可执行验收脚本 / 单测 / 回归命令 | 见下「回归入口」 |
 
 ## 全局规范（L1）
@@ -22,7 +22,7 @@
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
 - [ui/docs/design-system/](../ui/docs/design-system/README.md) — 设计系统规范
 
-## 模块地图（L2，24 个四件套）
+## 模块地图（L2，26 个四件套）
 
 缩写列 = BDD 场景编号前缀（见各模块 bdd.md）。
 
@@ -53,6 +53,8 @@
 | [ai](./ai/) | AI | Agent 运行时（应用发布后 AG-UI 流式对话、会话持久化 Redis热+Postgres冷、上下文压缩、知识库 RAG、token 用量；`src/ai` + 前端对话页） |
 | [skill](./skill/) | SKL | 技能（可装载技能包：管理/应用挂载/Agent 沙箱加载执行；内置 docx·ppt 生成，产物 save_artifact 交付；沙箱依赖见 ai 模块） |
 | [feishu](./feishu/) | FS | 飞书通知基座（Maomi.FeishuWss 长连接复用：一个飞书应用一条 WSS 连接；绑定 app 渠道且同一飞书应用同时只能绑一个渠道；事件去重后转发 `IFeishuEventHandler`，应用渠道已落地**群聊/私聊消息→应用 Agent→回复**；知识库渠道后续独立模块接入） |
+| [publication](./publication/) | PB | 上架审核（应用/提示词公开改审批制：团队申请上架 → `publication_review` 审核表 → 系统管理员「审批上架」菜单审批；**通过后系统才将目标资源 is_public 置为 true**；撤回/驳回/重新申请、pending 唯一约束） |
+| [prompt](./prompt/) | PT | 提示词库（个人提示词仅本人可用；团队提示词 Admin 创建、成员可用；申请上架走 publication 审批，通过后进入「提示词市场」对所有用户开放；市场查看计数） |
 
 ### 前端（ui/docs/）
 
@@ -80,6 +82,7 @@ node local-dev/user-management-e2e.mjs        # UM 34 场景
 node local-dev/audit-345.mjs                  # ACC/SET/OC 14 场景
 node local-dev/audit-storage.mjs              # STO 全链路 7 场景
 node local-dev/auth-lockout-check.mjs         # AUTH 锁定 8 场景
+node local-dev/prompt-e2e.mjs                # PT 40 场景
 # 前端
 cd ui && npm run typecheck && npm run lint && npm run test
 ```

@@ -8,7 +8,7 @@
 按要求启动后端（:5210）后，执行 [@CLS-S1](../classify/bdd.md#cls-s1) 至 [@CLS-S11](../classify/bdd.md#cls-s11)：
 
 1. 登录 admin / abcd123456，进入 `/classify`。
-2. 依次点击 plugin/app/kb 三个 Tab，确认每类列表加载正常（[@CLS-S1](./bdd.md#cls-s1) 至 [@CLS-S3](./bdd.md#cls-s3)）。
+2. 依次点击 plugin/app/kb/prompt 四个 Tab，确认每类列表加载正常（[@CLS-S1](./bdd.md#cls-s1) 至 [@CLS-S3](./bdd.md#cls-s3)、[@CLS-S12](./bdd.md#cls-s12)）。
 3. 新增分类→列表刷新出现（[@CLS-S4](./bdd.md#cls-s4)）；连续新增同名被拒（[@CLS-S5](./bdd.md#cls-s5)）。
 4. 修改分类名称并刷新确认（[@CLS-S7](./bdd.md#cls-s7)）；改名冲突被拒（[@CLS-S8](./bdd.md#cls-s8)）。
 5. 删除未引用分类成功（[@CLS-S9](./bdd.md#cls-s9)）；删除有插件引用的分类被拒（[@CLS-S6](./bdd.md#cls-s6)）。
@@ -25,4 +25,4 @@
 
 ## 种子说明
 
-- `classify` 表种子含 `{plugin, app, kb}` 三类，各 33 项。需重置时由 `ClassifySeed` 在 EF 迁移时生成。
+- `classify` 表种子含 `{plugin, app, kb, prompt}` 四类，各 18 项（同名）。需重置时由 `ClassifySeed` 在建库（`EnsureCreated`）时生成；已有库不自动补种，可在页面手动新增。

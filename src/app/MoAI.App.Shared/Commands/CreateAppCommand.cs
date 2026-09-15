@@ -48,11 +48,6 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
     /// </summary>
     public bool IsAuth { get; init; }
 
-    /// <summary>
-    /// 是否公开到平台；仅内部应用有效（平台内任意用户可用），外部应用必须为 false.
-    /// </summary>
-    public bool IsPublic { get; init; }
-
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -71,7 +66,5 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
         validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 最长 255 个字符.");
         validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
             .WithMessage("只有外部应用可以设置需要授权访问.");
-        validate.RuleFor(x => x.IsPublic).Must((cmd, isPublic) => !isPublic || !cmd.IsExternal)
-            .WithMessage("外部应用不支持公开到平台.");
     }
 }

@@ -21,13 +21,18 @@ internal partial class KnowledgeGraphConfiguration : IEntityTypeConfiguration<Kn
 
         entity.ToTable("knowledge_graph");
 
-        entity.HasIndex(e => e.TeamId, "idx_knowledge_graph_team_id");
-
         entity.HasIndex(e => e.Name, "idx_knowledge_graph_name_live_uindex")
             .IsUnique()
             .HasFilter("(is_deleted = 0)");
 
+        entity.HasIndex(e => e.TeamId, "idx_knowledge_graph_team_id");
+
         entity.Property(e => e.Id).HasColumnName("id");
+        entity.Property(e => e.AvatarPath)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("头像地址")
+            .HasColumnName("avatar_path");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasColumnName("create_time");

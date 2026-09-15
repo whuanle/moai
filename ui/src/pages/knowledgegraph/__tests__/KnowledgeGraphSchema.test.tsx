@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphSchema } from '../KnowledgeGraphSchema'
 import { useAppStore } from '@/store/app'
@@ -18,7 +19,7 @@ vi.mock('@/api/knowledgeGraph', () => ({
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
 function renderSchema(myRole: number | null, mode?: string | null) {
-  return render(<KnowledgeGraphSchema graphId={1} myRole={myRole} mode={mode} />)
+  return render(<MemoryRouter><KnowledgeGraphSchema graphId={1} teamId={1} myRole={myRole} mode={mode} /></MemoryRouter>)
 }
 
 describe('KnowledgeGraphSchema', () => {

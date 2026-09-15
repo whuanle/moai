@@ -1,3 +1,5 @@
+using MoAI.KnowledgeGraph.Models;
+
 namespace MoAI.KnowledgeGraph.Queries.Responses;
 
 /// <summary>
@@ -29,4 +31,9 @@ public class KnowledgeGraphEntityTypeItem
     /// 节点数（仅 connected 内省）.
     /// </summary>
     public long? Count { get; init; }
+
+    /// <summary>
+    /// 属性定义（托管图；connected 内省为空）.
+    /// </summary>
+    public List<KnowledgeGraphEntityTypeProperty> Properties { get; init; } = new();
 }

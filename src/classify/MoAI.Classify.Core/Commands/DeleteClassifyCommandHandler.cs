@@ -35,7 +35,7 @@ public class DeleteClassifyCommandHandler : IRequestHandler<DeleteClassifyComman
         }
 
         // 引用校验：不同类型引用表不同. 当前插件类型校验 Plugins.ClassifyId，
-        // 应用/知识库业务尚未实现，暂无引用表，删除时可删（预留扩展点）.
+        // 应用/知识库/提示词业务尚未实现，暂无引用表，删除时可删（预留扩展点）.
         if (classify.Type == ClassifyTypes.Plugin)
         {
             var used = await _databaseContext.Plugins

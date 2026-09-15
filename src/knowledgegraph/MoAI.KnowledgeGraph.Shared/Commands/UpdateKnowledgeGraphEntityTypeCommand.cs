@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.KnowledgeGraph.Models;
 
 namespace MoAI.KnowledgeGraph.Commands;
 
@@ -34,13 +35,19 @@ public class UpdateKnowledgeGraphEntityTypeCommand : IRequest<EmptyCommandRespon
     /// </summary>
     public string? Description { get; init; }
 
+    /// <summary>
+    /// 属性定义.
+    /// </summary>
+    public List<KnowledgeGraphEntityTypeProperty> Properties { get; init; } = new();
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateKnowledgeGraphEntityTypeCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
-        validate.RuleFor(x => x.EntityTypeId).GreaterThan(0).WithMessage("实体类型 id 不正确.");
+        // EntityTypeId 为路由字段回填，自动校验发生在回填之前，不在此校验（v1 遗留缺陷修复）。
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("类型名称不能为空.").MaximumLength(50).WithMessage("类型名称最长 50 个字符.");
         validate.RuleFor(x => x.Color).MaximumLength(20).WithMessage("颜色最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("描述最长 255 个字符.");
+        EntityTypePropertyRules.Apply(validate.RuleFor(x => x.Properties));
     }
 }

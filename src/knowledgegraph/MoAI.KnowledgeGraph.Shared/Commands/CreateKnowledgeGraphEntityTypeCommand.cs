@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.KnowledgeGraph.Models;
 
 namespace MoAI.KnowledgeGraph.Commands;
 
@@ -29,6 +30,11 @@ public class CreateKnowledgeGraphEntityTypeCommand : IRequest<SimpleLong>, IMode
     /// </summary>
     public string? Description { get; init; }
 
+    /// <summary>
+    /// 属性定义.
+    /// </summary>
+    public List<KnowledgeGraphEntityTypeProperty> Properties { get; init; } = new();
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateKnowledgeGraphEntityTypeCommand> validate)
     {
@@ -36,5 +42,6 @@ public class CreateKnowledgeGraphEntityTypeCommand : IRequest<SimpleLong>, IMode
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("类型名称不能为空.").MaximumLength(50).WithMessage("类型名称最长 50 个字符.");
         validate.RuleFor(x => x.Color).MaximumLength(20).WithMessage("颜色最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("描述最长 255 个字符.");
+        EntityTypePropertyRules.Apply(validate.RuleFor(x => x.Properties));
     }
 }

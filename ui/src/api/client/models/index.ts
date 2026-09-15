@@ -60,16 +60,13 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
-/**
- * Represents a context entry providing additional information to the agent.
- */
 export interface AGUIContext extends Parsable {
     /**
-     * Gets or sets the description of the context entry.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets the value of the context entry.
+     * The value property
      */
     value?: string | null;
 }
@@ -97,24 +94,21 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
-/**
- * Represents a tool available for the agent to use.
- */
 export interface AGUITool extends Parsable {
     /**
-     * Gets or sets the description of the tool.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
+     * The metadata property
      */
     metadata?: UntypedNode | null;
     /**
-     * Gets or sets the name of the tool.
+     * The name property
      */
     name?: string | null;
     /**
-     * Gets or sets the JSON Schema describing the tool's parameters.
+     * The parameters property
      */
     parameters?: UntypedNode | null;
 }
@@ -261,6 +255,27 @@ export interface AiPartitionDocumentCommand extends Parsable {
      */
     wikiId?: string | null;
 }
+/**
+ * AI 智能切割知识库文档（外部接口）.需先执行 ExtractExternalDocumentCommand 提取内容，之后才能切割。
+ */
+export interface AiPartitionExternalDocumentCommand extends Parsable {
+    /**
+     * 用于智能切割的对话模型 id.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 提示词模板，为空时使用内置默认模板（要求模型输出 JSON 字符串数组）.
+     */
+    promptTemplate?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
 export type AIProtocolFamily = (typeof AIProtocolFamilyObject)[keyof typeof AIProtocolFamilyObject];
 /**
  * 访问点配置（内部管理视图，未保存过时返回默认值）.
@@ -404,6 +419,23 @@ export interface AppLogItem extends AuditsInfo, Parsable {
      * 会话归属用户类型.
      */
     userType?: UserType | null;
+}
+/**
+ * 申请上架，将团队资源（应用/提示词）提交到上架审核，由系统管理员审批；需要资源所属团队的 Admin 及以上角色.
+ */
+export interface ApplyPublicationCommand extends Parsable {
+    /**
+     * 申请说明，可为空.
+     */
+    applyReason?: string | null;
+    /**
+     * 资源 id 字符串，应用为 app.id（uuid），提示词为 prompt.id（数字）.
+     */
+    resourceId?: string | null;
+    /**
+     * 资源类型.
+     */
+    resourceType?: PublicationResourceType | null;
 }
 /**
  * 会话消息项.
@@ -696,6 +728,27 @@ export interface ClassifyItem extends AuditsInfo, Parsable {
     type?: string | null;
 }
 /**
+ * 完成知识库文档上传（外部接口）.
+ */
+export interface CompleteExternalWikiDocumentCommand extends Parsable {
+    /**
+     * 文件 id.
+     */
+    fileId?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 上传成功或失败.
+     */
+    isSuccess?: boolean | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
  * 完成文件上传.
  */
 export interface CompleteFileUploadCommand extends Parsable {
@@ -938,6 +991,15 @@ export function createAiPartitionDocumentCommandFromDiscriminatorValue(parseNode
     return deserializeIntoAiPartitionDocumentCommand;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AiPartitionExternalDocumentCommand}
+ */
+// @ts-ignore
+export function createAiPartitionExternalDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAiPartitionExternalDocumentCommand;
+}
+/**
  * 创建 API Key 请求体.
  */
 export interface CreateApiKeyRequest extends Parsable {
@@ -984,10 +1046,6 @@ export interface CreateAppCommand extends Parsable {
      */
     isExternal?: boolean | null;
     /**
-     * 是否公开到平台；仅内部应用有效（平台内任意用户可用），外部应用必须为 false.
-     */
-    isPublic?: boolean | null;
-    /**
      * 应用名称，团队内唯一.
      */
     name?: string | null;
@@ -1013,6 +1071,15 @@ export function createAppItemFromDiscriminatorValue(parseNode: ParseNode | undef
 // @ts-ignore
 export function createAppLogItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAppLogItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ApplyPublicationCommand}
+ */
+// @ts-ignore
+export function createApplyPublicationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoApplyPublicationCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1160,6 +1227,15 @@ export interface CreateClassifyCommand extends Parsable {
 // @ts-ignore
 export function createClassifyItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoClassifyItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CompleteExternalWikiDocumentCommand}
+ */
+// @ts-ignore
+export function createCompleteExternalWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCompleteExternalWikiDocumentCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1416,6 +1492,15 @@ export function createCreateOAuthConnectionCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreatePromptCommand}
+ */
+// @ts-ignore
+export function createCreatePromptCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreatePromptCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateSkillCommand}
  */
 // @ts-ignore
@@ -1488,6 +1573,15 @@ export function createDeleteDynamicPluginCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DeleteExternalWikiDocumentsCommand}
+ */
+// @ts-ignore
+export function createDeleteExternalWikiDocumentsCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDeleteExternalWikiDocumentsCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {DeleteWikiDocumentsCommand}
  */
 // @ts-ignore
@@ -1511,6 +1605,15 @@ export function createEmbeddingDocumentCommandFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createEmbeddingDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoEmbeddingDocumentCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {EmbedExternalDocumentCommand}
+ */
+// @ts-ignore
+export function createEmbedExternalDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoEmbedExternalDocumentCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2193,6 +2296,15 @@ export function createPartitionDocumentCommandFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PartitionExternalDocumentCommand}
+ */
+// @ts-ignore
+export function createPartitionExternalDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPartitionExternalDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PluginBaseInfoItem}
  */
 // @ts-ignore
@@ -2216,6 +2328,15 @@ export function createPluginFunctionItemFromDiscriminatorValue(parseNode: ParseN
 // @ts-ignore
 export function createPluginRunResultFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPluginRunResult;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadExternalWikiDocumentCommand}
+ */
+// @ts-ignore
+export function createPreUploadExternalWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadExternalWikiDocumentCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2306,6 +2427,53 @@ export function createPreUploadWikiDocumentCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createPreUploadWikiDocumentCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPreUploadWikiDocumentCommandResponse;
+}
+/**
+ * 创建提示词；TeamId 为 0 时创建个人提示词仅本人可见可用，TeamId 大于 0 时创建团队提示词，需要团队 Admin 及以上角色.
+ */
+export interface CreatePromptCommand extends Parsable {
+    /**
+     * 头像地址，可为空.
+     */
+    avatarPath?: string | null;
+    /**
+     * 提示词内容.
+     */
+    content?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 分类 id，0 表示未分类，分类类型必须为 prompt.
+     */
+    promptClassId?: number | null;
+    /**
+     * 所属团队 id，0 表示个人提示词.
+     */
+    teamId?: number | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PromptItem}
+ */
+// @ts-ignore
+export function createPromptItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPromptItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PublicationReviewItem}
+ */
+// @ts-ignore
+export function createPublicationReviewItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPublicationReviewItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2616,6 +2784,15 @@ export function createQueryExternalNodesCommandFromDiscriminatorValue(parseNode:
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryExternalWikiDocumentsCommand}
+ */
+// @ts-ignore
+export function createQueryExternalWikiDocumentsCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryExternalWikiDocumentsCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryFeishuAppsCommandResponse}
  */
 // @ts-ignore
@@ -2796,11 +2973,38 @@ export function createQueryPluginTeamAuthorizationCommandResponseItemFromDiscrim
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPromptCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPromptCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPromptCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPromptListCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPromptListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPromptListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryPublicAppsCommandResponse}
  */
 // @ts-ignore
 export function createQueryPublicAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryPublicAppsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPublicationReviewListResponse}
+ */
+// @ts-ignore
+export function createQueryPublicationReviewListResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPublicationReviewListResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3075,6 +3279,15 @@ export function createRegisterUserCommandFromDiscriminatorValue(parseNode: Parse
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {RenameExternalWikiDocumentCommand}
+ */
+// @ts-ignore
+export function createRenameExternalWikiDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoRenameExternalWikiDocumentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RenameWikiDocumentCommand}
  */
 // @ts-ignore
@@ -3098,6 +3311,15 @@ export function createResetPasswordCommandFromDiscriminatorValue(parseNode: Pars
 // @ts-ignore
 export function createResetUserPasswordCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoResetUserPasswordCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ReviewPublicationCommand}
+ */
+// @ts-ignore
+export function createReviewPublicationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoReviewPublicationCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3642,6 +3864,15 @@ export function createUpdateExternalRelationTypeCommandFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateExternalWikiEmbeddingCommand}
+ */
+// @ts-ignore
+export function createUpdateExternalWikiEmbeddingCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateExternalWikiEmbeddingCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateFeishuAppCommand}
  */
 // @ts-ignore
@@ -3746,6 +3977,15 @@ export function createUpdateOpenApiPluginCommandFromDiscriminatorValue(parseNode
 // @ts-ignore
 export function createUpdatePluginTeamAuthorizationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdatePluginTeamAuthorizationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdatePromptCommand}
+ */
+// @ts-ignore
+export function createUpdatePromptCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdatePromptCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3987,6 +4227,15 @@ export function createWikiModelOptionItemFromDiscriminatorValue(parseNode: Parse
     return deserializeIntoWikiModelOptionItem;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WithdrawPublicationCommand}
+ */
+// @ts-ignore
+export function createWithdrawPublicationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWithdrawPublicationCommand;
+}
+/**
  * 删除分类.
  */
 export interface DeleteClassifyCommand extends Parsable {
@@ -4012,6 +4261,19 @@ export interface DeleteDynamicPluginCommand extends Parsable {
      * 实例 key.
      */
     pluginKey?: string | null;
+}
+/**
+ * 删除知识库文档（外部接口）.
+ */
+export interface DeleteExternalWikiDocumentsCommand extends Parsable {
+    /**
+     * 文档 id 集合.
+     */
+    documentIds?: string[] | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
 }
 /**
  * 删除知识库文档.
@@ -4174,6 +4436,19 @@ export function deserializeIntoAiPartitionDocumentCommand(aiPartitionDocumentCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAiPartitionExternalDocumentCommand(aiPartitionExternalDocumentCommand: Partial<AiPartitionExternalDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { aiPartitionExternalDocumentCommand.aiModelId = n.getGuidValue(); },
+        "documentId": n => { aiPartitionExternalDocumentCommand.documentId = n.getStringValue(); },
+        "promptTemplate": n => { aiPartitionExternalDocumentCommand.promptTemplate = n.getStringValue(); },
+        "wikiId": n => { aiPartitionExternalDocumentCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAppAccessPointConfigResponse(appAccessPointConfigResponse: Partial<AppAccessPointConfigResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { appAccessPointConfigResponse.appId = n.getGuidValue(); },
@@ -4227,6 +4502,18 @@ export function deserializeIntoAppLogItem(appLogItem: Partial<AppLogItem> | unde
         "title": n => { appLogItem.title = n.getStringValue(); },
         "totalTokens": n => { appLogItem.totalTokens = n.getNumberValue(); },
         "userType": n => { appLogItem.userType = n.getEnumValue<UserType>(UserTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoApplyPublicationCommand(applyPublicationCommand: Partial<ApplyPublicationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "applyReason": n => { applyPublicationCommand.applyReason = n.getStringValue(); },
+        "resourceId": n => { applyPublicationCommand.resourceId = n.getStringValue(); },
+        "resourceType": n => { applyPublicationCommand.resourceType = n.getEnumValue<PublicationResourceType>(PublicationResourceTypeObject); },
     }
 }
 /**
@@ -4408,6 +4695,19 @@ export function deserializeIntoClassifyItem(classifyItem: Partial<ClassifyItem> 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCompleteExternalWikiDocumentCommand(completeExternalWikiDocumentCommand: Partial<CompleteExternalWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { completeExternalWikiDocumentCommand.fileId = n.getStringValue(); },
+        "fileName": n => { completeExternalWikiDocumentCommand.fileName = n.getStringValue(); },
+        "isSuccess": n => { completeExternalWikiDocumentCommand.isSuccess = n.getBooleanValue(); },
+        "wikiId": n => { completeExternalWikiDocumentCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCompleteFileUploadCommand(completeFileUploadCommand: Partial<CompleteFileUploadCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "fileId": n => { completeFileUploadCommand.fileId = n.getStringValue(); },
@@ -4526,7 +4826,6 @@ export function deserializeIntoCreateAppCommand(createAppCommand: Partial<Create
         "description": n => { createAppCommand.description = n.getStringValue(); },
         "isAuth": n => { createAppCommand.isAuth = n.getBooleanValue(); },
         "isExternal": n => { createAppCommand.isExternal = n.getBooleanValue(); },
-        "isPublic": n => { createAppCommand.isPublic = n.getBooleanValue(); },
         "name": n => { createAppCommand.name = n.getStringValue(); },
         "teamId": n => { createAppCommand.teamId = n.getStringValue(); },
     }
@@ -4767,6 +5066,21 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoCreatePromptCommand(createPromptCommand: Partial<CreatePromptCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { createPromptCommand.avatarPath = n.getStringValue(); },
+        "content": n => { createPromptCommand.content = n.getStringValue(); },
+        "description": n => { createPromptCommand.description = n.getStringValue(); },
+        "name": n => { createPromptCommand.name = n.getStringValue(); },
+        "promptClassId": n => { createPromptCommand.promptClassId = n.getNumberValue(); },
+        "teamId": n => { createPromptCommand.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoCreateSkillCommand(createSkillCommand: Partial<CreateSkillCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { createSkillCommand.description = n.getStringValue(); },
@@ -4864,6 +5178,17 @@ export function deserializeIntoDeleteDynamicPluginCommand(deleteDynamicPluginCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoDeleteExternalWikiDocumentsCommand(deleteExternalWikiDocumentsCommand: Partial<DeleteExternalWikiDocumentsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentIds": n => { deleteExternalWikiDocumentsCommand.documentIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "wikiId": n => { deleteExternalWikiDocumentsCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoDeleteWikiDocumentsCommand(deleteWikiDocumentsCommand: Partial<DeleteWikiDocumentsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "documentIds": n => { deleteWikiDocumentsCommand.documentIds = n.getCollectionOfPrimitiveValues<string>(); },
@@ -4891,6 +5216,19 @@ export function deserializeIntoEmbeddingDocumentCommand(embeddingDocumentCommand
 export function deserializeIntoEmbeddingDocumentCommandResponse(embeddingDocumentCommandResponse: Partial<EmbeddingDocumentCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "taskId": n => { embeddingDocumentCommandResponse.taskId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoEmbedExternalDocumentCommand(embedExternalDocumentCommand: Partial<EmbedExternalDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentId": n => { embedExternalDocumentCommand.documentId = n.getStringValue(); },
+        "isEmbedMetadata": n => { embedExternalDocumentCommand.isEmbedMetadata = n.getBooleanValue(); },
+        "isEmbedSourceText": n => { embedExternalDocumentCommand.isEmbedSourceText = n.getBooleanValue(); },
+        "wikiId": n => { embedExternalDocumentCommand.wikiId = n.getStringValue(); },
     }
 }
 /**
@@ -5408,6 +5746,23 @@ export function deserializeIntoPartitionDocumentCommand(partitionDocumentCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPartitionExternalDocumentCommand(partitionExternalDocumentCommand: Partial<PartitionExternalDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkOverlap": n => { partitionExternalDocumentCommand.chunkOverlap = n.getNumberValue(); },
+        "chunkSize": n => { partitionExternalDocumentCommand.chunkSize = n.getNumberValue(); },
+        "documentId": n => { partitionExternalDocumentCommand.documentId = n.getStringValue(); },
+        "overlapUnit": n => { partitionExternalDocumentCommand.overlapUnit = n.getEnumValue<DocumentPartitionOverlapUnit>(DocumentPartitionOverlapUnitObject); },
+        "sizeUnit": n => { partitionExternalDocumentCommand.sizeUnit = n.getEnumValue<DocumentPartitionSizeUnit>(DocumentPartitionSizeUnitObject); },
+        "splitMode": n => { partitionExternalDocumentCommand.splitMode = n.getEnumValue<DocumentPartitionSplitMode>(DocumentPartitionSplitModeObject); },
+        "tokenEncodingOrModel": n => { partitionExternalDocumentCommand.tokenEncodingOrModel = n.getStringValue(); },
+        "wikiId": n => { partitionExternalDocumentCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPluginBaseInfoItem(pluginBaseInfoItem: Partial<PluginBaseInfoItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(pluginBaseInfoItem),
@@ -5450,6 +5805,20 @@ export function deserializeIntoPluginRunResult(pluginRunResult: Partial<PluginRu
         "key": n => { pluginRunResult.key = n.getStringValue(); },
         "responseType": n => { pluginRunResult.responseType = n.getStringValue(); },
         "success": n => { pluginRunResult.success = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadExternalWikiDocumentCommand(preUploadExternalWikiDocumentCommand: Partial<PreUploadExternalWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadExternalWikiDocumentCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadExternalWikiDocumentCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadExternalWikiDocumentCommand.fileSize = n.getNumberValue(); },
+        "shA256": n => { preUploadExternalWikiDocumentCommand.shA256 = n.getStringValue(); },
+        "wikiId": n => { preUploadExternalWikiDocumentCommand.wikiId = n.getStringValue(); },
     }
 }
 /**
@@ -5587,6 +5956,45 @@ export function deserializeIntoPreUploadWikiDocumentCommandResponse(preUploadWik
         "fileId": n => { preUploadWikiDocumentCommandResponse.fileId = n.getStringValue(); },
         "isExist": n => { preUploadWikiDocumentCommandResponse.isExist = n.getBooleanValue(); },
         "uploadUrl": n => { preUploadWikiDocumentCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPromptItem(promptItem: Partial<PromptItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(promptItem),
+        "avatarPath": n => { promptItem.avatarPath = n.getStringValue(); },
+        "counter": n => { promptItem.counter = n.getNumberValue(); },
+        "description": n => { promptItem.description = n.getStringValue(); },
+        "isPublic": n => { promptItem.isPublic = n.getBooleanValue(); },
+        "name": n => { promptItem.name = n.getStringValue(); },
+        "pendingPublicationId": n => { promptItem.pendingPublicationId = n.getStringValue(); },
+        "promptClassId": n => { promptItem.promptClassId = n.getNumberValue(); },
+        "promptId": n => { promptItem.promptId = n.getNumberValue(); },
+        "teamId": n => { promptItem.teamId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPublicationReviewItem(publicationReviewItem: Partial<PublicationReviewItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(publicationReviewItem),
+        "applyReason": n => { publicationReviewItem.applyReason = n.getStringValue(); },
+        "publicationId": n => { publicationReviewItem.publicationId = n.getStringValue(); },
+        "resourceId": n => { publicationReviewItem.resourceId = n.getStringValue(); },
+        "resourceName": n => { publicationReviewItem.resourceName = n.getStringValue(); },
+        "resourceType": n => { publicationReviewItem.resourceType = n.getEnumValue<PublicationResourceType>(PublicationResourceTypeObject); },
+        "reviewComment": n => { publicationReviewItem.reviewComment = n.getStringValue(); },
+        "reviewTime": n => { publicationReviewItem.reviewTime = n.getStringValue(); },
+        "state": n => { publicationReviewItem.state = n.getEnumValue<PublicationState>(PublicationStateObject); },
+        "teamId": n => { publicationReviewItem.teamId = n.getStringValue(); },
+        "teamName": n => { publicationReviewItem.teamName = n.getStringValue(); },
     }
 }
 /**
@@ -6057,6 +6465,22 @@ export function deserializeIntoQueryExternalNodesCommand(queryExternalNodesComma
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryExternalWikiDocumentsCommand(queryExternalWikiDocumentsCommand: Partial<QueryExternalWikiDocumentsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "excludeFileTypes": n => { queryExternalWikiDocumentsCommand.excludeFileTypes = n.getCollectionOfPrimitiveValues<string>(); },
+        "includeFileTypes": n => { queryExternalWikiDocumentsCommand.includeFileTypes = n.getCollectionOfPrimitiveValues<string>(); },
+        "isEmbedding": n => { queryExternalWikiDocumentsCommand.isEmbedding = n.getBooleanValue(); },
+        "pageNo": n => { queryExternalWikiDocumentsCommand.pageNo = n.getNumberValue(); },
+        "pageSize": n => { queryExternalWikiDocumentsCommand.pageSize = n.getNumberValue(); },
+        "query": n => { queryExternalWikiDocumentsCommand.query = n.getStringValue(); },
+        "wikiId": n => { queryExternalWikiDocumentsCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryFeishuAppsCommandResponse(queryFeishuAppsCommandResponse: Partial<QueryFeishuAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryFeishuAppsCommandResponse.items = n.getCollectionOfObjectValues<FeishuAppItem>(createFeishuAppItemFromDiscriminatorValue); },
@@ -6329,9 +6753,40 @@ export function deserializeIntoQueryPluginTeamAuthorizationCommandResponseItem(q
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryPromptCommandResponse(queryPromptCommandResponse: Partial<QueryPromptCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoPromptItem(queryPromptCommandResponse),
+        "content": n => { queryPromptCommandResponse.content = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPromptListCommandResponse(queryPromptListCommandResponse: Partial<QueryPromptListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPromptListCommandResponse.items = n.getCollectionOfObjectValues<PromptItem>(createPromptItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryPublicAppsCommandResponse(queryPublicAppsCommandResponse: Partial<QueryPublicAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryPublicAppsCommandResponse.items = n.getCollectionOfObjectValues<AppItem>(createAppItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPublicationReviewListResponse(queryPublicationReviewListResponse: Partial<QueryPublicationReviewListResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryPublicationReviewListResponse.items = n.getCollectionOfObjectValues<PublicationReviewItem>(createPublicationReviewItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -6745,6 +7200,18 @@ export function deserializeIntoRegisterUserCommand(registerUserCommand: Partial<
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoRenameExternalWikiDocumentCommand(renameExternalWikiDocumentCommand: Partial<RenameExternalWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentId": n => { renameExternalWikiDocumentCommand.documentId = n.getStringValue(); },
+        "fileName": n => { renameExternalWikiDocumentCommand.fileName = n.getStringValue(); },
+        "wikiId": n => { renameExternalWikiDocumentCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRenameWikiDocumentCommand(renameWikiDocumentCommand: Partial<RenameWikiDocumentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "documentId": n => { renameWikiDocumentCommand.documentId = n.getStringValue(); },
@@ -6776,6 +7243,18 @@ export function deserializeIntoResetUserPasswordCommand(resetUserPasswordCommand
         "contextUserType": n => { resetUserPasswordCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "newPassword": n => { resetUserPasswordCommand.newPassword = n.getStringValue(); },
         "userId": n => { resetUserPasswordCommand.userId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoReviewPublicationCommand(reviewPublicationCommand: Partial<ReviewPublicationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "isApprove": n => { reviewPublicationCommand.isApprove = n.getBooleanValue(); },
+        "publicationId": n => { reviewPublicationCommand.publicationId = n.getStringValue(); },
+        "reviewComment": n => { reviewPublicationCommand.reviewComment = n.getStringValue(); },
     }
 }
 /**
@@ -7411,7 +7890,6 @@ export function deserializeIntoUpdateAppCommand(updateAppCommand: Partial<Update
         "description": n => { updateAppCommand.description = n.getStringValue(); },
         "isAuth": n => { updateAppCommand.isAuth = n.getBooleanValue(); },
         "isExternal": n => { updateAppCommand.isExternal = n.getBooleanValue(); },
-        "isPublic": n => { updateAppCommand.isPublic = n.getBooleanValue(); },
         "name": n => { updateAppCommand.name = n.getStringValue(); },
     }
 }
@@ -7503,6 +7981,18 @@ export function deserializeIntoUpdateExternalRelationTypeCommand(updateExternalR
         "relationTypeId": n => { updateExternalRelationTypeCommand.relationTypeId = n.getStringValue(); },
         "sourceTypeId": n => { updateExternalRelationTypeCommand.sourceTypeId = n.getStringValue(); },
         "targetTypeId": n => { updateExternalRelationTypeCommand.targetTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateExternalWikiEmbeddingCommand(updateExternalWikiEmbeddingCommand: Partial<UpdateExternalWikiEmbeddingCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "embeddingDimensions": n => { updateExternalWikiEmbeddingCommand.embeddingDimensions = n.getNumberValue(); },
+        "embeddingModelId": n => { updateExternalWikiEmbeddingCommand.embeddingModelId = n.getGuidValue(); },
+        "wikiId": n => { updateExternalWikiEmbeddingCommand.wikiId = n.getStringValue(); },
     }
 }
 /**
@@ -7668,6 +8158,21 @@ export function deserializeIntoUpdatePluginTeamAuthorizationCommand(updatePlugin
     return {
         "pluginId": n => { updatePluginTeamAuthorizationCommand.pluginId = n.getGuidValue(); },
         "teamIds": n => { updatePluginTeamAuthorizationCommand.teamIds = n.getCollectionOfPrimitiveValues<number>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdatePromptCommand(updatePromptCommand: Partial<UpdatePromptCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { updatePromptCommand.avatarPath = n.getStringValue(); },
+        "content": n => { updatePromptCommand.content = n.getStringValue(); },
+        "description": n => { updatePromptCommand.description = n.getStringValue(); },
+        "name": n => { updatePromptCommand.name = n.getStringValue(); },
+        "promptClassId": n => { updatePromptCommand.promptClassId = n.getNumberValue(); },
+        "promptId": n => { updatePromptCommand.promptId = n.getNumberValue(); },
     }
 }
 /**
@@ -7950,6 +8455,16 @@ export function deserializeIntoWikiModelOptionItem(wikiModelOptionItem: Partial<
         "name": n => { wikiModelOptionItem.name = n.getStringValue(); },
     }
 }
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWithdrawPublicationCommand(withdrawPublicationCommand: Partial<WithdrawPublicationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "publicationId": n => { withdrawPublicationCommand.publicationId = n.getStringValue(); },
+    }
+}
 export type DocumentPartitionOverlapUnit = (typeof DocumentPartitionOverlapUnitObject)[keyof typeof DocumentPartitionOverlapUnitObject];
 export type DocumentPartitionSizeUnit = (typeof DocumentPartitionSizeUnitObject)[keyof typeof DocumentPartitionSizeUnitObject];
 export type DocumentPartitionSplitMode = (typeof DocumentPartitionSplitModeObject)[keyof typeof DocumentPartitionSplitModeObject];
@@ -7982,6 +8497,27 @@ export interface EmbeddingDocumentCommandResponse extends Parsable {
      * 任务 id.
      */
     taskId?: Guid | null;
+}
+/**
+ * 触发知识库文档向量化（外部接口）.需先提取内容、切割生成切片（元数据采用已保存结果按本次触发选择是否参与向量化）.
+ */
+export interface EmbedExternalDocumentCommand extends Parsable {
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 是否对生成的元数据（大纲/问题/关键词/摘要）向量化.
+     */
+    isEmbedMetadata?: boolean | null;
+    /**
+     * 是否对原文切片内容向量化.
+     */
+    isEmbedSourceText?: boolean | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
 }
 /**
  * 空数据.
@@ -8834,6 +9370,43 @@ export interface PartitionDocumentCommand extends Parsable {
     wikiId?: string | null;
 }
 /**
+ * 普通切割知识库文档（外部接口）.需先执行 ExtractExternalDocumentCommand 提取内容，之后才能切割。
+ */
+export interface PartitionExternalDocumentCommand extends Parsable {
+    /**
+     * 切片重叠大小（0-8192，单位由 OverlapUnit 决定）.
+     */
+    chunkOverlap?: number | null;
+    /**
+     * 切片大小（1-8192，单位由 SizeUnit 决定）.
+     */
+    chunkSize?: number | null;
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 重叠单位.
+     */
+    overlapUnit?: DocumentPartitionOverlapUnit | null;
+    /**
+     * 切片大小计量单位.
+     */
+    sizeUnit?: DocumentPartitionSizeUnit | null;
+    /**
+     * 切割模式.
+     */
+    splitMode?: DocumentPartitionSplitMode | null;
+    /**
+     * Token 计量时使用的编码名或模型名，为空默认 cl100k_base.
+     */
+    tokenEncodingOrModel?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
  * 插件基础信息项.
  */
 export interface PluginBaseInfoItem extends AuditsInfo, Parsable {
@@ -8933,6 +9506,31 @@ export interface PluginRunResult extends Parsable {
     success?: boolean | null;
 }
 export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
+/**
+ * 预上传知识库文档，生成预签名上传地址（外部接口）.
+ */
+export interface PreUploadExternalWikiDocumentCommand extends Parsable {
+    /**
+     * 文件类型 (MIME Type).
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小（字节）.
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 SHA-256.
+     */
+    shA256?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
 /**
  * 文件预上传响应.
  */
@@ -9171,6 +9769,94 @@ export interface PreUploadWikiDocumentCommandResponse extends Parsable {
      */
     uploadUrl?: string | null;
 }
+/**
+ * 提示词列表项，不含内容；个人/团队/市场列表共用.
+ */
+export interface PromptItem extends AuditsInfo, Parsable {
+    /**
+     * 头像地址.
+     */
+    avatarPath?: string | null;
+    /**
+     * 计数器，市场提示词被他人查看一次加一.
+     */
+    counter?: number | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否已公开到提示词市场.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 待审核的上架申请 id，无待审核申请时为 null.
+     */
+    pendingPublicationId?: string | null;
+    /**
+     * 分类 id，0 表示未分类.
+     */
+    promptClassId?: number | null;
+    /**
+     * 提示词 id.
+     */
+    promptId?: number | null;
+    /**
+     * 所属团队 id，0 表示个人提示词.
+     */
+    teamId?: number | null;
+}
+export type PublicationResourceType = (typeof PublicationResourceTypeObject)[keyof typeof PublicationResourceTypeObject];
+/**
+ * 上架审核记录.
+ */
+export interface PublicationReviewItem extends AuditsInfo, Parsable {
+    /**
+     * 申请说明.
+     */
+    applyReason?: string | null;
+    /**
+     * 上架审核记录 id.
+     */
+    publicationId?: string | null;
+    /**
+     * 资源 id 字符串，应用为 app.id（uuid），提示词为 prompt.id（数字）.
+     */
+    resourceId?: string | null;
+    /**
+     * 资源名称快照，申请时的资源名称.
+     */
+    resourceName?: string | null;
+    /**
+     * 资源类型.
+     */
+    resourceType?: PublicationResourceType | null;
+    /**
+     * 审批意见.
+     */
+    reviewComment?: string | null;
+    /**
+     * 审批时间，未审批为 null.
+     */
+    reviewTime?: string | null;
+    /**
+     * 审核状态.
+     */
+    state?: PublicationState | null;
+    /**
+     * 资源所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 团队名称.
+     */
+    teamName?: string | null;
+}
+export type PublicationState = (typeof PublicationStateObject)[keyof typeof PublicationStateObject];
 /**
  * 应用接入列表响应.
  */
@@ -9950,6 +10636,39 @@ export interface QueryExternalNodesCommand extends Parsable {
     pageSize?: number | null;
 }
 /**
+ * 分页查询知识库文档列表（外部接口）.
+ */
+export interface QueryExternalWikiDocumentsCommand extends Parsable {
+    /**
+     * 排除的文件类型（如 .md、.docx）.
+     */
+    excludeFileTypes?: string[] | null;
+    /**
+     * 包含的文件类型（如 .md、.docx）.
+     */
+    includeFileTypes?: string[] | null;
+    /**
+     * 是否已经向量化（null 表示不过滤）.
+     */
+    isEmbedding?: boolean | null;
+    /**
+     * 页码（从 1 开始）.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页数量.
+     */
+    pageSize?: number | null;
+    /**
+     * 筛选文件名称.
+     */
+    query?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
  * 飞书应用连接列表响应.
  */
 export interface QueryFeishuAppsCommandResponse extends Parsable {
@@ -10414,6 +11133,24 @@ export interface QueryPluginTeamAuthorizationCommandResponseItem extends Parsabl
     teamName?: string | null;
 }
 /**
+ * 提示词详情，含内容.
+ */
+export interface QueryPromptCommandResponse extends Parsable, PromptItem {
+    /**
+     * 提示词内容.
+     */
+    content?: string | null;
+}
+/**
+ * 提示词列表响应.
+ */
+export interface QueryPromptListCommandResponse extends Parsable {
+    /**
+     * 提示词列表.
+     */
+    items?: PromptItem[] | null;
+}
+/**
  * 平台公开应用列表响应.
  */
 export interface QueryPublicAppsCommandResponse extends Parsable {
@@ -10421,6 +11158,15 @@ export interface QueryPublicAppsCommandResponse extends Parsable {
      * 应用集合.
      */
     items?: AppItem[] | null;
+}
+/**
+ * 上架审核列表响应.
+ */
+export interface QueryPublicationReviewListResponse extends Parsable {
+    /**
+     * 上架审核记录.
+     */
+    items?: PublicationReviewItem[] | null;
 }
 /**
  * 服务器信息.
@@ -11113,6 +11859,23 @@ export interface RegisterUserCommand extends Parsable {
     userName?: string | null;
 }
 /**
+ * 重命名知识库文档（外部接口）.
+ */
+export interface RenameExternalWikiDocumentCommand extends Parsable {
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 新的文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
  * 重命名知识库文档.
  */
 export interface RenameWikiDocumentCommand extends Parsable {
@@ -11172,43 +11935,57 @@ export interface ResetUserPasswordCommand extends Parsable {
     userId?: string | null;
 }
 /**
- * Input payload for running an AG-UI agent.
+ * 审批上架申请（通过/驳回），仅系统管理员可操作；通过后系统将目标资源 is_public 置为 true.
  */
+export interface ReviewPublicationCommand extends Parsable {
+    /**
+     * 是否通过，true=通过上架，false=驳回.
+     */
+    isApprove?: boolean | null;
+    /**
+     * 上架审核记录 id.
+     */
+    publicationId?: string | null;
+    /**
+     * 审批意见，可为空.
+     */
+    reviewComment?: string | null;
+}
 export interface RunAgentInput extends Parsable {
     /**
-     * Gets or sets contextual information for the agent.
+     * The context property
      */
     context?: AGUIContext[] | null;
     /**
-     * Gets or sets additional forwarded properties from the client.
+     * The forwardedProps property
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * Gets or sets the conversation messages.
+     * The messages property
      */
     messages?: AGUIMessage[] | null;
     /**
-     * Gets or sets the parent run identifier for branching/time travel.
+     * The parentRunId property
      */
     parentRunId?: string | null;
     /**
-     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
+     * The resume property
      */
     resume?: AGUIResume[] | null;
     /**
-     * Gets or sets the run identifier.
+     * The runId property
      */
     runId?: string | null;
     /**
-     * Gets or sets the state to pass to the agent.
+     * The state property
      */
     state?: UntypedNode | null;
     /**
-     * Gets or sets the thread identifier.
+     * The threadId property
      */
     threadId?: string | null;
     /**
-     * Gets or sets the tools available to the agent.
+     * The tools property
      */
     tools?: AGUITool[] | null;
 }
@@ -11658,6 +12435,19 @@ export function serializeAiPartitionDocumentCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAiPartitionExternalDocumentCommand(writer: SerializationWriter, aiPartitionExternalDocumentCommand: Partial<AiPartitionExternalDocumentCommand> | undefined | null = {}) : void {
+    if (aiPartitionExternalDocumentCommand) {
+        writer.writeGuidValue("aiModelId", aiPartitionExternalDocumentCommand.aiModelId);
+        writer.writeStringValue("documentId", aiPartitionExternalDocumentCommand.documentId);
+        writer.writeStringValue("promptTemplate", aiPartitionExternalDocumentCommand.promptTemplate);
+        writer.writeStringValue("wikiId", aiPartitionExternalDocumentCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAppAccessPointConfigResponse(writer: SerializationWriter, appAccessPointConfigResponse: Partial<AppAccessPointConfigResponse> | undefined | null = {}) : void {
     if (appAccessPointConfigResponse) {
         writer.writeGuidValue("appId", appAccessPointConfigResponse.appId);
@@ -11711,6 +12501,18 @@ export function serializeAppLogItem(writer: SerializationWriter, appLogItem: Par
         writer.writeStringValue("title", appLogItem.title);
         writer.writeNumberValue("totalTokens", appLogItem.totalTokens);
         writer.writeEnumValue<UserType>("userType", appLogItem.userType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeApplyPublicationCommand(writer: SerializationWriter, applyPublicationCommand: Partial<ApplyPublicationCommand> | undefined | null = {}) : void {
+    if (applyPublicationCommand) {
+        writer.writeStringValue("applyReason", applyPublicationCommand.applyReason);
+        writer.writeStringValue("resourceId", applyPublicationCommand.resourceId);
+        writer.writeEnumValue<PublicationResourceType>("resourceType", applyPublicationCommand.resourceType);
     }
 }
 /**
@@ -11892,6 +12694,19 @@ export function serializeClassifyItem(writer: SerializationWriter, classifyItem:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCompleteExternalWikiDocumentCommand(writer: SerializationWriter, completeExternalWikiDocumentCommand: Partial<CompleteExternalWikiDocumentCommand> | undefined | null = {}) : void {
+    if (completeExternalWikiDocumentCommand) {
+        writer.writeStringValue("fileId", completeExternalWikiDocumentCommand.fileId);
+        writer.writeStringValue("fileName", completeExternalWikiDocumentCommand.fileName);
+        writer.writeBooleanValue("isSuccess", completeExternalWikiDocumentCommand.isSuccess);
+        writer.writeStringValue("wikiId", completeExternalWikiDocumentCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCompleteFileUploadCommand(writer: SerializationWriter, completeFileUploadCommand: Partial<CompleteFileUploadCommand> | undefined | null = {}) : void {
     if (completeFileUploadCommand) {
         writer.writeStringValue("fileId", completeFileUploadCommand.fileId);
@@ -12010,7 +12825,6 @@ export function serializeCreateAppCommand(writer: SerializationWriter, createApp
         writer.writeStringValue("description", createAppCommand.description);
         writer.writeBooleanValue("isAuth", createAppCommand.isAuth);
         writer.writeBooleanValue("isExternal", createAppCommand.isExternal);
-        writer.writeBooleanValue("isPublic", createAppCommand.isPublic);
         writer.writeStringValue("name", createAppCommand.name);
         writer.writeStringValue("teamId", createAppCommand.teamId);
     }
@@ -12251,6 +13065,21 @@ export function serializeCreateOAuthConnectionCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeCreatePromptCommand(writer: SerializationWriter, createPromptCommand: Partial<CreatePromptCommand> | undefined | null = {}) : void {
+    if (createPromptCommand) {
+        writer.writeStringValue("avatarPath", createPromptCommand.avatarPath);
+        writer.writeStringValue("content", createPromptCommand.content);
+        writer.writeStringValue("description", createPromptCommand.description);
+        writer.writeStringValue("name", createPromptCommand.name);
+        writer.writeNumberValue("promptClassId", createPromptCommand.promptClassId);
+        writer.writeNumberValue("teamId", createPromptCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeCreateSkillCommand(writer: SerializationWriter, createSkillCommand: Partial<CreateSkillCommand> | undefined | null = {}) : void {
     if (createSkillCommand) {
         writer.writeStringValue("description", createSkillCommand.description);
@@ -12348,6 +13177,17 @@ export function serializeDeleteDynamicPluginCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeDeleteExternalWikiDocumentsCommand(writer: SerializationWriter, deleteExternalWikiDocumentsCommand: Partial<DeleteExternalWikiDocumentsCommand> | undefined | null = {}) : void {
+    if (deleteExternalWikiDocumentsCommand) {
+        writer.writeCollectionOfPrimitiveValues<string>("documentIds", deleteExternalWikiDocumentsCommand.documentIds);
+        writer.writeStringValue("wikiId", deleteExternalWikiDocumentsCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeDeleteWikiDocumentsCommand(writer: SerializationWriter, deleteWikiDocumentsCommand: Partial<DeleteWikiDocumentsCommand> | undefined | null = {}) : void {
     if (deleteWikiDocumentsCommand) {
         writer.writeCollectionOfPrimitiveValues<string>("documentIds", deleteWikiDocumentsCommand.documentIds);
@@ -12375,6 +13215,19 @@ export function serializeEmbeddingDocumentCommand(writer: SerializationWriter, e
 export function serializeEmbeddingDocumentCommandResponse(writer: SerializationWriter, embeddingDocumentCommandResponse: Partial<EmbeddingDocumentCommandResponse> | undefined | null = {}) : void {
     if (embeddingDocumentCommandResponse) {
         writer.writeGuidValue("taskId", embeddingDocumentCommandResponse.taskId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeEmbedExternalDocumentCommand(writer: SerializationWriter, embedExternalDocumentCommand: Partial<EmbedExternalDocumentCommand> | undefined | null = {}) : void {
+    if (embedExternalDocumentCommand) {
+        writer.writeStringValue("documentId", embedExternalDocumentCommand.documentId);
+        writer.writeBooleanValue("isEmbedMetadata", embedExternalDocumentCommand.isEmbedMetadata);
+        writer.writeBooleanValue("isEmbedSourceText", embedExternalDocumentCommand.isEmbedSourceText);
+        writer.writeStringValue("wikiId", embedExternalDocumentCommand.wikiId);
     }
 }
 /**
@@ -12892,6 +13745,23 @@ export function serializePartitionDocumentCommand(writer: SerializationWriter, p
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePartitionExternalDocumentCommand(writer: SerializationWriter, partitionExternalDocumentCommand: Partial<PartitionExternalDocumentCommand> | undefined | null = {}) : void {
+    if (partitionExternalDocumentCommand) {
+        writer.writeNumberValue("chunkOverlap", partitionExternalDocumentCommand.chunkOverlap);
+        writer.writeNumberValue("chunkSize", partitionExternalDocumentCommand.chunkSize);
+        writer.writeStringValue("documentId", partitionExternalDocumentCommand.documentId);
+        writer.writeEnumValue<DocumentPartitionOverlapUnit>("overlapUnit", partitionExternalDocumentCommand.overlapUnit);
+        writer.writeEnumValue<DocumentPartitionSizeUnit>("sizeUnit", partitionExternalDocumentCommand.sizeUnit);
+        writer.writeEnumValue<DocumentPartitionSplitMode>("splitMode", partitionExternalDocumentCommand.splitMode);
+        writer.writeStringValue("tokenEncodingOrModel", partitionExternalDocumentCommand.tokenEncodingOrModel);
+        writer.writeStringValue("wikiId", partitionExternalDocumentCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePluginBaseInfoItem(writer: SerializationWriter, pluginBaseInfoItem: Partial<PluginBaseInfoItem> | undefined | null = {}) : void {
     if (pluginBaseInfoItem) {
         serializeAuditsInfo(writer, pluginBaseInfoItem)
@@ -12934,6 +13804,20 @@ export function serializePluginRunResult(writer: SerializationWriter, pluginRunR
         writer.writeStringValue("key", pluginRunResult.key);
         writer.writeStringValue("responseType", pluginRunResult.responseType);
         writer.writeBooleanValue("success", pluginRunResult.success);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadExternalWikiDocumentCommand(writer: SerializationWriter, preUploadExternalWikiDocumentCommand: Partial<PreUploadExternalWikiDocumentCommand> | undefined | null = {}) : void {
+    if (preUploadExternalWikiDocumentCommand) {
+        writer.writeStringValue("contentType", preUploadExternalWikiDocumentCommand.contentType);
+        writer.writeStringValue("fileName", preUploadExternalWikiDocumentCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadExternalWikiDocumentCommand.fileSize);
+        writer.writeStringValue("shA256", preUploadExternalWikiDocumentCommand.shA256);
+        writer.writeStringValue("wikiId", preUploadExternalWikiDocumentCommand.wikiId);
     }
 }
 /**
@@ -13071,6 +13955,45 @@ export function serializePreUploadWikiDocumentCommandResponse(writer: Serializat
         writer.writeStringValue("fileId", preUploadWikiDocumentCommandResponse.fileId);
         writer.writeBooleanValue("isExist", preUploadWikiDocumentCommandResponse.isExist);
         writer.writeStringValue("uploadUrl", preUploadWikiDocumentCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePromptItem(writer: SerializationWriter, promptItem: Partial<PromptItem> | undefined | null = {}) : void {
+    if (promptItem) {
+        serializeAuditsInfo(writer, promptItem)
+        writer.writeStringValue("avatarPath", promptItem.avatarPath);
+        writer.writeNumberValue("counter", promptItem.counter);
+        writer.writeStringValue("description", promptItem.description);
+        writer.writeBooleanValue("isPublic", promptItem.isPublic);
+        writer.writeStringValue("name", promptItem.name);
+        writer.writeStringValue("pendingPublicationId", promptItem.pendingPublicationId);
+        writer.writeNumberValue("promptClassId", promptItem.promptClassId);
+        writer.writeNumberValue("promptId", promptItem.promptId);
+        writer.writeNumberValue("teamId", promptItem.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePublicationReviewItem(writer: SerializationWriter, publicationReviewItem: Partial<PublicationReviewItem> | undefined | null = {}) : void {
+    if (publicationReviewItem) {
+        serializeAuditsInfo(writer, publicationReviewItem)
+        writer.writeStringValue("applyReason", publicationReviewItem.applyReason);
+        writer.writeStringValue("publicationId", publicationReviewItem.publicationId);
+        writer.writeStringValue("resourceId", publicationReviewItem.resourceId);
+        writer.writeStringValue("resourceName", publicationReviewItem.resourceName);
+        writer.writeEnumValue<PublicationResourceType>("resourceType", publicationReviewItem.resourceType);
+        writer.writeStringValue("reviewComment", publicationReviewItem.reviewComment);
+        writer.writeStringValue("reviewTime", publicationReviewItem.reviewTime);
+        writer.writeEnumValue<PublicationState>("state", publicationReviewItem.state);
+        writer.writeStringValue("teamId", publicationReviewItem.teamId);
+        writer.writeStringValue("teamName", publicationReviewItem.teamName);
     }
 }
 /**
@@ -13541,6 +14464,22 @@ export function serializeQueryExternalNodesCommand(writer: SerializationWriter, 
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryExternalWikiDocumentsCommand(writer: SerializationWriter, queryExternalWikiDocumentsCommand: Partial<QueryExternalWikiDocumentsCommand> | undefined | null = {}) : void {
+    if (queryExternalWikiDocumentsCommand) {
+        writer.writeCollectionOfPrimitiveValues<string>("excludeFileTypes", queryExternalWikiDocumentsCommand.excludeFileTypes);
+        writer.writeCollectionOfPrimitiveValues<string>("includeFileTypes", queryExternalWikiDocumentsCommand.includeFileTypes);
+        writer.writeBooleanValue("isEmbedding", queryExternalWikiDocumentsCommand.isEmbedding);
+        writer.writeNumberValue("pageNo", queryExternalWikiDocumentsCommand.pageNo);
+        writer.writeNumberValue("pageSize", queryExternalWikiDocumentsCommand.pageSize);
+        writer.writeStringValue("query", queryExternalWikiDocumentsCommand.query);
+        writer.writeStringValue("wikiId", queryExternalWikiDocumentsCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryFeishuAppsCommandResponse(writer: SerializationWriter, queryFeishuAppsCommandResponse: Partial<QueryFeishuAppsCommandResponse> | undefined | null = {}) : void {
     if (queryFeishuAppsCommandResponse) {
         writer.writeCollectionOfObjectValues<FeishuAppItem>("items", queryFeishuAppsCommandResponse.items, serializeFeishuAppItem);
@@ -13813,9 +14752,40 @@ export function serializeQueryPluginTeamAuthorizationCommandResponseItem(writer:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryPromptCommandResponse(writer: SerializationWriter, queryPromptCommandResponse: Partial<QueryPromptCommandResponse> | undefined | null = {}) : void {
+    if (queryPromptCommandResponse) {
+        serializePromptItem(writer, queryPromptCommandResponse)
+        writer.writeStringValue("content", queryPromptCommandResponse.content);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPromptListCommandResponse(writer: SerializationWriter, queryPromptListCommandResponse: Partial<QueryPromptListCommandResponse> | undefined | null = {}) : void {
+    if (queryPromptListCommandResponse) {
+        writer.writeCollectionOfObjectValues<PromptItem>("items", queryPromptListCommandResponse.items, serializePromptItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryPublicAppsCommandResponse(writer: SerializationWriter, queryPublicAppsCommandResponse: Partial<QueryPublicAppsCommandResponse> | undefined | null = {}) : void {
     if (queryPublicAppsCommandResponse) {
         writer.writeCollectionOfObjectValues<AppItem>("items", queryPublicAppsCommandResponse.items, serializeAppItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPublicationReviewListResponse(writer: SerializationWriter, queryPublicationReviewListResponse: Partial<QueryPublicationReviewListResponse> | undefined | null = {}) : void {
+    if (queryPublicationReviewListResponse) {
+        writer.writeCollectionOfObjectValues<PublicationReviewItem>("items", queryPublicationReviewListResponse.items, serializePublicationReviewItem);
     }
 }
 /**
@@ -14229,6 +15199,18 @@ export function serializeRegisterUserCommand(writer: SerializationWriter, regist
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeRenameExternalWikiDocumentCommand(writer: SerializationWriter, renameExternalWikiDocumentCommand: Partial<RenameExternalWikiDocumentCommand> | undefined | null = {}) : void {
+    if (renameExternalWikiDocumentCommand) {
+        writer.writeStringValue("documentId", renameExternalWikiDocumentCommand.documentId);
+        writer.writeStringValue("fileName", renameExternalWikiDocumentCommand.fileName);
+        writer.writeStringValue("wikiId", renameExternalWikiDocumentCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRenameWikiDocumentCommand(writer: SerializationWriter, renameWikiDocumentCommand: Partial<RenameWikiDocumentCommand> | undefined | null = {}) : void {
     if (renameWikiDocumentCommand) {
         writer.writeStringValue("documentId", renameWikiDocumentCommand.documentId);
@@ -14260,6 +15242,18 @@ export function serializeResetUserPasswordCommand(writer: SerializationWriter, r
         writer.writeEnumValue<UserType>("contextUserType", resetUserPasswordCommand.contextUserType);
         writer.writeStringValue("newPassword", resetUserPasswordCommand.newPassword);
         writer.writeStringValue("userId", resetUserPasswordCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeReviewPublicationCommand(writer: SerializationWriter, reviewPublicationCommand: Partial<ReviewPublicationCommand> | undefined | null = {}) : void {
+    if (reviewPublicationCommand) {
+        writer.writeBooleanValue("isApprove", reviewPublicationCommand.isApprove);
+        writer.writeStringValue("publicationId", reviewPublicationCommand.publicationId);
+        writer.writeStringValue("reviewComment", reviewPublicationCommand.reviewComment);
     }
 }
 /**
@@ -14895,7 +15889,6 @@ export function serializeUpdateAppCommand(writer: SerializationWriter, updateApp
         writer.writeStringValue("description", updateAppCommand.description);
         writer.writeBooleanValue("isAuth", updateAppCommand.isAuth);
         writer.writeBooleanValue("isExternal", updateAppCommand.isExternal);
-        writer.writeBooleanValue("isPublic", updateAppCommand.isPublic);
         writer.writeStringValue("name", updateAppCommand.name);
     }
 }
@@ -14987,6 +15980,18 @@ export function serializeUpdateExternalRelationTypeCommand(writer: Serialization
         writer.writeStringValue("relationTypeId", updateExternalRelationTypeCommand.relationTypeId);
         writer.writeStringValue("sourceTypeId", updateExternalRelationTypeCommand.sourceTypeId);
         writer.writeStringValue("targetTypeId", updateExternalRelationTypeCommand.targetTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateExternalWikiEmbeddingCommand(writer: SerializationWriter, updateExternalWikiEmbeddingCommand: Partial<UpdateExternalWikiEmbeddingCommand> | undefined | null = {}) : void {
+    if (updateExternalWikiEmbeddingCommand) {
+        writer.writeNumberValue("embeddingDimensions", updateExternalWikiEmbeddingCommand.embeddingDimensions);
+        writer.writeGuidValue("embeddingModelId", updateExternalWikiEmbeddingCommand.embeddingModelId);
+        writer.writeStringValue("wikiId", updateExternalWikiEmbeddingCommand.wikiId);
     }
 }
 /**
@@ -15152,6 +16157,21 @@ export function serializeUpdatePluginTeamAuthorizationCommand(writer: Serializat
     if (updatePluginTeamAuthorizationCommand) {
         writer.writeGuidValue("pluginId", updatePluginTeamAuthorizationCommand.pluginId);
         writer.writeCollectionOfPrimitiveValues<number>("teamIds", updatePluginTeamAuthorizationCommand.teamIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdatePromptCommand(writer: SerializationWriter, updatePromptCommand: Partial<UpdatePromptCommand> | undefined | null = {}) : void {
+    if (updatePromptCommand) {
+        writer.writeStringValue("avatarPath", updatePromptCommand.avatarPath);
+        writer.writeStringValue("content", updatePromptCommand.content);
+        writer.writeStringValue("description", updatePromptCommand.description);
+        writer.writeStringValue("name", updatePromptCommand.name);
+        writer.writeNumberValue("promptClassId", updatePromptCommand.promptClassId);
+        writer.writeNumberValue("promptId", updatePromptCommand.promptId);
     }
 }
 /**
@@ -15432,6 +16452,16 @@ export function serializeWikiModelOptionItem(writer: SerializationWriter, wikiMo
         writer.writeGuidValue("id", wikiModelOptionItem.id);
         writer.writeStringValue("modelKind", wikiModelOptionItem.modelKind);
         writer.writeStringValue("name", wikiModelOptionItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWithdrawPublicationCommand(writer: SerializationWriter, withdrawPublicationCommand: Partial<WithdrawPublicationCommand> | undefined | null = {}) : void {
+    if (withdrawPublicationCommand) {
+        writer.writeStringValue("publicationId", withdrawPublicationCommand.publicationId);
     }
 }
 /**
@@ -16190,10 +17220,6 @@ export interface UpdateAppCommand extends Parsable {
      */
     isExternal?: boolean | null;
     /**
-     * 是否公开到平台；仅内部应用有效，外部应用必须为 false.
-     */
-    isPublic?: boolean | null;
-    /**
      * 应用名称，团队内唯一.
      */
     name?: string | null;
@@ -16340,6 +17366,23 @@ export interface UpdateExternalRelationTypeCommand extends Parsable {
      * 终点实体类型 id，null=任意.
      */
     targetTypeId?: string | null;
+}
+/**
+ * 更新知识库向量化模型与维度配置（外部接口）.一旦该 wiki 已有文档被向量化（IsLock），模型与维度不可再修改（409）.
+ */
+export interface UpdateExternalWikiEmbeddingCommand extends Parsable {
+    /**
+     * 知识库向量维度（1-2000）.
+     */
+    embeddingDimensions?: number | null;
+    /**
+     * 向量化模型 id.
+     */
+    embeddingModelId?: Guid | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
 }
 /**
  * 更新飞书应用连接，需要团队 Admin 及以上角色；AppSecret 为空表示保持不变，更新后自动重连.
@@ -16624,6 +17667,35 @@ export interface UpdatePluginTeamAuthorizationCommand extends Parsable {
      * 授权团队 id 集合（全量替换），取消授权的团队将无法继续使用该私有插件.
      */
     teamIds?: number[] | null;
+}
+/**
+ * 更新提示词；个人提示词仅创建人可改，团队提示词需要团队 Admin 及以上角色.
+ */
+export interface UpdatePromptCommand extends Parsable {
+    /**
+     * 头像地址，可为空.
+     */
+    avatarPath?: string | null;
+    /**
+     * 提示词内容.
+     */
+    content?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * 分类 id，0 表示未分类，分类类型必须为 prompt.
+     */
+    promptClassId?: number | null;
+    /**
+     * 提示词 id.
+     */
+    promptId?: number | null;
 }
 /**
  * 更新技能，仅平台管理员可调用；技能标识不可修改.
@@ -17092,6 +18164,15 @@ export interface WikiModelOptionItem extends Parsable {
     name?: string | null;
 }
 /**
+ * 撤回上架申请，仅待审核状态可撤回；需要资源所属团队的 Admin 及以上角色.
+ */
+export interface WithdrawPublicationCommand extends Parsable {
+    /**
+     * 上架审核记录 id.
+     */
+    publicationId?: string | null;
+}
+/**
  * 访问点悬浮位置.
  */
 export const AccessPointPositionObject = {
@@ -17178,6 +18259,21 @@ export const PluginTypeObject = {
     NativePlugin: "nativePlugin",
     ToolPlugin: "toolPlugin",
     WikiPlugin: "wikiPlugin",
+} as const;
+/**
+ * 上架审核的资源类型.
+ */
+export const PublicationResourceTypeObject = {
+    App: "app",
+    Prompt: "prompt",
+} as const;
+/**
+ * 上架审核状态.
+ */
+export const PublicationStateObject = {
+    Pending: "pending",
+    Approved: "approved",
+    Rejected: "rejected",
 } as const;
 /**
  * 团队成员角色.

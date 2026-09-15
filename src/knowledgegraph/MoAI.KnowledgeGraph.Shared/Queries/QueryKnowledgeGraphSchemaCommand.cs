@@ -14,6 +14,11 @@ public class QueryKnowledgeGraphSchemaCommand : IRequest<QueryKnowledgeGraphSche
     /// </summary>
     public long KnowledgeGraphId { get; init; }
 
+    /// <summary>
+    /// 强制刷新：跳过内省缓存重新内省（仅 connected 模式生效）.
+    /// </summary>
+    public bool Refresh { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryKnowledgeGraphSchemaCommand> validate)
     {

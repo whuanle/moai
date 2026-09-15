@@ -20,6 +20,8 @@ using MoAI.Infra;
 using MoAI.KnowledgeGraph;
 using MoAI.Modules;
 using MoAI.OauthConnect;
+using MoAI.Publication;
+using MoAI.Prompt;
 using MoAI.Settings;
 using MoAI.Skill;
 using MoAI.Storage;
@@ -53,6 +55,8 @@ namespace MoAI;
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<AiCoreModule>]
 [InjectModule<FeishuCoreModule>]
+[InjectModule<PublicationCoreModule>]
+[InjectModule<PromptCoreModule>]
 [InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]
 [InjectModule<DynamicPluginsModule>]

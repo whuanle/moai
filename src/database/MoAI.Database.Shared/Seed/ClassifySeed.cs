@@ -17,11 +17,11 @@ public static class ClassifySeed
     {
         var classifyNames = new[]
         {
-            "职业", "商业", "工具", "语言", "办公", "通用", "写作", "精选", "编程", "情感", "教育",
-            "创意", "学术", "设计", "艺术", "娱乐", "生活", "医疗", "游戏", "翻译", "音乐", "点评",
-            "文案", "百科", "健康", "营销", "科学", "分析", "法律", "咨询", "金融", "旅游", "管理"
+            "职业", "商业", "工具", "语言", "办公", "通用", "写作", "精选", "编程",
+            "创意", "学术", "设计", "翻译",
+            "分析", "法律", "咨询", "金融", "管理"
         };
-        var classifyTypes = new[] { "plugin", "app", "kb" };
+        var classifyTypes = new[] { "plugin", "app", "kb", "prompt" };
         var classifyEntities = new List<ClassifyEntity>();
 
         int classifyId = 1;

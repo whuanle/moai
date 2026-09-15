@@ -11,6 +11,7 @@ export const ClassifyType = {
   Plugin: 'plugin',
   App: 'app',
   Kb: 'kb',
+  Prompt: 'prompt',
 } as const
 
 export type ClassifyTypeKey = (typeof ClassifyType)[keyof typeof ClassifyType]

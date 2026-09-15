@@ -45,6 +45,11 @@ internal partial class KnowledgeGraphEntityTypeConfiguration : IEntityTypeConfig
         entity.Property(e => e.Name)
             .HasMaxLength(50)
             .HasColumnName("name");
+        entity.Property(e => e.Properties)
+            .HasDefaultValueSql("'[]'::jsonb")
+            .HasComment("属性定义 JSON")
+            .HasColumnType("jsonb")
+            .HasColumnName("properties");
         entity.Property(e => e.Sort).HasColumnName("sort");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")

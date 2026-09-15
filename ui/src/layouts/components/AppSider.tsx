@@ -3,15 +3,16 @@ import {
   ApartmentOutlined,
   AppstoreAddOutlined,
   AppstoreOutlined,
-  BookOutlined,
+  AuditOutlined,
   CloudServerOutlined,
-  ClusterOutlined,
   DashboardOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MoonOutlined,
+  ProfileOutlined,
   SettingOutlined,
+  ShopOutlined,
   SunOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -42,8 +43,8 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
   { key: 'apps', icon: <AppstoreOutlined />, labelKey: 'nav.apps', path: '/apps' },
-  { key: 'wiki', icon: <BookOutlined />, labelKey: 'nav.wiki', path: '/wiki' },
-  { key: 'knowledgegraph', icon: <ClusterOutlined />, labelKey: 'nav.knowledgeGraph', path: '/knowledge-graph' },
+  { key: 'prompts', icon: <ProfileOutlined />, labelKey: 'nav.prompts', path: '/prompts' },
+  { key: 'promptMarket', icon: <ShopOutlined />, labelKey: 'nav.promptMarket', path: '/prompt-market' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
 ]
 
@@ -53,6 +54,7 @@ const adminNav: NavItem[] = [
   { key: 'classify', icon: <TagsOutlined />, labelKey: 'nav.classify', path: '/classify' },
   { key: 'users', icon: <UserOutlined />, labelKey: 'nav.users', path: '/users' },
   { key: 'adminTeams', icon: <ApartmentOutlined />, labelKey: 'nav.adminTeams', path: '/admin/teams' },
+  { key: 'publications', icon: <AuditOutlined />, labelKey: 'nav.publications', path: '/publications' },
   { key: 'models', icon: <CloudServerOutlined />, labelKey: 'nav.channel', path: '/models' },
   { key: 'oauthconnect', icon: <ApiOutlined />, labelKey: 'nav.oauthconnect', path: '/oauthconnect' },
   { key: 'settings', icon: <SettingOutlined />, labelKey: 'nav.settings', path: '/settings' },
@@ -61,14 +63,15 @@ const adminNav: NavItem[] = [
 const pathToKey: Record<string, string> = {
   '/dashboard': 'dashboard',
   '/apps': 'apps',
-  '/wiki': 'wiki',
-  '/knowledge-graph': 'knowledgegraph',
+  '/prompts': 'prompts',
+  '/prompt-market': 'promptMarket',
   '/team': 'team',
   '/plugin': 'plugin',
   '/skills': 'skills',
   '/classify': 'classify',
   '/users': 'users',
   '/admin/teams': 'adminTeams',
+  '/publications': 'publications',
   '/models': 'models',
   '/oauthconnect': 'oauthconnect',
   '/settings': 'settings',
@@ -96,10 +99,8 @@ export function AppSider() {
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
   const [collapsed, setCollapsed] = useState(false)
-  // 图谱详情（/team/:teamId/kg/**）高亮「知识图谱」；其余按精确路径映射
-  const selectedKey = /\/kg\//.test(location.pathname)
-    ? 'knowledgegraph'
-    : pathToKey[location.pathname] ?? 'dashboard'
+  // 一级菜单不再展示知识库/知识图谱，统一从团队详情分区进入
+  const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
   const isDark = themeKey === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
 

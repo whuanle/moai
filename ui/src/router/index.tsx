@@ -12,20 +12,21 @@ import { AccountSettings } from '@/pages/account/AccountSettings'
 import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
 import { Users } from '@/pages/users/Users'
 import { AdminTeams } from '@/pages/admin/AdminTeams'
+import { Publications } from '@/pages/publications/Publications'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
 import { TeamManage } from '@/pages/teams/TeamManage'
 import { AppWorkspace } from '@/pages/teams/apps/AppWorkspace'
 import { AppChat } from '@/pages/teams/apps/AppChat'
-import { Wiki } from '@/pages/wiki/Wiki'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
-import { KnowledgeGraphList } from '@/pages/knowledgegraph/KnowledgeGraphList'
 import { KnowledgeGraphDetail } from '@/pages/knowledgegraph/KnowledgeGraphDetail'
 import { Plugins } from '@/pages/plugins/Plugins'
 import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
 import { Skills } from '@/pages/skills/Skills'
 import { ClassifyPage } from '@/pages/classify/Classify'
+import { Prompts } from '@/pages/prompts/Prompts'
+import { PromptMarket } from '@/pages/prompts/PromptMarket'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -43,9 +44,12 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'apps', element: <AppPlaza /> },
+      { path: 'prompts', element: <Prompts /> },
+      { path: 'prompt-market', element: <PromptMarket /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
       { path: 'admin/teams', element: <AdminTeams /> },
+      { path: 'publications', element: <Publications /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
       { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
@@ -53,8 +57,9 @@ export const router = createBrowserRouter([
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },
-      { path: 'wiki', element: <Wiki /> },
-      { path: 'knowledge-graph', element: <KnowledgeGraphList /> },
+      // 知识库/知识图谱入口统一收敛到团队详情分区，全局路由重定向到团队列表
+      { path: 'wiki', element: <Navigate to="/team" replace /> },
+      { path: 'knowledge-graph', element: <Navigate to="/team" replace /> },
       { path: 'settings', element: <Settings /> },
       { path: 'oauthconnect', element: <OauthConnect /> },
       { path: 'models', element: <Models /> },

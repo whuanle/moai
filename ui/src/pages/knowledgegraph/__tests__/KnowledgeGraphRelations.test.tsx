@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphRelations } from '../KnowledgeGraphRelations'
 import { useAppStore } from '@/store/app'
@@ -17,7 +18,7 @@ vi.mock('@/api/knowledgeGraph', () => ({
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
 function renderRelations(graphEnabled = true, myRole: number | null = 1) {
-  return render(<KnowledgeGraphRelations graphId={1} graphEnabled={graphEnabled} myRole={myRole} />)
+  return render(<MemoryRouter><KnowledgeGraphRelations graphId={1} teamId={1} graphEnabled={graphEnabled} myRole={myRole} /></MemoryRouter>)
 }
 
 describe('KnowledgeGraphRelations', () => {
@@ -51,7 +52,7 @@ describe('KnowledgeGraphRelations', () => {
     expect(await screen.findByText('订单服务')).toBeInTheDocument()
     expect(screen.getByText('支付服务')).toBeInTheDocument()
     expect(screen.getByText('依赖')).toBeInTheDocument()
-    expect(getKnowledgeGraphEdges).toHaveBeenCalledWith(1, { pageNo: 1, pageSize: 20 })
+    expect(getKnowledgeGraphEdges).toHaveBeenCalledWith(1, { relationTypeId: null, nodeId: undefined, pageNo: 1, pageSize: 20 })
   })
 
   it('管理员（能力开启）新建/编辑/删除可用', async () => {

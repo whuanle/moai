@@ -11,6 +11,7 @@ import {
   GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
+  ProfileOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   StopOutlined,
@@ -26,6 +27,7 @@ import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import { Variables } from '@/pages/variables/Variables'
+import { TeamPrompts } from '@/pages/teams/prompts/TeamPrompts'
 import { TeamApps } from '@/pages/teams/apps/TeamApps'
 import { TeamExternalApps } from '@/pages/teams/apps/TeamExternalApps'
 import { TeamAccessApps } from '@/pages/teams/apps/TeamAccessApps'
@@ -57,12 +59,13 @@ const ROLE_OWNER = 2
 const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
-const SECTION_KEYS = ['info', 'apps', 'externalApps', 'accessApps', 'members', 'gateway', 'knowledge', 'knowledgegraph', 'plugins', 'variables', 'settings'] as const
+/** 分区顺序：成员可见的使用分区在前，Owner/Admin 管理分区在后 */
+const SECTION_KEYS = ['info', 'apps', 'prompts', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /**
  * 仅团队 Owner/Admin 可见的管理分区。
- * 普通成员进入团队只能「使用」：可见 信息 / 内部应用 / 知识库，看不到团队管理与应用配置入口。
+ * 普通成员进入团队只能「使用」：可见 信息 / 内部应用 / 知识库 / 知识图谱，看不到团队管理与应用配置入口。
  */
 const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'settings']
 
@@ -373,12 +376,13 @@ export function TeamManage() {
   const menuItems: Required<MenuProps>['items'] = [
     { key: 'info', icon: <TeamOutlined />, label: t('team.info') },
     { key: 'apps', icon: <AppstoreOutlined />, label: t('team.apps') },
+    { key: 'prompts', icon: <ProfileOutlined />, label: t('team.prompts') },
+    { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
+    { key: 'knowledgegraph', icon: <ClusterOutlined />, label: t('team.knowledgeGraph') },
     { key: 'externalApps', icon: <GlobalOutlined />, label: t('team.externalApps') },
     { key: 'accessApps', icon: <KeyOutlined />, label: t('team.accessApps') },
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
     { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
-    { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
-    { key: 'knowledgegraph', icon: <ClusterOutlined />, label: t('team.knowledgeGraph') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
@@ -477,6 +481,10 @@ export function TeamManage() {
             </DSCard>
           ) : activeSection === 'gateway' ? (
             <TeamGateway teamId={teamId} canManage={isOwner || detail?.myRole === ROLE_ADMIN} />
+          ) : activeSection === 'prompts' ? (
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamPrompts teamId={teamId} canManage={isAdminPlus} />
+            </DSCard>
           ) : activeSection === 'knowledge' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamWikis teamId={teamId} />

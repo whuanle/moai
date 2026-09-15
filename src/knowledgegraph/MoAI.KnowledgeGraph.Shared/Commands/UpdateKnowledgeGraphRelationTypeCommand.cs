@@ -48,7 +48,7 @@ public class UpdateKnowledgeGraphRelationTypeCommand : IRequest<EmptyCommandResp
     public static void Validate(AbstractValidator<UpdateKnowledgeGraphRelationTypeCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
-        validate.RuleFor(x => x.RelationTypeId).GreaterThan(0).WithMessage("关系类型 id 不正确.");
+        // RelationTypeId 为路由字段回填，自动校验发生在回填之前，不在此校验（v1 遗留缺陷修复）。
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("关系名称不能为空.").MaximumLength(50).WithMessage("关系名称最长 50 个字符.");
         validate.RuleFor(x => x.Color).MaximumLength(20).WithMessage("颜色最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("描述最长 255 个字符.");

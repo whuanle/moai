@@ -4,7 +4,6 @@ import {
   AppstoreAddOutlined,
   AppstoreOutlined,
   BookOutlined,
-  FileAddOutlined,
   TeamOutlined,
   UserAddOutlined,
 } from '@ant-design/icons'
@@ -31,18 +30,13 @@ export function Dashboard() {
     { title: t('dashboard.statRequests'), value: 2048, icon: <ApiOutlined />, trend: 22 },
   ]
 
+  // 知识库/知识图谱入口统一收敛到团队详情分区，仪表盘不再提供全局快捷入口
   const quickActions = [
     {
       icon: <AppstoreAddOutlined />,
       title: t('dashboard.quickApp'),
       desc: t('dashboard.quickAppDesc'),
       path: '/team',
-    },
-    {
-      icon: <FileAddOutlined />,
-      title: t('dashboard.quickWiki'),
-      desc: t('dashboard.quickWikiDesc'),
-      path: '/wiki',
     },
     {
       icon: <UserAddOutlined />,

@@ -28,6 +28,10 @@ import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBu
 // @ts-ignore
 import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
 // @ts-ignore
+import { PromptRequestBuilderNavigationMetadata, PromptRequestBuilderRequestsMetadata, type PromptRequestBuilder } from './prompt/index.js';
+// @ts-ignore
+import { PublicationRequestBuilderNavigationMetadata, type PublicationRequestBuilder } from './publication/index.js';
+// @ts-ignore
 import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
 // @ts-ignore
 import { SkillRequestBuilderNavigationMetadata, SkillRequestBuilderRequestsMetadata, type SkillRequestBuilder } from './skill/index.js';
@@ -100,6 +104,14 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The oauthconnect property
      */
     get oauthconnect(): OauthconnectRequestBuilder;
+    /**
+     * The prompt property
+     */
+    get prompt(): PromptRequestBuilder;
+    /**
+     * The publication property
+     */
+    get publication(): PublicationRequestBuilder;
     /**
      * The settings property
      */
@@ -180,6 +192,13 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     oauthconnect: {
         navigationMetadata: OauthconnectRequestBuilderNavigationMetadata,
+    },
+    prompt: {
+        requestsMetadata: PromptRequestBuilderRequestsMetadata,
+        navigationMetadata: PromptRequestBuilderNavigationMetadata,
+    },
+    publication: {
+        navigationMetadata: PublicationRequestBuilderNavigationMetadata,
     },
     settings: {
         requestsMetadata: SettingsRequestBuilderRequestsMetadata,

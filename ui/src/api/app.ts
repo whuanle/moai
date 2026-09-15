@@ -77,8 +77,6 @@ export async function createApp(payload: {
   isExternal?: boolean
   /** 是否需要授权访问；仅外部应用有效 */
   isAuth?: boolean
-  /** 是否公开到平台；仅内部应用有效 */
-  isPublic?: boolean
 }): Promise<string> {
   const client = getApiClient()
   const res = await client.api.app.post({
@@ -89,15 +87,17 @@ export async function createApp(payload: {
     avatar: payload.avatar,
     isExternal: payload.isExternal,
     isAuth: payload.isAuth,
-    isPublic: payload.isPublic,
   })
   return String(res?.value ?? '')
 }
 
-/** 基础信息更新：名称、描述、授权/公开开关（应用类型创建后不可修改；头像走独立接口） */
+/**
+ * 基础信息更新：名称、描述、授权开关（应用类型创建后不可修改；头像走独立接口）。
+ * 公开（is_public）只能通过「上架审核」由系统管理员审批后设置，此处不再提供。
+ */
 export async function updateApp(
   appId: string,
-  payload: { name: string; description?: string; isExternal?: boolean; isAuth?: boolean; isPublic?: boolean },
+  payload: { name: string; description?: string; isExternal?: boolean; isAuth?: boolean },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).put({
@@ -105,7 +105,6 @@ export async function updateApp(
     description: payload.description,
     isExternal: payload.isExternal,
     isAuth: payload.isAuth,
-    isPublic: payload.isPublic,
   })
 }
 

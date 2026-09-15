@@ -15,9 +15,14 @@ public class QueryKnowledgeGraphCanvasCommand : IRequest<QueryKnowledgeGraphCanv
     public long KnowledgeGraphId { get; init; }
 
     /// <summary>
-    /// 实体类型筛选（节点）.
+    /// 实体类型筛选（节点，托管图）.
     /// </summary>
     public long? EntityTypeId { get; init; }
+
+    /// <summary>
+    /// 标签筛选（节点，接入图）.
+    /// </summary>
+    public string? Label { get; init; }
 
     /// <summary>
     /// 关系类型筛选（边）.
@@ -40,5 +45,6 @@ public class QueryKnowledgeGraphCanvasCommand : IRequest<QueryKnowledgeGraphCanv
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
         validate.RuleFor(x => x.Limit).InclusiveBetween(0, 500).WithMessage("节点数量上限为 0~500.");
         validate.RuleFor(x => x.Keyword).MaximumLength(100).WithMessage("关键字最长 100 个字符.");
+        validate.RuleFor(x => x.Label).MaximumLength(100).Must(x => x == null || !x.Contains('`')).WithMessage("标签名非法.");
     }
 }

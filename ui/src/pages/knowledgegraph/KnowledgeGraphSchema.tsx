@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Spin, Tag } from 'antd'
+import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Spin, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
+import { PropertyListEditor } from './PropertyFields'
 import { neutralColors, spacing } from '@/design-system/theme'
 import {
   createEntityType,
@@ -14,6 +16,8 @@ import {
   updateEntityType,
   updateRelationType,
   type KnowledgeGraphEntityTypeItem,
+  type KnowledgeGraphIntrospectionDiff,
+  type KnowledgeGraphEntityTypeProperty,
   type KnowledgeGraphRelationTypeItem,
 } from '@/api/knowledgeGraph'
 
@@ -23,6 +27,7 @@ interface EntityTypeFormValues {
   name: string
   color?: string
   description?: string
+  properties?: KnowledgeGraphEntityTypeProperty[]
 }
 
 interface RelationTypeFormValues {
@@ -35,6 +40,7 @@ interface RelationTypeFormValues {
 
 interface KnowledgeGraphSchemaProps {
   graphId: number
+  teamId: number
   myRole: number | null
   mode?: string | null
 }
@@ -58,8 +64,38 @@ function ColorCell({ color }: { color?: string | null }) {
   )
 }
 
-export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: KnowledgeGraphSchemaProps) {
+function IntrospectionDiffAlert({ changes }: { changes: KnowledgeGraphIntrospectionDiff | null }) {
   const { t } = useTranslation()
+  if (!changes) return null
+  const isEmpty =
+    !(changes.addedLabels?.length) &&
+    !(changes.removedLabels?.length) &&
+    !(changes.addedRelationTypes?.length) &&
+    !(changes.removedRelationTypes?.length)
+  if (isEmpty) return null
+  const section = (added?: string[] | null, removed?: string[] | null) => {
+    const parts: string[] = []
+    if (added?.length) parts.push(`${t('knowledgegraph.schemaConnected.diffAdded')}: ${added.join(', ')}`)
+    if (removed?.length) parts.push(`${t('knowledgegraph.schemaConnected.diffRemoved')}: ${removed.join(', ')}`)
+    return parts.join('；')
+  }
+  const labelSection = section(changes.addedLabels, changes.removedLabels)
+  const relationSection = section(changes.addedRelationTypes, changes.removedRelationTypes)
+  const message = [labelSection, relationSection].filter(Boolean).map((x, i) => (i === 0 ? x : ` ${x}`)).join('\n')
+  return (
+    <Alert
+      type="info"
+      showIcon
+      message={t('knowledgegraph.schemaConnected.diffTitle')}
+      description={message}
+      style={{ marginBottom: spacing.md, whiteSpace: 'pre-line' }}
+    />
+  )
+}
+
+export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }: KnowledgeGraphSchemaProps) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [fetchedMode, setFetchedMode] = useState<string | null>(null)
   const [propertyKeys, setPropertyKeys] = useState<string[]>([])
@@ -70,6 +106,7 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
   const [editingEntityType, setEditingEntityType] = useState<KnowledgeGraphEntityTypeItem | null>(null)
   const [editingRelationType, setEditingRelationType] = useState<KnowledgeGraphRelationTypeItem | null>(null)
   const [saving, setSaving] = useState(false)
+  const [changes, setChanges] = useState<KnowledgeGraphIntrospectionDiff | null>(null)
   const [entityForm] = Form.useForm<EntityTypeFormValues>()
   const [relationForm] = Form.useForm<RelationTypeFormValues>()
 
@@ -77,23 +114,25 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
   const mode = modeProp ?? fetchedMode
   const isConnected = mode === 'connected'
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (refresh = false) => {
     if (!Number.isFinite(graphId) || graphId <= 0) {
       setLoading(false)
       return
     }
     setLoading(true)
     try {
-      const schema = await getKnowledgeGraphSchema(graphId)
+      const schema = await getKnowledgeGraphSchema(graphId, refresh)
       setFetchedMode(schema.mode ?? null)
       setPropertyKeys(schema.propertyKeys ?? [])
       setEntityTypes(schema.entityTypes ?? [])
       setRelationTypes(schema.relationTypes ?? [])
+      setChanges(schema.changes ?? null)
     } catch {
       setFetchedMode(null)
       setPropertyKeys([])
       setEntityTypes([])
       setRelationTypes([])
+      setChanges(null)
     } finally {
       setLoading(false)
     }
@@ -115,6 +154,7 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
   const openCreateEntityType = () => {
     setEditingEntityType(null)
     entityForm.resetFields()
+    entityForm.setFieldValue('properties', [])
     setEntityOpen(true)
   }
 
@@ -124,19 +164,21 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
       name: record.name ?? '',
       color: record.color ?? undefined,
       description: record.description ?? undefined,
+      properties: (record.properties ?? []).map((x) => ({ name: x.name ?? '', type: x.type ?? 'string', required: x.required ?? false, description: x.description ?? '' })),
     })
     setEntityOpen(true)
   }
 
   const handleSubmitEntityType = async () => {
     const values = await entityForm.validateFields()
+    const properties = (values.properties ?? []).filter((x) => x.name?.trim())
     setSaving(true)
     try {
       if (editingEntityType) {
-        await updateEntityType(graphId, Number(editingEntityType.entityTypeId), values)
+        await updateEntityType(graphId, Number(editingEntityType.entityTypeId), { ...values, properties })
         feedback.success(t('knowledgegraph.saveSuccess'))
       } else {
-        await createEntityType(graphId, values)
+        await createEntityType(graphId, { ...values, properties })
         feedback.success(t('knowledgegraph.createSuccess'))
       }
       setEntityOpen(false)
@@ -217,6 +259,31 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
     { title: t('knowledgegraph.schema.name'), dataIndex: 'name', key: 'name', render: (v: string | null | undefined) => v || '-' },
     { title: t('knowledgegraph.schema.color'), dataIndex: 'color', key: 'color', width: 140, render: (v: string | null | undefined) => <ColorCell color={v} /> },
     { title: t('knowledgegraph.schema.desc'), dataIndex: 'description', key: 'description', ellipsis: true, render: (v: string | null | undefined) => v || '-' },
+    {
+      title: t('knowledgegraph.props.column'),
+      key: 'properties',
+      width: 140,
+      render: (_, record) => {
+        const props = record.properties ?? []
+        if (props.length === 0) return <span style={{ opacity: 0.5 }}>-</span>
+        return (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {props.map((x) => x.name).join('、')}
+          </Typography.Text>
+        )
+      },
+    },
+    {
+      title: '',
+      key: 'view',
+      width: 110,
+      render: (_: unknown, record: KnowledgeGraphEntityTypeItem) =>
+        record.entityTypeId != null ? (
+          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/entities?typeId=${record.entityTypeId}`)}>
+            {t('knowledgegraph.schema.viewEntities')}
+          </Button>
+        ) : null,
+    },
     ...(canManage
       ? [
           {
@@ -255,6 +322,17 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
       render: (_, record) => (record.targetTypeId != null ? typeName.get(Number(record.targetTypeId)) || '-' : t('knowledgegraph.schema.anyType')),
     },
     { title: t('knowledgegraph.schema.desc'), dataIndex: 'description', key: 'description', ellipsis: true, render: (v: string | null | undefined) => v || '-' },
+    {
+      title: '',
+      key: 'view',
+      width: 110,
+      render: (_: unknown, record: KnowledgeGraphRelationTypeItem) =>
+        record.relationTypeId != null ? (
+          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/relations?relationTypeId=${record.relationTypeId}`)}>
+            {t('knowledgegraph.schema.viewRelations')}
+          </Button>
+        ) : null,
+    },
     ...(canManage
       ? [
           {
@@ -292,6 +370,12 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
   if (isConnected) {
     return (
       <Space direction="vertical" size={spacing.lg} style={{ width: '100%' }}>
+        <Space>
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void load(true)}>
+            {t('knowledgegraph.schemaConnected.refresh')}
+          </Button>
+        </Space>
+        <IntrospectionDiffAlert changes={changes} />
         <div>
           <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.schemaConnected.labels')}</div>
           <DataTable<KnowledgeGraphEntityTypeItem>
@@ -332,6 +416,7 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
 
   return (
     <Space direction="vertical" size={spacing.lg} style={{ width: '100%' }}>
+      <Alert type="info" showIcon message={t('knowledgegraph.schema.introTitle')} description={t('knowledgegraph.schema.introDesc')} />
       <div>
         <Space style={{ marginBottom: spacing.md }}>
           <span style={{ fontWeight: 600 }}>{t('knowledgegraph.schema.entityTypes')}</span>
@@ -386,6 +471,9 @@ export function KnowledgeGraphSchema({ graphId, myRole, mode: modeProp }: Knowle
           </Form.Item>
           <Form.Item name="description" label={t('knowledgegraph.schema.desc')}>
             <Input.TextArea maxLength={255} rows={2} />
+          </Form.Item>
+          <Form.Item label={t('knowledgegraph.props.editorTitle')} tooltip={t('knowledgegraph.props.editorTooltip')}>
+            <PropertyListEditor />
           </Form.Item>
         </Form>
       </Modal>

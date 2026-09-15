@@ -56,6 +56,8 @@
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
 		<ProjectReference Include="..\ai\MoAI.AI.Core\MoAI.AI.Core.csproj" />
 		<ProjectReference Include="..\feishu\MoAI.Feishu.Core\MoAI.Feishu.Core.csproj" />
+		<ProjectReference Include="..\publication\MoAI.Publication.Core\MoAI.Publication.Core.csproj" />
+		<ProjectReference Include="..\prompt\MoAI.Prompt.Core\MoAI.Prompt.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

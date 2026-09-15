@@ -24,4 +24,9 @@ public class QueryKnowledgeGraphNodeCommandResponse
     /// 描述.
     /// </summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 实例属性值（键为实体类型定义的属性名）.
+    /// </summary>
+    public Dictionary<string, string> Properties { get; init; } = new();
 }
