@@ -653,7 +653,7 @@ public class ExternalBatchResponse
     public int FailedCount { get; init; }
 
     /// <summary>
-    /// 逐条结果.
+    /// 逐条结果：包含全部行（成功与失败），按请求顺序排列，数量与请求 Items 一致.
     /// </summary>
     public IReadOnlyList<ExternalBatchItemResult> Results { get; init; } = new List<ExternalBatchItemResult>();
 }
@@ -672,6 +672,11 @@ public class ExternalBatchItemResult
     /// 是否成功.
     /// </summary>
     public bool Ok { get; init; }
+
+    /// <summary>
+    /// 创建的节点/边 id（成功时有值，失败时为 null）.
+    /// </summary>
+    public string? Id { get; init; }
 
     /// <summary>
     /// 失败原因（成功时为 null）.

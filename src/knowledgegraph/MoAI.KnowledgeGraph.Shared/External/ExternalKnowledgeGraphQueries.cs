@@ -56,7 +56,7 @@ public class ExternalGraphItem
     public string Description { get; init; } = string.Empty;
 
     /// <summary>
-    /// 来源：managed / connected.
+    /// 来源：managed（平台托管，可写）/ connected（外部接入，只读）.
     /// </summary>
     public string Mode { get; init; } = KnowledgeGraphModes.Managed;
 }
@@ -64,7 +64,7 @@ public class ExternalGraphItem
 /// <summary>
 /// 查询图谱 schema（实体类型 + 关系类型）（外部接口）.
 /// </summary>
-public class QueryExternalGraphSchemaCommand : IRequest<QueryKnowledgeGraphSchemaCommandResponse>, IModelValidator<QueryExternalGraphSchemaCommand>
+public class QueryExternalGraphSchemaCommand : IRequest<QueryExternalGraphSchemaCommandResponse>, IModelValidator<QueryExternalGraphSchemaCommand>
 {
     /// <summary>
     /// 外部调用方身份，由 Controller 从接入 token 解析填充.
@@ -82,6 +82,22 @@ public class QueryExternalGraphSchemaCommand : IRequest<QueryKnowledgeGraphSchem
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
     }
+}
+
+/// <summary>
+/// 图谱 schema 响应（外部接口）：仅暴露实体类型与关系类型等业务负载，不包含接入数据库名/内省缓存等内部基础设施字段.
+/// </summary>
+public class QueryExternalGraphSchemaCommandResponse
+{
+    /// <summary>
+    /// 实体类型.
+    /// </summary>
+    public List<KnowledgeGraphEntityTypeItem> EntityTypes { get; init; } = new();
+
+    /// <summary>
+    /// 关系类型.
+    /// </summary>
+    public List<KnowledgeGraphRelationTypeItem> RelationTypes { get; init; } = new();
 }
 
 /// <summary>
@@ -124,6 +140,8 @@ public class QueryExternalNodesCommand : IRequest<QueryKnowledgeGraphNodesComman
     public static void Validate(AbstractValidator<QueryExternalNodesCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
+        validate.RuleFor(x => x.PageNo).GreaterThanOrEqualTo(1).WithMessage("页码不正确.");
+        validate.RuleFor(x => x.PageSize).InclusiveBetween(1, 200).WithMessage("每页条数不正确（1-200）.");
     }
 }
 
@@ -178,7 +196,7 @@ public class QueryExternalNodeNeighborsCommand : IRequest<QueryKnowledgeGraphCan
     public string NodeId { get; init; } = default!;
 
     /// <summary>
-    /// 邻居数量上限（0=默认 100，最大 500）.
+    /// 邻居数量上限（默认 50，取值 1-500）.
     /// </summary>
     public int Limit { get; init; } = 50;
 
@@ -187,7 +205,7 @@ public class QueryExternalNodeNeighborsCommand : IRequest<QueryKnowledgeGraphCan
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
         validate.RuleFor(x => x.NodeId).NotEmpty().WithMessage("节点 id 不能为空.");
-        validate.RuleFor(x => x.Limit).InclusiveBetween(0, 500).WithMessage("邻居数量上限为 0~500.");
+        validate.RuleFor(x => x.Limit).InclusiveBetween(1, 500).WithMessage("邻居数量上限为 1~500.");
     }
 }
 
@@ -231,6 +249,8 @@ public class QueryExternalEdgesCommand : IRequest<QueryKnowledgeGraphEdgesComman
     public static void Validate(AbstractValidator<QueryExternalEdgesCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
+        validate.RuleFor(x => x.PageNo).GreaterThanOrEqualTo(1).WithMessage("页码不正确.");
+        validate.RuleFor(x => x.PageSize).InclusiveBetween(1, 200).WithMessage("每页条数不正确（1-200）.");
     }
 }
 
