@@ -21,6 +21,7 @@ public class WikiCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        context.Services.AddScoped<IExternalWikiAuthorizer>(sp => sp.GetRequiredService<ExternalWikiAuthorizer>());
         context.Services.AddSingleton(sp => new PostgresVectorStore(sp.GetRequiredService<SystemOptions>().Database));
         context.Services.AddScoped<IWikiEmbeddingVectorStore, PgVectorWikiEmbeddingVectorStore>();
         context.Services.AddTextExtraction();
