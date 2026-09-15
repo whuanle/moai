@@ -87,7 +87,7 @@ public class ExternalKnowledgeGraphController : ControllerBase
     /// </summary>
     /// <param name="kgId">图谱 id.</param>
     /// <param name="nodeId">节点 id.</param>
-    /// <param name="limit">邻居数量上限（默认 50，取值 1-500）.</param>
+    /// <param name="limit">邻居数量上限（默认 50；0 或负数按 100 处理，上限 500）.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryKnowledgeGraphCanvasCommandResponse"/>.</returns>
     [HttpGet("{kgId:long}/nodes/{nodeId}/neighbors")]
