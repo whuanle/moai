@@ -28,9 +28,6 @@ internal partial class AccessAppConfiguration : IEntityTypeConfiguration<AccessA
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
-        entity.Property(e => e.AppIds)
-            .HasComment("允许访问的应用id列表")
-            .HasColumnName("app_ids");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
