@@ -379,3 +379,6 @@ local-dev/system.local.json
 # Kiota 生成的 debug 端点目录需入库，避免被上面的 [Dd]ebug/ 构建产物规则误伤
 !ui/src/api/client/**/debug/
 !ui/src/api/client/**/debug/**
+.tmpbuild/
+/.zcode/plans
+/.tmp-ddl
