@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, AreaChartOutlined, ProfileOutlined, SettingOutlined } from '@ant-design/icons'
+import { ApiOutlined, ApartmentOutlined, AreaChartOutlined, HistoryOutlined, ProfileOutlined, SettingOutlined } from '@ant-design/icons'
 import { Button, Layout, Menu, Popconfirm, Result, Space, Spin, Tag, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +11,8 @@ import { AppAccessSection } from './AppAccessSection'
 import { AppConfigSection, type AppDetail } from './AppConfigSection'
 import { AppLogsSection } from './AppLogsSection'
 import { AppMonitorSection } from './AppMonitorSection'
+import { AppWorkflowRunsSection } from './AppWorkflowRunsSection'
+import { WorkflowDesigner } from './workflow'
 
 const { Sider, Content } = Layout
 const { Text } = Typography
@@ -18,7 +20,7 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTIONS = ['config', 'logs', 'monitor', 'access'] as const
+const SECTIONS = ['config', 'design', 'runs', 'logs', 'monitor', 'access'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 /**
@@ -80,19 +82,40 @@ export function AppWorkspace() {
   }
 
   const menuItems: Required<MenuProps>['items'] = []
-  menuItems.push({ key: 'config', icon: <SettingOutlined />, label: t('appWorkspace.menuConfig') })
-  if (canManage) {
-    menuItems.push(
-      { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
-      { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
-    )
+  if (isAgent) {
+    menuItems.push({ key: 'config', icon: <SettingOutlined />, label: t('appWorkspace.menuConfig') })
+    if (canManage) {
+      menuItems.push(
+        { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
+        { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
+      )
+    }
+  } else {
+    // 流程应用：编排设计与运行历史
+    if (canManage) {
+      menuItems.push({ key: 'design', icon: <ApartmentOutlined />, label: t('appWorkspace.menuDesign') })
+    }
+    menuItems.push({ key: 'runs', icon: <HistoryOutlined />, label: t('appWorkspace.menuRuns') })
   }
   if (canManage && isExternal) {
     menuItems.push({ key: 'access', icon: <ApiOutlined />, label: t('appWorkspace.menuAccess') })
   }
-  const validSection = menuItems.some((i) => i?.key === section) ? section : 'config'
+  const validSection = menuItems.some((i) => i?.key === section) ? section : isAgent ? 'config' : canManage ? 'design' : 'runs'
 
   const renderSection = () => {
+    if (validSection === 'design') {
+      return (
+        <WorkflowDesigner
+          teamId={teamId}
+          appId={appId}
+          appName={detail?.name ?? undefined}
+          canManage={canManage}
+        />
+      )
+    }
+    if (validSection === 'runs') {
+      return <AppWorkflowRunsSection teamId={teamId} appId={appId} canManage={canManage} />
+    }
     if (validSection === 'config') {
       return (
         <AppConfigSection
@@ -161,15 +184,17 @@ export function AppWorkspace() {
         </div>
       ) : detail?.appId ? (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
-          <Sider width={200} style={{ background: 'transparent' }}>
-            <Menu
-              mode="inline"
-              items={menuItems}
-              selectedKeys={[validSection]}
-              onClick={({ key }) => navigate(key === 'config' ? `/team/${teamId}/app/${appId}` : `/team/${teamId}/app/${appId}/${key}`)}
-              style={{ borderRadius: spacing.sm }}
-            />
-          </Sider>
+          {validSection !== 'design' && (
+            <Sider width={200} style={{ background: 'transparent' }}>
+              <Menu
+                mode="inline"
+                items={menuItems}
+                selectedKeys={[validSection]}
+                onClick={({ key }) => navigate(key === 'config' ? `/team/${teamId}/app/${appId}` : `/team/${teamId}/app/${appId}/${key}`)}
+                style={{ borderRadius: spacing.sm }}
+              />
+            </Sider>
+          )}
           <Content>{renderSection()}</Content>
         </Layout>
       ) : (

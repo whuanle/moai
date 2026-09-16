@@ -581,6 +581,51 @@ export interface AppUsageSummary extends Parsable {
     totalTokens?: string | null;
 }
 /**
+ * 流程应用运行实例列表项.
+ */
+export interface AppWorkflowInstanceItem extends AuditsInfo, Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 结束时间.
+     */
+    endTime?: string | null;
+    /**
+     * 失败/挂起原因，无异常为 null.
+     */
+    errorMessage?: string | null;
+    /**
+     * 启动参数 JSON 文本.
+     */
+    input?: string | null;
+    /**
+     * 实例 id.
+     */
+    instanceId?: Guid | null;
+    /**
+     * 是否调试运行.
+     */
+    isDebug?: boolean | null;
+    /**
+     * 最终输出 JSON 文本，未产出为 null.
+     */
+    output?: string | null;
+    /**
+     * 开始执行时间.
+     */
+    startTime?: string | null;
+    /**
+     * 实例状态，0=已创建 1=执行中 2=已挂起 3=已完成 4=已取消.
+     */
+    status?: number | null;
+    /**
+     * 执行引用的定义版本号，0=调试执行.
+     */
+    version?: number | null;
+}
+/**
  * 数据子项.
  */
 export interface AuditsInfo extends Parsable {
@@ -1147,6 +1192,15 @@ export function createAppUsageSummaryFromDiscriminatorValue(parseNode: ParseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppWorkflowInstanceItem}
+ */
+// @ts-ignore
+export function createAppWorkflowInstanceItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppWorkflowInstanceItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AuditsInfo}
  */
 // @ts-ignore
@@ -1556,6 +1610,24 @@ export function createCreateVariableCommandFromDiscriminatorValue(parseNode: Par
 // @ts-ignore
 export function createCreateWikiCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateWikiCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DebugRunAppWorkflowCommand}
+ */
+// @ts-ignore
+export function createDebugRunAppWorkflowCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDebugRunAppWorkflowCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DebugRunAppWorkflowResponse}
+ */
+// @ts-ignore
+export function createDebugRunAppWorkflowResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDebugRunAppWorkflowResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2492,6 +2564,15 @@ export function createPublicationReviewItemFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PublishAppWorkflowCommand}
+ */
+// @ts-ignore
+export function createPublishAppWorkflowCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPublishAppWorkflowCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAccessAppsCommandResponse}
  */
 // @ts-ignore
@@ -2686,6 +2767,33 @@ export function createQueryAppUsageCommandResponseFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createQueryAppUserConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAppUserConfigCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppWorkflowConfigCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppWorkflowConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppWorkflowConfigCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppWorkflowInstanceCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppWorkflowInstanceCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppWorkflowInstanceCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppWorkflowInstancesCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppWorkflowInstancesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppWorkflowInstancesCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3397,6 +3505,15 @@ export function createSaveAppAgentConfigCommandFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createSaveAppUserConfigCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSaveAppUserConfigCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveAppWorkflowDraftCommand}
+ */
+// @ts-ignore
+export function createSaveAppWorkflowDraftCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveAppWorkflowDraftCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4290,6 +4407,77 @@ export function createWithdrawPublicationCommandFromDiscriminatorValue(parseNode
     return deserializeIntoWithdrawPublicationCommand;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WorkflowNodeExecution}
+ */
+// @ts-ignore
+export function createWorkflowNodeExecutionFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWorkflowNodeExecution;
+}
+/**
+ * 调试执行流程应用：隐式保存草稿（可选）→ 校验 → 同步执行到终态，返回每个节点的执行状态.需要团队 Admin 及以上角色.
+ */
+export interface DebugRunAppWorkflowCommand extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 随调试一起保存的流程定义 JSON；为空则使用已保存的草稿.
+     */
+    definition?: string | null;
+    /**
+     * 随调试一起保存的编辑器画布原始 JSON；为空则保留已保存内容.
+     */
+    editorData?: string | null;
+    /**
+     * 启动参数 JSON 对象文本（开始节点的 run 输入），空为 '{}'；键需覆盖开始节点声明的必需启动参数.
+     */
+    inputJson?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * 调试执行响应：一次同步执行的终态快照.
+ */
+export interface DebugRunAppWorkflowResponse extends Parsable {
+    /**
+     * 执行引用的定义版本，调试运行为 0.
+     */
+    definitionVersion?: number | null;
+    /**
+     * 结束时间.
+     */
+    endedAt?: string | null;
+    /**
+     * 失败/挂起原因，无异常为 null.
+     */
+    errorMessage?: string | null;
+    /**
+     * 实例 id.
+     */
+    instanceId?: Guid | null;
+    /**
+     * 各节点执行状态.
+     */
+    nodes?: WorkflowNodeExecution[] | null;
+    /**
+     * 工作流最终输出 JSON 文本，未产出为 null.
+     */
+    output?: string | null;
+    /**
+     * 开始执行时间.
+     */
+    startedAt?: string | null;
+    /**
+     * 实例状态：created/running/suspended/completed/cancelled.
+     */
+    status?: string | null;
+}
+/**
  * 删除分类.
  */
 export interface DeleteClassifyCommand extends Parsable {
@@ -4633,6 +4821,26 @@ export function deserializeIntoAppUsageSummary(appUsageSummary: Partial<AppUsage
         "completionTokens": n => { appUsageSummary.completionTokens = n.getStringValue(); },
         "promptTokens": n => { appUsageSummary.promptTokens = n.getStringValue(); },
         "totalTokens": n => { appUsageSummary.totalTokens = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAppWorkflowInstanceItem(appWorkflowInstanceItem: Partial<AppWorkflowInstanceItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(appWorkflowInstanceItem),
+        "appId": n => { appWorkflowInstanceItem.appId = n.getGuidValue(); },
+        "endTime": n => { appWorkflowInstanceItem.endTime = n.getStringValue(); },
+        "errorMessage": n => { appWorkflowInstanceItem.errorMessage = n.getStringValue(); },
+        "input": n => { appWorkflowInstanceItem.input = n.getStringValue(); },
+        "instanceId": n => { appWorkflowInstanceItem.instanceId = n.getGuidValue(); },
+        "isDebug": n => { appWorkflowInstanceItem.isDebug = n.getBooleanValue(); },
+        "output": n => { appWorkflowInstanceItem.output = n.getStringValue(); },
+        "startTime": n => { appWorkflowInstanceItem.startTime = n.getStringValue(); },
+        "status": n => { appWorkflowInstanceItem.status = n.getNumberValue(); },
+        "version": n => { appWorkflowInstanceItem.version = n.getNumberValue(); },
     }
 }
 /**
@@ -5198,6 +5406,37 @@ export function deserializeIntoCreateWikiCommand(createWikiCommand: Partial<Crea
         "isPublic": n => { createWikiCommand.isPublic = n.getBooleanValue(); },
         "name": n => { createWikiCommand.name = n.getStringValue(); },
         "teamId": n => { createWikiCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDebugRunAppWorkflowCommand(debugRunAppWorkflowCommand: Partial<DebugRunAppWorkflowCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { debugRunAppWorkflowCommand.appId = n.getGuidValue(); },
+        "definition": n => { debugRunAppWorkflowCommand.definition = n.getStringValue(); },
+        "editorData": n => { debugRunAppWorkflowCommand.editorData = n.getStringValue(); },
+        "inputJson": n => { debugRunAppWorkflowCommand.inputJson = n.getStringValue(); },
+        "teamId": n => { debugRunAppWorkflowCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDebugRunAppWorkflowResponse(debugRunAppWorkflowResponse: Partial<DebugRunAppWorkflowResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "definitionVersion": n => { debugRunAppWorkflowResponse.definitionVersion = n.getNumberValue(); },
+        "endedAt": n => { debugRunAppWorkflowResponse.endedAt = n.getStringValue(); },
+        "errorMessage": n => { debugRunAppWorkflowResponse.errorMessage = n.getStringValue(); },
+        "instanceId": n => { debugRunAppWorkflowResponse.instanceId = n.getGuidValue(); },
+        "nodes": n => { debugRunAppWorkflowResponse.nodes = n.getCollectionOfObjectValues<WorkflowNodeExecution>(createWorkflowNodeExecutionFromDiscriminatorValue); },
+        "output": n => { debugRunAppWorkflowResponse.output = n.getStringValue(); },
+        "startedAt": n => { debugRunAppWorkflowResponse.startedAt = n.getStringValue(); },
+        "status": n => { debugRunAppWorkflowResponse.status = n.getStringValue(); },
     }
 }
 /**
@@ -6059,6 +6298,17 @@ export function deserializeIntoPublicationReviewItem(publicationReviewItem: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPublishAppWorkflowCommand(publishAppWorkflowCommand: Partial<PublishAppWorkflowCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { publishAppWorkflowCommand.appId = n.getGuidValue(); },
+        "teamId": n => { publishAppWorkflowCommand.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAccessAppsCommandResponse(queryAccessAppsCommandResponse: Partial<QueryAccessAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAccessAppsCommandResponse.items = n.getCollectionOfObjectValues<AccessAppItem>(createAccessAppItemFromDiscriminatorValue); },
@@ -6371,6 +6621,56 @@ export function deserializeIntoQueryAppUserConfigCommandResponse(queryAppUserCon
         "lockedSkills": n => { queryAppUserConfigCommandResponse.lockedSkills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "promptId": n => { queryAppUserConfigCommandResponse.promptId = n.getNumberValue(); },
         "skills": n => { queryAppUserConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppWorkflowConfigCommandResponse(queryAppWorkflowConfigCommandResponse: Partial<QueryAppWorkflowConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { queryAppWorkflowConfigCommandResponse.appId = n.getGuidValue(); },
+        "configId": n => { queryAppWorkflowConfigCommandResponse.configId = n.getGuidValue(); },
+        "draftDefinition": n => { queryAppWorkflowConfigCommandResponse.draftDefinition = n.getStringValue(); },
+        "draftEditorData": n => { queryAppWorkflowConfigCommandResponse.draftEditorData = n.getStringValue(); },
+        "publishedDefinition": n => { queryAppWorkflowConfigCommandResponse.publishedDefinition = n.getStringValue(); },
+        "publishTime": n => { queryAppWorkflowConfigCommandResponse.publishTime = n.getStringValue(); },
+        "status": n => { queryAppWorkflowConfigCommandResponse.status = n.getNumberValue(); },
+        "version": n => { queryAppWorkflowConfigCommandResponse.version = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppWorkflowInstanceCommandResponse(queryAppWorkflowInstanceCommandResponse: Partial<QueryAppWorkflowInstanceCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { queryAppWorkflowInstanceCommandResponse.appId = n.getGuidValue(); },
+        "endTime": n => { queryAppWorkflowInstanceCommandResponse.endTime = n.getStringValue(); },
+        "errorMessage": n => { queryAppWorkflowInstanceCommandResponse.errorMessage = n.getStringValue(); },
+        "input": n => { queryAppWorkflowInstanceCommandResponse.input = n.getStringValue(); },
+        "instanceId": n => { queryAppWorkflowInstanceCommandResponse.instanceId = n.getGuidValue(); },
+        "isDebug": n => { queryAppWorkflowInstanceCommandResponse.isDebug = n.getBooleanValue(); },
+        "nodes": n => { queryAppWorkflowInstanceCommandResponse.nodes = n.getCollectionOfObjectValues<WorkflowNodeExecution>(createWorkflowNodeExecutionFromDiscriminatorValue); },
+        "output": n => { queryAppWorkflowInstanceCommandResponse.output = n.getStringValue(); },
+        "startTime": n => { queryAppWorkflowInstanceCommandResponse.startTime = n.getStringValue(); },
+        "status": n => { queryAppWorkflowInstanceCommandResponse.status = n.getNumberValue(); },
+        "version": n => { queryAppWorkflowInstanceCommandResponse.version = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppWorkflowInstancesCommandResponse(queryAppWorkflowInstancesCommandResponse: Partial<QueryAppWorkflowInstancesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAppWorkflowInstancesCommandResponse.items = n.getCollectionOfObjectValues<AppWorkflowInstanceItem>(createAppWorkflowInstanceItemFromDiscriminatorValue); },
+        "pageNo": n => { queryAppWorkflowInstancesCommandResponse.pageNo = n.getNumberValue(); },
+        "pageSize": n => { queryAppWorkflowInstancesCommandResponse.pageSize = n.getNumberValue(); },
+        "total": n => { queryAppWorkflowInstancesCommandResponse.total = n.getNumberValue(); },
     }
 }
 /**
@@ -7416,6 +7716,19 @@ export function deserializeIntoSaveAppUserConfigCommand(saveAppUserConfigCommand
         "appId": n => { saveAppUserConfigCommand.appId = n.getGuidValue(); },
         "promptId": n => { saveAppUserConfigCommand.promptId = n.getNumberValue(); },
         "skills": n => { saveAppUserConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSaveAppWorkflowDraftCommand(saveAppWorkflowDraftCommand: Partial<SaveAppWorkflowDraftCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { saveAppWorkflowDraftCommand.appId = n.getGuidValue(); },
+        "definition": n => { saveAppWorkflowDraftCommand.definition = n.getStringValue(); },
+        "editorData": n => { saveAppWorkflowDraftCommand.editorData = n.getStringValue(); },
+        "teamId": n => { saveAppWorkflowDraftCommand.teamId = n.getStringValue(); },
     }
 }
 /**
@@ -8566,6 +8879,25 @@ export function deserializeIntoWikiModelOptionItem(wikiModelOptionItem: Partial<
 export function deserializeIntoWithdrawPublicationCommand(withdrawPublicationCommand: Partial<WithdrawPublicationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "publicationId": n => { withdrawPublicationCommand.publicationId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWorkflowNodeExecution(workflowNodeExecution: Partial<WorkflowNodeExecution> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "attempts": n => { workflowNodeExecution.attempts = n.getNumberValue(); },
+        "endedAt": n => { workflowNodeExecution.endedAt = n.getStringValue(); },
+        "errorMessage": n => { workflowNodeExecution.errorMessage = n.getStringValue(); },
+        "input": n => { workflowNodeExecution.input = n.getStringValue(); },
+        "nodeKey": n => { workflowNodeExecution.nodeKey = n.getStringValue(); },
+        "nodeName": n => { workflowNodeExecution.nodeName = n.getStringValue(); },
+        "nodeType": n => { workflowNodeExecution.nodeType = n.getStringValue(); },
+        "output": n => { workflowNodeExecution.output = n.getStringValue(); },
+        "startedAt": n => { workflowNodeExecution.startedAt = n.getStringValue(); },
+        "state": n => { workflowNodeExecution.state = n.getStringValue(); },
     }
 }
 export type DocumentPartitionOverlapUnit = (typeof DocumentPartitionOverlapUnitObject)[keyof typeof DocumentPartitionOverlapUnitObject];
@@ -9961,6 +10293,19 @@ export interface PublicationReviewItem extends AuditsInfo, Parsable {
 }
 export type PublicationState = (typeof PublicationStateObject)[keyof typeof PublicationStateObject];
 /**
+ * 发布流程应用编排：校验草稿定义合法后生成不可变的已发布快照（版本号递增），并置应用为已发布.需要团队 Admin 及以上角色.
+ */
+export interface PublishAppWorkflowCommand extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 应用接入列表响应.
  */
 export interface QueryAccessAppsCommandResponse extends Parsable {
@@ -10537,6 +10882,113 @@ export interface QueryAppUserConfigCommandResponse extends Parsable {
      * 用户自选技能 id 列表.
      */
     skills?: Guid[] | null;
+}
+/**
+ * 流程应用编排配置响应.
+ */
+export interface QueryAppWorkflowConfigCommandResponse extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 编排配置 id，未保存过配置为 null.
+     */
+    configId?: Guid | null;
+    /**
+     * 草稿流程定义 JSON，未保存过为 null.
+     */
+    draftDefinition?: string | null;
+    /**
+     * 草稿编辑器画布原始 JSON，未保存过为 null.
+     */
+    draftEditorData?: string | null;
+    /**
+     * 已发布定义快照 JSON，从未发布为 null.
+     */
+    publishedDefinition?: string | null;
+    /**
+     * 最近发布时间，从未发布为 null.
+     */
+    publishTime?: string | null;
+    /**
+     * 状态，0=草稿有未发布变更（或从未发布） 1=当前草稿已发布.
+     */
+    status?: number | null;
+    /**
+     * 当前已发布版本号，0=从未发布.
+     */
+    version?: number | null;
+}
+/**
+ * 流程应用运行实例详情响应.
+ */
+export interface QueryAppWorkflowInstanceCommandResponse extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 结束时间.
+     */
+    endTime?: string | null;
+    /**
+     * 失败/挂起原因，无异常为 null.
+     */
+    errorMessage?: string | null;
+    /**
+     * 启动参数 JSON 文本.
+     */
+    input?: string | null;
+    /**
+     * 实例 id.
+     */
+    instanceId?: Guid | null;
+    /**
+     * 是否调试运行.
+     */
+    isDebug?: boolean | null;
+    /**
+     * 各节点执行状态.
+     */
+    nodes?: WorkflowNodeExecution[] | null;
+    /**
+     * 最终输出 JSON 文本，未产出为 null.
+     */
+    output?: string | null;
+    /**
+     * 开始执行时间.
+     */
+    startTime?: string | null;
+    /**
+     * 实例状态，0=已创建 1=执行中 2=已挂起 3=已完成 4=已取消.
+     */
+    status?: number | null;
+    /**
+     * 执行引用的定义版本号，0=调试执行.
+     */
+    version?: number | null;
+}
+/**
+ * 流程应用运行实例分页结果.
+ */
+export interface QueryAppWorkflowInstancesCommandResponse extends Parsable {
+    /**
+     * 实例列表.
+     */
+    items?: AppWorkflowInstanceItem[] | null;
+    /**
+     * 页码.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页数量.
+     */
+    pageSize?: number | null;
+    /**
+     * 总数量.
+     */
+    total?: number | null;
 }
 /**
  * 分类列表查询响应.
@@ -12254,6 +12706,27 @@ export interface SaveAppUserConfigCommand extends Parsable {
     skills?: Guid[] | null;
 }
 /**
+ * 保存流程应用编排草稿（流程定义 JSON + 编辑器画布 JSON），需要团队 Admin 及以上角色.保存后草稿标记为未发布状态，不影响已发布版本.
+ */
+export interface SaveAppWorkflowDraftCommand extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 流程定义 JSON（引擎 WorkflowDefinition 契约：nodes + connections + ui），顶层 id 等于应用 id.
+     */
+    definition?: string | null;
+    /**
+     * 编辑器画布原始 JSON（FlowGram toJSON 产物），用于无损还原画布.
+     */
+    editorData?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 保存动态插件实例。创建时填实例 key + 模板 key + 配置；更新时实例 key 不可变.
  */
 export interface SaveDynamicPluginCommand extends Parsable {
@@ -12718,6 +13191,26 @@ export function serializeAppUsageSummary(writer: SerializationWriter, appUsageSu
         writer.writeStringValue("completionTokens", appUsageSummary.completionTokens);
         writer.writeStringValue("promptTokens", appUsageSummary.promptTokens);
         writer.writeStringValue("totalTokens", appUsageSummary.totalTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAppWorkflowInstanceItem(writer: SerializationWriter, appWorkflowInstanceItem: Partial<AppWorkflowInstanceItem> | undefined | null = {}) : void {
+    if (appWorkflowInstanceItem) {
+        serializeAuditsInfo(writer, appWorkflowInstanceItem)
+        writer.writeGuidValue("appId", appWorkflowInstanceItem.appId);
+        writer.writeStringValue("endTime", appWorkflowInstanceItem.endTime);
+        writer.writeStringValue("errorMessage", appWorkflowInstanceItem.errorMessage);
+        writer.writeStringValue("input", appWorkflowInstanceItem.input);
+        writer.writeGuidValue("instanceId", appWorkflowInstanceItem.instanceId);
+        writer.writeBooleanValue("isDebug", appWorkflowInstanceItem.isDebug);
+        writer.writeStringValue("output", appWorkflowInstanceItem.output);
+        writer.writeStringValue("startTime", appWorkflowInstanceItem.startTime);
+        writer.writeNumberValue("status", appWorkflowInstanceItem.status);
+        writer.writeNumberValue("version", appWorkflowInstanceItem.version);
     }
 }
 /**
@@ -13283,6 +13776,37 @@ export function serializeCreateWikiCommand(writer: SerializationWriter, createWi
         writer.writeBooleanValue("isPublic", createWikiCommand.isPublic);
         writer.writeStringValue("name", createWikiCommand.name);
         writer.writeStringValue("teamId", createWikiCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeDebugRunAppWorkflowCommand(writer: SerializationWriter, debugRunAppWorkflowCommand: Partial<DebugRunAppWorkflowCommand> | undefined | null = {}) : void {
+    if (debugRunAppWorkflowCommand) {
+        writer.writeGuidValue("appId", debugRunAppWorkflowCommand.appId);
+        writer.writeStringValue("definition", debugRunAppWorkflowCommand.definition);
+        writer.writeStringValue("editorData", debugRunAppWorkflowCommand.editorData);
+        writer.writeStringValue("inputJson", debugRunAppWorkflowCommand.inputJson);
+        writer.writeStringValue("teamId", debugRunAppWorkflowCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeDebugRunAppWorkflowResponse(writer: SerializationWriter, debugRunAppWorkflowResponse: Partial<DebugRunAppWorkflowResponse> | undefined | null = {}) : void {
+    if (debugRunAppWorkflowResponse) {
+        writer.writeNumberValue("definitionVersion", debugRunAppWorkflowResponse.definitionVersion);
+        writer.writeStringValue("endedAt", debugRunAppWorkflowResponse.endedAt);
+        writer.writeStringValue("errorMessage", debugRunAppWorkflowResponse.errorMessage);
+        writer.writeGuidValue("instanceId", debugRunAppWorkflowResponse.instanceId);
+        writer.writeCollectionOfObjectValues<WorkflowNodeExecution>("nodes", debugRunAppWorkflowResponse.nodes, serializeWorkflowNodeExecution);
+        writer.writeStringValue("output", debugRunAppWorkflowResponse.output);
+        writer.writeStringValue("startedAt", debugRunAppWorkflowResponse.startedAt);
+        writer.writeStringValue("status", debugRunAppWorkflowResponse.status);
     }
 }
 /**
@@ -14144,6 +14668,17 @@ export function serializePublicationReviewItem(writer: SerializationWriter, publ
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePublishAppWorkflowCommand(writer: SerializationWriter, publishAppWorkflowCommand: Partial<PublishAppWorkflowCommand> | undefined | null = {}) : void {
+    if (publishAppWorkflowCommand) {
+        writer.writeGuidValue("appId", publishAppWorkflowCommand.appId);
+        writer.writeStringValue("teamId", publishAppWorkflowCommand.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAccessAppsCommandResponse(writer: SerializationWriter, queryAccessAppsCommandResponse: Partial<QueryAccessAppsCommandResponse> | undefined | null = {}) : void {
     if (queryAccessAppsCommandResponse) {
         writer.writeCollectionOfObjectValues<AccessAppItem>("items", queryAccessAppsCommandResponse.items, serializeAccessAppItem);
@@ -14456,6 +14991,56 @@ export function serializeQueryAppUserConfigCommandResponse(writer: Serialization
         writer.writeCollectionOfPrimitiveValues<Guid>("lockedSkills", queryAppUserConfigCommandResponse.lockedSkills);
         writer.writeNumberValue("promptId", queryAppUserConfigCommandResponse.promptId);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppUserConfigCommandResponse.skills);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppWorkflowConfigCommandResponse(writer: SerializationWriter, queryAppWorkflowConfigCommandResponse: Partial<QueryAppWorkflowConfigCommandResponse> | undefined | null = {}) : void {
+    if (queryAppWorkflowConfigCommandResponse) {
+        writer.writeGuidValue("appId", queryAppWorkflowConfigCommandResponse.appId);
+        writer.writeGuidValue("configId", queryAppWorkflowConfigCommandResponse.configId);
+        writer.writeStringValue("draftDefinition", queryAppWorkflowConfigCommandResponse.draftDefinition);
+        writer.writeStringValue("draftEditorData", queryAppWorkflowConfigCommandResponse.draftEditorData);
+        writer.writeStringValue("publishedDefinition", queryAppWorkflowConfigCommandResponse.publishedDefinition);
+        writer.writeStringValue("publishTime", queryAppWorkflowConfigCommandResponse.publishTime);
+        writer.writeNumberValue("status", queryAppWorkflowConfigCommandResponse.status);
+        writer.writeNumberValue("version", queryAppWorkflowConfigCommandResponse.version);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppWorkflowInstanceCommandResponse(writer: SerializationWriter, queryAppWorkflowInstanceCommandResponse: Partial<QueryAppWorkflowInstanceCommandResponse> | undefined | null = {}) : void {
+    if (queryAppWorkflowInstanceCommandResponse) {
+        writer.writeGuidValue("appId", queryAppWorkflowInstanceCommandResponse.appId);
+        writer.writeStringValue("endTime", queryAppWorkflowInstanceCommandResponse.endTime);
+        writer.writeStringValue("errorMessage", queryAppWorkflowInstanceCommandResponse.errorMessage);
+        writer.writeStringValue("input", queryAppWorkflowInstanceCommandResponse.input);
+        writer.writeGuidValue("instanceId", queryAppWorkflowInstanceCommandResponse.instanceId);
+        writer.writeBooleanValue("isDebug", queryAppWorkflowInstanceCommandResponse.isDebug);
+        writer.writeCollectionOfObjectValues<WorkflowNodeExecution>("nodes", queryAppWorkflowInstanceCommandResponse.nodes, serializeWorkflowNodeExecution);
+        writer.writeStringValue("output", queryAppWorkflowInstanceCommandResponse.output);
+        writer.writeStringValue("startTime", queryAppWorkflowInstanceCommandResponse.startTime);
+        writer.writeNumberValue("status", queryAppWorkflowInstanceCommandResponse.status);
+        writer.writeNumberValue("version", queryAppWorkflowInstanceCommandResponse.version);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppWorkflowInstancesCommandResponse(writer: SerializationWriter, queryAppWorkflowInstancesCommandResponse: Partial<QueryAppWorkflowInstancesCommandResponse> | undefined | null = {}) : void {
+    if (queryAppWorkflowInstancesCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppWorkflowInstanceItem>("items", queryAppWorkflowInstancesCommandResponse.items, serializeAppWorkflowInstanceItem);
+        writer.writeNumberValue("pageNo", queryAppWorkflowInstancesCommandResponse.pageNo);
+        writer.writeNumberValue("pageSize", queryAppWorkflowInstancesCommandResponse.pageSize);
+        writer.writeNumberValue("total", queryAppWorkflowInstancesCommandResponse.total);
     }
 }
 /**
@@ -15501,6 +16086,19 @@ export function serializeSaveAppUserConfigCommand(writer: SerializationWriter, s
         writer.writeGuidValue("appId", saveAppUserConfigCommand.appId);
         writer.writeNumberValue("promptId", saveAppUserConfigCommand.promptId);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppUserConfigCommand.skills);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSaveAppWorkflowDraftCommand(writer: SerializationWriter, saveAppWorkflowDraftCommand: Partial<SaveAppWorkflowDraftCommand> | undefined | null = {}) : void {
+    if (saveAppWorkflowDraftCommand) {
+        writer.writeGuidValue("appId", saveAppWorkflowDraftCommand.appId);
+        writer.writeStringValue("definition", saveAppWorkflowDraftCommand.definition);
+        writer.writeStringValue("editorData", saveAppWorkflowDraftCommand.editorData);
+        writer.writeStringValue("teamId", saveAppWorkflowDraftCommand.teamId);
     }
 }
 /**
@@ -16651,6 +17249,25 @@ export function serializeWikiModelOptionItem(writer: SerializationWriter, wikiMo
 export function serializeWithdrawPublicationCommand(writer: SerializationWriter, withdrawPublicationCommand: Partial<WithdrawPublicationCommand> | undefined | null = {}) : void {
     if (withdrawPublicationCommand) {
         writer.writeStringValue("publicationId", withdrawPublicationCommand.publicationId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWorkflowNodeExecution(writer: SerializationWriter, workflowNodeExecution: Partial<WorkflowNodeExecution> | undefined | null = {}) : void {
+    if (workflowNodeExecution) {
+        writer.writeNumberValue("attempts", workflowNodeExecution.attempts);
+        writer.writeStringValue("endedAt", workflowNodeExecution.endedAt);
+        writer.writeStringValue("errorMessage", workflowNodeExecution.errorMessage);
+        writer.writeStringValue("input", workflowNodeExecution.input);
+        writer.writeStringValue("nodeKey", workflowNodeExecution.nodeKey);
+        writer.writeStringValue("nodeName", workflowNodeExecution.nodeName);
+        writer.writeStringValue("nodeType", workflowNodeExecution.nodeType);
+        writer.writeStringValue("output", workflowNodeExecution.output);
+        writer.writeStringValue("startedAt", workflowNodeExecution.startedAt);
+        writer.writeStringValue("state", workflowNodeExecution.state);
     }
 }
 /**
@@ -18386,6 +19003,51 @@ export interface WithdrawPublicationCommand extends Parsable {
      * 上架审核记录 id.
      */
     publicationId?: string | null;
+}
+/**
+ * 节点执行状态（调试/详情响应共用）.
+ */
+export interface WorkflowNodeExecution extends Parsable {
+    /**
+     * 执行次数（失败重试/恢复后重跑会累加）.
+     */
+    attempts?: number | null;
+    /**
+     * 结束执行时间.
+     */
+    endedAt?: string | null;
+    /**
+     * 失败原因，未失败为 null.
+     */
+    errorMessage?: string | null;
+    /**
+     * 解析后的节点输入 JSON 文本，未执行为 null.
+     */
+    input?: string | null;
+    /**
+     * 节点 Key.
+     */
+    nodeKey?: string | null;
+    /**
+     * 节点名称.
+     */
+    nodeName?: string | null;
+    /**
+     * 节点类型（start/end/condition/aiChat/javascript/plugin）.
+     */
+    nodeType?: string | null;
+    /**
+     * 节点输出 JSON 文本，未执行为 null.
+     */
+    output?: string | null;
+    /**
+     * 开始执行时间.
+     */
+    startedAt?: string | null;
+    /**
+     * 执行状态：pending/running/completed/failed/skipped.
+     */
+    state?: string | null;
 }
 /**
  * 访问点悬浮位置.

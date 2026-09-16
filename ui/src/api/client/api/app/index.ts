@@ -14,6 +14,8 @@ import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } fro
 // @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
+import { type WorkflowRequestBuilder, WorkflowRequestBuilderNavigationMetadata } from './workflow/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -36,6 +38,10 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The session property
      */
     get session(): SessionRequestBuilder;
+    /**
+     * The workflow property
+     */
+    get workflow(): WorkflowRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.app.item collection
      * @param id 应用 id.
@@ -86,6 +92,9 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
     },
     session: {
         navigationMetadata: SessionRequestBuilderNavigationMetadata,
+    },
+    workflow: {
+        navigationMetadata: WorkflowRequestBuilderNavigationMetadata,
     },
 };
 /**

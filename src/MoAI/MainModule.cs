@@ -42,6 +42,7 @@ namespace MoAI;
 [InjectModule<AuthCoreModule>]
 [InjectModule<AccountCoreModule>]
 [InjectModule<AppCoreModule>]
+[InjectModule<MoAI.App.Workflow.WorkflowCoreModule>]
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<AIChannelCoreModule>]

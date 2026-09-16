@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.App.Workflow</RootNamespace>
+		<Description>MoAI 工作流引擎：流程定义、流程实例、流程数据传输。</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Jint" />
+		<PackageReference Include="JsonPath.Net" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+	</ItemGroup>
+
+</Project>

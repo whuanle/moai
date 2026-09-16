@@ -88,6 +88,16 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppUserConfigEntity> AppUserConfigs { get; set; }
 
     /// <summary>
+    /// 流程应用编排配置，与 app 一一对应（app_type=1）.
+    /// </summary>
+    public virtual DbSet<AppWorkflowConfigEntity> AppWorkflowConfigs { get; set; }
+
+    /// <summary>
+    /// 流程应用运行实例，一次工作流执行的完整快照（含节点级状态，支撑断点恢复）.
+    /// </summary>
+    public virtual DbSet<AppWorkflowInstanceEntity> AppWorkflowInstances { get; set; }
+
+    /// <summary>
     /// 分类.
     /// </summary>
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }

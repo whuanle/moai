@@ -25,6 +25,23 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+    // FlowGram 的 IoC 容器是模块级单例，必须去重避免双实例（Ambiguous match: FlowRendererRegistry）
+    dedupe: [
+      '@flowgram.ai/core',
+      '@flowgram.ai/editor',
+      '@flowgram.ai/form',
+      '@flowgram.ai/form-core',
+      '@flowgram.ai/node',
+      '@flowgram.ai/free-layout-editor',
+      '@flowgram.ai/free-layout-core',
+      '@flowgram.ai/free-snap-plugin',
+      '@flowgram.ai/minimap-plugin',
+      '@flowgram.ai/variable-core',
+      '@flowgram.ai/document',
+      '@flowgram.ai/renderer',
+      '@flowgram.ai/playground-react',
+      '@flowgram.ai/utils',
+    ],
   },
   server: {
     port: 4000,
@@ -41,7 +58,19 @@ export default defineConfig({
     sourcemap: true,
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: [
+      'react',
+      'react-dom',
+      '@flowgram.ai/core',
+      '@flowgram.ai/editor',
+      '@flowgram.ai/form',
+      '@flowgram.ai/form-core',
+      '@flowgram.ai/node',
+      '@flowgram.ai/free-layout-editor',
+      '@flowgram.ai/free-snap-plugin',
+      '@flowgram.ai/minimap-plugin',
+      '@flowgram.ai/variable-core',
+    ],
   },
   test: {
     environment: 'jsdom',

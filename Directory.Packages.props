@@ -103,6 +103,8 @@
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="13.0.1" />
     <PackageVersion Include="StackExchange.Redis.Extensions.System.Text.Json" Version="13.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Ini" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.8.2" />

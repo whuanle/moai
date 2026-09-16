@@ -3,6 +3,7 @@ import { UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { Alert, Avatar, Button, Col, Divider, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography, Upload } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { Card as DSCard, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
 import {
@@ -66,6 +67,7 @@ export interface AppConfigSectionProps {
  * 资源绑定只能选择该团队有权使用的模型/插件/知识库；工作流应用仅展示应用信息与未开放提示。
  */
 export function AppConfigSection({ teamId, appId, detail, loading, canManage, onReload }: AppConfigSectionProps) {
+  const navigate = useNavigate()
   const { t } = useTranslation()
 
   const [modelId, setModelId] = useState<string>()
@@ -429,7 +431,18 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         </DSCard>
         <DSCard title={t('appManage.agentConfigTitle')} style={{ marginTop: spacing.md }}>
           {!isAgent ? (
-            <Alert type="warning" showIcon message={t('appManage.workflowConfigUnavailable')} />
+            <Alert
+              type="info"
+              showIcon
+              message={t('appManage.workflowConfigUnavailable')}
+              action={
+                canManage ? (
+                  <Button size="small" onClick={() => navigate(`/team/${teamId}/app/${appId}/design`)}>
+                    {t('appManage.workflowGoDesign')}
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               <Form layout="vertical" disabled={!canManage}>

@@ -32,6 +32,14 @@ class FilterRequestHandler implements Middleware {
   ): Promise<Response> {
     if (!this.next) throw new Error('Next middleware is not set')
 
+    // 业务数据 GET 禁用浏览器启发式缓存（否则保存后重新加载可能拿到旧响应）
+    const headers = new Headers(requestInit.headers)
+    if ((requestInit.method ?? 'GET') === 'GET') {
+      headers.set('Cache-Control', 'no-cache')
+      headers.set('Pragma', 'no-cache')
+    }
+    requestInit = { ...requestInit, headers }
+
     let response: Response
     try {
       response = await this.next.execute(url, requestInit, requestOptions)
