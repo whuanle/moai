@@ -83,6 +83,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppAgentSessionEntity> AppAgentSessions { get; set; }
 
     /// <summary>
+    /// 用户级应用配置，(app_id, user_id) 唯一，跨会话复用.
+    /// </summary>
+    public virtual DbSet<AppUserConfigEntity> AppUserConfigs { get; set; }
+
+    /// <summary>
     /// 分类.
     /// </summary>
     public virtual DbSet<ClassifyEntity> Classifies { get; set; }
@@ -152,6 +157,11 @@ public partial class DatabaseContext : DbContext
     /// 提示词.
     /// </summary>
     public virtual DbSet<PromptEntity> Prompts { get; set; }
+
+    /// <summary>
+    /// 上架审核，资源公开到平台前需系统管理员审批.
+    /// </summary>
+    public virtual DbSet<PublicationReviewEntity> PublicationReviews { get; set; }
 
     /// <summary>
     /// 系统设置.
@@ -227,11 +237,6 @@ public partial class DatabaseContext : DbContext
     /// 工作任务.
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
-
-    /// <summary>
-    /// 上架审核.
-    /// </summary>
-    public virtual DbSet<PublicationReviewEntity> PublicationReviews { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

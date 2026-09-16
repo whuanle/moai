@@ -373,6 +373,59 @@ async function main() {
       String(afterModel.json?.modelId))
   }
 
+  // AP-44 会话专家提示词：创建/绑定/清除/权限
+  {
+    check('AP-44a 未登录设置会话提示词 401', (await api('PUT', `/api/app/session/01924f5e-0000-7000-8000-00000000ffff/prompt`, { body: { promptId: 0 } })).status === 401)
+
+    const pPersonal = await api('POST', '/api/prompt', { token: owner.token, body: { teamId: 0, name: 'ap44-个人-' + TS, description: 'e2e', content: '你是严谨的审校专家' } })
+    const pTeam = await api('POST', '/api/prompt', { token: owner.token, body: { teamId: TID, name: 'ap44-团队-' + TS, description: 'e2e', content: '你是售前客服专家' } })
+    const outsiderPrompt = await api('POST', '/api/prompt', { token: outsider.token, body: { teamId: 0, name: 'ap44-外部-' + TS, description: 'e2e', content: 'x' } })
+    check('AP-44b 前置：个人/团队/外部提示词创建 200', pPersonal.status === 200 && pTeam.status === 200 && outsiderPrompt.status === 200, `${pPersonal.status}/${pTeam.status}/${outsiderPrompt.status}`)
+    const PERSONAL_ID = Number(pPersonal.json?.value)
+    const TEAM_ID = Number(pTeam.json?.value)
+    const OUTSIDER_ID = Number(outsiderPrompt.json?.value)
+
+    // 创建会话时直接绑定团队提示词
+    const withPrompt = await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'ap44-with-prompt', promptId: TEAM_ID } })
+    check('AP-44c 创建会话绑定团队提示词 200', withPrompt.status === 200 && isGuid(withPrompt.json?.value), `${withPrompt.status} ${withPrompt.text.slice(0, 120)}`)
+    const EP_SESSION = String(withPrompt.json?.value ?? '')
+    const epList = await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })
+    check('AP-44d 会话列表回读 promptId', (epList.json?.items ?? []).some((s) => String(s.sessionId) === EP_SESSION && Number(s.promptId) === TEAM_ID), epList.text.slice(0, 160))
+
+    // 绑定他人个人提示词 404；不存在提示词 404；负数 400
+    check('AP-44e 绑定他人个人提示词 404', (await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: owner.token, body: { promptId: OUTSIDER_ID } })).status === 404)
+    check('AP-44f 绑定不存在提示词 404', (await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: owner.token, body: { promptId: 99999999 } })).status === 404)
+    check('AP-44g 负数 promptId 400', (await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: owner.token, body: { promptId: -1 } })).status === 400)
+
+    // 非归属用户改他人会话 404
+    check('AP-44h 非归属用户改他人会话 404', (await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: member.token, body: { promptId: TEAM_ID } })).status === 404)
+
+    // 已有会话改绑个人提示词后清除
+    const rebound = await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: owner.token, body: { promptId: PERSONAL_ID } })
+    const reboundList = await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })
+    check('AP-44i 改绑个人提示词 200 且回读一致',
+      rebound.status === 200 && (reboundList.json?.items ?? []).some((s) => String(s.sessionId) === EP_SESSION && Number(s.promptId) === PERSONAL_ID),
+      `${rebound.status}`)
+
+    // 绑定不可用的提示词时创建即失败，不产生会话行
+    const beforeCnt = ((await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })).json?.items ?? []).length
+    const badCreate = await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'ap44-bad', promptId: 99999999 } })
+    const afterCnt = ((await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })).json?.items ?? []).length
+    check('AP-44j 创建会话绑定不可用提示词 404 且不落库',
+      badCreate.status === 404 && beforeCnt === afterCnt,
+      `status=${badCreate.status} before=${beforeCnt} after=${afterCnt}`)
+
+    const cleared = await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: owner.token, body: { promptId: 0 } })
+    const clearedList = await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })
+    check('AP-44k 清除绑定 200 且 promptId=0',
+      cleared.status === 200 && (clearedList.json?.items ?? []).some((s) => String(s.sessionId) === EP_SESSION && Number(s.promptId) === 0),
+      `${cleared.status}`)
+
+    // 删除提示词后会话仍保留 promptId，但对话装配时静默降级（不阻塞对话）；此处仅验证软删不回读出可用性错误
+    const del = await api('DELETE', `/api/prompt/${PERSONAL_ID}`, { token: owner.token })
+    check('AP-44l 清理：删除个人提示词 200', del.status === 200, `${del.status}`)
+  }
+
   console.log(`\n===== 应用管理 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
   process.exit(FAIL > 0 ? 1 : 0)
 }

@@ -204,6 +204,8 @@ export interface AppSessionItem {
   sessionId?: string | null
   appId?: string | null
   title?: string | null
+  /** 会话绑定的专家提示词 id，0 表示未绑定 */
+  promptId?: number | null
   userType?: number | null
   inputTokens?: number | null
   outTokens?: number | null
@@ -231,10 +233,10 @@ export async function getAppSessions(appId: string): Promise<AppSessionItem[]> {
   return (res?.items ?? []) as AppSessionItem[]
 }
 
-/** 创建 Agent 应用会话，返回会话 id（前端 threadId） */
-export async function createAppSession(appId: string, title?: string): Promise<string> {
+/** 创建 Agent 应用会话，返回会话 id（前端 threadId）；promptId 为可选绑定的专家提示词 */
+export async function createAppSession(appId: string, title?: string, promptId?: number): Promise<string> {
   const client = getApiClient()
-  const res = await client.api.app.byId(appId).session.post({ title })
+  const res = await client.api.app.byId(appId).session.post({ title, promptId: promptId || 0 })
   return String(res?.value ?? '')
 }
 
@@ -256,6 +258,12 @@ export async function getAppSessionMessages(sessionId: string): Promise<AspAppSe
 export async function renameAppSession(sessionId: string, title: string): Promise<void> {
   const client = getApiClient()
   await client.api.app.session.bySessionId(sessionId).title.put({ title })
+}
+
+/** 设置会话绑定的专家提示词（promptId=0 清除绑定），仅会话归属用户可操作 */
+export async function updateAppSessionPrompt(sessionId: string, promptId: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.session.bySessionId(sessionId).prompt.put({ promptId })
 }
 
 /** 删除会话（软删除，连同消息） */
@@ -393,4 +401,35 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
       totalTokens: toFiniteNumber(item.totalTokens),
     })),
   }
+}
+
+// ==================== 用户级应用配置 ====================
+
+export interface AppUserConfig {
+  /** 用户新会话默认专家提示词 id，0=未设置（使用应用默认提示词） */
+  promptId: number
+  /** 用户自选技能 id 列表（uuid 字符串） */
+  skills: string[]
+  /** 应用绑定技能 id 列表（应用所有者锁定，用户不可移除） */
+  lockedSkills: string[]
+}
+
+/** 查询当前用户在某应用下的个性化配置与应用锁定技能 */
+export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).userconfig.get()
+  return {
+    promptId: res?.promptId ?? 0,
+    skills: (res?.skills ?? []).map((id) => String(id)),
+    lockedSkills: (res?.lockedSkills ?? []).map((id) => String(id)),
+  }
+}
+
+/** 保存当前用户在某应用下的个性化配置，跨会话复用；应用绑定技能不受影响 */
+export async function saveAppUserConfig(appId: string, payload: { promptId: number; skills: string[] }): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.byId(appId).userconfig.put({
+    promptId: payload.promptId,
+    skills: payload.skills as Guid[],
+  })
 }

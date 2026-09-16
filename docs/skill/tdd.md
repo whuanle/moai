@@ -37,3 +37,19 @@
 - 154（1.9G 内存）不部署 OpenSandbox，沙箱执行类技能在该环境不可用（管理/挂载/说明降级可用）——见 SOP。
 - 自定义技能包文件仅文本（写入沙箱走文本通道）；二进制资源待后续按需扩展。
 - 内置技能 `createTime` 种子固定 2026-01-01（HasData 静态值）。
+
+## 增量验证映射（2026-09-16：归属三级权限 + 用户级应用配置）
+
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @SKL-S1~S4 | local-dev/skill-userconfig-e2e.mjs（SK-01~12） | PASS 20/20（2026-09-16） |
+| @SKL-S5~S7 | local-dev/skill-userconfig-e2e.mjs（UC-01~08） | PASS 20/20（2026-09-16） |
+| @SKL-S8 | @manual（需沙箱+模型，浏览器走查，见 sop.md 第 5 节） | 待走查 |
+| @SKL-S9 | ui/src/pages/teams/apps/__tests__/AppUserSettings.test.tsx | PASS 3/3（2026-09-16） |
+| @SKL-S10 | ui/src/pages/teams/apps/__tests__/AppConfigSection.test.tsx | PASS 7/7（2026-09-16） |
+
+同批回归：`dotnet build src/MoAI/MoAI.csproj` 0 error；前端 vitest **289/289**、typecheck 0、lint 0 error（10 个存量 warning）；存量 `publication-e2e` 34/34、`prompt-e2e` 46/46（PublicationReviewEntity.ReviewTime 修复后回归）。
+
+实踩坑（2026-09-16）：
+- **路由回填字段不得进 Validate**：`UpdateSkillCommand.SkillId` / `SaveAppUserConfigCommand.AppId` 的 NotEmpty 规则使 PUT `/api/skill/{id}`、`/api/app/{id}/userconfig` 必 400（SharpGrip 自动校验发生在 Controller 路由回填之前，与 rounds-log #81 promptId 同坑）。修复：命令 Validate 只校验请求体字段。
+- **PublicationReviewEntity.ReviewTime 类型错误**：实体为 `DateTime?` 但 DB 列 timestamptz、DTO/Handler 均用 `DateTimeOffset?`，赋值 `DateTimeOffset.Now` 直接 CS0029 编译失败；修复为 `DateTimeOffset?`（对齐 cqrs-conventions 时间约定）。

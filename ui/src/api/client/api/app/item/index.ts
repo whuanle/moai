@@ -22,6 +22,8 @@ import { type UnpublishRequestBuilder, UnpublishRequestBuilderRequestsMetadata }
 // @ts-ignore
 import { type UsageRequestBuilder, UsageRequestBuilderRequestsMetadata } from './usage/index.js';
 // @ts-ignore
+import { type UserconfigRequestBuilder, UserconfigRequestBuilderRequestsMetadata } from './userconfig/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -64,6 +66,10 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * The usage property
      */
     get usage(): UsageRequestBuilder;
+    /**
+     * The userconfig property
+     */
+    get userconfig(): UserconfigRequestBuilder;
     /**
      * 查询应用详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -137,6 +143,9 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     },
     usage: {
         requestsMetadata: UsageRequestBuilderRequestsMetadata,
+    },
+    userconfig: {
+        requestsMetadata: UserconfigRequestBuilderRequestsMetadata,
     },
 };
 /**

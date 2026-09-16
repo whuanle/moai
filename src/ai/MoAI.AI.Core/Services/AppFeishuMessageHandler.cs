@@ -138,8 +138,8 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
         {
             var factory = scope.ServiceProvider.GetRequiredService<AppAgentFactory>();
 
-            // 飞书用户不映射内部用户：userId=0，用量计入团队/应用维度
-            var agent = await factory.CreateAsync(appId, app.TeamId, userId: 0, sessionId, isDebug: false, cancellationToken);
+            // 飞书用户不映射内部用户：userId=0，用量计入团队/应用维度；飞书会话暂不支持专家提示词
+            var agent = await factory.CreateAsync(appId, app.TeamId, userId: 0, sessionId, isDebug: false, promptId: 0, cancellationToken);
             var session = await LoadSessionAsync(agent, hotStore, sessionId, cancellationToken);
 
             var response = await agent.RunAsync([new ChatMessage(ChatRole.User, text)], session, cancellationToken: cancellationToken);

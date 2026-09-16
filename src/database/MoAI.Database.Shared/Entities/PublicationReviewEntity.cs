@@ -10,7 +10,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 上架审核，应用/提示词等资源公开到平台前需系统管理员审批.
+/// 上架审核，资源公开到平台前需系统管理员审批.
 /// </summary>
 public partial class PublicationReviewEntity : IFullAudited
 {

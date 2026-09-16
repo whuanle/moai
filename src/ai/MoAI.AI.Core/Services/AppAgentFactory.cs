@@ -13,6 +13,7 @@ using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
+using MoAI.Skill.Services;
 
 namespace MoAI.AI.Services;
 
@@ -28,6 +29,7 @@ public sealed class AppAgentFactory
     private readonly AppChatHotStore _hotStore;
     private readonly IAiModelUsageCounter _usageCounter;
     private readonly AppContextProviderFactory _contextProviderFactory;
+    private readonly ISkillService _skillService;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -39,6 +41,7 @@ public sealed class AppAgentFactory
     /// <param name="hotStore">会话热态存储.</param>
     /// <param name="usageCounter">模型使用计数器.</param>
     /// <param name="contextProviderFactory">上下文提供者工厂.</param>
+    /// <param name="skillService">技能领域服务.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
         DatabaseContext databaseContext,
@@ -47,6 +50,7 @@ public sealed class AppAgentFactory
         AppChatHotStore hotStore,
         IAiModelUsageCounter usageCounter,
         AppContextProviderFactory contextProviderFactory,
+        ISkillService skillService,
         ILoggerFactory loggerFactory)
     {
         _databaseContext = databaseContext;
@@ -55,6 +59,7 @@ public sealed class AppAgentFactory
         _hotStore = hotStore;
         _usageCounter = usageCounter;
         _contextProviderFactory = contextProviderFactory;
+        _skillService = skillService;
         _loggerFactory = loggerFactory;
     }
 
@@ -66,9 +71,10 @@ public sealed class AppAgentFactory
     /// <param name="userId">用户 id.</param>
     /// <param name="sessionId">会话 id.</param>
     /// <param name="isDebug">是否调试会话：true 时不包裹用量计数器（不计数）.</param>
+    /// <param name="promptId">会话绑定的专家提示词 id，0 表示未绑定；内容追加在应用提示词之后.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>内层 Agent.</returns>
-    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, CancellationToken cancellationToken)
+    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == appId, cancellationToken).ConfigureAwait(false);
         if (app == null || app.TeamId != teamId)
@@ -97,6 +103,27 @@ public sealed class AppAgentFactory
 
         var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
 
+        // 用户级应用配置：自选技能与应用绑定技能取并集生效；调试会话不查（保持应用默认视角）.
+        // 应用绑定技能是应用所有者锁定的，不做用户可见性过滤；用户自选技能过滤后静默剔除失效项.
+        var lockedSkillIds = ParsePluginIds(config.Skills);
+        var userSkillIds = new List<Guid>();
+        if (!isDebug)
+        {
+            var userConfig = await _databaseContext.AppUserConfigs.AsNoTracking()
+                .Where(x => x.AppId == appId && x.UserId == userId)
+                .Select(x => new { x.Skills })
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            if (userConfig != null)
+            {
+                var candidates = ParsePluginIds(userConfig.Skills);
+                if (candidates.Count > 0)
+                {
+                    var visible = await _skillService.FilterVisibleSkillIdsAsync(candidates, userId, teamId, cancellationToken).ConfigureAwait(false);
+                    userSkillIds.AddRange(visible);
+                }
+            }
+        }
+
         var buildContext = new AppAgentBuildContext
         {
             App = app,
@@ -107,9 +134,24 @@ public sealed class AppAgentFactory
             SessionId = sessionId,
             WikiIds = ParseWikiIds(config.WikiIds),
             PluginIds = ParsePluginIds(config.Plugins),
-            SkillIds = ParsePluginIds(config.Skills),
+            SkillIds = lockedSkillIds.Concat(userSkillIds).Distinct().ToList(),
         };
         var contextProviders = await _contextProviderFactory.BuildAsync(buildContext, cancellationToken).ConfigureAwait(false);
+
+        // 会话绑定的专家提示词追加在应用提示词之后；提示词已被删除时静默降级为仅应用提示词
+        var expertPrompt = promptId == 0
+            ? null
+            : await _databaseContext.Prompts
+                .Where(x => x.Id == promptId)
+                .Select(x => x.Content)
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        var instructions = config.Prompt;
+        if (!string.IsNullOrWhiteSpace(expertPrompt))
+        {
+            instructions = string.IsNullOrWhiteSpace(instructions)
+                ? expertPrompt
+                : $"{instructions}\n\n{expertPrompt}";
+        }
 
         var options = new ChatClientAgentOptions
         {
@@ -117,7 +159,7 @@ public sealed class AppAgentFactory
             Name = AppAgentConstants.AgentName,
             ChatOptions = new ChatOptions
             {
-                Instructions = string.IsNullOrWhiteSpace(config.Prompt) ? null : config.Prompt,
+                Instructions = string.IsNullOrWhiteSpace(instructions) ? null : instructions,
             },
             ChatHistoryProvider = history,
             AIContextProviders = contextProviders,

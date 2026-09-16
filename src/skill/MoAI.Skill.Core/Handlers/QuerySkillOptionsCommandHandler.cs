@@ -27,6 +27,10 @@ public class QuerySkillOptionsCommandHandler : IRequestHandler<QuerySkillOptions
     {
         var items = await _databaseContext.Skills.AsNoTracking()
             .Where(x => !x.IsDisable)
+            .Where(x => x.IsSystem
+                || x.IsPublic
+                || (request.TeamId > 0 && x.TeamId == request.TeamId)
+                || (request.IncludePersonal && x.TeamId == 0 && !x.IsSystem && x.CreateUserId == request.ContextUserId))
             .OrderBy(x => x.Key)
             .Select(x => new SkillOptionItem
             {
@@ -35,6 +39,7 @@ public class QuerySkillOptionsCommandHandler : IRequestHandler<QuerySkillOptions
                 Name = x.Name,
                 Description = x.Description,
                 IsSystem = x.IsSystem,
+                TeamId = x.TeamId,
             })
             .ToListAsync(cancellationToken);
 

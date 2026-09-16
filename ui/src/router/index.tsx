@@ -25,8 +25,7 @@ import { Plugins } from '@/pages/plugins/Plugins'
 import { PluginTemplates } from '@/pages/plugins/PluginTemplates'
 import { Skills } from '@/pages/skills/Skills'
 import { ClassifyPage } from '@/pages/classify/Classify'
-import { Prompts } from '@/pages/prompts/Prompts'
-import { PromptMarket } from '@/pages/prompts/PromptMarket'
+import { PromptCenter } from '@/pages/prompts/PromptCenter'
 import { PromptEditor } from '@/pages/prompts/PromptEditor'
 
 export const router = createBrowserRouter([
@@ -45,10 +44,10 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'apps', element: <AppPlaza /> },
-      { path: 'prompts', element: <Prompts /> },
+      { path: 'prompts', element: <PromptCenter /> },
       { path: 'prompts/new', element: <PromptEditor /> },
       { path: 'prompts/:promptId/edit', element: <PromptEditor /> },
-      { path: 'prompt-market', element: <PromptMarket /> },
+      { path: 'prompt-market', element: <PromptCenter /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
       { path: 'admin/teams', element: <AdminTeams /> },

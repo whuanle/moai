@@ -11,7 +11,8 @@ using MoAI.Skill.Queries.Responses;
 namespace MoAI.Skill.Controllers;
 
 /// <summary>
-/// 技能管理接口（管理端点仅平台管理员；options 供应用配置页选择挂载）.
+/// 技能接口：list/detail 仅平台管理员（平台管理页）；options/维护端点登录即可，
+/// 个人技能归属人、团队技能团队管理员的目标保护在 Handler 校验.
 /// </summary>
 [ApiController]
 [Route("/skill")]
@@ -35,7 +36,7 @@ public class SkillController : ControllerBase
     }
 
     /// <summary>
-    /// 分页查询技能列表，仅平台管理员.
+    /// 分页查询技能列表（全量），仅平台管理员.
     /// </summary>
     /// <param name="req">查询参数.</param>
     /// <param name="ct">取消令牌.</param>
@@ -61,18 +62,22 @@ public class SkillController : ControllerBase
     }
 
     /// <summary>
-    /// 查询可挂载的技能选项（启用中的技能），登录用户可调用.
+    /// 查询当前用户可见的技能选项（系统内置 ∪ 公开 ∪ 指定团队 ∪ 本人个人技能）.
     /// </summary>
+    /// <param name="teamId">团队 id，0=不限定团队范围.</param>
+    /// <param name="includePersonal">是否包含本人个人技能.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QuerySkillOptionsCommandResponse"/>.</returns>
     [HttpGet("options")]
-    public Task<QuerySkillOptionsCommandResponse> QueryOptions(CancellationToken ct)
+    public Task<QuerySkillOptionsCommandResponse> QueryOptions([FromQuery] int teamId = 0, [FromQuery] bool includePersonal = false, CancellationToken ct = default)
     {
-        return _mediator.Send(new QuerySkillOptionsCommand(), ct);
+        var cmd = new QuerySkillOptionsCommand { TeamId = teamId, IncludePersonal = includePersonal };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>
-    /// 创建技能，仅平台管理员.
+    /// 创建技能：TeamId=0 创建个人技能，大于 0 创建团队技能（需团队管理员）.
     /// </summary>
     /// <param name="req">创建请求.</param>
     /// <param name="ct">取消令牌.</param>
@@ -80,12 +85,11 @@ public class SkillController : ControllerBase
     [HttpPost]
     public async Task<SimpleGuid> CreateSkill([FromBody] CreateSkillCommand req, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
         return await _mediator.Send(req, ct);
     }
 
     /// <summary>
-    /// 更新技能（标识不可修改），仅平台管理员.
+    /// 更新技能（标识不可修改）：个人技能归属人、团队技能团队管理员或平台管理员.
     /// </summary>
     /// <param name="id">技能 id.</param>
     /// <param name="req">更新请求.</param>
@@ -94,7 +98,6 @@ public class SkillController : ControllerBase
     [HttpPut("{id}")]
     public async Task<EmptyCommandResponse> UpdateSkill(Guid id, [FromBody] UpdateSkillCommand req, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
         var cmd = new UpdateSkillCommand
         {
             SkillId = id,
@@ -103,11 +106,12 @@ public class SkillController : ControllerBase
             Instructions = req.Instructions,
             Files = req.Files,
         };
+        _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }
 
     /// <summary>
-    /// 删除技能（软删除；系统内置技能不可删除），仅平台管理员.
+    /// 删除技能（软删除；系统内置技能不可删除）：个人技能归属人、团队技能团队管理员或平台管理员.
     /// </summary>
     /// <param name="id">技能 id.</param>
     /// <param name="ct">取消令牌.</param>
@@ -115,12 +119,13 @@ public class SkillController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<EmptyCommandResponse> DeleteSkill(Guid id, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
-        return await _mediator.Send(new DeleteSkillCommand { SkillId = id }, ct);
+        var cmd = new DeleteSkillCommand { SkillId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
     }
 
     /// <summary>
-    /// 启用/禁用技能，仅平台管理员.
+    /// 启用/禁用技能：个人技能归属人、团队技能团队管理员或平台管理员.
     /// </summary>
     /// <param name="id">技能 id.</param>
     /// <param name="req">请求.</param>
@@ -129,12 +134,13 @@ public class SkillController : ControllerBase
     [HttpPut("{id}/disable")]
     public async Task<EmptyCommandResponse> SetDisable(Guid id, [FromBody] SetSkillDisableRequest req, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
-        return await _mediator.Send(new SetSkillDisableCommand { SkillId = id, IsDisable = req.IsDisable }, ct);
+        var cmd = new SetSkillDisableCommand { SkillId = id, IsDisable = req.IsDisable };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
     }
 
     /// <summary>
-    /// 预上传技能包文件，仅平台管理员.
+    /// 预上传技能包文件，登录用户可调用.
     /// </summary>
     /// <param name="req">预上传请求.</param>
     /// <param name="ct">取消令牌.</param>
@@ -142,12 +148,11 @@ public class SkillController : ControllerBase
     [HttpPost("file/preupload")]
     public async Task<PreUploadSkillFileCommandResponse> PreUploadFile([FromBody] PreUploadSkillFileCommand req, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
         return await _mediator.Send(req, ct);
     }
 
     /// <summary>
-    /// 完成技能包文件上传，仅平台管理员.
+    /// 完成技能包文件上传，登录用户可调用.
     /// </summary>
     /// <param name="req">完成请求.</param>
     /// <param name="ct">取消令牌.</param>
@@ -155,7 +160,6 @@ public class SkillController : ControllerBase
     [HttpPost("file/complete")]
     public async Task<EmptyCommandResponse> CompleteFile([FromBody] CompleteSkillFileCommand req, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
         return await _mediator.Send(req, ct);
     }
 

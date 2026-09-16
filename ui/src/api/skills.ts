@@ -37,6 +37,8 @@ export interface SkillOption {
   name?: string | null
   description?: string | null
   isSystem?: boolean | null
+  /** 所属团队 id，0=系统内置或个人技能 */
+  teamId?: number | null
 }
 
 export interface GetSkillsParams {
@@ -112,9 +114,14 @@ export async function setSkillDisable(id: string, isDisable: boolean): Promise<v
   await client.api.skill.byId(id).disable.put({ isDisable })
 }
 
-export async function getSkillOptions(): Promise<SkillOption[]> {
+export async function getSkillOptions(params?: { teamId?: number; includePersonal?: boolean }): Promise<SkillOption[]> {
   const client = getApiClient()
-  const res = await client.api.skill.optionsPath.get()
+  const res = await client.api.skill.optionsPath.get({
+    queryParameters: {
+      teamId: params?.teamId ?? 0,
+      includePersonal: params?.includePersonal ?? false,
+    },
+  })
   return res?.items ?? []
 }
 

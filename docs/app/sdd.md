@@ -2,7 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/app-e2e.mjs](../../local-dev/app-e2e.mjs)
 
-- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33））
+- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33）；2026-09-16 增补：**会话专家提示词**（`app_agent_session.prompt_id` + 绑定接口 + 对话页右侧专家侧边栏，见 §2.1/§5.4 与 @AP-S44/@AP-S45））
 - 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页 + 外部应用分区 + 应用广场）已实现；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；**外部 token 体系与外部会话/对话端点（/api/external/agent/*）**已实现（D39，见 [外部应用/接入设计](../superpowers/specs/2026-09-13-external-app-and-access-design.md) 与 [访问点设计](../superpowers/specs/2026-09-14-access-point-design.md)）
 - 领域：`src/app`（Shared/Core/Api），前端 `ui/src/pages/teams/apps`（团队页「应用」分区 + 应用管理页）
 - Schema 真源：库表现状 + `src/database/MoAI.Database.Postgres/Data/App*.cs`（脚手架逆向生成）；原 `asserts/app.sql` / 库表 `app_agent_*` 已随仓库 DDL 清理移除
@@ -52,6 +52,7 @@
 | `id` | uuid PK | 会话ID |
 | `team_id` / `app_id` | int / uuid | 归属团队与应用 |
 | `title` | varchar(100) | 会话标题，默认「未命名标题」 |
+| `prompt_id` | int | 绑定的专家提示词（→ `prompt.id`），**0=未绑定**（2026-09-16 增补，存量库见 `asserts/app_agent_chat.sql`） |
 | `user_type` | int | `MoAI.Infra.Models.UserType`：0=识别不到 1=外部用户 2=外部应用 3=内部普通用户 |
 | `input_tokens` / `out_tokens` / `total_tokens` | int | 会话 token 累计 |
 | `last_message_time` | timestamptz | 最后消息时间，**会话列表按此倒序** |
@@ -59,6 +60,8 @@
 | 审计四件 + `is_deleted` | | bigint 软删除 |
 
 索引：`(app_id)`、`(team_id)`、`(app_id, create_user_id, last_message_time DESC)`。
+
+> **专家提示词（2026-09-16 增补）**：会话可绑定一个提示词作为「专家」。绑定接口 `PUT /app/session/{sessionId}/prompt`（0=清除），创建会话 `POST /app/{appId}/session` 请求体可直接带 `promptId`。可用性规则：本人个人提示词（`team_id=0`）或会话所属团队提示词，其余 404；非归属用户 404；校验失败**不产生会话**。运行期由 `AppAgentDispatcher` 读会话行 `prompt_id` 传入 `AppAgentFactory`，专家内容**追加在应用系统提示词之后**拼成 `ChatOptions.Instructions`（提示词已被删除时静默降级为仅应用提示词）；飞书入口与 Redis 调试会话暂不传专家。场景见 [@AP-S44](./bdd.md#ap-s44)/[@AP-S45](./bdd.md#ap-s45)。
 
 **`app_agent_message`｜会话消息（对话历史）**
 
@@ -209,6 +212,7 @@
 - **调试会话（Redis 临时会话）**：`POST /api/app/{id}/debug/session`（Admin+）生成 `Guid.CreateVersion7()` 会话 id 并写 Redis 注册表 `appagent:debug:{id}`（TTL 2h 滑动）；对话仍走 `/api/agent/{appId}/chat`，`AppAgentDispatcher` 在无 `app_agent_session` 行时回落注册表（校验 `UserId`），以 `isDebug=true` 装配（跳过 `UsageCapturingChatClient`）；`AppChatFlushService.FlushAsync` 无 session 行即 return → 调试对话**不落库**。前端刷新即弃用会话 id。
 - **日志分区**（`AppLogsSection.tsx`，Phase 2 已交付）：`GET /api/app/{id}/logs`（Admin+，分页，支持 标题关键字 / 用户类型 / 最后消息时间范围 过滤；数据源为全用户的正式会话 `app_agent_session`，即压缩后视图）+ `GET /api/app/{id}/logs/{sessionId}/messages`（Admin+，按 `seq` 返回该会话消息）。列表条目 `AppLogItem : AuditsInfo`，内部用户人名由 `IUserInfoFillService.FillAsync` 填充，外部用户按 `userType` + `ownerId` 展示（不填内部人名）。前端 `DataTable` + 详情 `Drawer`。
 - **监控分区**（`AppMonitorSection.tsx`，Phase 3 已交付）：`GET /api/app/{id}/usage`（Admin+），返回用量汇总（调用次数 / 输入 / 输出 / 合计 token）与按模型分布。数据源为聚合表 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId` Guid + `team_id`），**最多滞后约 1 分钟**；调试会话不计数。本期**不含按日趋势**（聚合表无时间分桶）。
+- **对话页专家侧边栏（`AppChat.tsx`，2026-09-16 增补）**：顶栏「专家」按钮（`UserSwitchOutlined`，绑定时带 Badge 圆点）点击后右侧浮层展开专家列表 = 本人个人提示词（`getMyPrompts`）+ 所在团队提示词（`getTeamPrompts`），支持关键字本地过滤与 个人/团队 来源标签。点选即绑定：已有会话直接调 `PUT /app/session/{id}/prompt`，未发送过消息则暂存本地、首轮 `createAppSession` 随会话一并创建；再点同一项取消。选中专家在输入框上方以提示条展示（可点 × 清除）；切换会话按该会话 `promptId` 回显。
 - **访问点**：仍为占位，Phase 4 交付。
 
 ## 6. 关键决策

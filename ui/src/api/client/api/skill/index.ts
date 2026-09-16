@@ -37,8 +37,8 @@ export interface SkillRequestBuilder extends BaseRequestBuilder<SkillRequestBuil
      */
      byId(id: Guid) : SkillItemRequestBuilder;
     /**
-     * 创建技能，仅平台管理员.
-     * @param body 创建技能，仅平台管理员可调用.
+     * 创建技能：TeamId=0 创建个人技能，大于 0 创建团队技能（需团队管理员）.
+     * @param body 创建技能：TeamId=0 创建个人技能（归属创建人），TeamId>0 创建团队技能（需团队管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleGuid>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -49,8 +49,8 @@ export interface SkillRequestBuilder extends BaseRequestBuilder<SkillRequestBuil
      */
      post(body: CreateSkillCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SimpleGuid | undefined>;
     /**
-     * 创建技能，仅平台管理员.
-     * @param body 创建技能，仅平台管理员可调用.
+     * 创建技能：TeamId=0 创建个人技能，大于 0 创建团队技能（需团队管理员）.
+     * @param body 创建技能：TeamId=0 创建个人技能（归属创建人），TeamId>0 创建团队技能（需团队管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

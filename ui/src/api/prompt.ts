@@ -94,7 +94,7 @@ export async function updatePrompt(
 ): Promise<void> {
   const client = getApiClient()
   await client.api.prompt.byId(promptId).put({
-    promptId: null,
+    // promptId 由路由提供、后端以路由为准，请求体不携带该字段
     name: payload.name,
     description: payload.description,
     content: payload.content,

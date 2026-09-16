@@ -53,7 +53,7 @@ public class AppSessionController : ControllerBase
     [HttpPost("{id:guid}/session")]
     public async Task<SimpleGuid> CreateSession([FromRoute] Guid id, [FromBody] CreateAppSessionCommand req, CancellationToken ct)
     {
-        var cmd = new CreateAppSessionCommand { AppId = id, Title = req.Title };
+        var cmd = new CreateAppSessionCommand { AppId = id, Title = req.Title, PromptId = req.PromptId };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }
@@ -88,6 +88,21 @@ public class AppSessionController : ControllerBase
     }
 
     /// <summary>
+    /// 设置会话绑定的专家提示词，promptId=0 表示清除；仅会话归属用户可操作.
+    /// </summary>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="req">绑定请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("session/{sessionId:guid}/prompt")]
+    public async Task<EmptyCommandResponse> UpdatePrompt([FromRoute] Guid sessionId, [FromBody] UpdateAppSessionPromptCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateAppSessionPromptCommand { SessionId = sessionId, PromptId = req.PromptId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 删除会话（软删除，连同消息）；仅会话归属用户可操作.
     /// </summary>
     /// <param name="sessionId">会话 id.</param>
@@ -97,6 +112,35 @@ public class AppSessionController : ControllerBase
     public async Task<EmptyCommandResponse> DeleteSession([FromRoute] Guid sessionId, CancellationToken ct)
     {
         var cmd = new DeleteAppSessionCommand { SessionId = sessionId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询当前用户在某应用下的个性化配置（专家提示词/自选技能）与应用锁定技能.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppUserConfigCommandResponse"/>.</returns>
+    [HttpGet("{id:guid}/userconfig")]
+    public Task<QueryAppUserConfigCommandResponse> QueryUserConfig([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new QueryAppUserConfigCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 保存当前用户在某应用下的个性化配置（专家提示词/自选技能），跨会话复用；应用绑定技能不受影响.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="req">保存请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id:guid}/userconfig")]
+    public async Task<EmptyCommandResponse> SaveUserConfig([FromRoute] Guid id, [FromBody] SaveAppUserConfigCommand req, CancellationToken ct)
+    {
+        var cmd = new SaveAppUserConfigCommand { AppId = id, PromptId = req.PromptId, Skills = req.Skills };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }

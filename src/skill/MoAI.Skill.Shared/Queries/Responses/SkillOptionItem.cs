@@ -29,4 +29,9 @@ public class SkillOptionItem
     /// 是否系统内置技能.
     /// </summary>
     public bool IsSystem { get; init; }
+
+    /// <summary>
+    /// 所属团队 id，0=系统内置或个人技能.
+    /// </summary>
+    public int TeamId { get; init; }
 }

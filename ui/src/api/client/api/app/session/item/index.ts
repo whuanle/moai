@@ -6,6 +6,8 @@ import { createBusinessValidationResultFromDiscriminatorValue, createEmptyComman
 // @ts-ignore
 import { MessagesRequestBuilderRequestsMetadata, type MessagesRequestBuilder } from './messages/index.js';
 // @ts-ignore
+import { PromptRequestBuilderRequestsMetadata, type PromptRequestBuilder } from './prompt/index.js';
+// @ts-ignore
 import { TitleRequestBuilderRequestsMetadata, type TitleRequestBuilder } from './title/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
@@ -18,6 +20,10 @@ export interface WithSessionItemRequestBuilder extends BaseRequestBuilder<WithSe
      * The messages property
      */
     get messages(): MessagesRequestBuilder;
+    /**
+     * The prompt property
+     */
+    get prompt(): PromptRequestBuilder;
     /**
      * The title property
      */
@@ -50,6 +56,9 @@ export const WithSessionItemRequestBuilderUriTemplate = "{+baseurl}/api/app/sess
 export const WithSessionItemRequestBuilderNavigationMetadata: Record<Exclude<keyof WithSessionItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     messages: {
         requestsMetadata: MessagesRequestBuilderRequestsMetadata,
+    },
+    prompt: {
+        requestsMetadata: PromptRequestBuilderRequestsMetadata,
     },
     title: {
         requestsMetadata: TitleRequestBuilderRequestsMetadata,

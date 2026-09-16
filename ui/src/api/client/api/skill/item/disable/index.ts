@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface DisableRequestBuilder extends BaseRequestBuilder<DisableRequestBuilder> {
     /**
-     * 启用/禁用技能，仅平台管理员.
+     * 启用/禁用技能：个人技能归属人、团队技能团队管理员或平台管理员.
      * @param body 启用/禁用技能请求体.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface DisableRequestBuilder extends BaseRequestBuilder<DisableRequest
      */
      put(body: SetSkillDisableRequest, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 启用/禁用技能，仅平台管理员.
+     * 启用/禁用技能：个人技能归属人、团队技能团队管理员或平台管理员.
      * @param body 启用/禁用技能请求体.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

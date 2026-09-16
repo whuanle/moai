@@ -50,7 +50,7 @@ public partial class SkillEntity : IFullAudited
     public bool IsSystem { get; set; }
 
     /// <summary>
-    /// 所属团队 id，0=系统级技能.
+    /// 所属团队 id，&gt;0=团队技能，0=系统级技能（is_system）或个人技能（归属 create_user_id）.
     /// </summary>
     public int TeamId { get; set; }
 
@@ -68,4 +68,9 @@ public partial class SkillEntity : IFullAudited
     public DateTimeOffset UpdateTime { get; set; }
 
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 是否公开（市场上架审批通过后置为 true），公开技能全员可见可用.
+    /// </summary>
+    public bool IsPublic { get; set; }
 }

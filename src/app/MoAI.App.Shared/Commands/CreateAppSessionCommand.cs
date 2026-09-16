@@ -21,6 +21,11 @@ public class CreateAppSessionCommand : IRequest<SimpleGuid>, IUserIdContext, IMo
     /// </summary>
     public string? Title { get; init; }
 
+    /// <summary>
+    /// 绑定的专家提示词 id，0 表示不绑定；创建后可通过更新会话提示词接口调整.
+    /// </summary>
+    public int PromptId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }

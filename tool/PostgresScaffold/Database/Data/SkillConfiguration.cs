@@ -55,6 +55,9 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
         entity.Property(e => e.IsDisable)
             .HasComment("是否禁用")
             .HasColumnName("is_disable");
+        entity.Property(e => e.IsPublic)
+            .HasComment("是否公开（市场上架审批通过后置为 true），公开技能全员可见可用")
+            .HasColumnName("is_public");
         entity.Property(e => e.IsSystem)
             .HasComment("是否系统内置技能：脚本以程序集内嵌资源分发，不可删除")
             .HasColumnName("is_system");
@@ -67,7 +70,7 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
             .HasComment("技能名称")
             .HasColumnName("name");
         entity.Property(e => e.TeamId)
-            .HasComment("所属团队 id，0=系统级技能")
+            .HasComment("所属团队 id，>0=团队技能，0=系统级技能（is_system）或个人技能（归属 create_user_id）")
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")

@@ -31,8 +31,8 @@
 
 ## 前端
 
-- 一级菜单「我的提示词」`/prompts`（个人列表 + 上架/撤回）与「提示词市场」`/prompt-market`（浏览/详情复制/计数）。
-- **独立编辑器页** `PromptEditor`：新建/编辑不再用弹窗，路由 `/prompts/new`、`/prompts/:promptId/edit`、`/team/:teamId/prompt/new`、`/team/:teamId/prompt/:promptId/edit`；左栏 Markdown 编辑（等宽 TextArea）、右栏 `react-markdown + remark-gfm` 实时预览；头像在编辑器内上传（新建先传存储拿 objectKey 随创建提交，编辑直接调 avatar 接口）。
+- 一级菜单单一入口「提示词市场」`/prompt-market`；`PromptCenter` 页头 Tab 切换「提示词市场 / 我的提示词」，`/prompts` 与 `/prompt-market` 为同一组件的两个 Tab 路由（切换 Tab 即路由跳转并重置筛选/分页），侧边菜单不再单列「我的提示词」。两个 Tab 均为分类列表（CheckableTag）+ 关键字搜索筛选，卡片列表 + 客户端分页（列表接口暂无分页参数），不使用表格。
+- **独立编辑器页** `PromptEditor`：新建/编辑不再用弹窗，路由 `/prompts/new`、`/prompts/:promptId/edit`、`/team/:teamId/prompt/new`、`/team/:teamId/prompt/:promptId/edit`；顶部基本信息（头像角标上传 + 名称/分类/描述一行）+ Markdown 工具栏 + 左右等高面板（borderless 等宽 TextArea ｜ `react-markdown + remark-gfm` 实时预览）；工具栏为 `MarkdownToolbar` + 纯函数内核 `markdown.ts#applyMarkdownEdit`（选区包裹/行级前缀/整块插入，占位文案走 i18n），头像在编辑器内上传（新建先传存储拿 objectKey 随创建提交，编辑直接调 avatar 接口）。
 - 团队详情「提示词」分区（成员可见，`TeamPrompts` 按 `canManage` 收敛管理入口）。
 - 共享 `PromptDetailModal`（头像 + Markdown 渲染内容）供我的/团队/市场三处复用。
 - 封装层 `ui/src/api/prompt.ts`，头像走 `uploadImageWithKey`（存储三段直传）+ `setPromptAvatar`；上架复用 `ui/src/api/publication.ts`；分类选项复用 `classifyApi.getClassifies('prompt')`。
@@ -42,6 +42,10 @@
 7. **头像存 objectKey**：与团队/用户头像同规则——数据库只存 `avatar_path`（objectKey 或绝对地址），前端 `resolveStorageUrl` 拼展示地址；后端校验 objectKey 必须是已完成上传并登记（`files.is_uploaded`）的文件，防伪造。
 
 ## 已知问题
+
+- `UpdatePromptCommand.PromptId` 已加 `[JsonIgnore]`：PUT `/{id}` 的请求体不再暴露 promptId（由路由提供）；存量 Kiota 客户端若仍发送该字段需为可绑定 int，不能为 null。
+
+
 
 - 应用 Agent 配置的 Prompt 仍是自由文本，尚未接入提示词库选择器（后续独立需求）。
 - `is_audit` 字段为建表遗留，业务未使用。

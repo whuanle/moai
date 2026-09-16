@@ -13,6 +13,7 @@ public class UpdatePromptCommand : IRequest<EmptyCommandResponse>, IUserIdContex
     /// <summary>
     /// 提示词 id.
     /// </summary>
+    [JsonIgnore]
     public int PromptId { get; init; }
 
     /// <summary>

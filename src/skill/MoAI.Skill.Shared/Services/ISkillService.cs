@@ -14,6 +14,16 @@ public interface ISkillService
     Task<IReadOnlyList<SkillRuntimeInfo>> GetRuntimeSkillsAsync(IReadOnlyCollection<Guid> skillIds, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 过滤出用户可见的技能 id 子集：系统内置 ∪ 公开 ∪ 所在团队 ∪ 本人个人技能，且未禁用.
+    /// </summary>
+    /// <param name="skillIds">待校验的技能 id 集合.</param>
+    /// <param name="userId">用户 id.</param>
+    /// <param name="teamId">团队 id（应用所属团队）.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>可见的技能 id 列表.</returns>
+    Task<IReadOnlyList<Guid>> FilterVisibleSkillIdsAsync(IReadOnlyCollection<Guid> skillIds, long userId, int teamId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 读取技能包文件内容（文本）.
     /// </summary>
     /// <param name="file">技能运行时文件.</param>

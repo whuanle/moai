@@ -21,6 +21,11 @@ public class AppSessionItem
     public string Title { get; set; } = default!;
 
     /// <summary>
+    /// 会话绑定的专家提示词 id，0 表示未绑定.
+    /// </summary>
+    public int PromptId { get; set; }
+
+    /// <summary>
     /// 发起用户类型，对齐 MoAI.Infra.Models.UserType.
     /// </summary>
     public int UserType { get; set; }

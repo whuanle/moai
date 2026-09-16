@@ -6,6 +6,7 @@ using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.App.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -67,12 +68,18 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
             throw new BusinessException("应用尚未发布，无法对话.") { StatusCode = 403 };
         }
 
+        if (request.PromptId != 0)
+        {
+            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, app.TeamId, request.ContextUserId, cancellationToken);
+        }
+
         var session = new AppAgentSessionEntity
         {
             Id = Guid.CreateVersion7(),
             TeamId = app.TeamId,
             AppId = app.Id,
             Title = string.IsNullOrWhiteSpace(request.Title) ? DefaultTitle : request.Title!,
+            PromptId = request.PromptId,
             UserType = (int)request.ContextUserType,
             LastMessageTime = DateTimeOffset.Now,
             CreateUserId = request.ContextUserId,

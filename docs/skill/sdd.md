@@ -57,3 +57,13 @@ Agent 运行时(src/ai)                 ▼
 - **D4 生成引擎=沙箱 Python**（用户拍板）：镜像未预装 python-docx/pptx（spike 证实），技能脚本自带 pip 兜底（PEP 668 需 `--break-system-packages`，一次性沙箱可接受）；备选三级降级为自建镜像，暂不需要。
 - **D5 产物通道二进制化**：`ReadFileAsync`（文本）不足以承载 docx/pptx，新增 `ReadFileBytesAsync`。
 - **D6 key 规则**：`^[a-z][a-z0-9_]{0,29}$`，与动态插件实例 key 同风格；工具名 `skill_{key}` 应用内唯一。
+
+## 6. 增量设计（2026-09-16：归属三级权限 + 用户级应用配置）
+
+- **归属模型**：`skill.team_id` 语义扩展——`is_system=1` 平台内置；`team_id>0` 团队技能；`team_id=0 且非内置` 个人技能（归属 `create_user_id`）。判定与提示词模块完全一致。新增 `is_public` 列（bool，市场上架审批通过置 true，本期仅存储与 options 过滤，审批流接 `PublicationResourceType.Skill` 为后续增量）。
+- **权限矩阵**：个人技能=归属人；团队技能=团队 Admin/Owner；平台管理员全通（`SkillAccessGuard`，Handler 目标保护）；`list`/`{id}` 详情仍 Controller IsAdmin 门禁；options/preupload/complete 登录即可。
+- **D7 用户级应用配置表 `app_user_config`**：(app_id, user_id) 唯一（partial 索引 is_deleted=0），字段 `prompt_id`（新会话默认专家，0=未设置）+ `skills` JSON uuid 数组（用户自选）。接口 `GET/PUT /api/app/{id}/userconfig`。**专家语义=新会话默认值**：前端进入对话页加载用户配置初始化专家选择，会话级专家面板（app 模块 @AP-S44/S45）仍可单独覆盖且优先；技能语义=运行时并集。
+- **D8 运行时并集与失效剔除**：`AppAgentFactory` 每次装配时查 `app_user_config`（调试会话跳过，保持应用默认视角），`生效技能 = config.Skills（锁定，不做可见性过滤）∪ FilterVisibleSkillIdsAsync(userConfig.Skills)`（系统内置∪公开∪本团队∪本人个人，且未禁用；失效项静默剔除）。会话不快照技能，用户配置变更即时对后续请求生效。
+- **D9 市场直接引用**：用户自选直接引用技能 id（可见性运行时兜底），不做"安装副本"；sha256 内容寻址下后续如需"下架保护"可加副本引用，成本为零。
+- 组件增量：`SkillAccessGuard`（权限断言）、`ISkillService.FilterVisibleSkillIdsAsync`、`Save/QueryAppUserConfigCommandHandler`（app 模块，校验复用 `SessionPromptHelper` 与 `FilterVisibleSkillIdsAsync`）、前端 `chat/AppUserSettings.tsx`（对话页应用设置面板）、`AppConfigSection` 技能绑定多选。
+- 前端约定：应用设置面板关闭时不渲染（避免与专家面板重复挂载同名列表项，vitest 踩坑）；i18n `appChat.userSettings*`/`appManage.sectionSkills*` zh-CN 与 en-US 同步。

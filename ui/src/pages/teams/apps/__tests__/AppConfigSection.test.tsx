@@ -5,6 +5,7 @@ import { AppConfigSection, type AppDetail } from '../AppConfigSection'
 import { getAppAgentConfig, saveAppAgentConfig } from '@/api/app'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins } from '@/api/team-plugin'
+import { getSkillOptions } from '@/api/skills'
 import { getWikis } from '@/api/wiki'
 
 vi.mock('@/api/app', () => ({
@@ -39,6 +40,10 @@ vi.mock('@/api/team-plugin', () => ({
 
 vi.mock('@/api/wiki', () => ({
   getWikis: vi.fn(),
+}))
+
+vi.mock('@/api/skills', () => ({
+  getSkillOptions: vi.fn(),
 }))
 
 const MODEL_ID = '1c6780ce-2ce5-425f-899e-1d76135cfd81'
@@ -104,6 +109,9 @@ describe('AppConfigSection（应用配置分区）', () => {
         { wikiId: 8, teamId: 3, name: '运维手册' },
       ],
     })
+    vi.mocked(getSkillOptions).mockResolvedValue([
+      { id: 'sk1', key: 'docx_writer', name: '文档撰写', description: '', isSystem: true, teamId: 0 },
+    ])
   })
 
   it('左栏应用信息与右栏 Agent 配置同时呈现', async () => {
@@ -174,6 +182,7 @@ describe('AppConfigSection（应用配置分区）', () => {
         prompt: '你是售前客服',
         wikiIds: [7],
         plugins: ['p1'],
+        skills: [],
         executionSettings: { sandbox: { enabled: false, renewOnAccess: true } },
       }),
     )
@@ -183,7 +192,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     renderSection()
     await screen.findByText('天气查询')
 
-    // 三个下拉依次为 对话模型 / 插件 / 知识库
+    // 四个下拉依次为 对话模型 / 插件 / 技能 / 知识库
     fireEvent.mouseDown(screen.getAllByRole('combobox')[1])
 
     await waitFor(() => {

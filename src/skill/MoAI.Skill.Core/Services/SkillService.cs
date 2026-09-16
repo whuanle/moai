@@ -50,6 +50,27 @@ public class SkillService : ISkillService
     }
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<Guid>> FilterVisibleSkillIdsAsync(IReadOnlyCollection<Guid> skillIds, long userId, int teamId, CancellationToken cancellationToken = default)
+    {
+        if (skillIds.Count == 0)
+        {
+            return Array.Empty<Guid>();
+        }
+
+        var ids = skillIds.ToArray();
+        var visible = await _databaseContext.Skills.AsNoTracking()
+            .Where(x => ids.Contains(x.Id) && !x.IsDisable)
+            .Where(x => x.IsSystem
+                || x.IsPublic
+                || x.TeamId == teamId
+                || (x.TeamId == 0 && x.CreateUserId == userId))
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        return visible;
+    }
+
+    /// <inheritdoc/>
     public async Task<string> ReadSkillFileAsync(SkillRuntimeFile file, CancellationToken cancellationToken = default)
     {
         if (file.IsEmbedded)

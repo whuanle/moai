@@ -1,12 +1,15 @@
 using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Skill.Commands;
 using MoAI.Skill.Models;
+using MoAI.Skill.Services;
+using MoAI.Team.Services;
 
 namespace MoAI.Skill.Handlers;
 
@@ -18,19 +21,27 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly DatabaseContext _databaseContext;
+    private readonly IUserAccountService _userAccountService;
+    private readonly ITeamService _teamService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateSkillCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public CreateSkillCommandHandler(DatabaseContext databaseContext)
+    /// <param name="userAccountService">用户账号领域服务.</param>
+    /// <param name="teamService">团队领域服务.</param>
+    public CreateSkillCommandHandler(DatabaseContext databaseContext, IUserAccountService userAccountService, ITeamService teamService)
     {
         _databaseContext = databaseContext;
+        _userAccountService = userAccountService;
+        _teamService = teamService;
     }
 
     /// <inheritdoc/>
     public async Task<SimpleGuid> Handle(CreateSkillCommand request, CancellationToken cancellationToken)
     {
+        await SkillAccessGuard.EnsureCanCreateAsync(request.TeamId, request.ContextUserId, _userAccountService, _teamService, cancellationToken);
+
         var keyExist = await _databaseContext.Skills.AnyAsync(x => x.Key == request.Key, cancellationToken);
         if (keyExist)
         {
@@ -41,13 +52,15 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
 
         var skill = new SkillEntity
         {
+            Id = Guid.CreateVersion7(),
             Key = request.Key,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             Instructions = request.Instructions ?? string.Empty,
             Files = JsonSerializer.Serialize(request.Files, JsonOptions),
             IsSystem = false,
-            TeamId = 0,
+            TeamId = request.TeamId,
+            IsPublic = false,
             IsDisable = false,
         };
 

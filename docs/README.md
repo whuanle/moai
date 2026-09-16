@@ -51,7 +51,7 @@
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 | [app](./app/) | AP | 团队应用（团队页「应用」分区：Agent/流程应用的卡片列表与基础信息 + 头像与「允许外部使用」开关；卡片「管理」进**单页左侧应用信息 + 右侧 Agent 配置**的管理页，配置**对话模型**/插件/知识库/提示词；成员只读使用；**已支持发布进入对话**，会话运行见 ai 模块） |
 | [ai](./ai/) | AI | Agent 运行时（应用发布后 AG-UI 流式对话、会话持久化 Redis热+Postgres冷、上下文压缩、知识库 RAG、token 用量；`src/ai` + 前端对话页） |
-| [skill](./skill/) | SKL | 技能（可装载技能包：管理/应用挂载/Agent 沙箱加载执行；内置 docx·ppt 生成，产物 save_artifact 交付；沙箱依赖见 ai 模块） |
+| [skill](./skill/) | SKL | 技能（可装载技能包：平台内置/团队/个人三级归属维护；应用绑定锁定 + 用户级应用配置自选，运行时并集生效；Agent 沙箱加载执行，内置 docx·ppt 生成；市场审批为增量；沙箱依赖见 ai 模块） |
 | [feishu](./feishu/) | FS | 飞书通知基座（Maomi.FeishuWss 长连接复用：一个飞书应用一条 WSS 连接；绑定 app 渠道且同一飞书应用同时只能绑一个渠道；事件去重后转发 `IFeishuEventHandler`，应用渠道已落地**群聊/私聊消息→应用 Agent→回复**；知识库渠道后续独立模块接入） |
 | [publication](./publication/) | PB | 上架审核（应用/提示词公开改审批制：团队申请上架 → `publication_review` 审核表 → 系统管理员「审批上架」菜单审批；**通过后系统才将目标资源 is_public 置为 true**；撤回/驳回/重新申请、pending 唯一约束） |
 | [prompt](./prompt/) | PT | 提示词库（个人提示词仅本人可用；团队提示词 Admin 创建、成员可用；独立编辑器页 Markdown 实时预览 + 头像上传；申请上架走 publication 审批，通过后进入「提示词市场」对所有用户开放；市场查看计数） |
@@ -83,6 +83,7 @@ node local-dev/audit-345.mjs                  # ACC/SET/OC 14 场景
 node local-dev/audit-storage.mjs              # STO 全链路 7 场景
 node local-dev/auth-lockout-check.mjs         # AUTH 锁定 8 场景
 node local-dev/prompt-e2e.mjs                # PT 40 场景
+node local-dev/skill-userconfig-e2e.mjs      # SKL 20 场景
 # 前端
 cd ui && npm run typecheck && npm run lint && npm run test
 ```

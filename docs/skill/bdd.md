@@ -75,3 +75,83 @@ Feature: 技能管理
     When Agent 调 skill_{key}
     Then 200 返回 instructions，message 提示"未启用沙箱，脚本无法写入执行"
     And 不发生任何沙箱写入
+
+## 归属与三级权限（2026-09-16 增量）
+
+```gherkin
+Feature: 技能归属与三级权限
+  Background:
+    Given 用户已登录（平台管理员 / 团队管理员 / 普通用户）
+
+  @SKL-S1 @auto:e2e
+  Scenario: 个人技能归属创建人，仅本人可见可用
+    When Alice 创建个人技能（teamId=0）
+    Then 创建成功，Alice 的技能选项（includePersonal）包含该技能
+    And Bob 的技能选项不包含 Alice 的个人技能
+
+  @SKL-S2 @auto:e2e
+  Scenario: 团队技能仅团队管理员可创建
+    When 团队 Member 创建团队技能（teamId>0）
+    Then 403 只有团队管理员可以创建团队技能
+    When 团队 Owner 创建团队技能
+    Then 创建成功，团队成员的技能选项（teamId）包含该技能且不含他人个人技能
+
+  @SKL-S3 @auto:e2e
+  Scenario: 非归属人不可管理他人技能
+    When Bob 更新或删除 Alice 的个人技能
+    Then 403 只有技能创建人可以管理该技能
+    When 团队 Member 禁用团队的技能
+    Then 403 只有团队管理员可以管理该技能
+
+  @SKL-S4 @auto:e2e
+  Scenario: 归属人可更新并删除个人技能
+    When Alice 更新自己的个人技能
+    Then 200
+    When Alice 删除自己的个人技能
+    Then 200（软删除），选项与运行时加载中消失
+```
+
+## 用户级应用配置（2026-09-16 增量）
+
+```gherkin
+Feature: 用户级应用配置（跨会话复用）
+  Background:
+    Given 团队拥有应用 App，成员 Charlie 已登录
+
+  @SKL-S5 @auto:e2e
+  Scenario: 保存并回显
+    When Charlie 保存用户配置（自选技能列表）
+    Then 保存成功，查询回显 skills 与保存值一致、promptId=0、lockedSkills 为空
+
+  @SKL-S6 @auto:e2e
+  Scenario: 保存校验
+    When Charlie 保存含他人个人技能的自选列表
+    Then 400 存在不可用或无权使用的技能
+    When Charlie 保存不可用的专家提示词 id
+    Then 404 提示词不存在
+
+  @SKL-S7 @auto:e2e
+  Scenario: 覆盖语义与非成员
+    When Charlie 再次保存（skills 为空列表）
+    Then 覆盖先前自选技能，查询 skills 为空
+    When 非团队成员查询该应用用户配置
+    Then 404
+
+  @SKL-S8 @manual
+  Scenario: 运行时技能并集生效
+    Given 应用绑定技能 A（应用所有者锁定），Charlie 自选技能 B
+    When Charlie 发起对话并触发 list_tools
+    Then 工具列表同时含 skill_A 与 skill_B
+    And 自选技能被删除/禁用后，后续对话静默剔除且不影响技能 A
+
+  @SKL-S9 @auto:vitest
+  Scenario: 应用绑定技能对用户锁定
+    When Charlie 打开对话页「应用设置」面板
+    Then 应用绑定技能呈现勾选且禁用（应用必选标记），不可取消
+    And 保存仅提交自选技能与新会话默认专家
+
+  @SKL-S10 @auto:vitest
+  Scenario: 应用配置页绑定技能
+    When 团队管理员在应用配置页选择技能并保存
+    Then 绑定写入 app_agent_config.skills，选项来自系统内置∪公开∪本团队（不含个人技能）
+```

@@ -15,3 +15,8 @@ comment on column app.publish_time is '发布时间，未发布为 null';
 -- 会话冷快照：AgentSession 序列化状态（含压缩索引），用于 Redis 热态失效后恢复
 alter table app_agent_session add column if not exists state jsonb null;
 comment on column app_agent_session.state is 'Agent 会话冷快照（AgentSession 序列化，含上下文压缩索引），Redis 热态失效后恢复';
+
+-- 会话绑定的专家提示词：对话装配 Agent 时追加到系统提示词，0=未绑定
+alter table app_agent_session add column if not exists prompt_id integer not null default 0;
+comment on column app_agent_session.prompt_id is '会话绑定的专家提示词 id（prompt.id），0 表示未绑定';
+

@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface CompleteRequestBuilder extends BaseRequestBuilder<CompleteRequestBuilder> {
     /**
-     * 完成技能包文件上传，仅平台管理员.
+     * 完成技能包文件上传，登录用户可调用.
      * @param body 完成技能包文件上传，仅平台管理员可调用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -23,7 +23,7 @@ export interface CompleteRequestBuilder extends BaseRequestBuilder<CompleteReque
      */
      post(body: CompleteSkillFileCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 完成技能包文件上传，仅平台管理员.
+     * 完成技能包文件上传，登录用户可调用.
      * @param body 完成技能包文件上传，仅平台管理员可调用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

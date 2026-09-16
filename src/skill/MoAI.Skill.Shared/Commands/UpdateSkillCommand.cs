@@ -1,19 +1,29 @@
+using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using MoAI.Skill.Models;
 
 namespace MoAI.Skill.Commands;
 
 /// <summary>
-/// 更新技能，仅平台管理员可调用；技能标识不可修改.
+/// 更新技能：个人技能归属人、团队技能团队管理员或平台管理员可调用；技能标识不可修改.
 /// </summary>
-public class UpdateSkillCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateSkillCommand>
+public class UpdateSkillCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateSkillCommand>, IUserIdContext
 {
     /// <summary>
     /// 技能 id.
     /// </summary>
     public Guid SkillId { get; init; }
+
+    /// <inheritdoc/>
+    [JsonIgnore]
+    public long ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    [JsonIgnore]
+    public UserType ContextUserType { get; init; }
 
     /// <summary>
     /// 技能名称.
@@ -38,7 +48,7 @@ public class UpdateSkillCommand : IRequest<EmptyCommandResponse>, IModelValidato
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateSkillCommand> validate)
     {
-        validate.RuleFor(x => x.SkillId).NotEmpty().WithMessage("技能 id 不正确.");
+        // SkillId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("技能名称不能为空.").MaximumLength(50).WithMessage("技能名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("技能描述最长 255 个字符.");
         validate.RuleFor(x => x.Files).Must(files => files.Select(f => f.Path).Distinct().Count() == files.Count)

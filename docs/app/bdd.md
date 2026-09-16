@@ -379,6 +379,32 @@ Scenario: 查看应用用量监控
   Then 返回不存在
 ```
 
+## Feature: 会话专家提示词（app_agent_session.prompt_id）
+
+```gherkin
+@AP-S44 @auto:e2e @auto:unit
+Scenario: 会话绑定专家提示词，后续对话追加到系统提示词
+  Given 用户在应用对话页展开右侧专家侧边栏（本人个人提示词 + 所在团队提示词）
+  When 为会话选择一个可用专家（未发送过消息则随会话创建一并绑定）
+  Then 绑定成功，会话列表回读该会话的提示词 id
+  And 后续每轮对话装配 Agent 时，专家提示词内容追加在应用系统提示词之后
+  When 再次点击同一专家或点击提示条上的取消
+  Then 清除绑定（提示词 id 置 0），后续对话不再携带
+  When 切换到其他会话
+  Then 按该会话绑定的提示词回显选中态
+
+@AP-S45 @auto:e2e
+Scenario: 不可用专家与越权操作被拒绝
+  When 绑定他人个人提示词或不存在的提示词
+  Then 返回不存在
+  When 提示词 id 为负数
+  Then 返回参数错误
+  When 非会话归属用户设置会话提示词
+  Then 返回不存在
+  When 创建会话时绑定不可用的提示词
+  Then 返回不存在且不产生会话
+```
+
 ## Feature: 访问点配置（app_access_point）
 
 ```gherkin

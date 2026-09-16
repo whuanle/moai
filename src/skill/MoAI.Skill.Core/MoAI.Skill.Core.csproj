@@ -6,8 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.Skill.Api\MoAI.Skill.Api.csproj" />
 	</ItemGroup>
 

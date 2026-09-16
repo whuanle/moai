@@ -19,11 +19,12 @@
 | @PT-S12 | local-dev/prompt-e2e.mjs#PT-13 | PASS 46/46（2026-09-15） |
 | @PT-S13 | local-dev/prompt-e2e.mjs#PT-14 | PASS 46/46（2026-09-15） |
 | @PT-S14 | local-dev/prompt-e2e.mjs#PT-15c/d | PASS 46/46（2026-09-15） |
-| @PT-S15 | ui/src/pages/prompts/__tests__/Prompts.test.tsx#渲染我的提示词列表 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
-| @PT-S16 | ui/src/pages/prompts/__tests__/Prompts.test.tsx#新建入口跳转/申请上架/删除 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
+| @PT-S15 | ui/src/pages/prompts/__tests__/PromptCenter.test.tsx#市场 Tab 渲染/切换我的提示词 | PASS 11/11（2026-09-16，全仓 vitest 270/270） |
+| @PT-S16 | ui/src/pages/prompts/__tests__/PromptCenter.test.tsx#分类过滤/新建跳转/申请上架/删除 | PASS 11/11（2026-09-16，全仓 vitest 270/270） |
 | @PT-S18 | ui/src/pages/prompts/__tests__/PromptEditor.test.tsx#实时预览/新建/编辑回填/团队新建 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
+| @PT-S20 | ui/src/pages/prompts/__tests__/markdown.test.ts + PromptEditor.test.tsx#工具栏 | PASS 283/283（2026-09-16，全仓 vitest） |
 | @PT-S19 | local-dev/prompt-e2e.mjs#PT-16 | PASS 46/46（2026-09-15） |
-| @PT-S17 | @manual（浏览器走查，见 sop.md 第 3 节） | PASS（2026-09-15） |
+| @PT-S17 | @manual（浏览器走查，见 sop.md 第 3 节） | PASS（2026-09-16 浏览器实测市场卡片与编辑器工具栏/预览，团队分区未改动） |
 
 ## 构建与回归
 
@@ -35,6 +36,9 @@ node local-dev/publication-e2e.mjs                            # PB 34/34 回归�
 ```
 
 ## 本轮修复记录
+
+- 2026-09-16 编辑保存 400（`$.promptId` 无法转 Int32）：`UpdatePromptCommand.PromptId` 暴露在 PUT 请求体 schema 中，Kiota 把前端传入的 null 原样序列化导致 System.Text.Json 绑定失败。修复：后端 `PromptId` 加 `[JsonIgnore]`（请求体不再携带，与"路由提供"决策一致）；前端 `updatePrompt` 改传真实 id 立即兼容运行中后端。**待后端重启后执行 `npm run syncapi`，再删除封装层中的 `promptId` 字段**。
+
 
 - `UpdatePromptCommand` 不校验 `PromptId`（路由提供，body 携带 0 导致 PUT 400）。
 - E2E PT-14 计数断言改为 `market_list` 读数（detail GET 自身会 +1）。

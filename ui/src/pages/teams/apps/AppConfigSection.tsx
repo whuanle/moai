@@ -20,6 +20,7 @@ import {
 } from '@/api/publication'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
+import { getSkillOptions, type SkillOption } from '@/api/skills'
 import { getWikis, type WikiItem } from '@/api/wiki'
 import { resolveStorageUrl } from '@/utils/storage'
 import { AppDebugChat } from './chat/AppDebugChat'
@@ -71,6 +72,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
   const [prompt, setPrompt] = useState('')
   const [wikiIds, setWikiIds] = useState<number[]>([])
   const [pluginIds, setPluginIds] = useState<string[]>([])
+  const [skillIds, setSkillIds] = useState<string[]>([])
   const [sandboxEnabled, setSandboxEnabled] = useState(false)
   const [sandboxTimeout, setSandboxTimeout] = useState<number | null>(null)
   const [sandboxRenew, setSandboxRenew] = useState(true)
@@ -80,6 +82,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
   const [sandboxEgress, setSandboxEgress] = useState('')
   const [executionSettings, setExecutionSettings] = useState<Record<string, unknown>>({})
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
+  const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
   const [modelOptions, setModelOptions] = useState<{ value: string; label: string }[]>([])
   const [optionsLoading, setOptionsLoading] = useState(false)
@@ -99,6 +102,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         setPrompt(config.prompt ?? '')
         setWikiIds(config.wikiIds ?? [])
         setPluginIds(config.plugins ?? [])
+        setSkillIds(config.skills ?? [])
         const settings = config.executionSettings ?? {}
         setExecutionSettings(settings)
         const sandbox = (settings.sandbox ?? {}) as Record<string, unknown>
@@ -191,10 +195,12 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setOptionsLoading(true)
     try {
-      const [models, plugins, wikis] = await Promise.all([
+      const [models, plugins, wikis, skills] = await Promise.all([
         getTeamGatewayModels(teamId),
         getTeamPlugins(teamId),
         getWikis(teamId),
+        // 应用绑定场景不含个人技能；此处绑定即锁定，用户在对话中不可移除
+        getSkillOptions({ teamId }),
       ])
       setModelOptions(
         models
@@ -207,6 +213,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
       setPluginOptions(
         (plugins.items ?? []).filter((item) => item.pluginId && String(item.pluginId) !== EMPTY_GUID),
       )
+      setSkillOptions(skills)
       setWikiOptions(wikis.items ?? [])
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -268,6 +275,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         prompt,
         wikiIds,
         plugins: pluginIds,
+        skills: skillIds,
         // 与已加载的执行参数合并，避免覆盖压缩等其他扩展配置
         executionSettings: { ...executionSettings, sandbox },
       })
@@ -301,6 +309,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
   const pluginSelectOptions = pluginOptions.map((item) => ({
     value: String(item.pluginId),
     label: item.title || item.pluginName || '-',
+  }))
+
+  const skillSelectOptions = skillOptions.map((item) => ({
+    value: String(item.id),
+    label: item.name || item.key || '-',
   }))
 
   const wikiSelectOptions = wikiOptions
@@ -457,6 +470,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                     onChange={setPluginIds}
                     options={pluginSelectOptions}
                     notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.pluginsEmpty')}
+                  />
+                </Form.Item>
+                <Form.Item label={t('appManage.sectionSkills')} extra={t('appManage.skillsHint')}>
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: '100%' }}
+                    placeholder={t('appManage.skillsPlaceholder')}
+                    loading={optionsLoading}
+                    value={skillIds}
+                    onChange={setSkillIds}
+                    options={skillSelectOptions}
+                    notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.skillsEmpty')}
                   />
                 </Form.Item>
                 <Form.Item label={t('appManage.sectionKnowledge')} extra={t('appManage.knowledgeHint')}>

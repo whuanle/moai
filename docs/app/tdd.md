@@ -4,6 +4,10 @@
 
 ## 自检记录
 
+- 后端构建（会话专家提示词轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-16）。
+- 存量库加列：`app_agent_session.prompt_id integer not null default 0`（已对本机开发库执行，脚本同步至 `asserts/app_agent_chat.sql`）（2026-09-16）。
+- E2E：`node local-dev/app-e2e.mjs` → **113/113 PASS**（2026-09-16；新增 AP-44a~l 覆盖创建时绑定、改绑/清除回读、不可用提示词 404、越权 404、校验失败不落库。修复：`CreateSession` Controller 构造命令漏拷 `PromptId`，AP-44c/d 首跑暴露后补上）。
+- 前端：`npm run syncapi` 后 `npm run typecheck` → **0 error**；`npm run lint` → **0 error（10 个既有 warning）**；`npm run test` → **286 PASS（51 文件；`AppChat.test.tsx` 扩至 6 例）**（2026-09-16）。
 - 后端构建：`dotnet build src/MoAI/MoAI.csproj --no-restore` → **0 error**（2026-09-11）；`MoAI.App.Core` 单项目编译 0 error、改动文件 0 告警。
   > 历史：2026-09-10 曾因本机 NuGet `ConfigurationDefaults` 静态构造取不到系统目录（`Value cannot be null. (Parameter 'path1')`）无法还原；当前环境已可编译。
 - 后端构建（内部/外部应用轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-13；顺带移除与主实体重复的 `Partial/AppEntity.AgentChat.cs`、`Partial/AppAgentSessionEntity.AgentChat.cs` 及对应配置 partial）。
@@ -80,6 +84,8 @@
 | 应用对话日志看板 | ui/src/pages/teams/apps/__tests__/AppLogsSection.test.tsx | PASS 3/3（2026-09-14） |
 | @AP-S43 | app-e2e.mjs（AP-43a-e） | PASS（2026-09-14） |
 | 应用用量监控看板 | ui/src/pages/teams/apps/__tests__/AppMonitorSection.test.tsx | PASS 3/3（2026-09-14） |
+| @AP-S44 | app-e2e.mjs（AP-44c/d/i/k）+ AppChat.test.tsx（专家侧边栏/未建会话本地暂存随创建绑定/已有会话绑定与取消） | PASS 113/113、6/6（2026-09-16） |
+| @AP-S45 | app-e2e.mjs（AP-44a/e/f/g/h/j） | PASS 113/113（2026-09-16） |
 | @EA-S1 | external-app-e2e.mjs（EA-01、EA-02） | PASS 28/28（2026-09-14） |
 | @EA-S2 | external-app-e2e.mjs（EA-03~EA-06） | PASS（2026-09-14） |
 | @EA-S3 | external-app-e2e.mjs（EA-07） | PASS（2026-09-14） |

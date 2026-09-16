@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface OptionsRequestBuilder extends BaseRequestBuilder<OptionsRequestBuilder> {
     /**
-     * 查询可挂载的技能选项（启用中的技能），登录用户可调用.
+     * 查询当前用户可见的技能选项（系统内置 ∪ 公开 ∪ 指定团队 ∪ 本人个人技能）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QuerySkillOptionsCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -20,18 +20,31 @@ export interface OptionsRequestBuilder extends BaseRequestBuilder<OptionsRequest
      * @throws {BusinessValidationResult} error when the service returns a 409 status code
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
-     get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QuerySkillOptionsCommandResponse | undefined>;
+     get(requestConfiguration?: RequestConfiguration<OptionsRequestBuilderGetQueryParameters> | undefined) : Promise<QuerySkillOptionsCommandResponse | undefined>;
     /**
-     * 查询可挂载的技能选项（启用中的技能），登录用户可调用.
+     * 查询当前用户可见的技能选项（系统内置 ∪ 公开 ∪ 指定团队 ∪ 本人个人技能）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
-     toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
+     toGetRequestInformation(requestConfiguration?: RequestConfiguration<OptionsRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
+}
+/**
+ * 查询当前用户可见的技能选项（系统内置 ∪ 公开 ∪ 指定团队 ∪ 本人个人技能）.
+ */
+export interface OptionsRequestBuilderGetQueryParameters {
+    /**
+     * 是否包含本人个人技能.
+     */
+    includePersonal?: boolean;
+    /**
+     * 团队 id，0=不限定团队范围.
+     */
+    teamId?: number;
 }
 /**
  * Uri template for the request builder.
  */
-export const OptionsRequestBuilderUriTemplate = "{+baseurl}/api/skill/options";
+export const OptionsRequestBuilderUriTemplate = "{+baseurl}/api/skill/options{?includePersonal*,teamId*}";
 /**
  * Metadata for all the requests in the request builder.
  */

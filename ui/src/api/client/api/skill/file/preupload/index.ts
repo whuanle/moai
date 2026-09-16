@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface PreuploadRequestBuilder extends BaseRequestBuilder<PreuploadRequestBuilder> {
     /**
-     * 预上传技能包文件，仅平台管理员.
+     * 预上传技能包文件，登录用户可调用.
      * @param body 预上传技能包文件，生成预签名上传地址，仅平台管理员可调用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<PreUploadSkillFileCommandResponse>}
@@ -23,7 +23,7 @@ export interface PreuploadRequestBuilder extends BaseRequestBuilder<PreuploadReq
      */
      post(body: PreUploadSkillFileCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<PreUploadSkillFileCommandResponse | undefined>;
     /**
-     * 预上传技能包文件，仅平台管理员.
+     * 预上传技能包文件，登录用户可调用.
      * @param body 预上传技能包文件，生成预签名上传地址，仅平台管理员可调用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

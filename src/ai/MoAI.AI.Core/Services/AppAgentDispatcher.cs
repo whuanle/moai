@@ -140,7 +140,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
 
         var row = await databaseContext.AppAgentSessions
             .Where(x => x.Id == sessionId)
-            .Select(x => new { x.AppId, x.TeamId, x.CreateUserId })
+            .Select(x => new { x.AppId, x.TeamId, x.CreateUserId, x.PromptId })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -154,7 +154,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                 throw new BusinessException("会话不存在.") { StatusCode = 404 };
             }
 
-            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, cancellationToken).ConfigureAwait(false);
+            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken).ConfigureAwait(false);
         }
 
         // 无正式会话行：回落调试会话注册表（Redis）；命中且本人时按调试装配，不落库、不计数
@@ -165,6 +165,6 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }
 
-        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, cancellationToken).ConfigureAwait(false);
+        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken).ConfigureAwait(false);
     }
 }

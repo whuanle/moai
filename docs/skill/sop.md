@@ -40,3 +40,27 @@
 | 脚本执行报 externally-managed | 技能脚本 `_ensure` 是否带 `--break-system-packages` |
 | 产物下载 403/过期 | 预签名 1 小时；重新让 Agent 生成或再调 save_artifact |
 | skill 表 id 非默认 uuid | 检查 `SkillConfiguration` 被 rescaffold 覆盖（Guid 主键 + `HasDefaultValueSql("uuid_generate_v4()")`） |
+
+## 存量库 schema 变更（2026-09-16 增量）
+
+- `skill` 补列：`is_public boolean not null default false`（已并入 [asserts/skill.sql](../../asserts/skill.sql)，幂等）。
+- 新表 `app_user_config`：[asserts/app_user_config.sql](../../asserts/app_user_config.sql)（幂等，含 (app_id,user_id) partial 唯一索引）。
+- 存量库执行：`docker exec -i moai-postgres psql -U postgres -d moai < asserts/skill.sql && docker exec -i moai-postgres psql -U postgres -d moai < asserts/app_user_config.sql`；**EnsureCreated 不会改已有库**，跳过此步会导致运行时查询 42P01/42703。
+
+## 技能维护权限速查（2026-09-16 起）
+
+| 操作 | 平台内置 | 团队技能 | 个人技能 |
+|---|---|---|---|
+| 创建 | —（代码内嵌） | 团队 Admin/Owner（`POST /api/skill` teamId>0） | 任意登录用户（teamId=0） |
+| 更新/删除 | 禁止（仅可平台管理员禁用） | 团队 Admin/Owner | 归属人 |
+| 禁用 | 平台管理员 | 团队 Admin/Owner | 归属人 |
+| 绑定应用配置 | ✅ | ✅ 本团队应用 | ❌（个人技能仅限本人「应用设置」自选） |
+| 上架市场 | —（本就全员可用） | 团队管理员申请 | 本人申请（审批流为后续增量） |
+
+- 普通用户自选技能：对话页右上「应用设置」面板（`ControlOutlined` 按钮），保存 `PUT /api/app/{id}/userconfig`；专家=新会话默认，会话级「专家」面板可覆盖。
+
+## 回归入口
+
+```bash
+node local-dev/skill-userconfig-e2e.mjs      # SKL 20 场景（归属权限 + 用户配置）
+```

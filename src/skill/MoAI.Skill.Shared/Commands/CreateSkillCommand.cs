@@ -1,14 +1,16 @@
+using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using MoAI.Skill.Models;
 
 namespace MoAI.Skill.Commands;
 
 /// <summary>
-/// 创建技能，仅平台管理员可调用.
+/// 创建技能：TeamId=0 创建个人技能（归属创建人），TeamId&gt;0 创建团队技能（需团队管理员）.
 /// </summary>
-public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSkillCommand>
+public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSkillCommand>, IUserIdContext
 {
     /// <summary>
     /// 技能标识，全局唯一，蛇形命名，创建后不可变更.
@@ -35,6 +37,19 @@ public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSk
     /// </summary>
     public IReadOnlyList<SkillFileItem> Files { get; init; } = Array.Empty<SkillFileItem>();
 
+    /// <summary>
+    /// 所属团队 id，0=个人技能，大于 0=团队技能.
+    /// </summary>
+    public int TeamId { get; init; }
+
+    /// <inheritdoc/>
+    [JsonIgnore]
+    public long ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    [JsonIgnore]
+    public UserType ContextUserType { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateSkillCommand> validate)
     {
@@ -42,6 +57,7 @@ public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSk
             .Matches("^[a-z][a-z0-9_]{0,29}$").WithMessage("技能标识仅允许小写字母开头，包含小写字母/数字/下划线，最长 30.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("技能名称不能为空.").MaximumLength(50).WithMessage("技能名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("技能描述最长 255 个字符.");
+        validate.RuleFor(x => x.TeamId).GreaterThanOrEqualTo(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.Files).Must(files => files.Select(f => f.Path).Distinct().Count() == files.Count)
             .WithMessage("技能包内文件路径不能重复.");
         validate.RuleForEach(x => x.Files).ChildRules(file =>

@@ -88,4 +88,9 @@ public partial class AppAgentSessionEntity : IFullAudited
     /// Agent 会话冷快照（AgentSession 序列化，含上下文压缩索引），Redis 热态失效后恢复.
     /// </summary>
     public string? State { get; set; }
+
+    /// <summary>
+    /// 会话绑定的专家提示词 id（prompt.id），0 表示未绑定.
+    /// </summary>
+    public int PromptId { get; set; }
 }

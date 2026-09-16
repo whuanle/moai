@@ -10,7 +10,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MoonOutlined,
-  ProfileOutlined,
   SettingOutlined,
   ShopOutlined,
   SunOutlined,
@@ -43,7 +42,6 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
   { key: 'apps', icon: <AppstoreOutlined />, labelKey: 'nav.apps', path: '/apps' },
-  { key: 'prompts', icon: <ProfileOutlined />, labelKey: 'nav.prompts', path: '/prompts' },
   { key: 'promptMarket', icon: <ShopOutlined />, labelKey: 'nav.promptMarket', path: '/prompt-market' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
 ]
@@ -63,7 +61,7 @@ const adminNav: NavItem[] = [
 const pathToKey: Record<string, string> = {
   '/dashboard': 'dashboard',
   '/apps': 'apps',
-  '/prompts': 'prompts',
+  '/prompts': 'promptMarket',
   '/prompt-market': 'promptMarket',
   '/team': 'team',
   '/plugin': 'plugin',
@@ -100,7 +98,8 @@ export function AppSider() {
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
   const [collapsed, setCollapsed] = useState(false)
   // 一级菜单不再展示知识库/知识图谱，统一从团队详情分区进入
-  const selectedKey = pathToKey[location.pathname] ?? 'dashboard'
+  // 提示词编辑器等 /prompts 子路径同样归入「提示词市场」高亮
+  const selectedKey = pathToKey[location.pathname] ?? (location.pathname.startsWith('/prompts') ? 'promptMarket' : 'dashboard')
   const isDark = themeKey === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
 

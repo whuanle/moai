@@ -97,4 +97,31 @@ describe('PromptEditor', () => {
       expect(createPrompt).toHaveBeenCalledWith(expect.objectContaining({ teamId: 7, name: '团队周报' }))
     })
   })
+
+  it('工具栏加粗：选中文本后插入语法并实时预览', async () => {
+    renderEditor('/prompts/new')
+
+    const editor = (await screen.findByPlaceholderText(/支持 Markdown 语法/)) as HTMLTextAreaElement
+    fireEvent.change(editor, { target: { value: '加粗示例' } })
+    editor.setSelectionRange(0, 4)
+    fireEvent.click(screen.getByRole('button', { name: '加粗' }))
+
+    expect(editor.value).toBe('**加粗示例**')
+    await waitFor(() => {
+      // rAF 中恢复光标到语法内
+      expect(editor.selectionStart).toBe(2)
+    })
+    expect(await screen.findByText('加粗示例')).toBeInTheDocument()
+  })
+
+  it('工具栏标题：对当前行插入 H2 前缀', async () => {
+    renderEditor('/prompts/new')
+
+    const editor = (await screen.findByPlaceholderText(/支持 Markdown 语法/)) as HTMLTextAreaElement
+    fireEvent.change(editor, { target: { value: '标题文字' } })
+    editor.setSelectionRange(2, 2)
+    fireEvent.click(screen.getByRole('button', { name: '二级标题' }))
+
+    expect(editor.value).toBe('## 标题文字')
+  })
 })

@@ -17,7 +17,7 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      */
     get disable(): DisableRequestBuilder;
     /**
-     * 删除技能（软删除；系统内置技能不可删除），仅平台管理员.
+     * 删除技能（软删除；系统内置技能不可删除）：个人技能归属人、团队技能团队管理员或平台管理员.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -39,8 +39,8 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QuerySkillCommandResponse | undefined>;
     /**
-     * 更新技能（标识不可修改），仅平台管理员.
-     * @param body 更新技能，仅平台管理员可调用；技能标识不可修改.
+     * 更新技能（标识不可修改）：个人技能归属人、团队技能团队管理员或平台管理员.
+     * @param body 更新技能：个人技能归属人、团队技能团队管理员或平台管理员可调用；技能标识不可修改.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -51,7 +51,7 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      */
      put(body: UpdateSkillCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 删除技能（软删除；系统内置技能不可删除），仅平台管理员.
+     * 删除技能（软删除；系统内置技能不可删除）：个人技能归属人、团队技能团队管理员或平台管理员.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -63,8 +63,8 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 更新技能（标识不可修改），仅平台管理员.
-     * @param body 更新技能，仅平台管理员可调用；技能标识不可修改.
+     * 更新技能（标识不可修改）：个人技能归属人、团队技能团队管理员或平台管理员.
+     * @param body 更新技能：个人技能归属人、团队技能团队管理员或平台管理员可调用；技能标识不可修改.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

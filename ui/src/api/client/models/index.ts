@@ -60,13 +60,16 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
+/**
+ * Represents a context entry providing additional information to the agent.
+ */
 export interface AGUIContext extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the context entry.
      */
     description?: string | null;
     /**
-     * The value property
+     * Gets or sets the value of the context entry.
      */
     value?: string | null;
 }
@@ -94,21 +97,24 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
+/**
+ * Represents a tool available for the agent to use.
+ */
 export interface AGUITool extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the tool.
      */
     description?: string | null;
     /**
-     * The metadata property
+     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
      */
     metadata?: UntypedNode | null;
     /**
-     * The name property
+     * Gets or sets the name of the tool.
      */
     name?: string | null;
     /**
-     * The parameters property
+     * Gets or sets the JSON Schema describing the tool's parameters.
      */
     parameters?: UntypedNode | null;
 }
@@ -502,6 +508,10 @@ export interface AppSessionItem extends Parsable {
      * 输出 token 累计.
      */
     outTokens?: number | null;
+    /**
+     * 会话绑定的专家提示词 id，0 表示未绑定.
+     */
+    promptId?: number | null;
     /**
      * 会话 id.
      */
@@ -1098,6 +1108,10 @@ export interface CreateAppSessionCommand extends Parsable {
      * 应用 id，由 Controller 从路由参数回填.
      */
     appId?: Guid | null;
+    /**
+     * 绑定的专家提示词 id，0 表示不绑定；创建后可通过更新会话提示词接口调整.
+     */
+    promptId?: number | null;
     /**
      * 会话标题，可为空；空则由后端置为「未命名标题」.
      */
@@ -2667,6 +2681,15 @@ export function createQueryAppUsageCommandResponseFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppUserConfigCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppUserConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppUserConfigCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryClassifyListCommandResponse}
  */
 // @ts-ignore
@@ -3369,6 +3392,15 @@ export function createSaveAppAgentConfigCommandFromDiscriminatorValue(parseNode:
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveAppUserConfigCommand}
+ */
+// @ts-ignore
+export function createSaveAppUserConfigCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveAppUserConfigCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SaveDynamicPluginCommand}
  */
 // @ts-ignore
@@ -3511,7 +3543,7 @@ export function createSimpleStringFromDiscriminatorValue(parseNode: ParseNode | 
     return deserializeIntoSimpleString;
 }
 /**
- * 创建技能，仅平台管理员可调用.
+ * 创建技能：TeamId=0 创建个人技能（归属创建人），TeamId>0 创建团队技能（需团队管理员）.
  */
 export interface CreateSkillCommand extends Parsable {
     /**
@@ -3534,6 +3566,10 @@ export interface CreateSkillCommand extends Parsable {
      * 技能名称.
      */
     name?: string | null;
+    /**
+     * 所属团队 id，0=个人技能，大于 0=团队技能.
+     */
+    teamId?: number | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3797,6 +3833,15 @@ export function createUpdateAppAvatarCommandFromDiscriminatorValue(parseNode: Pa
 // @ts-ignore
 export function createUpdateAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateAppSessionPromptCommand}
+ */
+// @ts-ignore
+export function createUpdateAppSessionPromptCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateAppSessionPromptCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4555,6 +4600,7 @@ export function deserializeIntoAppSessionItem(appSessionItem: Partial<AppSession
         "inputTokens": n => { appSessionItem.inputTokens = n.getNumberValue(); },
         "lastMessageTime": n => { appSessionItem.lastMessageTime = n.getStringValue(); },
         "outTokens": n => { appSessionItem.outTokens = n.getNumberValue(); },
+        "promptId": n => { appSessionItem.promptId = n.getNumberValue(); },
         "sessionId": n => { appSessionItem.sessionId = n.getGuidValue(); },
         "title": n => { appSessionItem.title = n.getStringValue(); },
         "totalTokens": n => { appSessionItem.totalTokens = n.getNumberValue(); },
@@ -4847,6 +4893,7 @@ export function deserializeIntoCreateAppCommand(createAppCommand: Partial<Create
 export function deserializeIntoCreateAppSessionCommand(createAppSessionCommand: Partial<CreateAppSessionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { createAppSessionCommand.appId = n.getGuidValue(); },
+        "promptId": n => { createAppSessionCommand.promptId = n.getNumberValue(); },
         "title": n => { createAppSessionCommand.title = n.getStringValue(); },
     }
 }
@@ -5097,6 +5144,7 @@ export function deserializeIntoCreateSkillCommand(createSkillCommand: Partial<Cr
         "instructions": n => { createSkillCommand.instructions = n.getStringValue(); },
         "key": n => { createSkillCommand.key = n.getStringValue(); },
         "name": n => { createSkillCommand.name = n.getStringValue(); },
+        "teamId": n => { createSkillCommand.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -6318,6 +6366,18 @@ export function deserializeIntoQueryAppUsageCommandResponse(queryAppUsageCommand
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAppUserConfigCommandResponse(queryAppUserConfigCommandResponse: Partial<QueryAppUserConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "lockedSkills": n => { queryAppUserConfigCommandResponse.lockedSkills = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "promptId": n => { queryAppUserConfigCommandResponse.promptId = n.getNumberValue(); },
+        "skills": n => { queryAppUserConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryClassifyListCommandResponse(queryClassifyListCommandResponse: Partial<QueryClassifyListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryClassifyListCommandResponse.items = n.getCollectionOfObjectValues<ClassifyItem>(createClassifyItemFromDiscriminatorValue); },
@@ -7351,6 +7411,18 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSaveAppUserConfigCommand(saveAppUserConfigCommand: Partial<SaveAppUserConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { saveAppUserConfigCommand.appId = n.getGuidValue(); },
+        "promptId": n => { saveAppUserConfigCommand.promptId = n.getNumberValue(); },
+        "skills": n => { saveAppUserConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSaveDynamicPluginCommand(saveDynamicPluginCommand: Partial<SaveDynamicPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "classifyId": n => { saveDynamicPluginCommand.classifyId = n.getNumberValue(); },
@@ -7582,6 +7654,7 @@ export function deserializeIntoSkillOptionItem(skillOptionItem: Partial<SkillOpt
         "isSystem": n => { skillOptionItem.isSystem = n.getBooleanValue(); },
         "key": n => { skillOptionItem.key = n.getStringValue(); },
         "name": n => { skillOptionItem.name = n.getStringValue(); },
+        "teamId": n => { skillOptionItem.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -7907,6 +7980,17 @@ export function deserializeIntoUpdateAppCommand(updateAppCommand: Partial<Update
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateAppSessionPromptCommand(updateAppSessionPromptCommand: Partial<UpdateAppSessionPromptCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "promptId": n => { updateAppSessionPromptCommand.promptId = n.getNumberValue(); },
+        "sessionId": n => { updateAppSessionPromptCommand.sessionId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateAppSessionTitleCommand(updateAppSessionTitleCommand: Partial<UpdateAppSessionTitleCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "sessionId": n => { updateAppSessionTitleCommand.sessionId = n.getGuidValue(); },
@@ -8192,7 +8276,6 @@ export function deserializeIntoUpdatePromptCommand(updatePromptCommand: Partial<
         "description": n => { updatePromptCommand.description = n.getStringValue(); },
         "name": n => { updatePromptCommand.name = n.getStringValue(); },
         "promptClassId": n => { updatePromptCommand.promptClassId = n.getNumberValue(); },
-        "promptId": n => { updatePromptCommand.promptId = n.getNumberValue(); },
     }
 }
 /**
@@ -10439,6 +10522,23 @@ export interface QueryAppUsageCommandResponse extends Parsable {
     summary?: AppUsageSummary | null;
 }
 /**
+ * 用户级应用配置.
+ */
+export interface QueryAppUserConfigCommandResponse extends Parsable {
+    /**
+     * 应用绑定技能 id 列表（应用所有者在应用配置中锁定，用户不可移除）.
+     */
+    lockedSkills?: Guid[] | null;
+    /**
+     * 用户为新会话选择的专家提示词 id，0=未设置（使用应用默认提示词）.
+     */
+    promptId?: number | null;
+    /**
+     * 用户自选技能 id 列表.
+     */
+    skills?: Guid[] | null;
+}
+/**
  * 分类列表查询响应.
  */
 export interface QueryClassifyListCommandResponse extends Parsable {
@@ -11971,41 +12071,44 @@ export interface ReviewPublicationCommand extends Parsable {
      */
     reviewComment?: string | null;
 }
+/**
+ * Input payload for running an AG-UI agent.
+ */
 export interface RunAgentInput extends Parsable {
     /**
-     * The context property
+     * Gets or sets contextual information for the agent.
      */
     context?: AGUIContext[] | null;
     /**
-     * The forwardedProps property
+     * Gets or sets additional forwarded properties from the client.
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * The messages property
+     * Gets or sets the conversation messages.
      */
     messages?: AGUIMessage[] | null;
     /**
-     * The parentRunId property
+     * Gets or sets the parent run identifier for branching/time travel.
      */
     parentRunId?: string | null;
     /**
-     * The resume property
+     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
      */
     resume?: AGUIResume[] | null;
     /**
-     * The runId property
+     * Gets or sets the run identifier.
      */
     runId?: string | null;
     /**
-     * The state property
+     * Gets or sets the state to pass to the agent.
      */
     state?: UntypedNode | null;
     /**
-     * The threadId property
+     * Gets or sets the thread identifier.
      */
     threadId?: string | null;
     /**
-     * The tools property
+     * Gets or sets the tools available to the agent.
      */
     tools?: AGUITool[] | null;
 }
@@ -12132,6 +12235,23 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      * 允许使用的知识库 id 列表（元素为 wiki.id），须属于本团队.
      */
     wikiIds?: string[] | null;
+}
+/**
+ * 保存用户级应用配置：用户对某个应用的个性化定制（专家提示词/自选技能），跨会话复用.
+ */
+export interface SaveAppUserConfigCommand extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 用户选择的专家提示词 id，0=清除（新会话使用应用默认提示词）.
+     */
+    promptId?: number | null;
+    /**
+     * 用户自选技能 id 列表，与应用绑定技能取并集生效；null=不修改.
+     */
+    skills?: Guid[] | null;
 }
 /**
  * 保存动态插件实例。创建时填实例 key + 模板 key + 配置；更新时实例 key 不可变.
@@ -12565,6 +12685,7 @@ export function serializeAppSessionItem(writer: SerializationWriter, appSessionI
         writer.writeNumberValue("inputTokens", appSessionItem.inputTokens);
         writer.writeStringValue("lastMessageTime", appSessionItem.lastMessageTime);
         writer.writeNumberValue("outTokens", appSessionItem.outTokens);
+        writer.writeNumberValue("promptId", appSessionItem.promptId);
         writer.writeGuidValue("sessionId", appSessionItem.sessionId);
         writer.writeStringValue("title", appSessionItem.title);
         writer.writeNumberValue("totalTokens", appSessionItem.totalTokens);
@@ -12857,6 +12978,7 @@ export function serializeCreateAppCommand(writer: SerializationWriter, createApp
 export function serializeCreateAppSessionCommand(writer: SerializationWriter, createAppSessionCommand: Partial<CreateAppSessionCommand> | undefined | null = {}) : void {
     if (createAppSessionCommand) {
         writer.writeGuidValue("appId", createAppSessionCommand.appId);
+        writer.writeNumberValue("promptId", createAppSessionCommand.promptId);
         writer.writeStringValue("title", createAppSessionCommand.title);
     }
 }
@@ -13107,6 +13229,7 @@ export function serializeCreateSkillCommand(writer: SerializationWriter, createS
         writer.writeStringValue("instructions", createSkillCommand.instructions);
         writer.writeStringValue("key", createSkillCommand.key);
         writer.writeStringValue("name", createSkillCommand.name);
+        writer.writeNumberValue("teamId", createSkillCommand.teamId);
     }
 }
 /**
@@ -14328,6 +14451,18 @@ export function serializeQueryAppUsageCommandResponse(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAppUserConfigCommandResponse(writer: SerializationWriter, queryAppUserConfigCommandResponse: Partial<QueryAppUserConfigCommandResponse> | undefined | null = {}) : void {
+    if (queryAppUserConfigCommandResponse) {
+        writer.writeCollectionOfPrimitiveValues<Guid>("lockedSkills", queryAppUserConfigCommandResponse.lockedSkills);
+        writer.writeNumberValue("promptId", queryAppUserConfigCommandResponse.promptId);
+        writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppUserConfigCommandResponse.skills);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryClassifyListCommandResponse(writer: SerializationWriter, queryClassifyListCommandResponse: Partial<QueryClassifyListCommandResponse> | undefined | null = {}) : void {
     if (queryClassifyListCommandResponse) {
         writer.writeCollectionOfObjectValues<ClassifyItem>("items", queryClassifyListCommandResponse.items, serializeClassifyItem);
@@ -15361,6 +15496,18 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSaveAppUserConfigCommand(writer: SerializationWriter, saveAppUserConfigCommand: Partial<SaveAppUserConfigCommand> | undefined | null = {}) : void {
+    if (saveAppUserConfigCommand) {
+        writer.writeGuidValue("appId", saveAppUserConfigCommand.appId);
+        writer.writeNumberValue("promptId", saveAppUserConfigCommand.promptId);
+        writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppUserConfigCommand.skills);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSaveDynamicPluginCommand(writer: SerializationWriter, saveDynamicPluginCommand: Partial<SaveDynamicPluginCommand> | undefined | null = {}) : void {
     if (saveDynamicPluginCommand) {
         writer.writeNumberValue("classifyId", saveDynamicPluginCommand.classifyId);
@@ -15592,6 +15739,7 @@ export function serializeSkillOptionItem(writer: SerializationWriter, skillOptio
         writer.writeBooleanValue("isSystem", skillOptionItem.isSystem);
         writer.writeStringValue("key", skillOptionItem.key);
         writer.writeStringValue("name", skillOptionItem.name);
+        writer.writeNumberValue("teamId", skillOptionItem.teamId);
     }
 }
 /**
@@ -15917,6 +16065,17 @@ export function serializeUpdateAppCommand(writer: SerializationWriter, updateApp
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateAppSessionPromptCommand(writer: SerializationWriter, updateAppSessionPromptCommand: Partial<UpdateAppSessionPromptCommand> | undefined | null = {}) : void {
+    if (updateAppSessionPromptCommand) {
+        writer.writeNumberValue("promptId", updateAppSessionPromptCommand.promptId);
+        writer.writeGuidValue("sessionId", updateAppSessionPromptCommand.sessionId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateAppSessionTitleCommand(writer: SerializationWriter, updateAppSessionTitleCommand: Partial<UpdateAppSessionTitleCommand> | undefined | null = {}) : void {
     if (updateAppSessionTitleCommand) {
         writer.writeGuidValue("sessionId", updateAppSessionTitleCommand.sessionId);
@@ -16202,7 +16361,6 @@ export function serializeUpdatePromptCommand(writer: SerializationWriter, update
         writer.writeStringValue("description", updatePromptCommand.description);
         writer.writeStringValue("name", updatePromptCommand.name);
         writer.writeNumberValue("promptClassId", updatePromptCommand.promptClassId);
-        writer.writeNumberValue("promptId", updatePromptCommand.promptId);
     }
 }
 /**
@@ -16663,6 +16821,10 @@ export interface SkillOptionItem extends Parsable {
      * 技能名称.
      */
     name?: string | null;
+    /**
+     * 所属团队 id，0=系统内置或个人技能.
+     */
+    teamId?: number | null;
 }
 /**
  * 对文本执行 ${key} 变量替换（含私密变量解密），仅团队 Admin 及以上可调用；插件运行时应使用服务端内部的 IVariableService，避免将私密值回传给成员.
@@ -17256,6 +17418,19 @@ export interface UpdateAppCommand extends Parsable {
     name?: string | null;
 }
 /**
+ * 设置会话绑定的专家提示词；仅会话归属用户可操作，promptId=0 表示清除绑定.
+ */
+export interface UpdateAppSessionPromptCommand extends Parsable {
+    /**
+     * 专家提示词 id，0 表示清除绑定.
+     */
+    promptId?: number | null;
+    /**
+     * 会话 id，由 Controller 从路由参数回填.
+     */
+    sessionId?: Guid | null;
+}
+/**
  * 重命名会话；仅会话归属用户可操作.
  */
 export interface UpdateAppSessionTitleCommand extends Parsable {
@@ -17736,13 +17911,9 @@ export interface UpdatePromptCommand extends Parsable {
      * 分类 id，0 表示未分类，分类类型必须为 prompt.
      */
     promptClassId?: number | null;
-    /**
-     * 提示词 id.
-     */
-    promptId?: number | null;
 }
 /**
- * 更新技能，仅平台管理员可调用；技能标识不可修改.
+ * 更新技能：个人技能归属人、团队技能团队管理员或平台管理员可调用；技能标识不可修改.
  */
 export interface UpdateSkillCommand extends Parsable {
     /**
