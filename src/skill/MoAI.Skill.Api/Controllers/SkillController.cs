@@ -11,8 +11,8 @@ using MoAI.Skill.Queries.Responses;
 namespace MoAI.Skill.Controllers;
 
 /// <summary>
-/// 技能接口：list/detail 仅平台管理员（平台管理页）；options/维护端点登录即可，
-/// 个人技能归属人、团队技能团队管理员的目标保护在 Handler 校验.
+/// 技能接口：个人技能仅归属人管理，团队技能仅团队 Admin 及以上可管理，上架市场后所有人可见；
+/// list（全量分页）仅平台管理员，其余目标保护在 Handler 校验.
 /// </summary>
 [ApiController]
 [Route("/skill")]
@@ -36,7 +36,7 @@ public class SkillController : ControllerBase
     }
 
     /// <summary>
-    /// 分页查询技能列表（全量），仅平台管理员.
+    /// 分页查询全量技能列表，仅平台管理员.
     /// </summary>
     /// <param name="req">查询参数.</param>
     /// <param name="ct">取消令牌.</param>
@@ -49,16 +49,69 @@ public class SkillController : ControllerBase
     }
 
     /// <summary>
-    /// 查询技能详情，仅平台管理员.
+    /// 查询我的个人技能列表.
+    /// </summary>
+    /// <param name="req">查询参数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySkillListCommandResponse"/>.</returns>
+    [HttpGet("my_list")]
+    public Task<QuerySkillListCommandResponse> QueryMyList([FromQuery] QueryMySkillListCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询团队技能列表，仅团队成员可访问.
+    /// </summary>
+    /// <param name="req">查询参数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySkillListCommandResponse"/>.</returns>
+    [HttpGet("team_list")]
+    public Task<QuerySkillListCommandResponse> QueryTeamList([FromQuery] QueryTeamSkillListCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询技能市场列表（已上架公开技能），所有登录用户可访问.
+    /// </summary>
+    /// <param name="req">查询参数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySkillListCommandResponse"/>.</returns>
+    [HttpGet("market_list")]
+    public Task<QuerySkillListCommandResponse> QueryMarketList([FromQuery] QuerySkillMarketListCommand req, CancellationToken ct)
+    {
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询技能详情；可见即可查看：系统内置/已公开/所在团队/本人个人技能，平台管理员放行.
     /// </summary>
     /// <param name="id">技能 id.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QuerySkillCommandResponse"/>.</returns>
     [HttpGet("{id}")]
-    public async Task<QuerySkillCommandResponse> QuerySkill(Guid id, CancellationToken ct)
+    public Task<QuerySkillCommandResponse> QuerySkill(Guid id, CancellationToken ct)
     {
-        await EnsureAdminAsync(ct);
-        return await _mediator.Send(new QuerySkillCommand { SkillId = id }, ct);
+        var cmd = new QuerySkillCommand { SkillId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询技能包文件下载地址（预签名，1 小时有效）；可见即可下载，系统内置技能不支持.
+    /// </summary>
+    /// <param name="id">技能 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySkillFileDownloadResponse"/>.</returns>
+    [HttpGet("{id}/download")]
+    public Task<QuerySkillFileDownloadResponse> QueryFileDownloadUrls(Guid id, CancellationToken ct)
+    {
+        var cmd = new QuerySkillFileDownloadCommand { SkillId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>
@@ -168,7 +221,7 @@ public class SkillController : ControllerBase
         var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
         if (!userState.IsAdmin)
         {
-            throw new BusinessException("只有管理员可以管理技能.") { StatusCode = 403 };
+            throw new BusinessException("只有管理员可以查询全量技能列表.") { StatusCode = 403 };
         }
     }
 }

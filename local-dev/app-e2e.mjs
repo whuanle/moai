@@ -329,8 +329,8 @@ async function main() {
     const after = await api('GET', cfgUrl, { token: owner.token })
     check('AP-17d 校验失败不写入配置', after.json?.prompt === '你是售前客服助手', String(after.json?.prompt))
 
-    // 流程应用不支持该配置
-    check('AP-18 流程应用保存配置 400', (await api('PUT', `/api/app/${WORKFLOW_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 400)
+    // 流程应用仅经此入口维护对话开场白（模型/知识库/插件不适用不落库，见 workflow-e2e WF-15）
+    check('AP-18 流程应用保存配置 200（只写开场白字段）', (await api('PUT', `/api/app/${WORKFLOW_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 200)
     check('AP-19a 不存在的应用查配置 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff/agent-config', { token: owner.token })).status === 404)
     check('AP-19b 不存在的应用存配置 404', (await api('PUT', '/api/app/01924f5e-0000-7000-8000-00000000ffff/agent-config', { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 404)
 
@@ -424,6 +424,44 @@ async function main() {
     // 删除提示词后会话仍保留 promptId，但对话装配时静默降级（不阻塞对话）；此处仅验证软删不回读出可用性错误
     const del = await api('DELETE', `/api/prompt/${PERSONAL_ID}`, { token: owner.token })
     check('AP-44l 清理：删除个人提示词 200', del.status === 200, `${del.status}`)
+  }
+
+  // AP-45 对话开场白（Agent 应用配置：启用开关 + 内容，随应用详情下发到聊天页）
+  {
+    const cfgUrl = `/api/app/${AGENT_ID}/agent-config`
+    const OS_TEXT = '你好，我是售前助手，很高兴为你服务！'
+
+    check('AP-45a Member 保存开场白 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'x', openingStatementEnabled: true } })).status === 403)
+
+    const saveOs = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: OS_TEXT, openingStatementEnabled: true } })
+    check('AP-45b Owner 保存开场白（启用+内容）200', saveOs.status === 200, `${saveOs.status} ${saveOs.text.slice(0, 140)}`)
+
+    const backOs = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-45c 配置回读开场白一致', backOs.status === 200 && backOs.json?.openingStatement === OS_TEXT && backOs.json?.openingStatementEnabled === true,
+      backOs.text.slice(0, 200))
+
+    // 聊天页挂载点：应用详情（Member 可读）随详情下发开场白
+    const detailMember = await api('GET', `/api/app/${AGENT_ID}`, { token: member.token })
+    check('AP-45d Member 查应用详情下发开场白', detailMember.status === 200 && detailMember.json?.openingStatement === OS_TEXT && detailMember.json?.openingStatementEnabled === true,
+      detailMember.text.slice(0, 200))
+
+    // 关闭开关：内容保留但不再启用
+    const disableOs = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: OS_TEXT, openingStatementEnabled: false } })
+    const detailOff = await api('GET', `/api/app/${AGENT_ID}`, { token: member.token })
+    check('AP-45e 关闭开关后详情 enabled=false 且内容保留',
+      disableOs.status === 200 && detailOff.json?.openingStatementEnabled === false && detailOff.json?.openingStatement === OS_TEXT,
+      detailOff.text.slice(0, 200))
+
+    // 校验：超 4000 字 400，且不写入
+    check('AP-45f 开场白超 4000 字 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'x'.repeat(4001), openingStatementEnabled: true } })).status === 400)
+    const afterBad = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-45g 校验失败不写入开场白', afterBad.json?.openingStatement === OS_TEXT && afterBad.json?.openingStatementEnabled === false,
+      afterBad.text.slice(0, 200))
+
+    // 流程应用开场白默认为空（设计器系统设置里配置过才有值，见 workflow-e2e WF-15）
+    const wfDetail = await api('GET', `/api/app/${WORKFLOW_ID}`, { token: owner.token })
+    check('AP-45h 流程应用详情开场白为空', wfDetail.status === 200 && wfDetail.json?.openingStatement === '' && wfDetail.json?.openingStatementEnabled === false,
+      wfDetail.text.slice(0, 200))
   }
 
   console.log(`\n===== 应用管理 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

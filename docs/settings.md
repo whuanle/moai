@@ -20,6 +20,7 @@ src/settings/
 | `src/database/MoAI.Database.Shared/Seed/SettingDefinition.cs` | 设置项定义模型 |
 | `src/database/MoAI.Database.Shared/Seed/SettingDefinitions.cs` | **内置设置项注册表** |
 | `src/database/MoAI.Database.Shared/Seed/SettingSeed.cs` | 设置种子数据（枚举 `SettingDefinitions` 自动生成） |
+| `asserts/setting.sql` | 设置种子**存量库补种**脚本（幂等，只补缺失 key、不覆盖已保存值） |
 | `src/database/MoAI.Database.Shared/Seed/UserSeed.cs` | 用户种子数据 |
 | `src/database/MoAI.Database.Shared/Seed/ClassifySeed.cs` | 分类种子数据 |
 | `src/database/MoAI.Database.Shared/DatabaseContext.Configuration.cs` | `SeedData` 编排（仅调用各静态种子） |
@@ -54,9 +55,10 @@ public sealed class SettingDefinition
 > 前端不是动态渲染，新增配置项需要在设置页 / 接口同步加固定字段。
 
 1. **定义内置项** —— 在 `SettingDefinitions` 添加一条 `SettingDefinition`，并为其 key 定义常量。
-2. **种子数据自动生成** —— `SettingSeed.Apply` 会遍历 `SettingDefinitions` 生成对应的 `SettingEntity` 种子记录，无需手工改动 `SeedData`。
-3. **添加前端固定字段** —— 在 `ui/src/pages/settings/Settings.tsx` 增加对应的固定表单字段与 `ui/src/i18n/locales/{zh-CN,en-US}/common.json` 文案。
-4. **（可选）接入业务** —— 需要读取配置的业务代码直接查询 `setting` 表的 key 即可。
+2. **种子数据自动生成** —— `SettingSeed.Apply` 会遍历 `SettingDefinitions` 生成对应的 `SettingEntity` 种子记录，无需手工改动 `SeedData`；新库建库时自动写入默认值。
+3. **存量库补种** —— 在 `asserts/setting.sql` 同步补一条幂等 insert（`where not exists`，不覆盖已保存值），供升级时对存量库执行。
+4. **添加前端固定字段** —— 在 `ui/src/pages/settings/Settings.tsx` 增加对应的固定表单字段与 `ui/src/i18n/locales/{zh-CN,en-US}/common.json` 文案。
+5. **（可选）接入业务** —— 需要读取配置的业务代码通过 `MoAI.Settings.Shared` 的设置服务接口读取（实现位于 Settings.Core），不要在业务层散落裸查 `setting` 表。
 
 ## 编写规则
 

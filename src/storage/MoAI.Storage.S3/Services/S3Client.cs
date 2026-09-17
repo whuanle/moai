@@ -62,8 +62,9 @@ public class S3Client : IDisposable
     /// </summary>
     /// <param name="objectKey">对象 key.</param>
     /// <param name="expiration">有效期.</param>
+    /// <param name="fileName">下载文件名，提供时通过 response-content-disposition 强制浏览器附件下载（避免文本类内容被内联渲染）.</param>
     /// <returns>下载地址.</returns>
-    public async Task<Uri> GeneratePreSignedDownloadUrlAsync(string objectKey, TimeSpan expiration)
+    public async Task<Uri> GeneratePreSignedDownloadUrlAsync(string objectKey, TimeSpan expiration, string? fileName = null)
     {
         GetPreSignedUrlRequest request = new()
         {
@@ -72,6 +73,14 @@ public class S3Client : IDisposable
             Expires = DateTime.UtcNow.Add(expiration),
             Verb = HttpVerb.GET
         };
+
+        if (!string.IsNullOrWhiteSpace(fileName))
+        {
+            request.ResponseHeaderOverrides = new ResponseHeaderOverrides
+            {
+                ContentDisposition = $"attachment; filename*=UTF-8''{Uri.EscapeDataString(fileName)}"
+            };
+        }
 
         var url = await _s3Client.GetPreSignedURLAsync(request);
         return new Uri(ApplyEndpointScheme(url));

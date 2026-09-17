@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface ApplyRequestBuilder extends BaseRequestBuilder<ApplyRequestBuilder> {
     /**
      * 申请上架，将团队资源（应用/提示词）提交到上架审核；需要资源所属团队 Admin 及以上角色.
-     * @param body 申请上架，将团队资源（应用/提示词）提交到上架审核，由系统管理员审批；需要资源所属团队的 Admin 及以上角色.
+     * @param body 申请上架，将资源（应用/提示词/技能）提交到上架审核，由系统管理员审批；团队资源需要所属团队 Admin 及以上角色，个人资源仅创建人.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleLong>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface ApplyRequestBuilder extends BaseRequestBuilder<ApplyRequestBuil
      post(body: ApplyPublicationCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SimpleLong | undefined>;
     /**
      * 申请上架，将团队资源（应用/提示词）提交到上架审核；需要资源所属团队 Admin 及以上角色.
-     * @param body 申请上架，将团队资源（应用/提示词）提交到上架审核，由系统管理员审批；需要资源所属团队的 Admin 及以上角色.
+     * @param body 申请上架，将资源（应用/提示词/技能）提交到上架审核，由系统管理员审批；团队资源需要所属团队 Admin 及以上角色，个人资源仅创建人.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

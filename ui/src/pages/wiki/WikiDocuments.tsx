@@ -24,6 +24,7 @@ import {
   deleteWikiDocuments,
   downloadWikiDocument,
   renameWikiDocument,
+  getWikiUploadLimit,
   type WikiDocumentItem,
 } from '@/api/wiki'
 
@@ -74,6 +75,16 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([])
   const [uploading, setUploading] = useState(false)
+  // 知识库上传文件大小上限（MB），0 表示不限制
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState(0)
+
+  useEffect(() => {
+    getWikiUploadLimit()
+      .then(setMaxFileSizeMb)
+      .catch(() => {
+        // 读取失败按不限制处理，超限时服务端仍会拦截
+      })
+  }, [])
 
   const load = useCallback(
     async (page = pageNo, size = pageSize, keyword = searchText, embedding = embeddingFilter) => {
@@ -182,6 +193,10 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   const handleSelectFiles: UploadProps['beforeUpload'] = (file) => {
     if (!isSupported(file)) {
       feedback.error(t('wiki.doc.unsupportedType'))
+      return Upload.LIST_IGNORE
+    }
+    if (maxFileSizeMb > 0 && file.size > maxFileSizeMb * 1024 * 1024) {
+      feedback.error(t('wiki.doc.overSizeLimit', { limit: maxFileSizeMb }))
       return Upload.LIST_IGNORE
     }
     setSelectedFiles((prev) => [...prev, file])

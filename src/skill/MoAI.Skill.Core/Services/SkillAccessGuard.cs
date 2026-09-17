@@ -35,6 +35,36 @@ public static class SkillAccessGuard
     }
 
     /// <summary>
+    /// 校验用户可查看（详情/下载）该技能：平台管理员、系统内置、已公开、所在团队技能或本人个人技能.
+    /// </summary>
+    public static async Task EnsureCanViewAsync(SkillEntity skill, long userId, IUserAccountService userAccountService, ITeamService teamService, CancellationToken cancellationToken)
+    {
+        if (skill.IsSystem || skill.IsPublic)
+        {
+            return;
+        }
+
+        if (await IsPlatformAdminAsync(userId, userAccountService, cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        if (skill.TeamId > 0)
+        {
+            if (await teamService.GetMyRoleAsync(skill.TeamId, userId, cancellationToken).ConfigureAwait(false) != null)
+            {
+                return;
+            }
+        }
+        else if (skill.CreateUserId == userId)
+        {
+            return;
+        }
+
+        throw new BusinessException("无权查看该技能.") { StatusCode = 403 };
+    }
+
+    /// <summary>
     /// 校验用户可管理（更新/删除/启停）该技能：平台管理员、团队技能的团队管理员或个人技能归属人.
     /// </summary>
     public static async Task EnsureCanManageAsync(SkillEntity skill, long userId, IUserAccountService userAccountService, ITeamService teamService, CancellationToken cancellationToken)

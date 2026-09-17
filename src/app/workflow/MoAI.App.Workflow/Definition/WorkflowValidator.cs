@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace MoAI.App.Workflow.Definition;
 
 /// <summary>
@@ -126,6 +128,13 @@ public class WorkflowValidator
                     errors.Add($"条件节点 {conn.Source} 的出边 {conn.Id} condition 只能为 true/false，当前为 {conn.Condition}");
                 }
             }
+            else if (sourceType == NodeTypes.Switch)
+            {
+                if (string.IsNullOrWhiteSpace(conn.Condition))
+                {
+                    errors.Add($"多条件节点 {conn.Source} 的出边 {conn.Id} 缺少分支标记");
+                }
+            }
             else if (!string.IsNullOrWhiteSpace(conn.Condition))
             {
                 errors.Add($"非条件节点 {conn.Source} 的出边 {conn.Id} 不能设置 condition");
@@ -147,6 +156,51 @@ public class WorkflowValidator
                 if (edges.All(e => e.Condition != branch))
                 {
                     errors.Add($"条件节点 {conditionNode.Key} 缺少 condition={branch} 的出边");
+                }
+            }
+        }
+
+        // 多条件节点：出边分支标记必须对应已配置的分支 id（或 else），且不允许重复
+        foreach (var switchNode in nodes.Where(n => n.Type == NodeTypes.Switch))
+        {
+            var branchIds = new List<string>();
+            if (switchNode.Config.ValueKind == JsonValueKind.Object && switchNode.Config.TryGetProperty("branches", out var branchesEl) && branchesEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var branchEl in branchesEl.EnumerateArray())
+                {
+                    if (branchEl.ValueKind == JsonValueKind.Object && branchEl.TryGetProperty("id", out var idEl))
+                    {
+                        var id = idEl.GetString();
+                        if (!string.IsNullOrWhiteSpace(id))
+                        {
+                            branchIds.Add(id);
+                        }
+                    }
+                }
+            }
+
+            if (branchIds.Count == 0)
+            {
+                errors.Add($"多条件节点 {switchNode.Key} 至少需要配置一个分支");
+                continue;
+            }
+
+            var switchEdges = outgoing[switchNode.Key];
+            var duplicated = switchEdges.GroupBy(e => e.Condition).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (duplicated.Count > 0)
+            {
+                errors.Add($"多条件节点 {switchNode.Key} 存在重复的分支出边：{string.Join(", ", duplicated)}");
+            }
+
+            foreach (var edge in switchEdges)
+            {
+                if (string.IsNullOrWhiteSpace(edge.Condition))
+                {
+                    errors.Add($"多条件节点 {switchNode.Key} 的出边 {edge.Id} 缺少分支标记");
+                }
+                else if (edge.Condition != "else" && !branchIds.Contains(edge.Condition))
+                {
+                    errors.Add($"多条件节点 {switchNode.Key} 的出边 {edge.Id} 分支标记无效：{edge.Condition}（已配置：{string.Join(", ", branchIds)}，else）");
                 }
             }
         }
@@ -240,7 +294,7 @@ public class WorkflowValidator
                     continue;
                 }
 
-                if (prefix == "sys" || prefix == "input")
+                if (prefix == "sys" || prefix == "system" || prefix == "input")
                 {
                     continue;
                 }

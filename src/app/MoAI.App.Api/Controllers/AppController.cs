@@ -139,6 +139,8 @@ public class AppController : ControllerBase
             Prompt = req.Prompt,
             WikiIds = req.WikiIds,
             Plugins = req.Plugins,
+            OpeningStatement = req.OpeningStatement,
+            OpeningStatementEnabled = req.OpeningStatementEnabled,
             ExecutionSettings = req.ExecutionSettings
         };
         _userContextProvider.SetUserContext(cmd);

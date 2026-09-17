@@ -3,10 +3,9 @@
 .wf-designer {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
+  /* 设计路由下全局 Layout 内边距为 0，画布撑满整个视口（FastGPT 式全屏） */
+  height: 100vh;
   min-height: 480px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 8px;
   overflow: hidden;
   background: #fff;
 }
@@ -15,10 +14,61 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: #fafafa;
+  gap: 12px;
+  padding: 6px 12px 6px 8px;
+  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+  background: #fff;
   flex-shrink: 0;
+}
+
+.wf-header-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wf-header-titles {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.wf-header-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-header-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.wf-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.wf-status-dot-published { background: #52c41a; }
+.wf-status-dot-draft { background: #faad14; }
+.wf-status-dot-dirty { background: #ff4d4f; }
+
+.wf-header-dirty {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  color: #ff4d4f;
 }
 
 .wf-loading {
@@ -29,60 +79,163 @@
 }
 
 .wf-content {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
 }
 
-/* 左侧节点面板 */
-.wf-node-panel {
-  width: 208px;
-  flex-shrink: 0;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 12px;
-  overflow-y: auto;
-  background: #fafafa;
+/* ---------------- 画布左上浮动工具列（添加节点 / 系统设置） ---------------- */
+
+.wf-left-toolbar {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 30;
 }
 
-.wf-node-panel-title {
-  font-weight: 600;
-  margin-bottom: 8px;
+.wf-left-toolbar .ant-btn-circle {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.wf-left-tool-add {
+  background: #101828;
+  color: #fff;
+}
+
+.wf-left-tool-add:hover,
+.wf-left-tool-add:focus {
+  background: #344054;
+  color: #fff;
+}
+
+/* ---------------- 左侧浮层面板（节点库 / 系统设置） ---------------- */
+
+.wf-side-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.wf-side-panel {
+  pointer-events: auto;
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  bottom: 12px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid rgba(5, 5, 5, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.wf-side-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 10px 14px;
+  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+  flex-shrink: 0;
+}
+
+.wf-side-panel-title {
   font-size: 13px;
+  font-weight: 600;
+}
+
+.wf-side-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.wf-node-panel-group {
+  margin-bottom: 14px;
+}
+
+.wf-node-panel-group-title {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin: 4px 0 8px 2px;
+}
+
+.wf-node-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .wf-node-panel-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
   cursor: grab;
-  margin-bottom: 4px;
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(5, 5, 5, 0.08);
 }
 
 .wf-node-panel-item:hover {
-  border-color: #1677ff;
+  background: #eef3ff;
+  border-color: #85a5ff;
 }
 
-.wf-node-panel-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 5px;
+.wf-node-panel-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
   flex-shrink: 0;
 }
 
 .wf-node-panel-name {
   font-size: 13px;
   line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.wf-node-panel-desc {
+/* ---------------- 系统设置面板分区 ---------------- */
+
+.wf-settings-section {
+  margin-bottom: 18px;
+}
+
+.wf-settings-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.wf-settings-sec-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wf-config-hint {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
-  line-height: 16px;
+  line-height: 18px;
 }
 
 /* 画布 */
@@ -125,46 +278,242 @@
   z-index: 10;
 }
 
+.wf-tools-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(0, 0, 0, 0.12);
+  margin: 0 2px;
+}
+
 .wf-canvas-zoom {
   min-width: 42px;
   text-align: center;
   font-size: 12px;
 }
 
-/* 画布节点 */
 .wf-node {
-  width: 200px;
+  width: 360px;
   background: #fff;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
   position: relative;
+  font-size: 12px;
+}
+
+.wf-node-selected {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
 }
 
 .wf-node-header {
   display: flex;
   align-items: center;
-  padding: 6px 10px;
-  color: #fff;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+}
+
+.wf-node-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
-  font-weight: 500;
-  border-radius: 8px 8px 0 0;
+  color: #fff;
+  flex-shrink: 0;
 }
 
 .wf-node-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.wf-node-params {
-  padding: 6px 10px;
-}
-
-.wf-node-params-line {
+.wf-node-subtitle {
   font-size: 11px;
   color: rgba(0, 0, 0, 0.45);
-  line-height: 16px;
+  line-height: 14px;
+}
+
+.wf-node-head-text {
+  min-width: 0;
+}
+
+.wf-node-body {
+  padding: 10px 12px;
+}
+
+/* 头部标题/描述点击就地编辑 */
+.wf-editable-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  border-radius: 4px;
+  padding: 0 3px;
+  margin: 0 -3px;
+}
+
+.wf-editable-text:not(.wf-editable-readonly) {
+  cursor: text;
+}
+
+.wf-editable-text:not(.wf-editable-readonly):hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wf-editable-icon {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.wf-editable-text:hover .wf-editable-icon {
+  opacity: 1;
+}
+
+.wf-editable-placeholder {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.wf-editable-input {
+  font-weight: inherit;
+}
+
+.wf-node-key-prefix {
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Key 行与下方分区留出间隔，避免视觉上挤在一起 */
+.wf-node-key-input {
+  margin-bottom: 12px;
+}
+
+.wf-node-sec {
+  margin-bottom: 10px;
+}
+
+.wf-sec-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1677ff;
+  border-left: 3px solid #1677ff;
+  padding-left: 6px;
+  margin-bottom: 8px;
+  line-height: 14px;
+}
+
+.wf-b-row {
+  position: relative;
+  border: 1px solid rgba(5, 5, 5, 0.08);
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 6px;
+  background: #fafafa;
+}
+
+.wf-b-row-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.wf-b-row-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* AutoComplete/Select 无固有宽度，空值时收缩为 0，必须占满剩余行宽 */
+.wf-b-row-value .ant-select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 表达式类型选择器：固定窄宽，余下空间让给值输入 */
+.wf-b-row-value .wf-field-expr-type {
+  flex: 0 0 auto;
+  width: 78px;
+}
+
+.wf-b-row-value .ant-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.wf-field-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.wf-field-type {
+  width: 84px;
+  flex-shrink: 0;
+}
+
+.wf-field-expr {
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.wf-field-required {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.wf-field-required input {
+  margin: 0;
+}
+
+.wf-outs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wf-out-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  background: #f7f8fa;
+  border-radius: 6px;
+}
+
+.wf-out-req {
+  color: #ff4d4f;
+  font-size: 12px;
+}
+
+.wf-out-name {
+  font-weight: 500;
+}
+
+.wf-out-type {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.wf-out-desc {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -192,111 +541,6 @@
   50% { opacity: 0.4; }
 }
 
-/* 右侧配置面板 */
-.wf-config-panel {
-  width: 360px;
-  flex-shrink: 0;
-  border-left: 1px solid rgba(0, 0, 0, 0.06);
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  z-index: 20;
-}
-
-.wf-config-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.wf-config-title {
-  font-weight: 600;
-}
-
-.wf-config-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
-}
-
-.wf-config-section {
-  margin-bottom: 12px;
-}
-
-.wf-config-section > label {
-  display: block;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
-  margin-bottom: 4px;
-}
-
-.wf-config-code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 12px;
-}
-
-.wf-config-hint {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-  margin-top: 4px;
-}
-
-.wf-config-footer {
-  padding: 10px 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  text-align: right;
-}
-
-/* 字段编辑器 */
-.wf-fields {
-  margin-top: 4px;
-}
-
-.wf-fields-section {
-  margin-bottom: 16px;
-}
-
-.wf-fields-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.65);
-  margin-bottom: 6px;
-}
-
-.wf-field-row {
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 6px;
-  padding: 6px;
-  margin-bottom: 6px;
-}
-
-.wf-field-row-top {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.wf-field-name {
-  flex: 1;
-  min-width: 0;
-}
-
-.wf-field-expr {
-  width: 92px;
-  flex-shrink: 0;
-}
-
-.wf-field-required {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
 /* 调试运行面板 */
 .wf-run-panel {
   display: flex;
@@ -312,8 +556,119 @@
   margin-right: 6px;
 }
 
+.wf-system-var-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.wf-system-var-name {
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-size: 12px;
+  min-width: 96px;
+}
+
+.wf-system-var-input {
+  flex: 1;
+}
+
+.wf-vars-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.wf-vars-row-bottom {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.wf-vars-half {
+  flex: 1;
+  min-width: 0;
+}
+
 .wf-run-detail {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.65);
   word-break: break-all;
+}
+
+/* 多条件节点：分支端口锚点固定在节点右边缘（动态端口通过 data-port-id 计算） */
+.wf-switch-port {
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #722ed1;
+  background: #fff;
+  flex-shrink: 0;
+  cursor: crosshair;
+}
+
+.wf-switch-port-else {
+  border-color: #8c8c8c;
+}
+
+.wf-switch-else-label {
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.wf-branch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px;
+  margin-bottom: 4px;
+  background: #f7f8fa;
+  border-radius: 6px;
+}
+
+/* 左侧固定分支标签（满足时/不满足时） */
+.wf-branch-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.wf-branch-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wf-branch-dot-true {
+  background: #52c41a;
+}
+
+.wf-branch-dot-false {
+  background: #bfbfbf;
+}
+
+/* 右侧绑定的节点 */
+.wf-branch-target {
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-branch-target-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 130px;
 }

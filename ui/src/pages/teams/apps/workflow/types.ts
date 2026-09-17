@@ -14,6 +14,8 @@ export interface FieldBinding {
   value: string
   /** 非必需字段解析失败时置为 null（分支汇合场景） */
   required?: boolean
+  /** 期望字段类型（string/number/boolean/object/map/array/dynamic），设计器元数据 */
+  fieldType?: string
   description?: string
 }
 
@@ -26,8 +28,8 @@ export interface OutputField {
   description?: string
 }
 
-/** 节点类型（一期支持引擎已实现的 6 种） */
-export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin'
+/** 节点类型（引擎已实现的节点） */
+export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch'
 
 /** 节点私有配置 */
 export interface NodeSettings {
@@ -37,6 +39,20 @@ export interface NodeSettings {
   pluginKey?: string
   /** javaScript：沙箱脚本，约定 function run(inputs, sys, nodes) 返回对象 */
   code?: string
+  /** condition：脚本模式脚本，约定 function condition(inputs, sys, nodes, system) 返回布尔；存在时优先于 condition 绑定 */
+  conditionScript?: string
+  /** condition：绑定模式下「满足时」走哪条出边（目标节点 key）；缺省按端口 true/false */
+  trueTarget?: string
+}
+
+/** 多条件节点分支定义（data.branches，保存时映射为 config.branches） */
+export interface SwitchBranchDef {
+  /** 分支 id（出边 condition 标记，如 b1/b2） */
+  id: string
+  /** 分支显示名 */
+  label: string
+  /** 命中条件 */
+  binding: FieldBinding
 }
 
 /** 引擎节点定义（WorkflowNodeDefinition） */
@@ -63,6 +79,16 @@ export interface WorkflowConnectionDef {
   label?: string
 }
 
+/** 流程全局变量定义（启动时可赋值，节点经 system.变量名 引用） */
+export interface GlobalVariableDef {
+  name: string
+  /** string/number/boolean/object/map/array/dynamic */
+  fieldType?: string
+  /** 默认值（JSON 字面量字符串：数字/布尔按字面量，其余按字符串） */
+  defaultValue?: string
+  description?: string
+}
+
 /** 引擎工作流定义（WorkflowDefinition） */
 export interface WorkflowDefinition {
   id: string
@@ -73,6 +99,8 @@ export interface WorkflowDefinition {
   status: string
   nodes: WorkflowNodeDef[]
   connections: WorkflowConnectionDef[]
+  /** 流程全局变量 */
+  variables?: GlobalVariableDef[]
   ui?: {
     nodePositions?: Record<string, { x: number; y: number }>
     zoom?: number
@@ -90,10 +118,12 @@ export interface EditorNodeJSON {
     defaultExpanded?: boolean
     [key: string]: unknown
   }
-  /** 节点表单数据：title/content/inputs/outputs/settings */
+  /** 节点表单数据：key/title/content/branches(switch)/inputs/outputs/settings */
   data?: {
+    key?: string
     title?: string
     content?: string
+    branches?: SwitchBranchDef[]
     inputs?: Record<string, FieldBinding>
     outputs?: OutputField[]
     settings?: NodeSettings

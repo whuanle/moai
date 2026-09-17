@@ -3,9 +3,11 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Services;
+using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Queries;
 using MoAI.AIPlugin.Queries.Responses;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
 namespace MoAI.AIPlugin.Controllers;
@@ -45,6 +47,21 @@ public class PluginManageController : ControllerBase
     {
         await EnsureAdminAsync(ct);
         return await _mediator.Send(new QueryPluginManageListCommand { Kind = kind }, ct);
+    }
+
+    /// <summary>
+    /// 设置插件头像.
+    /// </summary>
+    /// <param name="id">插件记录 id.</param>
+    /// <param name="req">设置请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("{id}/avatar")]
+    public async Task<EmptyCommandResponse> UpdateAvatar(Guid id, [FromBody] UpdatePluginAvatarCommand req, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        var cmd = new UpdatePluginAvatarCommand { PluginId = id, ObjectKey = req.ObjectKey };
+        return await _mediator.Send(cmd, ct);
     }
 
     private async Task EnsureAdminAsync(CancellationToken ct)

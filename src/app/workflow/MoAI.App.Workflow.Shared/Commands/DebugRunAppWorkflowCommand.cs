@@ -34,6 +34,11 @@ public class DebugRunAppWorkflowCommand : IRequest<DebugRunAppWorkflowResponse>,
     public string? Definition { get; init; }
 
     /// <summary>
+    /// 全局变量实际值 JSON 对象文本（键为变量名），未提供的变量使用定义默认值；空为 '{}'.
+    /// </summary>
+    public string SystemJson { get; init; } = "{}";
+
+    /// <summary>
     /// 随调试一起保存的编辑器画布原始 JSON；为空则保留已保存内容.
     /// </summary>
     public string? EditorData { get; init; }

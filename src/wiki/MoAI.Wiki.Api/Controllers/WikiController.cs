@@ -50,6 +50,17 @@ public class WikiController : ControllerBase
     }
 
     /// <summary>
+    /// 查询知识库上传文件大小上限（MB），任意登录用户可访问，供前端上传前预检.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiUploadLimitCommandResponse"/>.</returns>
+    [HttpGet("upload-limit")]
+    public Task<QueryWikiUploadLimitCommandResponse> QueryWikiUploadLimit(CancellationToken ct)
+    {
+        return _mediator.Send(new QueryWikiUploadLimitCommand(), ct);
+    }
+
+    /// <summary>
     /// 查询知识库详情，仅团队成员可访问.
     /// </summary>
     /// <param name="id">知识库 id.</param>

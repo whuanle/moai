@@ -8,8 +8,8 @@ using MoAI.Infra.Services;
 namespace MoAI.Publication.Commands;
 
 /// <summary>
-/// 申请上架，将团队资源（应用/提示词）提交到上架审核，由系统管理员审批；
-/// 需要资源所属团队的 Admin 及以上角色.
+/// 申请上架，将资源（应用/提示词/技能）提交到上架审核，由系统管理员审批；
+/// 团队资源需要所属团队 Admin 及以上角色，个人资源仅创建人.
 /// </summary>
 public class ApplyPublicationCommand : IRequest<SimpleLong>, IUserIdContext, IModelValidator<ApplyPublicationCommand>
 {
@@ -19,7 +19,7 @@ public class ApplyPublicationCommand : IRequest<SimpleLong>, IUserIdContext, IMo
     public PublicationResourceType ResourceType { get; init; }
 
     /// <summary>
-    /// 资源 id 字符串，应用为 app.id（uuid），提示词为 prompt.id（数字）.
+    /// 资源 id 字符串，应用/技能为资源 id（uuid），提示词为 prompt.id（数字）.
     /// </summary>
     public string ResourceId { get; init; } = default!;
 

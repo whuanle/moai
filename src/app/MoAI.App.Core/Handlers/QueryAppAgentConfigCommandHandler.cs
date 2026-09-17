@@ -61,6 +61,8 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             Plugins = AppAgentConfigJson.ParseGuidList(config?.Plugins),
             Skills = AppAgentConfigJson.ParseGuidList(config?.Skills),
             ExecutionSettings = AppAgentConfigJson.ParseJsonObject(config?.ExecutionSettings),
+            OpeningStatement = config?.OpeningStatement ?? string.Empty,
+            OpeningStatementEnabled = config?.OpeningStatementEnabled ?? false,
             MyRole = (int)myRole.Value
         };
     }

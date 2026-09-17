@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Space, Spin, Tabs, Typography } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Col, Empty, Form, Input, Modal, Popconfirm, Popover, Row, Space, Spin, Tabs, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, SmileOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { classifyApi, ClassifyType, type Classify, type ClassifyTypeKey } from '@/api/classify'
 import { Card, feedback, Page } from '@/design-system'
-import { fontSize, spacing } from '@/design-system/theme'
+import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 
 const { Text, Paragraph } = Typography
@@ -17,26 +17,61 @@ const TYPE_TABS: { key: ClassifyTypeKey; labelKey: string }[] = [
   { key: ClassifyType.Prompt, labelKey: 'classify.typePrompt' },
 ]
 
-type ClassifyForm = { name: string; description?: string }
+type ClassifyForm = { name: string; description?: string; emoji?: string }
 
-/** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
+/** 常用表情候选（单选一个，后端最长 10 个字符）. */
+const EMOJI_OPTIONS = [
+  '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
+  '🙂', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘',
+  '😋', '😛', '😜', '🤪', '🤗', '🤭', '🤫', '🤔',
+  '😐', '😑', '😶', '😏', '😒', '🙄', '😴', '😢',
+  '😭', '😤', '😠', '🤯', '😳', '🥵', '🥶', '😱',
+  '🤒', '🤕', '🤢', '🤖', '👻', '💀', '💩', '🤡',
+  '🎉', '🎯', '🚀', '⭐', '✨', '⚡', '🔥', '💥',
+  '💡', '📚', '📖', '🎨', '🎵', '🎬', '🏆', '⚽',
+  '🎮', '🎲', '🧩', '💼', '📊', '📈', '💰', '🛒',
+  '🎁', '🍀', '🌈', '🌸', '🌍', '✅', '❌', '❓',
+  '🔧', '🔒', '🔑', '📌', '📝', '📅', '🤝', '👍',
+  '👏', '🙏', '💪', '👀', '🧠', '❤️', '💙', '💚',
+]
 
-function MetaRow({ label, value }: { label: string; value: string }) {
+/** 表情选择输入框：只读输入框 + 表情面板，选中的表情回填输入框. */
+function EmojiPickerInput({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+
   return (
-    <div style={{ display: 'flex', gap: spacing.sm }}>
-      <Text type="secondary" style={{ fontSize: fontSize.sm, flexShrink: 0 }}>
-        {label}
-      </Text>
-      <Text type="secondary" style={{ fontSize: fontSize.sm }}>
-        {value}
-      </Text>
+    <div style={{ display: 'flex', gap: spacing.xxs }}>
+      <Input value={value || ''} placeholder={t('classify.emojiPlaceholder')} readOnly style={{ flex: 1 }} />
+      {value ? (
+        <Button onClick={() => onChange?.('')}>{t('classify.emojiClear')}</Button>
+      ) : null}
+      <Popover
+        open={open}
+        onOpenChange={setOpen}
+        trigger="click"
+        placement="bottomRight"
+        arrow={false}
+        content={
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 32px)', gap: 2, maxHeight: 264, overflowY: 'auto' }}>
+            {EMOJI_OPTIONS.map((emoji) => (
+              <Button
+                key={emoji}
+                type={emoji === value ? 'primary' : 'text'}
+                style={{ width: 32, height: 32, padding: 0, fontSize: 18 }}
+                onClick={() => {
+                  onChange?.(emoji)
+                  setOpen(false)
+                }}
+              >
+                {emoji}
+              </Button>
+            ))}
+          </div>
+        }
+      >
+        <Button icon={<SmileOutlined />} title={t('classify.emojiPick')} />
+      </Popover>
     </div>
   )
 }
@@ -52,16 +87,13 @@ function ClassifyCardItem({ item, onEdit, onDelete }: ClassifyCardItemProps) {
   return (
     <Card styles={{ body: { padding: 20, display: 'flex', flexDirection: 'column', height: '100%' } }}>
       <Text strong style={{ fontSize: 16, display: 'block' }}>
+        {item.emoji ? <span style={{ marginRight: spacing.xs }}>{item.emoji}</span> : null}
         {item.name || '-'}
       </Text>
       <Paragraph type="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}>
         {item.description || '-'}
       </Paragraph>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs, marginTop: 'auto' }}>
-        <MetaRow label={t('classify.colCreateUser')} value={`${item.createUserName || '-'} · ${formatDateTime(item.createTime)}`} />
-        <MetaRow label={t('classify.colUpdateUser')} value={`${item.updateUserName || '-'} · ${formatDateTime(item.updateTime)}`} />
-      </div>
-      <div style={{ marginTop: spacing.sm, display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(16, 24, 40, 0.08)', paddingTop: spacing.sm }}>
+      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(16, 24, 40, 0.08)', paddingTop: spacing.sm }}>
         <Space>
           <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)}>
             {t('classify.edit')}
@@ -117,7 +149,7 @@ function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
 
   const openEdit = (record: Classify) => {
     setEditing(record)
-    form.setFieldsValue({ name: record.name ?? '', description: record.description ?? '' })
+    form.setFieldsValue({ name: record.name ?? '', description: record.description ?? '', emoji: record.emoji ?? '' })
     setModalOpen(true)
   }
 
@@ -131,10 +163,10 @@ function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
     setSubmitting(true)
     try {
       if (editing?.classifyId) {
-        await classifyApi.updateClassify({ classifyId: editing.classifyId, name, description: values.description ?? '' })
+        await classifyApi.updateClassify({ classifyId: editing.classifyId, name, description: values.description ?? '', emoji: values.emoji ?? '' })
         feedback.success(t('classify.updateSuccess'))
       } else {
-        await classifyApi.createClassify({ type, name, description: values.description ?? '' })
+        await classifyApi.createClassify({ type, name, description: values.description ?? '', emoji: values.emoji ?? '' })
         feedback.success(t('classify.addSuccess'))
       }
       reset()
@@ -178,7 +210,7 @@ function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
       ) : (
         <Row gutter={[16, 16]}>
           {items.map((item) => (
-            <Col xs={24} sm={12} lg={8} xl={6} key={item.classifyId}>
+            <Col xs={12} sm={8} lg={6} xl={4} xxl={3} key={item.classifyId}>
               <ClassifyCardItem item={item} onEdit={openEdit} onDelete={(record) => void handleDelete(record)} />
             </Col>
           ))}
@@ -204,6 +236,9 @@ function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
           </Form.Item>
           <Form.Item name="description" label={t('classify.desc')}>
             <Input maxLength={255} />
+          </Form.Item>
+          <Form.Item name="emoji" label={t('classify.emoji')}>
+            <EmojiPickerInput />
           </Form.Item>
         </Form>
       </Modal>

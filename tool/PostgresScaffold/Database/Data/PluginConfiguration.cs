@@ -32,6 +32,11 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
+        entity.Property(e => e.AvatarPath)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("头像")
+            .HasColumnName("avatar_path");
         entity.Property(e => e.ClassifyId)
             .HasComment("分类id")
             .HasColumnName("classify_id");

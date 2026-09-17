@@ -48,6 +48,7 @@ export const router = createBrowserRouter([
       { path: 'prompts/new', element: <PromptEditor /> },
       { path: 'prompts/:promptId/edit', element: <PromptEditor /> },
       { path: 'prompt-market', element: <PromptCenter /> },
+      { path: 'skill-market', element: <Skills /> },
       { path: 'account', element: <AccountSettings /> },
       { path: 'users', element: <Users /> },
       { path: 'admin/teams', element: <AdminTeams /> },

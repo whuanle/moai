@@ -83,4 +83,14 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 绑定的技能ID列表，JSON 数组文本，元素为 skill.id（uuid 字符串），如 [&quot;...&quot;].
     /// </summary>
     public string Skills { get; set; } = default!;
+
+    /// <summary>
+    /// 对话开场白，最长4000字符，空为&apos;&apos;.
+    /// </summary>
+    public string OpeningStatement { get; set; } = default!;
+
+    /// <summary>
+    /// 是否启用对话开场白.
+    /// </summary>
+    public bool OpeningStatementEnabled { get; set; }
 }

@@ -1,205 +1,100 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SearchOutlined, PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Space, Switch, Tag, Tooltip, Typography, Upload } from 'antd'
-import type { TableColumnsType, UploadFile } from 'antd'
-import { useTranslation } from 'react-i18next'
-import { Navigate } from 'react-router'
-import { Page, DataTable, QueryBar, feedback } from '@/design-system'
-import { controlHeight, spacing } from '@/design-system/theme'
-import { useAppStore } from '@/store/app'
-import { formatDateTime } from '@/utils/datetime'
 import {
-  createSkill,
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SendOutlined,
+  ThunderboltOutlined,
+  UndoOutlined,
+} from '@ant-design/icons'
+import { Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Typography } from 'antd'
+import { useTranslation } from 'react-i18next'
+import { useLocation, useNavigate } from 'react-router'
+import { Card, Page, feedback } from '@/design-system'
+import { neutralColors, spacing } from '@/design-system/theme'
+import { formatDateTime } from '@/utils/datetime'
+import { applyPublication, withdrawPublication } from '@/api/publication'
+import {
   deleteSkill,
+  downloadSkillFiles,
+  getMySkills,
   getSkill,
-  getSkills,
-  setSkillDisable,
-  updateSkill,
-  uploadSkillFile,
+  getSkillMarketList,
   type SkillDetail,
-  type SkillFileItem,
   type SkillListItem,
 } from '@/api/skills'
+import { SkillDetailModal } from './SkillDetailModal'
+import { SkillEditModal } from './SkillEditModal'
 
-const { Text } = Typography
+const { Text, Paragraph } = Typography
 
-const pageVerticalPadding = spacing.lg * 2
-const queryBarHeight = controlHeight + spacing.lg
-const tableHeaderHeight = 55
-const tablePaginationHeight = 57
-const tableScrollY = `calc(100vh - ${pageVerticalPadding + queryBarHeight + tableHeaderHeight + tablePaginationHeight}px)`
+type SkillTab = 'market' | 'mine'
 
-const keyPattern = /^[a-z][a-z0-9_]{0,29}$/
+const PAGE_DEFAULT_SIZE = 12
+const PAGE_SIZE_OPTIONS = [12, 24, 48]
 
-interface SkillFormValues {
-  key: string
-  name: string
-  description?: string
-  instructions?: string
-  /** 搜索栏字段（与编辑表单共用实例） */
-  searchText?: string
-}
-
-interface SkillFileEntry extends SkillFileItem {
-  uid: string
-}
-
+/** 技能中心：菜单单一入口，页头 Tab 切换「技能市场 / 我的技能」，卡片分页展示 */
 export function Skills() {
   const { t } = useTranslation()
-  const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const tab: SkillTab = location.pathname.startsWith('/skills') ? 'mine' : 'market'
 
-  const [form] = Form.useForm<SkillFormValues>()
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<SkillListItem[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [pageNo, setPageNo] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
   const [searchText, setSearchText] = useState('')
-  const [querySearchText, setQuerySearchText] = useState('')
+  const [keywords, setKeywords] = useState<string | undefined>(undefined)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_DEFAULT_SIZE)
 
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<SkillListItem | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [files, setFiles] = useState<SkillFileEntry[]>([])
-  const [uploading, setUploading] = useState(false)
-
-  const [detailOpen, setDetailOpen] = useState(false)
-  const [detailLoading, setDetailLoading] = useState(false)
   const [detail, setDetail] = useState<SkillDetail | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
-  const load = useCallback(
-    async (page: number, size: number, search: string) => {
-      setLoading(true)
-      try {
-        const res = await getSkills({ pageNo: page, pageSize: size, searchText: search || undefined })
-        setItems(res.items)
-        setTotalCount(res.totalCount)
-      } catch {
-        // 错误已由全局请求中间件统一提示
-      } finally {
-        setLoading(false)
-      }
-    },
-    [],
-  )
+  const [editOpen, setEditOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<string | null>(null)
+
+  const [applyRecord, setApplyRecord] = useState<SkillListItem | null>(null)
+  const [applying, setApplying] = useState(false)
+  const [applyReason, setApplyReason] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const filters = { keywords }
+      setItems(tab === 'mine' ? await getMySkills(filters) : await getSkillMarketList(filters))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setLoading(false)
+    }
+  }, [tab, keywords])
 
   useEffect(() => {
-    void load(pageNo, pageSize, querySearchText)
-  }, [load, pageNo, pageSize, querySearchText])
+    void load()
+  }, [load])
 
-  const handleSearch = (values: { searchText?: string }) => {
-    setPageNo(1)
-    setQuerySearchText((values.searchText ?? '').trim())
+  const handleTabChange = (key: string) => {
+    // 切换 tab 重置筛选与分页，两块状态更新与路由跳转合并为一次渲染、一次加载
+    setSearchText('')
+    setKeywords(undefined)
+    setPage(1)
+    navigate(key === 'mine' ? '/skills' : '/skill-market')
   }
 
-  const handleReset = () => {
-    setPageNo(1)
-    setQuerySearchText('')
-    form.setFieldValue('searchText', undefined)
-  }
-
-  const openCreate = () => {
-    setEditTarget(null)
-    setFiles([])
-    form.resetFields()
-    setModalOpen(true)
-  }
-
-  const openEdit = async (record: SkillListItem) => {
-    setEditTarget(record)
-    setFiles([])
-    form.resetFields()
-    setModalOpen(true)
-    setDetailLoading(true)
-    try {
-      const res = await getSkill(record.id ?? '')
-      form.setFieldsValue({
-        key: res.key ?? '',
-        name: res.name ?? '',
-        description: res.description ?? '',
-        instructions: res.instructions ?? '',
-      })
-      setFiles(
-        (res.files ?? []).map((f, index) => ({
-          uid: `loaded-${index}`,
-          path: f.path ?? '',
-          fileId: f.fileId ?? 0,
-          fileName: f.fileName ?? '',
-        })),
-      )
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setDetailLoading(false)
-    }
-  }
-
-  const closeModal = () => {
-    setModalOpen(false)
-    setEditTarget(null)
-    setFiles([])
-    form.resetFields()
-  }
-
-  const handleSubmit = async () => {
-    const values = await form.validateFields()
-    setSubmitting(true)
-    try {
-      const payload = {
-        name: values.name,
-        description: values.description ?? '',
-        instructions: values.instructions ?? '',
-        files: files.map((f) => ({ path: f.path ?? '', fileId: f.fileId ?? 0, fileName: f.fileName ?? '' })),
-      }
-      if (editTarget) {
-        await updateSkill(editTarget.id ?? '', payload)
-        feedback.success(t('skills.updateSuccess'))
-      } else {
-        await createSkill({ key: values.key, ...payload })
-        feedback.success(t('skills.createSuccess'))
-      }
-      closeModal()
-      void load(pageNo, pageSize, querySearchText)
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleUpload = async (file: File) => {
-    setUploading(true)
-    try {
-      const fileId = await uploadSkillFile(file)
-      setFiles((prev) => [
-        ...prev,
-        { uid: `f-${fileId}`, path: file.name, fileId, fileName: file.name },
-      ])
-    } catch {
-      feedback.error(t('skills.uploadFailed'))
-    } finally {
-      setUploading(false)
-    }
+  const applySearch = (value: string) => {
+    setSearchText(value)
+    setKeywords(value.trim() || undefined)
+    setPage(1)
   }
 
   const openDetail = async (record: SkillListItem) => {
-    setDetailOpen(true)
-    setDetailLoading(true)
-    setDetail(null)
     try {
       setDetail(await getSkill(record.id ?? ''))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setDetailLoading(false)
-    }
-  }
-
-  const handleDisable = async (record: SkillListItem, isDisable: boolean) => {
-    try {
-      await setSkillDisable(record.id ?? '', isDisable)
-      feedback.success(t('skills.updateSuccess'))
-      void load(pageNo, pageSize, querySearchText)
+      setDetailOpen(true)
     } catch {
       // 错误已由全局请求中间件统一提示
     }
@@ -209,270 +104,290 @@ export function Skills() {
     try {
       await deleteSkill(record.id ?? '')
       feedback.success(t('skills.deleteSuccess'))
-      void load(pageNo, pageSize, querySearchText)
+      void load()
     } catch {
       // 错误已由全局请求中间件统一提示
     }
   }
 
-  const columns: TableColumnsType<SkillListItem> = useMemo(
-    () => [
-      {
-        title: t('skills.colKey'),
-        dataIndex: 'key',
-        width: 160,
-        render: (v: string | null) => <Text code>{v}</Text>,
-      },
-      {
-        title: t('skills.colName'),
-        dataIndex: 'name',
-        width: 180,
-        ellipsis: true,
-      },
-      {
-        title: t('skills.colDescription'),
-        dataIndex: 'description',
-        width: 260,
-        ellipsis: true,
-        render: (v: string | null) => v || '-',
-      },
-      {
-        title: t('skills.colIsSystem'),
-        dataIndex: 'isSystem',
-        width: 100,
-        render: (v: boolean | null) =>
-          v ? <Tag color="geekblue">{t('skills.isSystem')}</Tag> : <Tag>{t('skills.notSystem')}</Tag>,
-      },
-      {
-        title: t('skills.colEnabled'),
-        dataIndex: 'isDisable',
-        width: 90,
-        render: (v: boolean | null, record) => (
-          <Switch
-            checked={!(record.isDisable ?? false)}
-            size="small"
-            onChange={(checked) => void handleDisable(record, !checked)}
-            aria-label={t('skills.colEnabled')}
-          />
-        ),
-      },
-      {
-        title: t('skills.colFileCount'),
-        dataIndex: 'fileCount',
-        width: 90,
-        render: (v: number | null) => v ?? 0,
-      },
-      {
-        title: t('skills.colUpdateTime'),
-        dataIndex: 'updateTime',
-        width: 160,
-        render: (v: string | null) => formatDateTime(v),
-      },
-      {
-        title: t('skills.colActions'),
-        key: 'actions',
-        width: 130,
-        fixed: 'right',
-        sticky: true,
-        render: (_: unknown, record) => (
-          <Space size={0}>
-            <Tooltip title={t('skills.detail')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<EyeOutlined />}
-                aria-label={`${t('skills.detail')}-${record.key ?? ''}`}
-                onClick={() => void openDetail(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('skills.edit')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                aria-label={`${t('skills.edit')}-${record.key ?? ''}`}
-                onClick={() => void openEdit(record)}
-              />
-            </Tooltip>
-            {!(record.isSystem ?? false) && (
-              <Popconfirm title={t('skills.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                <Tooltip title={t('skills.delete')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    aria-label={`${t('skills.delete')}-${record.key ?? ''}`}
-                  />
-                </Tooltip>
-              </Popconfirm>
-            )}
-          </Space>
-        ),
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, pageNo, pageSize, querySearchText],
-  )
-
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+  const handleDownload = async (record: SkillListItem) => {
+    try {
+      await downloadSkillFiles(record.id ?? '')
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
   }
 
-  const uploadFiles: UploadFile[] = files.map((f) => ({
-    uid: f.uid,
-    name: f.path ?? f.fileName ?? f.uid,
-    status: 'done',
-  }))
+  const handleApply = async () => {
+    if (!applyRecord) return
+    setApplying(true)
+    try {
+      await applyPublication({
+        resourceType: 'skill',
+        resourceId: String(applyRecord.id),
+        applyReason: applyReason || undefined,
+      })
+      feedback.success(t('skills.applySuccess'))
+      setApplyRecord(null)
+      setApplyReason('')
+      void load()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setApplying(false)
+    }
+  }
+
+  const handleWithdraw = async (record: SkillListItem) => {
+    if (!record.pendingPublicationId) return
+    try {
+      await withdrawPublication(String(record.pendingPublicationId))
+      feedback.success(t('skills.withdrawSuccess'))
+      void load()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const renderStatus = (record: SkillListItem) => {
+    if (record.isPublic) return <Tag color="success">{t('skills.statusPublic')}</Tag>
+    if (record.pendingPublicationId) return <Tag color="processing">{t('skills.statusPending')}</Tag>
+    return <Tag>{t('skills.statusPrivate')}</Tag>
+  }
+
+  const pagedItems = useMemo(
+    () => items.slice((page - 1) * pageSize, page * pageSize),
+    [items, page, pageSize],
+  )
+
+  const tabItems = [
+    { key: 'market', label: t('skills.tabMarket') },
+    { key: 'mine', label: t('skills.tabMine') },
+  ]
 
   return (
     <Page>
-      <div style={{ display: 'flex', flexDirection: 'column', height: `calc(100vh - ${pageVerticalPadding}px)`, minHeight: 0 }}>
-        <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
-          <Form.Item name="searchText">
-            <Input
-              placeholder={t('skills.searchPlaceholder')}
-              prefix={<SearchOutlined style={{ color: 'inherit' }} />}
-              allowClear
-              maxLength={100}
-              style={{ width: 280 }}
+      <Tabs activeKey={tab} onChange={handleTabChange} items={tabItems} />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: spacing.sm,
+          flexWrap: 'wrap',
+          marginBottom: spacing.md,
+        }}
+      >
+        {tab === 'mine' && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditTarget(null)
+              setEditOpen(true)
+            }}
+          >
+            {t('skills.create')}
+          </Button>
+        )}
+        <Input.Search
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onSearch={applySearch}
+          placeholder={t('skills.searchPlaceholder')}
+          prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+          allowClear
+          maxLength={100}
+          style={{ width: 280 }}
+        />
+        <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+          {t('ds.table.refresh')}
+        </Button>
+        <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
+      </div>
+      <Spin spinning={loading}>
+        {pagedItems.length === 0 ? (
+          <Empty description={t('skills.empty')} />
+        ) : (
+          <Row gutter={[spacing.md, spacing.md]}>
+            {pagedItems.map((record) => {
+              const name = record.name || '-'
+              return (
+                <Col key={String(record.id ?? '')} xs={24} sm={12} md={8} lg={6}>
+                  <Card style={{ height: '100%' }} styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        <ThunderboltOutlined style={{ fontSize: 22, color: 'inherit' }} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div
+                            title={name}
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 15,
+                              lineHeight: 1.4,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {name}
+                          </div>
+                          <Text code style={{ fontSize: 12 }}>
+                            {record.key}
+                          </Text>
+                        </div>
+                        {record.isSystem ? <Tag color="geekblue">{t('skills.isSystem')}</Tag> : null}
+                      </div>
+                      <Paragraph type="secondary" style={{ fontSize: 13, marginBottom: 0, minHeight: 38 }} ellipsis={{ rows: 2 }}>
+                        {record.description || '-'}
+                      </Paragraph>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
+                        {tab === 'mine' && renderStatus(record)}
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('skills.colFileCount')} {record.fileCount ?? 0}
+                        </Text>
+                        {tab === 'market' && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {record.createUserName || '-'}
+                          </Text>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 'auto',
+                          paddingTop: spacing.sm,
+                          borderTop: `1px solid ${neutralColors.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: spacing.sm,
+                        }}
+                      >
+                        {tab === 'mine' ? (
+                          <Space size={0}>
+                            <Button type="text" size="small" icon={<EyeOutlined />} aria-label={`${t('skills.detail')}-${record.key ?? ''}`} onClick={() => void openDetail(record)} />
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<EditOutlined />}
+                              aria-label={`${t('skills.edit')}-${record.key ?? ''}`}
+                              onClick={() => {
+                                setEditTarget(record.id ?? null)
+                                setEditOpen(true)
+                              }}
+                            />
+                            {record.isPublic ? null : record.pendingPublicationId ? (
+                              <Popconfirm title={t('skills.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
+                                <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('skills.withdraw')} />
+                              </Popconfirm>
+                            ) : (
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<SendOutlined />}
+                                aria-label={t('skills.apply')}
+                                onClick={() => {
+                                  setApplyRecord(record)
+                                  setApplyReason('')
+                                }}
+                              />
+                            )}
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<DownloadOutlined />}
+                              aria-label={`${t('skills.download')}-${record.key ?? ''}`}
+                              onClick={() => void handleDownload(record)}
+                            />
+                            <Popconfirm title={t('skills.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
+                              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={`${t('skills.delete')}-${record.key ?? ''}`} />
+                            </Popconfirm>
+                          </Space>
+                        ) : (
+                          <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                            {formatDateTime(record.updateTime)}
+                          </Text>
+                        )}
+                        <Space size={spacing.sm}>
+                          {tab === 'market' && (
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<DownloadOutlined />}
+                              aria-label={`${t('skills.download')}-${record.key ?? ''}`}
+                              onClick={() => void handleDownload(record)}
+                            />
+                          )}
+                          <Button type="primary" size="small" icon={<EyeOutlined />} onClick={() => void openDetail(record)}>
+                            {t('skills.view')}
+                          </Button>
+                        </Space>
+                      </div>
+                      {tab === 'mine' && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('skills.colUpdateTime')}: {formatDateTime(record.updateTime)}
+                        </Text>
+                      )}
+                    </div>
+                  </Card>
+                </Col>
+              )
+            })}
+          </Row>
+        )}
+      </Spin>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.md }}>
+        {items.length > 0 && (
+          <Pagination
+            current={page}
+            pageSize={pageSize}
+            total={items.length}
+            onChange={(next, nextSize) => {
+              setPage(nextSize !== pageSize ? 1 : next)
+              setPageSize(nextSize)
+            }}
+            showSizeChanger
+            pageSizeOptions={PAGE_SIZE_OPTIONS.map(String)}
+            showTotal={(total) => t('ds.table.total', { total })}
+          />
+        )}
+      </div>
+      <SkillDetailModal open={detailOpen} detail={detail} onClose={() => setDetailOpen(false)} />
+      <SkillEditModal
+        open={editOpen}
+        skillId={editTarget}
+        teamId={0}
+        onSaved={() => {
+          setEditOpen(false)
+          setEditTarget(null)
+          void load()
+        }}
+        onCancel={() => {
+          setEditOpen(false)
+          setEditTarget(null)
+        }}
+      />
+      <Modal
+        open={!!applyRecord}
+        title={t('skills.applyTitle')}
+        onOk={() => void handleApply()}
+        onCancel={() => setApplyRecord(null)}
+        okText={t('skills.applyOk')}
+        cancelText={t('skills.cancel')}
+        confirmLoading={applying}
+        destroyOnHidden
+        maskClosable={false}
+      >
+        <Form layout="vertical">
+          <Form.Item label={t('skills.applyReason')} style={{ marginBottom: 0 }}>
+            <Input.TextArea
+              value={applyReason}
+              onChange={(e) => setApplyReason(e.target.value)}
+              placeholder={t('skills.applyReasonPlaceholder')}
+              rows={3}
+              maxLength={255}
             />
           </Form.Item>
-        </QueryBar>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <DataTable<SkillListItem>
-            rowKey="id"
-            columns={columns}
-            dataSource={items}
-            loading={loading}
-            sticky
-            scroll={{ x: 1180, y: tableScrollY }}
-            pagination={{
-              current: pageNo,
-              pageSize,
-              total: totalCount,
-              showSizeChanger: true,
-              onChange: (page, size) => {
-                setPageNo(page)
-                setPageSize(size)
-              },
-            }}
-            toolbar={
-              <Space>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                  {t('skills.create')}
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={() => void load(pageNo, pageSize, querySearchText)} loading={loading}>
-                  {t('skills.refresh')}
-                </Button>
-                <Text type="secondary">{t('skills.totalCount', { count: totalCount })}</Text>
-              </Space>
-            }
-          />
-        </div>
-      </div>
-
-      <Modal
-        open={modalOpen}
-        title={editTarget ? t('skills.edit') : t('skills.create')}
-        onCancel={closeModal}
-        onOk={handleSubmit}
-        okText={t('skills.save')}
-        confirmLoading={submitting}
-        maskClosable={false}
-        destroyOnClose
-        width={640}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="key"
-            label={t('skills.formKey')}
-            rules={[
-              { required: true, message: t('skills.keyRequired') },
-              { pattern: keyPattern, message: t('skills.keyPattern') },
-            ]}
-            extra={t('skills.keyExtra')}
-          >
-            <Input maxLength={30} disabled={Boolean(editTarget)} />
-          </Form.Item>
-          <Form.Item
-            name="name"
-            label={t('skills.formName')}
-            rules={[{ required: true, message: t('skills.nameRequired') }]}
-          >
-            <Input maxLength={50} />
-          </Form.Item>
-          <Form.Item name="description" label={t('skills.formDescription')} rules={[{ max: 255, message: t('skills.descMaxLength') }]}>
-            <Input.TextArea rows={2} maxLength={255} />
-          </Form.Item>
-          <Form.Item name="instructions" label={t('skills.formInstructions')}>
-            <Input.TextArea rows={6} placeholder={t('skills.instructionsPlaceholder')} />
-          </Form.Item>
-          {!editTarget?.isSystem && (
-            <Form.Item label={t('skills.formFiles')} extra={t('skills.filesExtra')}>
-              <Upload
-                multiple
-                fileList={uploadFiles}
-                beforeUpload={(file) => {
-                  void handleUpload(file)
-                  return false
-                }}
-                onRemove={(file) => {
-                  setFiles((prev) => prev.filter((f) => f.uid !== file.uid))
-                }}
-                accept=".py,.md,.json,.txt,.csv,.yaml,.yml,.j2,.html,.css,.js"
-              >
-                <Button loading={uploading}>{t('skills.addFile')}</Button>
-              </Upload>
-            </Form.Item>
-          )}
         </Form>
-      </Modal>
-
-      <Modal
-        open={detailOpen}
-        title={detail ? `${detail.name ?? ''}（${detail.key ?? ''}）` : t('skills.detail')}
-        footer={null}
-        onCancel={() => setDetailOpen(false)}
-        width={720}
-        destroyOnClose
-      >
-        {detailLoading || !detail ? (
-          <Text type="secondary">{t('common.loading')}</Text>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-            <div>
-              <Text strong>{t('skills.formDescription')}</Text>
-              <p style={{ margin: 0 }}>{detail.description || '-'}</p>
-            </div>
-            <div>
-              <Text strong>{t('skills.formInstructions')}</Text>
-              <Input.TextArea
-                value={detail.instructions ?? ''}
-                readOnly
-                autoSize={{ minRows: 6, maxRows: 20 }}
-                style={{ marginTop: spacing.xs }}
-              />
-            </div>
-            <div>
-              <Text strong>{t('skills.formFiles')}</Text>
-              {detail.files && detail.files.length > 0 ? (
-                <ul style={{ margin: `${spacing.xs}px 0 0`, paddingLeft: spacing.lg }}>
-                  {detail.files.map((f, index) => (
-                    <li key={index}>
-                      <Text code>{f.path}</Text>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p style={{ margin: 0 }}>-</p>
-              )}
-            </div>
-            <Text type="secondary">
-              {t('skills.colUpdateTime')}: {formatDateTime(detail.updateTime)}
-            </Text>
-          </div>
-        )}
       </Modal>
     </Page>
   )

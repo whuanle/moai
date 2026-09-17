@@ -46,23 +46,46 @@ public class WithdrawPublicationCommandHandler : IRequestHandler<WithdrawPublica
 
         if (publicationReview.TeamId == 0)
         {
-            // 个人提示词的上架申请仅创建人可撤回
-            if (!int.TryParse(publicationReview.ResourceId, out var promptId))
+            // 个人资源（个人提示词/个人技能）的上架申请仅创建人可撤回
+            if ((PublicationResourceType)publicationReview.ResourceType == PublicationResourceType.Skill)
             {
-                throw new BusinessException("提示词 id 不正确.") { StatusCode = 400 };
+                if (!Guid.TryParse(publicationReview.ResourceId, out var skillId))
+                {
+                    throw new BusinessException("技能 id 不正确.") { StatusCode = 400 };
+                }
+
+                var skill = await _databaseContext.Skills
+                    .FirstOrDefaultAsync(x => x.Id == skillId, cancellationToken);
+
+                if (skill == null)
+                {
+                    throw new BusinessException("技能不存在或已删除.") { StatusCode = 404 };
+                }
+
+                if (skill.CreateUserId != request.ContextUserId)
+                {
+                    throw new BusinessException("只有创建人可以撤回个人技能的上架申请.") { StatusCode = 403 };
+                }
             }
-
-            var prompt = await _databaseContext.Prompts
-                .FirstOrDefaultAsync(x => x.Id == promptId, cancellationToken);
-
-            if (prompt == null)
+            else
             {
-                throw new BusinessException("提示词不存在或已删除.") { StatusCode = 404 };
-            }
+                if (!int.TryParse(publicationReview.ResourceId, out var promptId))
+                {
+                    throw new BusinessException("提示词 id 不正确.") { StatusCode = 400 };
+                }
 
-            if (prompt.CreateUserId != request.ContextUserId)
-            {
-                throw new BusinessException("只有创建人可以撤回个人提示词的上架申请.") { StatusCode = 403 };
+                var prompt = await _databaseContext.Prompts
+                    .FirstOrDefaultAsync(x => x.Id == promptId, cancellationToken);
+
+                if (prompt == null)
+                {
+                    throw new BusinessException("提示词不存在或已删除.") { StatusCode = 404 };
+                }
+
+                if (prompt.CreateUserId != request.ContextUserId)
+                {
+                    throw new BusinessException("只有创建人可以撤回个人提示词的上架申请.") { StatusCode = 403 };
+                }
             }
         }
         else

@@ -60,6 +60,9 @@ node local-dev/bocha-search-e2e.mjs
 | @DYN-S40 | local-dev/paddleocr-e2e.mjs（空 ApiUrl → InitAsync 拒 + 恢复后仍可运行） | 待运行 |
 | @DYN-S41 | local-dev/paddleocr-e2e.mjs（Token 为空 → 桩 401 → 业务异常带 HTTP 状态码 + 响应体） | 待运行 |
 | @DYN-S42 | local-dev/paddleocr-e2e.mjs（桩服务被 /ocr 与 /layout-parsing 命中数） | 待运行 |
+| @DYN-S43 | local-dev/dynamic-plugin-e2e.mjs（公开图片直传完成 → 设置头像 200 → 列表回读 avatarPath 一致） | PASS 99/99（2026-09-17） |
+| @DYN-S44 | local-dev/dynamic-plugin-e2e.mjs（未登记 objectKey → 404 头像文件不存在或未完成上传） | PASS 99/99（2026-09-17） |
+| @DYN-S45 | local-dev/dynamic-plugin-e2e.mjs（匿名 401、普通用户 403） | PASS 99/99（2026-09-17） |
 
 ## 前端测试
 

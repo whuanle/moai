@@ -20,7 +20,8 @@ src/aiplugin/
 ├── MoAI.AIPlugin.Shared/
 │   ├── Commands/SaveDynamicPluginCommand.cs        {pluginKey,templeteKey,title,description,classifyId,config} → EmptyCommandResponse
 │   ├── Commands/DeleteDynamicPluginCommand.cs       {pluginKey} → EmptyCommandResponse
-│   └── Queries/Responses/QueryPluginManageListCommandResponseItem.cs  （增强：+TempleteKey,+Config,+ConfigExample）
+│   ├── Commands/UpdatePluginAvatarCommand.cs        {pluginId(路由回填),objectKey} → EmptyCommandResponse
+│   └── Queries/Responses/QueryPluginManageListCommandResponseItem.cs  （增强：+TempleteKey,+Config,+ConfigExample,+AvatarPath）
 ├── MoAI.AIPlugin.Dynamic/                            内置模板宿主（Models/ 各模板模型 + Plugins/ 模板实现）
 ├── MoAI.AIPlugin.Core/
 │   ├── Commands/RunPluginCommandHandler.cs          （增强：key 未命中注册表时走实例解析器）
@@ -28,15 +29,17 @@ src/aiplugin/
 ├── MoAI.AIPlugin.Custom/
 │   ├── Commands/SaveDynamicPluginCommandHandler.cs  校验 + 创建/更新实例
 │   ├── Commands/DeleteDynamicPluginCommandHandler.cs 软删除
+│   ├── Commands/UpdatePluginAvatarCommandHandler.cs 校验文件已登记 → plugin.avatar_path = objectKey
 │   ├── Services/DynamicInstanceResolver.cs          实例 key → 模板 key + 配置
 │   ├── Queries/QueryPluginManageListCommandHandler.cs （增强：动态实例合并 + 模板字段填充）
 │   └── CustomPluginModule.cs                        注册 IDynamicInstanceResolver
 └── MoAI.AIPlugin.Api/
-    └── Controllers/DynamicPluginController.cs       [Route("/ai/plugin/dynamic")]，门禁在 Controller
+    ├── Controllers/DynamicPluginController.cs       [Route("/ai/plugin/dynamic")]，门禁在 Controller
+    └── Controllers/PluginManageController.cs        +POST {id}/avatar（管理员，跨 custom/dynamic/static 共用）
 
 ui/src/
-├── api/plugin.ts                                    +getDynamicTemplates,+saveDynamicPlugin,+deleteDynamicPlugin
-└── pages/plugins/DynamicPluginPanel.tsx              实例列表 + 新建/编辑弹窗（Monaco 配置）+ 运行 + 删除
+├── api/plugin.ts                                    +getDynamicTemplates,+saveDynamicPlugin,+deleteDynamicPlugin,+updatePluginAvatar
+└── pages/plugins/DynamicPluginPanel.tsx              实例列表 + 新建/编辑弹窗（Monaco 配置 + 头像上传）+ 运行 + 列表头像展示
 ```
 
 三层依赖：`Api → Core → Shared`；Core 增 `IDynamicInstanceResolver`（供 Run 解析）。Api 引用 `MoAI.Account.Shared`、`MoAI.AIPlugin.Shared`。
@@ -52,6 +55,7 @@ ui/src/
 | POST | `/api/ai/plugin/run`（沿用 `PluginController`） | admin | `{key=实例key,requestJson}` → `PluginRunResult`，运行实例 |
 | GET | `/api/ai/plugin`（`QueryAll`） | admin | 返回注册表模板列表，含 `configExample/paramsExample/isDynamic`（前端模板下拉） |
 | GET | `/api/ai/plugin/manage/list` | admin | 动态实例列表（`kind=dynamic`），带 `templeteKey/config/configExample` |
+| POST | `/api/ai/plugin/manage/{id}/avatar` | admin | `{objectKey}` → `EmptyCommandResponse`，设置插件头像（`plugin.avatar_path`，custom/dynamic/static 共用） |
 
 > 控制器 `[Route("/ai/plugin/...")]` 之上还有全局 `/api` 路由前缀，实际路径以 `/api/ai/plugin/...` 为准（早期文档漏写 `/api`，2026-09-11 依 OpenAPI 实测修正）。
 
@@ -59,6 +63,7 @@ ui/src/
 - `templeteKey`（string?）：动态实例的模板 key。
 - `config`（string?）：动态实例存储的配置 JSON。
 - `configExample`（string?）：动态模板配置示例（创建时 Monaco 初始值）。
+- `avatarPath`（string）：头像存储 ObjectKey（前端拼 `{server}/static/{objectKey}` 展示；内存发现的静态插件为空串）。
 
 ## 关键决策
 
@@ -70,6 +75,7 @@ ui/src/
 6. **分类校验**：`classifyId` 非 0 需在 `classify` 表存在且 `Type=plugin`，否则 400。
 7. **删除**：软删除 `plugin_dynamic` 与该实例关联的 `plugin` 行（`IsDeleted=1`）。
 8. **前端**：动态 Tab 用 `DynamicPluginPanel`；新建/编辑弹窗内含 Monaco 配置编辑器；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。i18n zh/en 同步。
+9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
 
 ## 内置动态模板
 

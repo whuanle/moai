@@ -24,11 +24,17 @@ public class UpdateClassifyCommand : IRequest<EmptyCommandResponse>, IModelValid
     /// </summary>
     public string? Description { get; init; }
 
+    /// <summary>
+    /// 表情符号（单个 emoji，传空串清除）.
+    /// </summary>
+    public string? Emoji { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateClassifyCommand> validate)
     {
         validate.RuleFor(x => x.ClassifyId).GreaterThan(0).WithMessage("分类 id 不合法.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("分类名称不能为空.").MaximumLength(20).WithMessage("分类名称最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).When(x => x.Description != null).WithMessage("分类描述最长 255 个字符.");
+        validate.RuleFor(x => x.Emoji).MaximumLength(10).When(x => x.Emoji != null).WithMessage("表情最长 10 个字符.");
     }
 }

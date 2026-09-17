@@ -34,6 +34,11 @@ public static class SettingDefinitions
     /// </summary>
     public const string GraphDialectKey = "KG_DIALECT";
 
+    /// <summary>
+    /// 知识库上传文件大小上限（MB），0 表示不限制.
+    /// </summary>
+    public const string WikiMaxFileSizeKey = "WIKI_MAX_FILE_SIZE_MB";
+
     private static readonly List<SettingDefinition> BackingField = new()
     {
         new SettingDefinition
@@ -70,6 +75,13 @@ public static class SettingDefinitions
             Name = "图数据库方言",
             Description = "memgraph 或 neo4j，影响内省与索引语句；外部接入 Neo4j 实例时选 neo4j.",
             DefaultValue = "memgraph"
+        },
+        new SettingDefinition
+        {
+            Key = WikiMaxFileSizeKey,
+            Name = "知识库最大文件大小",
+            Description = "知识库上传文档的大小上限（MB），默认 50，0 表示不限制（平台硬上限 1GB）.",
+            DefaultValue = "50"
         }
     };
 

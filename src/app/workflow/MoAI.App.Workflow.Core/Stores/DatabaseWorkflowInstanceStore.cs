@@ -43,8 +43,8 @@ public class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
             Status = (short)instance.Status,
             Input = instance.Input.ToJsonString(),
             InstanceData = JsonSerializer.Serialize(instance, WorkflowJson.Options),
-            StartTime = instance.StartedAt,
-            EndTime = instance.EndedAt,
+            StartTime = instance.StartedAt?.UtcDateTime,
+            EndTime = instance.EndedAt?.UtcDateTime,
         };
 
         _databaseContext.AppWorkflowInstances.Add(entity);
@@ -70,8 +70,8 @@ public class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
         entity.Output = instance.Output?.ToJsonString();
         entity.ErrorMessage = instance.ErrorMessage;
         entity.InstanceData = JsonSerializer.Serialize(instance, WorkflowJson.Options);
-        entity.StartTime = instance.StartedAt;
-        entity.EndTime = instance.EndedAt;
+        entity.StartTime = instance.StartedAt?.UtcDateTime;
+        entity.EndTime = instance.EndedAt?.UtcDateTime;
         await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 

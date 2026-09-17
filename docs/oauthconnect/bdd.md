@@ -152,7 +152,7 @@ Feature: 前端连接器页（/oauthconnect）
     When 选择 provider 为 feishu 或 dingTalk
     Then 隐藏"发现端点"输入并自动填充默认图标
     When 选择 custom
-    Then "发现端点"必填
+    Then "发现端点"必填，输入框占位提示 `https://.../.well-known/openid-configuration`
 
   @OC-S23 @manual
   Scenario: 编辑时提供商锁定

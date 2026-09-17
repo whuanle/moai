@@ -47,6 +47,7 @@ public class UpdateClassifyCommandHandler : IRequestHandler<UpdateClassifyComman
 
         classify.Name = request.Name;
         classify.Description = request.Description ?? classify.Description;
+        classify.Emoji = request.Emoji ?? classify.Emoji;
 
         _databaseContext.Update(classify);
         await _databaseContext.SaveChangesAsync(cancellationToken);

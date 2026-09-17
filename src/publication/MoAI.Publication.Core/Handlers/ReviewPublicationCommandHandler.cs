@@ -56,6 +56,19 @@ public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublication
 
                 app.IsPublic = true;
             }
+            else if ((PublicationResourceType)publicationReview.ResourceType == PublicationResourceType.Skill)
+            {
+                var skillId = Guid.Parse(publicationReview.ResourceId);
+                var skill = await _databaseContext.Skills
+                    .FirstOrDefaultAsync(x => x.Id == skillId, cancellationToken);
+
+                if (skill == null)
+                {
+                    throw new BusinessException("技能不存在或已删除，无法通过上架.") { StatusCode = 404 };
+                }
+
+                skill.IsPublic = true;
+            }
             else
             {
                 var promptId = int.Parse(publicationReview.ResourceId);
@@ -78,7 +91,7 @@ public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublication
         }
 
         publicationReview.ReviewComment = request.ReviewComment ?? string.Empty;
-        publicationReview.ReviewTime = DateTimeOffset.Now;
+        publicationReview.ReviewTime = DateTime.UtcNow;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

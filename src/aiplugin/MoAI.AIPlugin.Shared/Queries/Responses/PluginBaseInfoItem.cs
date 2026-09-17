@@ -20,6 +20,11 @@ public class PluginBaseInfoItem : AuditsInfo
     public string PluginName { get; set; } = default!;
 
     /// <summary>
+    /// 头像（存储 ObjectKey，前端拼装 /static 地址展示）.
+    /// </summary>
+    public string AvatarPath { get; set; } = string.Empty;
+
+    /// <summary>
     /// 插件标题.
     /// </summary>
     public string Title { get; set; } = default!;

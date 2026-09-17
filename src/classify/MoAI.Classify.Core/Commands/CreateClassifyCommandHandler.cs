@@ -40,6 +40,7 @@ public class CreateClassifyCommandHandler : IRequestHandler<CreateClassifyComman
             Type = request.Type,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
+            Emoji = request.Emoji ?? string.Empty,
         };
 
         _databaseContext.Classifies.Add(classify);

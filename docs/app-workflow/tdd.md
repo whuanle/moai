@@ -4,19 +4,21 @@
 
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
-| @WF-S1 | local-dev/workflow-e2e.mjs（WF-01） | PASS 27/27（2026-09-16） |
-| @WF-S2 | local-dev/workflow-e2e.mjs（WF-04/06） | PASS 27/27（2026-09-16） |
-| @WF-S3 | local-dev/workflow-e2e.mjs（WF-02/03） | PASS 27/27（2026-09-16） |
-| @WF-S4 | local-dev/workflow-e2e.mjs（WF-07） | PASS 27/27（2026-09-16） |
-| @WF-S5 | local-dev/workflow-e2e.mjs（WF-08） | PASS 27/27（2026-09-16） |
-| @WF-S6 | local-dev/workflow-e2e.mjs（WF-09） | PASS 27/27（2026-09-16） |
-| @WF-S7 | local-dev/workflow-e2e.mjs（WF-10） | PASS 27/27（2026-09-16） |
-| @WF-S8 | local-dev/workflow-e2e.mjs（WF-11/12） | PASS 27/27（2026-09-16） |
-| @WF-S9 | local-dev/workflow-e2e.mjs（WF-13） | PASS 27/27（2026-09-16） |
-| 引擎行为（条件路由/跳过传播/恢复/插值/校验） | tests/MoAI.App.Workflow.Tests（12 用例） | PASS 12/12（2026-09-16） |
+| @WF-S1 | local-dev/workflow-e2e.mjs（WF-01） | PASS 36/36（2026-09-17） |
+| @WF-S2 | local-dev/workflow-e2e.mjs（WF-04/06） | PASS 36/36（2026-09-17） |
+| @WF-S3 | local-dev/workflow-e2e.mjs（WF-02/03） | PASS 36/36（2026-09-17） |
+| @WF-S4 | local-dev/workflow-e2e.mjs（WF-07） | PASS 36/36（2026-09-17） |
+| @WF-S5 | local-dev/workflow-e2e.mjs（WF-08） | PASS 36/36（2026-09-17） |
+| @WF-S6 | local-dev/workflow-e2e.mjs（WF-09） | PASS 36/36（2026-09-17） |
+| @WF-S7 | local-dev/workflow-e2e.mjs（WF-10） | PASS 36/36（2026-09-17） |
+| @WF-S8 | local-dev/workflow-e2e.mjs（WF-11/12） | PASS 36/36（2026-09-17） |
+| @WF-S9 | local-dev/workflow-e2e.mjs（WF-13） | PASS 36/36（2026-09-17） |
+| @WF-S10 | local-dev/workflow-e2e.mjs（WF-15a~e） | PASS 36/36（2026-09-17） |
+| 引擎行为（条件路由/跳过传播/恢复/插值/校验/条件脚本） | tests/MoAI.App.Workflow.Tests（14 用例） | PASS 14/14（2026-09-17） |
 | 设计器转换层（往返/条件端口/校验） | ui/src/pages/teams/apps/workflow/__tests__/utils.test.ts（10 用例） | PASS 10/10（2026-09-16） |
-| 前端回归 | ui `npm run typecheck && npm run lint && npm run test` | 0 error / 0 error / 299/299（2026-09-16） |
-| 后端构建 | `dotnet build src/MoAI/MoAI.csproj` | 0 error（2026-09-16） |
+| 前端回归 | ui `npm run typecheck && npm run lint && npm run test` | 0 error / 0 error / 310/310（2026-09-17） |
+| 后端构建 | `dotnet build src/MoAI/MoAI.csproj` | 0 error（2026-09-17） |
+| 回归对照 | local-dev/app-e2e.mjs（AP-18 契约更新为流程应用只写开场白） | PASS 121/121（2026-09-17） |
 
 ## 验证前置
 

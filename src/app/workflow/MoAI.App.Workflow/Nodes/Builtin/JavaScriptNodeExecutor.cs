@@ -6,17 +6,19 @@ namespace MoAI.App.Workflow.Nodes.Builtin;
 
 /// <summary>
 /// JavaScript 节点执行器 - 使用 Jint 执行 JS 脚本做数据加工（与旧版 WorkflowJavaScriptAction 思路一致）.
-/// config: { "code": "function run(inputs, sys, nodes) { return { ... }; }" }
-/// 入参：inputs（当前节点输入）、sys（系统变量）、nodes（上游节点输出）；返回值即节点输出.
+/// config: { "code": "function run(inputs, sys, nodes, system) { return { ... }; }" }
+/// 入参：inputs（当前节点输入）、sys（系统变量）、nodes（上游节点输出）、system（流程全局变量）；
+/// 返回值即节点输出。旧的三参脚本 run(inputs, sys, nodes) 仍兼容.
 /// </summary>
 public class JavaScriptNodeExecutor : INodeExecutor
 {
     private const string WrapperScript = """
-        function __invoke__(inputsJson, sysJson, nodesJson) {
+        function __invoke__(inputsJson, sysJson, nodesJson, systemJson) {
           var inputs = JSON.parse(inputsJson);
           var sys = JSON.parse(sysJson);
           var nodes = JSON.parse(nodesJson);
-          var result = run(inputs, sys, nodes);
+          var system = JSON.parse(systemJson);
+          var result = run(inputs, sys, nodes, system);
           if (result === undefined) {
             return null;
           }
@@ -53,7 +55,8 @@ public class JavaScriptNodeExecutor : INodeExecutor
                 "__invoke__",
                 context.Inputs.ToJsonString(),
                 context.Scope.SystemVariables.ToJsonString(),
-                context.Scope.ToJsonPathContext()["nodes"]!.ToJsonString());
+                context.Scope.ToJsonPathContext()["nodes"]!.ToJsonString(),
+                context.Scope.WorkflowGlobals.ToJsonString());
 
             if (result.IsString())
             {

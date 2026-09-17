@@ -13,6 +13,7 @@ vi.mock('@/api/settings', () => ({
     kgUsername: 'KG_USERNAME',
     kgPassword: 'KG_PASSWORD',
     kgDialect: 'KG_DIALECT',
+    wikiMaxFileSize: 'WIKI_MAX_FILE_SIZE_MB',
   },
   getSettings: vi.fn(),
   saveSetting: vi.fn().mockResolvedValue(undefined),
@@ -25,6 +26,7 @@ function settingsResponse(overrides: Record<string, string> = {}) {
     KG_USERNAME: '',
     KG_PASSWORD: '',
     KG_DIALECT: 'memgraph',
+    WIKI_MAX_FILE_SIZE_MB: '50',
     ...overrides,
   }
   return {
@@ -58,7 +60,7 @@ describe('Settings（系统设置）', () => {
     expect(screen.queryByLabelText('密码')).toBeNull()
   })
 
-  it('开启后填写连接信息，保存时提交开关、方言与三项连接设置', async () => {
+  it('开启后填写连接信息，保存时提交开关、图数据库类型与三项连接设置', async () => {
     renderSettings()
     await screen.findByText('知识图谱（图数据库）')
 
@@ -93,6 +95,46 @@ describe('Settings（系统设置）', () => {
     expect(saveSetting).not.toHaveBeenCalledWith('KG_URI', expect.anything())
     expect(saveSetting).not.toHaveBeenCalledWith('KG_USERNAME', expect.anything())
     expect(saveSetting).not.toHaveBeenCalledWith('KG_PASSWORD', expect.anything())
+  })
+
+  it('知识图谱卡片默认展开，点击标题可折叠与再展开', async () => {
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getAllByRole('switch')[0])
+    expect(await screen.findByLabelText('连接地址')).toBeInTheDocument()
+
+    const header = screen.getByRole('button', { name: /知识图谱（图数据库）/ })
+    expect(header).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.click(header)
+    expect(header).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText('连接地址')).toBeNull()
+
+    fireEvent.click(header)
+    expect(header).toHaveAttribute('aria-expanded', 'true')
+    expect(await screen.findByLabelText('连接地址')).toBeInTheDocument()
+  })
+
+  it('知识库卡片默认折叠，默认回显 50，保存时提交 WIKI_MAX_FILE_SIZE_MB', async () => {
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    const wikiHeader = screen.getByRole('button', { name: /知识库/ })
+    expect(wikiHeader).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(wikiHeader)
+    const input = await screen.findByLabelText('最大文件大小')
+    expect(input).toHaveValue('50')
+    fireEvent.change(input, { target: { value: '80' } })
+
+    const saveButton = screen
+      .getAllByRole('button', { name: /保\s*存/ })
+      .find((b) => !(b as HTMLButtonElement).disabled)
+    expect(saveButton).toBeTruthy()
+    fireEvent.click(saveButton!)
+
+    await waitFor(() => expect(saveSetting).toHaveBeenCalledWith('WIKI_MAX_FILE_SIZE_MB', '80'))
   })
 
   it('非 root 管理员被重定向，不渲染知识图谱设置', async () => {

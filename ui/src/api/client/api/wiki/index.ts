@@ -10,6 +10,8 @@ import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './l
 // @ts-ignore
 import { ModelOptionsRequestBuilderRequestsMetadata, type ModelOptionsRequestBuilder } from './modelOptions/index.js';
 // @ts-ignore
+import { type UploadLimitRequestBuilder, UploadLimitRequestBuilderRequestsMetadata } from './uploadLimit/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -24,6 +26,10 @@ export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilde
      * The modelOptions property
      */
     get modelOptions(): ModelOptionsRequestBuilder;
+    /**
+     * The uploadLimit property
+     */
+    get uploadLimit(): UploadLimitRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.wiki.item collection
      * @param id 知识库 id.
@@ -68,6 +74,9 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
     },
     modelOptions: {
         requestsMetadata: ModelOptionsRequestBuilderRequestsMetadata,
+    },
+    uploadLimit: {
+        requestsMetadata: UploadLimitRequestBuilderRequestsMetadata,
     },
 };
 /**

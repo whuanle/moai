@@ -51,9 +51,9 @@ const DEF_NODES = [
   { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '标志位' }] },
   {
     key: 'compute', name: '计算', type: 'javaScript',
-    config: { code: 'function run(inputs, sys, nodes) {\n  return { hasResult: inputs.flag === "yes", summary: "sum-" + inputs.flag }\n}' },
+    config: { code: 'function run(inputs, sys, nodes, system) {\n  return { hasResult: inputs.flag === "yes", summary: "sum-" + inputs.flag, env: system.env }\n}' },
     inputs: { flag: { expressionType: 'variable', value: 'start.query', required: true } },
-    outputs: [{ name: 'hasResult', fieldType: 'boolean' }, { name: 'summary', fieldType: 'string' }],
+    outputs: [{ name: 'hasResult', fieldType: 'boolean' }, { name: 'summary', fieldType: 'string' }, { name: 'env', fieldType: 'string' }],
   },
   { key: 'check', name: '是否有结果', type: 'condition', inputs: { condition: { expressionType: 'variable', value: 'compute.hasResult', required: true } }, outputs: [] },
   {
@@ -77,6 +77,9 @@ const DEF_NODES = [
     outputs: [{ name: 'answer', fieldType: 'string' }, { name: 'missAnswer', fieldType: 'string' }],
   },
 ]
+const DEF_VARIABLES = [
+  { name: 'env', fieldType: 'string', defaultValue: '"dev"', description: '运行环境' },
+]
 const DEF_CONNECTIONS = [
   { id: 'c1', source: 'start', target: 'compute' },
   { id: 'c2', source: 'compute', target: 'check' },
@@ -87,14 +90,25 @@ const DEF_CONNECTIONS = [
 ]
 const POS = { start: { x: 80, y: 200 }, compute: { x: 280, y: 200 }, check: { x: 480, y: 200 }, hit: { x: 680, y: 120 }, miss: { x: 680, y: 300 }, end: { x: 880, y: 200 } }
 
-const buildDefinition = () => ({ id: '', name: 'wf-e2e', version: 0, status: 'draft', nodes: DEF_NODES, connections: DEF_CONNECTIONS, ui: { nodePositions: POS } })
-const buildEditorData = () => ({
-  nodes: DEF_NODES.map((n) => ({
+const buildDefinition = () => ({ id: '', name: 'wf-e2e', version: 0, status: 'draft', nodes: DEF_NODES, connections: DEF_CONNECTIONS, variables: DEF_VARIABLES, ui: { nodePositions: POS } })
+/** 条件节点脚本模式变体：check 用 config.conditionScript 路由（env=dev 或 hasResult 走真分支） */
+const buildScriptConditionDefinition = () => {
+  const def = buildDefinition()
+  const check = def.nodes.find((n) => n.key === 'check')
+  check.config = { conditionScript: "function condition(inputs, sys, nodes, system) {\n  return nodes.compute.hasResult === true || system.env === 'dev';\n}" }
+  delete check.inputs.condition
+  return def
+}
+const buildEditorData = (def = buildDefinition()) => ({
+  nodes: def.nodes.map((n) => ({
     id: n.key, type: n.type,
     meta: { position: POS[n.key] ?? { x: 100, y: 100 }, defaultExpanded: true },
-    data: { title: n.name, content: '', inputs: n.inputs, outputs: n.outputs, settings: n.config ?? {} },
+    data: {
+      title: n.name, content: '', inputs: n.inputs, outputs: n.outputs,
+      ...(n.type === 'switch' ? { branches: (n.config?.branches ?? []) } : { settings: n.config ?? {} }),
+    },
     blocks: [],
-    edges: DEF_CONNECTIONS.filter((c) => c.source === n.key).map((c) => ({
+    edges: def.connections.filter((c) => c.source === n.key).map((c) => ({
       sourceNodeID: c.source, targetNodeID: c.target,
       ...(c.condition ? { sourcePortID: c.condition } : {}),
     })),
@@ -193,6 +207,66 @@ async function main() {
   const detail = await api('GET', `/api/app/workflow/instance?appId=${APP}&teamId=${TID}&instanceId=${firstId}`, { token: owner.token })
   check('WF-13c 详情含节点状态', detail.status === 200 && (detail.json?.nodes ?? []).length === DEF_NODES.length && (detail.json?.nodes ?? []).every((n) => typeof n.nodeKey === 'string'), `${detail.status} ${detail.text.slice(0, 160)}`)
   check('WF-13d Member 查历史 403', (await api('GET', `/api/app/workflow/instances?appId=${APP}&teamId=${TID}`, { token: member.token })).status === 403)
+
+  // WF-14 全局变量：默认值生效 + 启动传入覆盖（compute JS 经第 4 参 system 读取）
+  const runDefault = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }) } })
+  const rd = runDefault.json ?? {}
+  const computeOut = (rd.nodes ?? []).find((n) => n.nodeKey === 'compute')?.output
+  check('WF-14a 全局变量默认值 dev', runDefault.status === 200 && computeOut && JSON.parse(computeOut).env === 'dev', computeOut ?? '')
+
+  const runOverride = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }), systemJson: JSON.stringify({ env: 'prod' }) } })
+  const ro = runOverride.json ?? {}
+  const computeOut2 = (ro.nodes ?? []).find((n) => n.nodeKey === 'compute')?.output
+  check('WF-14b 全局变量覆盖 prod', runOverride.status === 200 && computeOut2 && JSON.parse(computeOut2).env === 'prod', computeOut2 ?? '')
+
+  // WF-15 系统设置·对话开场白：流程应用经 agent-config 只写开场白字段（模型/知识库/插件/技能不适用不落库）
+  const osSave = await api('PUT', `/api/app/${APP}/agent-config`, { token: owner.token, body: { modelId: null, prompt: '', wikiIds: [], plugins: [], openingStatement: '你好，我是流程助手', openingStatementEnabled: true } })
+  check('WF-15a 流程应用保存开场白 200', osSave.status === 200, `${osSave.status} ${osSave.text.slice(0, 160)}`)
+  const osGet = await api('GET', `/api/app/${APP}/agent-config`, { token: owner.token })
+  check('WF-15b 开场白回读', osGet.status === 200 && osGet.json?.openingStatement === '你好，我是流程助手' && osGet.json?.openingStatementEnabled === true, osGet.text.slice(0, 200))
+  check('WF-15c Member 保存开场白 403', (await api('PUT', `/api/app/${APP}/agent-config`, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'x', openingStatementEnabled: true } })).status === 403)
+  const cfg3 = (await api('GET', `/api/app/workflow/config?appId=${APP}&teamId=${TID}`, { token: owner.token })).json ?? {}
+  check('WF-15d 开场白保存不影响流程草稿', cfg3.version === 1 && cfg3.status === 1 && typeof cfg3.draftDefinition === 'string' && cfg3.draftDefinition.includes('"compute"'), JSON.stringify({ v: cfg3.version, s: cfg3.status }).slice(0, 80))
+  const detailAfter = await api('GET', `/api/app/${APP}`, { token: owner.token })
+  check('WF-15e 应用详情下发开场白', detailAfter.status === 200 && detailAfter.json?.openingStatement === '你好，我是流程助手' && detailAfter.json?.openingStatementEnabled === true, detailAfter.text.slice(0, 160))
+
+  // WF-16 条件脚本模式：check 节点 config.conditionScript（Jint），按脚本返回值路由分支
+  await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildScriptConditionDefinition()), editorData: JSON.stringify(buildEditorData(buildScriptConditionDefinition())) } })
+  const runScriptTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }) } })
+  const rst = runScriptTrue.json ?? {}
+  check('WF-16a 脚本条件 env=dev 走真分支', runScriptTrue.status === 200 && rst.status === 'completed' && rst.output && JSON.parse(rst.output).answer === '命中:sum-no', `${runScriptTrue.status} ${rst.output ?? runScriptTrue.text.slice(0, 160)}`)
+  const runScriptFalse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }), systemJson: JSON.stringify({ env: 'prod' }) } })
+  const rsf = runScriptFalse.json ?? {}
+  check('WF-16b 脚本条件 env=prod 走假分支', runScriptFalse.status === 200 && rsf.status === 'completed' && rsf.output && JSON.parse(rsf.output).missAnswer === '未命中', `${runScriptFalse.status} ${rsf.output ?? runScriptFalse.text.slice(0, 160)}`)
+
+  // WF-17 多条件节点（switch/if-else）：b1=compute.hasResult，b2 固定 false，else 兜底
+  const buildSwitchDefinition = () => {
+    const def = buildDefinition()
+    def.nodes = def.nodes.filter((n) => n.key !== 'check')
+    def.nodes.splice(2, 0, {
+      key: 'sw', name: '多条件', type: 'switch',
+      config: { branches: [
+        { id: 'b1', label: '有结果', binding: { expressionType: 'variable', value: 'compute.hasResult' } },
+        { id: 'b2', label: '永不命中', binding: { expressionType: 'fixed', value: 'false' } },
+      ] },
+      inputs: {}, outputs: [],
+    })
+    def.connections = def.connections.filter((c) => !['c2', 'c3', 'c4'].includes(c.id))
+    def.connections.push(
+      { id: 'c2', source: 'compute', target: 'sw' },
+      { id: 'c3', source: 'sw', target: 'hit', condition: 'b1' },
+      { id: 'c4', source: 'sw', target: 'miss', condition: 'else' },
+    )
+    return def
+  }
+  const switchDef = buildSwitchDefinition()
+  await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(switchDef), editorData: JSON.stringify(buildEditorData(switchDef)) } })
+  const runSwitchTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }) } })
+  const rswt = runSwitchTrue.json ?? {}
+  check('WF-17a 多条件 b1 命中走 hit', runSwitchTrue.status === 200 && rswt.status === 'completed' && rswt.output && JSON.parse(rswt.output).answer === '命中:sum-yes', `${runSwitchTrue.status} ${rswt.output ?? runSwitchTrue.text.slice(0, 160)}`)
+  const runSwitchElse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }) } })
+  const rwse = runSwitchElse.json ?? {}
+  check('WF-17b 多条件未命中走 else', runSwitchElse.status === 200 && rwse.status === 'completed' && rwse.output && JSON.parse(rwse.output).missAnswer === '未命中', `${runSwitchElse.status} ${rwse.output ?? runSwitchElse.text.slice(0, 160)}`)
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)

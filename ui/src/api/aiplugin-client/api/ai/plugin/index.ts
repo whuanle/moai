@@ -8,13 +8,15 @@ import { CustomRequestBuilderNavigationMetadata, CustomRequestBuilderRequestsMet
 // @ts-ignore
 import { DynamicRequestBuilderNavigationMetadata, DynamicRequestBuilderRequestsMetadata, type DynamicRequestBuilder } from './dynamic/index.js';
 // @ts-ignore
+import { type WithPluginItemRequestBuilder, WithPluginItemRequestBuilderNavigationMetadata } from './item/index.js';
+// @ts-ignore
 import { ManageRequestBuilderNavigationMetadata, type ManageRequestBuilder } from './manage/index.js';
 // @ts-ignore
 import { RunRequestBuilderRequestsMetadata, type RunRequestBuilder } from './run/index.js';
 // @ts-ignore
 import { StaticRequestBuilderNavigationMetadata, type StaticRequestBuilder } from './static/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/ai/plugin
@@ -41,6 +43,12 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      */
     get static(): StaticRequestBuilder;
     /**
+     * Gets an item from the ApiTypes.api.ai.plugin.item collection
+     * @param pluginId 插件记录 id.
+     * @returns {WithPluginItemRequestBuilder}
+     */
+     byPluginId(pluginId: Guid) : WithPluginItemRequestBuilder;
+    /**
      * 查询已发现插件列表（仅管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryPluginListCommandResponse>}
@@ -66,6 +74,10 @@ export const PluginRequestBuilderUriTemplate = "{+baseurl}/api/ai/plugin";
  * Metadata for all the navigation properties in the request builder.
  */
 export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof PluginRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    byPluginId: {
+        navigationMetadata: WithPluginItemRequestBuilderNavigationMetadata,
+        pathParametersMappings: ["pluginId"],
+    },
     custom: {
         requestsMetadata: CustomRequestBuilderRequestsMetadata,
         navigationMetadata: CustomRequestBuilderNavigationMetadata,

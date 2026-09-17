@@ -44,6 +44,16 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public IReadOnlyCollection<Guid>? Skills { get; init; }
 
     /// <summary>
+    /// 对话开场白，最长 4000 字符；新会话开始时展示给用户，不参与模型上下文.
+    /// </summary>
+    public string OpeningStatement { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 是否启用对话开场白；启用且内容非空时生效.
+    /// </summary>
+    public bool OpeningStatementEnabled { get; init; }
+
+    /// <summary>
     /// 对话执行参数（JSON 对象，含沙箱等扩展配置）；为空表示不修改已保存的执行参数.
     /// </summary>
     public JsonElement? ExecutionSettings { get; init; }
@@ -61,6 +71,7 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     {
         // AppId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
         validate.RuleFor(x => x.Prompt).MaximumLength(4000).WithMessage("系统提示词最长 4000 个字符.");
+        validate.RuleFor(x => x.OpeningStatement).MaximumLength(4000).WithMessage("对话开场白最长 4000 个字符.");
         validate.RuleFor(x => x.WikiIds).NotNull().WithMessage("知识库列表不能为 null.");
         validate.RuleFor(x => x.Plugins).NotNull().WithMessage("插件列表不能为 null.");
     }

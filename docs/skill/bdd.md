@@ -1,6 +1,6 @@
 # 技能（Skill）模块行为规格（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md)
+> 关联：[SDD](./sdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/skill-userconfig-e2e.mjs](../../local-dev/skill-userconfig-e2e.mjs) ｜ [local-dev/skill-market-e2e.mjs](../../local-dev/skill-market-e2e.mjs)
 
 ## 管理端（IsAdmin）
 
@@ -154,4 +154,82 @@ Feature: 用户级应用配置（跨会话复用）
   Scenario: 应用配置页绑定技能
     When 团队管理员在应用配置页选择技能并保存
     Then 绑定写入 app_agent_config.skills，选项来自系统内置∪公开∪本团队（不含个人技能）
+```
+
+## 技能市场与个人维护（2026-09-17 增量）
+
+```gherkin
+Feature: 技能市场与个人/团队自助维护
+  Background:
+    Given 用户已登录（Alice 建个人技能，Bob 旁观，团队 Owner/Member 各一，平台管理员审批）
+
+  @SKM-S1 @auto:e2e
+  Scenario: 我的技能列表
+    When Alice 创建个人技能并上传包文件
+    Then Alice 的 my_list 含该技能（未公开、无待审、文件数正确）
+    And Bob 的 my_list 不含 Alice 的个人技能
+
+  @SKM-S2 @auto:e2e
+  Scenario: 团队技能列表
+    When 团队成员请求 team_list
+    Then 200 且含本团队技能
+    When 非团队成员请求该团队 team_list
+    Then 404 团队不存在或你不是团队成员
+
+  @SKM-S3 @auto:e2e
+  Scenario: 详情可见性
+    When Alice 查看自己的技能详情
+    Then 200
+    When Bob 查看 Alice 的未公开个人技能详情
+    Then 403 无权查看该技能
+    When 该技能上架后 Bob 再查看详情
+    Then 200
+
+  @SKM-S4 @auto:e2e
+  Scenario: 技能包下载
+    When Alice 请求自己的技能下载地址
+    Then 200，返回每个文件的预签名下载地址（1 小时有效，带 response-content-disposition 强制浏览器附件下载）
+    When Bob 请求该未公开技能的下载地址
+    Then 403
+    When 该技能上架后 Bob 再请求下载地址
+    Then 200
+
+  @SKM-S5 @auto:e2e
+  Scenario: 个人技能上架审批
+    When Bob 申请上架 Alice 的个人技能
+    Then 403 只有创建人可以申请上架个人资源
+    When Alice 申请上架
+    Then 200，my_list 回显待审核申请 id
+    And 重复申请 409
+    When Bob 撤回该申请
+    Then 403
+    When Alice 撤回后再重新申请，管理员审批通过
+    Then 技能 is_public=true，重复审批 409
+
+  @SKM-S6 @auto:e2e
+  Scenario: 技能市场列表
+    When 任意登录用户请求 market_list
+    Then 200，含全部已上架技能（个人与团队），并带创建人姓名
+
+  @SKM-S7 @auto:e2e
+  Scenario: 团队技能上架
+    When 团队 Member 申请上架团队技能
+    Then 403 只有团队管理员可以申请上架
+    When 团队 Owner 申请且管理员审批通过
+    Then 市场列表含该团队技能
+
+  @SKM-S8 @auto:e2e
+  Scenario: 内置技能市场保护
+    Given 库中存在系统内置技能（SkillSeed 种子）
+    When 申请上架内置技能
+    Then 400 系统内置技能无需申请上架
+    When 请求内置技能下载地址
+    Then 400 系统内置技能不支持下载
+    And 市场列表不含内置技能
+
+  @SKM-S9 @auto:e2e
+  Scenario: 删除联动清理待审核申请
+    Given 技能已有待审核的上架申请
+    When 归属人删除该技能
+    Then 200，且管理员审批该申请时 404 申请不存在（无僵尸记录）
 ```

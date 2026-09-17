@@ -57,7 +57,7 @@ public partial class PublicationReviewEntity : IFullAudited
     /// <summary>
     /// 审批时间，未审批为 null.
     /// </summary>
-    public DateTimeOffset? ReviewTime { get; set; }
+    public DateTime? ReviewTime { get; set; }
 
     /// <summary>
     /// 创建人（申请人）.

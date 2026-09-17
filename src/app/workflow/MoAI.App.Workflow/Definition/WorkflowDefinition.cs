@@ -45,6 +45,11 @@ public class WorkflowDefinition
     public List<ConnectionDefinition> Connections { get; set; } = new();
 
     /// <summary>
+    /// 全局变量列表 - 流程级变量，所有节点可通过 system.变量名 引用；启动时可传入实际值覆盖默认值.
+    /// </summary>
+    public List<GlobalVariableDefinition> Variables { get; set; } = new();
+
+    /// <summary>
     /// 前端设计器画布布局信息（节点坐标、缩放等），引擎不使用，仅随定义一起存储.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

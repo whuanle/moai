@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilder> {
     /**
-     * 分页查询技能列表（全量），仅平台管理员.
+     * 分页查询全量技能列表，仅平台管理员.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QuerySkillsCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilde
      */
      get(requestConfiguration?: RequestConfiguration<ListRequestBuilderGetQueryParameters> | undefined) : Promise<QuerySkillsCommandResponse | undefined>;
     /**
-     * 分页查询技能列表（全量），仅平台管理员.
+     * 分页查询全量技能列表，仅平台管理员.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<ListRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 分页查询技能列表（全量），仅平台管理员.
+ * 分页查询全量技能列表，仅平台管理员.
  */
 export interface ListRequestBuilderGetQueryParameters {
     /**

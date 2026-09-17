@@ -125,13 +125,14 @@ export async function publishWorkflow(appId: string, teamId: number): Promise<vo
 export async function debugRunWorkflow(
   appId: string,
   teamId: number,
-  payload: { inputJson?: string; definition?: string; editorData?: string },
+  payload: { inputJson?: string; systemJson?: string; definition?: string; editorData?: string },
 ): Promise<WorkflowDebugRunResult> {
   const client = getApiClient()
   const res = await client.api.app.workflow.debugRun.post({
     appId,
     teamId: String(teamId),
     inputJson: payload.inputJson ?? '{}',
+    systemJson: payload.systemJson ?? '{}',
     definition: payload.definition,
     editorData: payload.editorData,
   })

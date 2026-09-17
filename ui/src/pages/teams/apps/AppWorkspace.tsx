@@ -102,17 +102,24 @@ export function AppWorkspace() {
   }
   const validSection = menuItems.some((i) => i?.key === section) ? section : isAgent ? 'config' : canManage ? 'design' : 'runs'
 
+  // 流程设计分区：不渲染面包屑/页头（设计器自带 FastGPT 风格头部），画布近全屏
+  if (validSection === 'design') {
+    return (
+      <>
+        {loading ? (
+          <div style={{ padding: spacing.xl, textAlign: 'center' }}>
+            <Spin />
+          </div>
+        ) : detail?.appId ? (
+          <WorkflowDesigner teamId={teamId} appId={appId} appName={detail?.name ?? undefined} canManage={canManage} />
+        ) : (
+          <Result status="404" title={t('appManage.notFound')} />
+        )}
+      </>
+    )
+  }
+
   const renderSection = () => {
-    if (validSection === 'design') {
-      return (
-        <WorkflowDesigner
-          teamId={teamId}
-          appId={appId}
-          appName={detail?.name ?? undefined}
-          canManage={canManage}
-        />
-      )
-    }
     if (validSection === 'runs') {
       return <AppWorkflowRunsSection teamId={teamId} appId={appId} canManage={canManage} />
     }
@@ -184,8 +191,7 @@ export function AppWorkspace() {
         </div>
       ) : detail?.appId ? (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
-          {validSection !== 'design' && (
-            <Sider width={200} style={{ background: 'transparent' }}>
+          <Sider width={200} style={{ background: 'transparent' }}>
               <Menu
                 mode="inline"
                 items={menuItems}
@@ -194,7 +200,6 @@ export function AppWorkspace() {
                 style={{ borderRadius: spacing.sm }}
               />
             </Sider>
-          )}
           <Content>{renderSection()}</Content>
         </Layout>
       ) : (

@@ -18,7 +18,8 @@
     "copy": "Copy",
     "copySuccess": "Copied",
     "copyFailed": "Copy failed",
-    "ok": "OK"
+    "ok": "OK",
+    "home": "Home"
   },
   "nav": {
     "chat": "AI Assistant",
@@ -37,10 +38,10 @@
     "channel": "Model Channels",
     "admin": "Admin",
     "variable": "Variables",
-    "skills": "Skills",
     "knowledgeGraph": "Knowledge Graphs",
     "prompts": "My Prompts",
-    "promptMarket": "Prompt Market"
+    "promptMarket": "Prompt Market",
+    "skillMarket": "Skill Market"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -163,11 +164,18 @@
         "placeholder": "Enter graph database password"
       },
       "dialect": {
-        "name": "Dialect",
+        "name": "Graph database type",
         "desc": "Use memgraph for Memgraph community; choose neo4j for external Neo4j instances. Affects introspection and index statements."
       },
       "dialectMemgraph": "Memgraph",
       "dialectNeo4j": "Neo4j"
+    },
+    "wikiUpload": {
+      "title": "Knowledge Base",
+      "maxFileSize": {
+        "name": "Max file size",
+        "desc": "Maximum size for documents uploaded to knowledge bases; 50 MB by default, 0 means unlimited (platform hard limit 1GB). Applies to both web uploads and the open API."
+      }
     }
   },
   "oauthconnect": {
@@ -585,7 +593,12 @@
     "authRemove": "Remove",
     "authRemoveConfirm": "This team will lose access to this private plugin. Remove?",
     "authRemoveSuccess": "Authorization removed",
-    "noPlugin": "No plugin to authorize"
+    "noPlugin": "No plugin to authorize",
+    "avatar": "Plugin avatar",
+    "avatarTip": "Click the avatar to upload an image up to 5MB",
+    "avatarSuccess": "Avatar updated",
+    "avatarTypeError": "Only image files are allowed",
+    "avatarSizeError": "Avatar file must be no larger than 5MB"
   },
   "classify": {
     "title": "Classify",
@@ -598,12 +611,14 @@
     "editClassify": "Edit category",
     "name": "Category name",
     "desc": "Description",
+    "emoji": "Emoji",
+    "emojiPlaceholder": "Pick an emoji (optional)",
+    "emojiPick": "Pick an emoji",
+    "emojiClear": "Clear",
     "nameRequired": "Please enter a category name",
     "empty": "No categories",
     "edit": "Edit",
     "delete": "Delete",
-    "colCreateUser": "Created By",
-    "colUpdateUser": "Updated By",
     "deleteConfirm": "Are you sure to delete this category?",
     "addSuccess": "Added successfully",
     "updateSuccess": "Updated successfully",
@@ -678,14 +693,14 @@
     "searchPlaceholder": "Search team name or description",
     "empty": "No teams yet",
     "owner": "Owner",
-    "info": "Team Info",
     "knowledge": "Knowledge",
     "managePlugins": "Plugins",
     "manageVariables": "Variables",
     "gateway": "Model Gateway",
     "pluginsMemberHint": "This team has {{count}} owned plugins; system plugins are opened by admins",
     "knowledgeGraph": "Knowledge Graphs",
-    "prompts": "Prompts"
+    "prompts": "Prompts",
+    "skills": "Team Skills"
   },
   "wiki": {
     "title": "Knowledge Base",
@@ -742,6 +757,7 @@
       "uploadSuccess": "{{count}} document(s) uploaded",
       "uploadFailed": "Upload failed",
       "unsupportedType": "Unsupported file type",
+      "overSizeLimit": "File exceeds the knowledge base size limit (max {{limit}} MB)",
       "batchDelete": "Batch Delete",
       "delete": "Delete",
       "deleteConfirm": "Delete this document?",
@@ -1251,7 +1267,8 @@
     "rejectTitle": "Reject publication of \"{{name}}\"",
     "rejectCommentPlaceholder": "Optional reason for rejection (max 255 chars)",
     "refresh": "Refresh",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "typeSkill": "Skill"
   },
   "appManage": {
     "create": "New App",
@@ -1350,6 +1367,10 @@
     "sandboxEgressHint": "One per line; allow-list when default is deny, deny-list when default is allow",
     "promptHint": "The system prompt is used as the initial instruction for this app",
     "promptPlaceholder": "Enter the system prompt (optional)",
+    "openingStatement": "Opening statement",
+    "openingStatementHint": "When enabled, this message is shown at the start of a new conversation to break the ice; it is not part of the model context",
+    "openingStatementContent": "Opening message",
+    "openingStatementPlaceholder": "Hi, I'm your AI assistant. How can I help you today?",
     "workflowConfigUnavailable": "Configuration for workflow apps is not available yet; only basic info can be maintained",
     "backToList": "Back to apps",
     "agentConfigTitle": "Agent configuration",
@@ -1534,7 +1555,27 @@
     "instructionsPlaceholder": "Injected to the agent when the skill loads, including usage steps and script API",
     "formFiles": "Package files",
     "filesExtra": "Scripts and resources written into the session sandbox; file name is the package path",
-    "addFile": "Add file"
+    "addFile": "Add file",
+    "tabMarket": "Skill Market",
+    "tabMine": "My Skills",
+    "statusPublic": "Published",
+    "statusPending": "Under Review",
+    "statusPrivate": "Private",
+    "apply": "Publish",
+    "applyTitle": "Publish to Skill Market",
+    "applyOk": "Submit",
+    "applyReason": "Apply Reason",
+    "applyReasonPlaceholder": "Describe the skill usage for reviewers (optional)",
+    "applySuccess": "Application submitted, waiting for approval",
+    "withdraw": "Withdraw",
+    "withdrawConfirm": "Withdraw this publish application?",
+    "withdrawSuccess": "Application withdrawn",
+    "download": "Download",
+    "close": "Close",
+    "view": "View",
+    "empty": "No skills yet",
+    "cancel": "Cancel",
+    "systemReadonlyHint": "Built-in skills are read-only; scripts ship with the platform."
   },
   "prompt": {
     "create": "New Prompt",
@@ -1620,7 +1661,6 @@
   },
   "workflowDesigner": {
     "title": "Workflow Design",
-    "version": "v{{version}}",
     "published": "Published",
     "draft": "Draft",
     "unsaved": "Unsaved",
@@ -1636,19 +1676,17 @@
     "runTip": "Run the current draft synchronously",
     "runFailed": "Debug run failed",
     "runCompleted": "Completed. Final output:",
-    "runs": "Run History",
     "runsTip": "View workflow runs",
     "runPanelTitle": "Debug Run",
     "runInput": "Input (JSON)",
     "runNodes": "Node Execution States",
     "unsavedWarning": "You have unsaved changes. Leave anyway?",
-    "nodePanelTitle": "Nodes",
     "nodeStart": "Start",
-    "nodeStartDesc": "Workflow entry, declares input params",
+    "nodeStartDesc": "Workflow entry point",
     "nodeEnd": "End",
     "nodeEndDesc": "Collects final output",
     "nodeCondition": "Condition",
-    "nodeConditionDesc": "Branch by boolean result",
+    "nodeConditionDesc": "Route branches by condition",
     "nodeAiChat": "AI Chat",
     "nodeAiChatDesc": "Generate answer via model",
     "nodeJs": "JavaScript",
@@ -1669,8 +1707,6 @@
     "emptySub": "Connect lines for execution order, click a node to configure",
     "fitView": "Fit View",
     "validateFailed": "Validation failed",
-    "nodeName": "Name",
-    "nodeDesc": "Description",
     "aiModel": "Chat Model",
     "aiModelPlaceholder": "Select a team model",
     "pluginKey": "Plugin",
@@ -1690,8 +1726,6 @@
     "exprJsonPath": "JSONPath",
     "exprInterp": "Interp",
     "deleteFieldConfirm": "Delete this field?",
-    "cancel": "Cancel",
-    "confirm": "OK",
     "colNode": "Node",
     "colState": "State",
     "colOutput": "Output",
@@ -1706,6 +1740,48 @@
       "suspended": "Suspended",
       "cancelled": "Cancelled",
       "created": "Created"
-    }
+    },
+    "insertVariable": "Insert variable",
+    "pluginOutputsAuto": "Outputs auto-filled from the plugin response schema; adjust if needed",
+    "conditionField": "Condition (boolean)",
+    "conditionPlaceholder": "Pick or type a condition variable, e.g. search.hasResult",
+    "branchTrue": "T ↑",
+    "branchFalse": "F →",
+    "variables": "Global Variables",
+    "variablesHint": "Global variables are available to every node via system.variableName; assign values at debug run to override defaults.",
+    "addVariable": "Add Variable",
+    "variableDefault": "Default (numbers/booleans as literals, others as string)",
+    "systemVars": "Global Variables",
+    "startInputsHint": "Declared inputs are the workflow startup params (output equals input); required params must be provided at runtime.",
+    "groupControl": "Control",
+    "groupAi": "AI",
+    "groupData": "Data",
+    "groupIntegration": "Integration",
+    "addNode": "Add Node",
+    "systemSettings": "Settings",
+    "closePanel": "Collapse",
+    "openingStatement": "Opening Statement",
+    "openingStatementPlaceholder": "Shown to users when a new conversation starts",
+    "undo": "Undo",
+    "redo": "Redo",
+    "nodeKey": "Key",
+    "nodeKeyTip": "Node key: the prefix other nodes use to reference this node's outputs (e.g. search.hasResult); references are rewritten on save",
+    "clickToEdit": "Click to edit",
+    "conditionMode": "Condition Mode",
+    "conditionModeBinding": "Variable",
+    "conditionModeScript": "JS Script",
+    "conditionScriptTitle": "Condition Script",
+    "conditionScriptHint": "Define function condition(inputs, sys, nodes, system); return true for the TRUE branch, false for the FALSE branch.",
+    "nodeSwitch": "Switch",
+    "nodeSwitchDesc": "Evaluate conditions in order, route to the first match",
+    "switchBranches": "Branches (evaluated in order)",
+    "switchHint": "Conditions are evaluated top-down; the first hit wins. If none hits, the else branch is taken. Draw out edges from branch ports.",
+    "branch": "Branch",
+    "branchLabel": "Branch name",
+    "addBranch": "Add Branch",
+    "branchBinding": "Branch Binding",
+    "branchBindingNeedTwo": "Two outgoing edges are required to bind branches",
+    "branchTrue2": "When true",
+    "branchFalse2": "When false"
   }
 }

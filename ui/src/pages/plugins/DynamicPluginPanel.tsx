@@ -8,12 +8,12 @@ import {
   ReloadOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import type { PluginClassify } from '@/api/classify'
+import { classifyLabel, type PluginClassify } from '@/api/classify'
 import {
   pluginApi,
   type ClassifyFilter,
@@ -21,6 +21,7 @@ import {
   type DynamicPluginTemplate,
 } from '@/api/plugin'
 import { DataTable, feedback } from '@/design-system'
+import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
 
@@ -160,13 +161,23 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
     () => [
       { value: 'all' as const, label: t('plugins.classifyAll') },
       { value: 'uncategorized' as const, label: t('plugins.classifyUncategorized') },
-      ...classifies.map((c) => ({ value: String(c.classifyId), label: c.name })),
+      ...classifies.map((c) => ({ value: String(c.classifyId), label: classifyLabel(c) })),
     ],
     [classifies, t],
   )
 
   const columns: TableColumnsType<DynamicPluginManageItem> = [
-    { title: t('plugins.colPluginName'), dataIndex: 'pluginName', width: 180 },
+    {
+      title: t('plugins.colPluginName'),
+      dataIndex: 'pluginName',
+      width: 180,
+      render: (v: string | null, record) => (
+        <Space size={8}>
+          <PluginAvatar objectKey={record.avatarPath} title={record.title ?? v} />
+          <span>{v || '-'}</span>
+        </Space>
+      ),
+    },
     { title: t('plugins.colTitle'), dataIndex: 'title', width: 150, ellipsis: true },
     {
       title: t('plugins.dynamicTemplate'),
@@ -178,8 +189,16 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
       title: t('plugins.colClassify'),
       dataIndex: 'classifyName',
       width: 130,
-      render: (v: string | null) =>
-        v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>,
+      render: (v: string | null, record: DynamicPluginManageItem) => {
+        const classify = classifies.find((c) => c.classifyId === record.classifyId)
+        return classify ? (
+          <Tag>{classifyLabel(classify)}</Tag>
+        ) : v ? (
+          <Tag>{v}</Tag>
+        ) : (
+          <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>
+        )
+      },
     },
     { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
     { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => formatDateTime(v) },
@@ -254,20 +273,18 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
             <Button icon={<AppstoreOutlined />} onClick={() => navigate('/plugin/templates')}>
               {t('plugins.templateList')}
             </Button>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {filterTags.map((item, index) => (
-                <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  {index > 0 && (
-                    <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
-                      |
-                    </span>
-                  )}
-                  <Tag.CheckableTag checked={filter === item.value} onChange={() => setFilter(item.value)}>
-                    {item.label}
-                  </Tag.CheckableTag>
-                </span>
-              ))}
-            </span>
+            {filterTags.map((item, index) => (
+              <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {index > 0 && (
+                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                    |
+                  </span>
+                )}
+                <Tag.CheckableTag checked={filter === item.value} onChange={() => setFilter(item.value)}>
+                  {item.label}
+                </Tag.CheckableTag>
+              </span>
+            ))}
           </div>
         }
       />
@@ -303,6 +320,17 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
         width={640}
       >
         <Form form={form} layout="vertical">
+          {editing && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <PluginAvatarUpload
+                pluginId={editing.id ?? ''}
+                objectKey={editing.avatarPath}
+                title={editing.title}
+                onChanged={load}
+              />
+              <Typography.Text type="secondary">{t('plugins.avatarTip')}</Typography.Text>
+            </div>
+          )}
           <Form.Item
             name="pluginKey"
             label={t('plugins.pluginKey')}
@@ -345,7 +373,7 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
             <Select
               allowClear
               placeholder={t('plugins.formClassifyPlaceholder')}
-              options={classifies.map((c) => ({ value: c.classifyId, label: c.name }))}
+              options={classifies.map((c) => ({ value: c.classifyId, label: classifyLabel(c) }))}
             />
           </Form.Item>
           <Form.Item name="config" label={t('plugins.config')} rules={[{ required: true, message: t('plugins.configRequired') }]}>

@@ -58,4 +58,9 @@ public partial class ClassifyEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 表情.
+    /// </summary>
+    public string Emoji { get; set; } = default!;
 }

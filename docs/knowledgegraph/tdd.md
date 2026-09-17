@@ -11,6 +11,7 @@
 - v2.2 头像：单测 **42/42**（新增 `UpdateKnowledgeGraphAvatarCommandHandlerTests` 2 例）；E2E `node local-dev/kg-e2e.mjs http://127.0.0.1:5020` → **PASS 52/52**（2026-09-15，新增 S20：真实存储直传→设置→详情/列表回显→未登记 404）。
 - v2.3 模型属性：单测 **43/43**（新增 `QuerySchema_ReturnsEntityTypeProperties`）；E2E → **PASS 59/59**（2026-09-15，新增 S21 属性全链路 7 项；顺带修复 v1 遗留缺陷：Update 节点/边/实体类型/关系类型 4 个命令 validator 校验路由字段导致所有编辑操作 400，移除路由字段规则并新增 S21g 编辑覆盖断言）。
 - 外部开放接口：`node local-dev/kg-external-e2e.mjs http://127.0.0.1:5210` → **PASS 58/58**（2026-09-15，KX-01~KX-08：应用 token 换取、团队级列表、跨团队 404、类型/节点/边 CRUD 与分页邻接、批量整批拒绝、connected 409、仅应用 token）；无图数据库或 `KG_ENABLED=false` 时打印 SKIP 并退出码 0。
+- v2.4 设置页体验：vitest **303/303**（Settings 5/5：卡片折叠/展开、图数据库类型保存、关闭不提交连接信息）；typecheck 0、lint 0 错误（2026-09-17）。
 
 ## 映射表
 
@@ -37,6 +38,7 @@
 | @KG-S19 | `KnowledgeGraphSchemaCommandHandlerTests.QuerySchema_WhenConnectedWithRefresh_ForwardsRefresh`（refresh 透传 + changes 映射） | kg-e2e.mjs#KG-S19a/b | 单测 PASS；**E2E PASS（2026-09-15）** |
 | @KG-S20 | `UpdateKnowledgeGraphAvatarCommandHandlerTests`（未登记 404、登记后落库） | kg-e2e.mjs#KG-S20a…e | 单测 PASS；**E2E PASS 52/52（2026-09-15）** |
 | @KG-S21 | `KnowledgeGraphSchemaCommandHandlerTests.QuerySchema_ReturnsEntityTypeProperties` | kg-e2e.mjs#KG-S21a…g | 单测 PASS；**E2E PASS 59/59（2026-09-15）** |
+| @KG-S22 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（卡片默认展开/折叠、图数据库类型保存） | —（纯前端布局，浏览器走查） | vitest PASS 5/5（2026-09-17） |
 
 ## 外部开放接口映射（KX-*，/api/external/knowledge-graph）
 
@@ -59,7 +61,7 @@
 |---|---|---|
 | `ui/src/pages/knowledgegraph/__tests__/KnowledgeGraphDetail.test.tsx` | 五段菜单、托管图默认图览（调 canvas 接口）、接入图只读徽标 | PASS（2026-09-14） |
 | `ui/src/pages/knowledgegraph/__tests__/KnowledgeGraphEntities.test.tsx` / `KnowledgeGraphRelations.test.tsx` | Admin 可写、Member 只读（写入口不渲染）、能力未开启不渲染 | PASS（2026-09-14） |
-| `ui/src/pages/settings/__tests__/Settings.test.tsx` | KG_* 设置键、方言保存、关闭时不提交连接信息 | PASS（2026-09-14） |
+| `ui/src/pages/settings/__tests__/Settings.test.tsx` | KG_* 设置键、图数据库类型保存、关闭时不提交连接信息、卡片折叠/展开 | PASS 5/5（2026-09-17） |
 
 ## 备注
 

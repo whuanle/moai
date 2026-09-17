@@ -44,6 +44,7 @@ public class QueryClassifyListCommandHandler : IRequestHandler<QueryClassifyList
                 Type = x.Type,
                 Name = x.Name,
                 Description = x.Description,
+                Emoji = x.Emoji,
                 CreateUserId = (int)x.CreateUserId,
                 UpdateUserId = (int)x.UpdateUserId,
                 CreateTime = x.CreateTime,

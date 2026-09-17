@@ -4,6 +4,10 @@
 
 ## 自检记录
 
+- 后端构建（对话开场白轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-17）。
+- 存量库加列：`app_agent_config.opening_statement varchar(4000) not null default ''` + `opening_statement_enabled boolean not null default false`（本机 psql/docker 不可用，临时 Npgsql console 对开发库执行成功，脚本同步至 `asserts/app_agent_opening_statement.sql`）（2026-09-17）。
+- E2E：`node local-dev/app-e2e.mjs` → **121/121 PASS**（2026-09-17；新增 AP-45a~h 覆盖开场白 Member 403、保存回读、应用详情下发（Member 可读）、关闭开关内容保留、超长 400 不写入、流程应用详情恒空）。
+- 前端：`npm run syncapi` 后 `npm run typecheck`/`npm run lint` → **0 error（7 个既有 warning）**；`npm run test` → **310 PASS（53 文件；`AppConfigSection.test.tsx` 扩至 9 例：保存 payload 断言补开场白默认值 + 新增开场白回显随保存、未启用不渲染输入框 2 例）**（2026-09-17）。
 - 后端构建（会话专家提示词轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-16）。
 - 存量库加列：`app_agent_session.prompt_id integer not null default 0`（已对本机开发库执行，脚本同步至 `asserts/app_agent_chat.sql`）（2026-09-16）。
 - E2E：`node local-dev/app-e2e.mjs` → **113/113 PASS**（2026-09-16；新增 AP-44a~l 覆盖创建时绑定、改绑/清除回读、不可用提示词 404、越权 404、校验失败不落库。修复：`CreateSession` Controller 构造命令漏拷 `PromptId`，AP-44c/d 首跑暴露后补上）。
@@ -69,7 +73,7 @@
 | @AP-S16 | AppConfigSection.test.tsx（工作台配置分区：左「应用信息」+「Agent 配置」；流程应用只提示未开放。原单页分栏已被工作台取代，见 @AP-S40） | PASS 7/7（2026-09-14） |
 | @AP-S17 | app-e2e.mjs（AP-15a-c、AP-16b/c、AP-19a） | PASS（2026-09-11） |
 | @AP-S18 | app-e2e.mjs（AP-16a/d/e、AP-17a/b/d、AP-20a-e）+ AppConfigSection.test.tsx（选项来自团队模型/团队插件/本团队知识库） | PASS（2026-09-14） |
-| @AP-S19 | app-e2e.mjs（AP-17c、AP-18、AP-19a/b） | PASS（2026-09-11） |
+| @AP-S19 | app-e2e.mjs（AP-17c、AP-18、AP-19a/b） | PASS 121/121（2026-09-17，AP-18 契约更新：流程应用保存只写开场白字段返回 200） |
 | 团队内应用分区（卡片） | ui/src/pages/teams/apps/__tests__/TeamApps.test.tsx | PASS 6/6（2026-09-11） |
 | 应用工作台配置分区（原单页分栏 + 模型） | ui/src/pages/teams/apps/__tests__/AppConfigSection.test.tsx | PASS 7/7（2026-09-14） |
 | 团队页分区与角色可见性 | ui/src/pages/teams/__tests__/TeamManage.test.tsx | PASS 14/14（2026-09-11） |
@@ -86,6 +90,8 @@
 | 应用用量监控看板 | ui/src/pages/teams/apps/__tests__/AppMonitorSection.test.tsx | PASS 3/3（2026-09-14） |
 | @AP-S44 | app-e2e.mjs（AP-44c/d/i/k）+ AppChat.test.tsx（专家侧边栏/未建会话本地暂存随创建绑定/已有会话绑定与取消） | PASS 113/113、6/6（2026-09-16） |
 | @AP-S45 | app-e2e.mjs（AP-44a/e/f/g/h/j） | PASS 113/113（2026-09-16） |
+| @AP-S46 | app-e2e.mjs（AP-45b/c/d）+ AppConfigSection.test.tsx（开场白回显、随保存提交） | PASS 121/121、9/9（2026-09-17） |
+| @AP-S47 | app-e2e.mjs（AP-45a/e/f/g/h） | PASS 121/121（2026-09-17） |
 | @EA-S1 | external-app-e2e.mjs（EA-01、EA-02） | PASS 28/28（2026-09-14） |
 | @EA-S2 | external-app-e2e.mjs（EA-03~EA-06） | PASS（2026-09-14） |
 | @EA-S3 | external-app-e2e.mjs（EA-07） | PASS（2026-09-14） |
@@ -107,7 +113,7 @@
 dotnet build src/MoAI/MoAI.csproj          # 0 error
 cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
-node local-dev/app-e2e.mjs                 # 期望 101/101 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量）
+node local-dev/app-e2e.mjs                 # 期望 121/121 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白）
 node local-dev/external-app-e2e.mjs        # 期望 42/42 PASS（@EA-S1~S10 外部 token + 外部会话/对话，需先执行 asserts/external_app.sql）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test

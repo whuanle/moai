@@ -72,6 +72,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
 
   const [modelId, setModelId] = useState<string>()
   const [prompt, setPrompt] = useState('')
+  const [openingEnabled, setOpeningEnabled] = useState(false)
+  const [openingStatement, setOpeningStatement] = useState('')
   const [wikiIds, setWikiIds] = useState<number[]>([])
   const [pluginIds, setPluginIds] = useState<string[]>([])
   const [skillIds, setSkillIds] = useState<string[]>([])
@@ -102,6 +104,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         const config = await getAppAgentConfig(appId)
         setModelId(config.modelId ?? undefined)
         setPrompt(config.prompt ?? '')
+        setOpeningEnabled(Boolean(config.openingStatementEnabled))
+        setOpeningStatement(config.openingStatement ?? '')
         setWikiIds(config.wikiIds ?? [])
         setPluginIds(config.plugins ?? [])
         setSkillIds(config.skills ?? [])
@@ -278,6 +282,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         wikiIds,
         plugins: pluginIds,
         skills: skillIds,
+        openingStatement,
+        openingStatementEnabled: openingEnabled,
         // 与已加载的执行参数合并，避免覆盖压缩等其他扩展配置
         executionSettings: { ...executionSettings, sandbox },
       })
@@ -470,6 +476,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                     rows={8}
                   />
                 </Form.Item>
+                <Form.Item label={t('appManage.openingStatement')} valuePropName="checked" extra={t('appManage.openingStatementHint')}>
+                  <Switch checked={openingEnabled} onChange={setOpeningEnabled} />
+                </Form.Item>
+                {openingEnabled && (
+                  <Form.Item label={t('appManage.openingStatementContent')}>
+                    <Input.TextArea
+                      value={openingStatement}
+                      onChange={(e) => setOpeningStatement(e.target.value)}
+                      placeholder={t('appManage.openingStatementPlaceholder')}
+                      maxLength={4000}
+                      showCount
+                      autoSize={{ minRows: 3, maxRows: 8 }}
+                    />
+                  </Form.Item>
+                )}
                 <Form.Item label={t('appManage.sectionPlugins')} extra={t('appManage.pluginsHint')}>
                   <Select
                     mode="multiple"
@@ -609,6 +630,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
             <AppDebugChat
               appId={appId}
               appAvatar={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
+              openingStatement={openingEnabled ? openingStatement.trim() : ''}
             />
           ) : (
             <Alert type="info" showIcon message={t('appDebug.adminOnly')} />

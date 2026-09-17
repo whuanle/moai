@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip } from 'antd'
+import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { EditOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useSearchParams } from 'react-router'
-import { classifyApi, type PluginClassify } from '@/api/classify'
+import { classifyApi, classifyLabel, type PluginClassify } from '@/api/classify'
 import {
   pluginApi,
   type ClassifyFilter,
@@ -16,6 +16,7 @@ import { DataTable, feedback, Page } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import { CustomPluginPanel } from './CustomPluginPanel'
 import { DynamicPluginPanel } from './DynamicPluginPanel'
+import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
 
 const TAB_KINDS = ['custom', 'dynamic', 'static'] as const
@@ -115,13 +116,25 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
     () => [
       { value: 'all' as const, label: t('plugins.classifyAll') },
       { value: 'uncategorized' as const, label: t('plugins.classifyUncategorized') },
-      ...classifies.map((c) => ({ value: String(c.classifyId), label: c.name })),
+      ...classifies.map((c) => ({ value: String(c.classifyId), label: classifyLabel(c) })),
     ],
     [classifies, t],
   )
 
+  const nameColumn: TableColumnsType<StaticPluginManageItem>[number] = {
+    title: t('plugins.colPluginName'),
+    dataIndex: 'pluginName',
+    width: 200,
+    render: (v: string | null, record) => (
+      <Space size={8}>
+        <PluginAvatar objectKey={record.avatarPath} title={record.title ?? v} />
+        <span>{v || '-'}</span>
+      </Space>
+    ),
+  }
+
   const staticColumns: TableColumnsType<StaticPluginManageItem> = [
-    { title: t('plugins.colPluginName'), dataIndex: 'pluginName', width: 200 },
+    nameColumn,
     { title: t('plugins.colTitle'), dataIndex: 'title', width: 160, ellipsis: true },
     {
       title: t('plugins.colType'),
@@ -133,8 +146,16 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
       title: t('plugins.colClassify'),
       dataIndex: 'classifyName',
       width: 130,
-      render: (v: string | null) =>
-        v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>,
+      render: (v: string | null, record: StaticPluginManageItem) => {
+        const classify = classifies.find((c) => c.classifyId === record.classifyId)
+        return classify ? (
+          <Tag>{classifyLabel(classify)}</Tag>
+        ) : v ? (
+          <Tag>{v}</Tag>
+        ) : (
+          <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>
+        )
+      },
     },
     {
       title: t('plugins.colIsSystem'),
@@ -185,7 +206,7 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
   ]
 
   const baseColumns: TableColumnsType<StaticPluginManageItem> = [
-    { title: t('plugins.colPluginName'), dataIndex: 'pluginName', width: 200 },
+    nameColumn,
     { title: t('plugins.colTitle'), dataIndex: 'title', width: 160, ellipsis: true },
     {
       title: t('plugins.colType'),
@@ -197,8 +218,16 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
       title: t('plugins.colClassify'),
       dataIndex: 'classifyName',
       width: 130,
-      render: (v: string | null) =>
-        v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>,
+      render: (v: string | null, record: StaticPluginManageItem) => {
+        const classify = classifies.find((c) => c.classifyId === record.classifyId)
+        return classify ? (
+          <Tag>{classifyLabel(classify)}</Tag>
+        ) : v ? (
+          <Tag>{v}</Tag>
+        ) : (
+          <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>
+        )
+      },
     },
     {
       title: t('plugins.colIsSystem'),
@@ -266,6 +295,17 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
           destroyOnClose
         >
           <Form form={form} layout="vertical">
+            {editTarget && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <PluginAvatarUpload
+                  pluginId={editTarget.id ?? ''}
+                  objectKey={editTarget.avatarPath}
+                  title={editTarget.title}
+                  onChanged={load}
+                />
+                <Typography.Text type="secondary">{t('plugins.avatarTip')}</Typography.Text>
+              </div>
+            )}
             <Form.Item name="title" label={t('plugins.formPluginTitle')} rules={[{ required: true, message: t('plugins.pluginTitleRequired') }]}>
               <Input maxLength={50} />
             </Form.Item>
@@ -276,7 +316,7 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
               <Select
                 allowClear
                 placeholder={t('plugins.formClassifyPlaceholder')}
-                options={classifies.map((c) => ({ value: c.classifyId, label: c.name }))}
+                options={classifies.map((c) => ({ value: c.classifyId, label: classifyLabel(c) }))}
               />
             </Form.Item>
           </Form>

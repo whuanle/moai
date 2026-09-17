@@ -29,7 +29,7 @@ const MOCK_ITEMS = [
     classifyId: 1,
     description: '查询天气',
     isPublic: true,
-    counter: 3,
+    counter: '3',
     createUserName: 'admin',
     createTime: '2026-09-01T10:00:00',
   },
@@ -42,7 +42,7 @@ const MOCK_ITEMS = [
     classifyId: 0,
     description: '翻译文本',
     isPublic: false,
-    counter: 0,
+    counter: '0',
     createTime: '2026-09-02T11:30:00',
   },
 ]

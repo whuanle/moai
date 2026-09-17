@@ -242,20 +242,18 @@ export function TeamDynamicPluginPanel({
             <Button icon={<ReloadOutlined />} onClick={reload} loading={loading}>
               {t('plugins.refresh')}
             </Button>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {filterTags.map((item, index) => (
-                <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  {index > 0 && (
-                    <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
-                      |
-                    </span>
-                  )}
-                  <Tag.CheckableTag checked={filter === item.value} onChange={() => setFilter(item.value)}>
-                    {item.label}
-                  </Tag.CheckableTag>
-                </span>
-              ))}
-            </span>
+            {filterTags.map((item, index) => (
+              <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {index > 0 && (
+                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                    |
+                  </span>
+                )}
+                <Tag.CheckableTag checked={filter === item.value} onChange={() => setFilter(item.value)}>
+                  {item.label}
+                </Tag.CheckableTag>
+              </span>
+            ))}
           </div>
         }
       />

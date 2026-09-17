@@ -111,6 +111,7 @@ export function Publications() {
 
   const renderResourceType = (type: PublicationResourceType | null | undefined) => {
     if (type === 'prompt') return <Tag color="purple">{t('publications.typePrompt')}</Tag>
+    if (type === 'skill') return <Tag color="gold">{t('publications.typeSkill')}</Tag>
     return <Tag color="blue">{t('publications.typeApp')}</Tag>
   }
 
@@ -234,6 +235,7 @@ export function Publications() {
                 { label: t('publications.typeAll'), value: 'all' },
                 { label: t('publications.typeApp'), value: 'app' },
                 { label: t('publications.typePrompt'), value: 'prompt' },
+                { label: t('publications.typeSkill'), value: 'skill' },
               ]}
             />
           </Space>

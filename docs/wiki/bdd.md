@@ -210,9 +210,22 @@ Scenario: 向量化前置校验
 
 @WK-S22 @auto:e2e
 Scenario: 向量化复用已有内容与切片
-  Given 文档已提取内容并切割
+  Given 知识库已绑定 embedding 模型与维度，文档已提取内容并切割
   When 团队成员勾选原文切片/已有元数据并触发向量化
   Then 任务接受并写入消息队列，wiki 实体不发生变更
+```
+
+## Feature: 系统设置：知识库上传大小上限（v2）
+
+```gherkin
+@WK-S26 @auto:e2e
+Scenario: 超管设置知识库最大文件大小并全局生效
+  When 超管保存设置项 WIKI_MAX_FILE_SIZE_MB（MB，默认 50，0 表示不限制）
+  Then 团队成员访问 upload-limit 查询接口返回该上限（任意登录用户可读，供上传前预检）
+  When 团队成员预上传超过上限的文件（网页端与外部开放接口同一入口）
+  Then 返回 400（文件大小超过知识库上限）
+  When 预上传恰好等于上限或恢复默认 50（或设为 0 不限制）后的文件
+  Then 预上传通过（平台硬上限 1GB 仍然生效）
 ```
 
 > 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-06），不复用 WK-\*。授权模型：应用 token 即团队级授权，设计见 [sdd.md §4.1](./sdd.md#41-外部开放接口apexternalwiki)。

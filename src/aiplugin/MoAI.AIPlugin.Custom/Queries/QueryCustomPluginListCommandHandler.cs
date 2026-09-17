@@ -68,6 +68,7 @@ public class QueryCustomPluginListCommandHandler : IRequestHandler<QueryCustomPl
                 PluginId = x.Id,
                 Server = y.Server,
                 PluginName = x.PluginName,
+                AvatarPath = x.AvatarPath ?? string.Empty,
                 Title = x.Title,
                 OpenapiFileId = y.OpenapiFileId,
                 OpenapiFileName = y.OpenapiFileName,

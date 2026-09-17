@@ -54,6 +54,14 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
         entity.Property(e => e.ModelId)
             .HasComment("对话使用的模型ID，逻辑关联ai_model.id（uuid）")
             .HasColumnName("model_id");
+        entity.Property(e => e.OpeningStatement)
+            .HasMaxLength(4000)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("对话开场白，最长4000字符，空为''")
+            .HasColumnName("opening_statement");
+        entity.Property(e => e.OpeningStatementEnabled)
+            .HasComment("是否启用对话开场白")
+            .HasColumnName("opening_statement_enabled");
         entity.Property(e => e.Plugins)
             .HasDefaultValueSql("'[]'::text")
             .HasComment("绑定的插件ID列表，JSON 数组文本，元素为 plugin.id（uuid 字符串），如 '[\"...\"]'")

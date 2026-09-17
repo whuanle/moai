@@ -99,6 +99,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                 Counter = 0,
                 PluginKey = x.Key,
                 ParamsExample = PluginTypeHelper.GetStaticExample(x.PluginType, "GetParamsExampleValue"),
+                ResponseSchema = PluginTypeHelper.GetResponseSchema(x.Response),
                 CreateTime = DateTimeOffset.UtcNow,
             })
             .ToList();
@@ -188,6 +189,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     Config = dynamicEntity.Config,
                     ConfigExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetConfigExampleValue") : null,
                     ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
+                    ResponseSchema = template != null ? PluginTypeHelper.GetResponseSchema(template.Response) : null,
                     IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
@@ -270,6 +272,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     Config = dynamicEntity.Config,
                     ConfigExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetConfigExampleValue") : null,
                     ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
+                    ResponseSchema = template != null ? PluginTypeHelper.GetResponseSchema(template.Response) : null,
                     IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
@@ -296,6 +299,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     Counter = plugin.Counter,
                     PluginKey = staticInfo?.Key ?? plugin.PluginName,
                     ParamsExample = staticInfo != null ? PluginTypeHelper.GetStaticExample(staticInfo.PluginType, "GetParamsExampleValue") : null,
+                    ResponseSchema = staticInfo != null ? PluginTypeHelper.GetResponseSchema(staticInfo.Response) : null,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
                     UpdateTime = plugin.UpdateTime,

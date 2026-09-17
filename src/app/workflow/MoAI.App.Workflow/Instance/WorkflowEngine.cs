@@ -57,27 +57,30 @@ public class WorkflowEngine
     public async Task<WorkflowInstance> StartAsync(
         string definitionId,
         JsonObject? input = null,
+        JsonObject? systemVariables = null,
         string? instanceId = null,
         CancellationToken cancellationToken = default)
     {
         var definition = await _definitionStore.FindPublishedDefinitionByIdAsync(definitionId, cancellationToken)
             ?? throw new WorkflowException($"工作流定义 {definitionId} 不存在或未发布");
 
-        return await StartWithDefinitionAsync(definition, input, instanceId, cancellationToken);
+        return await StartWithDefinitionAsync(definition, input, systemVariables, instanceId, cancellationToken);
     }
 
     /// <summary>
     /// 用给定的定义对象直接启动工作流（不经定义存储查询），用于调试执行设计器草稿.
-    /// 定义会先经过完整校验与编译.
+    /// 定义会先经过完整校验与编译；全局变量按「定义默认值 ← <paramref name="systemVariables"/> 传入值」合并.
     /// </summary>
     /// <param name="definition">工作流定义（可为未发布的草稿）.</param>
     /// <param name="input">启动参数（开始节点的 run 输入）.</param>
+    /// <param name="systemVariables">全局变量实际值（键为变量名），未提供的变量使用定义默认值.</param>
     /// <param name="instanceId">实例 ID（不传自动生成）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>终态实例.</returns>
     public async Task<WorkflowInstance> StartWithDefinitionAsync(
         WorkflowDefinition definition,
         JsonObject? input = null,
+        JsonObject? systemVariables = null,
         string? instanceId = null,
         CancellationToken cancellationToken = default)
     {
@@ -90,6 +93,7 @@ public class WorkflowEngine
             DefinitionVersion = definition.Version,
             Status = InstanceStatus.Created,
             Input = input?.CloneObject() ?? new JsonObject(),
+            SystemVariables = MergeSystemVariables(definition, systemVariables),
             NodeStates = definition.Nodes.ToDictionary(
                 n => n.Key,
                 n => new NodeExecutionState
@@ -103,6 +107,33 @@ public class WorkflowEngine
 
         await _instanceStore.CreateAsync(instance, cancellationToken);
         return await ExecuteAsync(instance, graph, cancellationToken, resumed: false);
+    }
+
+    /// <summary>
+    /// 合并全局变量：定义声明的默认值先行，调用方传入值覆盖；未在定义中声明的传入值也保留.
+    /// </summary>
+    private static JsonObject MergeSystemVariables(WorkflowDefinition definition, JsonObject? systemVariables)
+    {
+        var merged = new JsonObject();
+        foreach (var variable in definition.Variables)
+        {
+            if (string.IsNullOrWhiteSpace(variable.Name))
+            {
+                continue;
+            }
+
+            merged[variable.Name] = variable.ResolveDefaultValue();
+        }
+
+        if (systemVariables != null)
+        {
+            foreach (var (name, value) in systemVariables)
+            {
+                merged[name] = value?.DeepClone();
+            }
+        }
+
+        return merged;
     }
 
     /// <summary>

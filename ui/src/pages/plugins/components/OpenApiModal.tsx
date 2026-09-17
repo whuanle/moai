@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Form, Modal, Progress, Spin, Upload } from 'antd'
+import { Alert, Form, Modal, Progress, Spin, Typography, Upload } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { UploadFile } from 'antd'
@@ -11,6 +11,7 @@ import { uploadOpenApiFile } from '@/utils/pluginFile'
 import { feedback } from '@/design-system'
 import { BaseFormFields } from './BaseFormFields'
 import { KeyValueConfig } from './KeyValueConfig'
+import { PluginAvatarUpload } from './PluginAvatarUpload'
 
 interface KeyValueItem {
   key: string
@@ -42,6 +43,10 @@ interface OpenApiModalProps {
   uploadFile?: (file: File, pluginName: string) => Promise<{ fileId: string }>
   /** 是否展示「公开」开关，团队插件恒为公开时传 false. */
   showIsPublic?: boolean
+  /** 编辑态是否展示头像上传（走管理员登记接口，团队面板不开启）. */
+  enableAvatar?: boolean
+  /** 头像登记成功后回调（父级刷新列表）. */
+  onAvatarChanged?: () => void
 }
 
 /** 将详情回填为表单初始值（OpenApi 编辑用）. */
@@ -71,6 +76,8 @@ export function OpenApiModal({
   loadDetail,
   uploadFile,
   showIsPublic = true,
+  enableAvatar = false,
+  onAvatarChanged,
 }: OpenApiModalProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<OpenApiFormValues>()
@@ -171,6 +178,17 @@ export function OpenApiModal({
       confirmLoading={loading}
     >
       <Spin spinning={detailLoading} tip={t('plugins.refresh')}>
+        {enableAvatar && isEdit && editing?.pluginId && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 16 }}>
+            <PluginAvatarUpload
+              pluginId={editing.pluginId}
+              objectKey={editing.avatarPath}
+              title={editing.title}
+              onChanged={onAvatarChanged}
+            />
+            <Typography.Text type="secondary">{t('plugins.avatarTip')}</Typography.Text>
+          </div>
+        )}
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <BaseFormFields classifies={classifies} showServerUrl serverUrlLabel={t('plugins.formServerUrlExtra')} showIsPublic={showIsPublic} />
           <Form.Item label={isEdit ? t('plugins.formOpenApiUploadOptional') : t('plugins.formUploadOpenApi')} required={!isEdit}>

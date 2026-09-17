@@ -59,6 +59,11 @@ public class QueryPluginManageListCommandResponseItem : AuditsInfo
     public bool IsPublic { get; init; }
 
     /// <summary>
+    /// 头像（存储 ObjectKey，前端拼装 /static 地址展示；内存发现的静态插件为空）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
+
+    /// <summary>
     /// 静态插件 key，仅静态插件有；用于前端编辑写回定位.
     /// </summary>
     public string? PluginKey { get; init; }

@@ -24,6 +24,12 @@ public class FieldBinding
     public bool Required { get; set; } = true;
 
     /// <summary>
+    /// 期望字段类型（设计器元数据，引擎运行时不校验），null 表示未指定（运行时）.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public FieldType? FieldType { get; set; }
+
+    /// <summary>
     /// 字段描述.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

@@ -4,10 +4,11 @@ namespace MoAI.App.Workflow.DataTransfer;
 
 /// <summary>
 /// 工作流变量作用域 - 流程数据传输的统一数据源.
-/// 三个变量命名空间：
-/// sys.*    - 系统变量（实例 ID、启动时间等）；
-/// input.*  - 工作流启动参数；
-/// {node}.* - 已完成节点的输出（键为节点 Key）.
+/// 四个变量命名空间：
+/// sys.*      - 系统变量（实例 ID、启动时间等）；
+/// system.*   - 流程全局变量（启动时可赋值）；
+/// input.*    - 工作流启动参数；
+/// {node}.*   - 已完成节点的输出（键为节点 Key）.
 /// </summary>
 public interface IWorkflowVariableScope
 {
@@ -15,6 +16,11 @@ public interface IWorkflowVariableScope
     /// 系统变量.
     /// </summary>
     JsonObject SystemVariables { get; }
+
+    /// <summary>
+    /// 流程全局变量（system.* 引用）.
+    /// </summary>
+    JsonObject WorkflowGlobals { get; }
 
     /// <summary>
     /// 工作流启动参数.
@@ -53,10 +59,12 @@ public class WorkflowVariableScope : IWorkflowVariableScope
     public WorkflowVariableScope(
         JsonObject? systemVariables = null,
         JsonObject? inputParameters = null,
-        IReadOnlyDictionary<string, JsonObject>? nodeOutputs = null)
+        IReadOnlyDictionary<string, JsonObject>? nodeOutputs = null,
+        JsonObject? workflowGlobals = null)
     {
         SystemVariables = systemVariables?.CloneObject() ?? new JsonObject();
         InputParameters = inputParameters?.CloneObject() ?? new JsonObject();
+        WorkflowGlobals = workflowGlobals?.CloneObject() ?? new JsonObject();
         _nodeOutputs = nodeOutputs?.ToDictionary(kv => kv.Key, kv => kv.Value.CloneObject())
             ?? new Dictionary<string, JsonObject>();
     }
@@ -66,6 +74,9 @@ public class WorkflowVariableScope : IWorkflowVariableScope
 
     /// <inheritdoc/>
     public JsonObject InputParameters { get; }
+
+    /// <inheritdoc/>
+    public JsonObject WorkflowGlobals { get; }
 
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, JsonObject> NodeOutputs => _nodeOutputs;
@@ -94,6 +105,10 @@ public class WorkflowVariableScope : IWorkflowVariableScope
         if (path.StartsWith("sys.", StringComparison.OrdinalIgnoreCase))
         {
             current = Navigate(SystemVariables, path[4..]);
+        }
+        else if (path.StartsWith("system.", StringComparison.OrdinalIgnoreCase))
+        {
+            current = Navigate(WorkflowGlobals, path[7..]);
         }
         else if (path.StartsWith("input.", StringComparison.OrdinalIgnoreCase))
         {
@@ -154,6 +169,7 @@ public class WorkflowVariableScope : IWorkflowVariableScope
         return new JsonObject
         {
             ["sys"] = SystemVariables.DeepClone(),
+            ["system"] = WorkflowGlobals.DeepClone(),
             ["input"] = InputParameters.DeepClone(),
             ["nodes"] = nodes,
         };

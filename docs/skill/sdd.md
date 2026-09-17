@@ -67,3 +67,11 @@ Agent 运行时(src/ai)                 ▼
 - **D9 市场直接引用**：用户自选直接引用技能 id（可见性运行时兜底），不做"安装副本"；sha256 内容寻址下后续如需"下架保护"可加副本引用，成本为零。
 - 组件增量：`SkillAccessGuard`（权限断言）、`ISkillService.FilterVisibleSkillIdsAsync`、`Save/QueryAppUserConfigCommandHandler`（app 模块，校验复用 `SessionPromptHelper` 与 `FilterVisibleSkillIdsAsync`）、前端 `chat/AppUserSettings.tsx`（对话页应用设置面板）、`AppConfigSection` 技能绑定多选。
 - 前端约定：应用设置面板关闭时不渲染（避免与专家面板重复挂载同名列表项，vitest 踩坑）；i18n `appChat.userSettings*`/`appManage.sectionSkills*` zh-CN 与 en-US 同步。
+
+## 7. 增量设计（2026-09-17：技能市场 + 个人维护 + 下载）
+
+- **对齐提示词模块**：`PublicationResourceType.Skill=2`，上架审批复用 publication 模块（apply/review/withdraw 各加 skill 分支）；个人技能归属人申请、团队技能 Admin+ 申请、内置技能拒绝申请；审批通过置 `skill.is_public=true`。
+- **列表三入口**：`my_list`（本人个人技能）/`team_list`（团队成员）/`market_list`（is_public 全员）+ 保留 `list`（管理员全量分页）。列表项扩展 `teamId/isPublic/pendingPublicationId` 并继承 `AuditsInfo` 填充人名（`QuerySkillListHelper`）。
+- **详情/下载可见性**：`SkillAccessGuard.EnsureCanViewAsync`——系统内置 ∪ 公开 ∪ 本团队 ∪ 本人 ∪ 平台管理员；下载端点 `{id}/download` 返回逐文件 MinIO 预签名地址（1 小时），内置技能 400（脚本随平台分发无对象存储文件）。
+- **删除联动**：删技能同步删待审核上架申请（对齐提示词，防僵尸审核记录）。
+- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。

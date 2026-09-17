@@ -3,29 +3,47 @@
  */
 
 import { useState } from 'react'
-import { Alert, Button, Input, Table, Typography } from 'antd'
+import { Alert, Button, Input, Select, Table, Typography } from 'antd'
 import { CaretRightOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { WorkflowDebugRunResult, WorkflowNodeExecution } from '@/api/workflow'
 import { formatDateTime } from '@/utils/datetime'
 import { useWorkflowDesignerStore } from './store'
-import type { EditorWorkflowJSON } from './types'
+import type { EditorWorkflowJSON, GlobalVariableDef } from './types'
 
 const { Text } = Typography
 
 export interface RunPanelProps {
   running: boolean
   result: WorkflowDebugRunResult | null
-  onRun: (inputJson: string) => void
+  onRun: (inputJson: string, systemJson: string) => void
 }
 
-/** 从画布提取开始节点的必需启动参数，生成输入模板 */
+/** 全局变量赋值：按声明的字段类型把字符串输入转为 JSON 值 */
+function buildSystemJson(variables: GlobalVariableDef[], values: Record<string, string>): string {
+  const json: Record<string, unknown> = {}
+  for (const variable of variables) {
+    if (!variable.name) continue
+    const raw = values[variable.name] ?? variable.defaultValue ?? ''
+    if (variable.fieldType === 'number') {
+      const parsed = Number.parseFloat(raw)
+      json[variable.name] = Number.isNaN(parsed) ? 0 : parsed
+    } else if (variable.fieldType === 'boolean') {
+      json[variable.name] = raw === 'true'
+    } else {
+      json[variable.name] = raw
+    }
+  }
+  return JSON.stringify(json)
+}
+
+/** 从画布提取开始节点声明的输入参数（必需项），生成启动参数模板 */
 function buildInputTemplate(editorJSON: EditorWorkflowJSON | null): string {
   const startNode = editorJSON?.nodes?.find((n) => n.type === 'start')
   const template: Record<string, unknown> = {}
-  for (const output of startNode?.data?.outputs ?? []) {
-    if (output.isRequired !== true || !output.name) continue
-    template[output.name] = output.fieldType === 'number' ? 0 : output.fieldType === 'boolean' ? false : ''
+  for (const [name, binding] of Object.entries(startNode?.data?.inputs ?? {})) {
+    if (binding.required !== true || !name) continue
+    template[name] = binding.fieldType === 'number' ? 0 : binding.fieldType === 'boolean' ? false : ''
   }
   return JSON.stringify(template, null, 2)
 }
@@ -41,9 +59,14 @@ const STATE_COLOR: Record<string, string> = {
 export function RunPanel({ running, result, onRun }: RunPanelProps) {
   const { t } = useTranslation()
   const canvasJSON = useWorkflowDesignerStore((s) => s.editorJSON ?? s.initialData)
+  const variables = useWorkflowDesignerStore((s) => s.variables)
   const [inputOverride, setInputOverride] = useState<string>('')
+  const [systemValues, setSystemValues] = useState<Record<string, string>>({})
 
   const inputJson = inputOverride || buildInputTemplate(canvasJSON)
+
+  const setSystemValue = (name: string, value: string) =>
+    setSystemValues((prev) => ({ ...prev, [name]: value }))
 
   const columns = [
     {
@@ -84,11 +107,41 @@ export function RunPanel({ running, result, onRun }: RunPanelProps) {
           onChange={(e) => setInputOverride(e.target.value)}
           className="wf-config-code"
         />
+        {variables.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <div className="wf-fields-title">{t('workflowDesigner.systemVars')}</div>
+            {variables.map((variable) => (
+              <div key={variable.name} className="wf-system-var-row">
+                <span className="wf-system-var-name">{variable.name}</span>
+                {variable.fieldType === 'boolean' ? (
+                  <Select
+                    size="small"
+                    value={systemValues[variable.name] ?? variable.defaultValue ?? 'false'}
+                    onChange={(v) => setSystemValue(variable.name, v)}
+                    className="wf-system-var-input"
+                    options={[
+                      { value: 'true', label: 'true' },
+                      { value: 'false', label: 'false' },
+                    ]}
+                  />
+                ) : (
+                  <Input
+                    size="small"
+                    value={systemValues[variable.name] ?? variable.defaultValue ?? ''}
+                    onChange={(e) => setSystemValue(variable.name, e.target.value)}
+                    placeholder={variable.description}
+                    className="wf-system-var-input"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         <Button
           type="primary"
           icon={<CaretRightOutlined />}
           loading={running}
-          onClick={() => onRun(inputJson || '{}')}
+          onClick={() => onRun(inputJson || '{}', buildSystemJson(variables, systemValues))}
           block
           style={{ marginTop: 8 }}
         >

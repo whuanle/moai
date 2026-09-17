@@ -52,9 +52,10 @@ ui/src/
 | POST | `/ai/plugin/static/save` | admin | `{pluginKey,title,description,classifyId}` → `EmptyCommandResponse`，写回/创建 DB |
 | POST | `/ai/plugin/run`（沿用 `PluginController`） | admin | `{key,requestJson}` → `PluginRunResult`，运行静态插件 |
 
-`QueryPluginManageListCommandResponseItem` 新增两个字段：
+`QueryPluginManageListCommandResponseItem` 字段（本轮 +`avatarPath`）：
 - `pluginKey`（string?）：仅静态插件有；内存发现但无 DB 记录时即为 key，用于编辑写回。
 - `paramsExample`（string?）：仅静态插件有；来自 `PluginTypeHelper.GetStaticExample(...,"GetParamsExampleValue")`，抽屉 Monaco 初始值。
+- `avatarPath`（string）：头像存储 ObjectKey（列表展示 + 编辑弹窗上传，走 `POST /ai/plugin/manage/{id}/avatar`，行为场景见 [@DYN-S43](../aiplugin-dynamic/bdd.md#dyn-s43)；内存发现的静态插件无 DB 记录、不可设头像）。
 
 ## 关键决策
 

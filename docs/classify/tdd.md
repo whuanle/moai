@@ -17,6 +17,8 @@
 | @CLS-S10 | local-dev/classify-e2e.mjs#non-admin | 待验证 |
 | @CLS-S11 | local-dev/classify-e2e.mjs#validation | 待验证 |
 | @CLS-S12 | ui/src/pages/classify/__tests__/Classify.test.tsx#按类型渲染四个分类页签 | PASS（2026-09-15，vitest 259/259 全绿） |
+| @CLS-S13 | ui/src/pages/classify/__tests__/Classify.test.tsx#新建分类时可选择表情并随表单提交 | PASS 7/7（2026-09-17） |
+| @CLS-S14 | ui/src/pages/classify/__tests__/Classify.test.tsx#编辑分类时表情回填，清除后随更新提交空串 | PASS 7/7（2026-09-17） |
 
 > 注：`local-dev/classify-e2e.mjs` 当前不存在（历史引用悬空），@CLS-S1~S11 待该脚本补建后执行；@CLS-S12 已由前端 vitest 覆盖。
 

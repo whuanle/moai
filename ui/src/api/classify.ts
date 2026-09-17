@@ -1,10 +1,10 @@
-import { getClassifyClient } from '@/api/kiota'
+import { getApiClient } from '@/api/kiota'
 import type {
   ClassifyItem,
   CreateClassifyCommand,
   DeleteClassifyCommand,
   UpdateClassifyCommand,
-} from '@/api/classify-client/models'
+} from '@/api/client/models'
 
 /** 分类类型（固定字符串，与后端 MoAI.Classify.ClassifyTypes 对齐）. */
 export const ClassifyType = {
@@ -26,16 +26,23 @@ export interface CreateClassifyPayload {
   type: ClassifyTypeKey
   name: string
   description?: string
+  emoji?: string
 }
 
 export interface UpdateClassifyPayload {
   classifyId: number
   name: string
   description?: string
+  emoji?: string
+}
+
+/** 分类显示文本（emoji + 名称，缺 emoji 时只显示名称）. */
+export function classifyLabel(classify: Pick<Classify, 'emoji' | 'name'>): string {
+  return [classify.emoji, classify.name].filter(Boolean).join(' ')
 }
 
 async function getClassifies(type?: ClassifyTypeKey): Promise<Classify[]> {
-  const client = getClassifyClient()
+  const client = getApiClient()
   const res = await client.api.classify.list.get({
     queryParameters: type ? { type } : undefined,
   })
@@ -48,18 +55,18 @@ async function getPluginClassifies(): Promise<PluginClassify[]> {
 }
 
 async function createClassify(payload: CreateClassifyPayload): Promise<number> {
-  const client = getClassifyClient()
+  const client = getApiClient()
   const res = await client.api.classify.post(payload as CreateClassifyCommand)
   return res?.value ?? 0
 }
 
 async function updateClassify(payload: UpdateClassifyPayload): Promise<void> {
-  const client = getClassifyClient()
+  const client = getApiClient()
   await client.api.classify.put(payload as UpdateClassifyCommand)
 }
 
 async function deleteClassify(classifyId: number): Promise<void> {
-  const client = getClassifyClient()
+  const client = getApiClient()
   await client.api.classify.delete({ classifyId } as DeleteClassifyCommand)
 }
 

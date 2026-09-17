@@ -46,7 +46,12 @@ interface AppDetailLite {
   name?: string | null
   avatarPath?: string | null
   publishStatus?: number | null
+  openingStatement?: string | null
+  openingStatementEnabled?: boolean | null
 }
+
+/** 开场白为前端本地展示消息，不入会话历史，id 固定以便复用 */
+const OPENING_MESSAGE_ID = 'opening-statement'
 
 /**
  * Agent 应用对话页（沉浸式）：左侧会话列表，右侧流式对话。
@@ -109,6 +114,13 @@ export function AppChat() {
     () => [t('appChat.suggestion1'), t('appChat.suggestion2'), t('appChat.suggestion3')],
     [t],
   )
+
+  // 应用配置的对话开场白：仅新会话开始时展示，不参与会话历史与服务端上下文
+  const openingMessage = useMemo<DisplayMessage | null>(() => {
+    const text = (detail?.openingStatement ?? '').trim()
+    if (!detail?.openingStatementEnabled || !text) return null
+    return { id: OPENING_MESSAGE_ID, role: 'assistant', content: text }
+  }, [detail])
 
   const loadSessions = useCallback(async () => {
     if (!appId) return
@@ -177,12 +189,18 @@ export function AppChat() {
 
   const newSession = useCallback(async () => {
     setActiveSessionId('')
-    setMessages([])
+    setMessages(openingMessage ? [openingMessage] : [])
     // 新会话默认使用用户配置的专家（应用设置中保存的偏好）
     setSelectedPromptId(savedPromptId)
     setSidebarOpen(false)
     inputRef.current?.focus()
-  }, [savedPromptId])
+  }, [openingMessage, savedPromptId])
+
+  // 应用详情加载完成（或当前会话被删除）回到新会话态时，补展示开场白；不覆盖已有消息/历史
+  useEffect(() => {
+    if (loading || !detail || activeSessionId) return
+    setMessages((prev) => (prev.length === 0 && openingMessage ? [openingMessage] : prev))
+  }, [loading, detail, activeSessionId, openingMessage])
 
   // 选择/取消专家：已有会话即时绑定，未发送过消息时先记在本地，首轮发送时随会话一并创建
   const toggleExpert = useCallback(

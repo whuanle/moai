@@ -109,7 +109,7 @@ public class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
         config.PublishedDefinition = config.DraftDefinition;
         config.Version += 1;
         config.Status = 1;
-        config.PublishTime = DateTimeOffset.Now;
+        config.PublishTime = DateTime.UtcNow;
         await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 

@@ -233,6 +233,12 @@ async function getManagePlugins(kind?: PluginKind): Promise<StaticPluginManageIt
   return (res?.items ?? []) as StaticPluginManageItem[]
 }
 
+/** 设置插件头像（管理员）：objectKey 为直传完成并登记的图片 key. */
+async function updatePluginAvatar(pluginId: string, objectKey: string): Promise<void> {
+  const client = getAiPluginClient()
+  await client.api.ai.plugin.manage.byId(pluginId).avatar.post({ objectKey })
+}
+
 /** 运行插件（复用 /ai/plugin/run）；动态插件传实例 key 为 key，不传 configJson（后端按存储配置初始化）.*/
 async function runPlugin(payload: { key: string; requestJson: string }): Promise<PluginRunResult | null> {
   const client = getAiPluginClient()
@@ -299,4 +305,5 @@ export const pluginApi = {
   getDynamicTemplates,
   saveDynamicPlugin,
   deleteDynamicPlugin,
+  updatePluginAvatar,
 }

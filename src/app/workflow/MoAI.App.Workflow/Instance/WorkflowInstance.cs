@@ -40,6 +40,12 @@ public class WorkflowInstance
     public JsonObject Input { get; set; } = new();
 
     /// <summary>
+    /// 全局变量实际值（启动时默认值与传入值合并的结果），节点通过 system.变量名 引用；
+    /// 随实例持久化，断点恢复后作用域仍可重建.
+    /// </summary>
+    public JsonObject SystemVariables { get; set; } = new();
+
+    /// <summary>
     /// 工作流最终输出（结束节点收集）.
     /// </summary>
     public JsonObject? Output { get; set; }

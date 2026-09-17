@@ -43,6 +43,11 @@ internal partial class ClassifyConfiguration : IEntityTypeConfiguration<Classify
             .HasDefaultValueSql("''::character varying")
             .HasComment("分类描述")
             .HasColumnName("description");
+        entity.Property(e => e.Emoji)
+            .HasMaxLength(10)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("表情")
+            .HasColumnName("emoji");
         entity.Property(e => e.IsDeleted)
             .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")

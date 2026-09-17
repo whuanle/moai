@@ -426,7 +426,7 @@ export function OauthConnect() {
                 },
               ]}
             >
-              <Input placeholder="https://..." />
+              <Input placeholder="https://.../.well-known/openid-configuration" />
             </Form.Item>
           )}
         </Form>

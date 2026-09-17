@@ -38,6 +38,76 @@ public class WorkflowEngineExecutionTests
             .ReturnsAsync(new JsonObject { ["answer"] = "抱歉，没有找到相关资料。" });
     }
 
+    private static WorkflowDefinition CreateScriptConditionDefinition()
+    {
+        return new WorkflowDefinition
+        {
+            Id = "script-cond",
+            Name = "脚本条件",
+            Version = 1,
+            Status = DefinitionStatus.Published,
+            Nodes =
+            [
+                new NodeDefinition
+                {
+                    Key = "start",
+                    Name = "开始",
+                    Type = NodeTypes.Start,
+                    Outputs =
+                    [
+                        new PortDefinition { Name = "query", FieldType = FieldType.String, IsRequired = true },
+                    ],
+                },
+                new NodeDefinition
+                {
+                    Key = "check",
+                    Name = "脚本条件",
+                    Type = NodeTypes.Condition,
+                    Config = System.Text.Json.JsonSerializer.SerializeToElement(new
+                    {
+                        conditionScript = "function condition(inputs, sys, nodes, system) {\n  return (nodes.start.query || '').length > 3;\n}",
+                    }),
+                },
+                new NodeDefinition
+                {
+                    Key = "end",
+                    Name = "结束",
+                    Type = NodeTypes.End,
+                    Inputs = new Dictionary<string, FieldBinding>
+                    {
+                        ["result"] = new FieldBinding { ExpressionType = ExpressionType.Variable, Value = "check.result", Required = false },
+                    },
+                },
+            ],
+            Connections =
+            [
+                new ConnectionDefinition { Id = "c1", Source = "start", Target = "check" },
+                new ConnectionDefinition { Id = "c2", Source = "check", Target = "end", Condition = "true" },
+                new ConnectionDefinition { Id = "c3", Source = "check", Target = "end", Condition = "false" },
+            ],
+        };
+    }
+
+    [Fact]
+    public async Task StartAsync_ConditionScript_RoutesByScriptResult()
+    {
+        var harness = new WorkflowTestHarness();
+        await harness.Store.SaveDefinitionAsync(CreateScriptConditionDefinition());
+
+        // 脚本按 nodes.start.query 长度路由：>3 走真分支，否则走假分支
+        var longInstance = await harness.Engine.StartAsync("script-cond", new JsonObject { ["query"] = "hello" });
+        Assert.Equal(InstanceStatus.Completed, longInstance.Status);
+        var longCheck = longInstance.NodeStates["check"].Output;
+        Assert.NotNull(longCheck);
+        Assert.True((bool)longCheck["result"]!);
+
+        var shortInstance = await harness.Engine.StartAsync("script-cond", new JsonObject { ["query"] = "hi" });
+        Assert.Equal(InstanceStatus.Completed, shortInstance.Status);
+        var shortCheck = shortInstance.NodeStates["check"].Output;
+        Assert.NotNull(shortCheck);
+        Assert.False((bool)shortCheck["result"]!);
+    }
+
     [Fact]
     public async Task StartAsync_TrueBranch_CompletesWithAiAnswer()
     {
@@ -53,6 +123,12 @@ public class WorkflowEngineExecutionTests
         Assert.Equal(NodeState.Completed, instance.NodeStates["answer"].State);
         Assert.Equal(NodeState.Skipped, instance.NodeStates["fallback"].State);
         Assert.Equal(NodeState.Completed, instance.NodeStates["end"].State);
+
+        // 条件节点透传：输出 = 输入 + result（true 分支：condition 输入为 true）
+        var checkOutput = instance.NodeStates["check"].Output;
+        Assert.NotNull(checkOutput);
+        Assert.True((bool)checkOutput["result"]!);
+        Assert.True((bool)checkOutput["condition"]!);
 
         // 插值表达式已解析上游输出
         harness.AiChat.Verify(c => c.CompleteAsync(
@@ -128,6 +204,68 @@ public class WorkflowEngineExecutionTests
         // 已完成节点（start/search/digest/check）恢复后不重跑
         Assert.Equal(1, resumed.NodeStates["search"].Attempts);
         Assert.Equal(2, resumed.NodeStates["fallback"].Attempts);
+    }
+
+    [Fact]
+    public async Task StartAsync_SystemVariables_DefaultAndOverride()
+    {
+        // 定义：start → echo(JS 读 system.env) → end；全局变量 env 默认 "test"
+        var definition = new WorkflowDefinition
+        {
+            Id = "sys-vars",
+            Name = "全局变量",
+            Version = 1,
+            Status = DefinitionStatus.Published,
+            Variables =
+            [
+                new GlobalVariableDefinition { Name = "env", FieldType = FieldType.String, DefaultValue = "\"test\"", Description = "环境" },
+            ],
+            Nodes =
+            [
+                new NodeDefinition { Key = "start", Name = "开始", Type = NodeTypes.Start },
+                new NodeDefinition
+                {
+                    Key = "echo",
+                    Name = "读取",
+                    Type = NodeTypes.JavaScript,
+                    Config = System.Text.Json.JsonSerializer.SerializeToElement(new
+                    {
+                        code = "function run(inputs, sys, nodes, system) { return { env: system.env, fromStart: inputs.flag } }",
+                    }),
+                    Inputs = new Dictionary<string, FieldBinding>
+                    {
+                        ["flag"] = new FieldBinding { ExpressionType = ExpressionType.Variable, Value = "start.flag", Required = false },
+                    },
+                    Outputs = [new PortDefinition { Name = "env", FieldType = FieldType.String }],
+                },
+                new NodeDefinition { Key = "end", Name = "结束", Type = NodeTypes.End },
+            ],
+            Connections =
+            [
+                new ConnectionDefinition { Id = "c1", Source = "start", Target = "echo" },
+                new ConnectionDefinition { Id = "c2", Source = "echo", Target = "end" },
+            ],
+        };
+
+        var harness = new WorkflowTestHarness();
+        await harness.Store.SaveDefinitionAsync(definition);
+
+        // 默认值生效
+        var withDefault = await harness.Engine.StartWithDefinitionAsync(definition, new JsonObject { ["flag"] = 1 });
+        Assert.Equal(InstanceStatus.Completed, withDefault.Status);
+        Assert.Equal("test", (string?)withDefault.NodeStates["echo"].Output!["env"]);
+
+        // 启动传入覆盖默认值
+        var withOverride = await harness.Engine.StartWithDefinitionAsync(
+            definition,
+            new JsonObject { ["flag"] = 2 },
+            new JsonObject { ["env"] = "prod" });
+        Assert.Equal("prod", (string?)withOverride.NodeStates["echo"].Output!["env"]);
+
+        // 实例持久化全局变量（断点恢复后作用域仍可重建）
+        var stored = await harness.Store.FindInstanceByIdAsync(withOverride.Id);
+        Assert.NotNull(stored);
+        Assert.Equal("prod", (string?)stored.SystemVariables["env"]);
     }
 
     [Fact]

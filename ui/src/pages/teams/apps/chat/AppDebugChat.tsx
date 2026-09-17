@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ClearOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
 import { Button, Input, Popconfirm, Tooltip, Typography, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -20,13 +20,15 @@ const SESSION_NOT_FOUND_MARKER = '[[moai:session-not-found]]'
 export interface AppDebugChatProps {
   appId: string
   appAvatar?: string
+  /** 应用配置的对话开场白（已按启用状态过滤），调试会话开始时展示 */
+  openingStatement?: string
 }
 
 /**
  * 调试对话面板：进入即创建 Redis 调试会话（不落库、不计用量），
  * 页面刷新即放弃会话 id 并重新创建；后端注册表过期时自动重建一次并重试。
  */
-export function AppDebugChat({ appId, appAvatar }: AppDebugChatProps) {
+export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugChatProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const userInfo = useAppStore((state) => state.userInfo)
@@ -42,6 +44,12 @@ export function AppDebugChat({ appId, appAvatar }: AppDebugChatProps) {
   const userName = userInfo?.nickName || userInfo?.userName || 'U'
   const userAvatar = resolveStorageUrl(userInfo?.avatar ?? null)
 
+  // 开场白为本地展示消息，不入调试会话历史
+  const openingMessage = useMemo<DisplayMessage | null>(() => {
+    const text = (openingStatement ?? '').trim()
+    return text ? { id: 'opening-statement', role: 'assistant', content: text } : null
+  }, [openingStatement])
+
   const ensureSession = useCallback(async (): Promise<string> => {
     if (sessionIdRef.current) return sessionIdRef.current
     const id = await createDebugSession(appId)
@@ -52,13 +60,20 @@ export function AppDebugChat({ appId, appAvatar }: AppDebugChatProps) {
   useEffect(() => {
     cancelledRef.current = false
     sessionIdRef.current = ''
-    setMessages([])
+    setMessages(openingMessage ? [openingMessage] : [])
     void ensureSession().catch(() => undefined)
     return () => {
       cancelledRef.current = true
       if (agentRef.current) abortAppChat(agentRef.current)
     }
+    // openingMessage 随配置加载/保存晚于挂载到达，此处仅按 appId 重建会话，开场白由下方补齐
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appId, ensureSession])
+
+  // 配置异步加载完成后（消息尚未开始时）补展示开场白，不覆盖已开始的调试对话
+  useEffect(() => {
+    setMessages((prev) => (prev.length === 0 && openingMessage ? [openingMessage] : prev))
+  }, [openingMessage])
 
   const runOnce = useCallback(
     async (text: string, assistantId: string, sessionId: string) => {
@@ -124,10 +139,10 @@ export function AppDebugChat({ appId, appAvatar }: AppDebugChatProps) {
   const clear = useCallback(async () => {
     if (agentRef.current) abortAppChat(agentRef.current)
     sessionIdRef.current = ''
-    setMessages([])
+    setMessages(openingMessage ? [openingMessage] : [])
     setSending(false)
     await ensureSession().catch(() => undefined)
-  }, [ensureSession])
+  }, [ensureSession, openingMessage])
 
   const copy = useCallback(
     async (text: string) => {

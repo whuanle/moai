@@ -54,6 +54,16 @@ public class QueryAppAgentConfigCommandResponse
     public JsonElement ExecutionSettings { get; set; }
 
     /// <summary>
+    /// 对话开场白，未配置时为空串.
+    /// </summary>
+    public string OpeningStatement { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否启用对话开场白；启用且内容非空时，新会话开始时展示.
+    /// </summary>
+    public bool OpeningStatementEnabled { get; set; }
+
+    /// <summary>
     /// 我在所属团队中的角色：0=Member 1=Admin 2=Owner.
     /// </summary>
     public int MyRole { get; set; }

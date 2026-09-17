@@ -317,6 +317,24 @@ public class WorkflowScheduler
             return;
         }
 
+        if (node.Type == NodeTypes.Switch)
+        {
+            // 多条件节点：输出 result 为命中的分支 id（或 else），按字符串匹配出边
+            var switchMatched = state.Output != null
+                && state.Output.TryGetPropertyValue("result", out var switchResultNode)
+                && switchResultNode is JsonValue switchValue
+                && switchValue.TryGetValue<string>(out var switchString)
+                ? switchString
+                : null;
+
+            foreach (var edge in outgoing)
+            {
+                edgeStates[edge.Id] = !string.IsNullOrEmpty(switchMatched) && edge.Condition == switchMatched ? EdgeState.Done : EdgeState.Skipped;
+            }
+
+            return;
+        }
+
         foreach (var edge in outgoing)
         {
             edgeStates[edge.Id] = EdgeState.Done;
@@ -476,7 +494,7 @@ public class WorkflowScheduler
             }
         }
 
-        return new WorkflowVariableScope(systemVariables, instance.Input, nodeOutputs);
+        return new WorkflowVariableScope(systemVariables, instance.Input, nodeOutputs, instance.SystemVariables);
     }
 
     /// <summary>

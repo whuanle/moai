@@ -1,9 +1,11 @@
+using MoAI.Infra.Models;
+
 namespace MoAI.Skill.Queries.Responses;
 
 /// <summary>
 /// 技能列表项.
 /// </summary>
-public class SkillListItem
+public class SkillListItem : AuditsInfo
 {
     /// <summary>
     /// 技能 id.
@@ -36,17 +38,22 @@ public class SkillListItem
     public bool IsDisable { get; init; }
 
     /// <summary>
+    /// 所属团队 id，0=系统内置或个人技能.
+    /// </summary>
+    public int TeamId { get; init; }
+
+    /// <summary>
+    /// 是否已上架市场公开.
+    /// </summary>
+    public bool IsPublic { get; init; }
+
+    /// <summary>
+    /// 待审核的上架申请 id，无待审核申请时为 null.
+    /// </summary>
+    public long? PendingPublicationId { get; init; }
+
+    /// <summary>
     /// 技能包文件数量.
     /// </summary>
     public int FileCount { get; init; }
-
-    /// <summary>
-    /// 创建时间.
-    /// </summary>
-    public DateTimeOffset CreateTime { get; init; }
-
-    /// <summary>
-    /// 更新时间.
-    /// </summary>
-    public DateTimeOffset UpdateTime { get; init; }
 }

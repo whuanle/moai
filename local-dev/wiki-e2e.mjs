@@ -1,8 +1,8 @@
-// 知识库模块 E2E（真实 HTTP，依赖 team-e2e 同款用户工厂；后端 127.0.0.1:5210）
+// 知识库模块 E2E（真实 HTTP，依赖 team-e2e 同款用户工厂；后端 127.0.0.1:5210，可用 argv[2] 覆盖）
 // 场景编号与 docs/wiki/bdd.md 对应（@WK-Sn）
 import crypto from 'node:crypto'
 
-const BASE = 'http://127.0.0.1:5210'
+const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
 let PASS = 0, FAIL = 0
 const check = (name, cond, detail = '') => {
   if (cond) { PASS++; console.log(`PASS | ${name}`) }
@@ -51,7 +51,7 @@ async function main() {
   const t = await api('POST', '/api/team', { token: owner.token, body: { name: 'wiki-team-' + TS } })
   const TID = Number(t.json.value)
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: alice.userId, role: 1 } })
-  await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: bob.userId, role: 2 } })
+  await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: bob.userId, role: 0 } })
 
   // WK-01 无 token 401
   check('WK-01 无 token 查列表 401', (await api('GET', `/api/wiki/list?teamId=${TID}`)).status === 401)
@@ -73,7 +73,7 @@ async function main() {
   {
     const r = await api('GET', `/api/wiki/list?teamId=${TID}`, { token: bob.token })
     const item = (r.json?.items ?? []).find(i => Number(i.wikiId) === WID)
-    check('WK-04b Member 查列表 200 且含 myRole', r.status === 200 && r.json.myRole === 2 && !!item, JSON.stringify(r.json).slice(0, 150))
+    check('WK-04b Member 查列表 200 且含 myRole', r.status === 200 && r.json.myRole === 0 && !!item, JSON.stringify(r.json).slice(0, 150))
   }
   check('WK-04c 非成员查列表 404', (await api('GET', `/api/wiki/list?teamId=${TID}`, { token: outsider.token })).status === 404)
 
@@ -126,6 +126,30 @@ async function main() {
   const prv = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: privName, isPublic: false } })
   const PRIVID = Number(prv.json?.value)
   check('WK-10 非成员查私有库详情 404', (await api('GET', `/api/wiki/${PRIVID}`, { token: outsider.token })).status === 404)
+
+  // WK-11 知识库最大文件大小（WIKI_MAX_FILE_SIZE_MB，超管设置，网页端与开放接口上传同时受限）
+  {
+    const wk11 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk11-' + TS } })
+    const WID11 = Number(wk11.json?.value)
+    const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const rootTk = rootL.json.accessToken
+    const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex')
+    const preup = (token, fileName, fileSize, sha) => api('POST', `/api/wiki/${WID11}/documents/preupload`, {
+      token,
+      body: { fileName, contentType: 'text/markdown', fileSize, sha256: sha },
+    })
+
+    await api('PUT', '/api/settings', { token: rootTk, body: { key: 'WIKI_MAX_FILE_SIZE_MB', value: '1' } })
+    const limit1 = await api('GET', '/api/wiki/upload-limit', { token: bob.token })
+    check('WK-11a 设置 1MB 后 upload-limit 返回 1（成员可读）', limit1.status === 200 && limit1.json?.maxFileSizeMb === 1 && Number(limit1.json?.maxFileSizeBytes) === 1048576, JSON.stringify(limit1.json))
+    check('WK-11b 超限 2MB preupload 400', (await preup(bob.token, `big-${TS}.md`, 2 * 1024 * 1024, sha256Hex(`big-${TS}`))).status === 400)
+    check('WK-11c 恰好 1MB preupload 200', (await preup(bob.token, `ok-${TS}.md`, 1024 * 1024, sha256Hex(`ok-${TS}`))).status === 200)
+
+    await api('PUT', '/api/settings', { token: rootTk, body: { key: 'WIKI_MAX_FILE_SIZE_MB', value: '50' } })
+    const limit50 = await api('GET', '/api/wiki/upload-limit', { token: bob.token })
+    const free = await preup(bob.token, `free-${TS}.md`, 2 * 1024 * 1024, sha256Hex(`free-${TS}`))
+    check('WK-11d 恢复默认 50MB 后 2MB preupload 200', limit50.json?.maxFileSizeMb === 50 && Number(limit50.json?.maxFileSizeBytes) === 52428800 && free.status === 200, `${JSON.stringify(limit50.json)} ${free.status}`)
+  }
 
   console.log(`\n===== 知识库 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
   process.exit(FAIL > 0 ? 1 : 0)

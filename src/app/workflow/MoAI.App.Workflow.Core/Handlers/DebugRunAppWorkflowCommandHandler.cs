@@ -115,10 +115,21 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
             throw new BusinessException($"启动参数 JSON 无效：{ex.Message}") { StatusCode = 400 };
         }
 
+        JsonObject systemVariables;
+        try
+        {
+            systemVariables = JsonNode.Parse(request.SystemJson) as JsonObject ?? new JsonObject();
+        }
+        catch (JsonException ex)
+        {
+            throw new BusinessException($"全局变量 JSON 无效：{ex.Message}") { StatusCode = 400 };
+        }
+
         // 同步执行到终态；节点失败时实例为挂起态并携带错误信息，不抛异常
         var instance = await _workflowEngine.StartWithDefinitionAsync(
             definition,
             input,
+            systemVariables,
             Guid.CreateVersion7().ToString("N"),
             cancellationToken);
 

@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons'
 import { Avatar, Button, Dropdown, Layout, Menu, Select, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import {
@@ -43,12 +43,12 @@ const mainNav: NavItem[] = [
   { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
   { key: 'apps', icon: <AppstoreOutlined />, labelKey: 'nav.apps', path: '/apps' },
   { key: 'promptMarket', icon: <ShopOutlined />, labelKey: 'nav.promptMarket', path: '/prompt-market' },
+  { key: 'skillMarket', icon: <ThunderboltOutlined />, labelKey: 'nav.skillMarket', path: '/skill-market' },
   { key: 'team', icon: <TeamOutlined />, labelKey: 'nav.team', path: '/team' },
 ]
 
 const adminNav: NavItem[] = [
   { key: 'plugin', icon: <AppstoreAddOutlined />, labelKey: 'nav.plugin', path: '/plugin' },
-  { key: 'skills', icon: <ThunderboltOutlined />, labelKey: 'nav.skills', path: '/skills' },
   { key: 'classify', icon: <TagsOutlined />, labelKey: 'nav.classify', path: '/classify' },
   { key: 'users', icon: <UserOutlined />, labelKey: 'nav.users', path: '/users' },
   { key: 'adminTeams', icon: <ApartmentOutlined />, labelKey: 'nav.adminTeams', path: '/admin/teams' },
@@ -63,9 +63,10 @@ const pathToKey: Record<string, string> = {
   '/apps': 'apps',
   '/prompts': 'promptMarket',
   '/prompt-market': 'promptMarket',
+  '/skills': 'skillMarket',
+  '/skill-market': 'skillMarket',
   '/team': 'team',
   '/plugin': 'plugin',
-  '/skills': 'skills',
   '/classify': 'classify',
   '/users': 'users',
   '/admin/teams': 'adminTeams',
@@ -98,16 +99,16 @@ export function AppSider() {
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
   const [collapsed, setCollapsed] = useState(false)
   // 一级菜单不再展示知识库/知识图谱，统一从团队详情分区进入
-  // 提示词编辑器等 /prompts 子路径同样归入「提示词市场」高亮
-  const selectedKey = pathToKey[location.pathname] ?? (location.pathname.startsWith('/prompts') ? 'promptMarket' : 'dashboard')
+  // 提示词编辑器等 /prompts 子路径归入「提示词市场」高亮，技能中心（市场/我的）归入「技能市场」高亮
+  const selectedKey =
+    pathToKey[location.pathname]
+    ?? (location.pathname.startsWith('/prompts')
+      ? 'promptMarket'
+      : location.pathname.startsWith('/skill')
+        ? 'skillMarket'
+        : 'dashboard')
   const isDark = themeKey === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
-
-  // 进入带页内二级导航的页面（如 /team/:id）时，自动收缩一级菜单栏
-  useEffect(() => {
-    const isSecondaryPage = /^\/team\/[^/]+/.test(location.pathname)
-    if (isSecondaryPage) setCollapsed(true)
-  }, [location.pathname])
 
   const displayName = userInfo?.nickName ?? userInfo?.userName
 

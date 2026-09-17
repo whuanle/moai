@@ -183,9 +183,52 @@ describe('AppConfigSection（应用配置分区）', () => {
         wikiIds: [7],
         plugins: ['p1'],
         skills: [],
+        openingStatement: '',
+        openingStatementEnabled: false,
         executionSettings: { sandbox: { enabled: false, renewOnAccess: true } },
       }),
     )
+  })
+
+  it('对话开场白：回显内容，随保存一并提交', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      skills: [],
+      openingStatement: '你好，我是售前助手',
+      openingStatementEnabled: true,
+      myRole: 2,
+    })
+
+    renderSection()
+
+    const opening = await screen.findByPlaceholderText('你好，我是你的 AI 助手，有什么可以帮你？')
+    expect((opening as HTMLTextAreaElement).value).toBe('你好，我是售前助手')
+
+    fireEvent.change(opening, { target: { value: '你好，很高兴见到你' } })
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          openingStatement: '你好，很高兴见到你',
+          openingStatementEnabled: true,
+        }),
+      ),
+    )
+  })
+
+  it('对话开场白：未启用时不展示内容输入框', async () => {
+    renderSection()
+
+    expect(await screen.findByText('对话开场白')).toBeTruthy()
+    expect(screen.queryByText('开场白内容')).toBeNull()
   })
 
   it('插件选项只取团队可访问插件：空 Guid 的内存静态插件被过滤', async () => {

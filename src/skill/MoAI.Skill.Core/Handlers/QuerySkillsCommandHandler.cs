@@ -51,10 +51,14 @@ public class QuerySkillsCommandHandler : IRequestHandler<QuerySkillsCommand, Que
             Description = x.Description,
             IsSystem = x.IsSystem,
             IsDisable = x.IsDisable,
+            TeamId = x.TeamId,
+            IsPublic = x.IsPublic,
             FileCount = x.IsSystem
                 ? BuiltinSkills.GetFiles(x.Key).Count
                 : SkillService.ParseFiles(x.Files).Count,
+            CreateUserId = (int)x.CreateUserId,
             CreateTime = x.CreateTime,
+            UpdateUserId = (int)x.UpdateUserId,
             UpdateTime = x.UpdateTime,
         }).ToList();
 

@@ -37,4 +37,9 @@ public static class NodeTypes
     /// JavaScript 节点 - 使用 Jint 执行 JS 脚本转换数据.
     /// </summary>
     public const string JavaScript = "javascript";
+
+    /// <summary>
+    /// 多条件节点 - 按顺序评估多个条件，走第一个命中的分支（if-else 语义）；全部未命中走 else 分支.
+    /// </summary>
+    public const string Switch = "switch";
 }

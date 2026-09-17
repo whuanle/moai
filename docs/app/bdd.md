@@ -179,8 +179,8 @@ Scenario: 只能绑定该团队有权使用的资源
 Scenario: 配置校验与类型约束
   When 提示词超过 4000 字
   Then 返回参数错误
-  When 对流程应用保存配置
-  Then 返回参数错误
+  When 对流程应用保存配置（该类型仅对话开场白适用，模型/知识库/插件/技能不校验不落库）
+  Then 返回成功
   When 对不存在的应用查询/保存配置
   Then 返回不存在
 ```
@@ -403,6 +403,28 @@ Scenario: 不可用专家与越权操作被拒绝
   Then 返回不存在
   When 创建会话时绑定不可用的提示词
   Then 返回不存在且不产生会话
+```
+
+## Feature: 对话开场白（Agent 应用）
+
+```gherkin
+@AP-S46 @auto:e2e @auto:unit
+Scenario: 配置开场白并在新会话开始时展示
+  When Admin 在 Agent 配置中启用对话开场白并填写内容，随配置一并保存
+  Then 保存成功，配置回读一致
+  And 应用详情（成员可读）随详情下发开场白与启用状态
+  And 聊天页与调试面板在新会话开始时先展示该开场白（不参与模型上下文、不入会话历史）
+
+@AP-S47 @auto:e2e @auto:unit
+Scenario: 开场白的权限、开关与校验
+  When Member 保存开场白配置
+  Then 返回禁止
+  When 关闭开关保存
+  Then 详情返回未启用且内容保留
+  When 开场白超过 4000 字
+  Then 返回参数错误且原配置不被改写
+  When 查看流程应用详情
+  Then 开场白恒为空串且不启用
 ```
 
 ## Feature: 访问点配置（app_access_point）

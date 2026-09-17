@@ -10,7 +10,13 @@ import { SkillItemRequestBuilderNavigationMetadata, SkillItemRequestBuilderReque
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { Market_listRequestBuilderRequestsMetadata, type Market_listRequestBuilder } from './market_list/index.js';
+// @ts-ignore
+import { My_listRequestBuilderRequestsMetadata, type My_listRequestBuilder } from './my_list/index.js';
+// @ts-ignore
 import { OptionsRequestBuilderRequestsMetadata, type OptionsRequestBuilder } from './options/index.js';
+// @ts-ignore
+import { Team_listRequestBuilderRequestsMetadata, type Team_listRequestBuilder } from './team_list/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -27,9 +33,21 @@ export interface SkillRequestBuilder extends BaseRequestBuilder<SkillRequestBuil
      */
     get list(): ListRequestBuilder;
     /**
+     * The market_list property
+     */
+    get market_list(): Market_listRequestBuilder;
+    /**
+     * The my_list property
+     */
+    get my_list(): My_listRequestBuilder;
+    /**
      * The optionsPath property
      */
     get optionsPath(): OptionsRequestBuilder;
+    /**
+     * The team_list property
+     */
+    get team_list(): Team_listRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.skill.item collection
      * @param id 技能 id.
@@ -75,8 +93,17 @@ export const SkillRequestBuilderNavigationMetadata: Record<Exclude<keyof SkillRe
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
     },
+    market_list: {
+        requestsMetadata: Market_listRequestBuilderRequestsMetadata,
+    },
+    my_list: {
+        requestsMetadata: My_listRequestBuilderRequestsMetadata,
+    },
     optionsPath: {
         requestsMetadata: OptionsRequestBuilderRequestsMetadata,
+    },
+    team_list: {
+        requestsMetadata: Team_listRequestBuilderRequestsMetadata,
     },
 };
 /**

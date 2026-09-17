@@ -4,9 +4,15 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Drawer, Space, Spin, Tag, Tooltip, Typography } from 'antd'
+import { App, Button, Drawer, Input, Space, Spin, Tooltip } from 'antd'
 import {
-  ApartmentOutlined,
+  ArrowLeftOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SettingOutlined,
+  UndoOutlined,
+  RedoOutlined,
+  ExpandOutlined,
   CaretRightOutlined,
   HistoryOutlined,
   SaveOutlined,
@@ -33,58 +39,125 @@ import { useWorkflowDesignerStore } from './store'
 import { CONDITION_PORTS, getNodeTemplate, NODE_CONSTRAINTS, NODE_TEMPLATES } from './constants'
 import { createDefaultEditorData, nodeDataFromTemplate, validateEditorData } from './utils'
 import type { EditorWorkflowJSON, NodeRunState } from './types'
-import { NodePanel } from './NodePanel'
-import { ConfigPanel } from './ConfigPanel'
+import { NodeLibraryPanel } from './NodePanel'
+import { SystemSettingsPanel } from './SystemSettingsPanel'
 import { RunPanel } from './RunPanel'
+import { NodeForm } from './NodeForm'
 import './workflow-designer.css'
 
-const { Text } = Typography
+/** 左侧浮层面板：无 / 节点库 / 系统设置（互斥，画布左上工具列唤出） */
+type LeftPanel = 'none' | 'nodes' | 'settings'
 
 // ==================== 画布内节点渲染 ====================
 
+/** 头部可编辑文本（标题/副标题共用）：点击就地编辑，Enter/失焦提交，Esc 取消 */
+function EditableNodeText({
+  value,
+  placeholder,
+  readonly,
+  className,
+  onCommit,
+}: {
+  value: string
+  placeholder: string
+  readonly: boolean
+  className: string
+  onCommit: (v: string) => void
+}) {
+  const { t } = useTranslation()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+
+  if (editing) {
+    return (
+      <Input
+        size="small"
+        autoFocus
+        value={draft}
+        className={`${className} wf-editable-input`}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          setEditing(false)
+          onCommit(draft.trim())
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            setEditing(false)
+            onCommit(draft.trim())
+          }
+          if (e.key === 'Escape') setEditing(false)
+        }}
+      />
+    )
+  }
+  return (
+    <div
+      className={`${className} wf-editable-text${readonly ? ' wf-editable-readonly' : ''}`}
+      title={readonly ? undefined : t('workflowDesigner.clickToEdit')}
+      onClick={() => {
+        if (readonly) return
+        setDraft(value)
+        setEditing(true)
+      }}
+    >
+      <span className={value ? undefined : 'wf-editable-placeholder'}>{value || placeholder}</span>
+      {!readonly && <EditOutlined className="wf-editable-icon" />}
+    </div>
+  )
+}
+
 function DefaultNodeRenderer(props: WorkflowNodeProps) {
   const { t } = useTranslation()
-  const { data } = useNodeRender()
+  const { data, updateData, selected, readonly } = useNodeRender()
   const nodeRunStates = useWorkflowDesignerStore((s) => s.nodeRunStates)
   const runState: NodeRunState | undefined = nodeRunStates[props.node.id]
-  const template = getNodeTemplate(String(props.node.flowNodeType ?? props.node.type))
-  const inputs = Object.keys(data?.inputs ?? {})
-  const outputs = data?.outputs ?? []
+  const nodeFlowType = String(props.node.flowNodeType ?? props.node.type)
+  const template = getNodeTemplate(nodeFlowType)
+  const nodeId = props.node.id
 
   return (
-    <WorkflowNodeRenderer className="wf-node" node={props.node} data-node-id={props.node.id}>
+    <WorkflowNodeRenderer className={`wf-node ${selected ? 'wf-node-selected' : ''}`} node={props.node} data-node-id={nodeId}>
       {runState && (
         <span
           className={`wf-node-run-badge wf-node-run-${runState.state}`}
           title={runState.errorMessage ?? t(`workflowDesigner.runState.${runState.state}`, { defaultValue: runState.state })}
         />
       )}
-      <div className="wf-node-header" style={{ background: template?.color }}>
-        {props.node.type === 'condition' && <ApartmentOutlined style={{ marginRight: 4 }} />}
-        <span className="wf-node-title">{String(data?.title ?? props.node.id)}</span>
-      </div>
-      {(inputs.length > 0 || outputs.length > 0) && (
-        <div className="wf-node-params">
-          {inputs.length > 0 && <div className="wf-node-params-line">IN: {inputs.join(', ')}</div>}
-          {outputs.length > 0 && (
-            <div className="wf-node-params-line">OUT: {outputs.map((o: { name: string }) => o.name).join(', ')}</div>
-          )}
+      <div className="wf-node-header">
+        <span className="wf-node-icon" style={{ background: template?.color }}>
+          {template?.icon ?? '◆'}
+        </span>
+        <div className="wf-node-head-text">
+          <EditableNodeText
+            className="wf-node-title"
+            value={String(data?.title ?? '')}
+            placeholder={String(template?.name ?? nodeId)}
+            readonly={readonly}
+            onCommit={(v) => updateData({ ...data, title: v })}
+          />
+          <EditableNodeText
+            className="wf-node-subtitle"
+            value={String(data?.content ?? '')}
+            placeholder={t(`workflowDesigner.nodeDesc_${nodeFlowType}`, { defaultValue: template?.desc ?? '' })}
+            readonly={readonly}
+            onCommit={(v) => updateData({ ...data, content: v })}
+          />
         </div>
-      )}
+      </div>
+      <div className="wf-node-body">
+        <NodeForm nodeId={nodeId} nodeType={nodeFlowType} readonly={readonly} />
+      </div>
     </WorkflowNodeRenderer>
   )
 }
 
 // ==================== 画布（拖拽投放 + 缩放工具） ====================
 
-function DesignerCanvas({ onSelectNode }: { onSelectNode: (nodeId: string) => void }) {
+function DesignerCanvas() {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { playground, document } = useClientContext()
+  const { playground, document, history } = useClientContext()
   const tools = usePlaygroundTools()
-  const editorJSON = useWorkflowDesignerStore((s) => s.editorJSON)
-
-  const isEmpty = !editorJSON || editorJSON.nodes.length === 0
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -121,22 +194,23 @@ function DesignerCanvas({ onSelectNode }: { onSelectNode: (nodeId: string) => vo
   }
 
   return (
-    <div className="wf-canvas" onDrop={handleDrop} onDragOver={handleDragOver} onClick={(e) => {
-      const target = (e.target as HTMLElement).closest('[data-node-id]')
-      if (target) onSelectNode(target.getAttribute('data-node-id') as string)
-    }}>
+    <div className="wf-canvas" onDrop={handleDrop} onDragOver={handleDragOver}>
       <EditorRenderer />
-      {isEmpty && (
-        <div className="wf-canvas-empty">
-          <div>{t('workflowDesigner.emptyTitle')}</div>
-          <div className="wf-canvas-empty-sub">{t('workflowDesigner.emptySub')}</div>
-        </div>
-      )}
       <div className="wf-canvas-tools">
-        <Button size="small" onClick={() => tools.zoomout()}>-</Button>
+        <Tooltip title={t('workflowDesigner.undo')}>
+          <Button size="small" type="text" icon={<UndoOutlined />} onClick={() => history.undo()} />
+        </Tooltip>
+        <Tooltip title={t('workflowDesigner.redo')}>
+          <Button size="small" type="text" icon={<RedoOutlined />} onClick={() => history.redo()} />
+        </Tooltip>
+        <span className="wf-tools-divider" />
+        <Button size="small" type="text" onClick={() => tools.zoomout()}>-</Button>
         <span className="wf-canvas-zoom">{Math.round((tools.zoom ?? 1) * 100)}%</span>
-        <Button size="small" onClick={() => tools.zoomin()}>+</Button>
-        <Button size="small" onClick={() => tools.fitView(false)}>{t('workflowDesigner.fitView')}</Button>
+        <Button size="small" type="text" onClick={() => tools.zoomin()}>+</Button>
+        <span className="wf-tools-divider" />
+        <Tooltip title={t('workflowDesigner.fitView')}>
+          <Button size="small" type="text" icon={<ExpandOutlined />} onClick={() => tools.fitView(false)} />
+        </Tooltip>
       </div>
     </div>
   )
@@ -153,11 +227,12 @@ function useNodeRegistries(): WorkflowNodeRegistry[] {
           isStart: template.type === 'start',
           deleteDisable: !NODE_CONSTRAINTS[template.type].deletable,
           copyDisable: !NODE_CONSTRAINTS[template.type].copyable,
+          ...(template.type === 'switch' ? { useDynamicPort: true } : {}),
           defaultPorts: [
             ...(NODE_CONSTRAINTS[template.type].requiresInput ? [{ type: 'input' as const }] : []),
             ...(template.type === 'condition'
               ? CONDITION_PORTS
-              : NODE_CONSTRAINTS[template.type].requiresOutput
+              : NODE_CONSTRAINTS[template.type].requiresOutput && template.type !== 'switch'
                 ? [{ type: 'output' as const }]
                 : []),
           ],
@@ -189,7 +264,7 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
   const runResult = useWorkflowDesignerStore((s) => s.runResult)
   const loadSeq = useWorkflowDesignerStore((s) => s.loadSeq)
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [leftPanel, setLeftPanel] = useState<LeftPanel>('none')
   const [runPanelOpen, setRunPanelOpen] = useState(false)
 
   useEffect(() => {
@@ -321,7 +396,6 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
   const handleRun = () => {
     const store = useWorkflowDesignerStore.getState()
     if (!validateBefore(store.editorJSON ?? store.initialData, false)) return
-    setSelectedNodeId(null)
     setRunPanelOpen(true)
   }
 
@@ -330,14 +404,31 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
   return (
     <div className="wf-designer">
       <div className="wf-header">
-        <Space size="small">
-          <Text strong>{appName || t('workflowDesigner.title')}</Text>
-          {version > 0 && <Tag>{t('workflowDesigner.version', { version })}</Tag>}
-          {status === 1 ? <Tag color="green">{t('workflowDesigner.published')}</Tag> : <Tag color="orange">{t('workflowDesigner.draft')}</Tag>}
-          {dirty && <Tag color="red">{t('workflowDesigner.unsaved')}</Tag>}
-        </Space>
+        <div className="wf-header-left">
+          <Tooltip title={t('appManage.backToList')}>
+            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(`/team/${teamId}/apps`)} />
+          </Tooltip>
+          <div className="wf-header-titles">
+            <div className="wf-header-name">{appName || t('workflowDesigner.title')}</div>
+            <div className="wf-header-status">
+              <span className={`wf-status-dot ${status === 1 ? 'wf-status-dot-published' : 'wf-status-dot-draft'}`} />
+              {status === 1 ? t('workflowDesigner.published') : t('workflowDesigner.draft')}
+              {version > 0 && <span>· v{version}</span>}
+              {dirty && (
+                <span className="wf-header-dirty">
+                  <span className="wf-status-dot wf-status-dot-dirty" />
+                  {t('workflowDesigner.unsaved')}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
         {canManage && (
           <Space size="small">
+            <Tooltip title={t('workflowDesigner.runsTip')}>
+              <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
+            </Tooltip>
+            <span className="wf-tools-divider" />
             <Tooltip title={t('workflowDesigner.runTip')}>
               <Button icon={<CaretRightOutlined />} loading={running} onClick={handleRun}>
                 {t('workflowDesigner.run')}
@@ -349,11 +440,6 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
             <Button type="primary" icon={<UploadOutlined />} loading={publishing} onClick={handlePublish}>
               {t('workflowDesigner.publish')}
             </Button>
-            <Tooltip title={t('workflowDesigner.runsTip')}>
-              <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)}>
-                {t('workflowDesigner.runs')}
-              </Button>
-            </Tooltip>
           </Space>
         )}
       </div>
@@ -365,14 +451,28 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
       ) : (
         <div className="wf-content">
           <FreeLayoutEditorProvider key={`${appId}-${loadSeq}`} {...editorProps}>
-            {canManage && <NodePanel />}
-            <DesignerCanvas onSelectNode={setSelectedNodeId} />
-            <ConfigPanel
-              teamId={teamId}
-              nodeId={selectedNodeId}
-              onClose={() => setSelectedNodeId(null)}
-            />
+            <DesignerCanvas />
           </FreeLayoutEditorProvider>
+          {canManage && leftPanel !== 'none' && (
+            <div className="wf-side-layer">
+              {leftPanel === 'nodes' ? <NodeLibraryPanel onClose={() => setLeftPanel('none')} /> : <SystemSettingsPanel onClose={() => setLeftPanel('none')} />}
+            </div>
+          )}
+          {canManage && leftPanel === 'none' && (
+            <div className="wf-left-toolbar">
+              <Tooltip title={t('workflowDesigner.addNode')} placement="right">
+                <Button
+                  className="wf-left-tool-add"
+                  shape="circle"
+                  icon={<PlusOutlined />}
+                  onClick={() => setLeftPanel('nodes')}
+                />
+              </Tooltip>
+              <Tooltip title={t('workflowDesigner.systemSettings')} placement="right">
+                <Button shape="circle" icon={<SettingOutlined />} onClick={() => setLeftPanel('settings')} />
+              </Tooltip>
+            </div>
+          )}
         </div>
       )}
 
@@ -388,13 +488,13 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
         <RunPanel
           running={running}
           result={runResult}
-          onRun={(inputJson) =>
+          onRun={(inputJson, systemJson) =>
             (async () => {
               const store = useWorkflowDesignerStore.getState()
               try {
                 // 边改边试：以当前画布保存并执行
                 const definition = await store.save()
-                await store.run(inputJson, JSON.stringify(definition), store.editorJSON ?? undefined)
+                await store.run(inputJson, JSON.stringify(definition), store.editorJSON ?? undefined, systemJson)
               } catch {
                 // 校验/请求错误已由全局请求中间件统一提示
               }

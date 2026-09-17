@@ -6,6 +6,7 @@ export const SettingKeys = {
   kgUsername: 'KG_USERNAME',
   kgPassword: 'KG_PASSWORD',
   kgDialect: 'KG_DIALECT',
+  wikiMaxFileSize: 'WIKI_MAX_FILE_SIZE_MB',
 } as const
 
 export async function getSettings() {

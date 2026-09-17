@@ -1,7 +1,7 @@
 import { getApiClient } from '@/api/kiota'
 
-/** 上架资源类型：app=应用，prompt=提示词（对齐后端 PublicationResourceType 枚举） */
-export type PublicationResourceType = 'app' | 'prompt'
+/** 上架资源类型：app=应用，prompt=提示词，skill=技能（对齐后端 PublicationResourceType 枚举） */
+export type PublicationResourceType = 'app' | 'prompt' | 'skill'
 
 /** 上架审核状态：pending=待审核，approved=已通过，rejected=已驳回（对齐后端 PublicationState 枚举） */
 export type PublicationState = 'pending' | 'approved' | 'rejected'
@@ -11,7 +11,7 @@ export interface PublicationReviewItem {
   /** 后端 long 序列化为字符串 */
   publicationId?: string | null
   resourceType?: PublicationResourceType | null
-  /** 应用为 app.id（uuid），提示词为 prompt.id（数字字符串） */
+  /** 应用为 app.id（uuid），提示词为 prompt.id（数字字符串），技能为 skill.id（uuid） */
   resourceId?: string | null
   /** 资源名称快照，申请时的名称 */
   resourceName?: string | null

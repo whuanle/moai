@@ -255,7 +255,7 @@ namespace MoAI.Storage.Services;
     /// <inheritdoc/>
     public async Task<Uri> GetDownloadUrlAsync(string objectKey, string fileName, TimeSpan expiryDuration, CancellationToken cancellationToken = default)
     {
-        return await _s3Client.GeneratePreSignedDownloadUrlAsync(objectKey, expiryDuration);
+        return await _s3Client.GeneratePreSignedDownloadUrlAsync(objectKey, expiryDuration, fileName);
     }
 
     /// <inheritdoc/>

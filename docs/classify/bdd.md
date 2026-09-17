@@ -87,6 +87,24 @@
 
 @CLS-S9 @auto:e2e
 
+## Feature: 分类表情（管理员）
+
+### Scenario: 新建分类时设置表情
+
+- Given 我是管理员
+- When 我提交新增分类并选择表情 🚀
+- Then 返回该分类 id，且刷新列表该分类名称旁展示该表情
+
+@CLS-S13 @auto:vitest
+
+### Scenario: 编辑分类时回填并清除表情
+
+- Given 已存在带表情 🚀 的分类
+- When 我打开编辑弹窗后清除表情并保存
+- Then 返回成功，且刷新列表该分类不再展示表情
+
+@CLS-S14 @auto:vitest
+
 ## Feature: 权限与校验
 
 ### Scenario: 非管理员访问被拒

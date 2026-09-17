@@ -34,7 +34,7 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
     {
         int teamId;
         string resourceName;
-        long promptOwnerId = 0;
+        long resourceOwnerId = 0;
 
         if (request.ResourceType == PublicationResourceType.App)
         {
@@ -64,6 +64,35 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
             teamId = app.TeamId;
             resourceName = app.Name;
         }
+        else if (request.ResourceType == PublicationResourceType.Skill)
+        {
+            if (!Guid.TryParse(request.ResourceId, out var skillId))
+            {
+                throw new BusinessException("技能 id 不正确.") { StatusCode = 400 };
+            }
+
+            var skill = await _databaseContext.Skills
+                .FirstOrDefaultAsync(x => x.Id == skillId, cancellationToken);
+
+            if (skill == null)
+            {
+                throw new BusinessException("技能不存在.") { StatusCode = 404 };
+            }
+
+            if (skill.IsSystem)
+            {
+                throw new BusinessException("系统内置技能无需申请上架.") { StatusCode = 400 };
+            }
+
+            if (skill.IsPublic)
+            {
+                throw new BusinessException("技能已公开，无需重复申请.") { StatusCode = 409 };
+            }
+
+            teamId = skill.TeamId;
+            resourceName = skill.Name;
+            resourceOwnerId = skill.CreateUserId;
+        }
         else
         {
             if (!int.TryParse(request.ResourceId, out var promptId))
@@ -86,15 +115,15 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
 
             teamId = prompt.TeamId;
             resourceName = prompt.Name;
-            promptOwnerId = prompt.CreateUserId;
+            resourceOwnerId = prompt.CreateUserId;
         }
 
         if (teamId == 0)
         {
-            // 个人提示词仅创建人可申请上架
-            if (promptOwnerId != request.ContextUserId)
+            // 个人技能/个人提示词仅创建人可申请上架
+            if (resourceOwnerId != request.ContextUserId)
             {
-                throw new BusinessException("只有创建人可以申请上架个人提示词.") { StatusCode = 403 };
+                throw new BusinessException("只有创建人可以申请上架个人资源.") { StatusCode = 403 };
             }
         }
         else

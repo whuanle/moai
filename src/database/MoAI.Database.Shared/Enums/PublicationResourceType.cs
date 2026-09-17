@@ -18,4 +18,10 @@ public enum PublicationResourceType
     /// </summary>
     [JsonPropertyName("prompt")]
     Prompt = 1,
+
+    /// <summary>
+    /// 技能，公开到技能市场.
+    /// </summary>
+    [JsonPropertyName("skill")]
+    Skill = 2,
 }

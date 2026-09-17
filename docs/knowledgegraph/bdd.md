@@ -186,6 +186,18 @@ Scenario: 实体类型属性定义与实例属性
   Then 新值覆盖旧值并回显
 ```
 
+## Feature: 超管系统设置（v2.4）
+
+```gherkin
+@KG-S22 @auto:vitest
+Scenario: 设置卡片折叠与图数据库类型排版
+  Given 超管打开系统设置
+  Then 知识图谱卡片默认展开，点击卡片标题可折叠（连接字段随折叠隐藏）与再展开
+  When 开启知识图谱
+  Then 「图数据库类型」下拉与说明文案纵向排列
+  And 用户名与密码输入框同行展示
+```
+
 > 外部开放接口（`/api/external/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-08），不复用 KG-\*。授权模型：应用 token 即团队级授权（等价团队 Admin 作用于本团队托管图谱），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
 
 ## Feature: 外部开放接口（应用 token，KX-*）

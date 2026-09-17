@@ -37,6 +37,13 @@ export async function getWikis(teamId: number): Promise<WikisResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
+/** 查询知识库上传文件大小上限（MB），0 表示不限制 */
+export async function getWikiUploadLimit(): Promise<number> {
+  const client = getApiClient()
+  const res = await client.api.wiki.uploadLimit.get()
+  return Number(res?.maxFileSizeMb ?? 0)
+}
+
 export function getWikiDetail(wikiId: number) {
   const client = getApiClient()
   return client.api.wiki.byId(String(wikiId)).get()

@@ -328,4 +328,25 @@
     When 管理员依次运行 paddleocr_ocr / paddleocr_structure_v3 / paddleocr_vl 三个实例
     Then 桩服务收到至少一次 /ocr 与至少两次 /layout-parsing 调用
     And 三个模板的 Authorization 头均为「token mock-token」且不互相串扰
+
+## Feature: 插件头像
+
+  @DYN-S43 @auto:e2e
+  Scenario: 管理员为插件设置头像并回读
+    Given 管理员已通过公开图片直传管线完成一张图片的上传登记
+    And 已创建一个动态插件实例
+    When 管理员以该图片的存储标识为实例设置头像
+    Then 设置成功
+    And 管理列表中该实例的头像标识与登记的存储标识一致
+
+  @DYN-S44 @auto:e2e
+  Scenario: 未完成登记的文件不能作为头像
+    When 管理员以存储中不存在的文件标识设置头像
+    Then 设置失败并提示头像文件不存在或未完成上传
+
+  @DYN-S45 @auto:e2e
+  Scenario: 仅管理员可设置插件头像
+    When 匿名请求或普通用户请求为插件设置头像
+    Then 匿名请求返回未认证
+    And 普通用户请求返回禁止访问
 ```

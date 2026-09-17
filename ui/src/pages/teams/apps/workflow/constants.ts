@@ -17,6 +17,7 @@ export interface NodeConstraints {
 
 export interface NodeTemplate {
   type: NodeType
+  icon: string
   nameKey: string
   /** 兜底中文名（i18n 缺失时展示） */
   name: string
@@ -41,6 +42,7 @@ export const NODE_CONSTRAINTS: Record<NodeType, NodeConstraints> = {
   aiChat: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   javaScript: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   plugin: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
+  switch: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
 }
 
 export const DEFAULT_JS_CODE = `function run(inputs, sys, nodes) {
@@ -51,16 +53,18 @@ export const DEFAULT_JS_CODE = `function run(inputs, sys, nodes) {
 export const NODE_TEMPLATES: NodeTemplate[] = [
   {
     type: 'start',
+    icon: '▶',
     nameKey: 'workflowDesigner.nodeStart',
     name: '开始',
     descKey: 'workflowDesigner.nodeStartDesc',
-    desc: '工作流入口，声明启动参数',
+    desc: '工作流的入口点',
     color: '#52c41a',
     inputs: {},
-    outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '工作流启动参数' }],
+    outputs: [],
   },
   {
     type: 'end',
+    icon: '⏹',
     nameKey: 'workflowDesigner.nodeEnd',
     name: '结束',
     descKey: 'workflowDesigner.nodeEndDesc',
@@ -73,18 +77,20 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   {
     type: 'condition',
+    icon: '◆',
     nameKey: 'workflowDesigner.nodeCondition',
     name: '条件判断',
     descKey: 'workflowDesigner.nodeConditionDesc',
-    desc: '按布尔结果路由到 true/false 分支',
+    desc: '根据条件判断选择分支',
     color: '#faad14',
     inputs: {
-      condition: { expressionType: 'variable', value: '', required: true, description: '判断条件（布尔）' },
+      condition: { expressionType: 'variable', value: '', required: true, description: '条件判断（布尔）' },
     },
     outputs: [],
   },
   {
     type: 'aiChat',
+    icon: '🤖',
     nameKey: 'workflowDesigner.nodeAiChat',
     name: 'AI 对话',
     descKey: 'workflowDesigner.nodeAiChatDesc',
@@ -99,6 +105,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   {
     type: 'javaScript',
+    icon: '📜',
     nameKey: 'workflowDesigner.nodeJs',
     name: 'JavaScript',
     descKey: 'workflowDesigner.nodeJsDesc',
@@ -110,6 +117,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   {
     type: 'plugin',
+    icon: '🔌',
     nameKey: 'workflowDesigner.nodePlugin',
     name: '插件调用',
     descKey: 'workflowDesigner.nodePluginDesc',
@@ -119,12 +127,23 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     outputs: [{ name: 'result', fieldType: 'dynamic', description: '插件返回结果' }],
     settings: { pluginKey: '' },
   },
+  {
+    type: 'switch',
+    icon: '⑂',
+    nameKey: 'workflowDesigner.nodeSwitch',
+    name: '多条件',
+    descKey: 'workflowDesigner.nodeSwitchDesc',
+    desc: '按顺序评估多个条件，走第一个命中的分支',
+    color: '#722ed1',
+    inputs: {},
+    outputs: [],
+  },
 ]
 
-/** 条件节点固定双出边端口（引擎要求恰好 condition=true/false 两条出边） */
+/** 条件节点固定双出边端口：真分支在顶部、假分支在右侧（位置分开便于区分画线） */
 export const CONDITION_PORTS = [
-  { portID: 'true', type: 'output' as const },
-  { portID: 'false', type: 'output' as const },
+  { portID: 'true', type: 'output' as const, location: 'top' as const },
+  { portID: 'false', type: 'output' as const, location: 'right' as const },
 ]
 
 export function getNodeTemplate(type: string): NodeTemplate | undefined {

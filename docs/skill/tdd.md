@@ -53,3 +53,23 @@
 实踩坑（2026-09-16）：
 - **路由回填字段不得进 Validate**：`UpdateSkillCommand.SkillId` / `SaveAppUserConfigCommand.AppId` 的 NotEmpty 规则使 PUT `/api/skill/{id}`、`/api/app/{id}/userconfig` 必 400（SharpGrip 自动校验发生在 Controller 路由回填之前，与 rounds-log #81 promptId 同坑）。修复：命令 Validate 只校验请求体字段。
 - **PublicationReviewEntity.ReviewTime 类型错误**：实体为 `DateTime?` 但 DB 列 timestamptz、DTO/Handler 均用 `DateTimeOffset?`，赋值 `DateTimeOffset.Now` 直接 CS0029 编译失败；修复为 `DateTimeOffset?`（对齐 cqrs-conventions 时间约定）。
+
+## 增量验证映射（2026-09-17：技能市场 + 个人维护 + 下载）
+
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @SKM-S1~S2 | local-dev/skill-market-e2e.mjs（SM-01~03、20~22） | PASS 28/28（2026-09-17） |
+| @SKM-S3~S4 | local-dev/skill-market-e2e.mjs（SM-04~07、18~19；SM-06 断言含 response-content-disposition） | PASS 28/28（2026-09-17，附件头修复后回归） |
+| @SKM-S5 | local-dev/skill-market-e2e.mjs（SM-08~16） | PASS 28/28（2026-09-17） |
+| @SKM-S6~S7 | local-dev/skill-market-e2e.mjs（SM-17、23~25） | PASS 28/28（2026-09-17） |
+| @SKM-S8 | local-dev/skill-market-e2e.mjs（SM-26~28，无种子库自动 SKIP） | PASS（2026-09-17，本地库无 SkillSeed 种子） |
+| @SKM-S9 | local-dev/skill-market-e2e.mjs（SM-29~31） | PASS 28/28（2026-09-17） |
+
+同批回归：`dotnet build src/MoAI/MoAI.csproj` 0 error；前端 typecheck 0、lint 0 error（存量 warning）、vitest **307/307**；存量 `skill-userconfig-e2e` 20/20、`publication-e2e` 34/34、`prompt-e2e` 46/46、`app-e2e` 113/113、`wiki-e2e` 32/32（预签名 URL 附件头修复后回归）。
+
+实现落点（2026-09-17）：
+- 审批链路：`PublicationResourceType.Skill=2`；`Apply/Review/Withdraw` Handler 各加 skill 分支（个人技能按归属人、团队技能按 Admin+；内置技能拒绝申请）。
+- 查询：`GET /api/skill/my_list|team_list|market_list`（`QuerySkillListHelper` 统一映射待审 id + 用户名填充）；`GET /api/skill/{id}` 详情改可见性校验（`SkillAccessGuard.EnsureCanViewAsync`）；`GET /api/skill/{id}/download` 返回逐文件预签名地址；`GET /api/skill/list` 仍仅管理员。
+- 删除联动：`DeleteSkillCommandHandler` 同步移除待审核上架申请（对齐 DeletePromptCommandHandler）。
+- 下载附件化：`S3Client.GeneratePreSignedDownloadUrlAsync` 支持 fileName→`ResponseHeaderOverrides.ContentDisposition`（`filename*=UTF-8''` 编码），文本类文件不再被浏览器内联渲染；wiki 文档下载与沙箱产物链接同链路受益。
+- 前端：`/skill-market`+`/skills` 双 Tab 技能中心（卡片流，参考提示词中心）；团队详情新增「团队技能」分区（TeamSkills）；审批上架页类型筛选加「技能」。

@@ -9,9 +9,9 @@
 3. `SkillSeed` 增加种子行（**固定 Guid**、key 蛇形、Instructions 写明调用步骤，路径用 `/workspace/skills/{key}/`）。
 4. 重建库后自动生效；已有库需手工 INSERT 或重跑删库重建（EnsureCreated 不补种子）。
 
-## 自定义技能（管理员）
+## 自定义技能（登录用户）
 
-`/skills` 页新建：标识（蛇形、创建后不可改）→ 上传包文件（文件名即包内路径）→ 填说明与描述。文件先 preupload（SHA256 去重）→ PUT 预签名 → complete → 保存时校验 fileId 已上传。删除仅自定义技能；内置技能只能禁用。
+个人技能在 `/skills`「我的技能」Tab、团队技能在团队详情「团队技能」分区维护：标识（蛇形、创建后不可改）→ 上传包文件（文件名即包内路径）→ 填说明与描述。文件先 preupload（SHA256 去重）→ PUT 预签名 → complete → 保存时校验 fileId 已上传。删除仅自定义技能；内置技能只能禁用。市场上架：卡片「申请上架」→ 平台管理员在「审批上架」通过后进入 `/skill-market`。
 
 ## 沙箱（技能执行的前提）
 
@@ -39,6 +39,7 @@
 | 加载提示未启用沙箱 | AppManage 开启沙箱 + 后端配置 `MoAI:OpenSandBox.Address` |
 | 脚本执行报 externally-managed | 技能脚本 `_ensure` 是否带 `--break-system-packages` |
 | 产物下载 403/过期 | 预签名 1 小时；重新让 Agent 生成或再调 save_artifact |
+| 技能/文档下载在浏览器内联打开 | 2026-09-17 起 `GetDownloadUrlAsync(fileName)` 已带 `response-content-disposition: attachment`；若复现检查对象存储是否透传 response-* 查询参数覆盖 |
 | skill 表 id 非默认 uuid | 检查 `SkillConfiguration` 被 rescaffold 覆盖（Guid 主键 + `HasDefaultValueSql("uuid_generate_v4()")`） |
 
 ## 存量库 schema 变更（2026-09-16 增量）
@@ -55,7 +56,7 @@
 | 更新/删除 | 禁止（仅可平台管理员禁用） | 团队 Admin/Owner | 归属人 |
 | 禁用 | 平台管理员 | 团队 Admin/Owner | 归属人 |
 | 绑定应用配置 | ✅ | ✅ 本团队应用 | ❌（个人技能仅限本人「应用设置」自选） |
-| 上架市场 | —（本就全员可用） | 团队管理员申请 | 本人申请（审批流为后续增量） |
+| 上架市场 | —（不可上架/下载，脚本随平台分发） | 团队 Admin/Owner 申请，admin 审批 | 归属人申请，admin 审批 |
 
 - 普通用户自选技能：对话页右上「应用设置」面板（`ControlOutlined` 按钮），保存 `PUT /api/app/{id}/userconfig`；专家=新会话默认，会话级「专家」面板可覆盖。
 
@@ -63,4 +64,5 @@
 
 ```bash
 node local-dev/skill-userconfig-e2e.mjs      # SKL 20 场景（归属权限 + 用户配置）
+node local-dev/skill-market-e2e.mjs          # SM 28 场景（市场列表/详情/下载可见性 + 上架审批 + 删除联动）
 ```

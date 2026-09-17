@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { TeamManage } from '../TeamManage'
 import { useAppStore } from '@/store/app'
 import { dissolveTeam, getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
+import { getApps } from '@/api/app'
 import { getVariables } from '@/api/variable'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getWikis } from '@/api/wiki'
@@ -132,17 +133,20 @@ describe('TeamManage', () => {
     })
   })
 
-  it('默认展示团队信息：名称、负责人、角色、成员数', async () => {
+  it('进入团队默认落在内部应用分区，菜单不再有团队信息入口', async () => {
     renderManage()
 
     await waitFor(() => {
       expect(getTeamDetail).toHaveBeenCalledWith(7)
     })
-    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
-    // 负责人标签 + Owner 昵称
-    expect(screen.getAllByText(/负责人|O/).length).toBeGreaterThan(0)
-    // 我的角色标签
-    expect(screen.getByText('所有者')).toBeInTheDocument()
+    // 默认分区加载团队应用列表
+    expect(await screen.findByText('新建应用')).toBeInTheDocument()
+    expect(getApps).toHaveBeenCalledWith(7)
+    // 团队信息菜单已移除
+    expect(screen.queryByText('团队信息')).not.toBeInTheDocument()
+    // 面包屑：主页 + 团队名
+    expect(screen.getByText('主页')).toBeInTheDocument()
+    expect(screen.getAllByText('Alpha 团队').length).toBeGreaterThan(0)
   })
 
   it('切换到成员菜单后展示成员列表', async () => {
@@ -278,7 +282,7 @@ describe('TeamManage', () => {
     expect(getVariables).toHaveBeenCalledWith(7, expect.objectContaining({ keyword: undefined, name: undefined }))
   })
 
-  it('普通成员进入团队只能使用：只保留 信息/应用/知识库 分区', async () => {
+  it('普通成员进入团队只能使用：只保留 应用/提示词/技能/知识库/知识图谱 分区', async () => {
     ;(getTeamDetail as ReturnType<typeof vi.fn>).mockResolvedValue({
       teamId: '7',
       name: 'Alpha 团队',
@@ -302,7 +306,7 @@ describe('TeamManage', () => {
     expect(screen.queryByText('设置')).not.toBeInTheDocument()
   })
 
-  it('普通成员直接访问管理分区的 URL 会回落到信息页', async () => {
+  it('普通成员直接访问管理分区的 URL 会回落到内部应用', async () => {
     ;(getTeamDetail as ReturnType<typeof vi.fn>).mockResolvedValue({
       teamId: '7',
       name: 'Alpha 团队',
@@ -314,14 +318,16 @@ describe('TeamManage', () => {
     renderManage('7', 'variables')
 
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
-    expect(await screen.findByText('负责人')).toBeInTheDocument()
+    // 回落到内部应用分区：加载团队应用列表，而不是被越权访问的分区
+    await waitFor(() => expect(getApps).toHaveBeenCalledWith(7))
     expect(getVariables).not.toHaveBeenCalled()
   })
 
-  it('非法子路由片段回退到信息区块', async () => {
+  it('非法子路由片段回退到内部应用分区', async () => {
     renderManage(undefined, 'not-exist')
 
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
-    expect(await screen.findByText('负责人')).toBeInTheDocument()
+    expect(await screen.findByText('新建应用')).toBeInTheDocument()
+    expect(getApps).toHaveBeenCalledWith(7)
   })
 })

@@ -26,4 +26,9 @@ public class ClassifyItem : AuditsInfo
     /// 分类描述.
     /// </summary>
     public string? Description { get; init; }
+
+    /// <summary>
+    /// 表情符号.
+    /// </summary>
+    public string? Emoji { get; init; }
 }

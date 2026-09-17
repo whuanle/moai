@@ -427,7 +427,7 @@ export interface AppLogItem extends AuditsInfo, Parsable {
     userType?: UserType | null;
 }
 /**
- * 申请上架，将团队资源（应用/提示词）提交到上架审核，由系统管理员审批；需要资源所属团队的 Admin 及以上角色.
+ * 申请上架，将资源（应用/提示词/技能）提交到上架审核，由系统管理员审批；团队资源需要所属团队 Admin 及以上角色，个人资源仅创建人.
  */
 export interface ApplyPublicationCommand extends Parsable {
     /**
@@ -435,7 +435,7 @@ export interface ApplyPublicationCommand extends Parsable {
      */
     applyReason?: string | null;
     /**
-     * 资源 id 字符串，应用为 app.id（uuid），提示词为 prompt.id（数字）.
+     * 资源 id 字符串，应用/技能为资源 id（uuid），提示词为 prompt.id（数字）.
      */
     resourceId?: string | null;
     /**
@@ -773,6 +773,10 @@ export interface ClassifyItem extends AuditsInfo, Parsable {
      * 分类描述.
      */
     description?: string | null;
+    /**
+     * 表情符号.
+     */
+    emoji?: string | null;
     /**
      * 分类名称.
      */
@@ -1278,6 +1282,10 @@ export interface CreateClassifyCommand extends Parsable {
      * 分类描述.
      */
     description?: string | null;
+    /**
+     * 表情符号（单个 emoji，可为空）.
+     */
+    emoji?: string | null;
     /**
      * 分类名称.
      */
@@ -2400,6 +2408,15 @@ export function createPluginBaseInfoItemFromDiscriminatorValue(parseNode: ParseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginFieldSchema}
+ */
+// @ts-ignore
+export function createPluginFieldSchemaFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginFieldSchema;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PluginFunctionItem}
  */
 // @ts-ignore
@@ -3167,6 +3184,24 @@ export function createQuerySkillCommandResponseFromDiscriminatorValue(parseNode:
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySkillFileDownloadResponse}
+ */
+// @ts-ignore
+export function createQuerySkillFileDownloadResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySkillFileDownloadResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySkillListCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySkillListCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySkillListCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QuerySkillOptionsCommandResponse}
  */
 // @ts-ignore
@@ -3361,6 +3396,15 @@ export function createQueryWikiModelOptionsCommandResponseFromDiscriminatorValue
 // @ts-ignore
 export function createQueryWikisCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryWikisCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiUploadLimitCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiUploadLimitCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiUploadLimitCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3687,6 +3731,15 @@ export interface CreateSkillCommand extends Parsable {
      * 所属团队 id，0=个人技能，大于 0=团队技能.
      */
     teamId?: number | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SkillFileDownloadItem}
+ */
+// @ts-ignore
+export function createSkillFileDownloadItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSkillFileDownloadItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4134,6 +4187,15 @@ export function createUpdateOpenApiPluginCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdatePluginAvatarCommand}
+ */
+// @ts-ignore
+export function createUpdatePluginAvatarCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdatePluginAvatarCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdatePluginTeamAuthorizationCommand}
  */
 // @ts-ignore
@@ -4435,6 +4497,10 @@ export interface DebugRunAppWorkflowCommand extends Parsable {
      * 启动参数 JSON 对象文本（开始节点的 run 输入），空为 '{}'；键需覆盖开始节点声明的必需启动参数.
      */
     inputJson?: string | null;
+    /**
+     * 全局变量实际值 JSON 对象文本（键为变量名），未提供的变量使用定义默认值；空为 '{}'.
+     */
+    systemJson?: string | null;
     /**
      * 所属团队 id.
      */
@@ -4949,6 +5015,7 @@ export function deserializeIntoClassifyItem(classifyItem: Partial<ClassifyItem> 
         ...deserializeIntoAuditsInfo(classifyItem),
         "classifyId": n => { classifyItem.classifyId = n.getNumberValue(); },
         "description": n => { classifyItem.description = n.getStringValue(); },
+        "emoji": n => { classifyItem.emoji = n.getStringValue(); },
         "name": n => { classifyItem.name = n.getStringValue(); },
         "type": n => { classifyItem.type = n.getStringValue(); },
     }
@@ -5113,6 +5180,7 @@ export function deserializeIntoCreateAppSessionCommand(createAppSessionCommand: 
 export function deserializeIntoCreateClassifyCommand(createClassifyCommand: Partial<CreateClassifyCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { createClassifyCommand.description = n.getStringValue(); },
+        "emoji": n => { createClassifyCommand.emoji = n.getStringValue(); },
         "name": n => { createClassifyCommand.name = n.getStringValue(); },
         "type": n => { createClassifyCommand.type = n.getStringValue(); },
     }
@@ -5419,6 +5487,7 @@ export function deserializeIntoDebugRunAppWorkflowCommand(debugRunAppWorkflowCom
         "definition": n => { debugRunAppWorkflowCommand.definition = n.getStringValue(); },
         "editorData": n => { debugRunAppWorkflowCommand.editorData = n.getStringValue(); },
         "inputJson": n => { debugRunAppWorkflowCommand.inputJson = n.getStringValue(); },
+        "systemJson": n => { debugRunAppWorkflowCommand.systemJson = n.getStringValue(); },
         "teamId": n => { debugRunAppWorkflowCommand.teamId = n.getStringValue(); },
     }
 }
@@ -6062,6 +6131,7 @@ export function deserializeIntoPartitionExternalDocumentCommand(partitionExterna
 export function deserializeIntoPluginBaseInfoItem(pluginBaseInfoItem: Partial<PluginBaseInfoItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(pluginBaseInfoItem),
+        "avatarPath": n => { pluginBaseInfoItem.avatarPath = n.getStringValue(); },
         "classifyId": n => { pluginBaseInfoItem.classifyId = n.getNumberValue(); },
         "counter": n => { pluginBaseInfoItem.counter = n.getStringValue(); },
         "description": n => { pluginBaseInfoItem.description = n.getStringValue(); },
@@ -6073,6 +6143,18 @@ export function deserializeIntoPluginBaseInfoItem(pluginBaseInfoItem: Partial<Pl
         "server": n => { pluginBaseInfoItem.server = n.getStringValue(); },
         "title": n => { pluginBaseInfoItem.title = n.getStringValue(); },
         "type": n => { pluginBaseInfoItem.type = n.getEnumValue<PluginType>(PluginTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPluginFieldSchema(pluginFieldSchema: Partial<PluginFieldSchema> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { pluginFieldSchema.description = n.getStringValue(); },
+        "fieldType": n => { pluginFieldSchema.fieldType = n.getStringValue(); },
+        "name": n => { pluginFieldSchema.name = n.getStringValue(); },
     }
 }
 /**
@@ -6509,6 +6591,8 @@ export function deserializeIntoQueryAppAgentConfigCommandResponse(queryAppAgentC
         "executionSettings": n => { queryAppAgentConfigCommandResponse.executionSettings = n.getObjectValue<UntypedNode>(createUntypedNodeFromDiscriminatorValue); },
         "modelId": n => { queryAppAgentConfigCommandResponse.modelId = n.getGuidValue(); },
         "myRole": n => { queryAppAgentConfigCommandResponse.myRole = n.getNumberValue(); },
+        "openingStatement": n => { queryAppAgentConfigCommandResponse.openingStatement = n.getStringValue(); },
+        "openingStatementEnabled": n => { queryAppAgentConfigCommandResponse.openingStatementEnabled = n.getBooleanValue(); },
         "plugins": n => { queryAppAgentConfigCommandResponse.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { queryAppAgentConfigCommandResponse.prompt = n.getStringValue(); },
         "skills": n => { queryAppAgentConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
@@ -6533,6 +6617,8 @@ export function deserializeIntoQueryAppCommandResponse(queryAppCommandResponse: 
         "isPublic": n => { queryAppCommandResponse.isPublic = n.getBooleanValue(); },
         "myRole": n => { queryAppCommandResponse.myRole = n.getNumberValue(); },
         "name": n => { queryAppCommandResponse.name = n.getStringValue(); },
+        "openingStatement": n => { queryAppCommandResponse.openingStatement = n.getStringValue(); },
+        "openingStatementEnabled": n => { queryAppCommandResponse.openingStatementEnabled = n.getBooleanValue(); },
         "publishStatus": n => { queryAppCommandResponse.publishStatus = n.getNumberValue(); },
         "publishTime": n => { queryAppCommandResponse.publishTime = n.getStringValue(); },
         "teamId": n => { queryAppCommandResponse.teamId = n.getStringValue(); },
@@ -7077,6 +7163,7 @@ export function deserializeIntoQueryPluginManageListCommandResponse(queryPluginM
 export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPluginManageListCommandResponseItem: Partial<QueryPluginManageListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryPluginManageListCommandResponseItem),
+        "avatarPath": n => { queryPluginManageListCommandResponseItem.avatarPath = n.getStringValue(); },
         "classifyId": n => { queryPluginManageListCommandResponseItem.classifyId = n.getNumberValue(); },
         "classifyName": n => { queryPluginManageListCommandResponseItem.classifyName = n.getStringValue(); },
         "config": n => { queryPluginManageListCommandResponseItem.config = n.getStringValue(); },
@@ -7195,10 +7282,33 @@ export function deserializeIntoQuerySkillCommandResponse(querySkillCommandRespon
         "id": n => { querySkillCommandResponse.id = n.getGuidValue(); },
         "instructions": n => { querySkillCommandResponse.instructions = n.getStringValue(); },
         "isDisable": n => { querySkillCommandResponse.isDisable = n.getBooleanValue(); },
+        "isPublic": n => { querySkillCommandResponse.isPublic = n.getBooleanValue(); },
         "isSystem": n => { querySkillCommandResponse.isSystem = n.getBooleanValue(); },
         "key": n => { querySkillCommandResponse.key = n.getStringValue(); },
         "name": n => { querySkillCommandResponse.name = n.getStringValue(); },
+        "teamId": n => { querySkillCommandResponse.teamId = n.getNumberValue(); },
         "updateTime": n => { querySkillCommandResponse.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySkillFileDownloadResponse(querySkillFileDownloadResponse: Partial<QuerySkillFileDownloadResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { querySkillFileDownloadResponse.items = n.getCollectionOfObjectValues<SkillFileDownloadItem>(createSkillFileDownloadItemFromDiscriminatorValue); },
+        "key": n => { querySkillFileDownloadResponse.key = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQuerySkillListCommandResponse(querySkillListCommandResponse: Partial<QuerySkillListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { querySkillListCommandResponse.items = n.getCollectionOfObjectValues<SkillListItem>(createSkillListItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -7510,6 +7620,17 @@ export function deserializeIntoQueryWikisCommandResponse(queryWikisCommandRespon
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiUploadLimitCommandResponse(queryWikiUploadLimitCommandResponse: Partial<QueryWikiUploadLimitCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "maxFileSizeBytes": n => { queryWikiUploadLimitCommandResponse.maxFileSizeBytes = n.getStringValue(); },
+        "maxFileSizeMb": n => { queryWikiUploadLimitCommandResponse.maxFileSizeMb = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshExternalTokenCommand(refreshExternalTokenCommand: Partial<RefreshExternalTokenCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "refreshToken": n => { refreshExternalTokenCommand.refreshToken = n.getStringValue(); },
@@ -7700,6 +7821,8 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
         "appId": n => { saveAppAgentConfigCommand.appId = n.getGuidValue(); },
         "executionSettings": n => { saveAppAgentConfigCommand.executionSettings = n.getObjectValue<UntypedNode>(createUntypedNodeFromDiscriminatorValue); },
         "modelId": n => { saveAppAgentConfigCommand.modelId = n.getGuidValue(); },
+        "openingStatement": n => { saveAppAgentConfigCommand.openingStatement = n.getStringValue(); },
+        "openingStatementEnabled": n => { saveAppAgentConfigCommand.openingStatementEnabled = n.getBooleanValue(); },
         "plugins": n => { saveAppAgentConfigCommand.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { saveAppAgentConfigCommand.prompt = n.getStringValue(); },
         "skills": n => { saveAppAgentConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
@@ -7930,6 +8053,18 @@ export function deserializeIntoSimpleString(simpleString: Partial<SimpleString> 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSkillFileDownloadItem(skillFileDownloadItem: Partial<SkillFileDownloadItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "downloadUrl": n => { skillFileDownloadItem.downloadUrl = n.getStringValue(); },
+        "fileName": n => { skillFileDownloadItem.fileName = n.getStringValue(); },
+        "path": n => { skillFileDownloadItem.path = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSkillFileItem(skillFileItem: Partial<SkillFileItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "fileId": n => { skillFileItem.fileId = n.getStringValue(); },
@@ -7944,15 +8079,17 @@ export function deserializeIntoSkillFileItem(skillFileItem: Partial<SkillFileIte
 // @ts-ignore
 export function deserializeIntoSkillListItem(skillListItem: Partial<SkillListItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "createTime": n => { skillListItem.createTime = n.getStringValue(); },
+        ...deserializeIntoAuditsInfo(skillListItem),
         "description": n => { skillListItem.description = n.getStringValue(); },
         "fileCount": n => { skillListItem.fileCount = n.getNumberValue(); },
         "id": n => { skillListItem.id = n.getGuidValue(); },
         "isDisable": n => { skillListItem.isDisable = n.getBooleanValue(); },
+        "isPublic": n => { skillListItem.isPublic = n.getBooleanValue(); },
         "isSystem": n => { skillListItem.isSystem = n.getBooleanValue(); },
         "key": n => { skillListItem.key = n.getStringValue(); },
         "name": n => { skillListItem.name = n.getStringValue(); },
-        "updateTime": n => { skillListItem.updateTime = n.getStringValue(); },
+        "pendingPublicationId": n => { skillListItem.pendingPublicationId = n.getStringValue(); },
+        "teamId": n => { skillListItem.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -8122,6 +8259,7 @@ export function deserializeIntoTeamPluginItem(teamPluginItem: Partial<TeamPlugin
         "pluginId": n => { teamPluginItem.pluginId = n.getGuidValue(); },
         "pluginKey": n => { teamPluginItem.pluginKey = n.getStringValue(); },
         "pluginName": n => { teamPluginItem.pluginName = n.getStringValue(); },
+        "responseSchema": n => { teamPluginItem.responseSchema = n.getCollectionOfObjectValues<PluginFieldSchema>(createPluginFieldSchemaFromDiscriminatorValue); },
         "server": n => { teamPluginItem.server = n.getStringValue(); },
         "templeteKey": n => { teamPluginItem.templeteKey = n.getStringValue(); },
         "title": n => { teamPluginItem.title = n.getStringValue(); },
@@ -8319,6 +8457,7 @@ export function deserializeIntoUpdateClassifyCommand(updateClassifyCommand: Part
     return {
         "classifyId": n => { updateClassifyCommand.classifyId = n.getNumberValue(); },
         "description": n => { updateClassifyCommand.description = n.getStringValue(); },
+        "emoji": n => { updateClassifyCommand.emoji = n.getStringValue(); },
         "name": n => { updateClassifyCommand.name = n.getStringValue(); },
     }
 }
@@ -8553,6 +8692,17 @@ export function deserializeIntoUpdateOpenApiPluginCommand(updateOpenApiPluginCom
         "query": n => { updateOpenApiPluginCommand.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "serverUrl": n => { updateOpenApiPluginCommand.serverUrl = n.getStringValue(); },
         "title": n => { updateOpenApiPluginCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdatePluginAvatarCommand(updatePluginAvatarCommand: Partial<UpdatePluginAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "objectKey": n => { updatePluginAvatarCommand.objectKey = n.getStringValue(); },
+        "pluginId": n => { updatePluginAvatarCommand.pluginId = n.getGuidValue(); },
     }
 }
 /**
@@ -9846,6 +9996,10 @@ export interface PartitionExternalDocumentCommand extends Parsable {
  */
 export interface PluginBaseInfoItem extends AuditsInfo, Parsable {
     /**
+     * 头像（存储 ObjectKey，前端拼装 /static 地址展示）.
+     */
+    avatarPath?: string | null;
+    /**
      * 分类 id.
      */
     classifyId?: number | null;
@@ -9889,6 +10043,23 @@ export interface PluginBaseInfoItem extends AuditsInfo, Parsable {
      * 插件类型.
      */
     type?: PluginType | null;
+}
+/**
+ * 插件字段元数据（请求参数或响应输出的单个字段），供设计器做智能提示与输出参数自动填充.
+ */
+export interface PluginFieldSchema extends Parsable {
+    /**
+     * 字段描述（取 DescriptionAttribute），可为空.
+     */
+    description?: string | null;
+    /**
+     * 字段类型：string / number / boolean / array / object / dynamic.
+     */
+    fieldType?: string | null;
+    /**
+     * 字段 JSON 名称（优先取 JsonPropertyNameAttribute，否则 camelCase 属性名）.
+     */
+    name?: string | null;
 }
 /**
  * 插件函数项.
@@ -10683,6 +10854,14 @@ export interface QueryAppAgentConfigCommandResponse extends Parsable {
      */
     myRole?: number | null;
     /**
+     * 对话开场白，未配置时为空串.
+     */
+    openingStatement?: string | null;
+    /**
+     * 是否启用对话开场白；启用且内容非空时，新会话开始时展示.
+     */
+    openingStatementEnabled?: boolean | null;
+    /**
      * 绑定的插件 id 列表（元素为 plugin.id，uuid）.
      */
     plugins?: Guid[] | null;
@@ -10747,6 +10926,14 @@ export interface QueryAppCommandResponse extends Parsable {
      * 应用名称.
      */
     name?: string | null;
+    /**
+     * 对话开场白（仅 Agent 应用，取自应用配置），未配置为空串.
+     */
+    openingStatement?: string | null;
+    /**
+     * 是否启用对话开场白（仅 Agent 应用）；启用且内容非空时，新会话开始时展示.
+     */
+    openingStatementEnabled?: boolean | null;
     /**
      * 发布状态：0=草稿（未发布）1=已发布.
      */
@@ -11614,6 +11801,10 @@ export interface QueryPluginManageListCommandResponse extends Parsable {
  */
 export interface QueryPluginManageListCommandResponseItem extends AuditsInfo, Parsable {
     /**
+     * 头像（存储 ObjectKey，前端拼装 /static 地址展示；内存发现的静态插件为空）.
+     */
+    avatarPath?: string | null;
+    /**
      * 分类 id，0 表示未分类.
      */
     classifyId?: number | null;
@@ -11803,6 +11994,10 @@ export interface QuerySkillCommandResponse extends Parsable {
      */
     isDisable?: boolean | null;
     /**
+     * 是否已上架市场公开.
+     */
+    isPublic?: boolean | null;
+    /**
      * 是否系统内置技能.
      */
     isSystem?: boolean | null;
@@ -11815,9 +12010,35 @@ export interface QuerySkillCommandResponse extends Parsable {
      */
     name?: string | null;
     /**
+     * 所属团队 id，0=系统内置或个人技能.
+     */
+    teamId?: number | null;
+    /**
      * 更新时间.
      */
     updateTime?: string | null;
+}
+/**
+ * 技能包文件下载地址响应.
+ */
+export interface QuerySkillFileDownloadResponse extends Parsable {
+    /**
+     * 文件下载地址列表.
+     */
+    items?: SkillFileDownloadItem[] | null;
+    /**
+     * 技能标识.
+     */
+    key?: string | null;
+}
+/**
+ * 技能列表响应（市场/个人/团队列表共用）.
+ */
+export interface QuerySkillListCommandResponse extends Parsable {
+    /**
+     * 技能列表.
+     */
+    items?: SkillListItem[] | null;
 }
 /**
  * 可挂载技能选项列表响应.
@@ -12350,6 +12571,19 @@ export interface QueryWikisCommandResponse extends Parsable {
     teamId?: string | null;
 }
 /**
+ * 知识库上传文件大小上限响应.
+ */
+export interface QueryWikiUploadLimitCommandResponse extends Parsable {
+    /**
+     * 上限大小（字节），0 表示不限制.
+     */
+    maxFileSizeBytes?: string | null;
+    /**
+     * 上限大小（MB），0 表示不限制（仅受平台硬上限 1GB 约束）.
+     */
+    maxFileSizeMb?: number | null;
+}
+/**
  * 刷新外部 token：使用 refresh_token 换取新的 access_token 与 refresh_token（旋转），授权范围以数据库当前配置为准.
  */
 export interface RefreshExternalTokenCommand extends Parsable {
@@ -12671,6 +12905,14 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      * 对话使用的模型 id（元素为 ai_model.id 的 uuid）；null 或空 Guid 表示未选择模型.
      */
     modelId?: Guid | null;
+    /**
+     * 对话开场白，最长 4000 字符；新会话开始时展示给用户，不参与模型上下文.
+     */
+    openingStatement?: string | null;
+    /**
+     * 是否启用对话开场白；启用且内容非空时生效.
+     */
+    openingStatementEnabled?: boolean | null;
     /**
      * 允许使用的插件 id 列表（元素为 plugin.id，uuid），须为本团队可访问插件.
      */
@@ -13319,6 +13561,7 @@ export function serializeClassifyItem(writer: SerializationWriter, classifyItem:
         serializeAuditsInfo(writer, classifyItem)
         writer.writeNumberValue("classifyId", classifyItem.classifyId);
         writer.writeStringValue("description", classifyItem.description);
+        writer.writeStringValue("emoji", classifyItem.emoji);
         writer.writeStringValue("name", classifyItem.name);
         writer.writeStringValue("type", classifyItem.type);
     }
@@ -13483,6 +13726,7 @@ export function serializeCreateAppSessionCommand(writer: SerializationWriter, cr
 export function serializeCreateClassifyCommand(writer: SerializationWriter, createClassifyCommand: Partial<CreateClassifyCommand> | undefined | null = {}) : void {
     if (createClassifyCommand) {
         writer.writeStringValue("description", createClassifyCommand.description);
+        writer.writeStringValue("emoji", createClassifyCommand.emoji);
         writer.writeStringValue("name", createClassifyCommand.name);
         writer.writeStringValue("type", createClassifyCommand.type);
     }
@@ -13789,6 +14033,7 @@ export function serializeDebugRunAppWorkflowCommand(writer: SerializationWriter,
         writer.writeStringValue("definition", debugRunAppWorkflowCommand.definition);
         writer.writeStringValue("editorData", debugRunAppWorkflowCommand.editorData);
         writer.writeStringValue("inputJson", debugRunAppWorkflowCommand.inputJson);
+        writer.writeStringValue("systemJson", debugRunAppWorkflowCommand.systemJson);
         writer.writeStringValue("teamId", debugRunAppWorkflowCommand.teamId);
     }
 }
@@ -14432,6 +14677,7 @@ export function serializePartitionExternalDocumentCommand(writer: SerializationW
 export function serializePluginBaseInfoItem(writer: SerializationWriter, pluginBaseInfoItem: Partial<PluginBaseInfoItem> | undefined | null = {}) : void {
     if (pluginBaseInfoItem) {
         serializeAuditsInfo(writer, pluginBaseInfoItem)
+        writer.writeStringValue("avatarPath", pluginBaseInfoItem.avatarPath);
         writer.writeNumberValue("classifyId", pluginBaseInfoItem.classifyId);
         writer.writeStringValue("counter", pluginBaseInfoItem.counter);
         writer.writeStringValue("description", pluginBaseInfoItem.description);
@@ -14443,6 +14689,18 @@ export function serializePluginBaseInfoItem(writer: SerializationWriter, pluginB
         writer.writeStringValue("server", pluginBaseInfoItem.server);
         writer.writeStringValue("title", pluginBaseInfoItem.title);
         writer.writeEnumValue<PluginType>("type", pluginBaseInfoItem.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePluginFieldSchema(writer: SerializationWriter, pluginFieldSchema: Partial<PluginFieldSchema> | undefined | null = {}) : void {
+    if (pluginFieldSchema) {
+        writer.writeStringValue("description", pluginFieldSchema.description);
+        writer.writeStringValue("fieldType", pluginFieldSchema.fieldType);
+        writer.writeStringValue("name", pluginFieldSchema.name);
     }
 }
 /**
@@ -14879,6 +15137,8 @@ export function serializeQueryAppAgentConfigCommandResponse(writer: Serializatio
         writer.writeObjectValue("executionSettings", queryAppAgentConfigCommandResponse.executionSettings);
         writer.writeGuidValue("modelId", queryAppAgentConfigCommandResponse.modelId);
         writer.writeNumberValue("myRole", queryAppAgentConfigCommandResponse.myRole);
+        writer.writeStringValue("openingStatement", queryAppAgentConfigCommandResponse.openingStatement);
+        writer.writeBooleanValue("openingStatementEnabled", queryAppAgentConfigCommandResponse.openingStatementEnabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", queryAppAgentConfigCommandResponse.plugins);
         writer.writeStringValue("prompt", queryAppAgentConfigCommandResponse.prompt);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppAgentConfigCommandResponse.skills);
@@ -14903,6 +15163,8 @@ export function serializeQueryAppCommandResponse(writer: SerializationWriter, qu
         writer.writeBooleanValue("isPublic", queryAppCommandResponse.isPublic);
         writer.writeNumberValue("myRole", queryAppCommandResponse.myRole);
         writer.writeStringValue("name", queryAppCommandResponse.name);
+        writer.writeStringValue("openingStatement", queryAppCommandResponse.openingStatement);
+        writer.writeBooleanValue("openingStatementEnabled", queryAppCommandResponse.openingStatementEnabled);
         writer.writeNumberValue("publishStatus", queryAppCommandResponse.publishStatus);
         writer.writeStringValue("publishTime", queryAppCommandResponse.publishTime);
         writer.writeStringValue("teamId", queryAppCommandResponse.teamId);
@@ -15447,6 +15709,7 @@ export function serializeQueryPluginManageListCommandResponse(writer: Serializat
 export function serializeQueryPluginManageListCommandResponseItem(writer: SerializationWriter, queryPluginManageListCommandResponseItem: Partial<QueryPluginManageListCommandResponseItem> | undefined | null = {}) : void {
     if (queryPluginManageListCommandResponseItem) {
         serializeAuditsInfo(writer, queryPluginManageListCommandResponseItem)
+        writer.writeStringValue("avatarPath", queryPluginManageListCommandResponseItem.avatarPath);
         writer.writeNumberValue("classifyId", queryPluginManageListCommandResponseItem.classifyId);
         writer.writeStringValue("classifyName", queryPluginManageListCommandResponseItem.classifyName);
         writer.writeStringValue("config", queryPluginManageListCommandResponseItem.config);
@@ -15565,10 +15828,33 @@ export function serializeQuerySkillCommandResponse(writer: SerializationWriter, 
         writer.writeGuidValue("id", querySkillCommandResponse.id);
         writer.writeStringValue("instructions", querySkillCommandResponse.instructions);
         writer.writeBooleanValue("isDisable", querySkillCommandResponse.isDisable);
+        writer.writeBooleanValue("isPublic", querySkillCommandResponse.isPublic);
         writer.writeBooleanValue("isSystem", querySkillCommandResponse.isSystem);
         writer.writeStringValue("key", querySkillCommandResponse.key);
         writer.writeStringValue("name", querySkillCommandResponse.name);
+        writer.writeNumberValue("teamId", querySkillCommandResponse.teamId);
         writer.writeStringValue("updateTime", querySkillCommandResponse.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySkillFileDownloadResponse(writer: SerializationWriter, querySkillFileDownloadResponse: Partial<QuerySkillFileDownloadResponse> | undefined | null = {}) : void {
+    if (querySkillFileDownloadResponse) {
+        writer.writeCollectionOfObjectValues<SkillFileDownloadItem>("items", querySkillFileDownloadResponse.items, serializeSkillFileDownloadItem);
+        writer.writeStringValue("key", querySkillFileDownloadResponse.key);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQuerySkillListCommandResponse(writer: SerializationWriter, querySkillListCommandResponse: Partial<QuerySkillListCommandResponse> | undefined | null = {}) : void {
+    if (querySkillListCommandResponse) {
+        writer.writeCollectionOfObjectValues<SkillListItem>("items", querySkillListCommandResponse.items, serializeSkillListItem);
     }
 }
 /**
@@ -15880,6 +16166,17 @@ export function serializeQueryWikisCommandResponse(writer: SerializationWriter, 
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiUploadLimitCommandResponse(writer: SerializationWriter, queryWikiUploadLimitCommandResponse: Partial<QueryWikiUploadLimitCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiUploadLimitCommandResponse) {
+        writer.writeStringValue("maxFileSizeBytes", queryWikiUploadLimitCommandResponse.maxFileSizeBytes);
+        writer.writeNumberValue("maxFileSizeMb", queryWikiUploadLimitCommandResponse.maxFileSizeMb);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshExternalTokenCommand(writer: SerializationWriter, refreshExternalTokenCommand: Partial<RefreshExternalTokenCommand> | undefined | null = {}) : void {
     if (refreshExternalTokenCommand) {
         writer.writeStringValue("refreshToken", refreshExternalTokenCommand.refreshToken);
@@ -16070,6 +16367,8 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
         writer.writeGuidValue("appId", saveAppAgentConfigCommand.appId);
         writer.writeObjectValue("executionSettings", saveAppAgentConfigCommand.executionSettings);
         writer.writeGuidValue("modelId", saveAppAgentConfigCommand.modelId);
+        writer.writeStringValue("openingStatement", saveAppAgentConfigCommand.openingStatement);
+        writer.writeBooleanValue("openingStatementEnabled", saveAppAgentConfigCommand.openingStatementEnabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", saveAppAgentConfigCommand.plugins);
         writer.writeStringValue("prompt", saveAppAgentConfigCommand.prompt);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppAgentConfigCommand.skills);
@@ -16300,6 +16599,18 @@ export function serializeSimpleString(writer: SerializationWriter, simpleString:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSkillFileDownloadItem(writer: SerializationWriter, skillFileDownloadItem: Partial<SkillFileDownloadItem> | undefined | null = {}) : void {
+    if (skillFileDownloadItem) {
+        writer.writeStringValue("downloadUrl", skillFileDownloadItem.downloadUrl);
+        writer.writeStringValue("fileName", skillFileDownloadItem.fileName);
+        writer.writeStringValue("path", skillFileDownloadItem.path);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSkillFileItem(writer: SerializationWriter, skillFileItem: Partial<SkillFileItem> | undefined | null = {}) : void {
     if (skillFileItem) {
         writer.writeStringValue("fileId", skillFileItem.fileId);
@@ -16314,15 +16625,17 @@ export function serializeSkillFileItem(writer: SerializationWriter, skillFileIte
 // @ts-ignore
 export function serializeSkillListItem(writer: SerializationWriter, skillListItem: Partial<SkillListItem> | undefined | null = {}) : void {
     if (skillListItem) {
-        writer.writeStringValue("createTime", skillListItem.createTime);
+        serializeAuditsInfo(writer, skillListItem)
         writer.writeStringValue("description", skillListItem.description);
         writer.writeNumberValue("fileCount", skillListItem.fileCount);
         writer.writeGuidValue("id", skillListItem.id);
         writer.writeBooleanValue("isDisable", skillListItem.isDisable);
+        writer.writeBooleanValue("isPublic", skillListItem.isPublic);
         writer.writeBooleanValue("isSystem", skillListItem.isSystem);
         writer.writeStringValue("key", skillListItem.key);
         writer.writeStringValue("name", skillListItem.name);
-        writer.writeStringValue("updateTime", skillListItem.updateTime);
+        writer.writeStringValue("pendingPublicationId", skillListItem.pendingPublicationId);
+        writer.writeNumberValue("teamId", skillListItem.teamId);
     }
 }
 /**
@@ -16492,6 +16805,7 @@ export function serializeTeamPluginItem(writer: SerializationWriter, teamPluginI
         writer.writeGuidValue("pluginId", teamPluginItem.pluginId);
         writer.writeStringValue("pluginKey", teamPluginItem.pluginKey);
         writer.writeStringValue("pluginName", teamPluginItem.pluginName);
+        writer.writeCollectionOfObjectValues<PluginFieldSchema>("responseSchema", teamPluginItem.responseSchema, serializePluginFieldSchema);
         writer.writeStringValue("server", teamPluginItem.server);
         writer.writeStringValue("templeteKey", teamPluginItem.templeteKey);
         writer.writeStringValue("title", teamPluginItem.title);
@@ -16689,6 +17003,7 @@ export function serializeUpdateClassifyCommand(writer: SerializationWriter, upda
     if (updateClassifyCommand) {
         writer.writeNumberValue("classifyId", updateClassifyCommand.classifyId);
         writer.writeStringValue("description", updateClassifyCommand.description);
+        writer.writeStringValue("emoji", updateClassifyCommand.emoji);
         writer.writeStringValue("name", updateClassifyCommand.name);
     }
 }
@@ -16923,6 +17238,17 @@ export function serializeUpdateOpenApiPluginCommand(writer: SerializationWriter,
         writer.writeCollectionOfObjectValues<KeyValueString>("query", updateOpenApiPluginCommand.query, serializeKeyValueString);
         writer.writeStringValue("serverUrl", updateOpenApiPluginCommand.serverUrl);
         writer.writeStringValue("title", updateOpenApiPluginCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdatePluginAvatarCommand(writer: SerializationWriter, updatePluginAvatarCommand: Partial<UpdatePluginAvatarCommand> | undefined | null = {}) : void {
+    if (updatePluginAvatarCommand) {
+        writer.writeStringValue("objectKey", updatePluginAvatarCommand.objectKey);
+        writer.writeGuidValue("pluginId", updatePluginAvatarCommand.pluginId);
     }
 }
 /**
@@ -17357,6 +17683,23 @@ export interface SimpleOfString extends Parsable {
 export interface SimpleString extends Parsable, SimpleOfString {
 }
 /**
+ * 技能包文件下载地址项.
+ */
+export interface SkillFileDownloadItem extends Parsable {
+    /**
+     * 预签名下载地址（1 小时有效）.
+     */
+    downloadUrl?: string | null;
+    /**
+     * 原始文件名.
+     */
+    fileName?: string | null;
+    /**
+     * 技能包内相对路径.
+     */
+    path?: string | null;
+}
+/**
  * 技能包文件项，序列化为 skill.files JSON 列.
  */
 export interface SkillFileItem extends Parsable {
@@ -17376,11 +17719,7 @@ export interface SkillFileItem extends Parsable {
 /**
  * 技能列表项.
  */
-export interface SkillListItem extends Parsable {
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
+export interface SkillListItem extends AuditsInfo, Parsable {
     /**
      * 技能描述.
      */
@@ -17398,6 +17737,10 @@ export interface SkillListItem extends Parsable {
      */
     isDisable?: boolean | null;
     /**
+     * 是否已上架市场公开.
+     */
+    isPublic?: boolean | null;
+    /**
      * 是否系统内置技能.
      */
     isSystem?: boolean | null;
@@ -17410,9 +17753,13 @@ export interface SkillListItem extends Parsable {
      */
     name?: string | null;
     /**
-     * 更新时间.
+     * 待审核的上架申请 id，无待审核申请时为 null.
      */
-    updateTime?: string | null;
+    pendingPublicationId?: string | null;
+    /**
+     * 所属团队 id，0=系统内置或个人技能.
+     */
+    teamId?: number | null;
 }
 /**
  * 可挂载技能选项.
@@ -17749,6 +18096,10 @@ export interface TeamPluginItem extends Parsable {
      */
     pluginName?: string | null;
     /**
+     * 响应字段 schema（静态/动态插件由响应类型反射生成，custom 插件为 null），供设计器自动填充输出参数.
+     */
+    responseSchema?: PluginFieldSchema[] | null;
+    /**
      * 自定义插件服务器地址（仅 custom 有）.
      */
     server?: string | null;
@@ -18072,6 +18423,10 @@ export interface UpdateClassifyCommand extends Parsable {
      * 分类描述.
      */
     description?: string | null;
+    /**
+     * 表情符号（单个 emoji，传空串清除）.
+     */
+    emoji?: string | null;
     /**
      * 分类名称.
      */
@@ -18477,6 +18832,19 @@ export interface UpdateOpenApiPluginCommand extends Parsable {
      * 插件标题，可中文.
      */
     title?: string | null;
+}
+/**
+ * 设置插件头像；仅管理员可操作；objectKey 需为已完成上传并登记的文件.
+ */
+export interface UpdatePluginAvatarCommand extends Parsable {
+    /**
+     * 头像文件的 ObjectKey.
+     */
+    objectKey?: string | null;
+    /**
+     * 插件记录 id，由 Controller 从路由参数回填.
+     */
+    pluginId?: Guid | null;
 }
 /**
  * 更新私有系统插件的团队授权（全量替换），仅私有插件可设置；公开插件应使用公开状态接口.
@@ -19143,6 +19511,7 @@ export const PluginTypeObject = {
 export const PublicationResourceTypeObject = {
     App: "app",
     Prompt: "prompt",
+    Skill: "skill",
 } as const;
 /**
  * 上架审核状态.

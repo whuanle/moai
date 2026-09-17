@@ -1,6 +1,6 @@
 // 动态插件 E2E（场景 @DYN-Sn；后端默认 http://127.0.0.1:5000，可用 DYN_BASE 覆盖）
 // 覆盖：实例列表/创建/编辑/运行/删除/门禁（S1~S14）+ 内置模板注册与各模板失败路径（S15/S17/S19~S21/S23~S31）
-//   + SQL 只读查询守卫（S30：拒绝写操作与多条语句、放行合法只读语句）。
+//   + SQL 只读查询守卫（S30：拒绝写操作与多条语句、放行合法只读语句）+ 插件头像（S43~S45）。
 // S16/S22（博查真实检索成功）需真实 API Key 与外网，脚本内以 SKIP 标注；
 // S32/S33（PostgreSQL/MySQL 真实查询成功路径）用环境变量提供连接串（PG_E2E_CONNECTION / MYSQL_E2E_CONNECTION），未提供则 SKIP。
 import crypto from 'node:crypto'
@@ -396,6 +396,26 @@ async function main() {
   await del(admin, PGQ)
   await del(admin, MYQ)
   await del(admin, 'dynamic_greet')
+
+  // ---- S43~S45 插件头像（POST /ai/plugin/manage/{id}/avatar；S35 为历史空号不复用）----
+  const AV = `dyn_avatar_${TS}`
+  const AVC = `avatar-png-${crypto.randomUUID()}`
+  const avSha = crypto.createHash('sha256').update(AVC).digest('hex')
+  const avPre = await api('POST', '/api/storage/public/pre_upload_image', { token: admin, body: { fileName: 'avatar.png', contentType: 'image/png', fileSize: 16, sha256: avSha } })
+  const avPut = await fetch(avPre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: Buffer.alloc(16, 1) })
+  const avComp = await api('POST', '/api/storage/complate_url', { token: admin, body: { fileId: avPre.json.fileId, isSuccess: true } })
+  check('DYN-S43 前置：公开图片直传管线完成', avPre.status === 200 && avPut.status === 200 && avComp.status === 200, `${avPre.status}/${avPut.status}/${avComp.status}`)
+  await save(admin, { pluginKey: AV, templeteKey: 'dynamic_greet', title: 'E2E 头像', description: 'e2e', classifyId: 0, config: '{"Prefix":"Hi"}' })
+  const avItem = (await instances(admin)).find((x) => x.pluginName === AV)
+  const avSet = await api('POST', `/api/ai/plugin/manage/${avItem.id}/avatar`, { token: admin, body: { objectKey: avPre.json.objectKey } })
+  const avAfter = (await instances(admin)).find((x) => x.pluginName === AV)
+  check('DYN-S43 设置头像成功且列表回读 avatarPath 一致', avSet.status === 200 && avAfter.avatarPath === avPre.json.objectKey, `${avSet.status} ${String(avAfter.avatarPath).slice(0, 48)}`)
+  const avBad = await api('POST', `/api/ai/plugin/manage/${avItem.id}/avatar`, { token: admin, body: { objectKey: 'public/images/no_such_file.png' } })
+  check('DYN-S44 未登记/伪 objectKey 拒绝 404', avBad.status === 404, String(avBad.status))
+  const avAnon = await api('POST', `/api/ai/plugin/manage/${avItem.id}/avatar`, { body: { objectKey: avPre.json.objectKey } })
+  const avMember = await api('POST', `/api/ai/plugin/manage/${avItem.id}/avatar`, { token: member.token, body: { objectKey: avPre.json.objectKey } })
+  check('DYN-S45 门禁：匿名 401、普通用户 403', avAnon.status === 401 && avMember.status === 403, `anon=${avAnon.status} member=${avMember.status}`)
+  await del(admin, AV)
 
   console.log(`\n=== 动态插件 E2E: PASS ${PASS} / FAIL ${FAIL} / SKIP ${SKIP} ===`)
   if (FAIL > 0) process.exitCode = 1

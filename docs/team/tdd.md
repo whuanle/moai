@@ -15,6 +15,10 @@
 - E2E：`node local-dev/team-e2e.mjs`（TM-15a~m、TM-16a~h 已补入脚本，含种子 `admin` 登录）**未执行**，需后端运行于 :5210 后跑，预期 **68/68**。
 - 前端：`ui/src/pages/admin/__tests__/AdminTeams.test.tsx` → **PASS 3/3**（2026-09-10）；`eslint` 0 error；`tsc` 除 `src/api/team.ts` 三处 `client.api.admin` 未定义（待 `npm run syncapi` 同步 Kiota 客户端后消除，属后端不可运行导致的流程中断）外无其它错误。
 
+### 2026-09-17 团队详情页导航收敛（@TM-S17）
+
+- 前端：`ui/src/pages/teams/__tests__/TeamManage.test.tsx` → **PASS 15/15**（2026-09-17）；团队详情页面包屑改为「主页 / 团队头像+团队名称」，移除「团队信息」菜单与信息卡片，默认分区与越权/非法子路由回落分区均改为「内部应用」。
+
 ## 映射表
 
 | 场景 | 验证物 | 结果（日期） |
@@ -37,6 +41,7 @@
 | @TM-S16 | team-e2e.mjs（TM-16a-h：转让非成员自动入团+角色降级） | 待执行（同上） |
 | @TM-S15 / @TM-S15b / @TM-S16（前端） | ui/src/pages/admin/__tests__/AdminTeams.test.tsx | PASS 3/3（2026-09-10） |
 | @TM-S16b | @manual（代码走查：两个列表 Handler 的 Owner 字典改 GroupBy 首条容错；MoAI.Team.Core 构建 0 错误） | PASS（2026-09-14） |
+| @TM-S17 | ui/src/pages/teams/__tests__/TeamManage.test.tsx | PASS 15/15（2026-09-17） |
 | 前端页面 | ui/src/pages/teams/__tests__/Teams.test.tsx | PASS 4/4（2026-09-02） |
 | 浏览器走查 | @manual（登录 → 团队菜单 → 建团/成员管理） | PASS（2026-09-02） |
 

@@ -2,7 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/app-e2e.mjs](../../local-dev/app-e2e.mjs)
 
-- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33）；2026-09-16 增补：**会话专家提示词**（`app_agent_session.prompt_id` + 绑定接口 + 对话页右侧专家侧边栏，见 §2.1/§5.4 与 @AP-S44/@AP-S45））
+- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33）；2026-09-16 增补：**会话专家提示词**（`app_agent_session.prompt_id` + 绑定接口 + 对话页右侧专家侧边栏，见 §2.1/§5.4 与 @AP-S44/@AP-S45）；2026-09-17 增补：**对话开场白**（`app_agent_config.opening_statement/-enabled` + 应用详情下发 + 聊天页/调试面板新会话展示，见 §2.1/§5.4 与 @AP-S46/@AP-S47））
 - 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页 + 外部应用分区 + 应用广场）已实现；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；**外部 token 体系与外部会话/对话端点（/api/external/agent/*）**已实现（D39，见 [外部应用/接入设计](../superpowers/specs/2026-09-13-external-app-and-access-design.md) 与 [访问点设计](../superpowers/specs/2026-09-14-access-point-design.md)）
 - 领域：`src/app`（Shared/Core/Api），前端 `ui/src/pages/teams/apps`（团队页「应用」分区 + 应用管理页）
 - Schema 真源：库表现状 + `src/database/MoAI.Database.Postgres/Data/App*.cs`（脚手架逆向生成）；原 `asserts/app.sql` / 库表 `app_agent_*` 已随仓库 DDL 清理移除
@@ -43,6 +43,8 @@
 | `wiki_ids` | text | 绑定知识库ID JSON 数组（元素为 `wiki.id`，int），空 `[]` |
 | `plugins` | text | 绑定插件ID JSON 数组（元素为 `plugin.id`，uuid 字符串），空 `[]` |
 | `execution_settings` | text | 对话参数 JSON 对象（temperature/topP/maxTokens…），空 `{}` |
+| `opening_statement` | varchar(4000) | 对话开场白内容，空 `''`（2026-09-17 增补，存量库见 `asserts/app_agent_opening_statement.sql`） |
+| `opening_statement_enabled` | boolean | 是否启用对话开场白，默认 `false` |
 | 审计四件 + `is_deleted` | | bigint 软删除 |
 
 **`app_agent_session`｜会话列表**
@@ -125,11 +127,11 @@
 | GET | `/api/app/list?teamId=` | 团队**内部**应用列表（固定 `is_external=false`，含 myRole、`isExternal/isAuth/isPublic`） | `QueryAppsCommandResponse` |
 | GET | `/api/app/external/list?teamId=` | 团队**外部**应用列表（`is_external=true`，Admin+） | `QueryAppsCommandResponse` |
 | GET | `/api/app/public/list` | 平台公开应用列表（`is_external=false && is_public && 已发布 && 未禁用`，任意登录用户） | `QueryPublicAppsCommandResponse` |
-| GET | `/api/app/{id}` | 应用详情（外部应用对内部用户 404；公开应用非成员可读） | `QueryAppCommandResponse` |
+| GET | `/api/app/{id}` | 应用详情（外部应用对内部用户 404；公开应用非成员可读）；Agent 应用随详情下发 `openingStatement`/`openingStatementEnabled`（成员可读，聊天页开场白取值点） | `QueryAppCommandResponse` |
 | PUT | `/api/app/{id}` | 更新基础信息 `{name, description?, isExternal?, isAuth?, isPublic?}`（应用类型不可改，`isExternal` 以库内为准） | Empty |
 | POST | `/api/app/{id}/avatar` | 设置头像 `{objectKey}`（须为已登记上传文件；编辑态使用） | Empty |
 | GET | `/api/app/{id}/agent-config` | 查询 Agent 应用配置（未保存过时返回空配置，不 404） | `QueryAppAgentConfigCommandResponse` |
-| PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[]}` | Empty |
+| PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[], openingStatement?, openingStatementEnabled?}` | Empty |
 | GET | `/api/access-app/list?teamId=` | 团队应用接入列表（Admin+，回显完整 key，支持再次查看） | `QueryAccessAppsCommandResponse` |
 | POST | `/api/access-app` | 创建应用接入 `{teamId, name, description?, appIds[]}`，key 原文仅返回一次 | `CreateAccessAppCommandResponse` |
 | PUT | `/api/access-app/{id}` | 更新接入 `{name, description?, appIds[]}`（key 不可改） | Empty |
@@ -147,7 +149,7 @@
 
 > `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`。
 
-`QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / myRole`。`modelId` 本期恒为**空 Guid**（模型选择未开放，落库占位）。
+`QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / skills(uuid[]) / executionSettings / openingStatement / openingStatementEnabled / myRole`。
 
 **保存配置的校验链**（`SaveAppAgentConfigCommandHandler`，顺序固定）：
 
@@ -213,6 +215,7 @@
 - **日志分区**（`AppLogsSection.tsx`，Phase 2 已交付）：`GET /api/app/{id}/logs`（Admin+，分页，支持 标题关键字 / 用户类型 / 最后消息时间范围 过滤；数据源为全用户的正式会话 `app_agent_session`，即压缩后视图）+ `GET /api/app/{id}/logs/{sessionId}/messages`（Admin+，按 `seq` 返回该会话消息）。列表条目 `AppLogItem : AuditsInfo`，内部用户人名由 `IUserInfoFillService.FillAsync` 填充，外部用户按 `userType` + `ownerId` 展示（不填内部人名）。前端 `DataTable` + 详情 `Drawer`。
 - **监控分区**（`AppMonitorSection.tsx`，Phase 3 已交付）：`GET /api/app/{id}/usage`（Admin+），返回用量汇总（调用次数 / 输入 / 输出 / 合计 token）与按模型分布。数据源为聚合表 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId` Guid + `team_id`），**最多滞后约 1 分钟**；调试会话不计数。本期**不含按日趋势**（聚合表无时间分桶）。
 - **对话页专家侧边栏（`AppChat.tsx`，2026-09-16 增补）**：顶栏「专家」按钮（`UserSwitchOutlined`，绑定时带 Badge 圆点）点击后右侧浮层展开专家列表 = 本人个人提示词（`getMyPrompts`）+ 所在团队提示词（`getTeamPrompts`），支持关键字本地过滤与 个人/团队 来源标签。点选即绑定：已有会话直接调 `PUT /app/session/{id}/prompt`，未发送过消息则暂存本地、首轮 `createAppSession` 随会话一并创建；再点同一项取消。选中专家在输入框上方以提示条展示（可点 × 清除）；切换会话按该会话 `promptId` 回显。
+- **对话开场白（`AppConfigSection.tsx` + `AppChat.tsx`/`AppDebugChat.tsx`，2026-09-17 增补）**：配置分区在系统提示词下方提供「对话开场白」开关 + 内容 `TextArea`（≤4000，关闭开关保留内容），随 `PUT /agent-config` 一次提交；应用详情（`GET /app/{id}`，成员可读）下发 `openingStatement`/`openingStatementEnabled`。聊天页在**新会话态**（详情加载完成且未选历史会话）以助手气泡展示开场白：切换历史会话按服务端历史渲染（不含开场白），删除当前会话回到新会话态时重新补展示；调试面板在挂载与「清空」后同样展示。开场白是**前端本地展示消息**（固定 id），不参与模型上下文、不入会话历史。
 - **访问点**：仍为占位，Phase 4 交付。
 
 ## 6. 关键决策
@@ -256,6 +259,7 @@
 - **D31 日志为压缩后视图**（Phase 2）：不做原始消息留存；外部身份按 `user_type` 区分展示。
 - **D32 监控基于聚合用量表（无趋势）**（Phase 3 已交付）：直接查 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId`，该列为 Guid，无需 D6 字符串化迁移）交付汇总 + 按模型分布；**不含按日趋势**（聚合表逐维一行、无时间分桶），趋势需逐次用量日志或按日聚合，留后续。
 - **D33 访问点本期占位**（Phase 4）：仅外部应用可见，先定地址形态与授权口径。
+- **D40 对话开场白为前端展示消息，随应用详情下发**：开场白（启用开关 + 内容）存 `app_agent_config`，语义是「新会话开始时的第一屏引导」——**不参与模型上下文、不入会话历史**（区别于系统提示词，也不经对话端点下发）。挂载点选 `GET /app/{id}` 应用详情而非 `/agent-config`：聊天页用户多为 Member，详情本就成员可读，避免为取开场白抬高权限门槛。开关与内容分离：关闭开关保留内容，重新打开无需重写；`enabled && 内容非空` 才生效。
 
 ## 7. 已知问题 / 下阶段
 
@@ -279,3 +283,4 @@
 - **日志仅 Admin+**：Member 查看返回 403、非成员 404；`AuditsInfo.CreateUserId` 为 `int`，外部用户 `long` id 仅作 `ownerId` 原样返回（非内部人名）。
 - **调试会话残留热态**：调试会话在 Redis 的消息/快照沿用 24h TTL，注册表 2h 过期后不可再解析，键随 TTL 自然清理；不做服务端即时销毁。
 - **调试会话归属仅按 UserId 校验**：注册表未存 `UserType`，与正式会话的归属校验等价；如后续需唯一用户类型可扩展。
+- **开场白仅内部 Web 聊天页与调试面板消费**：外部悬浮组件（widget）与飞书入口尚未读取 `openingStatement`，如需一致体验需在各入口分别接入；开场白不进模型上下文，改配即时生效（下一个新会话即可见）。

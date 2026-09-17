@@ -90,4 +90,9 @@ public partial class PluginEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 头像.
+    /// </summary>
+    public string AvatarPath { get; set; } = default!;
 }

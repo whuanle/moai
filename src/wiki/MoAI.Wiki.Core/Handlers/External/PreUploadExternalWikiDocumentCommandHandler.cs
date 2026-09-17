@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Settings.Services;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
 using MoAI.Storage.Services;
@@ -19,6 +20,7 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
     private readonly DatabaseContext _databaseContext;
     private readonly IStorageService _storageService;
     private readonly IExternalWikiAuthorizer _externalWikiAuthorizer;
+    private readonly IWikiSettingsService _wikiSettingsService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PreUploadExternalWikiDocumentCommandHandler"/> class.
@@ -26,11 +28,13 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="storageService">存储领域服务.</param>
     /// <param name="externalWikiAuthorizer">外部知识库授权器.</param>
-    public PreUploadExternalWikiDocumentCommandHandler(DatabaseContext databaseContext, IStorageService storageService, IExternalWikiAuthorizer externalWikiAuthorizer)
+    /// <param name="wikiSettingsService">知识库设置服务.</param>
+    public PreUploadExternalWikiDocumentCommandHandler(DatabaseContext databaseContext, IStorageService storageService, IExternalWikiAuthorizer externalWikiAuthorizer, IWikiSettingsService wikiSettingsService)
     {
         _databaseContext = databaseContext;
         _storageService = storageService;
         _externalWikiAuthorizer = externalWikiAuthorizer;
+        _wikiSettingsService = wikiSettingsService;
     }
 
     /// <inheritdoc/>
@@ -42,6 +46,12 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
         if (string.IsNullOrEmpty(extension) || !FileStoreHelper.DocumentFormats.Any(x => string.Equals(x, extension, StringComparison.OrdinalIgnoreCase)))
         {
             throw new BusinessException("不支持该文件格式.") { StatusCode = 400 };
+        }
+
+        var maxFileSizeMb = await _wikiSettingsService.GetMaxFileSizeMbAsync(cancellationToken);
+        if (maxFileSizeMb > 0 && request.FileSize > (long)maxFileSizeMb * 1024 * 1024)
+        {
+            throw new BusinessException($"文件大小超过知识库上限（最大 {maxFileSizeMb} MB）.") { StatusCode = 400 };
         }
 
         var objectKey = FileStoreHelper.GetObjectKey(sha256: request.SHA256, fileName: request.FileName, prefix: $"wiki/{request.WikiId}");

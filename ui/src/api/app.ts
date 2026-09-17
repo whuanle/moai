@@ -134,6 +134,10 @@ export interface AppAgentConfig {
   skills?: string[] | null
   /** 对话执行参数（自由 JSON，含沙箱等扩展配置） */
   executionSettings?: Record<string, unknown> | null
+  /** 对话开场白，未配置时为空串 */
+  openingStatement?: string | null
+  /** 是否启用对话开场白；启用且内容非空时，新会话开始时展示 */
+  openingStatementEnabled?: boolean | null
   /** 0=Member 1=Admin 2=Owner */
   myRole?: number | null
 }
@@ -153,6 +157,8 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     plugins: (res?.plugins ?? []).map((id) => String(id)),
     skills: (res?.skills ?? []).map((id) => String(id)),
     executionSettings: (fromUntypedNode(res?.executionSettings) as Record<string, unknown> | undefined) ?? {},
+    openingStatement: res?.openingStatement ?? '',
+    openingStatementEnabled: res?.openingStatementEnabled ?? false,
     myRole: res?.myRole ?? null,
   }
 }
@@ -169,6 +175,8 @@ export async function saveAppAgentConfig(
     wikiIds: number[]
     plugins: string[]
     skills?: string[] | null
+    openingStatement?: string
+    openingStatementEnabled?: boolean
     executionSettings?: Record<string, unknown>
   },
 ): Promise<void> {
@@ -180,6 +188,8 @@ export async function saveAppAgentConfig(
     wikiIds: payload.wikiIds.map((id) => String(id)),
     plugins: payload.plugins as Guid[],
     skills: (payload.skills ?? null) as Guid[] | null,
+    openingStatement: payload.openingStatement ?? '',
+    openingStatementEnabled: payload.openingStatementEnabled ?? false,
     executionSettings: payload.executionSettings ? toUntypedNode(payload.executionSettings) : null,
   })
 }

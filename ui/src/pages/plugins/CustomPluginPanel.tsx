@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -10,7 +10,7 @@ import {
 import { Button, Form, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { PluginClassify } from '@/api/classify'
+import { classifyLabel, type PluginClassify } from '@/api/classify'
 import {
   customPluginApi,
   type CustomPlugin,
@@ -18,9 +18,11 @@ import {
   type CustomPluginType,
 } from '@/api/plugin'
 import { DataTable, feedback, QueryBar } from '@/design-system'
+import { resolveStorageUrl } from '@/utils/storage'
 import { McpPluginModal, type McpFormValues } from './components/McpPluginModal'
 import { OpenApiModal, type OpenApiFormValues } from './components/OpenApiModal'
 import { FunctionListModal } from './components/FunctionListModal'
+import { PluginAvatar } from './components/PluginAvatarUpload'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
 
 const { Text } = Typography
@@ -226,7 +228,12 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       dataIndex: 'pluginName',
       key: 'pluginName',
       width: 160,
-      render: (v: string | null) => <Text strong>{v || '-'}</Text>,
+      render: (v: string | null, record) => (
+        <Space size={8}>
+          <PluginAvatar objectKey={record.avatarPath} title={record.title ?? v} />
+          <Text strong>{v || '-'}</Text>
+        </Space>
+      ),
     },
     { title: t('plugins.colTitle'), dataIndex: 'title', key: 'title', width: 140, ellipsis: true, render: (v: string | null) => v || '-' },
     {
@@ -244,7 +251,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       render: (v: number | null | undefined) => {
         if (!v) return <Text type="secondary">-</Text>
         const classify = classifies.find((item) => item.classifyId === v)
-        return classify ? <Tag color="blue">{classify.name}</Tag> : '-'
+        return classify ? <Tag color="blue">{classifyLabel(classify)}</Tag> : '-'
       },
     },
     {
@@ -280,7 +287,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       dataIndex: 'counter',
       key: 'counter',
       width: 90,
-      render: (v: number | null) => v ?? 0,
+      render: (v: string | number | null) => v ?? 0,
     },
     {
       title: t('plugins.colCreateUser'),
@@ -384,7 +391,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
     () => [
       { value: 'all', label: t('plugins.classifyAll') },
       { value: 'uncategorized', label: t('plugins.classifyUncategorized') },
-      ...classifies.map((c) => ({ value: String(c.classifyId), label: c.name })),
+      ...classifies.map((c) => ({ value: String(c.classifyId), label: classifyLabel(c) })),
     ],
     [classifies, t],
   )
@@ -430,19 +437,23 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         sticky
         scroll={{ x: 1200 }}
         toolbar={
-          <Space size={4}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             {classifyTags.map((item, index) => (
-              <Fragment key={item.value}>
-                {index > 0 && <Text type="secondary">|</Text>}
+              <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {index > 0 && (
+                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                    |
+                  </span>
+                )}
                 <Tag.CheckableTag
                   checked={classifyFilter === item.value}
                   onChange={() => setClassifyFilter(item.value)}
                 >
                   {item.label}
                 </Tag.CheckableTag>
-              </Fragment>
+              </span>
             ))}
-          </Space>
+          </div>
         }
       />
 
@@ -452,6 +463,8 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         editing={editing}
         classifies={classifies}
         onOk={submitMcp}
+        enableAvatar
+        onAvatarChanged={load}
         onCancel={() => {
           setMcpModalOpen(false)
           setEditing(null)
@@ -465,6 +478,8 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         editing={editing}
         classifies={classifies}
         onOk={submitOpenApi}
+        enableAvatar
+        onAvatarChanged={load}
         onCancel={() => {
           setOpenApiModalOpen(false)
           setEditing(null)

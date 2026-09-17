@@ -59,6 +59,20 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             }
         }
 
+        // 开场白随应用详情下发（聊天页成员可读，无需 Admin 权限）；Agent/流程应用均有配置行
+        var openingStatement = string.Empty;
+        var openingStatementEnabled = false;
+        if (app.AppType is (int)AppType.Agent or (int)AppType.Workflow)
+        {
+            var agentConfig = await _databaseContext.AppAgentConfigs
+                .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
+            if (agentConfig != null)
+            {
+                openingStatement = agentConfig.OpeningStatement;
+                openingStatementEnabled = agentConfig.OpeningStatementEnabled;
+            }
+        }
+
         return new QueryAppCommandResponse
         {
             AppId = app.Id,
@@ -72,6 +86,8 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             IsPublic = app.IsPublic,
             PublishStatus = app.PublishStatus,
             PublishTime = app.PublishTime,
+            OpeningStatement = openingStatement,
+            OpeningStatementEnabled = openingStatementEnabled,
             MyRole = myRole == null ? -1 : (int)myRole.Value,
             CreateTime = app.CreateTime,
             UpdateTime = app.UpdateTime

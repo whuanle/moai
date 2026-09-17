@@ -99,6 +99,11 @@ public class TeamPluginItem
     public string? ParamsExample { get; init; }
 
     /// <summary>
+    /// 响应字段 schema（静态/动态插件由响应类型反射生成，custom 插件为 null），供设计器自动填充输出参数.
+    /// </summary>
+    public List<PluginFieldSchema>? ResponseSchema { get; init; }
+
+    /// <summary>
     /// 是否公开（团队插件恒为 true）.
     /// </summary>
     public bool IsPublic { get; set; }

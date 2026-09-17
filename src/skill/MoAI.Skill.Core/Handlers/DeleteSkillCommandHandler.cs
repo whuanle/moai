@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Skill.Commands;
@@ -46,6 +47,17 @@ public class DeleteSkillCommandHandler : IRequestHandler<DeleteSkillCommand, Emp
         await SkillAccessGuard.EnsureCanManageAsync(skill, request.ContextUserId, _userAccountService, _teamService, cancellationToken);
 
         _databaseContext.Skills.Remove(skill);
+
+        // 同步移除该技能待审核的上架申请，避免审核列表出现僵尸记录
+        var skillIdString = skill.Id.ToString();
+        var pendingReviews = await _databaseContext.PublicationReviews
+            .Where(x => x.ResourceType == (int)PublicationResourceType.Skill
+                && x.ResourceId == skillIdString
+                && x.State == (int)PublicationState.Pending)
+            .ToListAsync(cancellationToken);
+
+        _databaseContext.PublicationReviews.RemoveRange(pendingReviews);
+
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return EmptyCommandResponse.Default;
     }

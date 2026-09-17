@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Col, Form, Modal, Row, Select, Spin, Switch } from 'antd'
+import { Col, Form, Modal, Row, Select, Spin, Switch, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PluginClassify } from '@/api/classify'
 import type { CustomPlugin, CustomPluginDetail, CustomKeyValue } from '@/api/plugin'
 import { customPluginApi } from '@/api/plugin'
 import { BaseFormFields } from './BaseFormFields'
 import { KeyValueConfig } from './KeyValueConfig'
+import { PluginAvatarUpload } from './PluginAvatarUpload'
 
 const HTTP_TRANSPORT_MODE_OPTIONS = [
   { value: 'AutoDetect', label: '自动检测 (AutoDetect)' },
@@ -43,6 +44,10 @@ interface McpPluginModalProps {
   loadDetail?: (pluginId: string) => Promise<CustomPluginDetail | null>
   /** 是否展示「公开」开关，团队插件恒为公开时传 false. */
   allowIsPublic?: boolean
+  /** 编辑态是否展示头像上传（走管理员登记接口，团队面板不开启）. */
+  enableAvatar?: boolean
+  /** 头像登记成功后回调（父级刷新列表）. */
+  onAvatarChanged?: () => void
 }
 
 /** 将详情对象转为表单初始值（含 transportMode 回填）. */
@@ -78,6 +83,8 @@ export function McpPluginModal({
   onCancel,
   loadDetail,
   allowIsPublic = true,
+  enableAvatar = false,
+  onAvatarChanged,
 }: McpPluginModalProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<McpFormValues>()
@@ -112,6 +119,17 @@ export function McpPluginModal({
       destroyOnClose
     >
       <Spin spinning={detailLoading} tip={t('plugins.refresh')}>
+        {enableAvatar && isEdit && editing?.pluginId && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 16 }}>
+            <PluginAvatarUpload
+              pluginId={editing.pluginId}
+              objectKey={editing.avatarPath}
+              title={editing.title}
+              onChanged={onAvatarChanged}
+            />
+            <Typography.Text type="secondary">{t('plugins.avatarTip')}</Typography.Text>
+          </div>
+        )}
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <BaseFormFields classifies={classifies} showServerUrl serverUrlLabel={t('plugins.formServerUrl')} showIsPublic={false} />
           <Row gutter={16}>

@@ -6,6 +6,8 @@ import { createBusinessValidationResultFromDiscriminatorValue, createEmptyComman
 // @ts-ignore
 import { DisableRequestBuilderRequestsMetadata, type DisableRequestBuilder } from './disable/index.js';
 // @ts-ignore
+import { DownloadRequestBuilderRequestsMetadata, type DownloadRequestBuilder } from './download/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -16,6 +18,10 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      * The disable property
      */
     get disable(): DisableRequestBuilder;
+    /**
+     * The download property
+     */
+    get download(): DownloadRequestBuilder;
     /**
      * 删除技能（软删除；系统内置技能不可删除）：个人技能归属人、团队技能团队管理员或平台管理员.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -28,7 +34,7 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      */
      delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 查询技能详情，仅平台管理员.
+     * 查询技能详情；可见即可查看：系统内置/已公开/所在团队/本人个人技能，平台管理员放行.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QuerySkillCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -57,7 +63,7 @@ export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemReq
      */
      toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 查询技能详情，仅平台管理员.
+     * 查询技能详情；可见即可查看：系统内置/已公开/所在团队/本人个人技能，平台管理员放行.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -80,6 +86,9 @@ export const SkillItemRequestBuilderUriTemplate = "{+baseurl}/api/skill/{id}";
 export const SkillItemRequestBuilderNavigationMetadata: Record<Exclude<keyof SkillItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     disable: {
         requestsMetadata: DisableRequestBuilderRequestsMetadata,
+    },
+    download: {
+        requestsMetadata: DownloadRequestBuilderRequestsMetadata,
     },
 };
 /**

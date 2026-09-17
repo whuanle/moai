@@ -18,7 +18,8 @@
     "copy": "复制",
     "copySuccess": "已复制",
     "copyFailed": "复制失败",
-    "ok": "确定"
+    "ok": "确定",
+    "home": "主页"
   },
   "nav": {
     "chat": "全量 AI",
@@ -37,10 +38,10 @@
     "channel": "模型渠道",
     "admin": "管理",
     "variable": "变量",
-    "skills": "技能",
     "knowledgeGraph": "知识图谱",
     "prompts": "我的提示词",
-    "promptMarket": "提示词市场"
+    "promptMarket": "提示词市场",
+    "skillMarket": "技能市场"
   },
   "auth": {
     "loginTitle": "登录",
@@ -163,11 +164,18 @@
         "placeholder": "请输入图数据库密码"
       },
       "dialect": {
-        "name": "方言",
+        "name": "图数据库类型",
         "desc": "Memgraph（社区版）选 memgraph；接入外部 Neo4j 选 neo4j，影响内省与索引语句。"
       },
       "dialectMemgraph": "Memgraph",
       "dialectNeo4j": "Neo4j"
+    },
+    "wikiUpload": {
+      "title": "知识库",
+      "maxFileSize": {
+        "name": "最大文件大小",
+        "desc": "知识库上传文档的大小上限，默认 50，0 表示不限制（平台硬上限 1GB）。设置后对网页端与开放接口上传同时生效。"
+      }
     }
   },
   "oauthconnect": {
@@ -506,14 +514,14 @@
     "searchPlaceholder": "搜索团队名称或简介",
     "empty": "暂无团队",
     "owner": "负责人",
-    "info": "团队信息",
     "knowledge": "知识库",
     "managePlugins": "插件",
     "manageVariables": "环境变量",
     "gateway": "模型网关",
     "pluginsMemberHint": "本团队共有 {{count}} 个私有插件；系统插件由管理员统一开放",
     "knowledgeGraph": "知识图谱",
-    "prompts": "提示词"
+    "prompts": "提示词",
+    "skills": "团队技能"
   },
   "wiki": {
     "title": "知识库",
@@ -570,6 +578,7 @@
       "uploadSuccess": "成功上传 {{count}} 个文档",
       "uploadFailed": "上传失败",
       "unsupportedType": "不支持的文件类型",
+      "overSizeLimit": "文件大小超过知识库上限（最大 {{limit}} MB）",
       "batchDelete": "批量删除",
       "delete": "删除",
       "deleteConfirm": "确定删除该文档？",
@@ -1085,7 +1094,12 @@
     "authRemove": "移除授权",
     "authRemoveConfirm": "移除后该团队无法继续使用此私有插件，确认移除？",
     "authRemoveSuccess": "授权已移除",
-    "noPlugin": "暂无可授权的插件"
+    "noPlugin": "暂无可授权的插件",
+    "avatar": "插件头像",
+    "avatarTip": "点击头像上传，支持图片格式，不超过 5MB",
+    "avatarSuccess": "头像已更新",
+    "avatarTypeError": "仅支持上传图片文件",
+    "avatarSizeError": "头像文件不能超过 5MB"
   },
   "classify": {
     "title": "分类管理",
@@ -1098,12 +1112,14 @@
     "editClassify": "编辑分类",
     "name": "分类名称",
     "desc": "分类描述",
+    "emoji": "表情",
+    "emojiPlaceholder": "选择表情（可选）",
+    "emojiPick": "选择表情",
+    "emojiClear": "清除",
     "nameRequired": "请输入分类名称",
     "empty": "暂无分类",
     "edit": "编辑",
     "delete": "删除",
-    "colCreateUser": "创建人",
-    "colUpdateUser": "更新人",
     "deleteConfirm": "确定删除该分类吗？",
     "addSuccess": "新增成功",
     "updateSuccess": "修改成功",
@@ -1251,7 +1267,8 @@
     "rejectTitle": "驳回「{{name}}」的上架申请",
     "rejectCommentPlaceholder": "可填写驳回原因（≤255 字）",
     "refresh": "刷新",
-    "cancel": "取消"
+    "cancel": "取消",
+    "typeSkill": "技能"
   },
   "appManage": {
     "create": "新建应用",
@@ -1350,6 +1367,10 @@
     "sandboxEgressHint": "每行一个；默认拒绝时填写放行域名，默认允许时填写拒绝域名",
     "promptHint": "系统提示词会作为该应用对话的初始指令",
     "promptPlaceholder": "请输入系统提示词（可选）",
+    "openingStatement": "对话开场白",
+    "openingStatementHint": "启用后，新会话开始时先展示这段开场白，让 AI 主动拉近与用户的距离；不参与模型上下文",
+    "openingStatementContent": "开场白内容",
+    "openingStatementPlaceholder": "你好，我是你的 AI 助手，有什么可以帮你？",
     "workflowConfigUnavailable": "流程应用的配置能力尚未开放，当前只能维护基础信息",
     "backToList": "返回应用列表",
     "agentConfigTitle": "Agent 配置",
@@ -1398,7 +1419,27 @@
     "instructionsPlaceholder": "技能加载时注入给 Agent 的使用说明，包含调用步骤与脚本用法",
     "formFiles": "技能包文件",
     "filesExtra": "脚本与资源文件，加载时写入会话沙箱；文件名即包内路径",
-    "addFile": "添加文件"
+    "addFile": "添加文件",
+    "tabMarket": "技能市场",
+    "tabMine": "我的技能",
+    "statusPublic": "已上架",
+    "statusPending": "审核中",
+    "statusPrivate": "未上架",
+    "apply": "申请上架",
+    "applyTitle": "申请上架到技能市场",
+    "applyOk": "提交申请",
+    "applyReason": "申请说明",
+    "applyReasonPlaceholder": "向管理员说明该技能的用途（可选）",
+    "applySuccess": "已提交上架申请，等待管理员审批",
+    "withdraw": "撤回申请",
+    "withdrawConfirm": "确定撤回该上架申请吗？",
+    "withdrawSuccess": "已撤回上架申请",
+    "download": "下载",
+    "close": "关闭",
+    "view": "查看",
+    "empty": "暂无技能",
+    "cancel": "取消",
+    "systemReadonlyHint": "系统内置技能不可修改，脚本随平台分发。"
   },
   "accessApp": {
     "create": "新建接入",
@@ -1620,7 +1661,6 @@
   },
   "workflowDesigner": {
     "title": "流程编排",
-    "version": "v{{version}}",
     "published": "已发布",
     "draft": "草稿",
     "unsaved": "未保存",
@@ -1636,19 +1676,17 @@
     "runTip": "以当前画布草稿同步执行一次流程",
     "runFailed": "调试执行失败",
     "runCompleted": "执行完成，最终输出：",
-    "runs": "运行历史",
     "runsTip": "查看流程运行记录",
     "runPanelTitle": "调试运行",
     "runInput": "启动参数（JSON）",
     "runNodes": "节点执行状态",
     "unsavedWarning": "有未保存的更改，确定离开吗？",
-    "nodePanelTitle": "节点",
     "nodeStart": "开始",
-    "nodeStartDesc": "工作流入口，声明启动参数",
+    "nodeStartDesc": "工作流的入口点",
     "nodeEnd": "结束",
     "nodeEndDesc": "收集最终输出",
     "nodeCondition": "条件判断",
-    "nodeConditionDesc": "按布尔结果路由分支",
+    "nodeConditionDesc": "根据条件判断选择分支",
     "nodeAiChat": "AI 对话",
     "nodeAiChatDesc": "调用模型生成回答",
     "nodeJs": "JavaScript",
@@ -1669,8 +1707,6 @@
     "emptySub": "连线声明执行顺序，双击节点配置参数",
     "fitView": "适应画布",
     "validateFailed": "校验未通过",
-    "nodeName": "节点名称",
-    "nodeDesc": "节点描述",
     "aiModel": "对话模型",
     "aiModelPlaceholder": "选择团队可用模型",
     "pluginKey": "插件",
@@ -1690,8 +1726,6 @@
     "exprJsonPath": "JSONPath",
     "exprInterp": "插值",
     "deleteFieldConfirm": "确定删除该字段？",
-    "cancel": "取消",
-    "confirm": "确定",
     "colNode": "节点",
     "colState": "状态",
     "colOutput": "输出",
@@ -1706,6 +1740,48 @@
       "suspended": "已挂起",
       "cancelled": "已取消",
       "created": "已创建"
-    }
+    },
+    "insertVariable": "插入变量",
+    "pluginOutputsAuto": "已根据插件返回类型自动填充输出参数，可手动调整",
+    "conditionField": "条件判断（布尔）",
+    "conditionPlaceholder": "选择或输入条件变量，如 search.hasResult",
+    "branchTrue": "真 ↑",
+    "branchFalse": "假 →",
+    "variables": "全局变量",
+    "variablesHint": "全局变量在流程内所有节点可用，节点中通过 system.变量名 引用；调试运行时可赋值覆盖默认值.",
+    "addVariable": "添加全局变量",
+    "variableDefault": "默认值（数字/布尔按字面量，其余按字符串）",
+    "systemVars": "全局变量赋值",
+    "startInputsHint": "声明的输入参数即工作流启动参数（输出自动等于输入）；「必填」的参数在运行时必须提供。",
+    "groupControl": "控制流",
+    "groupAi": "AI 能力",
+    "groupData": "数据处理",
+    "groupIntegration": "集成",
+    "addNode": "添加节点",
+    "systemSettings": "系统设置",
+    "closePanel": "收起",
+    "openingStatement": "对话开场白",
+    "openingStatementPlaceholder": "新会话开始时展示给用户的开场文案",
+    "undo": "撤销",
+    "redo": "重做",
+    "nodeKey": "Key",
+    "nodeKeyTip": "节点 Key：作为其他节点引用本节点输出的前缀（如 search.hasResult），保存时引用会自动更新",
+    "clickToEdit": "点击编辑",
+    "conditionMode": "条件模式",
+    "conditionModeBinding": "变量引用",
+    "conditionModeScript": "JS 脚本",
+    "conditionScriptTitle": "条件脚本",
+    "conditionScriptHint": "约定 function condition(inputs, sys, nodes, system)，返回 true 走「真」分支、false 走「假」分支。",
+    "nodeSwitch": "多条件",
+    "nodeSwitchDesc": "按顺序评估多个条件，走第一个命中的分支",
+    "switchBranches": "分支（按顺序求值）",
+    "switchHint": "从上到下评估各分支条件，走第一个命中的分支；全部未命中走 else。出边从分支端口连出。",
+    "branch": "分支",
+    "branchLabel": "条件名",
+    "addBranch": "添加分支",
+    "branchBinding": "分支绑定",
+    "branchBindingNeedTwo": "需要两条出边才能绑定分支（先从节点连出两条线）",
+    "branchTrue2": "满足时",
+    "branchFalse2": "不满足时"
   }
 }

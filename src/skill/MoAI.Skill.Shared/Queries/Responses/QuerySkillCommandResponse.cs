@@ -48,6 +48,16 @@ public class QuerySkillCommandResponse
     public bool IsDisable { get; init; }
 
     /// <summary>
+    /// 所属团队 id，0=系统内置或个人技能.
+    /// </summary>
+    public int TeamId { get; init; }
+
+    /// <summary>
+    /// 是否已上架市场公开.
+    /// </summary>
+    public bool IsPublic { get; init; }
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; init; }

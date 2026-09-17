@@ -53,9 +53,16 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             throw new BusinessException("只有团队管理员可以管理应用.") { StatusCode = 403 };
         }
 
-        if (app.AppType != (int)AppType.Agent)
+        if (app.AppType != (int)AppType.Agent && app.AppType != (int)AppType.Workflow)
         {
             throw new BusinessException("只有 Agent 应用支持配置插件、知识库与提示词.") { StatusCode = 400 };
+        }
+
+        // 流程应用无模型/知识库/插件/技能编排，仅经此入口维护对话开场白；其余字段不适用、不校验不落库
+        if (app.AppType == (int)AppType.Workflow)
+        {
+            await UpsertOpeningStatementAsync(app, request, cancellationToken);
+            return EmptyCommandResponse.Default;
         }
 
         // 对话模型须在该团队可用；执行参数（execution_settings）尚未开放设置
@@ -84,6 +91,8 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 Plugins = pluginJson,
                 Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
                 ExecutionSettings = executionJson ?? "{}",
+                OpeningStatement = request.OpeningStatement ?? string.Empty,
+                OpeningStatementEnabled = request.OpeningStatementEnabled,
             };
             _databaseContext.AppAgentConfigs.Add(config);
         }
@@ -93,6 +102,8 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             config.ModelId = modelId;
             config.WikiIds = wikiJson;
             config.Plugins = pluginJson;
+            config.OpeningStatement = request.OpeningStatement ?? string.Empty;
+            config.OpeningStatementEnabled = request.OpeningStatementEnabled;
 
             // 仅在请求显式携带技能列表时覆盖，避免旧前端保存时清空技能配置
             if (skillIds != null)
@@ -110,6 +121,35 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
+    }
+
+    /// <summary>
+    /// 流程应用只保存对话开场白（配置行不存在时创建，其余字段留默认值）.
+    /// </summary>
+    private async Task UpsertOpeningStatementAsync(AppEntity app, SaveAppAgentConfigCommand request, CancellationToken cancellationToken)
+    {
+        var config = await _databaseContext.AppAgentConfigs
+            .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
+
+        if (config == null)
+        {
+            config = new AppAgentConfigEntity
+            {
+                Id = Guid.CreateVersion7(),
+                TeamId = app.TeamId,
+                AppId = app.Id,
+                OpeningStatement = request.OpeningStatement ?? string.Empty,
+                OpeningStatementEnabled = request.OpeningStatementEnabled,
+            };
+            _databaseContext.AppAgentConfigs.Add(config);
+        }
+        else
+        {
+            config.OpeningStatement = request.OpeningStatement ?? string.Empty;
+            config.OpeningStatementEnabled = request.OpeningStatementEnabled;
+        }
+
+        await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
