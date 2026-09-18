@@ -1,6 +1,6 @@
 # 动态插件（DynamicPlugin）设计规格（SDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/sdd.md](../aiplugin-static/sdd.md) ｜ 规范：[../cqrs-conventions.md](../cqrs-conventions.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/sdd.md](../aiplugin-static/sdd.md) ｜ 规范：[../cqrs-conventions.md](../cqrs-conventions.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。行为场景见 BDD（@DYN-Sxx），本文不重复。
 
 ## 目标
@@ -87,6 +87,7 @@ ui/src/
 | `paddleocr_ocr` | `PaddleOcrPlugin` | `ApiUrl`（必填，`InitAsync` 校验；用户自有 PaddleOCR 服务地址）/`Token`（留空表示部署未开启鉴权） | `File`(必填，URL 或 Base64)/`FileType`/`UseDocOrientationClassify`/`UseDocUnwarping`/`UseTextlineOrientation` | `Pages[]`：每页含 `Text`（`rec_texts` 按行拼接）、`OcrImage`（Base64）、`InputImage`（Base64） |
 | `paddleocr_structure_v3` | `PaddleStructureV3Plugin` | 同 `paddleocr_ocr` | `File`(必填)/`FileType`/`UseDocOrientationClassify`/`UseDocUnwarping`/`UseTableRecognition`/`UseFormulaRecognition`/`UseSealRecognition`/`UseChartRecognition`/`UseRegionDetection` | `Pages[]`：每页含 `PrunedResultJson`（原文 JSON）、`OutputImages`（按名索引的 Base64 字典）、`InputImage`、`SealTexts[]`（从 `seal_res_list.rec_texts` 逐条抽取） |
 | `paddleocr_vl` | `PaddleVlPlugin` | 同 `paddleocr_ocr` | `File`(必填)/`FileType`/`UseDocOrientationClassify`/`UseDocUnwarping`/`UseLayoutDetection`/`UseChartRecognition`/`PrettifyMarkdown`/`ShowFormulaNumber` | `Pages[]`：每页含 `MarkdownText`、`MarkdownImages`（相对路径 → Base64）、`InputImage`、`PrunedResultJson` |
+| `moji_weather` | `MojiWeatherPlugin` | `AppCode`（必填，`InitAsync` 校验）/`Token`（部分服务规格要求） | `CityId` 或 `Lat`+`Lon`（二选一，`RunAsync` 校验） | `City`/`Condition`/`Forecast[]` |
 
 `bocha_web_search` 细节：
 
@@ -108,6 +109,15 @@ ui/src/
 4. **参数兜底**：`Count` 用 `Math.Clamp(1,50)`；`Freshness` 空白回落 `noLimit`；`Query` 为空白抛 `BusinessException(400)`；`Answer`/`Include` 原样透传。
 5. **错误归一**：与全网搜索一致——Refit 非 2xx → `BusinessException((int)StatusCode, "博查 AI Search 调用失败（HTTP xxx）：{body}")`；HTTP 200 但响应体 `code != 200` 由 `IBoChaClient.HandleApiError` 兜底。
 6. **上游地址可配置**：`InfraExternalHttpModule` 读取 `MoAI:BoCha:Endpoint`（默认 `https://api.bocha.cn`），便于指向代理或本地桩服务；桩服务脚本据此实现无 Key 的端到端验证（见 [tdd.md](./tdd.md)）。
+
+`moji_weather` 细节：
+
+1. **复用基础设施层客户端**：构造注入 `IMojiWeatherClient`（`MoAI.Infra.MojiWeather`，Refit + `ExternalHttpMessageHandler`），调用 `POST {MoAI:MojiWeather:Endpoint}/whapi/json/aliweather/broadcast`（默认 `https://moji.market.alicloudapi.com`，阿里云云市场墨迹天气网关），请求为表单编码；插件内不新建 `HttpClient`。
+2. **APPCODE 鉴权**：`AppCode` 存裸值，调用时经 `MojiWeatherAuthorization.Build`（`MoAI.AIPlugin.Dynamic/MojiWeatherAuthorization.cs`，幂等追加前缀）拼成 `APPCODE {AppCode}` 放 `Authorization` 头（云市场 APPCODE 简单认证）；部分服务规格要求的访问令牌 `Token` 非空时随表单下发，未配置不发该字段。
+3. **定位参数二选一**：`CityId` 或 `Lat`+`Lon`（成对），两者皆缺失或只给其一抛 `BusinessException(400)`；取值先 `Trim` 再下发，且 `CityId` 优先于经纬度。
+4. **响应容错解析**：上游返回 `{code,msg,data}` 信封——`code != 0` → `BusinessException(502, "墨迹天气返回错误（code=…）：{msg}")`；`data.city/condition/forecast` 用 `JsonDocument` 逐层容错展开（字段值兼容字符串/数字；`forecast` 兼容裸数组与 `{daily:[…]}`/`{value:[…]}` 包装；取不到任何有效字段的条目/对象直接丢弃），映射为裁剪后的 `City`（cityId/name/pname/counname）、`Condition`（temp/text/humidity/windDir/windLevel/windSpeed/pressure/icon/upDateTime）、`Forecast[]`（date/week/conditionDay~Night/tempDay~Night/wind*Day~Night/sunRise/sunSet）。
+5. **错误归一**：Refit 非 2xx → `BusinessException((int)StatusCode, "墨迹天气调用失败（HTTP xxx）：{body}")`（401 AppCode 无效、403 未购买/欠费、429 限流）；响应非合法 JSON → `BusinessException(502)`；两路径统一由 `PluginExecutor` 归一为 `Success=false`。
+6. **上游地址可配置**：`InfraExternalHttpModule` 读取 `MoAI:MojiWeather:Endpoint`，便于指向代理或本地桩服务；桩服务脚本据此实现无 AppCode 的端到端验证（`local-dev/moji-weather-e2e.mjs`，@DYN-S43~S47）。
 
 `feishu_webhook_text` 细节：
 
@@ -175,3 +185,4 @@ ui/src/
 - 插件运行结果的 `dataJson` 使用 PascalCase 字段名（`PluginExecutor` 以默认 `JsonSerializerOptions` 序列化响应对象），与 HTTP 接口的 camelCase 风格不一致；消费插件结果时需按 PascalCase 读字段。属引擎既有行为，改动会影响所有既有模板，未在本轮调整。
 - 博查两模板的**成功路径**已由 `local-dev/bocha-search-e2e.mjs` 用桩服务自动覆盖（@DYN-S16 / @DYN-S22）；桩服务返回的是官方文档样例报文，**真实上游字段若与文档有出入仍需一次人工走查**。
 - `bocha_ai_search` 的模态卡只解析通用字段：`douyin` 等非通用结构（`cover_images`、`interactions` 等）会被裁剪，仅保留 `Type` 与可映射的 `description`。
+- `moji_weather` 按阿里云云市场公开样例报文（`{code,msg,data}` 信封 + camelCase 字段）实现并容错解析；墨迹官方完整接口文档需注册后获取，真实上游字段若与样例有出入仍需一次人工走查（同博查既有口径）。

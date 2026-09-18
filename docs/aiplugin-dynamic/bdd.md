@@ -1,7 +1,7 @@
 # 动态插件（DynamicPlugin）行为规格（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs)
-> 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。标签：`@DYN-S<n>` 为场景主键（永久不复用）；`@auto:e2e` 由脚本验证（默认 `local-dev/dynamic-plugin-e2e.mjs`，博查成功路径与响应解析为 `local-dev/bocha-search-e2e.mjs`），`@manual` 人工走查。
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs)
+> 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。标签：`@DYN-S<n>` 为场景主键（永久不复用）；`@auto:e2e` 由脚本验证（默认 `local-dev/dynamic-plugin-e2e.mjs`，博查成功路径与响应解析为 `local-dev/bocha-search-e2e.mjs`，墨迹天气为 `local-dev/moji-weather-e2e.mjs`），`@manual` 人工走查。
 
 ## Feature: 动态插件实例列表
 
@@ -328,4 +328,45 @@
     When 管理员依次运行 paddleocr_ocr / paddleocr_structure_v3 / paddleocr_vl 三个实例
     Then 桩服务收到至少一次 /ocr 与至少两次 /layout-parsing 调用
     And 三个模板的 Authorization 头均为「token mock-token」且不互相串扰
+```
+
+## Feature: 墨迹天气内置模板
+
+```gherkin
+  @DYN-S43 @auto:e2e
+  Scenario: moji_weather 模板出现在注册表
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员查询插件注册表
+    Then 返回项中包含动态模板 moji_weather
+    And 该模板带 AppCode+Token 配置示例与含 CityId/Lat/Lon 的请求参数示例
+
+  @DYN-S44 @auto:e2e
+  Scenario: moji_weather 成功路径与响应解析（城市 ID 定位）
+    Given 桩服务按云市场样例报文返回实况与逐日预报
+    When 管理员用模板 moji_weather 创建实例并以 CityId 运行
+    Then 运行结果成功且实况字段（温度/现象/湿度/风向/更新时间）解析正确
+    And 逐日预报逐条解析且无法识别的空条目被丢弃
+    And 上游解析出的定位城市（省/区名）被返回
+    And 请求以表单编码下发 cityId，鉴权头为「APPCODE {实例配置 AppCode}」，Token 随表单下发
+
+  @DYN-S45 @auto:e2e
+  Scenario: moji_weather 经纬度定位与可选 Token
+    Given 管理员已创建未配置 Token 的 moji_weather 实例
+    When 以 Lat+Lon 运行该实例
+    Then 运行结果成功
+    And 表单下发 lat/lon 且不带 cityId 与 token 字段
+
+  @DYN-S46 @auto:e2e
+  Scenario: moji_weather 定位参数缺失被拒
+    When 不带任何定位参数运行 moji_weather 实例
+    Then 运行结果为失败并提示 CityId 或 Lat+Lon 至少提供一组
+    And 只给 Lat 或 Lon 其一时同样被拒
+    And 两种缺失情形均不发出上游请求
+
+  @DYN-S47 @auto:e2e
+  Scenario: moji_weather 上游错误归一
+    Given 桩服务对无效 AppCode 返回 HTTP 401、对特定 cityId 返回信封 code!=0
+    When 分别以无效 AppCode 实例与错误 cityId 运行
+    Then HTTP 401 归一为可读失败且带上游响应体
+    And 信封错误归一为可读失败且带错误码与 msg
 ```

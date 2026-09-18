@@ -4,6 +4,7 @@ using MoAI.Infra.BoCha;
 using MoAI.Infra.DingTalk;
 using MoAI.Infra.Doc2x;
 using MoAI.Infra.Feishu;
+using MoAI.Infra.MojiWeather;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.Paddleocr;
 using MoAI.Infra.Put;
@@ -79,6 +80,13 @@ public class InfraExternalHttpModule : IModule
         var boChaEndpoint = context.Configuration["MoAI:BoCha:Endpoint"];
         context.Services.AddRefitClient<IBoChaClient>(settings)
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(boChaEndpoint) ? "https://api.bocha.cn" : boChaEndpoint))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        // 墨迹天气服务地址允许被配置覆盖（默认阿里云云市场网关）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var mojiWeatherEndpoint = context.Configuration["MoAI:MojiWeather:Endpoint"];
+        context.Services.AddRefitClient<IMojiWeatherClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(mojiWeatherEndpoint) ? "https://moji.market.alicloudapi.com" : mojiWeatherEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
