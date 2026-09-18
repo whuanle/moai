@@ -1,12 +1,13 @@
 # 动态插件（DynamicPlugin）验证映射（TDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。场景复述见 BDD，本文只做编号→验证物映射。
 
 ## 后端 E2E
 
-两个脚本分工：`dynamic-plugin-e2e.mjs` 针对**已运行的真实后端**做实例管理与失败路径断言；`bocha-search-e2e.mjs`
-自带 BoCha 桩服务并拉起一个独立后端（`MoAI__BoCha__Endpoint` 指向桩），覆盖**成功路径与响应解析**，无需真实 API Key、不消耗额度。
+三个脚本分工：`dynamic-plugin-e2e.mjs` 针对**已运行的真实后端**做实例管理与失败路径断言；`bocha-search-e2e.mjs`
+自带 BoCha 桩服务并拉起一个独立后端（`MoAI__BoCha__Endpoint` 指向桩），覆盖**成功路径与响应解析**，无需真实 API Key、不消耗额度；
+`moji-weather-e2e.mjs` 同为桩服务模式（`MoAI__MojiWeather__Endpoint` 指向桩），覆盖墨迹天气模板，无需真实 AppCode。
 
 ```bash
 # 1) 实例管理与失败路径（需后端 :5000 运行中）
@@ -14,6 +15,9 @@ node local-dev/dynamic-plugin-e2e.mjs
 
 # 2) 博查成功路径与解析（脚本自建桩服务 + 独立后端 :5199，无需真实 Key）
 node local-dev/bocha-search-e2e.mjs
+
+# 3) 墨迹天气成功路径与解析（脚本自建桩服务 + 独立后端 :5197，无需真实 AppCode）
+node local-dev/moji-weather-e2e.mjs
 ```
 
 | 场景 | 验证物 | 结果（日期） |
@@ -60,6 +64,11 @@ node local-dev/bocha-search-e2e.mjs
 | @DYN-S40 | local-dev/paddleocr-e2e.mjs（空 ApiUrl → InitAsync 拒 + 恢复后仍可运行） | 待运行 |
 | @DYN-S41 | local-dev/paddleocr-e2e.mjs（Token 为空 → 桩 401 → 业务异常带 HTTP 状态码 + 响应体） | 待运行 |
 | @DYN-S42 | local-dev/paddleocr-e2e.mjs（桩服务被 /ocr 与 /layout-parsing 命中数） | 待运行 |
+| @DYN-S43 | local-dev/moji-weather-e2e.mjs（注册表含 moji_weather，配置示例含 AppCode/Token、参数示例含 CityId/Lat/Lon） | PASS（2026-09-18） |
+| @DYN-S44 | local-dev/moji-weather-e2e.mjs（`S44a~f` 表单编码 + APPCODE 头 + Token 透传 + 实况/逐日预报/定位城市容错解析 + 空条目丢弃） | PASS（2026-09-18） |
+| @DYN-S45 | local-dev/moji-weather-e2e.mjs（`S45a~b` lat/lon 定位成功 + 未配置 Token 不发 token 字段） | PASS（2026-09-18） |
+| @DYN-S46 | local-dev/moji-weather-e2e.mjs（`S46a~b` 无定位/半定位 → 可读失败；桩命中数证明未外呼） | PASS（2026-09-18） |
+| @DYN-S47 | local-dev/moji-weather-e2e.mjs（`S47a~b` 上游 401 与信封 code!=0 归一为可读失败） | PASS（2026-09-18） |
 | @DYN-S43 | local-dev/dynamic-plugin-e2e.mjs（公开图片直传完成 → 设置头像 200 → 列表回读 avatarPath 一致） | PASS 99/99（2026-09-17） |
 | @DYN-S44 | local-dev/dynamic-plugin-e2e.mjs（未登记 objectKey → 404 头像文件不存在或未完成上传） | PASS 99/99（2026-09-17） |
 | @DYN-S45 | local-dev/dynamic-plugin-e2e.mjs（匿名 401、普通用户 403） | PASS 99/99（2026-09-17） |
@@ -72,7 +81,7 @@ node local-dev/bocha-search-e2e.mjs
 | 新建实例弹窗 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS（2026-09-03） |
 | 删除实例 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS（2026-09-03） |
 
-> 博查两轮（全网搜索、AI 搜索）**均无前端改动**：新模板由后端注册表自动进入模板下拉与运行抽屉，无需改 `DynamicPluginPanel`，也无需 `npm run syncapi`。
+> 博查两轮（全网搜索、AI 搜索）与墨迹天气轮**均无前端改动**：新模板由后端注册表自动进入模板下拉与运行抽屉，无需改 `DynamicPluginPanel`，也无需 `npm run syncapi`。
 
 ## 已知缺口
 
@@ -89,10 +98,16 @@ cd ui && npm run typecheck && npm run lint && npm run test          # 前端全�
 node local-dev/dynamic-plugin-e2e.mjs                               # 实例管理 + 失败路径（需后端 5000 运行中）
 node local-dev/bocha-search-e2e.mjs                                 # 博查成功路径 + 响应解析（自建桩服务，无需真实 Key）
 node local-dev/paddleocr-e2e.mjs                                    # PaddleOCR 成功路径 + 响应解析（自建桩服务，无需真实 PaddleOCR）
+node local-dev/moji-weather-e2e.mjs                                  # 墨迹天气成功路径 + 响应解析（自建桩服务，无需真实 AppCode）
 ```
 
 ## 自检记录
 
+- 2026-09-18（墨迹天气内置模板 moji_weather）
+  - `dotnet build src/MoAI/MoAI.csproj` → **0 error**；新文件（`MojiWeather/IMojiWeatherClient.cs`、`InfraExternalHttpModule.cs` 注册段、`MojiWeatherAuthorization.cs`、`Models/MojiWeather*.cs` ×6、`Plugins/MojiWeatherPlugin.cs`）**0 告警**（首版 `MapForecast` 返回 `IReadOnlyList<>` 触发 CA1859，私有方法改返回 `List<>` 后清零）。
+  - `node local-dev/moji-weather-e2e.mjs` → **PASS 17 / FAIL 0**（首跑 16/1：唯一 FAIL 为脚本自身计数错误——把两条「定位缺失」校验失败误算为上游命中，修正为断言 `mockHits===4` 并显式化「参数校验失败不外呼」）。覆盖 @DYN-S43~S47：注册表出现、CityId 定位成功路径（表单编码 + APPCODE 头 + Token 透传 + 实况/逐日预报/定位城市容错解析 + 空条目丢弃）、lat/lon 定位且未配置 Token 不发 token、定位缺失 400（不外呼）、上游 401 与信封 code!=0 归一。
+  - 脚本环境适配（macOS 本机）：后端用「`local-dev/system.local.json` 拍平成 `MoAI__` 环境变量」拉起（**不用 `MAI_FILE`**——该文件是后加配置源，会反过来覆盖脚本注入的 `MoAI__Port`/`MoAI__MojiWeather__Endpoint`）；独立后端默认 :5197，与常驻 :5210 实例互不干扰；unix 下 `killBackend` 改为杀进程组（`dotnet run` 会再拉起宿主子进程），Windows 分支保留 `taskkill /T /F`。
+  - 墨迹官方完整文档需注册下载；桩服务报文按阿里云云市场公开样例形态（`{code,msg,data}` 信封 + camelCase 字段）构造，真实上游字段出入待人工走查（同博查口径，见 [sdd.md](./sdd.md) 已知问题）。
 - 2026-09-11（PostgreSQL / MySQL 只读查询内置模板）
   - `dotnet build src/aiplugin/MoAI.AIPlugin.Dynamic/MoAI.AIPlugin.Dynamic.csproj --no-restore -p:GenerateDependencyFile=false` → **0 error、0 告警**（PG 会话设置从字面量拼接改为 `SELECT set_config(...)` 参数化后，`CA2100`/`CA1863` 消除；常量提到类顶部消除 `SA1203`）。
   - **宿主级**：`dotnet build src/MoAI/MoAI.csproj --no-restore` → **0 error、0 告警**（连同并行会话的 PaddleOCR 三模板一起编过，`MoAI.AIPlugin.Dynamic` 不再需要临时排除 props）。

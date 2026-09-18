@@ -1,6 +1,6 @@
 # 动态插件（DynamicPlugin）运维手册（SOP）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。场景编号引用 BDD，不重复步骤。
 
 ## 验收流程
@@ -9,6 +9,7 @@
 
 - 自动（实例管理与失败路径）：`node local-dev/dynamic-plugin-e2e.mjs`（覆盖 [@DYN-S1](./bdd.md#dyn-s1)~[@DYN-S21](./bdd.md#dyn-s21) 中的大部分；`DYN_BASE` 可改地址）。
 - 自动（博查成功路径与响应解析，**无需真实 Key**）：`node local-dev/bocha-search-e2e.mjs`。脚本自带 BoCha 桩服务，并拉起一个指向桩服务的独立后端（默认 `:5199`，桩 `:5198`）后跑完整链路。可用 `BSE_BACKEND_PORT`/`BSE_MOCK_PORT` 改端口，`BSE_KEEP_BACKEND=1` 保留后端排查。
+- 自动（墨迹天气成功路径与响应解析，**无需真实 AppCode**）：`node local-dev/moji-weather-e2e.mjs`。脚本自带墨迹桩服务（云市场报文形态），并拉起一个指向桩服务的独立后端（默认 `:5197`，桩 `:5196`）后跑完整链路。可用 `MWE_BACKEND_PORT`/`MWE_MOCK_PORT` 改端口，`MWE_KEEP_BACKEND=1` 保留后端排查；后端基础设施连接取自 `local-dev/system.local.json` 拍平的环境变量。
 - 人工：[@DYN-S1](./bdd.md#dyn-s1) 至 [@DYN-S22](./bdd.md#dyn-s22)，按下列步骤走查：
 
 1. 登录 admin / abcd123456，进入 `/plugin?tab=dynamic`（[@DYN-S1](./bdd.md#dyn-s1) 至 [@DYN-S2](./bdd.md#dyn-s2)）。
@@ -50,6 +51,7 @@
 - `bocha_web_search`（`BoChaWebSearchPlugin`）：配置 `{"ApiKey":"sk-xxxx"}`，请求 `{"Query":"...","Freshness":"noLimit","Summary":true,"Count":10}`；走基础设施层 `IBoChaClient`（Refit）访问 `{MoAI:BoCha:Endpoint}/v1/web-search`。
 - `bocha_ai_search`（`BoChaAiSearchPlugin`）：配置同上，请求 `{"Query":"...","Freshness":"noLimit","Include":null,"Count":10,"Answer":true}`；访问 `/v1/ai-search`，返回总结答案、追问问题、参考网页/图片与模态卡。
 - `feishu_webhook_text`（`FeishuWebhookTextPlugin`）：配置 `{"WebhookKey":"https://open.feishu.cn/open-apis/bot/v2/hook/<token>","SignKey":""}`，请求 `{"Text":"..."}`；走基础设施层 `IFeishuWebHookClient`（Refit）访问 `https://open.feishu.cn/open-apis/bot/v2/hook/{token}`。
+- `moji_weather`（`MojiWeatherPlugin`）：配置 `{"AppCode":"...","Token":""}`，请求 `{"CityId":"285"}` 或 `{"Lat":"39.90598","Lon":"116.39139"}`；走基础设施层 `IMojiWeatherClient`（Refit，表单编码 + `Authorization: APPCODE ...`）访问 `{MoAI:MojiWeather:Endpoint}/whapi/json/aliweather/broadcast`。
 
 ### 博查搜索排障
 
@@ -68,7 +70,17 @@
 3. 失败时结果面板给出 `HTTP <状态码>` 或飞书业务码（如 `19001`/`19021`/`9499`），按上表定位；Refit 对非 2xx 的报文会拼到错误信息里，便于核对飞书侧返回内容。
 4. 模板不依赖真实可用机器人也能跑失败路径（空 WebhookKey / 空 Text / 占位 token → 飞书返回 `19001`），**纳入 CI**：见 `node local-dev/dynamic-plugin-e2e.mjs` 的 `@DYN-S23`/`@DYN-S24`。
 
+### 墨迹天气排障
+
+1. 配置示例：`{"AppCode":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","Token":""}`（AppCode 只填裸值，插件会自动拼 `APPCODE ` 前缀；重复带前缀也不会报错）。AppCode 在阿里云云市场「已购买服务」控制台查看；部分服务规格要求的访问令牌填 `Token`，不要求的规格留空。
+2. 运行示例（城市 ID）：`{"CityId":"285"}`；运行示例（经纬度）：`{"Lat":"39.90598","Lon":"116.39139"}`。`CityId` 与 `Lat`+`Lon`（成对）二选一，全缺或只给其一会得到 400「CityId 或 Lat+Lon 至少提供一组」。
+3. 失败时结果面板给出 `HTTP <状态码>` 与上游响应体（401 AppCode 无效、403 未购买/欠费、429 限流），或信封错误 `墨迹天气返回错误（code=…）：…`；按提示核对 AppCode/Token 与购买规格。
+4. 模板依赖外网与真实 AppCode，**不纳入 CI**；不带 AppCode 验证成功路径请用 `node local-dev/moji-weather-e2e.mjs`（桩服务）。
+5. 需要把请求指向代理或桩服务时，用配置覆盖上游地址（默认阿里云云市场网关）：
+   `MoAI__MojiWeather__Endpoint=http://127.0.0.1:5196 dotnet run --project src/MoAI/MoAI.csproj`。
+6. 上游实况/预报字段以购买规格的实际返回为准；若发现字段缺失或形态不同（插件已做多形态容错），按 [sdd.md](./sdd.md) `moji_weather` 细节核对解析字段表。
+
 ## 种子说明
 
 - 动态实例默认无 DB 记录；创建实例后才在 `plugin_dynamic` + `plugin` 表生成记录。
-- 内置动态模板：`dynamic_greet`、`bocha_web_search`、`bocha_ai_search`、`feishu_webhook_text`（均在 `MoAI.AIPlugin.Dynamic`）。
+- 内置动态模板：`dynamic_greet`、`bocha_web_search`、`bocha_ai_search`、`feishu_webhook_text`、`moji_weather`（均在 `MoAI.AIPlugin.Dynamic`）。
