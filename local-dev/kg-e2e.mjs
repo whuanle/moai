@@ -334,13 +334,15 @@ async function main() {
     const team2 = await api('POST', '/api/team', { token, body: { name: 'kg-team2-' + TS } })
     const TID2 = Number(team2.json?.value)
     check('KG-S16a 跨团队同名建图 409', Number.isFinite(TID2) && (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID2, name: opsName, templateKey: 'blank' } })).status === 409)
-    await api('DELETE', `/api/team/${TID2}`, { token })
+    // 团队不可解散：清理改为管理员禁用归档
+    await api('PUT', `/api/admin/team/${TID2}/disable`, { token, body: { isDisable: true } })
   }
 
   // 清理
   await api('DELETE', kg(G2), { token })
   await api('DELETE', kg(CONN), { token })
-  await api('DELETE', `/api/team/${TID}`, { token })
+  // 团队不可解散：清理改为管理员禁用归档
+  await api('PUT', `/api/admin/team/${TID}/disable`, { token, body: { isDisable: true } })
 
   console.log(`\n===== 知识图谱 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
   process.exit(FAIL > 0 ? 1 : 0)

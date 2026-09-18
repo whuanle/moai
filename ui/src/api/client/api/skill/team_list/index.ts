@@ -33,6 +33,10 @@ export interface Team_listRequestBuilder extends BaseRequestBuilder<Team_listReq
  */
 export interface Team_listRequestBuilderGetQueryParameters {
     /**
+     * 按分类 id 过滤，为空查全部分类.
+     */
+    classifyId?: number;
+    /**
      * 通过上下文自动配置id，前端不需要传递.
      */
     contextUserId?: string;
@@ -52,11 +56,12 @@ export interface Team_listRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const Team_listRequestBuilderUriTemplate = "{+baseurl}/api/skill/team_list{?ContextUserId*,ContextUserType*,Keywords*,TeamId*}";
+export const Team_listRequestBuilderUriTemplate = "{+baseurl}/api/skill/team_list{?ClassifyId*,ContextUserId*,ContextUserType*,Keywords*,TeamId*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const Team_listRequestBuilderGetQueryParametersMapper: Record<string, string> = {
+    "classifyId": "ClassifyId",
     "contextUserId": "ContextUserId",
     "contextUserType": "ContextUserType",
     "keywords": "Keywords",

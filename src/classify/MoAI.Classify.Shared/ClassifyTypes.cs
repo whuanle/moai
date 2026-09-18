@@ -27,7 +27,12 @@ public static class ClassifyTypes
     public const string Prompt = "prompt";
 
     /// <summary>
+    /// 技能类型.
+    /// </summary>
+    public const string Skill = "skill";
+
+    /// <summary>
     /// 所有合法分类类型.
     /// </summary>
-    public static readonly string[] All = [Plugin, App, Kb, Prompt];
+    public static readonly string[] All = [Plugin, App, Kb, Prompt, Skill];
 }

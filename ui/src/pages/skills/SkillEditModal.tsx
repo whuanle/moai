@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Typography, Upload } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { Button, Form, Input, Modal, Select, Typography, Upload } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { feedback } from '@/design-system'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import {
   createSkill,
   getSkill,
@@ -30,6 +31,7 @@ interface SkillFormValues {
   name: string
   description?: string
   instructions?: string
+  classifyId?: number
 }
 
 /** 技能编辑弹窗：创建/更新共用（标识创建后不可改）；市场/个人/团队分区复用 */
@@ -41,6 +43,21 @@ export function SkillEditModal({ open, skillId, teamId, onSaved, onCancel }: Ski
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [detail, setDetail] = useState<SkillDetail | null>(null)
+  const [classifies, setClassifies] = useState<Classify[]>([])
+
+  const classifyOptions = useMemo(
+    () => classifies.map((c) => ({ value: Number(c.classifyId), label: classifyLabel(c) })),
+    [classifies],
+  )
+
+  useEffect(() => {
+    classifyApi
+      .getClassifies(ClassifyType.Skill)
+      .then(setClassifies)
+      .catch(() => {
+        // 错误已由全局请求中间件统一提示
+      })
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -57,6 +74,7 @@ export function SkillEditModal({ open, skillId, teamId, onSaved, onCancel }: Ski
             name: res.name ?? '',
             description: res.description ?? '',
             instructions: res.instructions ?? '',
+            classifyId: res.classifyId || undefined,
           })
           setFiles(
             (res.files ?? []).map((f, index) => ({
@@ -96,6 +114,7 @@ export function SkillEditModal({ open, skillId, teamId, onSaved, onCancel }: Ski
         description: values.description ?? '',
         instructions: values.instructions ?? '',
         files: files.map((f) => ({ path: f.path ?? '', fileId: f.fileId ?? 0, fileName: f.fileName ?? '' })),
+        classifyId: values.classifyId ?? 0,
       }
       if (skillId) {
         await updateSkill(skillId, payload)
@@ -153,6 +172,9 @@ export function SkillEditModal({ open, skillId, teamId, onSaved, onCancel }: Ski
         </Form.Item>
         <Form.Item name="description" label={t('skills.formDescription')} rules={[{ max: 255, message: t('skills.descMaxLength') }]}>
           <Input.TextArea rows={2} maxLength={255} />
+        </Form.Item>
+        <Form.Item name="classifyId" label={t('skills.formClassify')}>
+          <Select allowClear placeholder={t('skills.classifyAll')} options={classifyOptions} />
         </Form.Item>
         <Form.Item name="instructions" label={t('skills.formInstructions')}>
           <Input.TextArea rows={6} placeholder={t('skills.instructionsPlaceholder')} />

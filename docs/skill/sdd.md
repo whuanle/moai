@@ -74,4 +74,11 @@ Agent 运行时(src/ai)                 ▼
 - **列表三入口**：`my_list`（本人个人技能）/`team_list`（团队成员）/`market_list`（is_public 全员）+ 保留 `list`（管理员全量分页）。列表项扩展 `teamId/isPublic/pendingPublicationId` 并继承 `AuditsInfo` 填充人名（`QuerySkillListHelper`）。
 - **详情/下载可见性**：`SkillAccessGuard.EnsureCanViewAsync`——系统内置 ∪ 公开 ∪ 本团队 ∪ 本人 ∪ 平台管理员；下载端点 `{id}/download` 返回逐文件 MinIO 预签名地址（1 小时），内置技能 400（脚本随平台分发无对象存储文件）。
 - **删除联动**：删技能同步删待审核上架申请（对齐提示词，防僵尸审核记录）。
-- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。
+- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心（xl/xxl 一行 6 张，不展示条数统计，头部固定分类 chip 按 `classifyId` 过滤、`classifyLabel` 展示 emoji）；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定，分类下拉同款 classifyLabel）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。
+
+## 8. 增量设计（2026-09-18：技能分类）
+
+- **数据**：`skill.classify_id`（int，0=未分类；实体 `SkillEntity.ClassifyId` + `SkillConfiguration` 映射，存量库已由 DBA 手工补列）。分类类型常量 `ClassifyTypes.Skill="skill"`（分类管理按类型隔离，emoji 复用 classify 模块）。
+- **命令**：`CreateSkillCommand/UpdateSkillCommand` 增加 `ClassifyId`（≥0）；Handler 校验 `ClassifyId>0` 时分类必须存在且 `Type=skill`，否则 404「技能分类不存在」。
+- **查询**：`my_list/team_list/market_list/list` 四个列表与详情响应均携带 `classifyId`；列表支持 `classifyId` 过滤（`QuerySkillListHelper.WhereClassify`）。
+- **前端**：技能中心两 Tab 头部固定分类 chip（CheckableTag + `classifyLabel` 展示 emoji），点击按分类过滤并回第一页；`SkillEditModal` 分类下拉；分类管理页新增「技能」页签。

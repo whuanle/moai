@@ -29,11 +29,34 @@ export interface OutputField {
 }
 
 /** 节点类型（引擎已实现的节点） */
-export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch'
+export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch' | 'knowledgeSearch' | 'questionClassifier' | 'http'
+
+/** http 节点键值对（查询参数/请求头/表单字段），值支持 {引用} 插值 */
+export interface HttpKvItem {
+  name: string
+  value: string
+}
+
+/** http 节点鉴权配置 */
+export interface HttpAuthSetting {
+  type: 'none' | 'bearer' | 'basic' | 'apiKey'
+  token?: string
+  username?: string
+  password?: string
+  headerName?: string
+  headerValue?: string
+}
+
+/** http 节点输出字段提取配置（对响应 JSON 做 JsonPath 提取） */
+export interface HttpExtractFieldDef {
+  name: string
+  path: string
+  fieldType?: string
+}
 
 /** 节点私有配置 */
 export interface NodeSettings {
-  /** aiChat：模型 id（ai_model.id，团队网关可选模型） */
+  /** aiChat/questionClassifier：模型 id（ai_model.id，团队网关可选模型） */
   aiModelId?: string
   /** plugin：插件 key */
   pluginKey?: string
@@ -43,6 +66,38 @@ export interface NodeSettings {
   conditionScript?: string
   /** condition：绑定模式下「满足时」走哪条出边（目标节点 key）；缺省按端口 true/false */
   trueTarget?: string
+  /** knowledgeSearch：知识库 id（单个，静态选择；与变量绑定 wikiId 输入二选一，输入优先） */
+  wikiId?: number
+  /** knowledgeSearch：旧版复数形式（多知识库数组），仅为旧草稿兼容保留 */
+  wikiIds?: number[]
+  /** knowledgeSearch：每个知识库召回条数（1-50，默认 5） */
+  topK?: number
+  /** questionClassifier：背景知识（补充分类判断的领域信息，可选） */
+  backgroundKnowledge?: string
+  /** questionClassifier：聊天记录携带条数（0-50，默认 6） */
+  historyCount?: number
+  /** http：请求方法（GET/POST/PUT/DELETE/PATCH/HEAD，默认 GET） */
+  method?: string
+  /** http：请求地址（支持 {引用} 插值） */
+  url?: string
+  /** http：超时时长（秒，1-300，默认 30） */
+  timeoutSeconds?: number
+  /** http：查询参数 */
+  params?: HttpKvItem[]
+  /** http：请求头 */
+  headers?: HttpKvItem[]
+  /** http：请求体类型（none/json/form/text，缺省时有 body 视为 json） */
+  bodyType?: 'none' | 'json' | 'form' | 'text'
+  /** http：请求体（json/text，支持 {引用} 插值） */
+  body?: string
+  /** http：表单字段（bodyType=form） */
+  formEntries?: HttpKvItem[]
+  /** http：鉴权配置 */
+  auth?: HttpAuthSetting
+  /** http：报错捕获（开启后请求失败/非 2xx 不中断流程，输出 hasError/errorMessage） */
+  errorCapture?: boolean
+  /** http：输出字段提取 */
+  extract?: HttpExtractFieldDef[]
 }
 
 /** 多条件节点分支定义（data.branches，保存时映射为 config.branches） */
@@ -53,6 +108,14 @@ export interface SwitchBranchDef {
   label: string
   /** 命中条件 */
   binding: FieldBinding
+}
+
+/** 问题分类节点分类定义（data.classes，保存时映射为 config.classes） */
+export interface ClassifierClassDef {
+  /** 分类 id（出边 condition 标记，如 c1/c2） */
+  id: string
+  /** 分类名称（问题类型描述） */
+  label: string
 }
 
 /** 引擎节点定义（WorkflowNodeDefinition） */
@@ -118,12 +181,13 @@ export interface EditorNodeJSON {
     defaultExpanded?: boolean
     [key: string]: unknown
   }
-  /** 节点表单数据：key/title/content/branches(switch)/inputs/outputs/settings */
+  /** 节点表单数据：key/title/content/branches(switch)/classes(questionClassifier)/inputs/outputs/settings */
   data?: {
     key?: string
     title?: string
     content?: string
     branches?: SwitchBranchDef[]
+    classes?: ClassifierClassDef[]
     inputs?: Record<string, FieldBinding>
     outputs?: OutputField[]
     settings?: NodeSettings

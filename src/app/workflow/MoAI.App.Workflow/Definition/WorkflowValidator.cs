@@ -135,6 +135,13 @@ public class WorkflowValidator
                     errors.Add($"多条件节点 {conn.Source} 的出边 {conn.Id} 缺少分支标记");
                 }
             }
+            else if (sourceType == NodeTypes.QuestionClassifier)
+            {
+                if (string.IsNullOrWhiteSpace(conn.Condition))
+                {
+                    errors.Add($"问题分类节点 {conn.Source} 的出边 {conn.Id} 缺少分类标记");
+                }
+            }
             else if (!string.IsNullOrWhiteSpace(conn.Condition))
             {
                 errors.Add($"非条件节点 {conn.Source} 的出边 {conn.Id} 不能设置 condition");
@@ -205,6 +212,63 @@ public class WorkflowValidator
             }
         }
 
+        // 问题分类节点：至少一个分类、分类名非空且不重复；出边分类标记必须对应已配置的分类 id，且不允许重复
+        foreach (var classifierNode in nodes.Where(n => n.Type == NodeTypes.QuestionClassifier))
+        {
+            var classes = Nodes.Builtin.QuestionClassifierNodeExecutor.ParseClasses(classifierNode.Config);
+            if (classes.Count == 0)
+            {
+                errors.Add($"问题分类节点 {classifierNode.Key} 至少需要配置一个分类");
+            }
+            else
+            {
+                if (classes.Any(c => string.IsNullOrWhiteSpace(c.Label)))
+                {
+                    errors.Add($"问题分类节点 {classifierNode.Key} 的分类值不可为空");
+                }
+
+                var duplicatedLabels = classes
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Label))
+                    .GroupBy(c => c.Label.Trim(), StringComparer.Ordinal)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
+                if (duplicatedLabels.Count > 0)
+                {
+                    errors.Add($"问题分类节点 {classifierNode.Key} 存在重复的分类名称：{string.Join(", ", duplicatedLabels)}");
+                }
+            }
+
+            var classIds = classes.Select(c => c.Id).ToList();
+            var classifierEdges = outgoing[classifierNode.Key];
+            var duplicatedMarkers = classifierEdges.GroupBy(e => e.Condition).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (duplicatedMarkers.Count > 0)
+            {
+                errors.Add($"问题分类节点 {classifierNode.Key} 存在重复的分类出边：{string.Join(", ", duplicatedMarkers)}");
+            }
+
+            foreach (var edge in classifierEdges)
+            {
+                if (string.IsNullOrWhiteSpace(edge.Condition))
+                {
+                    errors.Add($"问题分类节点 {classifierNode.Key} 的出边 {edge.Id} 缺少分类标记");
+                }
+                else if (!classIds.Contains(edge.Condition))
+                {
+                    errors.Add($"问题分类节点 {classifierNode.Key} 的出边 {edge.Id} 分类标记无效：{edge.Condition}（已配置：{string.Join(", ", classIds)}）");
+                }
+            }
+        }
+
+        // HTTP 请求节点：方法/地址/超时/Body 类型/鉴权/提取字段与插值引用校验
+        foreach (var httpNode in nodes.Where(n => n.Type == NodeTypes.Http))
+        {
+            errors.AddRange(Nodes.Builtin.HttpRequestNodeExecutor.ValidateDefinition(
+                httpNode,
+                nodeMap.Keys,
+                CollectAncestors(httpNode.Key, connections)));
+        }
+
         // End 节点不能有出边；非 End 节点必须有出边
         foreach (var node in nodes)
         {
@@ -216,6 +280,20 @@ public class WorkflowValidator
             if (node.Type != NodeTypes.End && outgoing[node.Key].Count == 0)
             {
                 errors.Add($"节点 {node.Key} 没有下游节点（孤立节点）");
+            }
+        }
+
+        // 普通节点（非条件/多条件/问题分类）只允许一条输出连线：设计器拖线即切换下游，分支语义由条件/多条件/问题分类节点承担
+        foreach (var node in nodes)
+        {
+            if (node.Type == NodeTypes.Condition || node.Type == NodeTypes.Switch || node.Type == NodeTypes.QuestionClassifier || node.Type == NodeTypes.End)
+            {
+                continue;
+            }
+
+            if (outgoing[node.Key].Count > 1)
+            {
+                errors.Add($"普通节点 {node.Key} 只允许一条输出连线（分支请使用条件/多条件节点）");
             }
         }
 
@@ -283,6 +361,12 @@ public class WorkflowValidator
                 }
 
                 if (binding.ExpressionType != ExpressionType.Variable)
+                {
+                    continue;
+                }
+
+                // 未绑定（空值）的变量引用合法：运行时按 required 语义解析为 null/失败，与设计器客户端校验一致
+                if (string.IsNullOrWhiteSpace(binding.Value))
                 {
                     continue;
                 }

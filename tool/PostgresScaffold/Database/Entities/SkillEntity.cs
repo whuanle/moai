@@ -73,4 +73,9 @@ public partial class SkillEntity : IFullAudited
     /// 是否公开（市场上架审批通过后置为 true），公开技能全员可见可用.
     /// </summary>
     public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 分类id.
+    /// </summary>
+    public int ClassifyId { get; set; }
 }

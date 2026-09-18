@@ -100,6 +100,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                 PluginKey = x.Key,
                 ParamsExample = PluginTypeHelper.GetStaticExample(x.PluginType, "GetParamsExampleValue"),
                 ResponseSchema = PluginTypeHelper.GetResponseSchema(x.Response),
+                ParamsSchema = PluginTypeHelper.GetResponseSchema(x.Request),
                 CreateTime = DateTimeOffset.UtcNow,
             })
             .ToList();
@@ -190,6 +191,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     ConfigExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetConfigExampleValue") : null,
                     ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
                     ResponseSchema = template != null ? PluginTypeHelper.GetResponseSchema(template.Response) : null,
+                    ParamsSchema = template != null ? PluginTypeHelper.GetResponseSchema(template.Request) : null,
                     IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
@@ -273,6 +275,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     ConfigExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetConfigExampleValue") : null,
                     ParamsExample = template != null ? PluginTypeHelper.GetStaticExample(template.PluginType, "GetParamsExampleValue") : null,
                     ResponseSchema = template != null ? PluginTypeHelper.GetResponseSchema(template.Response) : null,
+                    ParamsSchema = template != null ? PluginTypeHelper.GetResponseSchema(template.Request) : null,
                     IsPublic = plugin.IsPublic,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
@@ -300,6 +303,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
                     PluginKey = staticInfo?.Key ?? plugin.PluginName,
                     ParamsExample = staticInfo != null ? PluginTypeHelper.GetStaticExample(staticInfo.PluginType, "GetParamsExampleValue") : null,
                     ResponseSchema = staticInfo != null ? PluginTypeHelper.GetResponseSchema(staticInfo.Response) : null,
+                    ParamsSchema = staticInfo != null ? PluginTypeHelper.GetResponseSchema(staticInfo.Request) : null,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = plugin.CreateUserId,
                     UpdateTime = plugin.UpdateTime,

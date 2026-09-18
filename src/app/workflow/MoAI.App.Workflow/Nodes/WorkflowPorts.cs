@@ -42,3 +42,20 @@ public interface IWorkflowPluginInvoker
     /// <returns>插件输出.</returns>
     Task<JsonObject> InvokeAsync(string pluginKey, JsonObject parameters, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// 工作流知识库检索客户端抽象 - 知识库检索节点通过此接口检索知识库.
+/// 引擎不绑定知识库实现，由宿主注入（实现方负责团队归属校验与 embedding 检索）.
+/// </summary>
+public interface IWorkflowWikiSearchClient
+{
+    /// <summary>
+    /// 在指定知识库集合内检索与查询最相似的切片.
+    /// </summary>
+    /// <param name="wikiIds">知识库 id 集合.</param>
+    /// <param name="query">查询文本.</param>
+    /// <param name="top">每个知识库返回条数.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>按相似度降序的命中项.</returns>
+    Task<IReadOnlyList<WorkflowWikiSearchHit>> SearchAsync(IReadOnlyCollection<long> wikiIds, string query, int top, CancellationToken cancellationToken);
+}

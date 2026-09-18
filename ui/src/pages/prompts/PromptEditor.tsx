@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Page, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { classifyApi, ClassifyType, type Classify } from '@/api/classify'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createPrompt, getPromptDetail, setPromptAvatar, updatePrompt } from '@/api/prompt'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { ReactMarkdownPreview } from './PromptDetailModal'
@@ -50,7 +50,7 @@ export function PromptEditor() {
   const textareaRef = useRef<TextAreaRef>(null)
 
   const classOptions = useMemo(
-    () => classifies.map((c) => ({ value: Number(c.classifyId), label: c.name ?? '' })),
+    () => classifies.map((c) => ({ value: Number(c.classifyId), label: classifyLabel(c) })),
     [classifies],
   )
 

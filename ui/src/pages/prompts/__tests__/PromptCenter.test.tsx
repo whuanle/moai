@@ -26,6 +26,7 @@ vi.mock('@/api/classify', () => ({
     getClassifies: vi.fn().mockResolvedValue([{ classifyId: 3, name: '写作' }]),
   },
   ClassifyType: { Prompt: 'prompt' },
+  classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c.emoji, c.name].filter(Boolean).join(' '),
 }))
 
 vi.mock('@/api/kiota', () => ({

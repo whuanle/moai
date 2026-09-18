@@ -34,6 +34,7 @@ public class QuerySkillMarketListCommandHandler : IRequestHandler<QuerySkillMark
             .Where(x => x.IsPublic);
 
         query = QuerySkillListHelper.WhereKeywords(query, request.Keywords);
+        query = QuerySkillListHelper.WhereClassify(query, request.ClassifyId);
 
         var entities = await query
             .OrderBy(x => x.Key)

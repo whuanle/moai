@@ -22,6 +22,11 @@ public class QueryTeamSkillListCommand : IRequest<QuerySkillListCommandResponse>
     /// </summary>
     public string? Keywords { get; init; }
 
+    /// <summary>
+    /// 按分类 id 过滤，为空查全部分类.
+    /// </summary>
+    public int? ClassifyId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -35,5 +40,6 @@ public class QueryTeamSkillListCommand : IRequest<QuerySkillListCommandResponse>
     {
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.Keywords).MaximumLength(100).WithMessage("关键字最长 100 个字符.");
+        validate.RuleFor(x => x.ClassifyId).GreaterThan(0).When(x => x.ClassifyId != null).WithMessage("分类 id 不正确.");
     }
 }

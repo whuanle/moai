@@ -52,6 +52,7 @@
 | onSearch / onReset | 否 | 查询回调（带当前字段值）/ 重置回调（字段已被 resetFields 清空后触发，调用方负责重拉列表） |
 | loading | 否 | 「查询」按钮 loading |
 | children | 否 | Form.Item 筛选字段（inline 布局） |
+| extra | 否 | 追加在「重置」右侧的操作区（如新建、刷新按钮），与查询/重置同行（[@FE-CB-S19](./bdd.md#fe-cb-s19)） |
 
 - 「查询」为 primary submit 按钮，点击与输入框回车两条提交路径等效（preventDefault 后手动取字段值，[@FE-CB-S14](./bdd.md#fe-cb-s14)）。
 - 组合约束：用于列表页顶部 / Page 内；禁止放弹窗、详情页。

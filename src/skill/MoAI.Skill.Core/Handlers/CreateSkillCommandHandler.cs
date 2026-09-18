@@ -2,6 +2,7 @@ using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
+using MoAI.Classify;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -48,6 +49,17 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
             throw new BusinessException("技能标识已存在，请更换后重试.") { StatusCode = 409 };
         }
 
+        if (request.ClassifyId > 0)
+        {
+            var classifyExist = await _databaseContext.Classifies
+                .AnyAsync(x => x.Id == request.ClassifyId && x.Type == ClassifyTypes.Skill, cancellationToken);
+
+            if (!classifyExist)
+            {
+                throw new BusinessException("技能分类不存在.") { StatusCode = 404 };
+            }
+        }
+
         await SkillFilesGuard.EnsureFilesValidAsync(_databaseContext, request.Files, cancellationToken);
 
         var skill = new SkillEntity
@@ -60,6 +72,7 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
             Files = JsonSerializer.Serialize(request.Files, JsonOptions),
             IsSystem = false,
             TeamId = request.TeamId,
+            ClassifyId = request.ClassifyId,
             IsPublic = false,
             IsDisable = false,
         };

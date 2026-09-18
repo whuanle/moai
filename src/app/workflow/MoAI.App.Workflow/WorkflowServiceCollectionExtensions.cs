@@ -42,8 +42,11 @@ public static class WorkflowServiceCollectionExtensions
         services.AddScoped<INodeExecutor, ConditionNodeExecutor>();
         services.AddScoped<INodeExecutor>(sp => new PluginNodeExecutor(sp.GetRequiredService<IWorkflowPluginInvoker>()));
         services.AddScoped<INodeExecutor>(sp => new AiChatNodeExecutor(sp.GetRequiredService<IAiChatClient>()));
+        services.AddScoped<INodeExecutor>(sp => new KnowledgeSearchNodeExecutor(sp.GetRequiredService<IWorkflowWikiSearchClient>()));
         services.AddScoped<INodeExecutor, JavaScriptNodeExecutor>();
         services.AddScoped<INodeExecutor, SwitchNodeExecutor>();
+        services.AddScoped<INodeExecutor>(sp => new QuestionClassifierNodeExecutor(sp.GetRequiredService<IAiChatClient>()));
+        services.AddScoped<INodeExecutor>(sp => new HttpRequestNodeExecutor(sp.GetRequiredService<IExpressionEvaluator>()));
         services.AddScoped<INodeExecutorRegistry>(sp =>
         {
             var registry = new NodeExecutorRegistry();

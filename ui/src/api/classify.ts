@@ -12,6 +12,7 @@ export const ClassifyType = {
   App: 'app',
   Kb: 'kb',
   Prompt: 'prompt',
+  Skill: 'skill',
 } as const
 
 export type ClassifyTypeKey = (typeof ClassifyType)[keyof typeof ClassifyType]

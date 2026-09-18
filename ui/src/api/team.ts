@@ -65,11 +65,6 @@ export async function updateTeam(teamId: number, payload: { name?: string; descr
   await client.api.team.byId(String(teamId)).put({ name: payload.name, description: payload.description })
 }
 
-export async function dissolveTeam(teamId: number): Promise<void> {
-  const client = getApiClient()
-  await client.api.team.byId(String(teamId)).delete()
-}
-
 export async function getTeamUsers(teamId: number): Promise<TeamUserItem[]> {
   const client = getApiClient()
   const res = await client.api.team.byId(String(teamId)).users.get()

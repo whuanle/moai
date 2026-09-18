@@ -7,7 +7,7 @@
 |---|---|---|
 | `Page` | 页面容器+页头 | - |
 | `PageToolbar` | 页头工具行（筛选左/操作右，无筛选则操作左） | - |
-| `QueryBar` | 独立查询表单 | - |
+| `QueryBar` | 独立查询表单（`extra` 可在查询/重置右侧追加操作按钮） | - |
 | `DataTable` | 表格 | `columns`, `dataSource` |
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |

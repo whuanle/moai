@@ -151,8 +151,9 @@ check('删除密钥', delKey.status === 200)
 const deleted = await fetch(`${gwBase}/models`, { headers: { Authorization: `Bearer ${secret}` } })
 check('删除后密钥失效(401)', deleted.status === 401)
 
-const dissolve = await api(adminToken, `/api/team/${teamId}`, 'DELETE')
-check('解散团队（清理）', dissolve.status === 200)
+// 团队不可解散：清理改为管理员禁用团队
+const disable = await api(adminToken, `/api/admin/team/${teamId}/disable`, 'PUT', { isDisable: true })
+check('禁用团队（清理）', disable.status === 200)
 
 console.log(`\n结果: ${pass} passed, ${fail} failed`)
 process.exit(fail > 0 ? 1 : 0)

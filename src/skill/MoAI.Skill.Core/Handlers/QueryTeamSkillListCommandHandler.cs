@@ -46,6 +46,7 @@ public class QueryTeamSkillListCommandHandler : IRequestHandler<QueryTeamSkillLi
             .Where(x => x.TeamId == request.TeamId);
 
         query = QuerySkillListHelper.WhereKeywords(query, request.Keywords);
+        query = QuerySkillListHelper.WhereClassify(query, request.ClassifyId);
 
         var entities = await query
             .OrderByDescending(x => x.CreateTime)

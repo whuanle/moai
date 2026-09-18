@@ -110,19 +110,6 @@ public class TeamController : ControllerBase
     }
 
     /// <summary>
-    /// 解散团队，仅 Owner 可操作.
-    /// </summary>
-    /// <param name="id">团队 id.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpDelete("{id}")]
-    public async Task<EmptyCommandResponse> DissolveTeam(long id, CancellationToken ct)
-    {
-        await EnsureOwnerAsync(id, "只有团队所有者可以解散团队.", ct);
-        return await _mediator.Send(new DissolveTeamCommand { TeamId = id }, ct);
-    }
-
-    /// <summary>
     /// 转让团队所有权，仅 Owner 可操作，原 Owner 降为 Admin.
     /// </summary>
     /// <param name="id">团队 id.</param>

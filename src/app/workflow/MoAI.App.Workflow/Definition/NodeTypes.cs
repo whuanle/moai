@@ -42,4 +42,19 @@ public static class NodeTypes
     /// 多条件节点 - 按顺序评估多个条件，走第一个命中的分支（if-else 语义）；全部未命中走 else 分支.
     /// </summary>
     public const string Switch = "switch";
+
+    /// <summary>
+    /// 知识库检索节点 - 调用 <see cref="Nodes.IWorkflowWikiSearchClient"/> 在指定知识库中做向量检索.
+    /// </summary>
+    public const string KnowledgeSearch = "knowledgeSearch";
+
+    /// <summary>
+    /// 问题分类节点 - 调用 <see cref="Nodes.IAiChatClient"/> 把用户问题归入预定义分类之一.
+    /// </summary>
+    public const string QuestionClassifier = "questionClassifier";
+
+    /// <summary>
+    /// HTTP 请求节点 - 发起自定义 HTTP 请求（方法/地址/查询参数/请求头/请求体/鉴权），支持提取响应字段.
+    /// </summary>
+    public const string Http = "http";
 }

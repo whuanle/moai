@@ -8,7 +8,7 @@
 
 ## 1. 目标
 
-团队是知识库、插件等资源的管理单元。本期交付：团队 CRUD、成员管理（添加/移除/角色调整/自行退出）、解散；后续资源表通过 `team_id` 挂载。对齐侧边栏既有的「团队」菜单（问题台账 P9 死菜单之一）。
+团队是知识库、插件等资源的管理单元。本期交付：团队 CRUD、成员管理（添加/移除/角色调整/自行退出）；团队不可解散，仅平台管理员可禁用/启用（见管理员治理）。后续资源表通过 `team_id` 挂载。对齐侧边栏既有的「团队」菜单（问题台账 P9 死菜单之一）。
 
 ## 2. 数据模型
 
@@ -22,7 +22,7 @@
 
 | 角色 | 值 | 能力 |
 |---|---|---|
-| Owner | 0 | 全部 + 调整成员角色 + 解散团队；不可退出/被移除（需先解散） |
+| Owner | 0 | 全部 + 调整成员角色；不可退出/被移除 |
 | Admin | 1 | 修改团队信息 + 添加成员（仅 Member）+ 移除 Member |
 | Member | 2 | 查看团队/成员 + 自行退出 |
 
@@ -36,7 +36,7 @@
 - 转让所有权（TM-13）：仅 Owner；目标须在团（404）、不能是自己（400）；转让后原 Owner 降为 Admin，角色互换。
 - 团队头像（TM-14）：Admin+ 可设置；objectKey 必须是 file 表已完成上传记录（404 防伪造，与用户头像同规则）；走存储直传管线。
 - 移除：目标 Owner 恒 400；Admin 不可移除 Admin（403）；Member 仅可自行退出；Owner 不可退出（400）。
-- 解散：仅 Owner；团队与全部成员关系一并软删除。
+- 团队不可解散（2026-09-18 移除解散接口 `DELETE /api/team/{id}` 及前端入口）；团队停用走平台管理员禁用/启用。
 - 非成员访问团队任意接口：404（不泄露存在性）。
 - 管理员治理（TM-15/S15b/S16，`/admin/team/*`）：门禁只在 Controller（`is_admin`，非 admin 403、未登录 401）；禁用/启用只改状态（D6）；转让目标须为存在用户（404），非成员自动入团并成为 Owner，原 Owner 降为 Admin，目标已是 Owner 则 400。
 
@@ -48,7 +48,6 @@
 | GET | `/api/team/list` | 我参与的团队（含 myRole/memberCount/avatar） | `QueryTeamsCommandResponse` |
 | GET | `/api/team/{id}` | 详情（含 myRole） | `QueryTeamCommandResponse` |
 | PUT | `/api/team/{id}` | 改名/简介 | Empty |
-| DELETE | `/api/team/{id}` | 解散 | Empty |
 | PUT | `/api/team/{id}/owner` | 转让所有权（原 Owner 降 Admin） | Empty |
 | POST | `/api/team/{id}/avatar` | 设置头像（objectKey 须为已登记上传文件） | Empty |
 | GET | `/api/team/{id}/users` | 成员列表 | `QueryTeamUsersCommandResponse` |

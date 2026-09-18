@@ -46,6 +46,13 @@ public class WorkflowInstance
     public JsonObject SystemVariables { get; set; } = new();
 
     /// <summary>
+    /// 调用方注入的系统上下文（sys.* 附加变量），随实例持久化，断点恢复后作用域仍可重建.
+    /// 对话式调用（发布应用会话）注入 userId/appId/conversationId/messageId/history；
+    /// 未注入时 sys.* 仅有引擎内置项.
+    /// </summary>
+    public JsonObject? SystemContext { get; set; }
+
+    /// <summary>
     /// 工作流最终输出（结束节点收集）.
     /// </summary>
     public JsonObject? Output { get; set; }

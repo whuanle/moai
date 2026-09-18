@@ -158,6 +158,7 @@ public class SkillController : ControllerBase
             Description = req.Description,
             Instructions = req.Instructions,
             Files = req.Files,
+            ClassifyId = req.ClassifyId,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

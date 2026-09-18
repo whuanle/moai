@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { UploadOutlined } from '@ant-design/icons'
-import type { UploadProps } from 'antd'
-import { Alert, Avatar, Button, Col, Divider, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography, Upload } from 'antd'
+import { Alert, Button, Col, Divider, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card as DSCard, feedback } from '@/design-system'
+import { AvatarUpload, Card as DSCard, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
 import {
   getAppAgentConfig,
@@ -295,23 +293,23 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
     }
   }
 
-  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
+  /** 校验并上传应用头像；非法文件直接忽略 */
+  const handleAvatarFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       feedback.error(t('appManage.avatarTypeError'))
-      return Upload.LIST_IGNORE
+      return
     }
     if (file.size > 5 * 1024 * 1024) {
       feedback.error(t('appManage.avatarSizeError'))
-      return Upload.LIST_IGNORE
+      return
     }
-    if (!appId) return Upload.LIST_IGNORE
+    if (!appId) return
     setUploadingAvatar(true)
     uploadAppAvatar(appId, file)
       .then(() => feedback.success(t('appManage.avatarSuccess')))
       .then(() => onReload())
       .catch(() => undefined)
       .finally(() => setUploadingAvatar(false))
-    return Upload.LIST_IGNORE
   }
 
   const pluginSelectOptions = pluginOptions.map((item) => ({
@@ -344,21 +342,20 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         <DSCard title={t('appManage.sectionInfo')}>
           <Form form={infoForm} layout="vertical" disabled={!canManage}>
             <Form.Item label={t('appManage.avatar')}>
-              <Space align="center">
-                <Avatar shape="square" size={64} src={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}>
-                  {appName.slice(0, 1).toUpperCase()}
-                </Avatar>
-                <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*">
-                  <Button icon={<UploadOutlined />} loading={uploadingAvatar} disabled={!canManage}>
-                    {t('appManage.avatarUpload')}
-                  </Button>
-                </Upload>
-              </Space>
-              <div style={{ marginTop: spacing.xs }}>
+              <Space direction="vertical" size={spacing.xs}>
+                <AvatarUpload
+                  src={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
+                  fallback={appName.slice(0, 1).toUpperCase()}
+                  shape="square"
+                  size={96}
+                  uploading={uploadingAvatar}
+                  disabled={!canManage}
+                  onSelect={handleAvatarFile}
+                />
                 <Text type="secondary" style={{ fontSize: fontSize.xs }}>
                   {t('appManage.avatarHint')}
                 </Text>
-              </div>
+              </Space>
             </Form.Item>
             <Form.Item label={t('appManage.type')}>
               {isAgent ? (

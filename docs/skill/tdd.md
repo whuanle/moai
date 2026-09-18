@@ -73,3 +73,14 @@
 - 删除联动：`DeleteSkillCommandHandler` 同步移除待审核上架申请（对齐 DeletePromptCommandHandler）。
 - 下载附件化：`S3Client.GeneratePreSignedDownloadUrlAsync` 支持 fileName→`ResponseHeaderOverrides.ContentDisposition`（`filename*=UTF-8''` 编码），文本类文件不再被浏览器内联渲染；wiki 文档下载与沙箱产物链接同链路受益。
 - 前端：`/skill-market`+`/skills` 双 Tab 技能中心（卡片流，参考提示词中心）；团队详情新增「团队技能」分区（TeamSkills）；审批上架页类型筛选加「技能」。
+
+## 增量验证映射（2026-09-18：技能分类）
+
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @SKM-S10（前端 chip 过滤） | ui/src/pages/skills/__tests__/Skills.test.tsx | PASS 2/2（2026-09-18，全仓 vitest 346/346） |
+| @SKM-S10（后端校验/列表返回） | @manual（`dotnet build` 0 error；后端重启后建议补 skill-market-e2e 分类用例） | 待回归（2026-09-18） |
+
+实现落点（2026-09-18）：
+- 后端：`ClassifyTypes.Skill="skill"`；`SkillEntity.ClassifyId`（skill.classify_id，DBA 已补列）；Create/Update 校验分类存在且 Type=skill（404「技能分类不存在」）；四个列表 + 详情返回 `classifyId`，列表支持 `ClassifyId` 过滤（`QuerySkillListHelper.WhereClassify`）；`MoAI.Skill.Core` 增加对 `MoAI.Classify.Shared` 的项目引用。
+- 前端：Kiota 客户端重新生成；`ClassifyType.Skill`；分类管理页新增「技能」页签；技能中心两 Tab 头部固定分类 chip（emoji）；`SkillEditModal` 分类下拉；`api/skills.ts` 封装扩展。

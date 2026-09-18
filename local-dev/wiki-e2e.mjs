@@ -85,7 +85,11 @@ async function main() {
     const r2 = await api('POST', '/api/wiki', { token: outsider.token, body: { teamId: TID2, name: WNAME } })
     check('WK-05b 不同团队同名 200', r2.status === 200, `${r2.status}`)
     await api('DELETE', `/api/wiki/${Number(r2.json?.value)}`, { token: outsider.token })
-    await api('DELETE', `/api/team/${TID2}`, { token: outsider.token })
+    // 团队不可解散：清理改为管理员禁用归档
+    {
+      const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+      await api('PUT', `/api/admin/team/${TID2}/disable`, { token: rootL.json.accessToken, body: { isDisable: true } })
+    }
   }
 
   // WK-06 详情

@@ -18,6 +18,7 @@ import { Card, Page, feedback } from '@/design-system'
 import { neutralColors, spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { applyPublication, withdrawPublication } from '@/api/publication'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import {
   deleteSkill,
   downloadSkillFiles,
@@ -46,8 +47,10 @@ export function Skills() {
 
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<SkillListItem[]>([])
+  const [classifies, setClassifies] = useState<Classify[]>([])
   const [searchText, setSearchText] = useState('')
   const [keywords, setKeywords] = useState<string | undefined>(undefined)
+  const [classifyId, setClassifyId] = useState<number | undefined>(undefined)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_DEFAULT_SIZE)
 
@@ -64,23 +67,33 @@ export function Skills() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const filters = { keywords }
+      const filters = { keywords, classifyId }
       setItems(tab === 'mine' ? await getMySkills(filters) : await getSkillMarketList(filters))
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setLoading(false)
     }
-  }, [tab, keywords])
+  }, [tab, keywords, classifyId])
 
   useEffect(() => {
     void load()
   }, [load])
 
+  useEffect(() => {
+    classifyApi
+      .getClassifies(ClassifyType.Skill)
+      .then(setClassifies)
+      .catch(() => {
+        // 错误已由全局请求中间件统一提示
+      })
+  }, [])
+
   const handleTabChange = (key: string) => {
     // 切换 tab 重置筛选与分页，两块状态更新与路由跳转合并为一次渲染、一次加载
     setSearchText('')
     setKeywords(undefined)
+    setClassifyId(undefined)
     setPage(1)
     navigate(key === 'mine' ? '/skills' : '/skill-market')
   }
@@ -202,8 +215,30 @@ export function Skills() {
         <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
           {t('ds.table.refresh')}
         </Button>
-        <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
       </div>
+      <Space size={4} wrap style={{ marginBottom: spacing.md }}>
+        <Tag.CheckableTag
+          checked={classifyId === undefined}
+          onChange={() => {
+            setClassifyId(undefined)
+            setPage(1)
+          }}
+        >
+          {t('skills.categoryAll')}
+        </Tag.CheckableTag>
+        {classifies.map((c) => (
+          <Tag.CheckableTag
+            key={String(c.classifyId ?? '')}
+            checked={classifyId === Number(c.classifyId)}
+            onChange={() => {
+              setClassifyId(Number(c.classifyId) || undefined)
+              setPage(1)
+            }}
+          >
+            {classifyLabel(c)}
+          </Tag.CheckableTag>
+        ))}
+      </Space>
       <Spin spinning={loading}>
         {pagedItems.length === 0 ? (
           <Empty description={t('skills.empty')} />
@@ -212,7 +247,7 @@ export function Skills() {
             {pagedItems.map((record) => {
               const name = record.name || '-'
               return (
-                <Col key={String(record.id ?? '')} xs={24} sm={12} md={8} lg={6}>
+                <Col key={String(record.id ?? '')} xs={24} sm={12} md={8} lg={6} xl={4} xxl={4}>
                   <Card style={{ height: '100%' }} styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
@@ -347,7 +382,6 @@ export function Skills() {
             }}
             showSizeChanger
             pageSizeOptions={PAGE_SIZE_OPTIONS.map(String)}
-            showTotal={(total) => t('ds.table.total', { total })}
           />
         )}
       </div>

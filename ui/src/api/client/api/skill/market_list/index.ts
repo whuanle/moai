@@ -33,6 +33,10 @@ export interface Market_listRequestBuilder extends BaseRequestBuilder<Market_lis
  */
 export interface Market_listRequestBuilderGetQueryParameters {
     /**
+     * 按分类 id 过滤，为空查全部分类.
+     */
+    classifyId?: number;
+    /**
      * 按名称/标识/描述关键字筛选，空为不过滤.
      */
     keywords?: string;
@@ -40,11 +44,12 @@ export interface Market_listRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const Market_listRequestBuilderUriTemplate = "{+baseurl}/api/skill/market_list{?Keywords*}";
+export const Market_listRequestBuilderUriTemplate = "{+baseurl}/api/skill/market_list{?ClassifyId*,Keywords*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const Market_listRequestBuilderGetQueryParametersMapper: Record<string, string> = {
+    "classifyId": "ClassifyId",
     "keywords": "Keywords",
 };
 /**

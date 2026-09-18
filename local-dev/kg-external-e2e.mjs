@@ -299,8 +299,9 @@ async function main() {
     if (CONN > 0) await api('DELETE', kg(CONN), { token })
     if (ACC1) await api('DELETE', `/api/access-app/${ACC1}`, { token })
     if (ACC2) await api('DELETE', `/api/access-app/${ACC2}`, { token })
-    await api('DELETE', `/api/team/${T1}`, { token })
-    await api('DELETE', `/api/team/${T2}`, { token })
+    // 团队不可解散：清理改为管理员禁用归档
+    await api('PUT', `/api/admin/team/${T1}/disable`, { token, body: { isDisable: true } })
+    await api('PUT', `/api/admin/team/${T2}/disable`, { token, body: { isDisable: true } })
   }
 
   const skipNote = kx07Skipped ? ' | KX-07 skipped (connected 探活失败)' : ''

@@ -111,6 +111,11 @@ Feature: QueryBar 独立查询表单
     When 未传实例
     Then 组件内部自建实例
 
+  @FE-CB-S19 @auto:vitest
+  Scenario: 查询/重置右侧追加操作
+    When 传入 extra 操作节点（如新建、刷新按钮）
+    Then 节点与查询/重置按钮同行渲染且位于其右侧，点击行为由调用方处理
+
 Feature: PageToolbar 页头工具行
   @FE-CB-S17 @auto:vitest
   Scenario: 筛选在左、操作在右

@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { TeamManage } from '../TeamManage'
 import { useAppStore } from '@/store/app'
-import { dissolveTeam, getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
+import { getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
 import { getApps } from '@/api/app'
 import { getVariables } from '@/api/variable'
 import { getTeamPlugins } from '@/api/team-plugin'
@@ -77,7 +77,6 @@ vi.mock('@/api/team', () => ({
   updateTeamUserRole: vi.fn().mockResolvedValue(undefined),
   uploadTeamAvatar: vi.fn().mockResolvedValue(''),
   getTeamCandidates: vi.fn().mockResolvedValue([]),
-  dissolveTeam: vi.fn().mockResolvedValue(undefined),
   getMyTeams: vi.fn().mockResolvedValue([]),
 }))
 
@@ -216,20 +215,15 @@ describe('TeamManage', () => {
     expect(await screen.findByText('团队名称')).toBeInTheDocument()
   })
 
-  it('设置菜单中 Owner 可解散团队并返回列表', async () => {
+  it('设置菜单中 Owner 也不提供解散团队入口（团队仅可由平台管理员禁用）', async () => {
     renderManage()
 
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByText('设置'))
 
-    // antd Button 会在两个汉字间自动插入空格，实际渲染为「解 散」
-    fireEvent.click(await screen.findByText(/解\s*散/))
-    // 测试环境未包裹 AppProviders，antd 默认英文 locale，Popconfirm 确认按钮为 OK
-    fireEvent.click(screen.getByRole('button', { name: 'OK' }))
-
-    await waitFor(() => {
-      expect(dissolveTeam).toHaveBeenCalledWith(7)
-    })
+    expect(await screen.findByText('团队名称')).toBeInTheDocument()
+    // 团队不可解散：Owner 设置页只有保存修改，没有解散按钮
+    expect(screen.queryByText(/解\s*散/)).not.toBeInTheDocument()
   })
 
   it('设置菜单中非 Owner 不显示解散按钮', async () => {

@@ -238,6 +238,45 @@
   line-height: 18px;
 }
 
+/* 系统变量只读列表（系统设置面板）：名称 + sys 引用 + 类型徽标 */
+.wf-sys-var-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 12px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+}
+
+.wf-sys-var-row:last-child {
+  border-bottom: none;
+}
+
+.wf-sys-var-name {
+  color: rgba(0, 0, 0, 0.85);
+  flex-shrink: 0;
+}
+
+.wf-sys-var-ref {
+  flex: 1;
+  min-width: 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-sys-var-tag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 18px;
+  font-size: 11px;
+}
+
 /* 画布 */
 .wf-canvas {
   position: relative;
@@ -266,7 +305,7 @@
 
 .wf-canvas-tools {
   position: absolute;
-  left: 16px;
+  right: 16px;
   bottom: 16px;
   display: flex;
   align-items: center;
@@ -276,6 +315,20 @@
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
+}
+
+/* 抓手（平移）模式：画布抓取光标 + 工具栏按钮激活态 */
+.wf-canvas-hand {
+  cursor: grab !important;
+}
+
+.wf-canvas-hand:active {
+  cursor: grabbing !important;
+}
+
+.wf-tools-btn-active {
+  color: #1677ff;
+  background: #e6f4ff;
 }
 
 .wf-tools-divider {
@@ -671,4 +724,141 @@
   flex: 1;
   min-width: 0;
   max-width: 130px;
+}
+
+/* ==================== 画布右键菜单（节点/连线） ==================== */
+
+.wf-ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.wf-ctx-menu {
+  position: fixed;
+  z-index: 1001;
+  min-width: 128px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.wf-ctx-item {
+  padding: 7px 12px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.88);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wf-ctx-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wf-ctx-item-danger {
+  color: #ff4d4f;
+}
+
+.wf-ctx-item-danger:hover {
+  background: #fff1f0;
+}
+
+/* ==================== 添加节点面板：节点类型 / 团队工具 Tab ==================== */
+
+.wf-side-panel-tabs {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wf-side-panel-tab {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wf-side-panel-tab:hover {
+  color: rgba(0, 0, 0, 0.88);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.wf-side-panel-tab-active {
+  color: #1677ff;
+  background: #e6f4ff;
+  font-weight: 600;
+}
+
+.wf-side-panel-tab-active:hover {
+  color: #1677ff;
+  background: #e6f4ff;
+}
+
+.wf-node-panel-grid-tools {
+  grid-template-columns: 1fr;
+}
+
+.wf-node-panel-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.wf-node-panel-empty {
+  margin-top: 24px;
+}
+
+/* 插件节点：schema 自动生成的字段名/描述（只读） */
+.wf-field-name-readonly {
+  flex: 1;
+  min-width: 0;
+  padding: 0 7px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 24px;
+  color: rgba(0, 0, 0, 0.88);
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-field-desc-readonly {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* http 节点：区块标题右侧的 cURL 导入链接 + 请求参数 Tabs（节点卡内紧凑化） */
+.wf-sec-extra-link {
+  height: auto;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.wf-http-tabs .ant-tabs-tab {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.wf-http-tabs .ant-tabs-nav {
+  margin: 0 0 8px;
+}
+
+.wf-http-tabs .ant-tabs-content-holder {
+  overflow: visible;
 }

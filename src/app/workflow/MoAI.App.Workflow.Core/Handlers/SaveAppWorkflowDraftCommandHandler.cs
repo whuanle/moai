@@ -82,6 +82,9 @@ public class SaveAppWorkflowDraftCommandHandler : IRequestHandler<SaveAppWorkflo
         definition.Id = request.AppId.ToString();
         definition.Status = DefinitionStatus.Draft;
 
+        // 知识库检索节点引用的知识库必须属于本团队
+        await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
+
         _executionContext.TeamId = app.TeamId;
         await _definitionStore.SaveDefinitionAsync(definition, cancellationToken);
         await _definitionStore.SaveEditorDataAsync(request.AppId, request.EditorData, cancellationToken);

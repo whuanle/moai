@@ -34,6 +34,9 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
+        entity.Property(e => e.ClassifyId)
+            .HasComment("分类id")
+            .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasColumnName("create_time");

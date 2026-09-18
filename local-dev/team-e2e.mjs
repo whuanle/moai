@@ -55,6 +55,8 @@ async function main() {
   const cr = await api('POST', '/api/team', { token: owner.token, body: { name: TNAME, description: 'e2e 测试团队' } })
   check('TM-02 创建团队 200 且返回 id', cr.status === 200 && Number(cr.json?.value) > 0, `${cr.status} ${cr.text.slice(0, 120)}`)
   const TID = Number(cr.json?.value)
+  // 团队不可解散：脚本创建的团队在收尾统一由管理员禁用归档
+  const cleanupTeamIds = [TID]
 
   // TM-03 重名 409
   check('TM-03 重名创建 409', (await api('POST', '/api/team', { token: alice.token, body: { name: TNAME } })).status === 409)
@@ -112,16 +114,15 @@ async function main() {
   check('TM-11b Owner 改名 200', (await api('PUT', `/api/team/${TID}`, { token: owner.token, body: { name: TNAME + '-v2', description: '改过简介' } })).status === 200)
   check('TM-11c 详情回显新名', (await api('GET', `/api/team/${TID}`, { token: owner.token })).json?.name === TNAME + '-v2')
 
-  // TM-12 解散
-  check('TM-12a Admin 解散 403', (await api('DELETE', `/api/team/${TID}`, { token: bob.token })).status === 403)
-  check('TM-12b Owner 解散 200', (await api('DELETE', `/api/team/${TID}`, { token: owner.token })).status === 200)
-  check('TM-12c 解散后列表不含', !(await api('GET', '/api/team/list', { token: owner.token })).json.items.some(i => i.teamId === TID))
-  check('TM-12d 解散后详情 404', (await api('GET', `/api/team/${TID}`, { token: owner.token })).status === 404)
+  // TM-12 团队不可解散（解散接口已下线，团队仅可由平台管理员在「团队」界面禁用）
+  check('TM-12a Owner 解散团队 405', (await api('DELETE', `/api/team/${TID}`, { token: owner.token })).status === 405)
+  check('TM-12b 团队未被删除，详情仍可见', (await api('GET', `/api/team/${TID}`, { token: owner.token })).status === 200)
 
   // TM-13 所有权转让
   {
     const t = await api('POST', '/api/team', { token: owner.token, body: { name: 'own-team-' + TS } })
     const TID2 = Number(t.json.value)
+    cleanupTeamIds.push(TID2)
     await api('POST', `/api/team/${TID2}/users`, { token: owner.token, body: { userId: alice.userId, role: 1 } })
     await api('POST', `/api/team/${TID2}/users`, { token: owner.token, body: { userId: bob.userId, role: 0 } })
     check('TM-13a Admin 转让 403', (await api('PUT', `/api/team/${TID2}/owner`, { token: alice.token, body: { userId: bob.userId } })).status === 403)
@@ -131,13 +132,14 @@ async function main() {
     const members = (await api('GET', `/api/team/${TID2}/users`, { token: alice.token })).json.items
     const roles = Object.fromEntries(members.map(i => [Number(i.userId), i.role]))
     check('TM-13e 角色互换：新 Owner=2 原 Owner→Admin', roles[alice.userId] === 2 && roles[owner.userId] === 1, JSON.stringify(roles))
-    check('TM-13f 新 Owner 可解散，旧 Owner 403', (await api('DELETE', `/api/team/${TID2}`, { token: owner.token })).status === 403 && (await api('DELETE', `/api/team/${TID2}`, { token: alice.token })).status === 200)
+    check('TM-13f 解散接口已下线：新旧负责人解散均 405', (await api('DELETE', `/api/team/${TID2}`, { token: owner.token })).status === 405 && (await api('DELETE', `/api/team/${TID2}`, { token: alice.token })).status === 405)
   }
 
   // TM-14 团队头像（存储全链路）
   {
     const t = await api('POST', '/api/team', { token: owner.token, body: { name: 'avatar-team-' + TS } })
     const TID3 = Number(t.json.value)
+    cleanupTeamIds.push(TID3)
     const payload = Buffer.from('team-avatar-bytes-' + Date.now())
     const sha = crypto.createHash('sha256').update(payload).digest('hex')
     const pre = await api('POST', '/api/storage/public/pre_upload_image', { token: owner.token, body: { fileName: 'tavatar.png', contentType: 'image/png', fileSize: payload.length, shA256: sha } })
@@ -151,7 +153,6 @@ async function main() {
     const avatarFetch = detail.json?.avatar ? await fetch(detail.json.avatar) : null
     check('TM-14d 详情回显头像且可访问', avatarFetch !== null && avatarFetch.status === 200, detail.json?.avatar)
     check('TM-14e Member 设头像 403', (() => true)() && (await api('POST', `/api/team/${TID3}/avatar`, { token: owner.token, body: { objectKey: comp.json.objectKey } })).status === 200)
-    check('TM-14f 解散清理', (await api('DELETE', `/api/team/${TID3}`, { token: owner.token })).status === 200)
   }
 
   // TM-15 管理员团队治理：查看全部团队 + 禁用/启用（@TM-S15）
@@ -202,7 +203,12 @@ async function main() {
       check('TM-16f 原负责人降为管理员', roles[owner.userId] === 1, JSON.stringify(roles))
     }
     check('TM-16g 重复转让给当前负责人 400', (await api('PUT', `/api/admin/team/${TID4}/owner`, { token: adminToken, body: { userId: pick.userId } })).status === 400)
-    check('TM-16h 清理：新负责人解散团队 200', (await api('DELETE', `/api/team/${TID4}`, { token: pick.token })).status === 200)
+    check('TM-16h 清理：管理员禁用治理团队 200（团队不可解散，禁用归档）', (await api('PUT', `/api/admin/team/${TID4}/disable`, { token: adminToken, body: { isDisable: true } })).status === 200)
+
+    // 收尾清理：团队不可解散，脚本创建的团队统一禁用归档（TID4 已在 TM-16h 处理）
+    for (const id of cleanupTeamIds) {
+      check(`清理：禁用团队 ${id}`, (await api('PUT', `/api/admin/team/${id}/disable`, { token: adminToken, body: { isDisable: true } })).status === 200)
+    }
   }
 
   console.log(`\n===== 团队 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

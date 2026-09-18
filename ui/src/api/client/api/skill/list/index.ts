@@ -33,6 +33,10 @@ export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilde
  */
 export interface ListRequestBuilderGetQueryParameters {
     /**
+     * 按分类 id 过滤，为空查全部分类.
+     */
+    classifyId?: number;
+    /**
      * 页码，从 1 开始.
      */
     pageNo?: number;
@@ -48,11 +52,12 @@ export interface ListRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const ListRequestBuilderUriTemplate = "{+baseurl}/api/skill/list{?PageNo*,PageSize*,SearchText*}";
+export const ListRequestBuilderUriTemplate = "{+baseurl}/api/skill/list{?ClassifyId*,PageNo*,PageSize*,SearchText*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const ListRequestBuilderGetQueryParametersMapper: Record<string, string> = {
+    "classifyId": "ClassifyId",
     "pageNo": "PageNo",
     "pageSize": "PageSize",
     "searchText": "SearchText",

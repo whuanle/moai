@@ -3,25 +3,25 @@
  * 通过 useNodeRender().data / updateData 读写节点数据，变更自动触发画布内容事件.
  */
 
-import { useEffect, useMemo, useRef } from 'react'
-import { AutoComplete, Button, Input, Popconfirm, Select, Tooltip } from 'antd'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AutoComplete, Button, Input, InputNumber, Popconfirm, Select, Tooltip } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLinesData, WorkflowNodePortsData } from '@flowgram.ai/free-layout-editor'
 
+import { getWikis } from '@/api/wiki'
+import { getTeamPlugins } from '@/api/team-plugin'
+import { getTeamGatewayModels } from '@/api/gateway'
 import { useWorkflowDesignerStore } from './store'
-import { collectUpstreamVariables } from './utils'
-import type { FieldBinding, GlobalVariableDef, OutputField, SwitchBranchDef } from './types'
-
-const FIELD_TYPE_OPTIONS = ['string', 'number', 'boolean', 'object', 'map', 'array', 'dynamic']
-
-/** 绑定表达式类型选项（引擎求值器支持的输入表达式） */
-const EXPRESSION_TYPE_OPTIONS = [
-  { value: 'variable', labelKey: 'workflowDesigner.exprVariable' },
-  { value: 'jsonpath', labelKey: 'workflowDesigner.exprJsonPath' },
-  { value: 'interpolation', labelKey: 'workflowDesigner.exprInterp' },
-  { value: 'fixed', labelKey: 'workflowDesigner.exprFixed' },
-]
+import { inputsFromPluginSchema, outputsFromPluginSchema } from './utils'
+import {
+  EXPRESSION_TYPE_OPTIONS,
+  FIELD_TYPE_OPTIONS,
+  useVariableOptions,
+} from './node-form-shared'
+import { RefValueInput, SectionTitle, TypeSelect } from './node-form-widgets'
+import { HttpNodeForm } from './HttpNodeForm'
+import type { ClassifierClassDef, FieldBinding, NodeSettings, OutputField, SwitchBranchDef } from './types'
 
 /** 条件脚本模式默认脚本 */
 const CONDITION_DEFAULT_SCRIPT = `function condition(inputs, sys, nodes, system) {
@@ -34,72 +34,10 @@ interface NodeData {
   title?: string
   content?: string
   branches?: SwitchBranchDef[]
+  classes?: ClassifierClassDef[]
   inputs?: Record<string, FieldBinding>
   outputs?: OutputField[]
-  settings?: { aiModelId?: string; pluginKey?: string; code?: string; conditionScript?: string; trueTarget?: string }
-}
-
-/** 上游变量提示选项（system.* + sys.* + 祖先节点输出） */
-function useVariableOptions(nodeId: string): { value: string; label: string }[] {
-  const canvasJSON = useWorkflowDesignerStore((s) => s.editorJSON ?? s.initialData)
-  const variables = useWorkflowDesignerStore((s) => s.variables)
-  return useMemo(
-    () => collectUpstreamVariables(canvasJSON, nodeId, variables as GlobalVariableDef[]),
-    [canvasJSON, nodeId, variables],
-  )
-}
-
-/** 变量引用值输入（variable/jsonpath 用 AutoComplete 提示；其余普通输入） */
-function RefValueInput({
-  value,
-  options,
-  placeholder,
-  onChange,
-}: {
-  value: string
-  options: { value: string; label: string }[]
-  placeholder: string
-  onChange: (v: string) => void
-}) {
-  // AutoComplete：可从下拉选变量，也可自由输入任意引用
-  return (
-    <AutoComplete
-      size="small"
-      value={value}
-      options={options}
-      popupMatchSelectWidth={false}
-      filterOption={(input, option) =>
-        String(option?.value ?? '').toLowerCase().includes(input.toLowerCase()) ||
-        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-      }
-      placeholder={placeholder}
-      onChange={(v) => onChange(String(v))}
-    />
-  )
-}
-
-// ==================== 通用小部件 ====================
-
-function TypeSelect({ value, onChange }: { value: string | undefined; onChange: (v: string) => void }) {
-  return (
-    <Select
-      size="small"
-      value={value ?? 'dynamic'}
-      onChange={onChange}
-      className="wf-field-type"
-      popupMatchSelectWidth={false}
-      options={FIELD_TYPE_OPTIONS.map((ft) => ({ value: ft, label: ft }))}
-    />
-  )
-}
-
-function SectionTitle({ text, extra }: { text: string; extra?: React.ReactNode }) {
-  return (
-    <div className="wf-sec-title">
-      <span className="wf-sec-title-text">{text}</span>
-      {extra}
-    </div>
-  )
+  settings?: NodeSettings
 }
 
 // ==================== 节点 Key（引用前缀，写 data.key；名称/描述在卡片头部点击编辑） ====================
@@ -401,6 +339,274 @@ function SwitchBranchesEditor({
   )
 }
 
+// ==================== 问题分类节点：模型选择 + 背景知识/聊天记录 + 分类列表（动态端口） ====================
+
+/** 问题分类节点的 AI 模型选择（团队网关可用模型） */
+function ClassifierModelSelect({
+  data,
+  onUpdateData,
+}: {
+  data: NodeData
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const [models, setModels] = useState<{ value: string; label: string }[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!teamId) return
+    let cancelled = false
+    setLoading(true)
+    getTeamGatewayModels(teamId)
+      .then((res) => {
+        if (cancelled) return
+        setModels(
+          res
+            .filter((m) => m.aiModelId)
+            .map((m) => ({ value: String(m.aiModelId), label: m.name || m.modelId || '-' })),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setModels([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.classifierModel')} />
+      <Select
+        size="small"
+        style={{ width: '100%' }}
+        loading={loading}
+        showSearch
+        optionFilterProp="label"
+        value={data.settings?.aiModelId || undefined}
+        placeholder={t('workflowDesigner.classifierModelPlaceholder')}
+        options={models}
+        onChange={(v) => onUpdateData({ settings: { ...data.settings, aiModelId: v } })}
+      />
+    </div>
+  )
+}
+
+/** 问题分类节点的背景知识（可选，补充分类判断所需的领域信息） */
+function ClassifierBackgroundSection({
+  data,
+  onUpdateData,
+}: {
+  data: NodeData
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.classifierBackground')} />
+      <Input.TextArea
+        size="small"
+        rows={3}
+        value={data.settings?.backgroundKnowledge ?? ''}
+        placeholder={t('workflowDesigner.classifierBackgroundPlaceholder')}
+        onChange={(e) => onUpdateData({ settings: { ...data.settings, backgroundKnowledge: e.target.value } })}
+      />
+    </div>
+  )
+}
+
+const CLASSIFIER_HISTORY_MAX = 50
+
+/** 问题分类节点的聊天记录条数（从历史消息变量中携带最近 N 条参与分类） */
+function ClassifierHistoryCountSection({
+  data,
+  onUpdateData,
+}: {
+  data: NodeData
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const value = typeof data.settings?.historyCount === 'number' ? data.settings.historyCount : 6
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.classifierHistoryCount')} />
+      <InputNumber
+        size="small"
+        min={0}
+        max={CLASSIFIER_HISTORY_MAX}
+        precision={0}
+        style={{ width: 88 }}
+        value={value}
+        onChange={(v) => {
+          if (v == null) return
+          onUpdateData({ settings: { ...data.settings, historyCount: Math.min(Math.max(Number(v), 0), CLASSIFIER_HISTORY_MAX) } })
+        }}
+      />
+      <div className="wf-config-hint">{t('workflowDesigner.classifierHistoryCountHint')}</div>
+    </div>
+  )
+}
+
+/** 问题分类节点的用户问题输入绑定（必填） */
+function ClassifierQueryBinding({
+  data,
+  nodeId,
+  onUpdateData,
+}: {
+  data: NodeData
+  nodeId: string
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const options = useVariableOptions(nodeId)
+  const binding = data.inputs?.query ?? { expressionType: 'variable', value: '', required: true }
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.classifierQuery')} />
+      <div className="wf-b-row-value">
+        <Select
+          size="small"
+          className="wf-field-expr-type"
+          popupMatchSelectWidth={false}
+          value={binding.expressionType ?? 'variable'}
+          onChange={(v) => onUpdateData({ inputs: { ...data.inputs, query: { ...binding, expressionType: v as FieldBinding['expressionType'] } } })}
+          options={EXPRESSION_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))}
+        />
+        <ExpressionValueEditor
+          binding={binding}
+          options={options}
+          onChange={(patch2) => onUpdateData({ inputs: { ...data.inputs, query: { ...binding, ...patch2 } } })}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** 问题分类节点的历史消息输入绑定（可选，[{role, content}] 数组） */
+function ClassifierHistoryBinding({
+  data,
+  nodeId,
+  onUpdateData,
+}: {
+  data: NodeData
+  nodeId: string
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const options = useVariableOptions(nodeId)
+  const binding = data.inputs?.history ?? { expressionType: 'variable', value: '', required: false }
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.classifierHistory')} />
+      <div className="wf-b-row-value">
+        <Select
+          size="small"
+          className="wf-field-expr-type"
+          popupMatchSelectWidth={false}
+          value={binding.expressionType ?? 'variable'}
+          onChange={(v) => onUpdateData({ inputs: { ...data.inputs, history: { ...binding, expressionType: v as FieldBinding['expressionType'] } } })}
+          options={EXPRESSION_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))}
+        />
+        <ExpressionValueEditor
+          binding={binding}
+          options={options}
+          onChange={(patch2) => onUpdateData({ inputs: { ...data.inputs, history: { ...binding, ...patch2 } } })}
+        />
+      </div>
+      <div className="wf-config-hint">{t('workflowDesigner.classifierHistoryHint')}</div>
+    </div>
+  )
+}
+
+/** 问题分类节点的分类列表编辑：每个分类一条出边（data-port-id 动态端口）+ 分类名称 */
+function ClassifierClassesEditor({
+  data,
+  nodeId,
+  onUpdateData,
+}: {
+  data: NodeData
+  nodeId: string
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const classes = data.classes ?? []
+  const client = useClientContext()
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // 分类端口锚点是自定义 DOM（data-port-id），与多条件分支相同：捕获阶段原生监听阻断节点拖拽，直接启动画线
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const onPortMouseDown = (e: MouseEvent) => {
+      const portEl = (e.target as HTMLElement | null)?.closest?.('[data-port-id]') as HTMLElement | null
+      if (!portEl) return
+      e.stopPropagation()
+      e.preventDefault()
+      const classId = portEl.getAttribute('data-port-id') ?? ''
+      const entity = client.document.getAllNodes().find((n) => n.id === nodeId)
+      const port = entity?.getData(WorkflowNodePortsData)?.getPortEntityByKey('output', classId)
+      if (!port) return
+      void client.get(WorkflowDragService).startDrawingLine(port, { clientX: e.clientX, clientY: e.clientY })
+    }
+    el.addEventListener('mousedown', onPortMouseDown, true)
+    return () => el.removeEventListener('mousedown', onPortMouseDown, true)
+  }, [client, nodeId])
+
+  const update = (index: number, patch: Partial<ClassifierClassDef>) => {
+    onUpdateData({ classes: classes.map((c, i) => (i === index ? { ...c, ...patch } : c)) })
+  }
+
+  const remove = (index: number) => {
+    onUpdateData({ classes: classes.filter((_, i) => i !== index) })
+  }
+
+  const add = () => {
+    let id = `c${classes.length + 1}`
+    while (classes.some((c) => c.id === id)) id += 'x'
+    onUpdateData({ classes: [...classes, { id, label: '' }] })
+  }
+
+  return (
+    <div className="wf-node-sec" ref={rootRef}>
+      <SectionTitle text={t('workflowDesigner.classifierClasses')} />
+      {classes.map((cls, index) => (
+        <div key={cls.id} className="wf-b-row">
+          <div className="wf-b-row-top">
+            <span
+              className="wf-switch-port"
+              data-port-id={cls.id}
+              data-port-type="output"
+              data-port-location="right"
+              title={`${t('workflowDesigner.classifierClass')} ${cls.id}`}
+            />
+            <Input
+              size="small"
+              value={cls.label}
+              onChange={(e) => update(index, { label: e.target.value })}
+              placeholder={t('workflowDesigner.classifierClassPlaceholder')}
+              className="wf-field-name"
+            />
+            {classes.length > 1 && (
+              <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(index)}>
+                <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
+          </div>
+        </div>
+      ))}
+      <Button size="small" type="dashed" block icon={<PlusOutlined />} onClick={add}>
+        {t('workflowDesigner.classifierAddClass')}
+      </Button>
+    </div>
+  )
+}
+
 // ==================== 输出参数编辑（javaScript / plugin：输出是用户声明的元数据） ====================
 
 function OutputsEditor({ data, onUpdateData }: { data: NodeData; onUpdateData: (patch: Partial<NodeData>) => void }) {
@@ -567,6 +773,317 @@ function BindingsSection({
   )
 }
 
+// ==================== 知识库检索：知识库选择/变量绑定（单个） + 召回条数 + 检索问题 ====================
+
+const KNOWLEDGE_TOPK_MAX = 50
+
+/** 知识库来源（单个）：下拉选择本团队知识库，或输入/选择上游变量运行时动态绑定 */
+function KnowledgeWikiSelect({
+  data,
+  nodeId,
+  onUpdateData,
+}: {
+  data: NodeData
+  nodeId: string
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const variableOptions = useVariableOptions(nodeId)
+  const [wikiOptions, setWikiOptions] = useState<{ value: string; label: string }[]>([])
+
+  useEffect(() => {
+    if (!teamId) return
+    let cancelled = false
+    getWikis(teamId)
+      .then((res) => {
+        if (cancelled) return
+        setWikiOptions(
+          (res.items ?? [])
+            .filter((w) => w.wikiId != null)
+            .map((w) => ({ value: String(w.wikiId), label: String(w.name ?? w.wikiId) })),
+        )
+      })
+      .catch(() => {
+        // 团队知识库列表加载失败时仅空选项，不阻塞节点编辑
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
+
+  // 当前值：变量绑定优先展示，否则展示静态选择的知识库 id
+  const bound = data.inputs?.wikiId
+  const value = bound && String(bound.value ?? '').trim() !== '' ? bound.value : data.settings?.wikiId ? String(data.settings.wikiId) : ''
+
+  const handleChange = (raw: string) => {
+    const v = raw.trim()
+    if (v === '') {
+      // 清空：同时移除静态选择与变量绑定
+      const inputs = { ...(data.inputs ?? {}) }
+      delete inputs.wikiId
+      const { wikiId: _drop, ...restSettings } = data.settings ?? {}
+      void _drop
+      onUpdateData({ settings: restSettings, inputs })
+      return
+    }
+
+    if (/^\d+$/.test(v)) {
+      // 纯数字 → 静态选择知识库，移除变量绑定
+      const inputs = { ...(data.inputs ?? {}) }
+      delete inputs.wikiId
+      onUpdateData({ settings: { ...data.settings, wikiId: Number(v) }, inputs })
+      return
+    }
+
+    // 其余视为变量引用 → 写入输入绑定，移除静态选择
+    const { wikiId: _drop, ...restSettings } = data.settings ?? {}
+    void _drop
+    onUpdateData({
+      settings: restSettings,
+      inputs: { ...(data.inputs ?? {}), wikiId: { expressionType: 'variable', value: v, required: false } },
+    })
+  }
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.knowledgeWiki')} />
+      <AutoComplete
+        size="small"
+        style={{ width: '100%' }}
+        value={value}
+        popupMatchSelectWidth={false}
+        placeholder={t('workflowDesigner.knowledgeWikiPlaceholder')}
+        options={[
+          { label: t('workflowDesigner.knowledgeWikiGroup'), options: wikiOptions },
+          { label: t('workflowDesigner.knowledgeVariableGroup'), options: variableOptions },
+        ]}
+        filterOption={(input, option) => {
+          const o = option as { value?: string; label?: string }
+          return (
+            String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) ||
+            String(o?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          )
+        }}
+        onChange={handleChange}
+      />
+      <div className="wf-b-row" style={{ marginTop: 8 }}>
+        <span className="wf-out-name" style={{ whiteSpace: 'nowrap' }}>{t('workflowDesigner.knowledgeTopK')}</span>
+        <InputNumber
+          size="small"
+          min={1}
+          max={KNOWLEDGE_TOPK_MAX}
+          precision={0}
+          style={{ width: 88 }}
+          value={typeof data.settings?.topK === 'number' && data.settings.topK >= 1 ? data.settings.topK : 5}
+          onChange={(v) => {
+            if (v == null) return
+            onUpdateData({ settings: { ...data.settings, topK: Math.min(Math.max(Number(v), 1), KNOWLEDGE_TOPK_MAX) } })
+          }}
+        />
+      </div>
+      <div className="wf-config-hint">{t('workflowDesigner.knowledgeWikiHint')}</div>
+    </div>
+  )
+}
+
+function KnowledgeQueryBinding({
+  data,
+  nodeId,
+  onUpdateData,
+}: {
+  data: NodeData
+  nodeId: string
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const options = useVariableOptions(nodeId)
+  const binding = data.inputs?.query ?? { expressionType: 'variable', value: '', required: true }
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.knowledgeQuery')} />
+      <div className="wf-b-row-value">
+        <Select
+          size="small"
+          className="wf-field-expr-type"
+          popupMatchSelectWidth={false}
+          value={binding.expressionType ?? 'variable'}
+          onChange={(v) => onUpdateData({ inputs: { ...data.inputs, query: { ...binding, expressionType: v as FieldBinding['expressionType'] } } })}
+          options={EXPRESSION_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))}
+        />
+        <ExpressionValueEditor
+          binding={binding}
+          options={options}
+          onChange={(patch2) => onUpdateData({ inputs: { ...data.inputs, query: { ...binding, ...patch2 } } })}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ==================== 插件节点：团队工具选择 + 响应 schema 自动填充输出 ====================
+
+interface TeamToolOption {
+  value: string
+  label: string
+  description?: string
+  schema: { name?: string | null; fieldType?: string | null; description?: string | null }[]
+}
+
+/** 团队可用插件工具列表（插件节点与团队工具 Tab 共用数据源） */
+function useTeamTools(): { tools: TeamToolOption[]; loading: boolean } {
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const [tools, setTools] = useState<TeamToolOption[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!teamId) return
+    let cancelled = false
+    setLoading(true)
+    getTeamPlugins(teamId)
+      .then((res) => {
+        if (cancelled) return
+        setTools(
+          (res.items ?? []).map((item) => ({
+            value: String(item.pluginName ?? ''),
+            label: String(item.title || item.pluginName || ''),
+            description: item.description ?? '',
+            schema: item.responseSchema ?? [],
+          })),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setTools([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
+
+  return { tools, loading }
+}
+
+function PluginKeySelect({ data, onUpdateData }: { data: NodeData; onUpdateData: (patch: Partial<NodeData>) => void }) {
+  const { t } = useTranslation()
+  const { tools, loading } = useTeamTools()
+  const pluginKey = String(data.settings?.pluginKey ?? '')
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.pluginKey')} />
+      <Select
+        size="small"
+        style={{ width: '100%' }}
+        loading={loading}
+        value={pluginKey || undefined}
+        placeholder={t('workflowDesigner.pluginKeyPlaceholder')}
+        options={tools.map((tool) => ({ value: tool.value, label: tool.label, title: tool.description }))}
+        onChange={(v) => {
+          const tool = tools.find((tool2) => tool2.value === v)
+          if (!tool) return
+          // 自动按请求/响应 schema 覆盖输入与输出参数（schema 为空则保留现有值）
+          const inputs = inputsFromPluginSchema(tool.schema)
+          const outputs = outputsFromPluginSchema(tool.schema)
+          onUpdateData({
+            settings: { ...data.settings, pluginKey: tool.value },
+            ...(Object.keys(inputs).length > 0 ? { inputs } : {}),
+            ...(outputs.length > 0 ? { outputs } : {}),
+          })
+        }}
+      />
+      <div className="wf-config-hint">{t('workflowDesigner.pluginOutputsAuto')}</div>
+    </div>
+  )
+}
+
+// ==================== 插件节点：输入/输出由插件 schema 自动生成，仅可设置取值方式 ====================
+
+/**
+ * 插件节点输入参数（由插件请求 schema 自动生成，不可增删字段）：
+ * 每个字段仅可设置取值方式（变量/JSONPath/插值/固定值）与是否必填.
+ */
+function PluginBindingsSection({
+  data,
+  nodeId,
+  onUpdateData,
+}: {
+  data: NodeData
+  nodeId: string
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const options = useVariableOptions(nodeId)
+  const inputs = data.inputs ?? {}
+  const names = Object.keys(inputs)
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.inputFields')} />
+      {names.length === 0 && <div className="wf-config-hint">{t('workflowDesigner.pluginInputsEmpty')}</div>}
+      {names.map((name) => {
+        const binding = inputs[name]
+        const update = (patch: Partial<FieldBinding>) =>
+          onUpdateData({ inputs: { ...inputs, [name]: { ...binding, ...patch } } })
+        return (
+          <div key={name} className="wf-b-row">
+            <div className="wf-b-row-top">
+              <span className="wf-field-name wf-field-name-readonly" title={name}>
+                {name}
+              </span>
+              <TypeSelect value={binding.fieldType} onChange={(v) => update({ fieldType: v })} />
+            </div>
+            {binding.description && <div className="wf-field-desc-readonly">{binding.description}</div>}
+            <div className="wf-b-row-value">
+              <Select
+                size="small"
+                className="wf-field-expr-type"
+                popupMatchSelectWidth={false}
+                value={binding.expressionType ?? 'fixed'}
+                onChange={(v) => update({ expressionType: v as FieldBinding['expressionType'] })}
+                options={EXPRESSION_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))}
+              />
+              {binding.expressionType === 'variable' || binding.expressionType === 'jsonpath' ? (
+                <RefValueInput
+                  value={binding.value}
+                  options={options}
+                  placeholder="system.xxx / start.xxx"
+                  onChange={(v) => update({ value: v, expressionType: binding.expressionType })}
+                />
+              ) : binding.expressionType === 'interpolation' ? (
+                <Input
+                  size="small"
+                  value={binding.value}
+                  placeholder="{start.query} 模板"
+                  onChange={(e) => update({ value: e.target.value })}
+                />
+              ) : (
+                <Input
+                  size="small"
+                  value={binding.value}
+                  placeholder={t('workflowDesigner.exprFixed')}
+                  onChange={(e) => update({ value: e.target.value })}
+                />
+              )}
+              <label className="wf-field-required" title={t('workflowDesigner.required')}>
+                <input
+                  type="checkbox"
+                  checked={binding.required !== false}
+                  onChange={(e2) => update({ required: e2.target.checked })}
+                />
+              </label>
+            </div>
+          </div>
+        )
+      })}
+      <div className="wf-config-hint">{t('workflowDesigner.pluginInputsHint')}</div>
+    </div>
+  )
+}
+
 // ==================== 只读输出展示 ====================
 
 function OutputsSection({ outputs }: { outputs: OutputField[] }) {
@@ -602,21 +1119,26 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
     updateData({ ...nodeData, ...p })
   }
 
-  // 多条件节点分支数量变化后刷新动态端口（useDynamicPort 按 DOM [data-port-id] 计算）；
+  // 多条件分支/问题分类节点数量变化后刷新动态端口（useDynamicPort 按 DOM [data-port-id] 计算）；
   // 首次挂载不刷新（FlowGram 初始化已计算，且刷新会触发内容变更导致加载即标脏）
-  const branchCount = (nodeData.branches ?? []).length
-  const prevBranchCount = useRef<number | null>(null)
+  const dynamicPortCount =
+    nodeType === 'switch'
+      ? (nodeData.branches ?? []).length
+      : nodeType === 'questionClassifier'
+        ? (nodeData.classes ?? []).length
+        : null
+  const prevPortCount = useRef<number | null>(null)
   useEffect(() => {
-    if (nodeType !== 'switch') return
-    if (prevBranchCount.current === null) {
-      prevBranchCount.current = branchCount
+    if (dynamicPortCount == null) return
+    if (prevPortCount.current === null) {
+      prevPortCount.current = dynamicPortCount
       return
     }
-    if (prevBranchCount.current === branchCount) return
-    prevBranchCount.current = branchCount
+    if (prevPortCount.current === dynamicPortCount) return
+    prevPortCount.current = dynamicPortCount
     const entity = document.getAllNodes().find((n) => n.id === nodeId)
     entity?.getData(WorkflowNodePortsData)?.updateAllPorts?.()
-  }, [document, nodeId, nodeType, branchCount])
+  }, [document, nodeId, dynamicPortCount])
 
   const body = (() => {
     switch (nodeType) {
@@ -722,14 +1244,33 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
         return (
           <>
             <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
-            <BindingsSection
-              data={nodeData}
-              nodeId={nodeId}
-              onUpdateData={patch}
-              titleKey="workflowDesigner.inputFields"
-              addLabelKey="workflowDesigner.addInput"
-            />
-            <OutputsEditor data={nodeData} onUpdateData={patch} />
+            <PluginKeySelect data={nodeData} onUpdateData={patch} />
+            <PluginBindingsSection data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <OutputsSection outputs={nodeData.outputs ?? []} />
+          </>
+        )
+      case 'knowledgeSearch':
+        return (
+          <>
+            <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <KnowledgeWikiSelect data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <KnowledgeQueryBinding data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <OutputsSection outputs={nodeData.outputs ?? []} />
+          </>
+        )
+      case 'http':
+        return <HttpNodeForm data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+      case 'questionClassifier':
+        return (
+          <>
+            <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <ClassifierModelSelect data={nodeData} onUpdateData={patch} />
+            <ClassifierBackgroundSection data={nodeData} onUpdateData={patch} />
+            <ClassifierHistoryCountSection data={nodeData} onUpdateData={patch} />
+            <ClassifierQueryBinding data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <ClassifierHistoryBinding data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <ClassifierClassesEditor data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <div className="wf-config-hint">{t('workflowDesigner.classifierHint')}</div>
           </>
         )
       default:

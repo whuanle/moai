@@ -30,6 +30,7 @@ public sealed class AppAgentFactory
     private readonly IAiModelUsageCounter _usageCounter;
     private readonly AppContextProviderFactory _contextProviderFactory;
     private readonly ISkillService _skillService;
+    private readonly IWorkflowAppChatInvoker _workflowChatInvoker;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -42,6 +43,7 @@ public sealed class AppAgentFactory
     /// <param name="usageCounter">模型使用计数器.</param>
     /// <param name="contextProviderFactory">上下文提供者工厂.</param>
     /// <param name="skillService">技能领域服务.</param>
+    /// <param name="workflowChatInvoker">流程应用对话执行端口（Workflow 应用对话时使用）.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
         DatabaseContext databaseContext,
@@ -51,6 +53,7 @@ public sealed class AppAgentFactory
         IAiModelUsageCounter usageCounter,
         AppContextProviderFactory contextProviderFactory,
         ISkillService skillService,
+        IWorkflowAppChatInvoker workflowChatInvoker,
         ILoggerFactory loggerFactory)
     {
         _databaseContext = databaseContext;
@@ -60,6 +63,7 @@ public sealed class AppAgentFactory
         _usageCounter = usageCounter;
         _contextProviderFactory = contextProviderFactory;
         _skillService = skillService;
+        _workflowChatInvoker = workflowChatInvoker;
         _loggerFactory = loggerFactory;
     }
 
@@ -80,6 +84,29 @@ public sealed class AppAgentFactory
         if (app == null || app.TeamId != teamId)
         {
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
+        }
+
+        // 流程应用对话：一轮消息 = 一次已发布流程执行（发布状态在会话创建/执行端口内校验）
+        if (app.AppType == (int)Database.Enums.AppType.Workflow)
+        {
+            var request = new WorkflowAppChatRequest
+            {
+                AppId = appId,
+                TeamId = teamId,
+                UserId = userId,
+                SessionId = sessionId,
+            };
+            var workflowClient = new WorkflowAppChatClient(_workflowChatInvoker, request);
+            var workflowHistory = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
+            return new ChatClientAgent(
+                workflowClient,
+                new ChatClientAgentOptions
+                {
+                    Id = appId.ToString("N"),
+                    Name = AppAgentConstants.AgentName,
+                    ChatHistoryProvider = workflowHistory,
+                },
+                _loggerFactory);
         }
 
         var config = await _databaseContext.AppAgentConfigs.FirstOrDefaultAsync(x => x.AppId == appId, cancellationToken).ConfigureAwait(false);

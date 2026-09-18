@@ -99,7 +99,11 @@ async function main() {
   // 清理
   await api('DELETE', `/api/wiki/document/${DID}`, { token: owner.token })
   await api('DELETE', `/api/wiki/${WID}`, { token: owner.token })
-  await api('DELETE', `/api/team/${TID}`, { token: owner.token })
+  // 团队不可解散：清理改为管理员禁用归档
+  {
+    const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    await api('PUT', `/api/admin/team/${TID}/disable`, { token: rootL.json.accessToken, body: { isDisable: true } })
+  }
 
   console.log(`\n===== 文档 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
   process.exit(FAIL > 0 ? 1 : 0)

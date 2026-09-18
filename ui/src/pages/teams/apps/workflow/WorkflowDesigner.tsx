@@ -29,6 +29,9 @@ import {
   WorkflowNodeProps,
   WorkflowNodeRenderer,
   WorkflowNodeRegistry,
+  WorkflowNodeLinesData,
+  EditorState,
+  type onDragLineEndParams,
 } from '@flowgram.ai/free-layout-editor'
 import { createMinimapPlugin } from '@flowgram.ai/minimap-plugin'
 import { createFreeSnapPlugin } from '@flowgram.ai/free-snap-plugin'
@@ -38,7 +41,8 @@ import { FreeLayoutPluginContext } from '@flowgram.ai/free-layout-editor'
 import { useWorkflowDesignerStore } from './store'
 import { CONDITION_PORTS, getNodeTemplate, NODE_CONSTRAINTS, NODE_TEMPLATES } from './constants'
 import { createDefaultEditorData, nodeDataFromTemplate, validateEditorData } from './utils'
-import type { EditorWorkflowJSON, NodeRunState } from './types'
+import type { EditorWorkflowJSON, NodeRunState, OutputField } from './types'
+import type { FieldBinding } from './types'
 import { NodeLibraryPanel } from './NodePanel'
 import { SystemSettingsPanel } from './SystemSettingsPanel'
 import { RunPanel } from './RunPanel'
@@ -153,11 +157,94 @@ function DefaultNodeRenderer(props: WorkflowNodeProps) {
 
 // ==================== 画布（拖拽投放 + 缩放工具） ====================
 
-function DesignerCanvas() {
+/** 画布右键菜单状态：节点/连线二选一（坐标为视口坐标，菜单用 fixed 定位） */
+interface CanvasContextMenu {
+  x: number
+  y: number
+  kind: 'node' | 'line'
+  id: string
+}
+
+/** 抓手图标（平移模式） */
+function HandIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
+      <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
+      <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" />
+      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+    </svg>
+  )
+}
+
+function DesignerCanvas({ canManage }: { canManage: boolean }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { playground, document, history } = useClientContext()
   const tools = usePlaygroundTools()
+
+  const [ctxMenu, setCtxMenu] = useState<CanvasContextMenu | null>(null)
+  /** 抓手（平移）模式：开启后拖拽画布平移，再次点击恢复选择模式 */
+  const [handMode, setHandMode] = useState(false)
+
+  const toggleHandMode = () => {
+    const stateConfig = playground.editorState
+    if (handMode) {
+      stateConfig.toDefaultState()
+      setHandMode(false)
+    } else {
+      stateConfig.changeState(EditorState.STATE_MOUSE_FRIENDLY_SELECT.id)
+      setHandMode(true)
+    }
+  }
+
+  // 菜单打开期间：点击任意位置或再次右键即关闭
+  useEffect(() => {
+    if (!ctxMenu) return
+    const close = () => setCtxMenu(null)
+    window.addEventListener('mousedown', close)
+    window.addEventListener('contextmenu', close)
+    return () => {
+      window.removeEventListener('mousedown', close)
+      window.removeEventListener('contextmenu', close)
+    }
+  }, [ctxMenu])
+
+  const handleCanvasContextMenu = (e: React.MouseEvent) => {
+    if (!canManage) return
+    const target = e.target as HTMLElement
+    const pos = playground.config.getPosFromMouseEvent(e.nativeEvent)
+
+    // 线条：右键弹出「删除连线」
+    if (target.closest('.gedit-flow-activity-line')) {
+      const line = document.linesManager.getCloseInLineFromMousePos(pos)
+      if (line) {
+        e.preventDefault()
+        e.stopPropagation()
+        setCtxMenu({ x: e.clientX, y: e.clientY, kind: 'line', id: line.id })
+        return
+      }
+    }
+
+    // 节点：右键弹出「删除节点」（FlowGram 的节点包装层自带 data-node-id）
+    const nodeEl = target.closest('.gedit-flow-activity-node') as HTMLElement | null
+    const nodeId = nodeEl?.getAttribute('data-node-id')
+    if (nodeEl && nodeId) {
+      e.preventDefault()
+      e.stopPropagation()
+      setCtxMenu({ x: e.clientX, y: e.clientY, kind: 'node', id: nodeId })
+    }
+  }
+
+  const removeCtxTarget = () => {
+    if (!ctxMenu) return
+    if (ctxMenu.kind === 'node') {
+      document.getAllNodes().find((n) => n.id === ctxMenu.id)?.dispose()
+    } else {
+      document.linesManager.getLineById(ctxMenu.id)?.dispose()
+    }
+    setCtxMenu(null)
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -169,8 +256,16 @@ function DesignerCanvas() {
     try {
       const raw = e.dataTransfer.getData('application/x-moai-node')
       if (!raw) return
-      const template = JSON.parse(raw) as { type: string }
-      const type = template.type
+      // 普通投放：{ type }；团队工具投放：额外携带 pluginKey/title/description/inputs/outputs（直接生成已绑定插件的插件节点）
+      const payload = JSON.parse(raw) as {
+        type: string
+        pluginKey?: string
+        title?: string
+        description?: string
+        inputs?: Record<string, FieldBinding>
+        outputs?: OutputField[]
+      }
+      const type = payload.type
       const nodeCount = document.getAllNodes().filter((n) => n.flowNodeType === type).length
       const maxCount = NODE_CONSTRAINTS[type as keyof typeof NODE_CONSTRAINTS]?.maxCount ?? -1
       if (maxCount !== -1 && nodeCount >= maxCount) {
@@ -179,12 +274,20 @@ function DesignerCanvas() {
       }
       const position = playground.config.getPosFromMouseEvent(e.nativeEvent)
       const id = `${type}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+      const data = nodeDataFromTemplate(type)
+      if (data && payload.pluginKey) {
+        data.settings = { ...data.settings, pluginKey: payload.pluginKey }
+        if (payload.title) data.title = payload.title
+        if (payload.description) data.content = payload.description
+        if (payload.inputs && Object.keys(payload.inputs).length > 0) data.inputs = payload.inputs
+        if (payload.outputs && payload.outputs.length > 0) data.outputs = payload.outputs
+      }
       // 用 WorkflowDocument.createWorkflowNode 创建：走工作流专属的实体/端口初始化与内容变更事件
       document.createWorkflowNode({
         id,
         type,
         meta: { position },
-        data: nodeDataFromTemplate(type),
+        data,
         blocks: [],
         edges: [],
       })
@@ -194,9 +297,40 @@ function DesignerCanvas() {
   }
 
   return (
-    <div className="wf-canvas" onDrop={handleDrop} onDragOver={handleDragOver}>
+    <div
+      className={`wf-canvas${handMode ? ' wf-canvas-hand' : ''}`}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onContextMenu={handleCanvasContextMenu}
+    >
       <EditorRenderer />
+      {ctxMenu && (
+        <>
+          {/* 透明遮罩：点击任意处关闭菜单（菜单自身 mousedown 阻断冒泡保持打开） */}
+          <div className="wf-ctx-backdrop" onMouseDown={(e) => { e.stopPropagation(); setCtxMenu(null) }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu(null) }} />
+          <div className="wf-ctx-menu" style={{ left: ctxMenu.x, top: ctxMenu.y }} onMouseDown={(e) => e.stopPropagation()}>
+            <div
+              className="wf-ctx-item wf-ctx-item-danger"
+              onClick={() => {
+                removeCtxTarget()
+                message.success(ctxMenu.kind === 'node' ? t('workflowDesigner.ctxNodeDeleted') : t('workflowDesigner.ctxLineDeleted'))
+              }}
+            >
+              {ctxMenu.kind === 'node' ? t('workflowDesigner.ctxDeleteNode') : t('workflowDesigner.ctxDeleteLine')}
+            </div>
+          </div>
+        </>
+      )}
       <div className="wf-canvas-tools">
+        <Tooltip title={t('workflowDesigner.handTool')}>
+          <Button
+            size="small"
+            type="text"
+            icon={<HandIcon />}
+            className={handMode ? 'wf-tools-btn-active' : ''}
+            onClick={toggleHandMode}
+          />
+        </Tooltip>
         <Tooltip title={t('workflowDesigner.undo')}>
           <Button size="small" type="text" icon={<UndoOutlined />} onClick={() => history.undo()} />
         </Tooltip>
@@ -227,12 +361,13 @@ function useNodeRegistries(): WorkflowNodeRegistry[] {
           isStart: template.type === 'start',
           deleteDisable: !NODE_CONSTRAINTS[template.type].deletable,
           copyDisable: !NODE_CONSTRAINTS[template.type].copyable,
-          ...(template.type === 'switch' ? { useDynamicPort: true } : {}),
+          // switch/questionClassifier 的出边端口按节点表单内容动态计算（分支/分类锚点）
+          ...(template.type === 'switch' || template.type === 'questionClassifier' ? { useDynamicPort: true } : {}),
           defaultPorts: [
             ...(NODE_CONSTRAINTS[template.type].requiresInput ? [{ type: 'input' as const }] : []),
             ...(template.type === 'condition'
               ? CONDITION_PORTS
-              : NODE_CONSTRAINTS[template.type].requiresOutput && template.type !== 'switch'
+              : NODE_CONSTRAINTS[template.type].requiresOutput && template.type !== 'switch' && template.type !== 'questionClassifier'
                 ? [{ type: 'output' as const }]
                 : []),
           ],
@@ -343,6 +478,18 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
         }),
       ],
       onContentChange: handleContentChange,
+      // 普通节点（非条件/多条件/问题分类）拖出新连线时替换旧连线：拖线即切换下游节点
+      onDragLineEnd: (_ctx: FreeLayoutPluginContext, params: onDragLineEndParams) => {
+        const { fromPort, line } = params
+        if (!fromPort || !line) return Promise.resolve()
+        const node = fromPort.node
+        const type = String(node.flowNodeType ?? node.type)
+        if (type === 'condition' || type === 'switch' || type === 'questionClassifier' || type === 'end') return Promise.resolve()
+        for (const old of node.getData(WorkflowNodeLinesData)?.outputLines ?? []) {
+          if (old.id !== line.id) old.dispose()
+        }
+        return Promise.resolve()
+      },
     }
   }, [initialData, nodeRegistries, canManage, handleContentChange])
 
@@ -451,7 +598,7 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
       ) : (
         <div className="wf-content">
           <FreeLayoutEditorProvider key={`${appId}-${loadSeq}`} {...editorProps}>
-            <DesignerCanvas />
+            <DesignerCanvas canManage={canManage} />
           </FreeLayoutEditorProvider>
           {canManage && leftPanel !== 'none' && (
             <div className="wf-side-layer">

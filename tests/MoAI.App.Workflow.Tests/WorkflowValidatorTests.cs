@@ -40,6 +40,61 @@ public class WorkflowValidatorTests
     }
 
     [Fact]
+    public void Validate_NormalNodeMultipleOutgoing_ReportsError()
+    {
+        var definition = new WorkflowDefinition
+        {
+            Id = "multi-out",
+            Name = "多出边",
+            Nodes =
+            [
+                new NodeDefinition { Key = "start", Name = "开始", Type = NodeTypes.Start },
+                new NodeDefinition { Key = "js", Name = "脚本", Type = NodeTypes.JavaScript },
+                new NodeDefinition { Key = "end1", Name = "结束1", Type = NodeTypes.End },
+                new NodeDefinition { Key = "end2", Name = "结束2", Type = NodeTypes.End },
+            ],
+            Connections =
+            [
+                new ConnectionDefinition { Id = "c1", Source = "start", Target = "js" },
+                new ConnectionDefinition { Id = "c2", Source = "js", Target = "end1" },
+                new ConnectionDefinition { Id = "c3", Source = "js", Target = "end2" },
+            ],
+        };
+        var validator = new WorkflowValidator();
+
+        var errors = validator.GetErrors(definition);
+
+        Assert.Contains(errors, e => e.Contains("只允许一条输出连线"));
+    }
+
+    [Fact]
+    public void Validate_ConditionMultipleOutgoing_Allowed()
+    {
+        var definition = new WorkflowDefinition
+        {
+            Id = "branch-out",
+            Name = "条件多出边",
+            Nodes =
+            [
+                new NodeDefinition { Key = "start", Name = "开始", Type = NodeTypes.Start },
+                new NodeDefinition { Key = "check", Name = "条件", Type = NodeTypes.Condition },
+                new NodeDefinition { Key = "end", Name = "结束", Type = NodeTypes.End },
+            ],
+            Connections =
+            [
+                new ConnectionDefinition { Id = "c1", Source = "start", Target = "check" },
+                new ConnectionDefinition { Id = "c2", Source = "check", Target = "end", Condition = "true" },
+                new ConnectionDefinition { Id = "c3", Source = "check", Target = "end", Condition = "false" },
+            ],
+        };
+        var validator = new WorkflowValidator();
+
+        var errors = validator.GetErrors(definition);
+
+        Assert.DoesNotContain(errors, e => e.Contains("只允许一条输出连线"));
+    }
+
+    [Fact]
     public void Validate_Cycle_ReportsError()
     {
         var definition = new WorkflowDefinition

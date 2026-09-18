@@ -53,17 +53,6 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      */
     get users(): UsersRequestBuilder;
     /**
-     * 解散团队，仅 Owner 可操作.
-     * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
-     * @returns {Promise<EmptyCommandResponse>}
-     * @throws {BusinessValidationResult} error when the service returns a 400 status code
-     * @throws {BusinessValidationResult} error when the service returns a 401 status code
-     * @throws {BusinessValidationResult} error when the service returns a 403 status code
-     * @throws {BusinessValidationResult} error when the service returns a 409 status code
-     * @throws {BusinessValidationResult} error when the service returns a 500 status code
-     */
-     delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
-    /**
      * 查询团队详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryTeamCommandResponse>}
@@ -86,12 +75,6 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
      put(body: UpdateTeamCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
-    /**
-     * 解散团队，仅 Owner 可操作.
-     * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
-     * @returns {RequestInformation}
-     */
-     toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
      * 查询团队详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -140,19 +123,6 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
  * Metadata for all the requests in the request builder.
  */
 export const ItemRequestBuilderRequestsMetadata: RequestsMetadata = {
-    delete: {
-        uriTemplate: ItemRequestBuilderUriTemplate,
-        responseBodyContentType: "application/json",
-        errorMappings: {
-            400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
-            401: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
-            403: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
-            409: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
-            500: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
-        },
-        adapterMethodName: "send",
-        responseBodyFactory:  createEmptyCommandResponseFromDiscriminatorValue,
-    },
     get: {
         uriTemplate: ItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",

@@ -4,13 +4,12 @@ import {
   ExperimentOutlined,
   FileTextOutlined,
   SettingOutlined,
-  UploadOutlined,
 } from '@ant-design/icons'
-import { Alert, AutoComplete, Avatar, Button, Form, Input, Layout, Menu, Select, Space, Spin, Switch, Tag, Typography, Upload } from 'antd'
-import type { MenuProps, UploadProps } from 'antd'
+import { Alert, AutoComplete, Button, Form, Input, Layout, Menu, Select, Space, Spin, Switch, Tag, Typography } from 'antd'
+import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Card, feedback, Page } from '@/design-system'
+import { AvatarUpload, Card, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getWikiDetail, getWikiModelOptions, updateWiki, updateWikiEmbeddingConfig, updateWikiRerankModel, uploadWikiAvatar } from '@/api/wiki'
 import { getTeamDetail } from '@/api/team'
@@ -259,14 +258,15 @@ export function WikiDetail() {
 
   const avatarSrc = wiki?.avatarPath?.trim() ? resolveStorageUrl(wiki.avatarPath) : undefined
 
-  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
+  /** 校验并上传知识库头像；非法文件直接忽略 */
+  const handleAvatarFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       feedback.error(t('wiki.avatarTypeError'))
-      return Upload.LIST_IGNORE
+      return
     }
     if (file.size > 5 * 1024 * 1024) {
       feedback.error(t('wiki.avatarSizeError'))
-      return Upload.LIST_IGNORE
+      return
     }
     setUploadingAvatar(true)
     uploadWikiAvatar(wikiId, file)
@@ -274,7 +274,6 @@ export function WikiDetail() {
       .then(() => reload())
       .catch(() => undefined)
       .finally(() => setUploadingAvatar(false))
-    return Upload.LIST_IGNORE
   }
 
   if (loading) {
@@ -331,27 +330,17 @@ export function WikiDetail() {
                 <>
                   <Form form={settingsForm} layout="vertical">
                   <Form.Item label={t('wiki.avatar')}>
-                    <Space align="center">
-                      <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*" disabled={uploadingAvatar}>
-                        <Avatar
-                          // 加 key：上传成功后 src 变化时强制重挂载，避免 Avatar 缓存旧图
-                          key={avatarSrc ?? 'default'}
-                          shape="square"
-                          size={64}
-                          icon={!avatarSrc ? <BookOutlined /> : undefined}
-                          src={avatarSrc}
-                          style={{ cursor: 'pointer' }}
-                        />
-                      </Upload>
-                      <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*">
-                        <Button icon={<UploadOutlined />} loading={uploadingAvatar}>
-                          {avatarSrc ? t('wiki.avatarReplace') : t('wiki.avatar')}
-                        </Button>
-                      </Upload>
-                    </Space>
-                    <div>
+                    <Space direction="vertical" size={spacing.xs}>
+                      <AvatarUpload
+                        src={avatarSrc}
+                        fallback={<BookOutlined />}
+                        shape="square"
+                        size={96}
+                        uploading={uploadingAvatar}
+                        onSelect={handleAvatarFile}
+                      />
                       <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.avatarHint')}</Text>
-                    </div>
+                    </Space>
                   </Form.Item>
                   <Form.Item
                     name="name"

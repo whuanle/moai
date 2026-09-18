@@ -38,8 +38,8 @@ docker exec -i moai-postgres psql -U postgres -d moai < asserts/prompt.sql
 1. 后端 `cd src/MoAI && dotnet run`，前端 `cd ui && npm run dev`。
 2. 普通账号登录 → 「提示词市场」菜单 → 页头切到「我的提示词」Tab → 新建 → 进入编辑器页，用工具栏「H2/加粗」插入语法右侧实时渲染（也可手输 Markdown），上传头像后保存 → 卡片出现「未上架」且带头像。
 3. 点卡片「申请上架」→ admin 在「审批上架」通过 → 刷新出现「已上架」，页头「提示词市场」Tab 可见。
-4. 另一普通账号打开市场 → 使用（复制内容，详情 Markdown 渲染）→ 计数 +1。
-5. 团队 Owner 在团队详情「提示词」分区新建（同一编辑器页）→ Member 只读可见；Owner 申请上架走同一审批链。
+4. 另一普通账号打开市场 → 使用（详情弹窗为横线分隔的 Markdown 内容，可一键复制）→ 计数 +1。
+5. 团队 Owner 在团队详情「提示词」分区新建（同一编辑器页）→ Member 只读可见；分区为卡片列表展示；Owner 申请上架走同一审批链。
 
 ## 4. 回归命令
 

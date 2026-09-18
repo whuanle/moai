@@ -1,6 +1,22 @@
 import { type Guid } from '@microsoft/kiota-abstractions'
+import { Env } from '@/config/env'
 import { getApiClient } from '@/api/kiota'
-import type { ExternalAccessPointResponse } from './client/models'
+
+/** 访问点公开配置（外部匿名端点返回结构，/openapi/external.json） */
+export interface ExternalAccessPointResponse {
+  appId?: string | null
+  title?: string | null
+  subtitle?: string | null
+  placeholder?: string | null
+  primaryColor?: string | null
+  position?: string | null
+  launcherText?: string | null
+  avatar?: string | null
+  panelWidth?: number | null
+  panelHeight?: number | null
+  defaultOpen?: boolean | null
+  enabled?: boolean | null
+}
 
 export interface AppAccessPointConfig {
   appId?: string | null
@@ -79,9 +95,12 @@ export async function saveAppAccessPoint(appId: string, payload: SaveAccessPoint
   } as never)
 }
 
-/** 查询访问点公开配置（匿名，悬浮组件用） */
-export async function getExternalAccessPoint(appId: string): Promise<ExternalAccessPointResponse> {
-  const client = getApiClient()
-  const res = await client.api.external.app.byAppId(normalizeGuid(appId)).accessPoint.get()
-  return res as ExternalAccessPointResponse
+/** 查询访问点公开配置（匿名，悬浮组件用）。
+ * 外部接口（/api/external）已从内部 Kiota 客户端文档拆分（/openapi/external.json），此处直接 fetch。 */
+export async function getExternalAccessPoint(appId: string): Promise<ExternalAccessPointResponse | null> {
+  const res = await fetch(`${Env.serverUrl}/api/external/app/${appId}/access-point`)
+  if (!res.ok) {
+    return null
+  }
+  return (await res.json()) as ExternalAccessPointResponse
 }

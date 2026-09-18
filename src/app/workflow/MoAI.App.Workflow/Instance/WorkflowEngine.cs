@@ -51,6 +51,8 @@ public class WorkflowEngine
     /// </summary>
     /// <param name="definitionId">工作流定义 ID.</param>
     /// <param name="input">启动参数（开始节点的 run 输入）.</param>
+    /// <param name="systemVariables">全局变量实际值（键为变量名，经 system.* 引用）.</param>
+    /// <param name="systemContext">调用方注入的 sys.* 附加变量（对话上下文：userId/appId/conversationId/messageId/history）.</param>
     /// <param name="instanceId">实例 ID（不传自动生成）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>终态实例.</returns>
@@ -58,13 +60,14 @@ public class WorkflowEngine
         string definitionId,
         JsonObject? input = null,
         JsonObject? systemVariables = null,
+        JsonObject? systemContext = null,
         string? instanceId = null,
         CancellationToken cancellationToken = default)
     {
         var definition = await _definitionStore.FindPublishedDefinitionByIdAsync(definitionId, cancellationToken)
             ?? throw new WorkflowException($"工作流定义 {definitionId} 不存在或未发布");
 
-        return await StartWithDefinitionAsync(definition, input, systemVariables, instanceId, cancellationToken);
+        return await StartWithDefinitionAsync(definition, input, systemVariables, systemContext, instanceId, cancellationToken);
     }
 
     /// <summary>
@@ -74,6 +77,7 @@ public class WorkflowEngine
     /// <param name="definition">工作流定义（可为未发布的草稿）.</param>
     /// <param name="input">启动参数（开始节点的 run 输入）.</param>
     /// <param name="systemVariables">全局变量实际值（键为变量名），未提供的变量使用定义默认值.</param>
+    /// <param name="systemContext">调用方注入的 sys.* 附加变量（对话上下文）.</param>
     /// <param name="instanceId">实例 ID（不传自动生成）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>终态实例.</returns>
@@ -81,6 +85,7 @@ public class WorkflowEngine
         WorkflowDefinition definition,
         JsonObject? input = null,
         JsonObject? systemVariables = null,
+        JsonObject? systemContext = null,
         string? instanceId = null,
         CancellationToken cancellationToken = default)
     {
@@ -94,6 +99,7 @@ public class WorkflowEngine
             Status = InstanceStatus.Created,
             Input = input?.CloneObject() ?? new JsonObject(),
             SystemVariables = MergeSystemVariables(definition, systemVariables),
+            SystemContext = systemContext?.CloneObject(),
             NodeStates = definition.Nodes.ToDictionary(
                 n => n.Key,
                 n => new NodeExecutionState

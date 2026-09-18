@@ -10,9 +10,11 @@ export interface QueryBarProps {
   onReset?: () => void
   loading?: boolean
   children?: ReactNode
+  /** 追加在查询/重置按钮右侧的操作区（如新建、刷新） */
+  extra?: ReactNode
 }
 
-export function QueryBar({ form, onSearch, onReset, loading, children }: QueryBarProps) {
+export function QueryBar({ form, onSearch, onReset, loading, children, extra }: QueryBarProps) {
   const { t } = useTranslation()
   const [internalForm] = Form.useForm()
   const activeForm = form ?? internalForm
@@ -47,6 +49,7 @@ export function QueryBar({ form, onSearch, onReset, loading, children }: QueryBa
             >
               {t('ds.query.reset')}
             </Button>
+            {extra}
           </Space>
         </Form.Item>
       </Form>

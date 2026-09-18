@@ -45,12 +45,18 @@ public class UpdateSkillCommand : IRequest<EmptyCommandResponse>, IModelValidato
     /// </summary>
     public IReadOnlyList<SkillFileItem> Files { get; init; } = Array.Empty<SkillFileItem>();
 
+    /// <summary>
+    /// 分类 id，0 表示未分类，分类类型必须为 skill.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateSkillCommand> validate)
     {
         // SkillId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("技能名称不能为空.").MaximumLength(50).WithMessage("技能名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("技能描述最长 255 个字符.");
+        validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");
         validate.RuleFor(x => x.Files).Must(files => files.Select(f => f.Path).Distinct().Count() == files.Count)
             .WithMessage("技能包内文件路径不能重复.");
         validate.RuleForEach(x => x.Files).ChildRules(file =>

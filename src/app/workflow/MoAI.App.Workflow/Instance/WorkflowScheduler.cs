@@ -317,9 +317,9 @@ public class WorkflowScheduler
             return;
         }
 
-        if (node.Type == NodeTypes.Switch)
+        if (node.Type == NodeTypes.Switch || node.Type == NodeTypes.QuestionClassifier)
         {
-            // 多条件节点：输出 result 为命中的分支 id（或 else），按字符串匹配出边
+            // 多条件/问题分类节点：输出 result 为命中的分支 id（问题分类为分类 id），按字符串匹配出边
             var switchMatched = state.Output != null
                 && state.Output.TryGetPropertyValue("result", out var switchResultNode)
                 && switchResultNode is JsonValue switchValue
@@ -474,6 +474,7 @@ public class WorkflowScheduler
 
     /// <summary>
     /// 构建变量作用域：sys.* + input.* + 已完成节点输出（流程数据传输的上下文）.
+    /// sys.* = 引擎内置项（实例/流程标识、开始时间、当前时间）+ 调用方注入的 SystemContext（对话上下文等）.
     /// </summary>
     private static WorkflowVariableScope BuildVariableScope(WorkflowInstance instance, CompiledWorkflow graph)
     {
@@ -483,7 +484,17 @@ public class WorkflowScheduler
             ["workflowId"] = instance.DefinitionId,
             ["workflowName"] = instance.DefinitionName,
             ["startedAt"] = instance.StartedAt?.ToString("O"),
+            ["currentTime"] = instance.StartedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"),
         };
+
+        // 调用方注入的 sys 附加变量（userId/appId/conversationId/messageId/history 等），注入值优先
+        if (instance.SystemContext != null)
+        {
+            foreach (var (name, value) in instance.SystemContext)
+            {
+                systemVariables[name] = value?.DeepClone();
+            }
+        }
 
         var nodeOutputs = new Dictionary<string, JsonObject>();
         foreach (var (nodeKey, state) in instance.NodeStates)

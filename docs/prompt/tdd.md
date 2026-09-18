@@ -21,10 +21,11 @@
 | @PT-S14 | local-dev/prompt-e2e.mjs#PT-15c/d | PASS 46/46（2026-09-15） |
 | @PT-S15 | ui/src/pages/prompts/__tests__/PromptCenter.test.tsx#市场 Tab 渲染/切换我的提示词 | PASS 11/11（2026-09-16，全仓 vitest 270/270） |
 | @PT-S16 | ui/src/pages/prompts/__tests__/PromptCenter.test.tsx#分类过滤/新建跳转/申请上架/删除 | PASS 11/11（2026-09-16，全仓 vitest 270/270） |
-| @PT-S18 | ui/src/pages/prompts/__tests__/PromptEditor.test.tsx#实时预览/新建/编辑回填/团队新建 | PASS 4/4（2026-09-15，全仓 vitest 267/267） |
+| @PT-S18 | ui/src/pages/prompts/__tests__/PromptEditor.test.tsx#实时预览/新建/编辑回填/团队新建/工具栏 | PASS 6/6（2026-09-18，全仓 vitest 330/330） |
 | @PT-S20 | ui/src/pages/prompts/__tests__/markdown.test.ts + PromptEditor.test.tsx#工具栏 | PASS 283/283（2026-09-16，全仓 vitest） |
 | @PT-S19 | local-dev/prompt-e2e.mjs#PT-16 | PASS 46/46（2026-09-15） |
-| @PT-S17 | @manual（浏览器走查，见 sop.md 第 3 节） | PASS（2026-09-16 浏览器实测市场卡片与编辑器工具栏/预览，团队分区未改动） |
+| @PT-S21 | ui/src/pages/teams/prompts/__tests__/TeamPrompts.test.tsx | PASS 3/3（2026-09-18，全仓 vitest 330/330） |
+| @PT-S17 | @manual（浏览器走查，见 sop.md 第 3 节） | PASS（2026-09-16 市场/编辑器走查；2026-09-18 详情弹窗与团队分区改版，待复走查） |
 
 ## 构建与回归
 
@@ -37,6 +38,7 @@ node local-dev/publication-e2e.mjs                            # PB 34/34 回归�
 
 ## 本轮修复记录
 
+- 2026-09-18 团队提示词分区交互改版（纯前端）：固定卡片列表（新建/刷新并入查询行，不展示条数与视图切换）、卡片按被使用次数降序、分类筛选改为头部固定分类列表并显示 emoji（`classifyLabel`）、`PromptDetailModal` 去背景色/边框改横线分隔并新增复制按钮；提示词中心（市场/我的）同步：卡片一行 6 张、去掉「共 N 条」、分类 chip 显示 emoji；新增 [@PT-S21](./bdd.md#pt-s21) 与 TeamPrompts 组件测试；设计系统 `QueryBar` 新增 `extra` 插槽（[@FE-CB-S19](../components-base/bdd.md#fe-cb-s19)）。
 - 2026-09-16 编辑保存 400（`$.promptId` 无法转 Int32）：`UpdatePromptCommand.PromptId` 暴露在 PUT 请求体 schema 中，Kiota 把前端传入的 null 原样序列化导致 System.Text.Json 绑定失败。修复：后端 `PromptId` 加 `[JsonIgnore]`（请求体不再携带，与"路由提供"决策一致）；前端 `updatePrompt` 改传真实 id 立即兼容运行中后端。**待后端重启后执行 `npm run syncapi`，再删除封装层中的 `promptId` 字段**。
 
 

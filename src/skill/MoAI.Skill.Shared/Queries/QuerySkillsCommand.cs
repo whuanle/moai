@@ -24,11 +24,17 @@ public class QuerySkillsCommand : IRequest<QuerySkillsCommandResponse>, IModelVa
     /// </summary>
     public string? SearchText { get; init; }
 
+    /// <summary>
+    /// 按分类 id 过滤，为空查全部分类.
+    /// </summary>
+    public int? ClassifyId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QuerySkillsCommand> validate)
     {
         validate.RuleFor(x => x.PageNo).GreaterThanOrEqualTo(1).WithMessage("页码从 1 开始.");
         validate.RuleFor(x => x.PageSize).InclusiveBetween(1, 100).WithMessage("每页数量 1-100.");
         validate.RuleFor(x => x.SearchText).MaximumLength(100).WithMessage("关键字最长 100 个字符.");
+        validate.RuleFor(x => x.ClassifyId).GreaterThan(0).When(x => x.ClassifyId != null).WithMessage("分类 id 不正确.");
     }
 }

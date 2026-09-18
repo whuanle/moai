@@ -43,6 +43,11 @@ public class SkillListItem : AuditsInfo
     public int TeamId { get; init; }
 
     /// <summary>
+    /// 分类 id，0 表示未分类.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
+    /// <summary>
     /// 是否已上架市场公开.
     /// </summary>
     public bool IsPublic { get; init; }

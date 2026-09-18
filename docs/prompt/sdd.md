@@ -31,11 +31,11 @@
 
 ## 前端
 
-- 一级菜单单一入口「提示词市场」`/prompt-market`；`PromptCenter` 页头 Tab 切换「提示词市场 / 我的提示词」，`/prompts` 与 `/prompt-market` 为同一组件的两个 Tab 路由（切换 Tab 即路由跳转并重置筛选/分页），侧边菜单不再单列「我的提示词」。两个 Tab 均为分类列表（CheckableTag）+ 关键字搜索筛选，卡片列表 + 客户端分页（列表接口暂无分页参数），不使用表格。
+- 一级菜单单一入口「提示词市场」`/prompt-market`；`PromptCenter` 页头 Tab 切换「提示词市场 / 我的提示词」，`/prompts` 与 `/prompt-market` 为同一组件的两个 Tab 路由（切换 Tab 即路由跳转并重置筛选/分页），侧边菜单不再单列「我的提示词」。两个 Tab 均为分类列表（CheckableTag，`classifyLabel` 展示 emoji）+ 关键字搜索筛选，卡片列表（xl/xxl 一行 6 张）+ 客户端分页（列表接口暂无分页参数），不展示条数统计，不使用表格。
 - **独立编辑器页** `PromptEditor`：新建/编辑不再用弹窗，路由 `/prompts/new`、`/prompts/:promptId/edit`、`/team/:teamId/prompt/new`、`/team/:teamId/prompt/:promptId/edit`；顶部基本信息（头像角标上传 + 名称/分类/描述一行）+ Markdown 工具栏 + 左右等高面板（borderless 等宽 TextArea ｜ `react-markdown + remark-gfm` 实时预览）；工具栏为 `MarkdownToolbar` + 纯函数内核 `markdown.ts#applyMarkdownEdit`（选区包裹/行级前缀/整块插入，占位文案走 i18n），头像在编辑器内上传（新建先传存储拿 objectKey 随创建提交，编辑直接调 avatar 接口）。
-- 团队详情「提示词」分区（成员可见，`TeamPrompts` 按 `canManage` 收敛管理入口）。
-- 共享 `PromptDetailModal`（头像 + Markdown 渲染内容）供我的/团队/市场三处复用。
-- 封装层 `ui/src/api/prompt.ts`，头像走 `uploadImageWithKey`（存储三段直传）+ `setPromptAvatar`；上架复用 `ui/src/api/publication.ts`；分类选项复用 `classifyApi.getClassifies('prompt')`。
+- 团队详情「提示词」分区（成员可见，`TeamPrompts` 按 `canManage` 收敛管理入口）：固定卡片网格（形态与提示词中心一致，客户端分页 12/24/48，按 `counter` 被使用次数降序、同次数保持后端顺序），新建/刷新按钮经 `QueryBar` 的 `extra` 并入查询行（查询/重置右侧），不展示条数统计与表格视图；分类筛选为头部固定分类列表（`Tag.CheckableTag`，`classifyLabel` 展示 emoji）。
+- 共享 `PromptDetailModal`（头像标题 + 描述 + `Divider` 横线分隔的 Markdown 内容区，内容不用背景色/边框容器，标题行右侧复制按钮走 clipboard + feedback）供我的/团队/市场三处复用。
+- 封装层 `ui/src/api/prompt.ts`，头像走 `uploadImageWithKey`（存储三段直传）+ `setPromptAvatar`；上架复用 `ui/src/api/publication.ts`；分类选项复用 `classifyApi.getClassifies('prompt')` 并以 `classifyLabel`（emoji + 名称）展示（团队分区为头部固定分类列表，编辑器为下拉）。
 
 ## 关键决策（补充）
 

@@ -232,4 +232,14 @@ Feature: 技能市场与个人/团队自助维护
     Given 技能已有待审核的上架申请
     When 归属人删除该技能
     Then 200，且管理员审批该申请时 404 申请不存在（无僵尸记录）
+
+  @SKM-S10 @manual
+  Scenario: 技能分类接入
+    Given 管理员在分类管理「技能」页签维护分类（可配 emoji）
+    When 创建/更新技能选择该分类
+    Then 保存成功，列表与详情返回 classifyId
+    When 提交不存在的 skill 分类 id
+    Then 返回 404「技能分类不存在」
+    When 技能中心（市场/我的）点击分类 chip（emoji + 名称）
+    Then 列表按 classifyId 过滤
 ```

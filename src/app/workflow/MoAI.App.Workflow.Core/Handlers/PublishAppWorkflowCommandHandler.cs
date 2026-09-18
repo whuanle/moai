@@ -90,6 +90,9 @@ public class PublishAppWorkflowCommandHandler : IRequestHandler<PublishAppWorkfl
             throw new BusinessException(ex.Message) { StatusCode = 400 };
         }
 
+        // 知识库检索节点引用的知识库必须属于本团队
+        await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
+
         _executionContext.TeamId = app.TeamId;
         await _definitionStore.PublishAsync(request.AppId.ToString(), cancellationToken);
 

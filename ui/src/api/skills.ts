@@ -9,6 +9,8 @@ export interface SkillListItem {
   isDisable?: boolean | null
   /** 所属团队 id，0=系统内置或个人技能 */
   teamId?: number | null
+  /** 分类 id，0=未分类 */
+  classifyId?: number | null
   /** 是否已上架市场公开 */
   isPublic?: boolean | null
   /** 待审核的上架申请 id（后端 long 序列化为字符串），无待审核申请时为 null */
@@ -37,6 +39,8 @@ export interface SkillDetail {
   isSystem?: boolean | null
   isDisable?: boolean | null
   teamId?: number | null
+  /** 分类 id，0=未分类 */
+  classifyId?: number | null
   isPublic?: boolean | null
   createTime?: string | null
   updateTime?: string | null
@@ -62,10 +66,12 @@ export interface GetSkillsParams {
   pageNo?: number
   pageSize?: number
   searchText?: string
+  classifyId?: number
 }
 
 export interface SkillListFilters {
   keywords?: string
+  classifyId?: number
 }
 
 export async function getSkills(params: GetSkillsParams): Promise<{ totalCount: number; items: SkillListItem[] }> {
@@ -75,6 +81,7 @@ export async function getSkills(params: GetSkillsParams): Promise<{ totalCount: 
       pageNo: params.pageNo,
       pageSize: params.pageSize,
       searchText: params.searchText,
+      classifyId: params.classifyId,
     },
   })
   return { totalCount: res?.totalCount ?? 0, items: res?.items ?? [] }
@@ -83,7 +90,10 @@ export async function getSkills(params: GetSkillsParams): Promise<{ totalCount: 
 export async function getMySkills(filters?: SkillListFilters): Promise<SkillListItem[]> {
   const client = getApiClient()
   const res = await client.api.skill.my_list.get({
-    queryParameters: { keywords: filters?.keywords || undefined },
+    queryParameters: {
+      keywords: filters?.keywords || undefined,
+      classifyId: filters?.classifyId || undefined,
+    },
   })
   return (res?.items ?? []) as SkillListItem[]
 }
@@ -94,6 +104,7 @@ export async function getTeamSkills(teamId: number, filters?: SkillListFilters):
     queryParameters: {
       teamId,
       keywords: filters?.keywords || undefined,
+      classifyId: filters?.classifyId || undefined,
     },
   })
   return (res?.items ?? []) as SkillListItem[]
@@ -102,7 +113,10 @@ export async function getTeamSkills(teamId: number, filters?: SkillListFilters):
 export async function getSkillMarketList(filters?: SkillListFilters): Promise<SkillListItem[]> {
   const client = getApiClient()
   const res = await client.api.skill.market_list.get({
-    queryParameters: { keywords: filters?.keywords || undefined },
+    queryParameters: {
+      keywords: filters?.keywords || undefined,
+      classifyId: filters?.classifyId || undefined,
+    },
   })
   return (res?.items ?? []) as SkillListItem[]
 }
@@ -125,6 +139,7 @@ export async function createSkill(payload: {
   description?: string
   instructions?: string
   files: SkillFileItem[]
+  classifyId?: number
 }): Promise<string | undefined> {
   const client = getApiClient()
   const res = await client.api.skill.post({
@@ -133,6 +148,7 @@ export async function createSkill(payload: {
     name: payload.name,
     description: payload.description ?? '',
     instructions: payload.instructions ?? '',
+    classifyId: payload.classifyId ?? 0,
     // Kiota 将后端 long 生成为 string，统一收敛为字符串
     files: payload.files.map((f) => ({
       path: f.path ?? '',
@@ -145,13 +161,14 @@ export async function createSkill(payload: {
 
 export async function updateSkill(
   id: string,
-  payload: { name: string; description?: string; instructions?: string; files: SkillFileItem[] },
+  payload: { name: string; description?: string; instructions?: string; files: SkillFileItem[]; classifyId?: number },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.skill.byId(id).put({
     name: payload.name,
     description: payload.description ?? '',
     instructions: payload.instructions ?? '',
+    classifyId: payload.classifyId ?? 0,
     files: payload.files.map((f) => ({
       path: f.path ?? '',
       fileId: f.fileId != null ? String(f.fileId) : '0',

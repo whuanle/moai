@@ -16,7 +16,7 @@ import { Card, Page, feedback } from '@/design-system'
 import { neutralColors, spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
-import { classifyApi, ClassifyType, type Classify } from '@/api/classify'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { applyPublication, withdrawPublication } from '@/api/publication'
 import {
   deletePrompt,
@@ -57,7 +57,7 @@ export function PromptCenter() {
   const [applyReason, setApplyReason] = useState('')
 
   const classOptions = useMemo(
-    () => classifies.map((c) => ({ value: Number(c.classifyId), label: c.name ?? '' })),
+    () => classifies.map((c) => ({ value: Number(c.classifyId), label: classifyLabel(c) })),
     [classifies],
   )
   const classNameMap = useMemo(
@@ -243,7 +243,6 @@ export function PromptCenter() {
         <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
           {t('ds.table.refresh')}
         </Button>
-        <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
       </div>
       <Space size={4} wrap style={{ marginBottom: spacing.md }}>
         <Tag.CheckableTag checked={promptClassId === undefined} onChange={() => { setPromptClassId(undefined); setPage(1) }}>
@@ -267,7 +266,7 @@ export function PromptCenter() {
             {pagedItems.map((record) => {
               const name = record.name || '-'
               return (
-                <Col key={String(record.promptId ?? '')} xs={24} sm={12} md={8} lg={6}>
+                <Col key={String(record.promptId ?? '')} xs={24} sm={12} md={8} lg={6} xl={4} xxl={4}>
                   <Card style={{ height: '100%' }} styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
@@ -343,18 +342,17 @@ export function PromptCenter() {
       </Spin>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.md }}>
         {items.length > 0 && (
-          <Pagination
-            current={page}
-            pageSize={pageSize}
-            total={items.length}
-            onChange={(next, nextSize) => {
-              setPage(nextSize !== pageSize ? 1 : next)
-              setPageSize(nextSize)
-            }}
-            showSizeChanger
-            pageSizeOptions={PAGE_SIZE_OPTIONS.map(String)}
-            showTotal={(total) => t('ds.table.total', { total })}
-          />
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={items.length}
+                onChange={(next, nextSize) => {
+                  setPage(nextSize !== pageSize ? 1 : next)
+                  setPageSize(nextSize)
+                }}
+                showSizeChanger
+                pageSizeOptions={PAGE_SIZE_OPTIONS.map(String)}
+              />
         )}
       </div>
       <PromptDetailModal open={detailOpen} detail={detail} onClose={() => setDetailOpen(false)} />

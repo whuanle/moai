@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
+import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps, TableColumnsType } from 'antd'
-import type { UploadProps } from 'antd'
 import {
   AppstoreAddOutlined,
   AppstoreOutlined,
@@ -17,13 +16,12 @@ import {
   StopOutlined,
   TeamOutlined,
   ThunderboltOutlined,
-  UploadOutlined,
   UserAddOutlined,
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Card as DSCard, DataTable, feedback, Page } from '@/design-system'
+import { AvatarUpload, Card as DSCard, DataTable, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
@@ -39,8 +37,6 @@ import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
 import { TeamKnowledgeGraphs } from '@/pages/teams/knowledgegraph/TeamKnowledgeGraphs'
 import {
   addTeamUser,
-  dissolveTeam,
-  getMyTeams,
   getTeamCandidates,
   getTeamDetail,
   getTeamUsers,
@@ -102,7 +98,6 @@ export function TeamManage() {
   const section: SectionKey = SECTION_KEYS.includes(rawSection as SectionKey) ? (rawSection as SectionKey) : DEFAULT_SECTION
   const navigateToSection = (key: SectionKey) => navigate(`/team/${teamId}/${key}`)
   const currentUserId = useAppStore((state) => state.userInfo?.userId)
-  const setMyTeams = useAppStore((state) => state.setMyTeams)
 
   const [detail, setDetail] = useState<TeamDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -112,7 +107,6 @@ export function TeamManage() {
   const [settingsForm] = Form.useForm<{ name: string; description?: string }>()
   const [savingInfo, setSavingInfo] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [dissolving, setDissolving] = useState(false)
   const [candidates, setCandidates] = useState<TeamCandidateItem[]>([])
   const [searching, setSearching] = useState(false)
 
@@ -241,32 +235,15 @@ export function TeamManage() {
     }
   }
 
-  const handleDissolve = async () => {
-    setDissolving(true)
-    try {
-      await dissolveTeam(teamId)
-      feedback.success(t('team.dissolveSuccess'))
-      try {
-        setMyTeams(await getMyTeams())
-      } catch {
-        // 侧边栏团队列表刷新失败不阻塞跳转
-      }
-      navigate('/team')
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setDissolving(false)
-    }
-  }
-
-  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
+  /** 校验并上传团队头像；非法文件直接忽略 */
+  const handleAvatarFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       feedback.error(t('team.avatarTypeError'))
-      return Upload.LIST_IGNORE
+      return
     }
     if (file.size > 5 * 1024 * 1024) {
       feedback.error(t('team.avatarSizeError'))
-      return Upload.LIST_IGNORE
+      return
     }
     setUploadingAvatar(true)
     uploadTeamAvatar(teamId, file)
@@ -274,7 +251,6 @@ export function TeamManage() {
       .then(() => loadDetail())
       .catch(() => undefined)
       .finally(() => setUploadingAvatar(false))
-    return Upload.LIST_IGNORE
   }
 
   const renderRole = (role: number | null | undefined) => {
@@ -498,22 +474,19 @@ export function TeamManage() {
               <Variables teamId={teamId} />
             </DSCard>
           ) : (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <Form form={settingsForm} layout="vertical">
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
+              <Form form={settingsForm} layout="vertical" style={{ width: '100%', maxWidth: 480 }}>
                 <Form.Item label={t('team.avatar')}>
-                  <Space align="center">
-                    <Avatar size={64} src={detail?.avatar || undefined}>
-                      {(detail?.name ?? '?').slice(0, 1)}
-                    </Avatar>
-                    <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*">
-                      <Button icon={<UploadOutlined />} loading={uploadingAvatar}>
-                        {t('team.avatar')}
-                      </Button>
-                    </Upload>
-                  </Space>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>{t('team.avatarHint')}</Text>
-                  </div>
+                  <AvatarUpload
+                    src={detail?.avatar || undefined}
+                    fallback={(detail?.name ?? '?').slice(0, 1)}
+                    size={96}
+                    uploading={uploadingAvatar}
+                    onSelect={handleAvatarFile}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: spacing.xs }}>
+                    {t('team.avatarHint')}
+                  </Text>
                 </Form.Item>
                 <Form.Item
                   name="name"
@@ -532,13 +505,6 @@ export function TeamManage() {
                   {t('team.saveInfo')}
                 </Button>
               </Form>
-              {isOwner && (
-                <Popconfirm title={t('team.dissolveConfirm')} onConfirm={() => void handleDissolve()}>
-                  <Button danger style={{ marginTop: spacing.lg }} loading={dissolving}>
-                    {t('team.dissolve')}
-                  </Button>
-                </Popconfirm>
-              )}
             </DSCard>
           )}
         </Content>

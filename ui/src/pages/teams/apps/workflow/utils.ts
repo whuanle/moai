@@ -5,6 +5,7 @@
 
 import { generateNodeId, getNodeTemplate, isSupportedNodeType, NODE_CONSTRAINTS } from './constants'
 import type {
+  ClassifierClassDef,
   EditorEdgeJSON,
   EditorNodeJSON,
   EditorWorkflowJSON,
@@ -19,6 +20,9 @@ import type {
 
 /** 引擎契约中条件节点出边的合法 condition 值 */
 const CONDITION_VALUES = ['true', 'false']
+
+/** 问题分类节点聊天记录条数上限（与引擎 QuestionClassifierNodeExecutor.MaxHistoryCount 一致） */
+export const CLASSIFIER_HISTORY_MAX = 50
 
 /**
  * 汇总画布全部连线（两处来源合并去重）：
@@ -85,12 +89,27 @@ export function nodeDataFromTemplate(type: NodeType | string): EditorNodeJSON['d
     }
   }
 
+  if (type === 'questionClassifier') {
+    return {
+      title: template?.name ?? type,
+      content: template?.desc ?? '',
+      inputs: template ? JSON.parse(JSON.stringify(template.inputs)) : {},
+      outputs: template ? JSON.parse(JSON.stringify(template.outputs)) : [],
+      settings: template?.settings ? { ...template.settings } : {},
+      classes: [
+        { id: 'c1', label: '' },
+        { id: 'c2', label: '' },
+      ],
+    }
+  }
+
   return {
     title: template?.name ?? type,
     content: template?.desc ?? '',
     inputs: template ? JSON.parse(JSON.stringify(template.inputs)) : {},
     outputs: template ? JSON.parse(JSON.stringify(template.outputs)) : [],
-    settings: template?.settings ? { ...template.settings } : {},
+    // 深拷贝：模板 settings 含嵌套结构（http 的 params/headers/auth/extract），避免多节点共享引用
+    settings: template?.settings ? (JSON.parse(JSON.stringify(template.settings)) as NodeSettings) : {},
   }
 }
 
@@ -110,7 +129,7 @@ export function toEditorFormat(definition: WorkflowDefinition | null | undefined
     edges.push({
       sourceNodeID: conn.source,
       targetNodeID: conn.target,
-      ...((sourceNode?.type === 'condition' || sourceNode?.type === 'switch') && conn.condition
+      ...((sourceNode?.type === 'condition' || sourceNode?.type === 'switch' || sourceNode?.type === 'questionClassifier') && conn.condition
         ? { sourcePortID: conn.condition }
         : {}),
     })
@@ -145,6 +164,23 @@ export function toEditorFormat(definition: WorkflowDefinition | null | undefined
             }))
           : undefined
 
+      // questionClassifier：config.classes 还原为 data.classes 供分类编辑器展示，设置项从 config 摘出
+      const classes =
+        n.type === 'questionClassifier' && Array.isArray(configObj.classes)
+          ? (configObj.classes as Record<string, unknown>[]).map((c, i) => ({
+              id: String(c.id ?? `c${i + 1}`),
+              label: String(c.label ?? ''),
+            }))
+          : undefined
+      const classifierSettings =
+        n.type === 'questionClassifier'
+          ? {
+              aiModelId: String(configObj.aiModelId ?? ''),
+              backgroundKnowledge: String(configObj.backgroundKnowledge ?? ''),
+              historyCount: Number.isFinite(Number(configObj.historyCount)) ? Number(configObj.historyCount) : 6,
+            }
+          : undefined
+
       return {
         id: n.key,
         type: n.type,
@@ -156,9 +192,10 @@ export function toEditorFormat(definition: WorkflowDefinition | null | undefined
           title: n.name,
           content: n.description ?? '',
           branches,
+          classes,
           inputs: startInputs ?? n.inputs ?? {},
           outputs: n.type === 'start' ? [] : (n.outputs ?? []),
-          settings: n.type === 'switch' ? {} : (n.config ?? {}),
+          settings: n.type === 'switch' ? {} : (classifierSettings ?? (n.config ?? {})),
         },
         blocks: [],
         edges: [],
@@ -259,6 +296,7 @@ export function fromEditorFormat(editor: EditorWorkflowJSON, name: string, descr
           : sanitizeOutputs(n.data?.outputs)
 
       // switch：data.branches → config.branches（顺序分支定义）；
+      // questionClassifier：data.classes → config.classes（分类定义，出边标记 = 分类 id）；
       // condition：config.trueTarget（满足时走哪条出边的目标节点 key）按 id→key 重写
       const config =
         type === 'switch'
@@ -269,7 +307,12 @@ export function fromEditorFormat(editor: EditorWorkflowJSON, name: string, descr
                 binding: sanitizeBinding(b.binding),
               })),
             }
-          : sanitizeSettings(n.data?.settings)
+          : type === 'questionClassifier'
+            ? {
+                ...sanitizeSettings(n.data?.settings),
+                classes: sanitizeClasses(n.data?.classes),
+              }
+            : sanitizeSettings(n.data?.settings)
 
       if (type === 'condition' && typeof config.trueTarget === 'string') {
         const mapped = idToKey.get(config.trueTarget)
@@ -319,7 +362,7 @@ export function fromEditorFormat(editor: EditorWorkflowJSON, name: string, descr
               ? { condition: String(edge.sourcePortID), label: String(edge.sourcePortID) === 'true' ? '满足' : '不满足' }
               : {}
           })()
-        : typeOf(edge.sourceNodeID) === 'switch' && String(edge.sourcePortID ?? '') !== ''
+        : (typeOf(edge.sourceNodeID) === 'switch' || typeOf(edge.sourceNodeID) === 'questionClassifier') && String(edge.sourcePortID ?? '') !== ''
           ? { condition: String(edge.sourcePortID) }
           : {}),
     })
@@ -348,11 +391,130 @@ export function fromEditorFormat(editor: EditorWorkflowJSON, name: string, descr
 function sanitizeSettings(settings: Record<string, unknown> | NodeSettings | undefined): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   if (!settings) return result
-  for (const key of ['aiModelId', 'pluginKey', 'code', 'conditionScript', 'trueTarget'] as const) {
+  for (const key of ['aiModelId', 'pluginKey', 'code', 'conditionScript', 'trueTarget', 'backgroundKnowledge'] as const) {
     const value = settings[key]
     if (typeof value === 'string' && value !== '') {
       result[key] = value
     }
+  }
+
+  // knowledgeSearch：静态知识库（单个）+ topK（每库召回条数，1-50）；wikiIds 为旧草稿兼容
+  const wikiId = Number(settings.wikiId)
+  if (Number.isInteger(wikiId) && wikiId > 0) {
+    result.wikiId = wikiId
+  }
+
+  if (Array.isArray(settings.wikiIds)) {
+    const ids = [...new Set(settings.wikiIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))]
+    if (ids.length > 0) {
+      result.wikiIds = ids
+    }
+  }
+
+  const topK = Number(settings.topK)
+  if (Number.isInteger(topK) && topK >= 1) {
+    result.topK = Math.min(topK, 50)
+  }
+
+  // questionClassifier：聊天记录条数（0-50，缺省由引擎取默认值 6）
+  const historyCount = Number(settings.historyCount)
+  if (Number.isInteger(historyCount) && historyCount >= 0) {
+    result.historyCount = Math.min(historyCount, CLASSIFIER_HISTORY_MAX)
+  }
+
+  // http：请求方法/地址/超时/Body 类型/报错捕获
+  const httpMethod = String(settings.method ?? '').toUpperCase()
+  if (['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'].includes(httpMethod)) {
+    result.method = httpMethod
+  }
+
+  const url = String(settings.url ?? '')
+  if (url.trim() !== '') {
+    result.url = url
+  }
+
+  const timeoutSeconds = Number(settings.timeoutSeconds)
+  if (Number.isInteger(timeoutSeconds) && timeoutSeconds >= 1) {
+    result.timeoutSeconds = Math.min(timeoutSeconds, 300)
+  }
+
+  if (['none', 'json', 'form', 'text'].includes(String(settings.bodyType))) {
+    result.bodyType = settings.bodyType
+  }
+
+  if (typeof settings.body === 'string' && settings.body !== '') {
+    result.body = settings.body
+  }
+
+  if (settings.errorCapture === true) {
+    result.errorCapture = true
+  }
+
+  // http：键值对列表（查询参数/请求头/表单字段），剔除无名项
+  const sanitizeKvList = (value: unknown): { name: string; value: string }[] | undefined => {
+    if (!Array.isArray(value)) return undefined
+    const list = value
+      .filter((item): item is { name?: unknown; value?: unknown } => !!item && typeof item === 'object')
+      .map((item) => ({ name: String(item.name ?? ''), value: String(item.value ?? '') }))
+      .filter((item) => item.name.trim() !== '')
+    return list.length > 0 ? list : undefined
+  }
+
+  const params = sanitizeKvList(settings.params)
+  if (params) result.params = params
+  const headers = sanitizeKvList(settings.headers)
+  if (headers) result.headers = headers
+  const formEntries = sanitizeKvList(settings.formEntries)
+  if (formEntries) result.formEntries = formEntries
+
+  // http：鉴权配置（按类型保留所需字段）
+  if (settings.auth && typeof settings.auth === 'object') {
+    const rawAuth = settings.auth as Record<string, unknown>
+    const authType = String(rawAuth.type ?? 'none')
+    if (['none', 'bearer', 'basic', 'apiKey'].includes(authType)) {
+      const str = (v: unknown) => (typeof v === 'string' && v !== '' ? v : undefined)
+      result.auth = {
+        type: authType as 'none' | 'bearer' | 'basic' | 'apiKey',
+        ...(authType === 'bearer' ? { token: str(rawAuth.token) } : {}),
+        ...(authType === 'basic' ? { username: str(rawAuth.username), password: str(rawAuth.password) } : {}),
+        ...(authType === 'apiKey' ? { headerName: str(rawAuth.headerName), headerValue: str(rawAuth.headerValue) } : {}),
+      }
+    }
+  }
+
+  // http：输出字段提取（名称/JsonPath 非空且名称唯一）
+  if (Array.isArray(settings.extract)) {
+    const seen = new Set<string>()
+    const extract = settings.extract
+      .filter((item): item is { name?: unknown; path?: unknown; fieldType?: unknown } => !!item && typeof item === 'object')
+      .map((item) => ({
+        name: String(item.name ?? '').trim(),
+        path: String(item.path ?? '').trim(),
+        fieldType: ['string', 'number', 'boolean', 'object', 'map', 'array', 'dynamic'].includes(String(item.fieldType))
+          ? String(item.fieldType)
+          : 'string',
+      }))
+      .filter((item) => {
+        if (item.name === '' || item.path === '' || seen.has(item.name)) return false
+        seen.add(item.name)
+        return true
+      })
+    if (extract.length > 0) {
+      result.extract = extract
+    }
+  }
+
+  return result
+}
+
+/** 清洗问题分类节点分类列表：保留 id 非空且唯一的项（label 允许为空，校验层提示） */
+function sanitizeClasses(classes: ClassifierClassDef[] | undefined): { id: string; label: string }[] {
+  if (!Array.isArray(classes)) return []
+  const result: { id: string; label: string }[] = []
+  for (const item of classes) {
+    const id = String(item?.id ?? '').trim()
+    if (!id || result.some((c) => c.id === id)) continue
+    result.push({ id, label: String(item?.label ?? '') })
   }
   return result
 }
@@ -395,6 +557,52 @@ function sanitizeOutputs(outputs: OutputField[] | undefined): OutputField[] {
       isRequired: o.isRequired === true,
       ...(o.description ? { description: o.description } : {}),
     }))
+}
+
+/**
+ * 团队插件响应 schema → 节点输出参数声明（name/fieldType/description）.
+ * schema 为空时返回空数组，由调用方决定是否保留原输出.
+ */
+export function outputsFromPluginSchema(
+  schema:
+    | { name?: string | null; fieldType?: string | null; description?: string | null }[]
+    | null
+    | undefined,
+): OutputField[] {
+  if (!Array.isArray(schema)) return []
+  return schema
+    .filter((f) => f && typeof f.name === 'string' && f.name !== '')
+    .map((f) => ({
+      name: f.name as string,
+      fieldType: String(f.fieldType ?? 'dynamic'),
+      description: f.description ?? '',
+    }))
+}
+
+/**
+ * 团队插件请求参数 schema → 节点输入参数绑定（fixed 空值待填/待绑定，描述来自参数注释）.
+ * schema 为空时返回空对象，由调用方决定是否保留原输入.
+ */
+export function inputsFromPluginSchema(
+  schema:
+    | { name?: string | null; fieldType?: string | null; description?: string | null }[]
+    | null
+    | undefined,
+): Record<string, FieldBinding> {
+  const result: Record<string, FieldBinding> = {}
+  if (!Array.isArray(schema)) return result
+  for (const f of schema) {
+    if (!f || typeof f.name !== 'string' || f.name === '') continue
+    result[f.name] = {
+      expressionType: 'fixed',
+      value: '',
+      required: true,
+      fieldType: String(f.fieldType ?? 'string'),
+      ...(f.description ? { description: f.description } : {}),
+    }
+  }
+
+  return result
 }
 
 // ==================== 客户端校验（与引擎 WorkflowValidator 同构的快速反馈） ====================
@@ -469,6 +677,11 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
       errors.push({ nodeId: node.id, message: `节点「${node.data?.title ?? node.id}」缺少输出连接` })
     }
 
+    // 普通节点（非条件/多条件/问题分类/结束）只允许一条输出连线：拖线即切换下游，分支由条件节点承担
+    if (node.type !== 'condition' && node.type !== 'switch' && node.type !== 'questionClassifier' && node.type !== 'end' && outs.length > 1) {
+      errors.push({ nodeId: node.id, message: `节点「${node.data?.title ?? node.id}」只允许一条输出连线（分支请使用条件/多条件节点）` })
+    }
+
     // 条件节点：恰好 true/false 各一条出边
     if (node.type === 'condition') {
       const conditions = outs.map((e) => String(e.sourcePortID))
@@ -506,6 +719,96 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
         }
 
         seenBranch.add(marker)
+      }
+    }
+    // 问题分类节点：分类名非空/不重复；出边分类标记必须对应已配置分类（无 else），不允许重复
+    if (node.type === 'questionClassifier') {
+      const classDefs = node.data?.classes ?? []
+      const classIds = classDefs.map((c) => String(c.id ?? '').trim()).filter(Boolean)
+      const title = String(node.data?.title ?? node.id)
+      if (classIds.length === 0) {
+        errors.push({ nodeId: node.id, message: `问题分类节点「${title}」至少需要配置一个分类` })
+      }
+
+      if (classDefs.some((c) => !String(c.label ?? '').trim())) {
+        errors.push({ nodeId: node.id, message: `问题分类节点「${title}」的分类值不可为空` })
+      }
+
+      const labels = classDefs.map((c) => String(c.label ?? '').trim()).filter(Boolean)
+      const duplicatedLabel = labels.find((label, i) => labels.indexOf(label) !== i)
+      if (duplicatedLabel) {
+        errors.push({ nodeId: node.id, message: `问题分类节点「${title}」存在重复的分类名称：${duplicatedLabel}` })
+      }
+
+      const classSet = new Set(classIds)
+      const seenClass = new Set<string>()
+      for (const edge of outs) {
+        const marker = String(edge.sourcePortID ?? '')
+        if (!marker) {
+          errors.push({ nodeId: node.id, message: `问题分类节点「${title}」存在未绑定分类的出边` })
+          continue
+        }
+
+        if (!classSet.has(marker)) {
+          errors.push({ nodeId: node.id, message: `问题分类节点「${title}」的出边分类标记无效：${marker}` })
+        }
+
+        if (seenClass.has(marker)) {
+          errors.push({ nodeId: node.id, message: `问题分类节点「${title}」存在重复的分类出边：${marker}` })
+        }
+
+        seenClass.add(marker)
+      }
+    }
+    // http 节点：请求地址必填；提取字段名唯一且 JsonPath 非空；配置中的 {引用} 插值必须是上游节点
+    if (node.type === 'http') {
+      const title = String(node.data?.title ?? node.id)
+      const httpSettings = (node.data?.settings ?? {}) as Record<string, unknown>
+      if (String(httpSettings.url ?? '').trim() === '') {
+        errors.push({ nodeId: node.id, message: `HTTP 请求节点「${title}」未配置请求地址` })
+      }
+
+      const httpAncestors = collectAncestors(node.id, outgoing)
+      const seenExtract = new Set<string>()
+      const extractList = Array.isArray(httpSettings.extract) ? (httpSettings.extract as { name?: unknown; path?: unknown }[]) : []
+      for (const field of extractList) {
+        const name = String(field?.name ?? '').trim()
+        const path = String(field?.path ?? '').trim()
+        if (!name) {
+          errors.push({ nodeId: node.id, message: `HTTP 请求节点「${title}」存在名称为空的提取字段` })
+          continue
+        }
+
+        if (seenExtract.has(name)) {
+          errors.push({ nodeId: node.id, message: `HTTP 请求节点「${title}」存在重复的提取字段名：${name}` })
+        }
+
+        seenExtract.add(name)
+        if (!path) {
+          errors.push({ nodeId: node.id, message: `HTTP 请求节点「${title}」的提取字段 ${name} 缺少 JsonPath 表达式` })
+        }
+      }
+
+      const templates: string[] = [String(httpSettings.url ?? ''), String(httpSettings.body ?? '')]
+      for (const list of [httpSettings.params, httpSettings.headers, httpSettings.formEntries]) {
+        if (!Array.isArray(list)) continue
+        for (const item of list as { value?: unknown }[]) {
+          templates.push(String(item?.value ?? ''))
+        }
+      }
+
+      for (const template of templates) {
+        for (const match of template.matchAll(/\{([^{}]+)\}/g)) {
+          const reference = match[1]!.trim()
+          const prefix = reference.split('.')[0] ?? ''
+          if (!prefix || prefix === 'sys' || prefix === 'system' || prefix === 'input') continue
+          const refId = keyToId.get(prefix) ?? (idSet.has(prefix) ? prefix : '')
+          if (!refId) {
+            errors.push({ nodeId: node.id, message: `HTTP 请求节点「${title}」引用了不存在的节点：{${reference}}` })
+          } else if (!httpAncestors.has(refId)) {
+            errors.push({ nodeId: node.id, message: `HTTP 请求节点「${title}」引用了非上游节点：{${reference}}` })
+          }
+        }
       }
     }
   }
@@ -560,6 +863,18 @@ export interface VariableOption {
   label: string
 }
 
+/**
+ * 对话系统变量：发布应用对话时由服务端自动注入 sys.*，
+ * history 为 [{role, content}] 数组，可直接作为 AI 对话节点的 history 输入.
+ */
+export const CONVERSATION_SYS_VARIABLES: VariableOption[] = [
+  { value: 'sys.userId', label: 'sys.userId（使用者 ID）' },
+  { value: 'sys.appId', label: 'sys.appId（应用 ID）' },
+  { value: 'sys.conversationId', label: 'sys.conversationId（当前对话 ID）' },
+  { value: 'sys.messageId', label: 'sys.messageId（AI 回复的 ID）' },
+  { value: 'sys.history', label: 'sys.history（历史记录）' },
+]
+
 export function collectUpstreamVariables(
   editor: EditorWorkflowJSON | null,
   nodeId: string | null,
@@ -602,7 +917,10 @@ export function collectUpstreamVariables(
     { value: 'sys.instanceId', label: 'sys.instanceId（实例 ID）' },
     { value: 'sys.workflowId', label: 'sys.workflowId（流程 ID）' },
     { value: 'sys.startedAt', label: 'sys.startedAt（开始时间）' },
+    { value: 'sys.currentTime', label: 'sys.currentTime（当前时间）' },
   )
+  // 对话系统变量：发布应用对话时自动注入（sys.userId/sys.appId/sys.conversationId/sys.messageId/sys.history）
+  options.push(...CONVERSATION_SYS_VARIABLES)
   for (const id of ancestors) {
     const node = byId.get(id)
     if (!node) continue

@@ -44,13 +44,13 @@
 | [infra](./infra/) | INF | 配置加载/RSA/异常/模块框架 |
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
-| [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、解散与所有权转让 |
+| [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、所有权转让；团队不可解散，仅平台管理员可禁用 |
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱维护 + 外部接入只读；Memgraph/Neo4j 双方言 Bolt 访问、单库 kgId 隔离；图览画布 + 一跳邻接；`KG_ENABLED` 门禁，Member 全只读，名称全局唯一） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 | [app](./app/) | AP | 团队应用（团队页「应用」分区：Agent/流程应用的卡片列表与基础信息 + 头像与「允许外部使用」开关；卡片「管理」进**单页左侧应用信息 + 右侧 Agent 配置**的管理页，配置**对话模型**/插件/知识库/提示词；成员只读使用；**已支持发布进入对话**，会话运行见 ai 模块） |
-| [app-workflow](./app-workflow/) | WF | 流程应用（FlowGram 可视化 DAG 编排：拖拽/连线/参数表达式绑定，草稿-发布不可变版本快照；同步调试执行 + 节点级状态回显与运行历史；一期 6 种节点 start/end/condition/aiChat/javascript/plugin；引擎端口对接 ai 模型与 aiplugin 执行入口） |
+| [app-workflow](./app-workflow/) | WF | 流程应用（FlowGram 可视化 DAG 编排：拖拽/连线/参数表达式绑定，草稿-发布不可变版本快照；同步调试执行 + 节点级状态回显与运行历史；9 种节点 start/end/condition/switch/aiChat/javascript/plugin/knowledgeSearch/questionClassifier；引擎端口对接 ai 模型与 aiplugin 执行入口） |
 | [ai](./ai/) | AI | Agent 运行时（应用发布后 AG-UI 流式对话、会话持久化 Redis热+Postgres冷、上下文压缩、知识库 RAG、token 用量；`src/ai` + 前端对话页） |
 | [skill](./skill/) | SKL | 技能（可装载技能包：平台内置/团队/个人三级归属维护；应用绑定锁定 + 用户级应用配置自选，运行时并集生效；Agent 沙箱加载执行，内置 docx·ppt 生成；市场审批为增量；沙箱依赖见 ai 模块） |
 | [feishu](./feishu/) | FS | 飞书通知基座（Maomi.FeishuWss 长连接复用：一个飞书应用一条 WSS 连接；绑定 app 渠道且同一飞书应用同时只能绑一个渠道；事件去重后转发 `IFeishuEventHandler`，应用渠道已落地**群聊/私聊消息→应用 Agent→回复**；知识库渠道后续独立模块接入） |

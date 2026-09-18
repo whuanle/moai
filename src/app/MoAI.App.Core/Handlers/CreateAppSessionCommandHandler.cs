@@ -48,9 +48,10 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
             throw new BusinessException("应用已被禁用.") { StatusCode = 403 };
         }
 
-        if (app.AppType != (int)AppType.Agent)
+        // Agent 应用对话模型，Workflow 应用对话执行已发布流程；其他类型不支持会话
+        if (app.AppType != (int)AppType.Agent && app.AppType != (int)AppType.Workflow)
         {
-            throw new BusinessException("只有 Agent 应用支持对话.") { StatusCode = 400 };
+            throw new BusinessException("该应用类型不支持对话.") { StatusCode = 400 };
         }
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);

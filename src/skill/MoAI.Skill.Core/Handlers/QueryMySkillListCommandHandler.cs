@@ -34,6 +34,7 @@ public class QueryMySkillListCommandHandler : IRequestHandler<QueryMySkillListCo
             .Where(x => x.TeamId == 0 && !x.IsSystem && x.CreateUserId == request.ContextUserId);
 
         query = QuerySkillListHelper.WhereKeywords(query, request.Keywords);
+        query = QuerySkillListHelper.WhereClassify(query, request.ClassifyId);
 
         var entities = await query
             .OrderByDescending(x => x.CreateTime)

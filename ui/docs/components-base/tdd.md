@@ -10,7 +10,7 @@
 | @FE-CB-S1、@FE-CB-S2 | [Page/__tests__/index.test.tsx](../../src/design-system/components/Page/__tests__/index.test.tsx) | PASS 2/2（2026-09-01） |
 | @FE-CB-S6 | [Card/__tests__/statCard.test.tsx](../../src/design-system/components/Card/__tests__/statCard.test.tsx) | PASS 1/1（2026-09-01） |
 | @FE-CB-S9 ~ @FE-CB-S12 | [DataTable/__tests__/index.test.tsx](../../src/design-system/components/DataTable/__tests__/index.test.tsx) | PASS 4/4（2026-09-01） |
-| @FE-CB-S14、@FE-CB-S15 | [QueryBar/__tests__/index.test.tsx](../../src/design-system/components/QueryBar/__tests__/index.test.tsx) | PASS 2/2（2026-09-01） |
+| @FE-CB-S14、@FE-CB-S15、@FE-CB-S19 | [QueryBar/__tests__/index.test.tsx](../../src/design-system/components/QueryBar/__tests__/index.test.tsx) | PASS 3/3（2026-09-18） |
 | @FE-CB-S17、@FE-CB-S18 | [PageToolbar/__tests__/index.test.tsx](../../src/design-system/components/PageToolbar/__tests__/index.test.tsx) | PASS 2/2（2026-09-01） |
 | @FE-CB-S3 ~ @FE-CB-S5、@FE-CB-S7、@FE-CB-S8、@FE-CB-S13、@FE-CB-S16 | @manual 浏览器/代码走查（[SOP 第 5 节](./sop.md)；样式与布局断言未单测化） | PASS（2026-09-01，见 SOP 存档） |
 

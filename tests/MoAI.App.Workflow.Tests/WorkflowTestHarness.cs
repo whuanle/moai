@@ -18,6 +18,8 @@ public sealed class WorkflowTestHarness
 
     public Mock<IAiChatClient> AiChat { get; } = new();
 
+    public Mock<IWorkflowWikiSearchClient> WikiSearch { get; } = new();
+
     public IServiceProvider Services { get; }
 
     public WorkflowTestHarness()
@@ -29,6 +31,7 @@ public sealed class WorkflowTestHarness
         services.AddSingleton<IWorkflowEventLogStore>(Store);
         services.AddSingleton(PluginInvoker.Object);
         services.AddSingleton(AiChat.Object);
+        services.AddSingleton(WikiSearch.Object);
         Services = services.BuildServiceProvider();
     }
 

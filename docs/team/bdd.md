@@ -119,7 +119,7 @@ Scenario: 成员自行退出
   Then 返回成功且不再在成员列表
 ```
 
-## Feature: 团队维护与解散
+## Feature: 团队维护
 
 ```gherkin
 @TM-S11 @auto:e2e
@@ -130,15 +130,9 @@ Scenario: 修改团队信息
   Then 返回成功且详情回显新值
 
 @TM-S12 @auto:e2e
-Scenario: 解散团队
-  Given 我是 Admin
-  When 解散团队
-  Then 返回禁止
-  When 我是 Owner
-  When 解散团队
-  Then 返回成功
-  And 我的团队列表不再包含该团队
-  And 查看该团队详情返回不存在
+Scenario: 团队不可解散
+  When Owner 尝试解散团队
+  Then 返回不支持且团队继续存在（解散能力已移除，仅平台管理员可在「团队」界面禁用团队）
 ```
 
 ## Feature: 所有权转让与团队头像（二期）
@@ -154,7 +148,7 @@ Scenario: 转让所有权
   When Owner 转让所有权给 Admin
   Then 返回成功
   And 原所有者角色变为 Admin，新所有者角色为 Owner
-  And 原所有者无法解散团队，新所有者可以
+  And 团队仍不可被解散
 
 @TM-S14 @auto:e2e
 Scenario: 设置团队头像

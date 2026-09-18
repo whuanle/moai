@@ -16,4 +16,14 @@ describe('QueryBar', () => {
     fireEvent.click(screen.getByText('重置'))
     expect(onReset).toHaveBeenCalled()
   })
+  it('renders extra actions to the right of reset', () => {
+    const onExtra = vi.fn()
+    render(<QueryBar extra={<button onClick={onExtra}>extra-action</button>} />)
+    const reset = screen.getByText('重置')
+    const extraBtn = screen.getByText('extra-action')
+    // extra 渲染在重置按钮右侧（DOM 顺序其后）
+    expect(reset.compareDocumentPosition(extraBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(extraBtn)
+    expect(onExtra).toHaveBeenCalled()
+  })
 })

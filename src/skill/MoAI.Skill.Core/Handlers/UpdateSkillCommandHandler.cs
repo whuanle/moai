@@ -2,6 +2,7 @@ using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
+using MoAI.Classify;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -49,10 +50,22 @@ public class UpdateSkillCommandHandler : IRequestHandler<UpdateSkillCommand, Emp
         await SkillAccessGuard.EnsureCanManageAsync(skill, request.ContextUserId, _userAccountService, _teamService, cancellationToken);
         await SkillFilesGuard.EnsureFilesValidAsync(_databaseContext, request.Files, cancellationToken);
 
+        if (request.ClassifyId > 0)
+        {
+            var classifyExist = await _databaseContext.Classifies
+                .AnyAsync(x => x.Id == request.ClassifyId && x.Type == ClassifyTypes.Skill, cancellationToken);
+
+            if (!classifyExist)
+            {
+                throw new BusinessException("技能分类不存在.") { StatusCode = 404 };
+            }
+        }
+
         skill.Name = request.Name;
         skill.Description = request.Description ?? string.Empty;
         skill.Instructions = request.Instructions ?? string.Empty;
         skill.Files = JsonSerializer.Serialize(request.Files, JsonOptions);
+        skill.ClassifyId = request.ClassifyId;
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return EmptyCommandResponse.Default;

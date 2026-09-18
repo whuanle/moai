@@ -34,6 +34,8 @@ public class QuerySkillsCommandHandler : IRequestHandler<QuerySkillsCommand, Que
             query = query.Where(x => x.Key.Contains(keyword) || x.Name.Contains(keyword) || x.Description.Contains(keyword));
         }
 
+        query = QuerySkillListHelper.WhereClassify(query, request.ClassifyId);
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var skills = await query
@@ -52,6 +54,7 @@ public class QuerySkillsCommandHandler : IRequestHandler<QuerySkillsCommand, Que
             IsSystem = x.IsSystem,
             IsDisable = x.IsDisable,
             TeamId = x.TeamId,
+            ClassifyId = x.ClassifyId,
             IsPublic = x.IsPublic,
             FileCount = x.IsSystem
                 ? BuiltinSkills.GetFiles(x.Key).Count

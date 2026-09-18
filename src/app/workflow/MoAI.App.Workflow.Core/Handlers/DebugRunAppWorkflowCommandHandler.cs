@@ -125,11 +125,25 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
             throw new BusinessException($"全局变量 JSON 无效：{ex.Message}") { StatusCode = 400 };
         }
 
+        // 知识库检索节点引用的知识库必须属于本团队（调试执行直接以当前定义跑，保存/发布之外的唯一入口）
+        await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
+
+        // 调试注入 sys.* 对话上下文：用户/应用为当前真实值，对话维度无会话故留空，保证设计器引用可解析
+        var systemContext = new JsonObject
+        {
+            ["userId"] = request.ContextUserId.ToString(),
+            ["appId"] = request.AppId.ToString(),
+            ["conversationId"] = string.Empty,
+            ["messageId"] = string.Empty,
+            ["history"] = new JsonArray(),
+        };
+
         // 同步执行到终态；节点失败时实例为挂起态并携带错误信息，不抛异常
         var instance = await _workflowEngine.StartWithDefinitionAsync(
             definition,
             input,
             systemVariables,
+            systemContext,
             Guid.CreateVersion7().ToString("N"),
             cancellationToken);
 

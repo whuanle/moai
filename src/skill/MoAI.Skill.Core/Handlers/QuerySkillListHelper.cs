@@ -45,6 +45,7 @@ internal static class QuerySkillListHelper
             IsSystem = x.IsSystem,
             IsDisable = x.IsDisable,
             TeamId = x.TeamId,
+            ClassifyId = x.ClassifyId,
             IsPublic = x.IsPublic,
             PendingPublicationId = pendingPublicationIds.TryGetValue(x.Id.ToString(), out var publicationId) ? publicationId : null,
             FileCount = x.IsSystem ? BuiltinSkills.GetFiles(x.Key).Count : SkillService.ParseFiles(x.Files).Count,
@@ -70,6 +71,22 @@ internal static class QuerySkillListHelper
         {
             var pattern = keywords.Trim();
             query = query.Where(x => x.Key.Contains(pattern) || x.Name.Contains(pattern) || x.Description.Contains(pattern));
+        }
+
+        return query;
+    }
+
+    /// <summary>
+    /// 按分类过滤，空则不过滤.
+    /// </summary>
+    /// <param name="query">查询源.</param>
+    /// <param name="classifyId">分类 id，空则不过滤.</param>
+    /// <returns>过滤后的查询源.</returns>
+    public static IQueryable<SkillEntity> WhereClassify(IQueryable<SkillEntity> query, int? classifyId)
+    {
+        if (classifyId > 0)
+        {
+            query = query.Where(x => x.ClassifyId == classifyId);
         }
 
         return query;

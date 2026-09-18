@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AppstoreAddOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons'
-import type { UploadProps } from 'antd'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography, Upload } from 'antd'
+import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, feedback } from '@/design-system'
+import { AvatarUpload, Card, feedback } from '@/design-system'
 import { neutralColors, spacing } from '@/design-system/theme'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
@@ -112,14 +111,13 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
     }
   }
 
-  const createAvatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
-    if (!checkImage(file)) return Upload.LIST_IGNORE
+  const handleCreateAvatarFile = (file: File) => {
+    if (!checkImage(file)) return
     setUploadingCreateAvatar(true)
     uploadImageWithKey(file)
       .then(({ objectKey, url }) => setCreateAvatar({ objectKey, url }))
       .catch(() => feedback.error(t('appManage.avatarUploadError')))
       .finally(() => setUploadingCreateAvatar(false))
-    return Upload.LIST_IGNORE
   }
 
   const renderKind = (kind: AppItem['appType']) => {
@@ -302,21 +300,19 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
             />
           </Form.Item>
           <Form.Item label={t('appManage.avatar')}>
-            <Space align="center">
-              <Avatar shape="square" size={64} src={createAvatar?.url || undefined}>
-                {(createForm.getFieldValue('name') as string | undefined)?.slice(0, 1).toUpperCase() || '?'}
-              </Avatar>
-              <Upload beforeUpload={createAvatarBeforeUpload} showUploadList={false} accept="image/*">
-                <Button icon={<UploadOutlined />} loading={uploadingCreateAvatar}>
-                  {t('appManage.avatarUpload')}
-                </Button>
-              </Upload>
-            </Space>
-            <div style={{ marginTop: spacing.xs }}>
+            <Space direction="vertical" size={spacing.xs}>
+              <AvatarUpload
+                src={createAvatar?.url || undefined}
+                fallback={(createForm.getFieldValue('name') as string | undefined)?.slice(0, 1).toUpperCase() || '?'}
+                shape="square"
+                size={96}
+                uploading={uploadingCreateAvatar}
+                onSelect={handleCreateAvatarFile}
+              />
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {t('appManage.avatarHint')}
               </Text>
-            </div>
+            </Space>
           </Form.Item>
           <Form.Item
             name="name"

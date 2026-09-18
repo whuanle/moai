@@ -10,7 +10,7 @@ namespace MoAI.Classify.Commands;
 public class CreateClassifyCommand : IRequest<SimpleInt>, IModelValidator<CreateClassifyCommand>
 {
     /// <summary>
-    /// 分类类型：plugin|app|kb.
+    /// 分类类型：plugin|app|kb|prompt|skill.
     /// </summary>
     public string Type { get; init; } = default!;
 
@@ -32,7 +32,7 @@ public class CreateClassifyCommand : IRequest<SimpleInt>, IModelValidator<Create
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateClassifyCommand> validate)
     {
-        validate.RuleFor(x => x.Type).Must(t => ClassifyTypes.All.Contains(t)).WithMessage("分类类型不合法，仅支持 plugin|app|kb.");
+        validate.RuleFor(x => x.Type).Must(t => ClassifyTypes.All.Contains(t)).WithMessage("分类类型不合法，仅支持 plugin|app|kb|prompt|skill.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("分类名称不能为空.").MaximumLength(20).WithMessage("分类名称最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).When(x => x.Description != null).WithMessage("分类描述最长 255 个字符.");
         validate.RuleFor(x => x.Emoji).MaximumLength(10).When(x => x.Emoji != null).WithMessage("表情最长 10 个字符.");

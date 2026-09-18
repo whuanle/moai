@@ -15,6 +15,7 @@ const TYPE_TABS: { key: ClassifyTypeKey; labelKey: string }[] = [
   { key: ClassifyType.App, labelKey: 'classify.typeApp' },
   { key: ClassifyType.Kb, labelKey: 'classify.typeKb' },
   { key: ClassifyType.Prompt, labelKey: 'classify.typePrompt' },
+  { key: ClassifyType.Skill, labelKey: 'classify.typeSkill' },
 ]
 
 type ClassifyForm = { name: string; description?: string; emoji?: string }

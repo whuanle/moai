@@ -104,6 +104,11 @@ public class TeamPluginItem
     public List<PluginFieldSchema>? ResponseSchema { get; init; }
 
     /// <summary>
+    /// 请求参数 schema（静态/动态插件由请求类型反射生成，custom 插件为 null），供设计器自动填充输入参数.
+    /// </summary>
+    public List<PluginFieldSchema>? ParamsSchema { get; init; }
+
+    /// <summary>
     /// 是否公开（团队插件恒为 true）.
     /// </summary>
     public bool IsPublic { get; set; }

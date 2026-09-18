@@ -84,7 +84,7 @@ node local-dev/team-e2e.mjs              # TM 47
 node local-dev/wiki-e2e.mjs              # WK 32
 node local-dev/variable-e2e.mjs          # VR 26
 node local-dev/app-e2e.mjs               # AP 28
-node local-dev/workflow-e2e.mjs          # WF 36（流程应用：草稿/发布/调试执行/条件分支与脚本/运行历史/系统设置·开场白）
+node local-dev/workflow-e2e.mjs          # WF 82（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量）
 node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/撤回，is_public 审批制）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 20（技能三级归属权限 + 用户级应用配置：专家默认/技能自选）

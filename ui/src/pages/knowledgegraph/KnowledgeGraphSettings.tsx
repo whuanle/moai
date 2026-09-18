@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Alert, Avatar, Button, Descriptions, Form, Input, Popconfirm, Space, Upload } from 'antd'
-import type { UploadProps } from 'antd'
-import { ClusterOutlined, UploadOutlined } from '@ant-design/icons'
-import { Card, feedback } from '@/design-system'
+import { Alert, Button, Descriptions, Form, Input, Popconfirm, Space } from 'antd'
+import { ClusterOutlined } from '@ant-design/icons'
+import { AvatarUpload, Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -38,23 +37,23 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
   const isConnected = graph?.mode === 'connected'
   const avatarSrc = graph?.avatarPath?.trim() ? resolveStorageUrl(graph.avatarPath) : undefined
 
-  const avatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
+  /** 校验并上传知识图谱头像；非法文件直接忽略 */
+  const handleAvatarFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       feedback.error(t('knowledgegraph.avatarTypeError'))
-      return Upload.LIST_IGNORE
+      return
     }
     if (file.size > 5 * 1024 * 1024) {
       feedback.error(t('knowledgegraph.avatarSizeError'))
-      return Upload.LIST_IGNORE
+      return
     }
-    if (!graph?.kgId) return Upload.LIST_IGNORE
+    if (!graph?.kgId) return
     setUploadingAvatar(true)
     uploadKnowledgeGraphAvatar(Number(graph.kgId), file)
       .then(() => feedback.success(t('knowledgegraph.avatarSuccess')))
       .then(() => onChanged())
       .catch(() => undefined)
       .finally(() => setUploadingAvatar(false))
-    return Upload.LIST_IGNORE
   }
 
   useEffect(() => {
@@ -102,24 +101,14 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
           <Form form={form} layout="vertical">
             <Form.Item label={t('knowledgegraph.avatar')}>
               <Space direction="vertical" size={spacing.xs}>
-                <Space align="center">
-                  <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*" disabled={uploadingAvatar}>
-                    <Avatar
-                      // 加 key：上传成功后 src 变化时强制重挂载，避免 Avatar 缓存旧图
-                      key={avatarSrc ?? 'default'}
-                      shape="square"
-                      size={64}
-                      icon={!avatarSrc ? <ClusterOutlined /> : undefined}
-                      src={avatarSrc}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  </Upload>
-                  <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*" disabled={uploadingAvatar}>
-                    <Button icon={<UploadOutlined />} loading={uploadingAvatar}>
-                      {avatarSrc ? t('knowledgegraph.avatarReplace') : t('knowledgegraph.avatar')}
-                    </Button>
-                  </Upload>
-                </Space>
+                <AvatarUpload
+                  src={avatarSrc}
+                  fallback={<ClusterOutlined />}
+                  shape="square"
+                  size={96}
+                  uploading={uploadingAvatar}
+                  onSelect={handleAvatarFile}
+                />
                 <span style={{ opacity: 0.65 }}>{t('knowledgegraph.avatarHint')}</span>
               </Space>
             </Form.Item>

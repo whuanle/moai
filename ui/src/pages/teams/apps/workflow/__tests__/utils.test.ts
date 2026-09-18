@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   collectEdges,
+  inputsFromPluginSchema,
+  outputsFromPluginSchema,
   collectUpstreamVariables,
   normalizeEditorData,
   normalizeReferences,
@@ -10,6 +12,7 @@ import {
   toEditorFormat,
   validateEditorData,
 } from '../utils'
+import { parseCurlCommand } from '../curl'
 import type { WorkflowDefinition } from '../types'
 
 /** 与后端 DemoDefinition 同构的定义 */
@@ -388,5 +391,371 @@ describe('多条件节点（switch）', () => {
     const errors = validateEditorData(bad)
     expect(errors.some((e) => e.message.includes('分支标记无效'))).toBe(true)
     expect(errors.some((e) => e.message.includes('重复的分支出边'))).toBe(true)
+  })
+})
+
+describe('团队插件请求 schema 转输入绑定', () => {
+  it('inputsFromPluginSchema：fixed 空值绑定 + 类型/描述，剔除无名项', () => {
+    const inputs = inputsFromPluginSchema([
+      { name: 'url', fieldType: 'string', description: '目标网页链接' },
+      { name: 'extractText', fieldType: 'boolean' },
+      { name: '' },
+    ])
+    expect(inputs.url).toEqual({
+      expressionType: 'fixed',
+      value: '',
+      required: true,
+      fieldType: 'string',
+      description: '目标网页链接',
+    })
+    expect(inputs.extractText).toMatchObject({ expressionType: 'fixed', fieldType: 'boolean' })
+    expect(Object.keys(inputs)).toEqual(['url', 'extractText'])
+    expect(inputsFromPluginSchema(null)).toEqual({})
+  })
+})
+
+describe('团队插件响应 schema 转输出声明', () => {
+  it('outputsFromPluginSchema：字段映射，剔除无名项，空 schema 返回空数组', () => {
+    const outputs = outputsFromPluginSchema([
+      { name: 'answer', fieldType: 'string', description: '回答内容' },
+      { name: '', fieldType: 'string' },
+      { fieldType: 'number' },
+      { name: 'docs', fieldType: 'array', description: '文档列表' },
+    ])
+    expect(outputs).toEqual([
+      { name: 'answer', fieldType: 'string', description: '回答内容' },
+      { name: 'docs', fieldType: 'array', description: '文档列表' },
+    ])
+    expect(outputsFromPluginSchema([])).toEqual([])
+    expect(outputsFromPluginSchema(null)).toEqual([])
+  })
+})
+
+describe('输出连线限制（单出边）', () => {
+  it('普通节点多条出边报错，条件节点多出边放行', () => {
+    const editor: import('../types').EditorWorkflowJSON = {
+      nodes: [
+        { id: 'start', type: 'start', data: { inputs: {} }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'js' }] },
+        { id: 'js', type: 'javaScript', data: { settings: { code: 'function run() {}' } }, blocks: [], edges: [
+          { sourceNodeID: 'js', targetNodeID: 'end1' },
+          { sourceNodeID: 'js', targetNodeID: 'end2' },
+        ] },
+        { id: 'end1', type: 'end', data: {}, blocks: [], edges: [] },
+        { id: 'end2', type: 'end', data: {}, blocks: [], edges: [] },
+      ],
+      edges: [],
+    }
+    const errors = validateEditorData(editor)
+    expect(errors.some((e) => e.nodeId === 'js' && e.message.includes('只允许一条输出连线'))).toBe(true)
+
+    // 条件节点双出边不受限制
+    const ok: import('../types').EditorWorkflowJSON = {
+      nodes: [
+        { id: 'start', type: 'start', data: { inputs: {} }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'check' }] },
+        { id: 'check', type: 'condition', data: { inputs: {} }, blocks: [], edges: [
+          { sourceNodeID: 'check', targetNodeID: 'end', sourcePortID: 'true' },
+          { sourceNodeID: 'check', targetNodeID: 'end', sourcePortID: 'false' },
+        ] },
+        { id: 'end', type: 'end', data: {}, blocks: [], edges: [] },
+      ],
+      edges: [],
+    }
+    expect(validateEditorData(ok)).toEqual([])
+  })
+})
+
+describe('问题分类节点（questionClassifier）', () => {
+  const clfEditor = (): import('../types').EditorWorkflowJSON => ({
+    nodes: [
+      { id: 'start', type: 'start', data: { inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'clf' }] },
+      {
+        id: 'clf',
+        type: 'questionClassifier',
+        data: {
+          title: '问题分类',
+          inputs: {
+            query: { expressionType: 'variable', value: 'start.query', required: true },
+            history: { expressionType: 'variable', value: 'start.history', required: false },
+          },
+          outputs: [
+            { name: 'result', fieldType: 'string' },
+            { name: 'className', fieldType: 'string' },
+          ],
+          // junkKey 为故意传入的未知属性，用于断言序列化时被丢弃
+          settings: { aiModelId: 'm1', backgroundKnowledge: '商城知识', historyCount: 4, junkKey: 'x' } as import('../types').NodeSettings,
+          classes: [
+            { id: 'c1', label: '售前咨询' },
+            { id: 'c2', label: '售后咨询' },
+          ],
+        },
+        blocks: [],
+        edges: [
+          { sourceNodeID: 'clf', targetNodeID: 'a1', sourcePortID: 'c1' },
+          { sourceNodeID: 'clf', targetNodeID: 'a2', sourcePortID: 'c2' },
+        ],
+      },
+      { id: 'a1', type: 'javaScript', data: { settings: { code: 'function run() {}' } }, blocks: [], edges: [{ sourceNodeID: 'a1', targetNodeID: 'end' }] },
+      { id: 'a2', type: 'javaScript', data: { settings: { code: 'function run() {}' } }, blocks: [], edges: [{ sourceNodeID: 'a2', targetNodeID: 'end' }] },
+      { id: 'end', type: 'end', data: {}, blocks: [], edges: [] },
+    ],
+    edges: [],
+  })
+
+  it('nodeDataFromTemplate 提供默认分类与设置', () => {
+    const data = nodeDataFromTemplate('questionClassifier')
+    expect(data?.classes?.map((c) => c.id)).toEqual(['c1', 'c2'])
+    expect(data?.settings?.historyCount).toBe(6)
+    expect(data?.settings?.aiModelId).toBe('')
+    expect(data?.inputs?.query.required).toBe(true)
+    expect(data?.inputs?.history.required).toBe(false)
+    expect(data?.outputs?.map((o) => o.name)).toEqual(['result', 'className'])
+  })
+
+  it('fromEditorFormat：classes 映射为 config.classes，出边携带分类标记，settings 清洗', () => {
+    const def = fromEditorFormat(clfEditor(), 'x')
+    const clf = def.nodes.find((n) => n.key === 'clf')!
+    expect(clf.config).toEqual({
+      aiModelId: 'm1',
+      backgroundKnowledge: '商城知识',
+      historyCount: 4,
+      classes: [
+        { id: 'c1', label: '售前咨询' },
+        { id: 'c2', label: '售后咨询' },
+      ],
+    })
+    expect(def.connections.filter((c) => c.source === 'clf').map((c) => c.condition)).toEqual(['c1', 'c2'])
+    // 输入绑定保留（含可选的历史消息变量绑定）
+    expect(clf.inputs.history).toMatchObject({ value: 'start.history', required: false })
+  })
+
+  it('toEditorFormat 往返：config.classes 还原为 data.classes，设置从 config 摘出', () => {
+    const editor2 = toEditorFormat(fromEditorFormat(clfEditor(), 'x'))
+    const clf = editor2.nodes.find((n) => n.id === 'clf')
+    expect(clf?.type).toBe('questionClassifier')
+    expect(clf?.data?.classes?.map((c) => c.id)).toEqual(['c1', 'c2'])
+    expect(clf?.data?.settings).toEqual({ aiModelId: 'm1', backgroundKnowledge: '商城知识', historyCount: 4 })
+    expect(clf?.data?.inputs?.query.value).toBe('start.query')
+    expect(validateEditorData(editor2)).toEqual([])
+  })
+
+  it('validateEditorData：分类为空/分类名为空/标记无效或重复报错，合法通过', () => {
+    expect(validateEditorData(clfEditor())).toEqual([])
+
+    const noClasses = clfEditor()
+    noClasses.nodes.find((n) => n.id === 'clf')!.data!.classes = []
+    expect(validateEditorData(noClasses).some((e) => e.message.includes('至少需要配置一个分类'))).toBe(true)
+
+    const emptyLabel = clfEditor()
+    emptyLabel.nodes.find((n) => n.id === 'clf')!.data!.classes![1].label = '  '
+    expect(validateEditorData(emptyLabel).some((e) => e.message.includes('分类值不可为空'))).toBe(true)
+
+    const badMarker = clfEditor()
+    badMarker.nodes.find((n) => n.id === 'clf')!.edges![1].sourcePortID = 'nope'
+    expect(validateEditorData(badMarker).some((e) => e.message.includes('分类标记无效'))).toBe(true)
+
+    const dupMarker = clfEditor()
+    dupMarker.nodes.find((n) => n.id === 'clf')!.edges![1].sourcePortID = 'c1'
+    expect(validateEditorData(dupMarker).some((e) => e.message.includes('重复的分类出边'))).toBe(true)
+  })
+})
+
+describe('知识库检索节点（knowledgeSearch）', () => {
+  const ksEditor = (): import('../types').EditorWorkflowJSON => ({
+    nodes: [
+      { id: 'start', type: 'start', data: { inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'ks' }] },
+      {
+        id: 'ks',
+        type: 'knowledgeSearch',
+        data: {
+          title: '检索知识库',
+          inputs: {
+            query: { expressionType: 'variable', value: 'start.query', required: true },
+            wikiId: { expressionType: 'variable', value: 'start.wikiId', required: false },
+          },
+          outputs: [
+            { name: 'query', fieldType: 'string' },
+            { name: 'hits', fieldType: 'array' },
+          ],
+          // junkKey 为故意传入的未知属性，用于断言序列化时被丢弃
+          settings: { wikiId: 7, topK: 9, junkKey: 'should.be.dropped' } as import('../types').NodeSettings,
+        },
+        blocks: [],
+        edges: [{ sourceNodeID: 'ks', targetNodeID: 'end' }],
+      },
+      { id: 'end', type: 'end', data: {}, blocks: [], edges: [] },
+    ],
+    edges: [],
+  })
+
+  it('nodeDataFromTemplate 提供默认知识库配置与输出声明', () => {
+    const data = nodeDataFromTemplate('knowledgeSearch')
+    expect(data?.settings?.topK).toBe(5)
+    expect(data?.inputs?.query.required).toBe(true)
+    // 知识库变量绑定为可选输入（单个知识库，运行时优先于静态选择）
+    expect(data?.inputs?.wikiId?.required).toBe(false)
+    expect(data?.outputs?.map((o) => o.name)).toEqual(['query', 'count', 'hits', 'contents', 'text'])
+  })
+
+  it('fromEditorFormat：settings 清洗为 wikiId/topK，剔除非法与未知键', () => {
+    const def = fromEditorFormat(ksEditor(), 'x')
+    const ks = def.nodes.find((n) => n.key === 'ks')!
+    expect(ks.config).toEqual({ wikiId: 7, topK: 9 })
+    // 输入绑定保留（含可选的 wikiId 变量绑定）
+    expect(ks.inputs.wikiId).toMatchObject({ value: 'start.wikiId', required: false })
+  })
+
+  it('toEditorFormat 往返保留 knowledgeSearch 节点与绑定', () => {
+    const editor2 = toEditorFormat(fromEditorFormat(ksEditor(), 'x'))
+    const ks = editor2.nodes.find((n) => n.id === 'ks')
+    expect(ks?.type).toBe('knowledgeSearch')
+    expect(ks?.data?.settings).toEqual({ wikiId: 7, topK: 9 })
+    expect(ks?.data?.inputs?.query.value).toBe('start.query')
+    expect(ks?.data?.inputs?.wikiId?.value).toBe('start.wikiId')
+    expect(validateEditorData(editor2)).toEqual([])
+  })
+})
+
+describe('HTTP 请求节点（http）', () => {
+  const httpEditor = (): import('../types').EditorWorkflowJSON => ({
+    nodes: [
+      { id: 'start', type: 'start', data: { inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'http1' }] },
+      {
+        id: 'http1',
+        type: 'http',
+        data: {
+          title: '调用外部接口',
+          inputs: {},
+          outputs: [
+            { name: 'statusCode', fieldType: 'number' },
+            { name: 'rawResponse', fieldType: 'dynamic' },
+            { name: 'hasError', fieldType: 'boolean' },
+            { name: 'errorMessage', fieldType: 'string' },
+            { name: 'title', fieldType: 'string' },
+          ],
+          settings: {
+            method: 'post',
+            url: 'https://api.example.com/{start.query}',
+            timeoutSeconds: 60,
+            params: [{ name: 'q', value: '{start.query}' }, { name: '', value: 'dropped' }],
+            headers: [{ name: 'X-Trace', value: 't-1' }],
+            bodyType: 'json',
+            body: '{"q":"{start.query}"}',
+            auth: { type: 'bearer', token: 'tk-1' },
+            errorCapture: true,
+            extract: [
+              { name: 'title', path: '$.data.title', fieldType: 'string' },
+              { name: '', path: '$.x', fieldType: 'string' },
+            ],
+            // junkKey 为故意传入的未知属性，用于断言序列化时被丢弃
+            junkKey: 'should.be.dropped',
+          } as import('../types').NodeSettings,
+        },
+        blocks: [],
+        edges: [{ sourceNodeID: 'http1', targetNodeID: 'end' }],
+      },
+      { id: 'end', type: 'end', data: {}, blocks: [], edges: [] },
+    ],
+    edges: [],
+  })
+
+  it('nodeDataFromTemplate 提供默认请求配置与固定输出声明', () => {
+    const data = nodeDataFromTemplate('http')
+    expect(data?.settings?.method).toBe('GET')
+    expect(data?.settings?.timeoutSeconds).toBe(30)
+    expect(data?.settings?.params).toEqual([])
+    expect(data?.outputs?.map((o) => o.name)).toEqual(['statusCode', 'rawResponse', 'hasError', 'errorMessage'])
+  })
+
+  it('nodeDataFromTemplate 深拷贝 settings（多节点不共享嵌套引用）', () => {
+    const a = nodeDataFromTemplate('http')
+    const b = nodeDataFromTemplate('http')
+    expect(a?.settings).not.toBe(b?.settings)
+    expect(a?.settings?.params).not.toBe(b?.settings?.params)
+  })
+
+  it('fromEditorFormat：settings 清洗为引擎 config（方法大写、剔除无名参数/空提取与未知键）', () => {
+    const def = fromEditorFormat(httpEditor(), 'x')
+    const http = def.nodes.find((n) => n.key === 'http1')!
+    expect(http.config).toEqual({
+      method: 'POST',
+      url: 'https://api.example.com/{start.query}',
+      timeoutSeconds: 60,
+      params: [{ name: 'q', value: '{start.query}' }],
+      headers: [{ name: 'X-Trace', value: 't-1' }],
+      bodyType: 'json',
+      body: '{"q":"{start.query}"}',
+      auth: { type: 'bearer', token: 'tk-1' },
+      errorCapture: true,
+      extract: [{ name: 'title', path: '$.data.title', fieldType: 'string' }],
+    })
+  })
+
+  it('toEditorFormat 往返保留 http 节点配置并通过校验', () => {
+    const editor2 = toEditorFormat(fromEditorFormat(httpEditor(), 'x'))
+    const http = editor2.nodes.find((n) => n.id === 'http1')
+    expect(http?.type).toBe('http')
+    expect(http?.data?.settings?.method).toBe('POST')
+    expect(http?.data?.settings?.auth).toEqual({ type: 'bearer', token: 'tk-1' })
+    expect(validateEditorData(editor2)).toEqual([])
+  })
+
+  it('validateEditorData：缺请求地址/非上游插值引用/重复提取名/缺 JsonPath', () => {
+    const editor = httpEditor()
+    const http = editor.nodes.find((n) => n.id === 'http1')!
+    const settings = http.data!.settings as Record<string, unknown>
+
+    settings.url = ''
+    let errors = validateEditorData(editor)
+    expect(errors.some((e) => e.message.includes('未配置请求地址'))).toBe(true)
+
+    settings.url = 'https://api.example.com/{end.answer}'
+    errors = validateEditorData(editor)
+    expect(errors.some((e) => e.message.includes('非上游节点'))).toBe(true)
+
+    settings.url = 'https://api.example.com/'
+    settings.extract = [{ name: 'a', path: '$.x' }, { name: 'a', path: '' }]
+    errors = validateEditorData(editor)
+    expect(errors.some((e) => e.message.includes('重复的提取字段名'))).toBe(true)
+    expect(errors.some((e) => e.message.includes('缺少 JsonPath'))).toBe(true)
+  })
+})
+
+describe('cURL 导入解析（parseCurlCommand）', () => {
+  it('解析 POST JSON + Bearer 头（Bearer 提升为鉴权）', () => {
+    const parsed = parseCurlCommand(
+      [
+        "curl -X POST 'https://api.example.com/search?lang=zh' \\",
+        "  -H 'Content-Type: application/json' \\",
+        "  -H 'Authorization: Bearer abc123' \\",
+        '  -d \'{"query":"天气"}\'',
+      ].join('\n'),
+    )
+    expect(parsed).not.toBeNull()
+    expect(parsed!.method).toBe('POST')
+    expect(parsed!.url).toBe('https://api.example.com/search?lang=zh')
+    expect(parsed!.bodyType).toBe('json')
+    expect(parsed!.body).toBe('{"query":"天气"}')
+    expect(parsed!.auth).toEqual({ type: 'bearer', token: 'abc123' })
+    expect(parsed!.headers).toEqual([{ name: 'Content-Type', value: 'application/json' }])
+  })
+
+  it('解析 -u Basic 与多段 -d 表单', () => {
+    const parsed = parseCurlCommand("curl 'https://api.example.com/list' -u root:secret -d page=1 -d size=20")
+    expect(parsed).not.toBeNull()
+    expect(parsed!.method).toBe('POST')
+    expect(parsed!.auth).toEqual({ type: 'basic', username: 'root', password: 'secret' })
+    expect(parsed!.bodyType).toBe('form')
+    expect(parsed!.formEntries).toEqual([
+      { name: 'page', value: '1' },
+      { name: 'size', value: '20' },
+    ])
+  })
+
+  it('无 -d 默认 GET；无法提取 URL 时返回 null', () => {
+    const parsed = parseCurlCommand("curl 'https://api.example.com/ping'")
+    expect(parsed!.method).toBe('GET')
+    expect(parsed!.bodyType).toBe('none')
+    expect(parseCurlCommand('curl -X GET')).toBeNull()
+    expect(parseCurlCommand('')).toBeNull()
   })
 })

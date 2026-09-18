@@ -102,6 +102,13 @@ export function AppWorkspace() {
   }
   const validSection = menuItems.some((i) => i?.key === section) ? section : isAgent ? 'config' : canManage ? 'design' : 'runs'
 
+  // 流程设计分区默认走 /design 子路由：AppLayout 按 /design 后缀去掉全局内边距（画布真全屏）
+  useEffect(() => {
+    if (validSection === 'design' && section !== 'design') {
+      navigate(`/team/${teamId}/app/${appId}/design`, { replace: true })
+    }
+  }, [validSection, section, teamId, appId, navigate])
+
   // 流程设计分区：不渲染面包屑/页头（设计器自带 FastGPT 风格头部），画布近全屏
   if (validSection === 'design') {
     return (
@@ -160,12 +167,11 @@ export function AppWorkspace() {
       ]}
       extra={
         <Space>
-          {isAgent &&
-            (isPublished ? (
-              <Tag color="green">{t('appManage.published')}</Tag>
-            ) : (
-              <Tag>{t('appManage.unpublished')}</Tag>
-            ))}
+          {isPublished ? (
+            <Tag color="green">{t('appManage.published')}</Tag>
+          ) : (
+            <Tag>{t('appManage.unpublished')}</Tag>
+          )}
           {isAgent && canManage && (
             <Popconfirm
               title={isPublished ? t('appManage.unpublishConfirm') : t('appManage.publishConfirm')}
@@ -178,7 +184,8 @@ export function AppWorkspace() {
               </Button>
             </Popconfirm>
           )}
-          {isAgent && isPublished && (
+          {/* Agent 与流程应用发布后均可进入对话；流程应用仅发布走编排设计器 */}
+          {isPublished && (
             <Button onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)}>{t('appManage.enterChat')}</Button>
           )}
           <Button onClick={() => navigate(`/team/${teamId}/apps`)}>{t('appManage.backToList')}</Button>

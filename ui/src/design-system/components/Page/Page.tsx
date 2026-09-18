@@ -15,11 +15,15 @@ export interface PageProps {
 
 export function Page({ title, subtitle, breadcrumb, extra, children }: PageProps) {
   const hasHeader = Boolean(breadcrumb || title || subtitle || extra)
+  const hasTitleRow = Boolean(title || subtitle || extra)
   return (
     <div style={{ width: '100%' }}>
       {hasHeader && (
-        <div style={{ marginBottom: spacing.lg }}>
-          {breadcrumb && <Breadcrumb items={breadcrumb} style={{ marginBottom: spacing.sm }} />}
+        <div style={{ marginBottom: hasTitleRow ? spacing.lg : spacing.md }}>
+          {breadcrumb && (
+            <Breadcrumb items={breadcrumb} style={{ marginBottom: hasTitleRow ? spacing.sm : 0 }} />
+          )}
+          {hasTitleRow && (
           <div
             style={{
               display: 'flex',
@@ -42,6 +46,7 @@ export function Page({ title, subtitle, breadcrumb, extra, children }: PageProps
             </div>
             {extra && <div style={{ flexShrink: 0 }}>{extra}</div>}
           </div>
+          )}
         </div>
       )}
       {children}
