@@ -46,8 +46,8 @@ Feature: 技能管理
 ## 应用挂载（团队 Admin+）
 
   Scenario: 挂载校验
-    When 保存应用配置 skills 含已禁用/不存在的技能 id
-    Then 400 包含不存在或已禁用的技能，请重新选择
+    When 保存应用配置 skills 含已禁用/不存在/无权使用（非系统内置、非市场公开、非本团队）的技能 id
+    Then 400 包含不存在、已禁用或无权使用的技能，请重新选择
     When 保存时不携带 skills 字段（null）
     Then 已保存技能保持不变（兼容旧前端整体替换式保存）
     When 查询应用配置
@@ -111,49 +111,55 @@ Feature: 技能归属与三级权限
     Then 200（软删除），选项与运行时加载中消失
 ```
 
-## 用户级应用配置（2026-09-16 增量）
+## 用户级应用配置（2026-09-16 增量；2026-09-19 改为「应用默认技能」模型）
 
 ```gherkin
-Feature: 用户级应用配置（跨会话复用）
+Feature: 用户级应用配置（跨会话复用，技能仅可在默认范围内勾选）
   Background:
-    Given 团队拥有应用 App，成员 Charlie 已登录
+    Given 团队拥有应用 App，管理员已配置默认技能，成员 Charlie 已登录
 
   @SKL-S5 @auto:e2e
-  Scenario: 保存并回显
-    When Charlie 保存用户配置（自选技能列表）
-    Then 保存成功，查询回显 skills 与保存值一致、promptId=0、lockedSkills 为空
+  Scenario: 管理员配置默认技能
+    When 管理员保存应用配置（skills=技能列表）
+    Then 保存成功，应用配置回显 skills
+    And 技能候选=系统内置∪市场公开∪本团队（不含个人技能）
 
   @SKL-S6 @auto:e2e
-  Scenario: 保存校验
-    When Charlie 保存含他人个人技能的自选列表
-    Then 400 存在不可用或无权使用的技能
-    When Charlie 保存不可用的专家提示词 id
-    Then 404 提示词不存在
+  Scenario: 用户默认全选与目录回显
+    When Charlie 首次查询应用用户配置（未保存过）
+    Then skills=应用默认技能全集（默认全部启用），promptId=0
+    And 响应携带默认技能目录（defaultSkills）
 
   @SKL-S7 @auto:e2e
-  Scenario: 覆盖语义与非成员
-    When Charlie 再次保存（skills 为空列表）
-    Then 覆盖先前自选技能，查询 skills 为空
+  Scenario: 技能仅可在默认范围内勾选
+    When Charlie 保存勾选默认技能子集并选择可用专家
+    Then 保存成功，回显 skills 与 promptId
+    When Charlie 保存应用未开放的技能（如他人个人技能）
+    Then 400 存在应用未开放的技能
+    When Charlie 保存不可用的专家提示词（如他人个人提示词）
+    Then 404 提示词不存在或不可用
     When 非团队成员查询该应用用户配置
     Then 404
 
   @SKL-S8 @manual
-  Scenario: 运行时技能并集生效
-    Given 应用绑定技能 A（应用所有者锁定），Charlie 自选技能 B
+  Scenario: 运行时技能按勾选交集生效
+    Given 应用默认技能 A、B，Charlie 已在应用设置中取消勾选 B
     When Charlie 发起对话并触发 list_tools
-    Then 工具列表同时含 skill_A 与 skill_B
-    And 自选技能被删除/禁用后，后续对话静默剔除且不影响技能 A
+    Then 工具列表含 skill_A 且不含 skill_B
+    And Charlie 未保存过用户配置时默认技能全部生效
+    And 默认技能被删除/禁用后，后续对话静默剔除该技能
 
   @SKL-S9 @auto:vitest
-  Scenario: 应用绑定技能对用户锁定
+  Scenario: 应用设置面板仅展示默认技能目录
     When Charlie 打开对话页「应用设置」面板
-    Then 应用绑定技能呈现勾选且禁用（应用必选标记），不可取消
-    And 保存仅提交自选技能与新会话默认专家
+    Then 仅展示应用默认技能目录（无锁定项），技能可勾选/取消
+    And 专家列表为本人个人提示词与本团队提示词，位于技能目录之上；保存提交勾选技能与专家（新会话默认，已有会话且变化时即时切换）
 
   @SKL-S10 @auto:vitest
-  Scenario: 应用配置页绑定技能
+  Scenario: 应用配置页配置默认技能
     When 团队管理员在应用配置页选择技能并保存
-    Then 绑定写入 app_agent_config.skills，选项来自系统内置∪公开∪本团队（不含个人技能）
+    Then 写入 app_agent_config.skills
+    And 技能选项不含个人技能
 ```
 
 ## 技能市场与个人维护（2026-09-17 增量）

@@ -33,6 +33,10 @@
 | @TP-S25 | team-plugin-e2e.mjs（TP-25、TP-25b） | PASS（2026-09-10） |
 | @TP-S26 | team-plugin-e2e.mjs（TP-26） | PASS（2026-09-10） |
 | @TP-S27 | team-plugin-e2e.mjs（TP-13 跨团队） | PASS（2026-09-10） |
+| @TP-S29 | team-plugin-e2e.mjs（TP-29a/b/c：MCP 桩校验插值后明文） | PASS（2026-09-20） |
+| @TP-S30 | team-plugin-e2e.mjs（TP-30a/b、TP-31：detail 回显占位符 + 刷新插值） | PASS（2026-09-20） |
+| @TP-S31 | team-plugin-e2e.mjs（TP-32：缺失变量 409） | PASS（2026-09-20） |
+| @TP-S32 | team-plugin-e2e.mjs（TP-33a/b/c、TP-34a/b：OpenAPI 保存回显）+ 单测 CustomPluginVariableInterpolatorTests | PASS（2026-09-20） |
 | @TP-S28 | ui/src/pages/teams/plugins/__tests__/TeamPlugins.test.tsx | PASS（2026-09-10，两 Tab/管理入口） |
 | 前端：团队插件页 | ui/src/pages/teams/__tests__/TeamManage.test.tsx | PASS（2026-09-10，插件区块嵌入） |
 | 前端：系统插件授权抽屉 | ui/src/pages/plugins/__tests__/CustomPluginPanel.test.tsx（回归） | PASS（2026-09-10） |

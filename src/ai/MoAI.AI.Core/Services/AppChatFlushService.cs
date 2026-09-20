@@ -10,6 +10,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using MoAI.AI.Models;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 
 namespace MoAI.AI.Services;
@@ -65,6 +66,15 @@ public sealed class AppChatFlushService
         if (records.Count > 0)
         {
             var config = await _databaseContext.AppAgentConfigs.FirstOrDefaultAsync(x => x.AppId == session.AppId, cancellationToken).ConfigureAwait(false);
+
+            // 会话按发布快照的执行参数压缩（正式会话即按该参数运行）；未发布/无快照回退实时草稿
+            if (config != null)
+            {
+                var app = await _databaseContext.Apps.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == session.AppId, cancellationToken).ConfigureAwait(false);
+                config = app == null ? config : AppAgentConfigSnapshot.ResolveEffectiveConfig(app, config, preferPublished: true);
+            }
+
             var compacted = await CompactAsync(config, records, cancellationToken).ConfigureAwait(false);
 
             // 物理替换：被压缩掉的行原文丢弃（绕过软删除，避免 (session_id, seq) 唯一索引冲突）

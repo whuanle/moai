@@ -53,6 +53,7 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx
 3. OAuth 未绑定 profile 写 Redis `oauth:bind:{guid}`（10 分钟 TTL）；一键注册在 `TransactionScope` 内以占位 Guid 建号、改为 `u{自增id}`、失效用户态缓存、写 `UserOauthConnections`（ProviderId+Sub）。
 4. 授权地址按提供商特殊拼接：默认 `scope=openid profile`、飞书 scope 为空、钉钉 `openid corpid`+`prompt=consent`；`state={OAuthId}`；`redirect_uri={WebUI}/oauth_login`。
 5. 前端：401 且非 login 接口 → 清用户态跳 `/login`（`kiota.ts` FilterRequestHandler）；Access Token 过期（60 秒宽限）且 Refresh 有效时静默续期；OAuthLogin 用 `useRef` 防 StrictMode 重复消费一次性 code。
+6. **所有内部签发 token 的处理器必须显式设 `UserType = Normal`**（Login/Refresh/OAuthLogin/OAuthRegister）：claim `typ` 缺失会解析为 None，下游 `app_agent_session.user_type` 落 0，对话日志把内部用户误标为外部用户（2026-09-20 修复 Refresh/OAuth 两类三处漏设，回归 [@AUTH-S24](./bdd.md#auth-s24)；存量数据见 `asserts/app_agent_session_user_type_fix.sql`）。
 
 ## 已知问题
 

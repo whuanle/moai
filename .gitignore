@@ -382,3 +382,8 @@ local-dev/system.local.json
 .tmpbuild/
 /.zcode/plans
 /.tmp-ddl
+
+# 独立输出目录的后端构建产物（宿主 bin 被并行实例锁定时用 -o local-dev/backend-dist 验证）
+local-dev/backend-dist/
+local-dev/backend-*.log
+/tmp/

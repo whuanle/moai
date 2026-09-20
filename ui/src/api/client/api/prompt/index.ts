@@ -12,6 +12,8 @@ import { My_listRequestBuilderRequestsMetadata, type My_listRequestBuilder } fro
 // @ts-ignore
 import { Team_listRequestBuilderRequestsMetadata, type Team_listRequestBuilder } from './team_list/index.js';
 // @ts-ignore
+import { Top_usedRequestBuilderRequestsMetadata, type Top_usedRequestBuilder } from './top_used/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -30,6 +32,10 @@ export interface PromptRequestBuilder extends BaseRequestBuilder<PromptRequestBu
      * The team_list property
      */
     get team_list(): Team_listRequestBuilder;
+    /**
+     * The top_used property
+     */
+    get top_used(): Top_usedRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.prompt.item collection
      * @param id 提示词 id.
@@ -77,6 +83,9 @@ export const PromptRequestBuilderNavigationMetadata: Record<Exclude<keyof Prompt
     },
     team_list: {
         requestsMetadata: Team_listRequestBuilderRequestsMetadata,
+    },
+    top_used: {
+        requestsMetadata: Top_usedRequestBuilderRequestsMetadata,
     },
 };
 /**

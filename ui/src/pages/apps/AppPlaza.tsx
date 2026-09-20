@@ -89,11 +89,10 @@ export function AppPlaza() {
                       >
                         {item.description || '-'}
                       </Paragraph>
-                      {item.appType !== 'workflow' && (
-                        <Button type="primary" size="small" block onClick={() => openChat(item)}>
-                          {t('appManage.enterChat')}
-                        </Button>
-                      )}
+                      {/* Agent 与已发布流程应用均可对话：流程应用一轮对话 = 一次已发布流程执行 */}
+                      <Button type="primary" size="small" block onClick={() => openChat(item)}>
+                        {t('appManage.enterChat')}
+                      </Button>
                       <div
                         style={{
                           display: 'flex',

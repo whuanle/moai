@@ -39,7 +39,14 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public IReadOnlyCollection<Guid> Plugins { get; init; } = Array.Empty<Guid>();
 
     /// <summary>
-    /// 允许使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的技能；null 表示保持已保存的技能不变.
+    /// 绑定为工具的流程应用 id 列表（元素为 app.id，uuid），须为本团队已发布流程应用；
+    /// null 表示保持已保存的流程应用绑定不变.
+    /// </summary>
+    public IReadOnlyCollection<Guid>? WorkflowApps { get; init; }
+
+    /// <summary>
+    /// 应用默认使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的系统内置/市场公开/本团队技能；
+    /// 用户进入对话后可在应用设置中取消勾选；null 表示保持已保存的技能不变.
     /// </summary>
     public IReadOnlyCollection<Guid>? Skills { get; init; }
 
@@ -52,6 +59,12 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     /// 是否启用对话开场白；启用且内容非空时生效.
     /// </summary>
     public bool OpeningStatementEnabled { get; init; }
+
+    /// <summary>
+    /// 快捷输入列表（管理员配置，用户在对话欢迎态点击即发送），最多 10 条、每条最长 200 字符；
+    /// null 表示保持已保存的快捷输入不变.
+    /// </summary>
+    public IReadOnlyCollection<string>? QuickInputs { get; init; }
 
     /// <summary>
     /// 对话执行参数（JSON 对象，含沙箱等扩展配置）；为空表示不修改已保存的执行参数.
@@ -74,5 +87,9 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
         validate.RuleFor(x => x.OpeningStatement).MaximumLength(4000).WithMessage("对话开场白最长 4000 个字符.");
         validate.RuleFor(x => x.WikiIds).NotNull().WithMessage("知识库列表不能为 null.");
         validate.RuleFor(x => x.Plugins).NotNull().WithMessage("插件列表不能为 null.");
+        validate.RuleFor(x => x.QuickInputs).Must(list => list == null || list.Count <= 10)
+            .WithMessage("快捷输入最多 10 条.");
+        validate.RuleFor(x => x.QuickInputs).Must(list => list?.All(x => x.Length <= 200) ?? true)
+            .WithMessage("快捷输入每条最长 200 个字符.");
     }
 }

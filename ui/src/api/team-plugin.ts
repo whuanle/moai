@@ -125,6 +125,8 @@ export async function saveTeamOpenApiPlugin(payload: {
   name: string
   title: string
   description: string
+  header?: KeyValueString[]
+  query?: KeyValueString[]
   classifyId?: number
 }): Promise<string | null> {
   const client = getApiClient()
@@ -136,6 +138,8 @@ export async function saveTeamOpenApiPlugin(payload: {
     name: payload.name,
     title: payload.title,
     description: payload.description,
+    header: payload.header ?? [],
+    query: payload.query ?? [],
     classifyId: payload.classifyId ?? 0,
   }
   const res: SimpleGuid | undefined = await client.api.team

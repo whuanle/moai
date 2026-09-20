@@ -2,6 +2,7 @@
 // 用法：node local-dev/app-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 APP_BASE 覆盖）
 // 前置：后端运行中，且已执行 asserts/app.sql 建表。
 import crypto from 'node:crypto'
+import http from 'node:http'
 
 const BASE = process.env.APP_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5000'
 let PASS = 0, FAIL = 0
@@ -462,6 +463,517 @@ async function main() {
     const wfDetail = await api('GET', `/api/app/${WORKFLOW_ID}`, { token: owner.token })
     check('AP-45h 流程应用详情开场白为空', wfDetail.status === 200 && wfDetail.json?.openingStatement === '' && wfDetail.json?.openingStatementEnabled === false,
       wfDetail.text.slice(0, 200))
+  }
+
+  // AP-57 快捷输入（Agent 应用配置：管理员自定义多条，聊天页欢迎态点击即发送）
+  {
+    const cfgUrl = `/api/app/${AGENT_ID}/agent-config`
+    const QI = ['帮我总结一份文档的核心要点', '根据知识库回答一个业务问题', '写一段简洁的产品介绍']
+
+    check('AP-57a Member 保存快捷输入 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: QI } })).status === 403)
+
+    const saveQi = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: QI } })
+    check('AP-57b Owner 保存快捷输入（3 条）200', saveQi.status === 200, `${saveQi.status} ${saveQi.text.slice(0, 140)}`)
+
+    const backQi = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-57c 配置回读快捷输入一致', backQi.status === 200 && JSON.stringify(backQi.json?.quickInputs) === JSON.stringify(QI),
+      backQi.text.slice(0, 200))
+
+    // 聊天页挂载点：应用详情（Member 可读）随详情下发快捷输入
+    const detailQi = await api('GET', `/api/app/${AGENT_ID}`, { token: member.token })
+    check('AP-57d Member 查应用详情下发快捷输入', detailQi.status === 200 && JSON.stringify(detailQi.json?.quickInputs) === JSON.stringify(QI),
+      detailQi.text.slice(0, 200))
+
+    // 规范化：去首尾空白、丢弃空串、去重
+    const norm = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['  第一条  ', '', '第一条', '第二条'] } })
+    const backNorm = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-57e 空白与重复项被清理', norm.status === 200 && JSON.stringify(backNorm.json?.quickInputs) === JSON.stringify(['第一条', '第二条']),
+      backNorm.text.slice(0, 200))
+
+    check('AP-57f 超过 10 条 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: Array.from({ length: 11 }, (_, i) => `q${i}`) } })).status === 400)
+    check('AP-57g 单条超 200 字 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['x'.repeat(201)] } })).status === 400)
+    const afterBad = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-57h 校验失败不写入快捷输入', JSON.stringify(afterBad.json?.quickInputs) === JSON.stringify(['第一条', '第二条']),
+      afterBad.text.slice(0, 200))
+
+    // 旧前端兼容：请求不携带 quickInputs 字段保存其他字段时，已保存的快捷输入保持不变
+    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', wikiIds: [], plugins: [] } })
+    const keep = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-57i 不携带字段保存时保持原值', JSON.stringify(keep.json?.quickInputs) === JSON.stringify(['第一条', '第二条']),
+      keep.text.slice(0, 200))
+
+    const clear = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', wikiIds: [], plugins: [], quickInputs: [] } })
+    const backClear = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-57j 空数组清空快捷输入', clear.status === 200 && JSON.stringify(backClear.json?.quickInputs) === '[]',
+      backClear.text.slice(0, 200))
+
+    // 发布快照：发布后改草稿，线上详情仍按发布快照下发快捷输入
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '快捷输入快照' + TS, appType: 'agent' } })
+    const SNAP_ID = String(c.json?.value ?? '')
+    await api('PUT', `/api/app/${SNAP_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['快照版问题'] } })
+    await api('POST', `/api/app/${SNAP_ID}/publish`, { token: owner.token })
+    await api('PUT', `/api/app/${SNAP_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['草稿版问题'] } })
+    const snapDetail = await api('GET', `/api/app/${SNAP_ID}`, { token: member.token })
+    check('AP-57k 已发布应用详情按快照下发快捷输入', snapDetail.status === 200 && JSON.stringify(snapDetail.json?.quickInputs) === JSON.stringify(['快照版问题']),
+      snapDetail.text.slice(0, 200))
+  }
+
+  // AP-54 发布配置快照双轨：发布后管理员改配置只落草稿，线上按发布快照执行，重新发布后生效
+  {
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '快照双轨' + TS, appType: 'agent' } })
+    const SNAP_ID = String(c.json?.value ?? '')
+    const snapUrl = `/api/app/${SNAP_ID}/agent-config`
+    const saveA = await api('PUT', snapUrl, { token: owner.token, body: { prompt: 'PROMPT_A', wikiIds: [], plugins: [], openingStatement: 'OS_A', openingStatementEnabled: true } })
+    check('AP-54a 发布前保存配置 200', c.status === 200 && saveA.status === 200, `${saveA.status} ${saveA.text.slice(0, 120)}`)
+    check('AP-54b 发布应用 200', (await api('POST', `/api/app/${SNAP_ID}/publish`, { token: owner.token })).status === 200)
+    const cfg1 = await api('GET', snapUrl, { token: owner.token })
+    check('AP-54c 发布后配置状态=草稿与发布一致', cfg1.status === 200 && cfg1.json?.status === 1, cfg1.text.slice(0, 160))
+
+    // 管理员继续改配置（草稿）：配置回读为草稿值，线上详情仍下发发布快照开场白
+    const saveB = await api('PUT', snapUrl, { token: owner.token, body: { prompt: 'PROMPT_B', wikiIds: [], plugins: [], openingStatement: 'OS_B', openingStatementEnabled: true } })
+    const cfg2 = await api('GET', snapUrl, { token: owner.token })
+    const detail1 = await api('GET', `/api/app/${SNAP_ID}`, { token: member.token })
+    check('AP-54d 草稿保存后回读草稿值且状态=未发布变更', saveB.status === 200 && cfg2.json?.prompt === 'PROMPT_B' && cfg2.json?.status === 0,
+      cfg2.text.slice(0, 160))
+    check('AP-54e 线上详情仍下发已发布开场白 OS_A', detail1.status === 200 && detail1.json?.openingStatement === 'OS_A' && detail1.json?.openingStatementEnabled === true,
+      detail1.text.slice(0, 160))
+
+    // 重新发布后草稿进入发布快照
+    check('AP-54f 重新发布 200', (await api('POST', `/api/app/${SNAP_ID}/publish`, { token: owner.token })).status === 200)
+    const cfg3 = await api('GET', snapUrl, { token: owner.token })
+    const detail2 = await api('GET', `/api/app/${SNAP_ID}`, { token: member.token })
+    check('AP-54g 重新发布后开场白 OS_B 生效且状态回 1', cfg3.json?.status === 1 && detail2.json?.openingStatement === 'OS_B',
+      `${cfg3.text.slice(0, 120)} ${detail2.text.slice(0, 120)}`)
+
+    // 未发布应用不进入双轨：详情按实时草稿下发
+    const c2 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '未发布双轨' + TS, appType: 'agent' } })
+    const UNP_ID = String(c2.json?.value ?? '')
+    await api('PUT', `/api/app/${UNP_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'OS_U', openingStatementEnabled: true } })
+    const detailU = await api('GET', `/api/app/${UNP_ID}`, { token: owner.token })
+    check('AP-54h 未发布应用详情按实时开场白', detailU.status === 200 && detailU.json?.openingStatement === 'OS_U' && detailU.json?.openingStatementEnabled === true,
+      detailU.text.slice(0, 160))
+    const cfgU = await api('GET', `/api/app/${UNP_ID}/agent-config`, { token: owner.token })
+    check('AP-54i 未发布应用配置状态=0', cfgU.status === 200 && cfgU.json?.status === 0, cfgU.text.slice(0, 120))
+  }
+
+  // AP-58 流程应用绑定为工具（Agent 应用配置：workflowApps 仅允许本团队已发布流程应用，null 保持原值）
+  {
+    const cfgUrl = `/api/app/${AGENT_ID}/agent-config`
+
+    // 前置：造一个已发布流程应用（start(question) → end(reply=interpolation)，确定性输出不依赖模型）
+    const wfNodes = [
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
+      { key: 'end', name: '结束', type: 'end', inputs: { reply: { expressionType: 'interpolation', value: '工具结果:{start.question}', required: false } }, outputs: [{ name: 'reply', fieldType: 'string' }] },
+    ]
+    const wfDef = { id: '', name: 'wf-tool-e2e', version: 0, status: 'draft', nodes: wfNodes, connections: [{ id: 'c1', source: 'start', target: 'end' }], variables: [], ui: { nodePositions: { start: { x: 80, y: 200 }, end: { x: 480, y: 200 } } } }
+    const wfEditor = {
+      nodes: wfNodes.map((n) => ({
+        id: n.key, type: n.type,
+        meta: { position: wfDef.ui.nodePositions[n.key], defaultExpanded: true },
+        data: { title: n.name, content: '', inputs: n.inputs, outputs: n.outputs, settings: n.config ?? {} },
+        blocks: [],
+        edges: wfDef.connections.filter((c) => c.source === n.key).map((c) => ({ sourceNodeID: c.source, targetNodeID: c.target })),
+      })),
+      edges: [],
+    }
+
+    const cPub = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '工具流程' + TS, appType: 'workflow' } })
+    const WF_PUB = String(cPub.json?.value ?? '')
+    const draft = await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: WF_PUB, teamId: TID, definition: JSON.stringify(wfDef), editorData: JSON.stringify(wfEditor) } })
+    check('AP-58a 前置：流程草稿保存 200', draft.status === 200, `${draft.status} ${draft.text.slice(0, 140)}`)
+    const pub = await api('POST', '/api/app/workflow/publish', { token: owner.token, body: { appId: WF_PUB, teamId: TID } })
+    check('AP-58b 前置：流程发布 200', pub.status === 200, `${pub.status} ${pub.text.slice(0, 140)}`)
+
+    // 未发布流程应用（对照）
+    const cDraft = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '草稿工具流程' + TS, appType: 'workflow' } })
+    const WF_DRAFT = String(cDraft.json?.value ?? '')
+
+    check('AP-58c Member 绑定流程应用 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: [WF_PUB] } })).status === 403)
+    check('AP-58d 绑定 Agent 应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: [AGENT_ID] } })).status === 400)
+    check('AP-58e 绑定未发布流程应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: [WF_DRAFT] } })).status === 400)
+    check('AP-58f 绑定不存在的流程应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: ['01924f5e-0000-7000-8000-00000000cccc'] } })).status === 400)
+
+    const saveWf = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', wikiIds: [], plugins: [], workflowApps: [WF_PUB] } })
+    check('AP-58g Owner 绑定已发布流程应用 200', saveWf.status === 200, `${saveWf.status} ${saveWf.text.slice(0, 140)}`)
+    const backWf = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-58h 回读绑定一致', (backWf.json?.workflowApps ?? []).map(String).includes(WF_PUB), backWf.text.slice(0, 200))
+
+    // 旧前端兼容：不携带 workflowApps 字段保存其他字段时，绑定保持不变
+    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P2', wikiIds: [], plugins: [] } })
+    const keep = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-58i 不携带字段保存时保持绑定', (keep.json?.workflowApps ?? []).map(String).includes(WF_PUB) && keep.json?.prompt === 'P2', keep.text.slice(0, 200))
+
+    // 发布快照含流程应用绑定：发布后改草稿，状态进入未发布变更；重新发布后回 1
+    await api('POST', `/api/app/${AGENT_ID}/publish`, { token: owner.token })
+    const st1 = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-58j 发布后配置状态=1', st1.json?.status === 1, st1.text.slice(0, 120))
+    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P3', wikiIds: [], plugins: [], workflowApps: [] } })
+    const st2 = await api('GET', cfgUrl, { token: owner.token })
+    check('AP-58k 草稿清空绑定后状态=0 且草稿回读为空', st2.json?.status === 0 && (st2.json?.workflowApps ?? []).length === 0, st2.text.slice(0, 160))
+    check('AP-58l 重新发布 200', (await api('POST', `/api/app/${AGENT_ID}/publish`, { token: owner.token })).status === 200)
+  }
+
+  // AP-59 对话链路：绑定的已发布流程应用被装配为工具，Agent 对话中 call_tool 驱动流程并回传结果
+  // 模型为本地 OpenAI 兼容桩（流式/非流式均支持）：首轮直接 call_tool(workflow__*)，收到工具结果后回显.
+  {
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    if (!adminToken) {
+      console.log('SKIP | AP-59 无 admin 账号（admin/abcd123456），跳过对话链路验证')
+    } else {
+      // 已发布流程应用（沿用 AP-58 形状：start(question) → end(reply=插值)，无模型/沙箱依赖）
+      const wfName = 'flowtool' + TS
+      const wfNodes = [
+        { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
+        { key: 'end', name: '结束', type: 'end', inputs: { reply: { expressionType: 'interpolation', value: '工具结果:{start.question}', required: false } }, outputs: [{ name: 'reply', fieldType: 'string' }] },
+      ]
+      const wfDef = { id: '', name: 'wf-tool-chat', version: 0, status: 'draft', nodes: wfNodes, connections: [{ id: 'c1', source: 'start', target: 'end' }], variables: [], ui: { nodePositions: { start: { x: 80, y: 200 }, end: { x: 480, y: 200 } } } }
+      const wfEditor = {
+        nodes: wfNodes.map((n) => ({
+          id: n.key, type: n.type,
+          meta: { position: wfDef.ui.nodePositions[n.key], defaultExpanded: true },
+          data: { title: n.name, content: '', inputs: n.inputs, outputs: n.outputs, settings: n.config ?? {} },
+          blocks: [],
+          edges: wfDef.connections.filter((c) => c.source === n.key).map((c) => ({ sourceNodeID: c.source, targetNodeID: c.target })),
+        })),
+        edges: [],
+      }
+      const cwf = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: wfName, appType: 'workflow' } })
+      const WF_CHAT = String(cwf.json?.value ?? '')
+      await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: WF_CHAT, teamId: TID, definition: JSON.stringify(wfDef), editorData: JSON.stringify(wfEditor) } })
+      const wfPub = await api('POST', '/api/app/workflow/publish', { token: owner.token, body: { appId: WF_CHAT, teamId: TID } })
+      check('AP-59a 前置：工具流程发布 200', wfPub.status === 200, `${wfPub.status} ${wfPub.text.slice(0, 140)}`)
+
+      // OpenAI 兼容对话桩：无工具结果时发 call_tool(workflow__<name>)，有工具结果时回显其内容
+      const WF_TOOL_NAME = 'workflow__' + wfName
+      const stub = http.createServer((req, res) => {
+        console.log(`STUB-HIT | ${req.method} ${req.url}`)
+        let body = ''
+        req.on('data', (chunk) => { body += chunk })
+        req.on('end', () => {
+          let payload = {}
+          try { payload = JSON.parse(body || '{}') } catch { /* 按无工具结果处理 */ }
+          const toolMsg = (payload.messages ?? []).find((m) => m.role === 'tool')
+          // 工具结果为 JSON（{success,reply,instanceId}），回显其中的 reply；解析失败按原文回显
+          let toolEcho = String(toolMsg?.content ?? '')
+          try {
+            const parsed = JSON.parse(toolEcho)
+            if (parsed && typeof parsed.reply === 'string') toolEcho = parsed.reply
+          } catch { /* 保持原文 */ }
+          const base = { id: 'chatcmpl-stub', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'stub' }
+          if (payload.stream) {
+            res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+            const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n')
+            if (toolMsg) {
+              send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: '流程返回：' + toolEcho.slice(0, 400) }, finish_reason: null }] })
+              send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })
+            } else {
+              const fnArgs = JSON.stringify({ toolName: WF_TOOL_NAME, argumentsJson: JSON.stringify({ query: '工单123' }) })
+              send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: null, tool_calls: [{ index: 0, id: 'call_stub_1', type: 'function', function: { name: 'call_tool', arguments: fnArgs } }] }, finish_reason: null }] })
+              send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })
+            }
+            res.write('data: [DONE]\n\n')
+            res.end()
+          } else {
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            const message = toolMsg
+              ? { role: 'assistant', content: '流程返回：' + toolEcho.slice(0, 400) }
+              : { role: 'assistant', content: null, tool_calls: [{ id: 'call_stub_1', type: 'function', function: { name: 'call_tool', arguments: JSON.stringify({ toolName: WF_TOOL_NAME, argumentsJson: JSON.stringify({ query: '工单123' }) }) } }] }
+            res.end(JSON.stringify({ ...base, object: 'chat.completion', choices: [{ index: 0, message, finish_reason: toolMsg ? 'stop' : 'tool_calls' }] }))
+          }
+        })
+      })
+      await new Promise((resolve) => stub.listen(0, '127.0.0.1', resolve))
+      stub.unref()
+      const stubPort = stub.address().port
+
+      // 桩渠道 + 对话模型，授权给本次团队（结束时清理）
+      const chName = `ap59-mock渠道-${TS}`
+      const modelName = `ap59-chat-mock-${TS}`
+      const crc = await api('POST', '/api/ai/channel', { token: adminToken, body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: `http://127.0.0.1:${stubPort}/v1`, apiKey: 'ap59-mock-key', enabled: true, description: 'app-e2e AP-59 桩渠道' } })
+      check('AP-59b 创建桩渠道 200', crc.status === 200, `${crc.status} ${crc.text.slice(0, 140)}`)
+      const channels = await api('GET', '/api/ai/channel', { token: adminToken })
+      const CH_ID = (channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? ''
+      const mrc = await api('POST', '/api/ai/model', { token: adminToken, body: { channelId: CH_ID, meta: { modelId: modelName, name: modelName, modelKind: 'conversation', description: 'app-e2e AP-59 桩模型' }, enabled: true, isPublic: false } })
+      check('AP-59c 创建桩对话模型 200', mrc.status === 200, `${mrc.status} ${mrc.text.slice(0, 140)}`)
+      const models = await api('GET', `/api/ai/model?channelId=${CH_ID}`, { token: adminToken })
+      const MODEL_ID = String((models.json?.items ?? []).find((m) => m.name === modelName)?.id ?? '')
+      const cur = await api('GET', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken })
+      const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+      check('AP-59d 桩模型授权团队 200', (await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { teamIds } })).status === 200)
+
+      // Agent 应用：绑模型 + 流程应用 → 发布（正式会话按发布快照装配工具）
+      const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '流程工具宿主' + TS, appType: 'agent' } })
+      const HOST_ID = String(ca.json?.value ?? '')
+      const cfgSave = await api('PUT', `/api/app/${HOST_ID}/agent-config`, { token: owner.token, body: { prompt: '你会调用流程工具', wikiIds: [], plugins: [], modelId: MODEL_ID, workflowApps: [WF_CHAT] } })
+      check('AP-59e 宿主应用绑定模型与流程应用 200', cfgSave.status === 200, `${cfgSave.status} ${cfgSave.text.slice(0, 140)}`)
+      check('AP-59f 宿主应用发布 200', (await api('POST', `/api/app/${HOST_ID}/publish`, { token: owner.token })).status === 200)
+
+      const chatSse = async (appId, token, sessionId, text) => {
+        const res = await fetch(`${BASE}/api/agent/${appId}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            threadId: sessionId,
+            runId: crypto.randomUUID(),
+            state: {},
+            messages: [{ id: crypto.randomUUID(), role: 'user', content: text }],
+            tools: [],
+            context: [],
+            forwardedProps: {},
+          }),
+        })
+        const raw = await res.text()
+        const events = raw.split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => { try { return JSON.parse(l.slice(5).trim()) } catch { return null } })
+          .filter(Boolean)
+        const reply = events
+          .filter((e) => e.type === 'TEXT_MESSAGE_CONTENT' && typeof e.delta === 'string')
+          .map((e) => e.delta)
+          .join('')
+        const runError = events.find((e) => e.type === 'RUN_ERROR')?.message ?? null
+        return { status: res.status, reply, runError }
+      }
+
+      const sess = await api('POST', `/api/app/${HOST_ID}/session`, { token: owner.token, body: { title: 'ap59' } })
+      const SID = String(sess.json?.value ?? '')
+      check('AP-59g 创建正式会话 200', sess.status === 200 && isGuid(SID), `${sess.status} ${sess.text.slice(0, 140)}`)
+
+      const chat1 = await chatSse(HOST_ID, owner.token, SID, '请处理工单123')
+      check('AP-59h 对话中 call_tool 驱动流程并回传结果', chat1.status === 200 && chat1.reply.includes('工具结果:工单123') && !chat1.runError,
+        `${chat1.status} reply=${chat1.reply.slice(0, 160)} err=${chat1.runError}`)
+
+      // 解绑后重新发布：工具下线，同名调用返回「工具不存在」错误文本
+      await api('PUT', `/api/app/${HOST_ID}/agent-config`, { token: owner.token, body: { prompt: '你会调用流程工具', wikiIds: [], plugins: [], modelId: MODEL_ID, workflowApps: [] } })
+      await api('POST', `/api/app/${HOST_ID}/publish`, { token: owner.token })
+      const sess2 = await api('POST', `/api/app/${HOST_ID}/session`, { token: owner.token, body: { title: 'ap59-unbound' } })
+      const chat2 = await chatSse(HOST_ID, owner.token, String(sess2.json?.value ?? ''), '再处理一次')
+      check('AP-59i 解绑发布后工具下线（无任何工具，call_tool 不存在）', chat2.status === 200 && chat2.reply.includes('not found'),
+        `${chat2.status} reply=${chat2.reply.slice(0, 160)} err=${chat2.runError}`)
+
+      // 清理桩模型/渠道（应用与流程留给台账）
+      await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [MODEL_ID] } })
+      await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
+      stub.close()
+    }
+  }
+
+  // AP-60 审批策略：审批模式下白名单插件与沙箱自动放行，其余工具仍挂起等待人工决策；
+  // 模型为本地 OpenAI 兼容桩（用户消息 CALL:<toolName> 指定要调用的工具，收到工具结果后回显其内容）.
+  {
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    if (!adminToken) {
+      console.log('SKIP | AP-60 无 admin 账号（admin/abcd123456），跳过审批策略验证')
+    } else {
+      const team = await api('POST', '/api/team', { token: adminToken, body: { name: `ap60-审批策略-${TS}` } })
+      const TID = Number(team.json?.value ?? 0)
+
+      // 团队可访问插件：优先静态（工具名=插件名，无外部依赖），否则取第一个非空 Guid 插件（工具名经 userconfig 下发）
+      const pl = await api('GET', `/api/team/${TID}/plugin/list`, { token: adminToken })
+      const items = (pl.json?.items ?? []).filter((i) => isGuid(i.pluginId) && i.pluginId !== '00000000-0000-0000-0000-000000000000')
+      const bindable = items.find((i) => i.kind === 'static') ?? items[0] ?? null
+      if (!bindable) {
+        console.log('SKIP | AP-60 团队无可绑定插件，跳过审批策略验证')
+      } else {
+        // 桩模型：用户消息 CALL:<toolName> → call_tool(toolName)；有工具结果时原样回显
+        const stub = http.createServer((req, res) => {
+          let body = ''
+          req.on('data', (chunk) => { body += chunk })
+          req.on('end', () => {
+            let payload = {}
+            try { payload = JSON.parse(body || '{}') } catch { /* 按无指令处理 */ }
+            const toolMsg = (payload.messages ?? []).find((m) => m.role === 'tool')
+            const lastUser = [...(payload.messages ?? [])].reverse().find((m) => m.role === 'user')
+            const wantTool = String(lastUser?.content ?? '').match(/CALL:([\w-]+)/)?.[1] ?? null
+            const base = { id: 'chatcmpl-stub60', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'stub60' }
+            const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n')
+            if (payload.stream) {
+              res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+              if (toolMsg) {
+                send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: '工具回显:' + String(toolMsg.content ?? '').slice(0, 600) }, finish_reason: null }] })
+                send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })
+              } else {
+                const fnArgs = JSON.stringify({ toolName: wantTool, argumentsJson: '{}' })
+                send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: null, tool_calls: [{ index: 0, id: 'call_stub60_1', type: 'function', function: { name: 'call_tool', arguments: fnArgs } }] }, finish_reason: null }] })
+                send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })
+              }
+              res.write('data: [DONE]\n\n')
+              res.end()
+            } else {
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              const message = toolMsg
+                ? { role: 'assistant', content: '工具回显:' + String(toolMsg.content ?? '').slice(0, 600) }
+                : { role: 'assistant', content: null, tool_calls: [{ id: 'call_stub60_1', type: 'function', function: { name: 'call_tool', arguments: JSON.stringify({ toolName: wantTool, argumentsJson: '{}' }) } }] }
+              res.end(JSON.stringify({ ...base, object: 'chat.completion', choices: [{ index: 0, message, finish_reason: toolMsg ? 'stop' : 'tool_calls' }] }))
+            }
+          })
+        })
+        await new Promise((resolve) => stub.listen(0, '127.0.0.1', resolve))
+        stub.unref()
+        const stubPort = stub.address().port
+
+        const chName = `ap60-mock渠道-${TS}`
+        const modelName = `ap60-chat-mock-${TS}`
+        await api('POST', '/api/ai/channel', { token: adminToken, body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: `http://127.0.0.1:${stubPort}/v1`, apiKey: 'ap60-mock-key', enabled: true, description: 'app-e2e AP-60 桩渠道' } })
+        const channels = await api('GET', '/api/ai/channel', { token: adminToken })
+        const CH_ID = (channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? ''
+        await api('POST', '/api/ai/model', { token: adminToken, body: { channelId: CH_ID, meta: { modelId: modelName, name: modelName, modelKind: 'conversation', description: 'app-e2e AP-60 桩模型' }, enabled: true, isPublic: false } })
+        const models = await api('GET', `/api/ai/model?channelId=${CH_ID}`, { token: adminToken })
+        const MODEL_ID = String((models.json?.items ?? []).find((m) => m.name === modelName)?.id ?? '')
+        const curAuth = await api('GET', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken })
+        const teamIds = [...new Set([...(curAuth.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+        await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { teamIds } })
+
+        const app = await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `ap60-审批策略应用-${TS}`, appType: 'agent' } })
+        const APP_ID = String(app.json?.value ?? '')
+        const cfgUrl = `/api/app/${APP_ID}/agent-config`
+
+        // 保存校验：自动放行插件必须是已绑定插件（未绑定的固定 Guid 一律 400）
+        const badPolicy = await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [], plugins: [String(bindable.pluginId)], modelId: MODEL_ID,
+          executionSettings: { toolApproval: { autoApprovePlugins: ['01924f5e-0000-7000-8000-00000000aaaa'], sandboxAutoApproved: false } },
+        } })
+        check('AP-60a 自动放行插件未绑定时保存 400', badPolicy.status === 400, `${badPolicy.status} ${badPolicy.text.slice(0, 140)}`)
+        const badShape = await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [], plugins: [], modelId: MODEL_ID,
+          executionSettings: { toolApproval: { autoApprovePlugins: 'not-array' } },
+        } })
+        check('AP-60b 自动放行插件非法结构保存 400', badShape.status === 400, `${badShape.status} ${badShape.text.slice(0, 140)}`)
+
+        // 正式配置：绑定插件并加入白名单，启用沙箱但不自动放行沙箱
+        const saveCfg = await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [], plugins: [String(bindable.pluginId)], modelId: MODEL_ID,
+          executionSettings: {
+            sandbox: { enabled: true },
+            toolApproval: { autoApprovePlugins: [String(bindable.pluginId)], sandboxAutoApproved: false },
+          },
+        } })
+        check('AP-60c 白名单插件保存 200', saveCfg.status === 200, `${saveCfg.status} ${saveCfg.text.slice(0, 140)}`)
+        check('AP-60d 发布应用 200', (await api('POST', `/api/app/${APP_ID}/publish`, { token: adminToken })).status === 200)
+
+      // userconfig 下发自动放行工具名（静态插件=插件名，自定义插件=插件名__函数名）
+      const uc = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: adminToken })
+      const autoNames = uc.json?.toolApprovalAutoApprovedNames ?? []
+      const nameHit = autoNames.some((n) => n === bindable.pluginName || n.startsWith(`${bindable.pluginName}__`))
+      check('AP-60e userconfig 下发白名单插件工具名', uc.status === 200 && nameHit && (uc.json?.toolApprovalAutoApprovedPrefixes ?? []).length === 0,
+        `names=${JSON.stringify(autoNames).slice(0, 200)} pluginName=${bindable.pluginName}`)
+
+        const chatSse = async (sessionId, text, mode) => {
+          // 审批等待上限 300s：用例里预期自动放行的调用若误入等待会拖垮脚本，60s 兜底中断判失败
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 60000)
+          let res
+          try {
+            res = await fetch(`${BASE}/api/agent/${APP_ID}/chat`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${adminToken}`,
+                'X-Moai-Tool-Approval': mode ?? 'approval',
+              },
+              body: JSON.stringify({
+                threadId: sessionId,
+                runId: crypto.randomUUID(),
+                state: {},
+                messages: [{ id: crypto.randomUUID(), role: 'user', content: text }],
+                tools: [],
+                context: [],
+                forwardedProps: {},
+              }),
+              signal: controller.signal,
+            })
+          } catch {
+            return { status: 0, reply: '', runError: 'abort-60s' }
+          }
+          let raw = ''
+          try {
+            raw = await res.text()
+          } catch {
+            clearTimeout(timer)
+            return { status: 0, reply: '', runError: 'abort-60s' }
+          }
+          clearTimeout(timer)
+          const events = raw.split('\n')
+            .filter((l) => l.startsWith('data:'))
+            .map((l) => { try { return JSON.parse(l.slice(5).trim()) } catch { return null } })
+            .filter(Boolean)
+          const reply = events
+            .filter((e) => e.type === 'TEXT_MESSAGE_CONTENT' && typeof e.delta === 'string')
+            .map((e) => e.delta)
+            .join('')
+          const runError = events.find((e) => e.type === 'RUN_ERROR')?.message ?? null
+          return { status: res.status, reply, runError }
+        }
+
+        // 白名单插件：审批模式下直接执行，无待审批记录（决策接口 missing）
+        const sess1 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-white' } })
+        const SID1 = String(sess1.json?.value ?? '')
+        const chat1 = await chatSse(SID1, `CALL:${autoNames[0] ?? bindable.pluginName}`)
+        const dec1 = await api('POST', `/api/app/session/${SID1}/tool-approval`, { token: adminToken, body: { toolName: autoNames[0] ?? bindable.pluginName, approved: false } })
+        check('AP-60f 审批模式下白名单插件直接执行（无人工等待）',
+          chat1.status === 200 && chat1.reply.includes('工具回显:') && !chat1.reply.includes('工具不存在') && !chat1.runError && dec1.json?.status === 'missing',
+          `${chat1.status} reply=${chat1.reply.slice(0, 160)} err=${chat1.runError} dec=${dec1.json?.status}`)
+
+        // 非白名单（沙箱未开自动放行）：审批模式下挂起等待，拒绝后模型收到拒绝说明且工具未执行
+        const sess2 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-wait' } })
+        const SID2 = String(sess2.json?.value ?? '')
+        const chat2Promise = chatSse(SID2, 'CALL:sandbox_run_shell')
+        let dec2Status = ''
+        for (let i = 0; i < 100; i++) {
+          await new Promise((r) => setTimeout(r, 300))
+          const dec = await api('POST', `/api/app/session/${SID2}/tool-approval`, { token: adminToken, body: { toolName: 'sandbox_run_shell', approved: false } })
+          if (dec.json?.status === 'rejected') { dec2Status = dec.json.status; break }
+        }
+        const chat2 = await chat2Promise
+        // 工具结果 JSON 中文会被转义（\u62D2\u7EDD=拒绝），两种形态都认
+        const rejectedText = chat2.reply.includes('拒绝') || chat2.reply.includes('62D2')
+        check('AP-60g 审批模式下非白名单工具挂起并按拒绝收敛',
+          chat2.status === 200 && rejectedText && dec2Status === 'rejected',
+          `${chat2.status} reply=${chat2.reply.slice(0, 160)} dec=${dec2Status}`)
+
+        // 自动模式（auto 头）：全部工具直接执行，沙箱工具也无人工等待（沙箱未真正运行：CALL 指令的目标在 auto 下也会进入执行，
+        // 此处仍用白名单插件验证自动模式全放行语义）
+        const sess3 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-auto' } })
+        const SID3 = String(sess3.json?.value ?? '')
+        const chat3 = await chatSse(SID3, `CALL:${autoNames[0] ?? bindable.pluginName}`, 'auto')
+        check('AP-60h 自动模式下工具直接执行', chat3.status === 200 && chat3.reply.includes('工具回显:') && !chat3.runError,
+          `${chat3.status} reply=${chat3.reply.slice(0, 160)} err=${chat3.runError}`)
+
+        // 草稿改策略不影响线上（发布快照生效）：草稿移除白名单后发布版仍自动放行；重新发布后进入人工等待
+        await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [], plugins: [String(bindable.pluginId)], modelId: MODEL_ID,
+          executionSettings: { sandbox: { enabled: true }, toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: true } },
+        } })
+        const sess4 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-snap' } })
+        const SID4 = String(sess4.json?.value ?? '')
+        const chat4 = await chatSse(SID4, `CALL:${autoNames[0] ?? bindable.pluginName}`)
+        check('AP-60i 草稿移除白名单后发布快照仍自动放行', chat4.status === 200 && chat4.reply.includes('工具回显:') && !chat4.runError,
+          `${chat4.status} reply=${chat4.reply.slice(0, 160)} err=${chat4.runError}`)
+
+        // 重新发布后按新策略：插件回到人工等待（拒绝收敛验证），沙箱变为自动放行
+        await api('POST', `/api/app/${APP_ID}/publish`, { token: adminToken })
+        const sess5 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-repub' } })
+        const SID5 = String(sess5.json?.value ?? '')
+        const chat5Promise = chatSse(SID5, `CALL:${autoNames[0] ?? bindable.pluginName}`)
+        let dec5Status = ''
+        for (let i = 0; i < 100; i++) {
+          await new Promise((r) => setTimeout(r, 300))
+          const dec = await api('POST', `/api/app/session/${SID5}/tool-approval`, { token: adminToken, body: { toolName: autoNames[0] ?? bindable.pluginName, approved: false } })
+          if (dec.json?.status === 'rejected') { dec5Status = dec.json.status; break }
+        }
+        const chat5 = await chat5Promise
+        const rejectedText5 = chat5.reply.includes('拒绝') || chat5.reply.includes('62D2')
+        check('AP-60j 重新发布后插件回到人工审批', chat5.status === 200 && rejectedText5 && dec5Status === 'rejected',
+          `${chat5.status} reply=${chat5.reply.slice(0, 160)} dec=${dec5Status}`)
+
+        // 清理桩模型/渠道（应用留给台账）
+        await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [MODEL_ID] } })
+        await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
+        stub.close()
+      }
+    }
   }
 
   console.log(`\n===== 应用管理 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

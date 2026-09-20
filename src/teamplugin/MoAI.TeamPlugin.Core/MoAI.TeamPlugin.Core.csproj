@@ -7,7 +7,9 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\..\variable\MoAI.Variable.Shared\MoAI.Variable.Shared.csproj" />
 		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
 		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
 		<ProjectReference Include="..\MoAI.TeamPlugin.Api\MoAI.TeamPlugin.Api.csproj" />

@@ -72,6 +72,58 @@ export function createDefaultEditorData(): EditorWorkflowJSON {
   }
 }
 
+/**
+ * 核心节点保护（加载草稿时调用）：开始/结束节点必须存在、开始节点唯一.
+ * 空画布（历史草稿可能落库为 {}）回退默认编排；缺失的开始/结束节点按现有节点范围补齐；
+ * 重复的开始节点仅保留首个（开始节点不可删除，多出的无法在画布上移除）.
+ */
+export function ensureCoreNodes(editor: EditorWorkflowJSON): EditorWorkflowJSON {
+  const nodes = (editor.nodes ?? []).filter((n) => isSupportedNodeType(String(n.type)))
+  if (nodes.length === 0) return createDefaultEditorData()
+
+  const firstStartIndex = nodes.findIndex((n) => n.type === 'start')
+  const hasEnd = nodes.some((n) => n.type === 'end')
+  if (firstStartIndex >= 0 && hasEnd && nodes.filter((n) => n.type === 'start').length === 1) {
+    return editor
+  }
+
+  const repaired = nodes.filter((n, i) => n.type !== 'start' || i === firstStartIndex)
+
+  // 已有节点包围盒：补齐的核心节点摆在范围外侧，加载后 fitView 保证可见
+  const xs = repaired.map((n) => n.meta?.position?.x ?? 0)
+  const ys = repaired.map((n) => n.meta?.position?.y ?? 0)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+
+  // 固定 id 已被占用时加后缀，避免与画布现有节点冲突
+  const startId = repaired.some((n) => n.id === 'start') ? 'start_repaired' : generateNodeId('start')
+  const endId = repaired.some((n) => n.id === 'end') ? 'end_repaired' : generateNodeId('end')
+
+  const result = [...repaired]
+  if (firstStartIndex < 0) {
+    result.unshift({
+      id: startId,
+      type: 'start',
+      meta: { position: { x: minX - 360, y: minY }, defaultExpanded: true },
+      data: nodeDataFromTemplate('start'),
+      blocks: [],
+      edges: [],
+    })
+  }
+  if (!hasEnd) {
+    result.push({
+      id: endId,
+      type: 'end',
+      meta: { position: { x: maxX + 360, y: minY }, defaultExpanded: true },
+      data: nodeDataFromTemplate('end'),
+      blocks: [],
+      edges: [],
+    })
+  }
+  return { ...editor, nodes: result }
+}
+
 /** 按模板生成节点表单数据（拖拽新增/默认画布共用） */
 export function nodeDataFromTemplate(type: NodeType | string): EditorNodeJSON['data'] {
   const template = getNodeTemplate(type)
@@ -138,19 +190,10 @@ export function toEditorFormat(definition: WorkflowDefinition | null | undefined
   const nodes: EditorNodeJSON[] = definition.nodes
     .filter((n) => isSupportedNodeType(n.type))
     .map((n) => {
-      // 开始节点：声明的输出即启动参数，加载时映射回 data.inputs 供「输入参数」编辑器回显
+      // 开始节点：固定唯一启动参数 question（用户问题）；旧定义的自定义参数收敛为 question
       const startInputs =
         n.type === 'start'
-          ? (n.outputs ?? []).reduce<Record<string, FieldBinding>>((acc, o) => {
-              acc[o.name] = {
-                expressionType: 'run',
-                value: '',
-                required: o.isRequired !== false,
-                fieldType: o.fieldType,
-                ...(o.description ? { description: o.description } : {}),
-              }
-              return acc
-            }, {})
+          ? { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } as FieldBinding }
           : undefined
 
       // switch：config.branches 还原为 data.branches 供分支编辑器展示
@@ -255,6 +298,58 @@ export function normalizeReferences(editor: EditorWorkflowJSON): EditorWorkflowJ
   return { ...editor, nodes }
 }
 
+/** 旧参数引用改写：`<startKey>.query` → `<startKey>.question`，要求后面是引用边界（结尾/`.`/`}`/非标识符），避免误伤 queryX 等同前缀字段 */
+function rewriteLegacyQueryRef(value: string, startKey: string): string {
+  const token = `${startKey}.query`
+  let out = ''
+  let from = 0
+  for (let idx = value.indexOf(token, from); idx >= 0; idx = value.indexOf(token, from)) {
+    const after = idx + token.length
+    const next = value[after]
+    const isBoundary = next === undefined || !/[A-Za-z0-9_]/.test(next)
+    out += value.slice(from, idx) + (isBoundary ? `${startKey}.question` : token)
+    from = after
+  }
+  return out + value.slice(from)
+}
+
+/** 递归改写节点数据中所有字符串叶子（绑定值、分支条件、HTTP 配置、JS 脚本内的引用一并迁移） */
+function rewriteDataQueryRefs<T>(data: T, startKey: string): T {
+  if (typeof data === 'string') return rewriteLegacyQueryRef(data, startKey) as unknown as T
+  if (Array.isArray(data)) return data.map((item) => rewriteDataQueryRefs(item, startKey)) as unknown as T
+  if (data && typeof data === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data)) {
+      out[key] = rewriteDataQueryRefs(value, startKey)
+    }
+    return out as unknown as T
+  }
+  return data
+}
+
+/**
+ * 旧草稿画布收敛到固定 question 契约（加载 draftEditorData 时调用，与 toEditorFormat 的收敛规则一致）：
+ * start 节点只保留唯一启动参数 question；下游对旧参数 `<startKey>.query` 的引用（变量/插值/脚本）
+ * 改写为 `<startKey>.question`。其余自定义旧参数无等价物，引用留待校验/运行期报错由用户手工修复.
+ */
+export function convergeStartContract(editor: EditorWorkflowJSON): EditorWorkflowJSON {
+  const startNode = (editor.nodes ?? []).find((n) => n.type === 'start')
+  if (!startNode) return editor
+  const startKey = nodeKeyOf(startNode)
+
+  const nodes = (editor.nodes ?? []).map((n) => {
+    if (n.type === 'start') {
+      const data = {
+        ...n.data,
+        inputs: { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } as FieldBinding },
+      }
+      return { ...n, data }
+    }
+    return n.data ? { ...n, data: rewriteDataQueryRefs(n.data, startKey) } : n
+  })
+  return { ...editor, nodes }
+}
+
 /**
  * 编辑器画布 JSON → 引擎定义（保存/调试执行时调用）.
  * 以画布为唯一数据源：节点表单数据 + collectEdges 汇总的全量连线.
@@ -282,17 +377,10 @@ export function fromEditorFormat(editor: EditorWorkflowJSON, name: string, descr
             : binding
       }
 
-      // 开始节点：data.inputs 是启动参数声明——映射为引擎 outputs（必需参数校验用），输出自动等于输入
+      // 开始节点：固定唯一启动参数 question（用户问题，流程对话时由服务端注入），不再支持自定义输入/输出字段
       const outputs =
         type === 'start'
-          ? sanitizeOutputs(
-              Object.entries(inputs).map(([fieldName, binding]) => ({
-                name: fieldName,
-                fieldType: binding.fieldType ?? 'string',
-                isRequired: binding.required !== false,
-                ...(binding.description ? { description: binding.description } : {}),
-              })),
-            )
+          ? [{ name: 'question', fieldType: 'string', isRequired: true }]
           : sanitizeOutputs(n.data?.outputs)
 
       // switch：data.branches → config.branches（顺序分支定义）；
@@ -391,11 +479,30 @@ export function fromEditorFormat(editor: EditorWorkflowJSON, name: string, descr
 function sanitizeSettings(settings: Record<string, unknown> | NodeSettings | undefined): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   if (!settings) return result
-  for (const key of ['aiModelId', 'pluginKey', 'code', 'conditionScript', 'trueTarget', 'backgroundKnowledge'] as const) {
+  for (const key of ['aiModelId', 'systemPrompt', 'agentAppId', 'pluginKey', 'code', 'conditionScript', 'trueTarget', 'backgroundKnowledge'] as const) {
     const value = settings[key]
     if (typeof value === 'string' && value !== '') {
       result[key] = value
     }
+  }
+
+  // aiChat：采样温度 0-2（越界丢弃，用渠道默认）
+  const temperature = Number(settings.temperature)
+  if (Number.isFinite(temperature) && temperature >= 0 && temperature <= 2) {
+    result.temperature = Math.round(temperature * 100) / 100
+  }
+
+  // aiChat：引入技能（Guid 数组去重，过滤非法值）
+  if (Array.isArray(settings.skillIds)) {
+    const ids = [...new Set(settings.skillIds.map(String).filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))]
+    if (ids.length > 0) {
+      result.skillIds = ids
+    }
+  }
+
+  // aiChat：沙箱开关（仅显式 true 保留）
+  if (settings.sandboxEnabled === true) {
+    result.sandboxEnabled = true
   }
 
   // knowledgeSearch：静态知识库（单个）+ topK（每库召回条数，1-50）；wikiIds 为旧草稿兼容
@@ -760,6 +867,23 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
         seenClass.add(marker)
       }
     }
+    // aiChat 节点：模型必选（保存期拦截，与 HTTP 节点请求地址同级校验）
+    if (node.type === 'aiChat') {
+      const title = String(node.data?.title ?? node.id)
+      if (!String(node.data?.settings?.aiModelId ?? '').trim()) {
+        errors.push({ nodeId: node.id, message: `AI 对话节点「${title}」未配置模型，请在节点配置中选择 AI 模型` })
+      }
+    }
+
+    // agentApp 节点：必须选择 Agent 应用
+    if (node.type === 'agentApp') {
+      const title = String(node.data?.title ?? node.id)
+      const agentAppId = String(node.data?.settings?.agentAppId ?? '').trim()
+      if (!agentAppId) {
+        errors.push({ nodeId: node.id, message: `Agent 应用节点「${title}」未选择应用，请在节点配置中选择 Agent 应用` })
+      }
+    }
+
     // http 节点：请求地址必填；提取字段名唯一且 JsonPath 非空；配置中的 {引用} 插值必须是上游节点
     if (node.type === 'http') {
       const title = String(node.data?.title ?? node.id)
@@ -821,15 +945,16 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
   // 变量引用必须是上游节点（前缀可以是节点 id，也可以是其自定义 Key）
   for (const node of nodes) {
     const ancestors = collectAncestors(node.id, outgoing)
+    const title = String(node.data?.title ?? node.id)
     for (const [fieldName, binding] of Object.entries(node.data?.inputs ?? {})) {
       if (binding?.expressionType !== 'variable' || !binding.value) continue
       const prefix = binding.value.split('.')[0]
       if (!prefix || prefix === 'sys' || prefix === 'system' || prefix === 'input') continue
       const refId = keyToId.get(prefix) ?? (idSet.has(prefix) ? prefix : '')
       if (!refId) {
-        errors.push({ nodeId: node.id, message: `输入 ${fieldName} 引用了不存在的节点：${binding.value}` })
+        errors.push({ nodeId: node.id, message: `节点「${title}」的输入 ${fieldName} 引用了不存在的节点：${binding.value}` })
       } else if (!ancestors.has(refId)) {
-        errors.push({ nodeId: node.id, message: `输入 ${fieldName} 引用了非上游节点：${binding.value}` })
+        errors.push({ nodeId: node.id, message: `节点「${title}」的输入 ${fieldName} 引用了非上游节点：${binding.value}` })
       }
     }
   }
@@ -838,6 +963,7 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
   for (const node of nodes) {
     if (node.type !== 'switch') continue
     const ancestors = collectAncestors(node.id, outgoing)
+    const title = String(node.data?.title ?? node.id)
     const branchDefs = node.data?.branches ?? []
     for (let bi = 0; bi < branchDefs.length; bi++) {
       const binding = branchDefs[bi]?.binding
@@ -847,9 +973,9 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
       const refId = keyToId.get(prefix) ?? (idSet.has(prefix) ? prefix : '')
       const label = branchDefs[bi].label || `分支 ${bi + 1}`
       if (!refId) {
-        errors.push({ nodeId: node.id, message: `分支「${label}」引用了不存在的节点：${binding.value}` })
+        errors.push({ nodeId: node.id, message: `节点「${title}」的分支「${label}」引用了不存在的节点：${binding.value}` })
       } else if (!ancestors.has(refId)) {
-        errors.push({ nodeId: node.id, message: `分支「${label}」引用了非上游节点：${binding.value}` })
+        errors.push({ nodeId: node.id, message: `节点「${title}」的分支「${label}」引用了非上游节点：${binding.value}` })
       }
     }
   }
@@ -926,7 +1052,7 @@ export function collectUpstreamVariables(
     if (!node) continue
     const title = String(node.data?.title ?? id)
     const key = nodeKeyOf(node)
-    // 开始节点透传：声明的输入参数即输出变量
+    // 开始节点：固定 question 输出（data.inputs 恒为 question 声明）
     if (node.type === 'start') {
       for (const [name, binding] of Object.entries(node.data?.inputs ?? {})) {
         if (!name) continue

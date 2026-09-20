@@ -26,6 +26,7 @@
 | @PT-S19 | local-dev/prompt-e2e.mjs#PT-16 | PASS 46/46（2026-09-15） |
 | @PT-S21 | ui/src/pages/teams/prompts/__tests__/TeamPrompts.test.tsx | PASS 3/3（2026-09-18，全仓 vitest 330/330） |
 | @PT-S17 | @manual（浏览器走查，见 sop.md 第 3 节） | PASS（2026-09-16 市场/编辑器走查；2026-09-18 详情弹窗与团队分区改版，待复走查） |
+| @PT-S22 | 后端单测（绑定点计数：CreateAppSession/UpdateAppSessionPrompt Handler）+ API 实测 top_used 排序 | PASS（2026-09-20，浏览器实测 top10 返回与使用次数展示） |
 
 ## 构建与回归
 

@@ -18,12 +18,17 @@ public sealed class WorkflowTestHarness
 
     public Mock<IAiChatClient> AiChat { get; } = new();
 
+    public Mock<IWorkflowAgentAppClient> AgentApp { get; } = new();
+
     public Mock<IWorkflowWikiSearchClient> WikiSearch { get; } = new();
 
     public IServiceProvider Services { get; }
 
     public WorkflowTestHarness()
     {
+        AgentApp.Setup(c => c.InvokeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<System.Text.Json.Nodes.JsonArray?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Agent 应用回答");
+
         var services = new ServiceCollection();
         services.AddMoAIWorkflow();
         services.AddSingleton<IWorkflowDefinitionStore>(Store);
@@ -31,6 +36,7 @@ public sealed class WorkflowTestHarness
         services.AddSingleton<IWorkflowEventLogStore>(Store);
         services.AddSingleton(PluginInvoker.Object);
         services.AddSingleton(AiChat.Object);
+        services.AddSingleton(AgentApp.Object);
         services.AddSingleton(WikiSearch.Object);
         Services = services.BuildServiceProvider();
     }

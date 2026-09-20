@@ -24,4 +24,10 @@ public static class AppAgentConstants
     /// 会话解析失败时附加在提示文本前的标记，供前端识别并重建调试会话.
     /// </summary>
     public const string SessionResolveErrorMarker = "[[moai:session-not-found]]";
+
+    /// <summary>
+    /// 流程应用「调试」Tab 的草稿执行标记请求头：携带 1 时按最新草稿定义执行（免发布，仅团队管理员），
+    /// 正式对话（应用对话页/飞书等）不携带，按已发布快照执行.
+    /// </summary>
+    public const string WorkflowDraftHeaderName = "X-Moai-Workflow-Draft";
 }

@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Drawer, Input, Space, Spin, Tooltip } from 'antd'
 import {
-  ArrowLeftOutlined,
   EditOutlined,
   PlusOutlined,
   SettingOutlined,
@@ -39,6 +38,7 @@ import '@flowgram.ai/free-layout-editor/index.css'
 
 import { FreeLayoutPluginContext } from '@flowgram.ai/free-layout-editor'
 import { useWorkflowDesignerStore } from './store'
+import { WorkflowAppHeader } from './WorkflowAppHeader'
 import { CONDITION_PORTS, getNodeTemplate, NODE_CONSTRAINTS, NODE_TEMPLATES } from './constants'
 import { createDefaultEditorData, nodeDataFromTemplate, validateEditorData } from './utils'
 import type { EditorWorkflowJSON, NodeRunState, OutputField } from './types'
@@ -226,11 +226,15 @@ function DesignerCanvas({ canManage }: { canManage: boolean }) {
       }
     }
 
-    // 节点：右键弹出「删除节点」（FlowGram 的节点包装层自带 data-node-id）
+    // 节点：右键弹出「删除节点」（FlowGram 的节点包装层自带 data-node-id）；
+    // 开始/结束节点为核心节点不可删除（与节点注册的 deleteDisable 一致），不弹出菜单
     const nodeEl = target.closest('.gedit-flow-activity-node') as HTMLElement | null
     const nodeId = nodeEl?.getAttribute('data-node-id')
     if (nodeEl && nodeId) {
       e.preventDefault()
+      const node = document.getAllNodes().find((n) => n.id === nodeId)
+      const nodeType = String(node?.flowNodeType ?? node?.type ?? '')
+      if (NODE_CONSTRAINTS[nodeType as keyof typeof NODE_CONSTRAINTS]?.deletable === false) return
       e.stopPropagation()
       setCtxMenu({ x: e.clientX, y: e.clientY, kind: 'node', id: nodeId })
     }
@@ -239,7 +243,14 @@ function DesignerCanvas({ canManage }: { canManage: boolean }) {
   const removeCtxTarget = () => {
     if (!ctxMenu) return
     if (ctxMenu.kind === 'node') {
-      document.getAllNodes().find((n) => n.id === ctxMenu.id)?.dispose()
+      const node = document.getAllNodes().find((n) => n.id === ctxMenu.id)
+      const nodeType = String(node?.flowNodeType ?? node?.type ?? '')
+      // 双保险：菜单动作侧同样拦截核心节点删除
+      if (NODE_CONSTRAINTS[nodeType as keyof typeof NODE_CONSTRAINTS]?.deletable === false) {
+        setCtxMenu(null)
+        return
+      }
+      node?.dispose()
     } else {
       document.linesManager.getLineById(ctxMenu.id)?.dispose()
     }
@@ -550,46 +561,46 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
 
   return (
     <div className="wf-designer">
-      <div className="wf-header">
-        <div className="wf-header-left">
-          <Tooltip title={t('appManage.backToList')}>
-            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(`/team/${teamId}/apps`)} />
-          </Tooltip>
-          <div className="wf-header-titles">
-            <div className="wf-header-name">{appName || t('workflowDesigner.title')}</div>
-            <div className="wf-header-status">
-              <span className={`wf-status-dot ${status === 1 ? 'wf-status-dot-published' : 'wf-status-dot-draft'}`} />
-              {status === 1 ? t('workflowDesigner.published') : t('workflowDesigner.draft')}
-              {version > 0 && <span>· v{version}</span>}
-              {dirty && (
-                <span className="wf-header-dirty">
-                  <span className="wf-status-dot wf-status-dot-dirty" />
-                  {t('workflowDesigner.unsaved')}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        {canManage && (
-          <Space size="small">
-            <Tooltip title={t('workflowDesigner.runsTip')}>
-              <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
-            </Tooltip>
-            <span className="wf-tools-divider" />
-            <Tooltip title={t('workflowDesigner.runTip')}>
-              <Button icon={<CaretRightOutlined />} loading={running} onClick={handleRun}>
-                {t('workflowDesigner.run')}
+      <WorkflowAppHeader
+        teamId={teamId}
+        appId={appId}
+        appName={appName}
+        activeKey="design"
+        statusLine={
+          <>
+            <span className={`wf-status-dot ${status === 1 ? 'wf-status-dot-published' : 'wf-status-dot-draft'}`} />
+            {status === 1 ? t('workflowDesigner.published') : t('workflowDesigner.draft')}
+            {version > 0 && <span>· v{version}</span>}
+            {dirty && (
+              <span className="wf-header-dirty">
+                <span className="wf-status-dot wf-status-dot-dirty" />
+                {t('workflowDesigner.unsaved')}
+              </span>
+            )}
+          </>
+        }
+        right={
+          canManage && (
+            <Space size="small">
+              <Tooltip title={t('workflowDesigner.runsTip')}>
+                <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
+              </Tooltip>
+              <span className="wf-tools-divider" />
+              <Tooltip title={t('workflowDesigner.runTip')}>
+                <Button icon={<CaretRightOutlined />} loading={running} onClick={handleRun}>
+                  {t('workflowDesigner.run')}
+                </Button>
+              </Tooltip>
+              <Button icon={<SaveOutlined />} loading={saving} onClick={() => void handleSave()}>
+                {t('workflowDesigner.save')}
               </Button>
-            </Tooltip>
-            <Button icon={<SaveOutlined />} loading={saving} onClick={() => void handleSave()}>
-              {t('workflowDesigner.save')}
-            </Button>
-            <Button type="primary" icon={<UploadOutlined />} loading={publishing} onClick={handlePublish}>
-              {t('workflowDesigner.publish')}
-            </Button>
-          </Space>
-        )}
-      </div>
+              <Button type="primary" icon={<UploadOutlined />} loading={publishing} onClick={handlePublish}>
+                {t('workflowDesigner.publish')}
+              </Button>
+            </Space>
+          )
+        }
+      />
 
       {loading ? (
         <div className="wf-loading">

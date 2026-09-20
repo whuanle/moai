@@ -20,6 +20,8 @@
 
 沿用既有 `prompt` 表（`PromptEntity`，用户已建）：`team_id`（0=个人）、`name`(≤20)、`description`(≤255)、`content`(text，入参限 10000)、`prompt_class_id`（classify.type=prompt）、`is_public`（上架审批通过置 true）、`counter`（市场被他人查看次数）、`is_audit`（预留未用）。存量库执行 `asserts/prompt.sql`。
 
+- `prompt.use_count integer not null default 0`：被选为专家提示词的使用次数，`CreateAppSessionCommandHandler`/`UpdateAppSessionPromptCommandHandler` 绑定时 +1（ExecuteUpdateAsync，不经实体跟踪）；`GET /api/prompt/top_used?teamId=&limit=`（1~10，默认 10）按使用次数倒序返回范围内（本人个人 + 指定团队）且 use_count>0 的提示词，供对话页输入框下方「热门专家」展示。存量库补列见 `asserts/prompt.sql`。
+
 ## 关键决策
 
 1. **归属即权限**：`team_id=0` 时仅 `create_user_id` 本人可读写；`team_id>0` 时经 `ITeamService.GetMyRoleAsync` 要求 Admin+ 可管理、成员可读。列表/详情均按此过滤，无权限统一 404 防探测。

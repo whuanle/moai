@@ -66,6 +66,11 @@ public sealed class AppTool
     public required string Kind { get; init; }
 
     /// <summary>
+    /// 工具来源资源 id（插件/流程应用 id），审批策略按其判定白名单自动放行；无来源（沙箱/知识库）为 null.
+    /// </summary>
+    public Guid? SourceId { get; init; }
+
+    /// <summary>
     /// 参数示例（JSON 文本），可为空.
     /// </summary>
     public string? ParametersExample { get; init; }

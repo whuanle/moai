@@ -9,6 +9,10 @@ export interface ServerInfo {
   serviceUrl: string
   publicStoreUrl: string
   rsaPublic: string
+  /** 网站 Logo（存储 ObjectKey，空串表示使用默认 /logo.svg） */
+  logoPath: string
+  /** 网站名称（系统设置可改，空串表示使用前端内置默认名） */
+  name: string
 }
 
 export interface UserInfo {

@@ -17,6 +17,7 @@ using MoAI.Infra.Extensions;
 using MoAI.Infra.Models;
 using MoAI.Team.Services;
 using MoAI.TeamPlugin.Commands;
+using MoAI.Variable.Services;
 using System.Transactions;
 
 namespace MoAI.TeamPlugin.Handlers;
@@ -30,6 +31,7 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
     private readonly DatabaseContext _databaseContext;
     private readonly IPluginRegistry _pluginRegistry;
     private readonly ITeamService _teamService;
+    private readonly IVariableService _variableService;
     private readonly ILogger<SaveTeamMcpPluginCommandHandler> _logger;
 
     /// <summary>
@@ -39,12 +41,14 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="pluginRegistry">插件注册表，用于校验系统插件 key 不重复.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public SaveTeamMcpPluginCommandHandler(ILoggerFactory loggerFactory, DatabaseContext databaseContext, IPluginRegistry pluginRegistry, ITeamService teamService)
+    /// <param name="variableService">团队变量服务，导入/刷新连接 MCP 服务器前对 Header/Query 做变量插值.</param>
+    public SaveTeamMcpPluginCommandHandler(ILoggerFactory loggerFactory, DatabaseContext databaseContext, IPluginRegistry pluginRegistry, ITeamService teamService, IVariableService variableService)
     {
         _loggerFactory = loggerFactory;
         _databaseContext = databaseContext;
         _pluginRegistry = pluginRegistry;
         _teamService = teamService;
+        _variableService = variableService;
         _logger = loggerFactory.CreateLogger<SaveTeamMcpPluginCommandHandler>();
     }
 
@@ -66,7 +70,8 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
         try
         {
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(request, Guid.Empty, _loggerFactory, cancellationToken);
+            var connectionOptions = await BuildInterpolatedConnectionOptionsAsync(request, cancellationToken);
+            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, Guid.Empty, _loggerFactory, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -152,7 +157,8 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
         try
         {
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(request, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            var connectionOptions = await BuildInterpolatedConnectionOptionsAsync(request, cancellationToken);
+            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -209,4 +215,21 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
         }
     }
 
+    /// <summary>
+    /// 构建连接 MCP 服务器用的连接选项：Header/Query 值先做团队变量插值（落库仍保存原始占位符）.
+    /// </summary>
+    private async Task<McpServerPluginConnectionOptions> BuildInterpolatedConnectionOptionsAsync(SaveTeamMcpPluginCommand request, CancellationToken cancellationToken)
+    {
+        var combined = request.Header.Concat(request.Query).ToList();
+        var interpolated = await _variableService.SubstituteAsync(request.TeamId, combined, cancellationToken);
+
+        return new McpServerPluginConnectionOptions
+        {
+            Name = request.Name,
+            Description = request.Description,
+            ServerUrl = request.ServerUrl,
+            Header = interpolated.Take(request.Header.Count).ToList(),
+            Query = interpolated.Skip(request.Header.Count).ToList(),
+        };
+    }
 }

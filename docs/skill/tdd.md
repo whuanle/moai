@@ -84,3 +84,26 @@
 实现落点（2026-09-18）：
 - 后端：`ClassifyTypes.Skill="skill"`；`SkillEntity.ClassifyId`（skill.classify_id，DBA 已补列）；Create/Update 校验分类存在且 Type=skill（404「技能分类不存在」）；四个列表 + 详情返回 `classifyId`，列表支持 `ClassifyId` 过滤（`QuerySkillListHelper.WhereClassify`）；`MoAI.Skill.Core` 增加对 `MoAI.Classify.Shared` 的项目引用。
 - 前端：Kiota 客户端重新生成；`ClassifyType.Skill`；分类管理页新增「技能」页签；技能中心两 Tab 头部固定分类 chip（emoji）；`SkillEditModal` 分类下拉；`api/skills.ts` 封装扩展。
+
+## 增量验证映射（2026-09-19：应用默认技能）
+
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @SKL-S5 | local-dev/skill-userconfig-e2e.mjs（UC-03~04：默认技能配置保存与回显） | 待回归（2026-09-19，本机无依赖容器无法起后端） |
+| @SKL-S6 | local-dev/skill-userconfig-e2e.mjs（UC-05~07） | 待回归（同上） |
+| @SKL-S7 | local-dev/skill-userconfig-e2e.mjs（UC-08~13：范围校验/覆盖语义/非成员/会话专家可用性） | 待回归（同上） |
+| @SKL-S8 | @manual（需沙箱+模型，浏览器走查，见 sop.md 第 5 节） | 待走查 |
+| @SKL-S9 | ui/src/pages/teams/apps/__tests__/AppUserSettings.test.tsx | PASS 3/3（2026-09-19） |
+| @SKL-S10 | ui/src/pages/teams/apps/__tests__/AppConfigSection.test.tsx | PASS 9/9（2026-09-19） |
+
+同批验证（2026-09-19）：`dotnet build src/MoAI/MoAI.csproj` 0 error；前端 typecheck 0、lint 0 error（8 个存量 warning）、vitest 全绿。
+
+实现落点（2026-09-19）：
+- 后端：`app_agent_config.skills` 语义改为「默认技能」；`ValidateSkillIdsAsync` 强化（启用中且 系统内置∪公开∪本团队）；`QueryAppUserConfigCommandResponse` 改为自带 `defaultSkills` 目录（移除 `lockedSkills`）；`SaveAppUserConfigCommandHandler` 校验 skills ⊆ 默认集、promptId 按通用可用性校验（`SessionPromptHelper.EnsureUsableAsync`）；`AppAgentFactory` 合并逻辑从「锁定∪自选（可见性过滤）」改为「默认集∩勾选（无行=全选）」，移除 `ISkillService` 依赖。
+- 前端：`api/app.ts` 重写 userconfig 封装并在 Kiota 边界做原始 JSON 投射（待 `npm run syncapi` 后生成物携带新字段）；`AppUserSettings.tsx` 面板仅渲染默认技能目录（技能全可勾选/取消，专家列表来自个人+团队提示词）；`AppConfigSection.tsx` 技能区文案改「默认技能」语义，左栏内部滚动（`maxHeight: calc(100vh - 160px)`）并缩窄（lg=11）、调试对话栏加宽（lg=13）；i18n zh/en 同步（移除 skillLocked/skillPersonal）。
+- 同日调整：曾实现的 `app_agent_config.prompts` 可选专家绑定（管理员限定专家范围）当日按需求移除——专家选择恢复为本人个人 ∪ 本团队提示词；实体/列保留在存量库中为无害孤儿列（新库不再创建）。
+
+实踩坑（2026-09-19）：
+- **实体再生成与字段新增并行**：DB 侧建表/补列后经 PostgresScaffold 再生成实体会覆盖手写字段，新增列需先落库（含列注释）再 scaffold。
+- **Member 创建会话前置发布校验**：E2E 覆盖会话专家绑定时需先 `POST /api/app/{id}/publish`，否则 403 应用尚未发布先于专家校验返回。
+- **antd 菜单项可访问名含图标 aria-label**：`getByRole('menuitem', { name: /^信息$/ })` 匹配失败（实际名称如 `info-circle 信息`），断言用包含式正则。

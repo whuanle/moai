@@ -154,7 +154,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                 throw new BusinessException("会话不存在.") { StatusCode = 404 };
             }
 
-            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken).ConfigureAwait(false);
+            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider)).ConfigureAwait(false);
         }
 
         // 无正式会话行：回落调试会话注册表（Redis）；命中且本人时按调试装配，不落库、不计数
@@ -165,6 +165,31 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }
 
-        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken).ConfigureAwait(false);
+        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 从对话 SSE 请求头解析工具审批模式（X-Moai-Tool-Approval），
+    /// 非对话渠道（飞书等）无 HttpContext 时按自动模式处理.
+    /// </summary>
+    /// <param name="serviceProvider">请求作用域服务.</param>
+    /// <returns>审批模式.</returns>
+    private static string ResolveApprovalMode(IServiceProvider serviceProvider)
+    {
+        var httpContext = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+        var mode = httpContext?.Request.Headers[AppToolApprovalContract.HeaderName].ToString();
+        return AppToolApprovalContract.IsValidMode(mode) ? mode! : AppToolApprovalContract.ModeAuto;
+    }
+
+    /// <summary>
+    /// 从对话 SSE 请求头解析流程草稿执行标记（X-Moai-Workflow-Draft=1，工作台「调试」Tab 携带），
+    /// 非对话渠道或未携带时按已发布快照执行.
+    /// </summary>
+    /// <param name="serviceProvider">请求作用域服务.</param>
+    /// <returns>是否按最新草稿执行.</returns>
+    private static bool ResolveWorkflowDraft(IServiceProvider serviceProvider)
+    {
+        var httpContext = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+        return httpContext?.Request.Headers[AppAgentConstants.WorkflowDraftHeaderName].ToString() == "1";
     }
 }

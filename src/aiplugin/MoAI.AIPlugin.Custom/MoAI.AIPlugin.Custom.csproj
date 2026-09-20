@@ -17,6 +17,7 @@
 		<ProjectReference Include="..\..\classify\MoAI.Classify.Shared\MoAI.Classify.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
 		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
+		<ProjectReference Include="..\..\variable\MoAI.Variable.Shared\MoAI.Variable.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
 	</ItemGroup>

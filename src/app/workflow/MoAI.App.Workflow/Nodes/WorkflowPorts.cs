@@ -3,28 +3,77 @@ using System.Text.Json.Nodes;
 namespace MoAI.App.Workflow.Nodes;
 
 /// <summary>
+/// AI 对话请求（aiChat 节点执行入参的端口契约）.
+/// </summary>
+public sealed class AiChatRequest
+{
+    /// <summary>
+    /// 系统提示词（可为空）.
+    /// </summary>
+    public string? SystemPrompt { get; init; }
+
+    /// <summary>
+    /// 用户消息.
+    /// </summary>
+    public required string Prompt { get; init; }
+
+    /// <summary>
+    /// 历史消息（可选，[{role, content}]）.
+    /// </summary>
+    public JsonArray? History { get; init; }
+
+    /// <summary>
+    /// 模型标识（可为空，由实现方决定默认模型）.
+    /// </summary>
+    public string? Model { get; init; }
+
+    /// <summary>
+    /// 采样温度 0-2（可为空，用渠道/模型默认）.
+    /// </summary>
+    public float? Temperature { get; init; }
+
+    /// <summary>
+    /// 引入的技能 id（挂载为模型可调用工具，为空时不带工具）.
+    /// </summary>
+    public IReadOnlyList<Guid> SkillIds { get; init; } = [];
+
+    /// <summary>
+    /// 是否开启沙箱（暴露代码执行等沙箱工具；技能脚本执行依赖沙箱）.
+    /// </summary>
+    public bool SandboxEnabled { get; init; }
+}
+
+/// <summary>
 /// AI 对话客户端抽象 - AI 对话节点通过此接口调用模型服务.
 /// 引擎不绑定具体模型 SDK（SemanticKernel 等），迁移到正式项目时注入真实实现即可.
 /// </summary>
 public interface IAiChatClient
 {
     /// <summary>
-    /// 发起一次对话补全.
+    /// 发起一次对话补全（request.SkillIds/SandboxEnabled 非空时走带工具的 Agent 执行）.
     /// </summary>
-    /// <param name="systemPrompt">系统提示词（可为空）.</param>
-    /// <param name="prompt">用户消息.</param>
-    /// <param name="history">历史消息（可选，[{role, content}]）.</param>
-    /// <param name="model">模型标识（可为空，由实现方决定默认模型）.</param>
+    /// <param name="request">对话请求.</param>
     /// <param name="onProgress">流式输出回调（可为空）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>模型回答文本.</returns>
-    Task<string> CompleteAsync(
-        string? systemPrompt,
-        string prompt,
-        JsonArray? history,
-        string? model,
-        Func<string, Task>? onProgress,
-        CancellationToken cancellationToken);
+    Task<string> CompleteAsync(AiChatRequest request, Func<string, Task>? onProgress, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Agent 应用调用端口 - agentApp 节点通过此接口驱动一次已发布 Agent 应用对话（一轮）.
+/// 实现方负责应用归属校验与循环嵌套防护（当前流程 → Agent → 流程工具的回环）.
+/// </summary>
+public interface IWorkflowAgentAppClient
+{
+    /// <summary>
+    /// 以 prompt 为用户消息驱动一次 Agent 应用对话，返回回复文本.
+    /// </summary>
+    /// <param name="agentAppId">Agent 应用 id.</param>
+    /// <param name="prompt">用户消息.</param>
+    /// <param name="history">历史消息（可选，[{role, content}]）.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>回复文本.</returns>
+    Task<string> InvokeAsync(Guid agentAppId, string prompt, JsonArray? history, CancellationToken cancellationToken);
 }
 
 /// <summary>

@@ -97,6 +97,24 @@ export async function getWorkflowConfig(appId: string, teamId: number): Promise<
   return res ?? {}
 }
 
+/** Agent 应用可选项（流程设计器 agentApp 节点） */
+export interface AppAgentOption {
+  appId?: string | null
+  name?: string | null
+  avatarPath?: string | null
+  /** 引入该应用是否与当前流程构成循环嵌套（true 时禁选） */
+  circular?: boolean | null
+}
+
+/** 查询流程设计器可选的 Agent 应用列表（本团队已发布），含循环嵌套标记 */
+export async function getWorkflowAgentOptions(appId: string, teamId: number): Promise<AppAgentOption[]> {
+  const client = getApiClient()
+  const res = await client.api.app.workflow.agentOptions.get({
+    queryParameters: { appId, teamId: String(teamId) },
+  })
+  return res?.items ?? []
+}
+
 /** 保存流程编排草稿（流程定义 JSON + 编辑器画布 JSON），需要团队 Admin+ */
 export async function saveWorkflowDraft(
   appId: string,

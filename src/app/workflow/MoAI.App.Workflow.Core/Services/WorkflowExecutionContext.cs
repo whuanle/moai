@@ -16,6 +16,16 @@ public class WorkflowExecutionContext
     public long TeamId { get; set; }
 
     /// <summary>
+    /// 应用 id（工具/沙箱等端口实现解析应用维度资源用）.
+    /// </summary>
+    public Guid AppId { get; set; }
+
+    /// <summary>
+    /// 触发用户 id（调试=操作人；对话=会话用户；系统触发为 0）.
+    /// </summary>
+    public long UserId { get; set; }
+
+    /// <summary>
     /// 编排配置 id（app_workflow_config.id）.
     /// </summary>
     public Guid ConfigId { get; set; }

@@ -8,14 +8,18 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+		<PackageReference Include="Maomi.ToMarkdown" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\skill\MoAI.Skill.Shared\MoAI.Skill.Shared.csproj" />
+		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\..\ai\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
+		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.App.Api\MoAI.App.Api.csproj" />
 	</ItemGroup>
 

@@ -22,8 +22,7 @@ public class DiagnosticResumeTests
         var harness = new WorkflowTestHarness();
         await harness.Store.SaveDefinitionAsync(WorkflowTestHarness.CreateDocQaDefinition());
         harness.AiChat.Setup(c => c.CompleteAsync(
-            It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<JsonArray?>(), It.IsAny<string?>(),
-            It.IsAny<Func<string, Task>?>(), It.IsAny<CancellationToken>())).ReturnsAsync("AI 回答");
+            It.IsAny<AiChatRequest>(), It.IsAny<Func<string, Task>?>(), It.IsAny<CancellationToken>())).ReturnsAsync("AI 回答");
 
         harness.PluginInvoker
             .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))

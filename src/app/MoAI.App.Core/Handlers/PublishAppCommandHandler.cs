@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
+using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -55,12 +57,34 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
             throw new BusinessException("只有 Agent 应用支持发布使用.") { StatusCode = 400 };
         }
 
-        if (app.PublishStatus != 1)
+        // 发布即快照当前配置：正式会话按快照执行，之后的保存只落草稿，直到下次发布
+        var config = await _databaseContext.AppAgentConfigs
+            .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
+
+        if (config == null)
         {
-            app.PublishStatus = 1;
-            app.PublishTime = DateTime.UtcNow;
-            await _databaseContext.SaveChangesAsync(cancellationToken);
+            // 配置行尚未创建（应用建后未保存过配置）时以默认值建行，保证已发布应用必有快照
+            config = new AppAgentConfigEntity
+            {
+                Id = Guid.CreateVersion7(),
+                TeamId = app.TeamId,
+                AppId = app.Id,
+                Prompt = string.Empty,
+                WikiIds = "[]",
+                Plugins = "[]",
+                Skills = "[]",
+                ExecutionSettings = "{}",
+                OpeningStatement = string.Empty,
+            };
+            _databaseContext.AppAgentConfigs.Add(config);
         }
+
+        config.PublishedConfig = AppAgentConfigSnapshot.Serialize(config);
+        config.Status = 1;
+
+        app.PublishStatus = 1;
+        app.PublishTime = DateTime.UtcNow;
+        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

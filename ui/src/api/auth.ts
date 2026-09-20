@@ -28,6 +28,8 @@ export async function refreshServerInfo(): Promise<ServerInfo> {
     serviceUrl: res?.serviceUrl ?? '',
     publicStoreUrl: res?.publicStoreUrl ?? '',
     rsaPublic: res?.rsaPublic ?? '',
+    logoPath: res?.logoPath ?? '',
+    name: res?.name ?? '',
   }
   useAppStore.getState().setServerInfo(info)
   return info

@@ -30,6 +30,7 @@
     <PackageVersion Include="Maomi.ToMarkdown.Token" Version="1.0.0-alpha.2" />
     <PackageVersion Include="Markdig" Version="0.43.0" />
     <PackageVersion Include="MediatR" Version="14.2.0" />
+    <PackageVersion Include="Microsoft.Agents.AI" Version="1.20.0" />
     <PackageVersion Include="Microsoft.Agents.AI.Anthropic" Version="1.20.0-preview.260831.1" />
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.20.0" />
     <PackageVersion Include="Microsoft.Agents.AI.Hosting.AGUI.AspNetCore" Version="1.20.0-preview.260831.1" />

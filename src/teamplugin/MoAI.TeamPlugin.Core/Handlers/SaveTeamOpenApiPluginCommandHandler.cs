@@ -94,8 +94,8 @@ public class SaveTeamOpenApiPluginCommandHandler : IRequestHandler<SaveTeamOpenA
         var pluginCustomEntity = new PluginCustomEntity
         {
             OpenapiFileName = request.FileName,
-            Headers = Array.Empty<KeyValueString>().ToJsonString(),
-            Queries = Array.Empty<KeyValueString>().ToJsonString(),
+            Headers = request.Header.ToJsonString(),
+            Queries = request.Query.ToJsonString(),
             OpenapiFileId = fileEntity.Id,
             Server = parseResult.Server,
             Type = (int)PluginType.OpenApi,
@@ -160,6 +160,9 @@ public class SaveTeamOpenApiPluginCommandHandler : IRequestHandler<SaveTeamOpenA
         pluginEntity.Description = request.Description;
         pluginEntity.PluginName = request.Name;
         pluginEntity.ClassifyId = request.ClassifyId;
+
+        pluginCustomEntity.Headers = request.Header.ToJsonString();
+        pluginCustomEntity.Queries = request.Query.ToJsonString();
 
         // 未覆盖新的 openapi 文件
         if (request.FileId == 0 || request.FileId == pluginCustomEntity.OpenapiFileId)

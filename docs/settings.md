@@ -192,9 +192,16 @@ protected static void SeedData(ModelBuilder modelBuilder)
 
 | key | 名称 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `OPEN_NEO4J` | Neo4j 知识图谱 | `"false"` | 开启后知识库可使用知识图谱能力；由超级管理员在系统设置页操作 |
-| `NEO4J_URI` | Neo4j 连接地址 | `""` | 仅在 `OPEN_NEO4J="true"` 时需填写 |
-| `NEO4J_USERNAME` | Neo4j 用户名 | `""` | 同上 |
-| `NEO4J_PASSWORD` | Neo4j 密码 | `""` | 同上，明文存储，仅超级管理员可改 |
+| `KG_ENABLED` | 知识图谱 | `"false"` | 开启后团队可使用知识图谱能力；由超级管理员在系统设置页操作 |
+| `KG_URI` | 图数据库连接地址 | `""` | 仅在 `KG_ENABLED="true"` 时需填写 |
+| `KG_USERNAME` | 图数据库用户名 | `""` | 同上 |
+| `KG_PASSWORD` | 图数据库密码 | `""` | 同上，明文存储，仅超级管理员可改 |
+| `KG_DIALECT` | 图数据库方言 | `"memgraph"` | memgraph / neo4j，影响内省与索引语句 |
+| `WIKI_MAX_FILE_SIZE_MB` | 知识库最大文件大小 | `"50"` | 0 表示不限制（平台硬上限 1GB） |
+| `SANDBOX_MAX_TTL_SECONDS` | 沙箱存活时间上限 | `"86400"` | 每个应用沙箱最大存活时间（秒），保存时校验 60~604800；团队保存应用配置不得超出 |
+| `SANDBOX_MAX_CPU` | 沙箱 CPU 上限 | `"4"` | K8s 数量格式（如 `4`/`2000m`），保存时校验格式 |
+| `SANDBOX_MAX_MEMORY` | 沙箱内存上限 | `"8Gi"` | K8s 数量格式（如 `8Gi`/`512Mi`），保存时校验格式 |
+| `SYSTEM_LOGO` | 网站 Logo | `""` | 全局网站 Logo 的图片 ObjectKey，经专用 `POST /api/settings/logo` 写入（非空须为已登记上传的文件，空恢复默认）；匿名经 `serverinfo.logoPath` 读取 |
+| `SYSTEM_NAME` | 网站名称 | `""` | 仅前端展示（侧边栏标题与浏览器标签页），经通用 `PUT /api/settings` 写入（去空白后 ≤50 字符，空回退配置文件默认名称）；匿名经 `serverinfo.name` 读取 |
 
-> 成组配置（如知识图谱）供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的 `IKnowledgeGraphSettingsService` 读取，避免各模块自行拼 key 查表。
+> 成组配置供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的成组读取服务：知识图谱 `IKnowledgeGraphSettingsService`、知识库 `IWikiSettingsService`、沙箱上限 `ISandboxSettingsService`（含 K8s 数量解析器 `SandboxQuantity`），避免各模块自行拼 key 查表。沙箱上限在应用保存时的强校验见 [app 模块 D41](./app/sdd.md)。

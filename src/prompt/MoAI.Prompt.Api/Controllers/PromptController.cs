@@ -121,6 +121,20 @@ public class PromptController : ControllerBase
     }
 
     /// <summary>
+    /// 查询使用次数最多的专家提示词（本人个人 + 指定团队范围，按使用次数倒序，默认前 10），
+    /// 供对话页输入框下方推荐展示；未绑定团队传入的提示词不在范围内.
+    /// </summary>
+    /// <param name="req">查询参数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPromptListCommandResponse"/>.</returns>
+    [HttpGet("top_used")]
+    public Task<QueryPromptListCommandResponse> QueryTopUsed([FromQuery] QueryTopUsedPromptsCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 查询提示词详情（含内容）；个人提示词仅创建人、团队提示词仅团队成员可看，已上架市场的所有人可看.
     /// </summary>
     /// <param name="id">提示词 id.</param>

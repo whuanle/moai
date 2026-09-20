@@ -2,26 +2,49 @@ import { HttpAgent } from '@ag-ui/client'
 import { Env } from '@/config/env'
 import { useAppStore } from '@/store/app'
 
+/** 工具审批模式：auto=自动执行；approval=重要工具挂起等待人工批准（与后端契约一致） */
+export type ToolApprovalMode = 'auto' | 'approval'
+
+/** AG-UI 工具调用信息：name 为元工具名（call_tool），args 为解析后的参数对象 */
+export interface AgentToolCallInfo {
+  id: string
+  name: string
+  args?: Record<string, unknown>
+}
+
 /**
- * AG-UI 对话回调：流式增量、工具调用、结束与错误。
+ * AG-UI 对话回调：流式增量、工具调用（含解析后参数）、结束与错误。
  * 服务端以 threadId 作为会话 id，历史由服务端管理，因此每轮只发送最新用户消息。
  */
 export interface AgentChatHandlers {
   onDelta?: (text: string) => void
+  /** 工具调用开始（此时参数未必完整），保留供简单标记场景 */
   onToolCall?: (name: string) => void
+  /** 工具调用参数流结束：args 为完整解析对象（call_tool 时含真实 toolName/argumentsJson） */
+  onToolCallEnd?: (info: AgentToolCallInfo) => void
   onDone?: () => void
   onError?: (message: string) => void
 }
 
 /** 构建指向应用对话 AG-UI 端点（/api/agent/{appId}/chat，SSE）的客户端，threadId 即会话 id */
-export function createAppChatAgent(appId: string, threadId: string): HttpAgent {
+export function createAppChatAgent(
+  appId: string,
+  threadId: string,
+  options?: { toolApprovalMode?: ToolApprovalMode; workflowDraft?: boolean },
+): HttpAgent {
   const token = useAppStore.getState().userInfo?.accessToken
   const url = `${Env.serverUrl}/api/agent/${appId}/chat`
 
   return new HttpAgent({
     url,
     threadId,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // 审批模式随每轮对话请求下发（未携带时后端按 auto 处理）
+      'X-Moai-Tool-Approval': options?.toolApprovalMode ?? 'auto',
+      // 流程应用「调试」Tab 携带：按最新草稿执行（免发布，仅团队管理员；未携带按已发布快照）
+      ...(options?.workflowDraft ? { 'X-Moai-Workflow-Draft': '1' } : {}),
+    },
   })
 }
 
@@ -54,6 +77,8 @@ export async function runAppChat(
         emit()
       },
       onToolCallStartEvent: ({ event }) => handlers.onToolCall?.(event.toolCallName),
+      onToolCallEndEvent: ({ event, toolCallName, toolCallArgs }) =>
+        handlers.onToolCallEnd?.({ id: event.toolCallId, name: toolCallName, args: toolCallArgs }),
       onRunErrorEvent: ({ event }) => handlers.onError?.(event.message),
       onRunFinishedEvent: () => handlers.onDone?.(),
     },

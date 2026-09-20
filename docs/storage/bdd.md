@@ -156,3 +156,10 @@ Feature: 前端上传链路（头像 / 图标）
     When 直传或完成接口失败
     Then 页面就地反馈上传失败错误
 ```
+
+  @STO-S25 @auto:e2e
+  Scenario: 对话附件预上传（专用目录 + 白名单与大小上限）
+    Given 登录用户在应用对话输入卡上传附件
+    Then 走 pre_upload_chat_file 预上传，ObjectKey=public/chat/{sha256}.{ext}，经 /static 免登录下载
+    When 附件扩展名不在文档/图片白名单（如 .exe）或超过 20MB
+    Then 预上传返回 400

@@ -11,7 +11,7 @@ namespace MoAI.AI.Services;
 
 /// <summary>
 /// 流程应用对话客户端：把一轮 AG-UI 对话转换为一次流程执行.
-/// 从消息列表取最后一条用户消息作为启动参数（query），交给 <see cref="IWorkflowAppChatInvoker"/>
+/// 从消息列表取最后一条用户消息作为启动参数（question），交给 <see cref="IWorkflowAppChatInvoker"/>
 /// 驱动已发布流程，把结束节点输出作为本轮 AI 回复；历史与会话持久化仍走 ChatHistoryProvider/热态管线.
 /// </summary>
 internal sealed class WorkflowAppChatClient : IChatClient

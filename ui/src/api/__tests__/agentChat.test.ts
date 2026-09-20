@@ -46,6 +46,26 @@ describe('runAppChat', () => {
     expect(onToolCall).toHaveBeenCalledWith('search_knowledge_base')
   })
 
+  it('call_tool 参数流结束时回调解析后的完整参数（含真实工具名）', async () => {
+    const onToolCallEnd = vi.fn()
+    const agent = fakeAgent((subscriber) => {
+      subscriber.onToolCallStartEvent({ event: { toolCallId: 'tc-1', toolCallName: 'call_tool' } })
+      subscriber.onToolCallEndEvent({
+        event: { toolCallId: 'tc-1', toolCallName: 'call_tool' },
+        toolCallName: 'call_tool',
+        toolCallArgs: { toolName: 'sandbox_run_code', argumentsJson: '{"language":"python"}' },
+      })
+    })
+
+    await runAppChat(agent, 'hi', { onToolCallEnd })
+
+    expect(onToolCallEnd).toHaveBeenCalledWith({
+      id: 'tc-1',
+      name: 'call_tool',
+      args: { toolName: 'sandbox_run_code', argumentsJson: '{"language":"python"}' },
+    })
+  })
+
   it('仅发送本轮用户消息（历史由服务端管理）', async () => {
     const agent = fakeAgent(() => {})
     await runAppChat(agent, '本轮问题', { onDelta: vi.fn() })

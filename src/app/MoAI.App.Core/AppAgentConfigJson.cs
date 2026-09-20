@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace MoAI.App;
 
 /// <summary>
-/// <c>app_agent_config</c> 中 JSON 文本列（<c>wiki_ids</c> / <c>plugins</c>）的读写辅助.
+/// <c>app_agent_config</c> 中 JSON 文本列（<c>wiki_ids</c> / <c>plugins</c> / <c>quick_inputs</c>）的读写辅助.
 /// </summary>
 internal static class AppAgentConfigJson
 {
@@ -76,6 +76,37 @@ internal static class AppAgentConfigJson
     /// <returns>JSON 文本.</returns>
     public static string SerializePluginIds(IEnumerable<Guid> pluginIds)
         => JsonSerializer.Serialize(pluginIds.Select(x => x.ToString()).ToList());
+
+    /// <summary>
+    /// 解析 JSON 字符串数组（快捷输入）；空串/非法内容返回空列表.
+    /// </summary>
+    /// <param name="json">JSON 文本，如 <c>["帮我总结要点"]</c>.</param>
+    /// <returns>非空字符串列表.</returns>
+    public static List<string> ParseStringList(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<string>();
+        }
+
+        try
+        {
+            var raw = JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            return raw.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToList();
+        }
+        catch (JsonException)
+        {
+            return new List<string>();
+        }
+    }
+
+    /// <summary>
+    /// 序列化字符串列表为 JSON 数组文本（快捷输入）.
+    /// </summary>
+    /// <param name="items">字符串列表.</param>
+    /// <returns>JSON 文本.</returns>
+    public static string SerializeStrings(IEnumerable<string> items)
+        => JsonSerializer.Serialize(items.ToList());
 
     /// <summary>
     /// 解析 JSON 对象文本为 <see cref="JsonElement"/>；空串/非法内容返回空对象 <c>{}</c>.

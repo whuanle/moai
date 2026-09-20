@@ -44,6 +44,7 @@ internal static class QueryPromptListHelper
             PromptClassId = x.PromptClassId,
             IsPublic = x.IsPublic,
             Counter = x.Counter,
+            UseCount = x.UseCount,
             TeamId = x.TeamId,
             PendingPublicationId = pendingPublicationIds.TryGetValue(x.Id.ToString(), out var publicationId) ? publicationId : null,
             CreateUserId = (int)x.CreateUserId,

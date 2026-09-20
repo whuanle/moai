@@ -30,6 +30,11 @@ export interface NodeTemplate {
   outputs: OutputField[]
   settings?: {
     aiModelId?: string
+    systemPrompt?: string
+    temperature?: number
+    skillIds?: string[]
+    sandboxEnabled?: boolean
+    agentAppId?: string
     pluginKey?: string
     code?: string
     wikiId?: number
@@ -63,6 +68,7 @@ export const NODE_CONSTRAINTS: Record<NodeType, NodeConstraints> = {
   knowledgeSearch: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   questionClassifier: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   http: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
+  agentApp: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
 }
 
 export const DEFAULT_JS_CODE = `function run(inputs, sys, nodes) {
@@ -79,7 +85,9 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     descKey: 'workflowDesigner.nodeStartDesc',
     desc: '工作流的入口点',
     color: '#52c41a',
-    inputs: {},
+    inputs: {
+      question: { expressionType: 'run', value: '', required: true, fieldType: 'string' },
+    },
     outputs: [],
   },
   {
@@ -117,11 +125,24 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     desc: '调用模型生成回答',
     color: '#1677ff',
     inputs: {
-      system: { expressionType: 'fixed', value: '', required: false, description: '系统提示词' },
       prompt: { expressionType: 'variable', value: '', required: true, description: '用户提示词' },
     },
     outputs: [{ name: 'answer', fieldType: 'string', description: '模型回答' }],
-    settings: { aiModelId: '' },
+    settings: { aiModelId: '', systemPrompt: '' },
+  },
+  {
+    type: 'agentApp',
+    icon: '🤝',
+    nameKey: 'workflowDesigner.nodeAgentApp',
+    name: 'Agent 应用',
+    descKey: 'workflowDesigner.nodeAgentAppDesc',
+    desc: '调用已发布的 Agent 应用完成一轮对话',
+    color: '#722ed1',
+    inputs: {
+      prompt: { expressionType: 'variable', value: '', required: true, description: '发给 Agent 的用户消息' },
+    },
+    outputs: [{ name: 'answer', fieldType: 'string', description: 'Agent 回答' }],
+    settings: { agentAppId: '' },
   },
   {
     type: 'knowledgeSearch',

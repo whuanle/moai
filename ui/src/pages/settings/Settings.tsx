@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, InputNumber, Select, Switch, Typography } from 'antd'
+import { Button, Input, InputNumber, Popconfirm, Select, Switch, Typography } from 'antd'
 import { CaretRightOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
-import { getSettings, saveSetting, SettingKeys } from '@/api/settings'
-import { Card, feedback, neutralColors, Page, spacing } from '@/design-system'
+import { refreshServerInfo } from '@/api/auth'
+import {
+  getSettings,
+  SANDBOX_TTL_LIMITS,
+  saveSetting,
+  SandboxLimitDefaults,
+  SettingKeys,
+  resetSystemLogo,
+  updateSystemLogo,
+} from '@/api/settings'
+import { AvatarUpload, Card, feedback, neutralColors, Page, spacing } from '@/design-system'
+import { DEFAULT_LOGO_SRC } from '@/layouts/useSystemLogo'
 import { useAppStore } from '@/store/app'
+import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
+import { resolveStorageUrl } from '@/utils/storage'
 
 const { Text } = Typography
 
@@ -84,6 +96,17 @@ export function Settings() {
   const [savingWiki, setSavingWiki] = useState(false)
   const [wikiMaxFileSize, setWikiMaxFileSize] = useState(0)
   const [wikiDirty, setWikiDirty] = useState(false)
+  const [savingSandbox, setSavingSandbox] = useState(false)
+  const [sandboxMaxTtl, setSandboxMaxTtl] = useState<number>(SandboxLimitDefaults.maxTtlSeconds)
+  const [sandboxMaxCpu, setSandboxMaxCpu] = useState<string>(SandboxLimitDefaults.maxCpu)
+  const [sandboxMaxMemory, setSandboxMaxMemory] = useState<string>(SandboxLimitDefaults.maxMemory)
+  const [sandboxDirty, setSandboxDirty] = useState(false)
+  const [logoPath, setLogoPath] = useState('')
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [resettingLogo, setResettingLogo] = useState(false)
+  const [siteName, setSiteName] = useState('')
+  const [siteNameDirty, setSiteNameDirty] = useState(false)
+  const [savingSiteName, setSavingSiteName] = useState(false)
 
   useEffect(() => {
     void load()
@@ -104,6 +127,20 @@ export function Settings() {
       const parsedMaxFileSize = Number.parseInt(valueOf(SettingKeys.wikiMaxFileSize), 10)
       setWikiMaxFileSize(Number.isFinite(parsedMaxFileSize) && parsedMaxFileSize >= 0 ? parsedMaxFileSize : 50)
       setWikiDirty(false)
+      const parsedSandboxTtl = Number.parseInt(valueOf(SettingKeys.sandboxMaxTtl), 10)
+      setSandboxMaxTtl(
+        Number.isFinite(parsedSandboxTtl) && parsedSandboxTtl >= SANDBOX_TTL_LIMITS.min
+          ? parsedSandboxTtl
+          : SandboxLimitDefaults.maxTtlSeconds,
+      )
+      const sandboxCpu = valueOf(SettingKeys.sandboxMaxCpu).trim()
+      setSandboxMaxCpu(sandboxCpu || SandboxLimitDefaults.maxCpu)
+      const sandboxMemory = valueOf(SettingKeys.sandboxMaxMemory).trim()
+      setSandboxMaxMemory(sandboxMemory || SandboxLimitDefaults.maxMemory)
+      setSandboxDirty(false)
+      setLogoPath(valueOf(SettingKeys.systemLogo).trim())
+      setSiteName(valueOf(SettingKeys.systemName).trim())
+      setSiteNameDirty(false)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -145,6 +182,87 @@ export function Settings() {
     }
   }
 
+  async function handleSaveSandbox() {
+    if (
+      !Number.isInteger(sandboxMaxTtl) ||
+      sandboxMaxTtl < SANDBOX_TTL_LIMITS.min ||
+      sandboxMaxTtl > SANDBOX_TTL_LIMITS.max
+    ) {
+      feedback.error(t('settings.sandbox.invalidTtl'))
+      return
+    }
+    if (parseCpuMillicores(sandboxMaxCpu) == null || parseMemoryBytes(sandboxMaxMemory) == null) {
+      feedback.error(t('settings.sandbox.invalidFormat'))
+      return
+    }
+    setSavingSandbox(true)
+    try {
+      await saveSetting(SettingKeys.sandboxMaxTtl, String(sandboxMaxTtl))
+      await saveSetting(SettingKeys.sandboxMaxCpu, sandboxMaxCpu.trim())
+      await saveSetting(SettingKeys.sandboxMaxMemory, sandboxMaxMemory.trim())
+      feedback.success(t('settings.saveSuccess'))
+      setSandboxDirty(false)
+    } catch {
+      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
+      void load()
+    } finally {
+      setSavingSandbox(false)
+    }
+  }
+
+  async function handleSaveSiteName() {
+    setSavingSiteName(true)
+    try {
+      // 后端以空值回退默认名称，提交前统一去首尾空白
+      await saveSetting(SettingKeys.systemName, siteName.trim())
+      // 刷新全局 serverInfo，侧边栏标题与浏览器标签页立即生效
+      await refreshServerInfo()
+      feedback.success(t('settings.saveSuccess'))
+      setSiteNameDirty(false)
+    } catch {
+      void load()
+    } finally {
+      setSavingSiteName(false)
+    }
+  }
+
+  async function handleLogoUpload(file: File) {
+    if (!file.type.startsWith('image/')) {
+      feedback.error(t('settings.logo.typeError'))
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      feedback.error(t('settings.logo.sizeError'))
+      return
+    }
+    setLogoUploading(true)
+    try {
+      const objectKey = await updateSystemLogo(file)
+      setLogoPath(objectKey)
+      // 刷新全局 serverInfo，侧边栏/登录/注册页 Logo 立即生效
+      await refreshServerInfo()
+      feedback.success(t('settings.logo.uploadSuccess'))
+    } catch {
+      void load()
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+
+  async function handleLogoReset() {
+    setResettingLogo(true)
+    try {
+      await resetSystemLogo()
+      setLogoPath('')
+      await refreshServerInfo()
+      feedback.success(t('settings.logo.resetSuccess'))
+    } catch {
+      void load()
+    } finally {
+      setResettingLogo(false)
+    }
+  }
+
   if (!isRoot) {
     return <Navigate to="/dashboard" replace />
   }
@@ -152,6 +270,63 @@ export function Settings() {
   return (
     <Page>
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+        <CollapsibleCard title={t('settings.siteName.title')} defaultExpanded>
+          <Field label={t('settings.siteName.name')}>
+            <Input
+              value={siteName}
+              maxLength={50}
+              showCount
+              placeholder={t('settings.siteName.placeholder')}
+              aria-label={t('settings.siteName.name')}
+              onChange={(e) => {
+                setSiteName(e.target.value)
+                setSiteNameDirty(true)
+              }}
+              style={{ maxWidth: 360 }}
+            />
+            <Text type="secondary">{t('settings.siteName.desc')}</Text>
+          </Field>
+
+          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              loading={savingSiteName}
+              disabled={!siteNameDirty || loading}
+              onClick={handleSaveSiteName}
+            >
+              {t('settings.save')}
+            </Button>
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title={t('settings.logo.title')} defaultExpanded>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+            <AvatarUpload
+              src={resolveStorageUrl(logoPath) || DEFAULT_LOGO_SRC}
+              shape="square"
+              size={96}
+              uploading={logoUploading}
+              onSelect={handleLogoUpload}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Text strong>{t('settings.logo.name')}</Text>
+              <br />
+              <Text type="secondary">{t('settings.logo.desc')}</Text>
+            </div>
+            {logoPath && (
+              <Popconfirm
+                title={t('settings.logo.resetConfirm')}
+                onConfirm={handleLogoReset}
+                disabled={resettingLogo}
+              >
+                <Button danger loading={resettingLogo}>
+                  {t('settings.logo.reset')}
+                </Button>
+              </Popconfirm>
+            )}
+          </div>
+        </CollapsibleCard>
+
         <CollapsibleCard title={t('settings.knowledgeGraph.title')} defaultExpanded>
           <div
             style={{
@@ -279,6 +454,66 @@ export function Settings() {
               loading={savingWiki}
               disabled={!wikiDirty || loading}
               onClick={handleSaveWiki}
+            >
+              {t('settings.save')}
+            </Button>
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title={t('settings.sandbox.title')}>
+          <Field label={t('settings.sandbox.maxTtl.name')}>
+            <InputNumber
+              value={sandboxMaxTtl}
+              min={SANDBOX_TTL_LIMITS.min}
+              max={SANDBOX_TTL_LIMITS.max}
+              precision={0}
+              addonAfter={t('appManage.sandboxSeconds')}
+              aria-label={t('settings.sandbox.maxTtl.name')}
+              onChange={(value) => {
+                setSandboxMaxTtl(typeof value === 'number' ? value : SandboxLimitDefaults.maxTtlSeconds)
+                setSandboxDirty(true)
+              }}
+              style={{ width: 220 }}
+            />
+            <Text type="secondary">{t('settings.sandbox.maxTtl.desc')}</Text>
+          </Field>
+          <div style={{ display: 'flex', gap: spacing.md }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.sandbox.maxCpu.name')}>
+                <Input
+                  value={sandboxMaxCpu}
+                  placeholder={SandboxLimitDefaults.maxCpu}
+                  aria-label={t('settings.sandbox.maxCpu.name')}
+                  onChange={(e) => {
+                    setSandboxMaxCpu(e.target.value)
+                    setSandboxDirty(true)
+                  }}
+                />
+                <Text type="secondary">{t('settings.sandbox.maxCpu.desc')}</Text>
+              </Field>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.sandbox.maxMemory.name')}>
+                <Input
+                  value={sandboxMaxMemory}
+                  placeholder={SandboxLimitDefaults.maxMemory}
+                  aria-label={t('settings.sandbox.maxMemory.name')}
+                  onChange={(e) => {
+                    setSandboxMaxMemory(e.target.value)
+                    setSandboxDirty(true)
+                  }}
+                />
+                <Text type="secondary">{t('settings.sandbox.maxMemory.desc')}</Text>
+              </Field>
+            </div>
+          </div>
+
+          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              loading={savingSandbox}
+              disabled={!sandboxDirty || loading}
+              onClick={handleSaveSandbox}
             >
               {t('settings.save')}
             </Button>

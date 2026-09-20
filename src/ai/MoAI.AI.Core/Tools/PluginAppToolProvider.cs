@@ -26,6 +26,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
     private readonly IPluginExecutor _executor;
     private readonly McpToolCallService _mcpToolCallService;
     private readonly OpenApiToolCallService _openApiToolCallService;
+    private readonly CustomPluginVariableInterpolator _variableInterpolator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PluginAppToolProvider"/> class.
@@ -36,13 +37,15 @@ public sealed class PluginAppToolProvider : IAppToolProvider
     /// <param name="executor">插件执行器.</param>
     /// <param name="mcpToolCallService">MCP 工具调用服务.</param>
     /// <param name="openApiToolCallService">OpenAPI 工具调用服务.</param>
+    /// <param name="variableInterpolator">团队变量插值器.</param>
     public PluginAppToolProvider(
         DatabaseContext databaseContext,
         IPluginRegistry registry,
         IDynamicInstanceResolver dynamicResolver,
         IPluginExecutor executor,
         McpToolCallService mcpToolCallService,
-        OpenApiToolCallService openApiToolCallService)
+        OpenApiToolCallService openApiToolCallService,
+        CustomPluginVariableInterpolator variableInterpolator)
     {
         _databaseContext = databaseContext;
         _registry = registry;
@@ -50,6 +53,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         _executor = executor;
         _mcpToolCallService = mcpToolCallService;
         _openApiToolCallService = openApiToolCallService;
+        _variableInterpolator = variableInterpolator;
     }
 
     /// <inheritdoc/>
@@ -113,6 +117,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                 Title = string.IsNullOrWhiteSpace(plugin.Title) ? template.Name : plugin.Title,
                 Description = string.IsNullOrWhiteSpace(plugin.Description) ? template.Description : plugin.Description,
                 Kind = "dynamic",
+                SourceId = plugin.Id,
                 ParametersExample = PluginTypeHelper.GetStaticExample(template.PluginType, PluginParamsExampleMethod),
                 InvokeAsync = (argsJson, ct) => ExecutePluginAsync(template, argsJson, resolved.ConfigJson, ct),
             };
@@ -135,6 +140,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
             Title = string.IsNullOrWhiteSpace(plugin.Title) ? info.Name : plugin.Title,
             Description = string.IsNullOrWhiteSpace(plugin.Description) ? info.Description : plugin.Description,
             Kind = "static",
+            SourceId = plugin.Id,
             ParametersExample = PluginTypeHelper.GetStaticExample(info.PluginType, PluginParamsExampleMethod),
             InvokeAsync = (argsJson, ct) => ExecutePluginAsync(info, argsJson, null, ct),
         };
@@ -158,6 +164,9 @@ public sealed class PluginAppToolProvider : IAppToolProvider
             return [];
         }
 
+        // 团队插件：Header/Query 值中的 {key} 占位符按插件所属团队变量插值（落库仍保存原始占位符）
+        custom = await _variableInterpolator.InterpolateAsync(custom, plugin.TeamId, cancellationToken);
+
         var functions = await _databaseContext.PluginFunctions
             .Where(x => x.PluginCustomId == custom.Id)
             .ToListAsync(cancellationToken);
@@ -165,7 +174,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         var tools = new List<AppTool>();
         foreach (var function in functions)
         {
-            var toolName = $"{plugin.PluginName}__{function.Name}";
+            var toolName = AppPluginToolNaming.FunctionToolName(plugin.PluginName, function.Name);
             var title = string.IsNullOrWhiteSpace(function.Summary)
                 ? $"{plugin.Title} · {function.Name}"
                 : $"{plugin.Title} · {function.Summary}";
@@ -179,6 +188,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                     Title = title,
                     Description = function.Summary ?? string.Empty,
                     Kind = "mcp",
+                    SourceId = plugin.Id,
                     ResolveParametersExampleAsync = ct => ResolveMcpSchemaAsync(custom, callName, function.Name, ct),
                     InvokeAsync = (argsJson, ct) => CallMcpAsync(custom, callName, function.Name, argsJson, ct),
                 });
@@ -191,6 +201,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                     Title = title,
                     Description = function.Summary ?? string.Empty,
                     Kind = "openapi",
+                    SourceId = plugin.Id,
                     ParametersExample = string.IsNullOrWhiteSpace(function.Path) ? null : $"{{\"path\":\"{function.Path}\"}}",
                     InvokeAsync = (argsJson, ct) => CallOpenApiAsync(custom, function.Name, argsJson, ct),
                 });

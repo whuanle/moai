@@ -4,7 +4,10 @@
 // 覆盖：草稿保存/查询、发布校验与版本快照、调试执行（条件分支/跳过传播/JS 沙箱/插值）、
 //       知识库检索节点（wikiIds 归属校验/空命中结构/未配置失败）、问题分类节点校验闭环、
 //       HTTP 请求节点（GET 参数与字段提取/POST JSON 请求体/非 2xx 默认中断/报错捕获/超时/配置校验）、
-//       启动参数校验、运行历史与详情、角色门禁。
+//       启动参数校验、运行历史与详情、角色门禁、核心节点不变量（无开始/双开始/无结束草稿 400）。
+//       开始节点固定 question 契约（对话注入 + 对话/调试 query 镜像兼容旧编排）、对话历史 MAF 压缩有界、
+//       调试 Tab 按最新草稿执行（免发布，仅管理员，X-Moai-Workflow-Draft 头）、
+//       Agent 应用节点（agentApp）调用已发布 Agent + 流程↔Agent 循环嵌套防护。
 import crypto from 'node:crypto'
 import http from 'node:http'
 
@@ -47,15 +50,15 @@ async function mkuser(p) {
 const isGuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
 // ==================== 测试流程定义（引擎确定性行为，不依赖模型/外部插件） ====================
-// start(query) → compute(JS: hasResult=query==='yes') → check(条件)
+// start(question) → compute(JS: hasResult=query==='yes') → check(条件)
 //   → [true] hit(JS: answer='命中:{compute.summary}') → end
 //   → [false] miss(JS: answer='未命中') → end
 const DEF_NODES = [
-  { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '标志位' }] },
+  { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
   {
     key: 'compute', name: '计算', type: 'javaScript',
     config: { code: 'function run(inputs, sys, nodes, system) {\n  return { hasResult: inputs.flag === "yes", summary: "sum-" + inputs.flag, env: system.env }\n}' },
-    inputs: { flag: { expressionType: 'variable', value: 'start.query', required: true } },
+    inputs: { flag: { expressionType: 'variable', value: 'start.question', required: true } },
     outputs: [{ name: 'hasResult', fieldType: 'boolean' }, { name: 'summary', fieldType: 'string' }, { name: 'env', fieldType: 'string' }],
   },
   { key: 'check', name: '是否有结果', type: 'condition', inputs: { condition: { expressionType: 'variable', value: 'compute.hasResult', required: true } }, outputs: [] },
@@ -150,9 +153,12 @@ async function main() {
   const memberView = await api('GET', `/api/app/workflow/config?appId=${APP}&teamId=${TID}`, { token: member.token })
   check('WF-03c Member 查配置 200', memberView.status === 200)
 
-  // WF-04 请求校验
+  // WF-04 请求校验 + 核心节点不变量（开始恰好一个/结束至少一个，违反即 400）
   check('WF-04a 空 definition 400', (await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: '', editorData: '{}' } })).status === 400)
   check('WF-04b 非法 teamId 400', (await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: 0, definition: '{}', editorData: '{}' } })).status === 400)
+  check('WF-04c 无开始节点 400', (await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify({ ...buildDefinition(), nodes: DEF_NODES.filter((n) => n.type !== 'start') }), editorData: '{}' } })).status === 400)
+  check('WF-04d 无结束节点 400', (await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify({ ...buildDefinition(), nodes: DEF_NODES.filter((n) => n.type !== 'end') }), editorData: '{}' } })).status === 400)
+  check('WF-04e 双开始节点 400', (await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify({ ...buildDefinition(), nodes: [...DEF_NODES, DEF_NODES[0]] }), editorData: '{}' } })).status === 400)
 
   // WF-05 非 workflow 应用 400
   check('WF-05 Agent 应用调 workflow 草稿 400', (await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: AGENT, teamId: TID, definition: JSON.stringify(buildDefinition()), editorData: JSON.stringify(buildEditorData()) } })).status === 400)
@@ -184,7 +190,7 @@ async function main() {
   check('WF-08c 应用置为已发布', (appDetail.json?.publishStatus ?? appDetail.json?.publish_status ?? -1) === 1 || appDetail.text.includes('"publishStatus":1'), appDetail.text.slice(0, 120))
 
   // WF-09 调试执行：true 分支
-  const runTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }) } })
+  const runTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'yes' }) } })
   const rt = runTrue.json ?? {}
   const nodeState = (key) => (rt.nodes ?? []).find((n) => n.nodeKey === key)?.state
   check('WF-09a true 分支执行完成', runTrue.status === 200 && rt.status === 'completed', `${runTrue.status} ${runTrue.text.slice(0, 200)}`)
@@ -193,7 +199,7 @@ async function main() {
   check('WF-09d 上游节点完成', nodeState('compute') === 'completed' && nodeState('check') === 'completed' && nodeState('end') === 'completed')
 
   // WF-10 调试执行：false 分支
-  const runFalse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }) } })
+  const runFalse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'no' }) } })
   const rf = runFalse.json ?? {}
   check('WF-10 false 分支输出', runFalse.status === 200 && rf.status === 'completed' && rf.output && JSON.parse(rf.output).missAnswer === '未命中' && JSON.parse(rf.output).answer === null, `${runFalse.status} ${rf.output ?? ''}`)
 
@@ -201,7 +207,7 @@ async function main() {
   const runMissing = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: '{}' } })
   const rm = runMissing.json ?? {}
   const startNode = (rm.nodes ?? []).find((n) => n.nodeKey === 'start')
-  check('WF-11 缺参数挂起且 start 失败', runMissing.status === 200 && rm.status === 'suspended' && startNode?.state === 'failed' && (startNode.errorMessage ?? '').includes('query'), `${runMissing.status} ${runMissing.text.slice(0, 200)}`)
+  check('WF-11 缺参数挂起且 start 失败', runMissing.status === 200 && rm.status === 'suspended' && startNode?.state === 'failed' && (startNode.errorMessage ?? '').includes('question'), `${runMissing.status} ${runMissing.text.slice(0, 200)}`)
 
   // WF-12 非法启动参数 JSON 400
   check('WF-12 非法输入 JSON 400', (await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: '{bad' } })).status === 400)
@@ -216,33 +222,41 @@ async function main() {
   check('WF-13d Member 查历史 403', (await api('GET', `/api/app/workflow/instances?appId=${APP}&teamId=${TID}`, { token: member.token })).status === 403)
 
   // WF-14 全局变量：默认值生效 + 启动传入覆盖（compute JS 经第 4 参 system 读取）
-  const runDefault = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }) } })
+  const runDefault = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'yes' }) } })
   const rd = runDefault.json ?? {}
   const computeOut = (rd.nodes ?? []).find((n) => n.nodeKey === 'compute')?.output
   check('WF-14a 全局变量默认值 dev', runDefault.status === 200 && computeOut && JSON.parse(computeOut).env === 'dev', computeOut ?? '')
 
-  const runOverride = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }), systemJson: JSON.stringify({ env: 'prod' }) } })
+  const runOverride = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'yes' }), systemJson: JSON.stringify({ env: 'prod' }) } })
   const ro = runOverride.json ?? {}
   const computeOut2 = (ro.nodes ?? []).find((n) => n.nodeKey === 'compute')?.output
   check('WF-14b 全局变量覆盖 prod', runOverride.status === 200 && computeOut2 && JSON.parse(computeOut2).env === 'prod', computeOut2 ?? '')
 
-  // WF-15 系统设置·对话开场白：流程应用经 agent-config 只写开场白字段（模型/知识库/插件/技能不适用不落库）
+  // WF-15 系统设置·对话开场白（草稿/发布双轨）：流程应用经 agent-config 只写开场白字段（模型/知识库/插件/技能不适用不落库）；
+  // 发布后改开场白只落草稿，线上详情仍按发布快照下发，重新发布后生效
   const osSave = await api('PUT', `/api/app/${APP}/agent-config`, { token: owner.token, body: { modelId: null, prompt: '', wikiIds: [], plugins: [], openingStatement: '你好，我是流程助手', openingStatementEnabled: true } })
   check('WF-15a 流程应用保存开场白 200', osSave.status === 200, `${osSave.status} ${osSave.text.slice(0, 160)}`)
   const osGet = await api('GET', `/api/app/${APP}/agent-config`, { token: owner.token })
-  check('WF-15b 开场白回读', osGet.status === 200 && osGet.json?.openingStatement === '你好，我是流程助手' && osGet.json?.openingStatementEnabled === true, osGet.text.slice(0, 200))
+  check('WF-15b 开场白回读（草稿值）', osGet.status === 200 && osGet.json?.openingStatement === '你好，我是流程助手' && osGet.json?.openingStatementEnabled === true, osGet.text.slice(0, 200))
   check('WF-15c Member 保存开场白 403', (await api('PUT', `/api/app/${APP}/agent-config`, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'x', openingStatementEnabled: true } })).status === 403)
   const cfg3 = (await api('GET', `/api/app/workflow/config?appId=${APP}&teamId=${TID}`, { token: owner.token })).json ?? {}
-  check('WF-15d 开场白保存不影响流程草稿', cfg3.version === 1 && cfg3.status === 1 && typeof cfg3.draftDefinition === 'string' && cfg3.draftDefinition.includes('"compute"'), JSON.stringify({ v: cfg3.version, s: cfg3.status }).slice(0, 80))
+  check('WF-15d 开场白草稿不触碰编排定义但状态转未发布变更', cfg3.version === 1 && cfg3.status === 0 && typeof cfg3.draftDefinition === 'string' && cfg3.draftDefinition.includes('"compute"'), JSON.stringify({ v: cfg3.version, s: cfg3.status }).slice(0, 80))
   const detailAfter = await api('GET', `/api/app/${APP}`, { token: owner.token })
-  check('WF-15e 应用详情下发开场白', detailAfter.status === 200 && detailAfter.json?.openingStatement === '你好，我是流程助手' && detailAfter.json?.openingStatementEnabled === true, detailAfter.text.slice(0, 160))
+  check('WF-15e 详情仍下发已发布开场白（发布时未配置，故为空）', detailAfter.status === 200 && detailAfter.json?.openingStatement === '' && detailAfter.json?.openingStatementEnabled === false, detailAfter.text.slice(0, 160))
+  // 重新发布：开场白随编排定义一起进入发布快照
+  const osPublish = await api('POST', `/api/app/workflow/publish`, { token: owner.token, body: { appId: APP, teamId: TID } })
+  const cfg3b = (await api('GET', `/api/app/workflow/config?appId=${APP}&teamId=${TID}`, { token: owner.token })).json ?? {}
+  const detailRepublished = await api('GET', `/api/app/${APP}`, { token: owner.token })
+  check('WF-15f 重新发布后开场白生效且状态回 1', osPublish.status === 200 && cfg3b.version === 2 && cfg3b.status === 1
+    && detailRepublished.json?.openingStatement === '你好，我是流程助手' && detailRepublished.json?.openingStatementEnabled === true,
+    `${osPublish.status} ${JSON.stringify({ v: cfg3b.version, s: cfg3b.status })} ${detailRepublished.text.slice(0, 120)}`)
 
   // WF-16 条件脚本模式：check 节点 config.conditionScript（Jint），按脚本返回值路由分支
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildScriptConditionDefinition()), editorData: JSON.stringify(buildEditorData(buildScriptConditionDefinition())) } })
-  const runScriptTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }) } })
+  const runScriptTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'no' }) } })
   const rst = runScriptTrue.json ?? {}
   check('WF-16a 脚本条件 env=dev 走真分支', runScriptTrue.status === 200 && rst.status === 'completed' && rst.output && JSON.parse(rst.output).answer === '命中:sum-no', `${runScriptTrue.status} ${rst.output ?? runScriptTrue.text.slice(0, 160)}`)
-  const runScriptFalse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }), systemJson: JSON.stringify({ env: 'prod' }) } })
+  const runScriptFalse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'no' }), systemJson: JSON.stringify({ env: 'prod' }) } })
   const rsf = runScriptFalse.json ?? {}
   check('WF-16b 脚本条件 env=prod 走假分支', runScriptFalse.status === 200 && rsf.status === 'completed' && rsf.output && JSON.parse(rsf.output).missAnswer === '未命中', `${runScriptFalse.status} ${rsf.output ?? runScriptFalse.text.slice(0, 160)}`)
 
@@ -268,10 +282,10 @@ async function main() {
   }
   const switchDef = buildSwitchDefinition()
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(switchDef), editorData: JSON.stringify(buildEditorData(switchDef)) } })
-  const runSwitchTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'yes' }) } })
+  const runSwitchTrue = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'yes' }) } })
   const rswt = runSwitchTrue.json ?? {}
   check('WF-17a 多条件 b1 命中走 hit', runSwitchTrue.status === 200 && rswt.status === 'completed' && rswt.output && JSON.parse(rswt.output).answer === '命中:sum-yes', `${runSwitchTrue.status} ${rswt.output ?? runSwitchTrue.text.slice(0, 160)}`)
-  const runSwitchElse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'no' }) } })
+  const runSwitchElse = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'no' }) } })
   const rwse = runSwitchElse.json ?? {}
   check('WF-17b 多条件未命中走 else', runSwitchElse.status === 200 && rwse.status === 'completed' && rwse.output && JSON.parse(rwse.output).missAnswer === '未命中', `${runSwitchElse.status} ${rwse.output ?? runSwitchElse.text.slice(0, 160)}`)
 
@@ -288,11 +302,11 @@ async function main() {
   const buildKsDefinition = (wikiIds) => ({
     id: '', name: 'wf-ks', version: 0, status: 'draft',
     nodes: [
-      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '检索问题' }] },
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '检索问题' }] },
       {
         key: 'ks', name: '知识库检索', type: 'knowledgeSearch',
         config: { wikiIds, topK: 3 },
-        inputs: { query: { expressionType: 'variable', value: 'start.query', required: true } },
+        inputs: { query: { expressionType: 'variable', value: 'start.question', required: true } },
         outputs: [
           { name: 'query', fieldType: 'string' },
           { name: 'count', fieldType: 'number' },
@@ -333,7 +347,7 @@ async function main() {
   check('WF-18e 含检索节点发布 200', ksPublish.status === 200, `${ksPublish.status} ${ksPublish.text.slice(0, 160)}`)
 
   // WF-18f 调试执行：未配 embedding → 空命中但结构完整（query/count/hits/contents/text）
-  const ksRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: '检索一下' }) } })
+  const ksRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: '检索一下' }) } })
   const ksr = ksRun.json ?? {}
   const ksOut = ksr.nodes?.find((n) => n.nodeKey === 'ks')?.output
   const ksParsed = ksOut ? JSON.parse(ksOut) : null
@@ -346,7 +360,7 @@ async function main() {
   const noWikiDef = buildKsDefinition([])
   noWikiDef.nodes.find((n) => n.key === 'ks').config = { wikiIds: [] }
   await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(noWikiDef), editorData: '{}' } })
-  const noWikiRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'x' }) } })
+  const noWikiRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'x' }) } })
   const nwr = noWikiRun.json ?? {}
   const ksState = (nwr.nodes ?? []).find((n) => n.nodeKey === 'ks')
   check('WF-18i 未配置知识库节点失败', noWikiRun.status === 200 && nwr.status === 'suspended' && ksState?.state === 'failed' && (ksState.errorMessage ?? '').includes('wikiId'), `${noWikiRun.status} ${noWikiRun.text.slice(0, 200)}`)
@@ -360,14 +374,14 @@ async function main() {
     id: '', name: 'wf-ks-dyn', version: 0, status: 'draft',
     nodes: [
       { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [
-        { name: 'query', fieldType: 'string', isRequired: true, description: '检索问题' },
+        { name: 'question', fieldType: 'string', isRequired: true, description: '检索问题' },
         { name: 'wikiId', fieldType: 'dynamic', isRequired: false, description: '知识库 id（动态）' },
       ] },
       {
         key: 'ks', name: '知识库检索', type: 'knowledgeSearch',
         config: { topK: 3 },
         inputs: {
-          query: { expressionType: 'variable', value: 'start.query', required: true },
+          query: { expressionType: 'variable', value: 'start.question', required: true },
           wikiId: { expressionType: 'variable', value: 'start.wikiId', required: false },
         },
         outputs: [
@@ -399,7 +413,7 @@ async function main() {
   check('WF-19a 动态绑定定义保存 200', dynSave.status === 200, `${dynSave.status} ${dynSave.text.slice(0, 160)}`)
 
   // WF-19b 运行时动态解析：start.wikiId = 本团队知识库 → 节点完成
-  const dynRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: '动态检索', wikiId: WIKI }) } })
+  const dynRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: '动态检索', wikiId: WIKI }) } })
   const dynr = dynRun.json ?? {}
   const dynKs = (dynr.nodes ?? []).find((n) => n.nodeKey === 'ks')
   check('WF-19b 变量绑定运行时解析', dynRun.status === 200 && dynr.status === 'completed' && dynKs?.state === 'completed', `${dynRun.status} ${dynRun.text.slice(0, 200)}`)
@@ -407,13 +421,13 @@ async function main() {
   check('WF-19c 动态输出结构完整', dynParsed !== null && dynParsed.query === '动态检索' && dynParsed.count === 0 && Array.isArray(dynParsed.hits) && dynParsed.text === '', dynKs?.output ?? '')
 
   // WF-19d 动态传入他团队知识库 id → 运行时团队过滤兜底，静默忽略
-  const dynRunForeign = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'x', wikiId: OWIKI }) } })
+  const dynRunForeign = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'x', wikiId: OWIKI }) } })
   const dynrf = dynRunForeign.json ?? {}
   const foreignKs = (dynrf.nodes ?? []).find((n) => n.nodeKey === 'ks')
   check('WF-19d 动态传入他团队知识库被过滤', dynRunForeign.status === 200 && dynrf.status === 'completed' && foreignKs?.state === 'completed', `${dynRunForeign.status} ${dynRunForeign.text.slice(0, 160)}`)
 
   // WF-19e 未传 wikiId 且无静态配置 → 节点失败并提示 wikiIds
-  const dynRunNone = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: 'x' }) } })
+  const dynRunNone = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'x' }) } })
   const dynrn = dynRunNone.json ?? {}
   const noneKs = (dynrn.nodes ?? []).find((n) => n.nodeKey === 'ks')
   check('WF-19e 未绑定且未配置时节点失败', dynRunNone.status === 200 && dynrn.status === 'suspended' && noneKs?.state === 'failed' && (noneKs.errorMessage ?? '').includes('wikiId'), `${dynRunNone.status} ${dynRunNone.text.slice(0, 200)}`)
@@ -428,7 +442,7 @@ async function main() {
   }
   const singleSave = await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildKsSingleDefinition()), editorData: '{}' } })
   check('WF-19f 单数静态配置保存 200', singleSave.status === 200, `${singleSave.status} ${singleSave.text.slice(0, 160)}`)
-  const singleRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: '静态单库' }) } })
+  const singleRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: '静态单库' }) } })
   const sr = singleRun.json ?? {}
   const singleKs = (sr.nodes ?? []).find((n) => n.nodeKey === 'ks')
   check('WF-19g 单数静态知识库配置执行完成', singleRun.status === 200 && sr.status === 'completed' && singleKs?.state === 'completed', `${singleRun.status} ${singleRun.text.slice(0, 160)}`)
@@ -438,12 +452,12 @@ async function main() {
   const buildClfDefinition = () => ({
     id: '', name: 'wf-clf', version: 0, status: 'draft',
     nodes: [
-      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '用户问题' }] },
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
       {
         key: 'clf', name: '问题分类', type: 'questionClassifier',
         config: { aiModelId: '', historyCount: 6, classes: [{ id: 'c1', label: '售前咨询' }, { id: 'c2', label: '售后咨询' }] },
         inputs: {
-          query: { expressionType: 'variable', value: 'start.query', required: true },
+          query: { expressionType: 'variable', value: 'start.question', required: true },
           history: { expressionType: 'variable', value: 'start.history', required: false },
         },
         outputs: [
@@ -496,7 +510,7 @@ async function main() {
   check('WF-20d 含问题分类节点发布 200', clfPublish.status === 200, `${clfPublish.status} ${clfPublish.text.slice(0, 160)}`)
 
   // WF-20e 未配置 AI 模型：分类节点失败、实例挂起
-  const clfRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ query: '怎么退货' }) } })
+  const clfRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: '怎么退货' }) } })
   const cr = clfRun.json ?? {}
   const clfNode = (cr.nodes ?? []).find((n) => n.nodeKey === 'clf')
   check('WF-20e 未配置模型节点失败挂起', clfRun.status === 200 && cr.status === 'suspended' && clfNode?.state === 'failed' && (clfNode.errorMessage ?? '').includes('模型'), `${clfRun.status} ${clfRun.text.slice(0, 200)}`)
@@ -544,7 +558,7 @@ async function main() {
   const buildHttpDefinition = ({ url, method = 'GET', extraConfig = {} }) => ({
     id: '', name: 'wf-http', version: 0, status: 'draft',
     nodes: [
-      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'q', fieldType: 'string', isRequired: true, description: '参数' }] },
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
       {
         key: 'http1', name: 'HTTP 请求', type: 'http',
         config: {
@@ -574,10 +588,10 @@ async function main() {
   const httpOutputOf = (r) => { const o = httpNodeOf(r)?.output; return o ? JSON.parse(o) : null }
 
   // WF-21a GET + 查询参数（插值引用启动参数）+ 输出字段提取，下游 end 引用提取结果
-  const getDef = buildHttpDefinition({ url: stubUrl('/get'), extraConfig: { params: [{ name: 'q', value: '{start.q}' }] } })
+  const getDef = buildHttpDefinition({ url: stubUrl('/get'), extraConfig: { params: [{ name: 'q', value: '{start.question}' }] } })
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(getDef), editorData: JSON.stringify(buildEditorData(getDef)) } })
   const hitsBefore = stubHits.length
-  const httpGetRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ q: 'hello' }) } })
+  const httpGetRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'hello' }) } })
   const hgr = httpGetRun.json ?? {}
   const hgOut = httpOutputOf(hgr)
   check('WF-21a HTTP GET 节点执行完成', httpGetRun.status === 200 && hgr.status === 'completed' && hgOut !== null && hgOut.statusCode === 200 && hgOut.hasError === false, `${httpGetRun.status} ${httpGetRun.text.slice(0, 200)}`)
@@ -586,10 +600,10 @@ async function main() {
   check('WF-21c 提取字段与下游引用', hgOut?.title === 'stub-title' && JSON.parse(hgr.nodes.find((n) => n.nodeKey === 'end').output).title === 'stub-title', `${JSON.stringify(hgOut)} ${httpGetRun.text.slice(0, 120)}`)
 
   // WF-21d POST JSON 请求体（插值替换字符串与数值位置）
-  const postDef = buildHttpDefinition({ url: stubUrl('/post'), method: 'POST', extraConfig: { bodyType: 'json', body: '{"q":"{start.q}","n":3}' } })
+  const postDef = buildHttpDefinition({ url: stubUrl('/post'), method: 'POST', extraConfig: { bodyType: 'json', body: '{"q":"{start.question}","n":3}' } })
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(postDef), editorData: JSON.stringify(buildEditorData(postDef)) } })
   const hitsBeforePost = stubHits.length
-  const httpPostRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ q: 'hi' }) } })
+  const httpPostRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'hi' }) } })
   const hpr = httpPostRun.json ?? {}
   const postCall = stubHits[hitsBeforePost]
   check('WF-21d POST JSON 请求体与 Content-Type', httpPostRun.status === 200 && hpr.status === 'completed' && postCall !== undefined && postCall.method === 'POST' && postCall.body === '{"q":"hi","n":3}' && postCall.contentType.startsWith('application/json'), `${httpPostRun.status} ${JSON.stringify(postCall ?? {}).slice(0, 200)}`)
@@ -597,7 +611,7 @@ async function main() {
   // WF-21e 非 2xx 且未开报错捕获：节点失败、实例挂起
   const failDef = buildHttpDefinition({ url: stubUrl('/fail') })
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(failDef), editorData: JSON.stringify(buildEditorData(failDef)) } })
-  const httpFailRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ q: 'x' }) } })
+  const httpFailRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'x' }) } })
   const hfr = httpFailRun.json ?? {}
   const failNode = httpNodeOf(hfr)
   check('WF-21e 非 2xx 默认节点失败挂起', httpFailRun.status === 200 && hfr.status === 'suspended' && failNode?.state === 'failed' && (failNode.errorMessage ?? '').includes('500'), `${httpFailRun.status} ${httpFailRun.text.slice(0, 200)}`)
@@ -605,7 +619,7 @@ async function main() {
   // WF-21f 开启报错捕获：节点完成输出 hasError/errorMessage，下游可继续
   const captureDef = buildHttpDefinition({ url: stubUrl('/fail'), extraConfig: { errorCapture: true } })
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(captureDef), editorData: JSON.stringify(buildEditorData(captureDef)) } })
-  const httpCaptureRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ q: 'x' }) } })
+  const httpCaptureRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'x' }) } })
   const hcr = httpCaptureRun.json ?? {}
   const hcOut = httpOutputOf(hcr)
   check('WF-21f 报错捕获完成且输出错误信息', httpCaptureRun.status === 200 && hcr.status === 'completed' && hcOut !== null && hcOut.hasError === true && (hcOut.errorMessage ?? '').includes('500') && hcOut.statusCode === 500, `${httpCaptureRun.status} ${JSON.stringify(hcOut ?? {}).slice(0, 200)}`)
@@ -614,7 +628,7 @@ async function main() {
   // WF-21h 超时：桩延迟 4s、节点超时 1s → 节点失败并提示超时
   const slowDef = buildHttpDefinition({ url: stubUrl('/slow'), extraConfig: { timeoutSeconds: 1 } })
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(slowDef), editorData: JSON.stringify(buildEditorData(slowDef)) } })
-  const httpSlowRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ q: 'x' }) } })
+  const httpSlowRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: 'x' }) } })
   const hsr = httpSlowRun.json ?? {}
   const slowNode = httpNodeOf(hsr)
   check('WF-21h 请求超时节点失败', httpSlowRun.status === 200 && hsr.status === 'suspended' && slowNode?.state === 'failed' && (slowNode.errorMessage ?? '').includes('超时'), `${httpSlowRun.status} ${httpSlowRun.text.slice(0, 200)}`)
@@ -637,10 +651,10 @@ async function main() {
   // 「对话回显」流程：start(query) → echo(JS 读 sys.*) → end(reply=插值)。
   // 验证：流程应用会话创建、AG-UI 对话执行发布流程、sys.userId/appId/conversationId/messageId/currentTime
   //       注入、sys.history 跨轮累积、会话消息落库、未发布流程对话失败可见。
-  const chatSse = async (appId, token, sessionId, text) => {
+  const chatSse = async (appId, token, sessionId, text, extraHeaders = {}) => {
     const res = await fetch(`${BASE}/api/agent/${appId}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...extraHeaders },
       body: JSON.stringify({
         threadId: sessionId,
         runId: crypto.randomUUID(),
@@ -675,7 +689,7 @@ async function main() {
   const buildChatDefinition = () => ({
     id: '', name: 'wf-chat', version: 0, status: 'draft',
     nodes: [
-      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '用户消息' }] },
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户消息' }] },
       {
         key: 'echo', name: '回显系统变量', type: 'javaScript',
         config: { code: 'function run(inputs, sys) {\n  return { userId: sys.userId || "", appId: sys.appId || "", conversationId: sys.conversationId || "", messageId: sys.messageId || "", historyCount: (sys.history || []).length, currentTime: sys.currentTime || "" };\n}' },
@@ -691,7 +705,7 @@ async function main() {
       },
       {
         key: 'end', name: '结束', type: 'end',
-        inputs: { reply: { expressionType: 'interpolation', value: 'uid={echo.userId}|app={echo.appId}|conv={echo.conversationId}|msg={echo.messageId}|h={echo.historyCount}|t={echo.currentTime}|q={start.query}', required: true } },
+        inputs: { reply: { expressionType: 'interpolation', value: 'uid={echo.userId}|app={echo.appId}|conv={echo.conversationId}|msg={echo.messageId}|h={echo.historyCount}|t={echo.currentTime}|q={start.question}', required: true } },
         outputs: [{ name: 'reply', fieldType: 'string' }],
       },
     ],
@@ -744,6 +758,160 @@ async function main() {
   const instAfter = await api('GET', `/api/app/workflow/instances?appId=${APP}&teamId=${TID}&pageNo=1&pageSize=50`, { token: owner.token })
   check('WF-22l 对话实例计入运行历史', instAfter.status === 200 && (instAfter.json?.total ?? 0) >= 2, `${instAfter.status} ${instAfter.text.slice(0, 160)}`)
 
+  // ==================== WF-23 开始节点 question 契约 ====================
+  // 「问题透传」流程：start(question) → qjs(JS 读 nodes.start.question 与镜像 nodes.start.query) → end。
+  // 验证：流程对话时用户问题注入开始节点 question 字段；旧编排绑定的 start.query 镜像同值（后向兼容）
+  const buildQuestionDefinition = () => ({
+    id: '', name: 'wf-q', version: 0, status: 'draft',
+    nodes: [
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
+      {
+        key: 'qjs', name: '读取问题', type: 'javaScript',
+        config: { code: 'function run(inputs, sys, nodes) {\n  return { q: nodes.start.question || "", legacy: nodes.start.query || "" };\n}' },
+        inputs: {},
+        outputs: [{ name: 'q', fieldType: 'string' }, { name: 'legacy', fieldType: 'string' }],
+      },
+      {
+        key: 'end', name: '结束', type: 'end',
+        inputs: { reply: { expressionType: 'interpolation', value: 'q={qjs.q}|legacy={qjs.legacy}', required: true } },
+        outputs: [{ name: 'reply', fieldType: 'string' }],
+      },
+    ],
+    connections: [
+      { id: 'w1', source: 'start', target: 'qjs' },
+      { id: 'w2', source: 'qjs', target: 'end' },
+    ],
+    ui: { nodePositions: { start: { x: 80, y: 200 }, qjs: { x: 320, y: 200 }, end: { x: 560, y: 200 } } },
+  })
+  await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildQuestionDefinition()), editorData: JSON.stringify(buildEditorData(buildQuestionDefinition())) } })
+  const qPublish = await api('POST', `/api/app/workflow/publish`, { token: owner.token, body: { appId: APP, teamId: TID } })
+  check('WF-23a 问题透传流程发布 200', qPublish.status === 200, `${qPublish.status} ${qPublish.text.slice(0, 160)}`)
+  const qSession = await api('POST', `/api/app/${APP}/session`, { token: member.token, body: { title: 'wf 问题契约', promptId: 0 } })
+  const QSESSION = String(qSession.json?.value ?? '')
+  const qChat = await chatSse(APP, member.token, QSESSION, '今天天气如何')
+  check('WF-23b 用户问题注入 start.question', qChat.status === 200 && qChat.runError === null && qChat.reply.includes('q=今天天气如何'), `status=${qChat.status} reply=${qChat.reply.slice(0, 160)} err=${qChat.runError}`)
+  check('WF-23c 旧编排 start.query 镜像同值', qChat.reply.includes('legacy=今天天气如何'), qChat.reply.slice(0, 160))
+
+  // WF-23d 调试执行同样补 query 镜像：历史草稿（start 声明旧参数 query、下游绑定 start.query）
+  // 仅传固定契约 question 也能跑通 —— 调试与对话行为一致
+  const buildLegacyQueryDefinition = () => ({
+    id: '', name: 'wf-legacy-q', version: 0, status: 'draft',
+    nodes: [
+      { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'query', fieldType: 'string', isRequired: true, description: '旧参数' }] },
+      { key: 'end', name: '结束', type: 'end', inputs: { reply: { expressionType: 'variable', value: 'start.query', required: true } }, outputs: [] },
+    ],
+    connections: [{ id: 'l1', source: 'start', target: 'end' }],
+    ui: { nodePositions: { start: { x: 80, y: 200 }, end: { x: 560, y: 200 } } },
+  })
+  await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildLegacyQueryDefinition()), editorData: '{}' } })
+  const legacyRun = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: APP, teamId: TID, inputJson: JSON.stringify({ question: '旧编排兼容问题' }) } })
+  const lr = legacyRun.json ?? {}
+  check('WF-23d 调试执行 query 镜像兼容旧编排', legacyRun.status === 200 && lr.status === 'completed' && lr.output && JSON.parse(lr.output).reply === '旧编排兼容问题', `${legacyRun.status} ${legacyRun.text.slice(0, 200)}`)
+
+  // ==================== WF-24 对话历史压缩（sys.history 有界） ====================
+  // 恢复发布「对话回显」流程；同一会话连发 10 轮，末轮 sys.history 经 MAF 压缩管线
+  //（滑动窗口 PreserveTurns=6）约束在 ~12 条（≤14），不随轮次线性增长
+  await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildChatDefinition()), editorData: JSON.stringify(buildEditorData(buildChatDefinition())) } })
+  const hcPublish = await api('POST', `/api/app/workflow/publish`, { token: owner.token, body: { appId: APP, teamId: TID } })
+  check('WF-24a 回显流程重新发布 200', hcPublish.status === 200, `${hcPublish.status} ${hcPublish.text.slice(0, 160)}`)
+  const cSession = await api('POST', `/api/app/${APP}/session`, { token: member.token, body: { title: 'wf 压缩', promptId: 0 } })
+  const CSESSION = String(cSession.json?.value ?? '')
+  let lastH = -1
+  let lastReply = ''
+  for (let i = 1; i <= 10; i++) {
+    const r = await chatSse(APP, member.token, CSESSION, `第${i}轮问题`)
+    lastReply = r.reply
+    if (r.runError !== null) { lastH = -1; break }
+    const m = /h=(\d+)/.exec(r.reply)
+    if (!m) { lastH = -1; break }
+    lastH = Number(m[1])
+  }
+  check('WF-24b 十轮对话全部成功', lastH >= 0 && lastReply.includes('q=第10轮问题'), `lastH=${lastH} reply=${lastReply.slice(0, 120)}`)
+  check('WF-24c 历史压缩后有界（2 ≤ h ≤ 14）', lastH >= 2 && lastH <= 14, `lastH=${lastH}`)
+
+  // ==================== WF-25 调试 Tab 按最新草稿执行（免发布，与内部应用一致） ====================
+  // 「调试」Tab 携带 X-Moai-Workflow-Draft=1：未发布流程也能对话（按最新草稿，仅团队管理员），
+  // 实例在运行历史中记为「调试」类型；正式对话（无该头）仍要求已发布。
+  const draftHeaders = { 'X-Moai-Workflow-Draft': '1' }
+  const w2 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '草稿调试' + TS, appType: 'workflow' } })
+  const APP2 = String(w2.json?.value ?? '')
+  check('WF-25a 新建未发布流程应用', w2.status === 200 && isGuid(APP2), `${w2.status} ${w2.text.slice(0, 120)}`)
+  const draftSave = await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP2, teamId: TID, definition: JSON.stringify(buildQuestionDefinition()), editorData: '{}' } })
+  check('WF-25b 保存草稿不发布', draftSave.status === 200, `${draftSave.status} ${draftSave.text.slice(0, 120)}`)
+  const dSession = await api('POST', `/api/app/${APP2}/session`, { token: owner.token, body: { title: '草稿调试会话', promptId: 0 } })
+  const DSESSION = String(dSession.json?.value ?? '')
+  check('WF-25c 管理员对未发布应用建会话', dSession.status === 200 && isGuid(DSESSION), `${dSession.status} ${dSession.text.slice(0, 120)}`)
+  const draftChat = await chatSse(APP2, owner.token, DSESSION, '草稿模式问题', draftHeaders)
+  check('WF-25d 未发布草稿调试对话成功', draftChat.status === 200 && draftChat.runError === null && draftChat.reply.includes('q=草稿模式问题'), `status=${draftChat.status} reply=${draftChat.reply.slice(0, 160)} err=${draftChat.runError}`)
+  const formalChat = await chatSse(APP2, owner.token, DSESSION, '正式对话')
+  check('WF-25e 未发布正式对话仍被拒', formalChat.status === 200 && formalChat.reply.includes('尚未发布'), `reply=${formalChat.reply.slice(0, 160)}`)
+  const memberDraft = await chatSse(APP, member.token, WSESSION, '越权草稿调试', draftHeaders)
+  check('WF-25f 普通成员携带草稿头被拒', memberDraft.status === 200 && memberDraft.reply.includes('仅团队管理员'), `reply=${memberDraft.reply.slice(0, 160)}`)
+  const draftInstances = await api('GET', `/api/app/workflow/instances?appId=${APP2}&teamId=${TID}&pageNo=1&pageSize=10`, { token: owner.token })
+  const draftItem = (draftInstances.json?.items ?? [])[0]
+  check('WF-25g 草稿调试实例计入运行历史且为调试类型', draftInstances.status === 200 && (draftInstances.json?.total ?? 0) >= 1 && draftItem?.isDebug === true, `${draftInstances.status} ${JSON.stringify(draftItem ?? {}).slice(0, 160)}`)
+
+  // ==================== WF-26 Agent 应用节点 + 循环嵌套防护 ====================
+  // 流程可经 agentApp 节点调用已发布 Agent 应用；Agent 又可把流程绑为工具（workflow_apps），
+  // 二者成环须被拦截：选项标记 circular、保存/调试 400、运行期以根流程为基准防线。
+  let usableModelId = ''
+  {
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    if (adminToken) {
+      const all = await api('GET', '/api/ai/model', { token: adminToken })
+      const chat = (all.json?.items ?? []).find((m) => !/embed|rerank/i.test(String(m.modelId ?? m.name ?? '')))
+      if (chat) {
+        const cur = await api('GET', `/api/ai/model/${chat.id}/authorization`, { token: adminToken })
+        const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+        const grant = await api('PUT', `/api/ai/model/${chat.id}/authorization`, { token: adminToken, body: { teamIds } })
+        if (grant.status === 200) usableModelId = String(chat.id)
+      }
+    }
+  }
+  check('WF-26a 测试团队获得可用对话模型', !!usableModelId, usableModelId || '未拿到 admin/模型授权')
+  if (usableModelId) {
+    const ag = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '流程节点Agent' + TS, appType: 'agent' } })
+    const AG = String(ag.json?.value ?? '')
+    check('WF-26b 创建 Agent 应用', ag.status === 200 && isGuid(AG), `${ag.status} ${ag.text.slice(0, 120)}`)
+    await api('PUT', `/api/app/${AG}/agent-config`, { token: owner.token, body: { modelId: usableModelId, prompt: '你是回声助手，每句回答都以「Agent回复：」开头。', wikiIds: [], plugins: [] } })
+    const agPub = await api('POST', `/api/app/${AG}/publish`, { token: owner.token })
+    check('WF-26c Agent 应用配置模型并发布 200', agPub.status === 200, `${agPub.status} ${agPub.text.slice(0, 120)}`)
+
+    const w3 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '调用Agent' + TS, appType: 'workflow' } })
+    const W3 = String(w3.json?.value ?? '')
+    const buildAgentFlow = () => ({
+      id: '', name: 'wf-agent', version: 0, status: 'draft',
+      nodes: [
+        { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true }] },
+        { key: 'agent', name: 'Agent 节点', type: 'agentApp', config: { agentAppId: AG }, inputs: { prompt: { expressionType: 'interpolation', value: '用户问题：{start.question}', required: true } }, outputs: [{ name: 'answer', fieldType: 'string' }] },
+        { key: 'end', name: '结束', type: 'end', inputs: { reply: { expressionType: 'variable', value: 'agent.answer', required: true } }, outputs: [] },
+      ],
+      connections: [{ id: 'g1', source: 'start', target: 'agent' }, { id: 'g2', source: 'agent', target: 'end' }],
+      ui: {},
+    })
+    const opt1 = await api('GET', `/api/app/workflow/agent-options?appId=${W3}&teamId=${TID}`, { token: owner.token })
+    const optItem = (opt1.json?.items ?? []).find((x) => String(x.appId) === AG)
+    check('WF-26d 选项含已发布 Agent 且未成环', opt1.status === 200 && !!optItem && optItem.circular === false, opt1.text.slice(0, 160))
+    const run3 = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: W3, teamId: TID, definition: JSON.stringify(buildAgentFlow()), editorData: '{}', inputJson: JSON.stringify({ question: '你好' }) } })
+    const r3 = run3.json ?? {}
+    check('WF-26e Agent 节点调试执行完成', run3.status === 200 && r3.status === 'completed', `${run3.status} ${run3.text.slice(0, 200)}`)
+    check('WF-26f Agent 回复进入流程输出', r3.output && String(JSON.parse(r3.output).reply ?? '').length > 0, r3.output ?? '')
+
+    // 成环：发布 W3 → Agent 绑定 W3 为流程工具并重新发布（快照生效）→ 选项标记、保存/调试被拦
+    const w3Pub = await api('POST', `/api/app/workflow/publish`, { token: owner.token, body: { appId: W3, teamId: TID } })
+    check('WF-26g 流程发布 200', w3Pub.status === 200, `${w3Pub.status}`)
+    await api('PUT', `/api/app/${AG}/agent-config`, { token: owner.token, body: { modelId: usableModelId, prompt: '你是回声助手，每句回答都以「Agent回复：」开头。', wikiIds: [], plugins: [], workflowApps: [W3] } })
+    const agPub2 = await api('POST', `/api/app/${AG}/publish`, { token: owner.token })
+    check('WF-26h Agent 绑定流程工具并重新发布 200', agPub2.status === 200, `${agPub2.status} ${agPub2.text.slice(0, 120)}`)
+    const opt2 = await api('GET', `/api/app/workflow/agent-options?appId=${W3}&teamId=${TID}`, { token: owner.token })
+    const optItem2 = (opt2.json?.items ?? []).find((x) => String(x.appId) === AG)
+    check('WF-26i 成环后选项标记 circular', optItem2?.circular === true, JSON.stringify(optItem2 ?? {}))
+    const saveCyclic = await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: W3, teamId: TID, definition: JSON.stringify(buildAgentFlow()), editorData: '{}' } })
+    check('WF-26j 成环后保存草稿被拒 400', saveCyclic.status === 400 && (saveCyclic.text ?? '').includes('循环嵌套'), `${saveCyclic.status} ${saveCyclic.text.slice(0, 160)}`)
+    const runCyclic = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: W3, teamId: TID, inputJson: JSON.stringify({ question: 'hi' }) } })
+    check('WF-26k 成环后调试执行被拒 400', runCyclic.status === 400 && (runCyclic.text ?? '').includes('循环嵌套'), `${runCyclic.status} ${runCyclic.text.slice(0, 160)}`)
+  }
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)

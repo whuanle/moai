@@ -1,5 +1,6 @@
 // 团队插件 E2E（场景 @TP-Sn；后端默认 127.0.0.1:5210，可用 TP_BASE 覆盖）
 import crypto from 'node:crypto'
+import { createServer } from 'node:http'
 
 const BASE = process.env.TP_BASE ?? 'http://127.0.0.1:5210'
 let PASS = 0, FAIL = 0
@@ -28,6 +29,43 @@ const TS = Date.now().toString().slice(-8)
 let seq = 0
 const uname = (p) => `${p}${TS}${String(seq++).padStart(2, '0')}`
 const phone = () => `15${Date.now().toString().slice(-8)}${String(seq++).padStart(2, '0')}`.slice(0, 11)
+
+/**
+ * 最小 MCP streamable-http 桩：校验 Authorization 与 query.tenant 必须等于插值后的值，
+ * 否则 401 —— 团队变量插值生效与否的唯一判据。
+ */
+function startMcpStub(expectedAuth, expectedTenant) {
+  const seen = { auths: [], tenants: [] }
+  const server = createServer((req, res) => {
+    let body = ''
+    req.on('data', (c) => { body += c })
+    req.on('end', () => {
+      const url = new URL(req.url, 'http://stub.local')
+      if (url.pathname !== '/mcp') { res.writeHead(404); res.end(); return }
+      const auth = req.headers['authorization'] ?? ''
+      seen.auths.push(auth)
+      if (auth !== expectedAuth) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('unauthorized'); return }
+      let msg = {}
+      try { msg = JSON.parse(body) } catch { /* 忽略空 body */ }
+      const respond = (obj) => {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'mcp-session-id': 'e2e-session' })
+        res.end(JSON.stringify(obj))
+      }
+      if (msg.method === 'initialize') {
+        respond({ jsonrpc: '2.0', id: msg.id, result: { protocolVersion: msg.params?.protocolVersion ?? '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'e2e-stub', version: '1.0.0' } } })
+        return
+      }
+      if (msg.method === 'notifications/initialized') { res.writeHead(202); res.end(); return }
+      if (msg.method === 'tools/list') {
+        seen.tenants.push(url.searchParams.get('tenant'))
+        respond({ jsonrpc: '2.0', id: msg.id, result: { tools: [{ name: 'echo_header', title: 'Echo', description: 'echo tool for e2e', inputSchema: { type: 'object', properties: {} } }] } })
+        return
+      }
+      respond({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: 'method not found' } })
+    })
+  })
+  return { server, seen }
+}
 
 async function mkuser(p) {
   const name = uname(p)
@@ -102,6 +140,108 @@ async function main() {
 
   // TP-24 OpenAPI 预上传：非成员 404（不依赖真实文件）
   check('TP-24 非成员 OpenAPI 预上传 404', (await api('POST', `/api/team/${TID}/plugin/pre_upload_openapi`, { token: outsider.token, body: { teamId: TID, pluginName: 'x', fileName: 'a.json', contentType: 'application/json', fileSize: 10, shA256: 'a'.repeat(64) } })).status === 404)
+
+  // ===== 团队变量插值（header/query 的 {key} 占位符）=====
+  {
+    await api('POST', '/api/variable', { token: owner.token, body: { teamId: TID, key: 'TP_TOKEN', value: 'e2e-ok-token', name: '桩口令', description: 'e2e 插值' } })
+    await api('POST', '/api/variable', { token: owner.token, body: { teamId: TID, key: 'TP_TENANT', value: 'tenant-x', name: '租户', description: 'e2e 插值' } })
+
+    const stub = startMcpStub('Bearer e2e-ok-token', 'tenant-x')
+    await new Promise((resolve) => stub.server.listen(0, '127.0.0.1', resolve))
+    const port = stub.server.address().port
+    const stubUrl = `http://127.0.0.1:${port}/mcp`
+
+    // TP-29a 导入 header 含 {TP_TOKEN}：连接前插值，桩校验 Authorization 通过 → 200
+    const importMcp = await api('POST', `/api/team/${TID}/plugin/mcp`, {
+      token: owner.token,
+      body: {
+        teamId: TID,
+        name: `tpvar_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`,
+        title: '变量插值插件',
+        description: 'E2E 验证团队变量插值',
+        serverUrl: stubUrl,
+        header: [{ key: 'Authorization', value: 'Bearer {TP_TOKEN}' }],
+        query: [{ key: 'tenant', value: '{TP_TENANT}' }],
+      },
+    })
+    check('TP-29a 导入 header/query 含变量占位符（插值后连接桩）200', importMcp.status === 200, importMcp.text.slice(0, 160))
+    check('TP-29b 桩收到的 Authorization 为插值后明文', stub.seen.auths.some((a) => a === 'Bearer e2e-ok-token'), JSON.stringify(stub.seen.auths))
+    check('TP-29c 桩收到的 query.tenant 为插值后明文', stub.seen.tenants.includes('tenant-x'), JSON.stringify(stub.seen.tenants))
+
+    const varPluginId = importMcp.json?.value
+    if (varPluginId) {
+      // TP-30 落库保留原始占位符：detail 回显 {TP_TOKEN} 原文
+      const detail = await api('GET', `/api/team/${TID}/plugin/${varPluginId}/detail`, { token: owner.token })
+      const headerVal = detail.json?.header?.[0]?.value
+      const queryVal = detail.json?.query?.[0]?.value
+      check('TP-30a detail 回显 header 保留 {TP_TOKEN} 原文', headerVal === 'Bearer {TP_TOKEN}', JSON.stringify(detail.json?.header))
+      check('TP-30b detail 回显 query 保留 {TP_TENANT} 原文', queryVal === '{TP_TENANT}', JSON.stringify(detail.json?.query))
+
+      // TP-31 刷新：再次插值连接桩 → 200
+      const refresh = await api('POST', `/api/team/${TID}/plugin/${varPluginId}/refresh_mcp`, { token: owner.token })
+      check('TP-31 刷新（插值连接）200', refresh.status === 200, refresh.text.slice(0, 120))
+
+      await api('DELETE', `/api/team/${TID}/plugin/${varPluginId}`, { token: owner.token })
+    }
+
+    // TP-32 变量不存在：插值保留 {NOPE}，桩 401 → 导入 409
+    const importMissing = await api('POST', `/api/team/${TID}/plugin/mcp`, {
+      token: owner.token,
+      body: {
+        teamId: TID,
+        name: `tpmiss_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`,
+        title: '缺失变量插件',
+        description: 'E2E 验证未匹配变量保留原文',
+        serverUrl: stubUrl,
+        header: [{ key: 'Authorization', value: 'Bearer {NOPE_VAR}' }],
+        query: [],
+      },
+    })
+    check('TP-32 变量缺失导致连接失败 409', importMissing.status === 409, `${importMissing.status} ${importMissing.text.slice(0, 120)}`)
+
+    stub.server.close()
+  }
+
+  // ===== 团队 OpenAPI 插件 header/query 保存与回显 =====
+  {
+    const openApiDoc = JSON.stringify({
+      openapi: '3.0.1',
+      info: { title: 'e2e', version: '1.0.0' },
+      servers: [{ url: 'https://e2e.invalid' }],
+      paths: { '/ping': { get: { operationId: 'ping', summary: 'ping', responses: { '200': { description: 'ok' } } } } },
+    })
+    const sha = crypto.createHash('sha256').update(openApiDoc).digest('hex')
+    const pre = await api('POST', `/api/team/${TID}/plugin/pre_upload_openapi`, {
+      token: owner.token,
+      body: { teamId: TID, pluginName: `tpoa_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`, fileName: 'openapi.json', contentType: 'application/json', fileSize: Buffer.byteLength(openApiDoc), shA256: sha },
+    })
+    check('TP-33a OpenAPI 预上传 200', pre.status === 200 && Boolean(pre.json?.fileId), pre.text.slice(0, 160))
+    if (pre.json?.fileId && pre.json?.uploadUrl) {
+      const put = await fetch(pre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: openApiDoc })
+      check('TP-33b OpenAPI 文件直传 200', put.ok, String(put.status))
+      const save = await api('POST', `/api/team/${TID}/plugin/openapi`, {
+        token: owner.token,
+        body: {
+          teamId: TID,
+          fileId: pre.json.fileId,
+          fileName: 'openapi.json',
+          name: `tpoa_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`,
+          title: 'OpenAPI变量插件',
+          description: 'E2E 验证 OpenAPI header/query 保存回显',
+          header: [{ key: 'X-Token', value: '{TP_TOKEN}' }],
+          query: [{ key: 'tenant', value: '{TP_TENANT}' }],
+        },
+      })
+      check('TP-33c 团队 OpenAPI 保存（带 header/query）200', save.status === 200, save.text.slice(0, 160))
+      const oaId = save.json?.value
+      if (oaId) {
+        const detail = await api('GET', `/api/team/${TID}/plugin/${oaId}/detail`, { token: owner.token })
+        check('TP-34a OpenAPI detail 回显 header 保留占位符', detail.json?.header?.[0]?.value === '{TP_TOKEN}', JSON.stringify(detail.json?.header))
+        check('TP-34b OpenAPI detail 回显 query 保留占位符', detail.json?.query?.[0]?.value === '{TP_TENANT}', JSON.stringify(detail.json?.query))
+        await api('DELETE', `/api/team/${TID}/plugin/${oaId}`, { token: owner.token })
+      }
+    }
+  }
 
   // TP-19 Owner 删除团队动态插件
   if (dynItem) {

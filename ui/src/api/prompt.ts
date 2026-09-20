@@ -13,6 +13,8 @@ export interface PromptItem {
   isPublic?: boolean | null
   /** 市场提示词被他人查看次数 */
   counter?: number | null
+  /** 被选为专家提示词的使用次数，top_used 推荐按其倒序 */
+  useCount?: number | null
   /** 0 表示个人提示词 */
   teamId?: number | null
   /** 待审核的上架申请 id（后端 long 序列化为字符串），无待审核申请时为 null */
@@ -47,6 +49,15 @@ export async function getTeamPrompts(teamId: number, filters?: { keywords?: stri
       keywords: filters?.keywords || undefined,
       promptClassId: filters?.promptClassId || undefined,
     },
+  })
+  return (res?.items ?? []) as PromptItem[]
+}
+
+/** 查询使用次数最多的专家提示词（本人个人 + 指定团队范围，按使用次数倒序，默认前 10） */
+export async function getTopUsedPrompts(teamId: number, limit = 10): Promise<PromptItem[]> {
+  const client = getApiClient()
+  const res = await client.api.prompt.top_used.get({
+    queryParameters: { teamId, limit },
   })
   return (res?.items ?? []) as PromptItem[]
 }

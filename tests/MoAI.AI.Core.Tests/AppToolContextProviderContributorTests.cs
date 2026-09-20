@@ -39,10 +39,14 @@ public class AppToolContextProviderContributorTests
 
     private static AppAgentBuildContext Context() => new() { App = new AppEntity(), AppId = System.Guid.NewGuid(), TeamId = 1 };
 
+    // 审批模式下的闸口装配在独立用例中验证；此处传 null 走自动模式路径
+    private static AppToolContextProviderContributor Contributor(params IAppToolProvider[] providers)
+        => new(providers, approvalService: null!);
+
     [Fact]
     public async Task Create_NoTools_ReturnsNull()
     {
-        var contributor = new AppToolContextProviderContributor([new FakeProvider(10)]);
+        var contributor = Contributor(new FakeProvider(10));
 
         var provider = await contributor.CreateAsync(Context(), CancellationToken.None);
 
@@ -52,7 +56,7 @@ public class AppToolContextProviderContributorTests
     [Fact]
     public async Task Create_AggregatesAndDeduplicatesByName()
     {
-        var contributor = new AppToolContextProviderContributor(
+        var contributor = Contributor(
         [
             new FakeProvider(20, Tool("weather")),
             new FakeProvider(10, Tool("echo"), Tool("weather")),

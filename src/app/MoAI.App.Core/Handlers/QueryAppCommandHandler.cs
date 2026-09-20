@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Team.Services;
@@ -59,17 +60,21 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             }
         }
 
-        // 开场白随应用详情下发（聊天页成员可读，无需 Admin 权限）；Agent/流程应用均有配置行
+        // 开场白与快捷输入随应用详情下发（聊天页成员可读，无需 Admin 权限）；Agent/流程应用均有配置行；
+        // 已发布应用按发布快照下发，管理员未发布的草稿修改不影响线上展示
         var openingStatement = string.Empty;
         var openingStatementEnabled = false;
+        var quickInputs = new List<string>();
         if (app.AppType is (int)AppType.Agent or (int)AppType.Workflow)
         {
             var agentConfig = await _databaseContext.AppAgentConfigs
                 .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
             if (agentConfig != null)
             {
-                openingStatement = agentConfig.OpeningStatement;
-                openingStatementEnabled = agentConfig.OpeningStatementEnabled;
+                var effectiveConfig = AppAgentConfigSnapshot.ResolveEffectiveConfig(app, agentConfig, preferPublished: true);
+                openingStatement = effectiveConfig.OpeningStatement;
+                openingStatementEnabled = effectiveConfig.OpeningStatementEnabled;
+                quickInputs = AppAgentConfigJson.ParseStringList(effectiveConfig.QuickInputs);
             }
         }
 
@@ -88,6 +93,7 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             PublishTime = app.PublishTime,
             OpeningStatement = openingStatement,
             OpeningStatementEnabled = openingStatementEnabled,
+            QuickInputs = quickInputs,
             MyRole = myRole == null ? -1 : (int)myRole.Value,
             CreateTime = app.CreateTime,
             UpdateTime = app.UpdateTime

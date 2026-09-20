@@ -14,10 +14,7 @@ public class WorkflowEngineExecutionTests
         await harness.Store.SaveDefinitionAsync(WorkflowTestHarness.CreateDocQaDefinition());
         harness.AiChat
             .Setup(c => c.CompleteAsync(
-                It.IsAny<string?>(),
-                It.IsAny<string>(),
-                It.IsAny<JsonArray?>(),
-                It.IsAny<string?>(),
+                It.IsAny<AiChatRequest>(),
                 It.IsAny<Func<string, Task>?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync("根据资料回答内容");
@@ -132,10 +129,11 @@ public class WorkflowEngineExecutionTests
 
         // 插值表达式已解析上游输出
         harness.AiChat.Verify(c => c.CompleteAsync(
-            "你是问答助手。",
-            "用户问题：什么是工作流？\n参考资料摘要：MoAI 文档",
-            It.IsAny<JsonArray?>(),
-            "mock-gpt-4o",
+            It.Is<AiChatRequest>(r =>
+                r.SystemPrompt == "你是问答助手。"
+                && r.Prompt == "用户问题：什么是工作流？\n参考资料摘要：MoAI 文档"
+                && r.Model == "mock-gpt-4o"
+                && r.Temperature == null),
             It.IsAny<Func<string, Task>?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }

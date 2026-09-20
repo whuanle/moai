@@ -118,6 +118,24 @@ export async function uploadAppAvatar(appId: string, file: File): Promise<string
 
 // ==================== Agent 应用配置 ====================
 
+/** 沙箱资源上限（每个应用可配置的存活时间 / CPU / 内存最大值，由超级管理员在系统设置调整） */
+export interface SandboxLimits {
+  maxTtlSeconds: number
+  maxCpu: string
+  maxMemory: string
+}
+
+/** 查询沙箱资源上限；接口异常时回退内置默认值（与后端 SettingDefinitions 一致） */
+export async function getSandboxLimits(): Promise<SandboxLimits> {
+  const client = getApiClient()
+  const res = await client.api.app.sandboxLimits.get()
+  return {
+    maxTtlSeconds: res?.maxTtlSeconds ?? 86400,
+    maxCpu: res?.maxCpu || '4',
+    maxMemory: res?.maxMemory || '8Gi',
+  }
+}
+
 export interface AppAgentConfig {
   appId?: string | null
   teamId?: string | number | null
@@ -130,7 +148,9 @@ export interface AppAgentConfig {
   wikiIds?: number[] | null
   /** 允许使用的插件 id 列表（元素为 plugin.id，uuid 字符串） */
   plugins?: string[] | null
-  /** 允许使用的技能 id 列表（元素为 skill.id，uuid 字符串） */
+  /** 绑定为工具的流程应用 id 列表（元素为 app.id，uuid 字符串，本团队已发布流程应用） */
+  workflowApps?: string[] | null
+  /** 应用默认使用的技能 id 列表（元素为 skill.id，uuid 字符串），用户可在应用设置中取消勾选 */
   skills?: string[] | null
   /** 对话执行参数（自由 JSON，含沙箱等扩展配置） */
   executionSettings?: Record<string, unknown> | null
@@ -138,6 +158,10 @@ export interface AppAgentConfig {
   openingStatement?: string | null
   /** 是否启用对话开场白；启用且内容非空时，新会话开始时展示 */
   openingStatementEnabled?: boolean | null
+  /** 快捷输入列表（管理员配置，对话欢迎态点击即发送），未配置为空列表 */
+  quickInputs?: string[] | null
+  /** 配置状态：0=草稿有未发布变更 1=当前草稿与已发布一致；已发布应用 0 时线上仍按发布快照执行 */
+  status?: number | null
   /** 0=Member 1=Admin 2=Owner */
   myRole?: number | null
 }
@@ -155,10 +179,13 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     // Kiota 把后端 long 生成为 string，前端统一收敛为 number 便于与 wikiId 比较
     wikiIds: (res?.wikiIds ?? []).map((id) => Number(id)),
     plugins: (res?.plugins ?? []).map((id) => String(id)),
+    workflowApps: (res?.workflowApps ?? []).map((id) => String(id)),
     skills: (res?.skills ?? []).map((id) => String(id)),
     executionSettings: (fromUntypedNode(res?.executionSettings) as Record<string, unknown> | undefined) ?? {},
     openingStatement: res?.openingStatement ?? '',
     openingStatementEnabled: res?.openingStatementEnabled ?? false,
+    quickInputs: (res?.quickInputs ?? []).map((x) => String(x)),
+    status: res?.status ?? 0,
     myRole: res?.myRole ?? null,
   }
 }
@@ -174,9 +201,13 @@ export async function saveAppAgentConfig(
     prompt: string
     wikiIds: number[]
     plugins: string[]
+    /** 绑定为工具的流程应用 id 列表；null / 缺省表示保持已保存的流程应用绑定不变 */
+    workflowApps?: string[] | null
     skills?: string[] | null
     openingStatement?: string
     openingStatementEnabled?: boolean
+    /** 快捷输入列表；null / 缺省表示保持已保存的快捷输入不变 */
+    quickInputs?: string[] | null
     executionSettings?: Record<string, unknown>
   },
 ): Promise<void> {
@@ -187,9 +218,11 @@ export async function saveAppAgentConfig(
     // 后端 wiki_ids 为 long，Kiota 生成的请求体为 string[]，此处按生成类型传字符串
     wikiIds: payload.wikiIds.map((id) => String(id)),
     plugins: payload.plugins as Guid[],
+    workflowApps: (payload.workflowApps ?? null) as Guid[] | null,
     skills: (payload.skills ?? null) as Guid[] | null,
     openingStatement: payload.openingStatement ?? '',
     openingStatementEnabled: payload.openingStatementEnabled ?? false,
+    quickInputs: payload.quickInputs ?? null,
     executionSettings: payload.executionSettings ? toUntypedNode(payload.executionSettings) : null,
   })
 }
@@ -415,31 +448,120 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
 
 // ==================== 用户级应用配置 ====================
 
-export interface AppUserConfig {
-  /** 用户新会话默认专家提示词 id，0=未设置（使用应用默认提示词） */
-  promptId: number
-  /** 用户自选技能 id 列表（uuid 字符串） */
-  skills: string[]
-  /** 应用绑定技能 id 列表（应用所有者锁定，用户不可移除） */
-  lockedSkills: string[]
+/** 应用设置中展示的默认技能项（管理员配置） */
+export interface AppUserSkillOption {
+  /** 技能 id（uuid 字符串） */
+  id?: string | null
+  key?: string | null
+  name?: string | null
+  description?: string | null
+  isSystem?: boolean | null
+  /** 所属团队 id，0=系统内置或市场公开 */
+  teamId?: number | null
 }
 
-/** 查询当前用户在某应用下的个性化配置与应用锁定技能 */
+export interface AppUserConfig {
+  /** 用户当前选择的专家提示词 id，0=未选择 */
+  promptId: number
+  /** 用户当前勾选的技能 id 列表（应用默认技能的子集；未配置过时为默认技能全集） */
+  skills: string[]
+  /** 应用默认技能目录（管理员配置） */
+  defaultSkills: AppUserSkillOption[]
+  /** 工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准 */
+  toolApprovalMode: 'auto' | 'approval'
+  /** 无需展示审批卡的工具名（只读检索类），与后端契约同步下发 */
+  toolApprovalExemptNames: string[]
+  /** 无需展示审批卡的工具名前缀（技能装载） */
+  toolApprovalExemptPrefixes: string[]
+  /** 审批策略自动放行的工具名（应用配置白名单插件产出），审批模式下后端直接执行 */
+  toolApprovalAutoApprovedNames: string[]
+  /** 审批策略自动放行的工具名前缀（沙箱工具 sandbox_），审批模式下后端直接执行 */
+  toolApprovalAutoApprovedPrefixes: string[]
+}
+
+/** userconfig.get 响应的原始 JSON 形状（新契约字段经原始 JSON 投射读取，regen 后行为一致） */
+interface RawAppUserConfigResponse {
+  promptId?: number | null
+  skills?: string[] | null
+  defaultSkills?: AppUserSkillOption[] | null
+  toolApprovalMode?: string | null
+  toolApprovalExemptNames?: string[] | null
+  toolApprovalExemptPrefixes?: string[] | null
+  toolApprovalAutoApprovedNames?: string[] | null
+  toolApprovalAutoApprovedPrefixes?: string[] | null
+}
+
+/**
+ * 查询当前用户在某应用下的个性化配置与应用默认技能目录（含工具审批模式与审批卡豁免清单）。
+ */
 export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
   const client = getApiClient()
-  const res = await client.api.app.byId(appId).userconfig.get()
+  const res = (await client.api.app.byId(appId).userconfig.get()) as unknown as RawAppUserConfigResponse
   return {
     promptId: res?.promptId ?? 0,
     skills: (res?.skills ?? []).map((id) => String(id)),
-    lockedSkills: (res?.lockedSkills ?? []).map((id) => String(id)),
+    defaultSkills: res?.defaultSkills ?? [],
+    toolApprovalMode: res?.toolApprovalMode === 'approval' ? 'approval' : 'auto',
+    toolApprovalExemptNames: res?.toolApprovalExemptNames ?? [],
+    toolApprovalExemptPrefixes: res?.toolApprovalExemptPrefixes ?? [],
+    toolApprovalAutoApprovedNames: res?.toolApprovalAutoApprovedNames ?? [],
+    toolApprovalAutoApprovedPrefixes: res?.toolApprovalAutoApprovedPrefixes ?? [],
   }
 }
 
-/** 保存当前用户在某应用下的个性化配置，跨会话复用；应用绑定技能不受影响 */
-export async function saveAppUserConfig(appId: string, payload: { promptId: number; skills: string[] }): Promise<void> {
+/** 保存当前用户在某应用下的个性化配置，跨会话复用；技能仅能在应用默认范围内勾选 */
+export async function saveAppUserConfig(
+  appId: string,
+  payload: { promptId: number; skills: string[]; toolApprovalMode?: 'auto' | 'approval' },
+): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).userconfig.put({
     promptId: payload.promptId,
     skills: payload.skills as Guid[],
+    toolApprovalMode: payload.toolApprovalMode,
   })
+}
+
+/**
+ * 对会话中挂起等待人工审批的工具调用做出决策（批准/拒绝）。
+ * 返回后端状态：approved/rejected=决策已生效；missing=无匹配待审批记录（已自动执行或已被处理）。
+ */
+export async function decideAppSessionToolApproval(
+  sessionId: string,
+  toolName: string,
+  approved: boolean,
+): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.app.session.bySessionId(sessionId).toolApproval.post({
+    toolName,
+    approved,
+  })
+  return res?.status ?? 'missing'
+}
+
+/** 对话附件文本提取结果 */
+export interface ChatAttachmentExtractResult {
+  markdown: string
+  contentLength: number
+  truncated: boolean
+}
+
+/**
+ * 对话附件文本提取：对已上传到 public/chat 目录的文档做提取，返回 markdown 文本。
+ * 由前端拼进用户消息发送给模型（对话链路为纯文本）。
+ */
+export async function extractChatAttachment(
+  objectKey: string,
+  fileName: string,
+): Promise<ChatAttachmentExtractResult> {
+  const client = getApiClient()
+  const res = await client.api.app.chatAttachment.extract.post({
+    objectKey,
+    fileName,
+  })
+  return {
+    markdown: res?.markdown ?? '',
+    contentLength: res?.contentLength ?? 0,
+    truncated: res?.truncated ?? false,
+  }
 }

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
 import { radius, spacing } from '@/design-system/theme'
 import { getOAuthProviders, login, type OAuthProviderItem } from '@/api/auth'
+import { AppLogo } from '@/layouts/components/AppLogo'
 import { resolveStorageUrl } from '@/utils/storage'
 
 interface LoginFormValues {
@@ -69,7 +70,7 @@ export function Login() {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: spacing.lg }}>
-          <img src="/logo.svg" width={48} height={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
+          <AppLogo size={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
           <Typography.Title level={3} style={{ marginBottom: 4 }}>
             {t('auth.loginTitle')}
           </Typography.Title>

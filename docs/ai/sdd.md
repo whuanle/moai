@@ -101,6 +101,7 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
 - **D15 沙箱选 OpenSandbox 而非 MAF**：MAF 的 Docker 能力仅限 shell（无代码解释器）、持久容器单会话单用户、无多租户服务端；OpenSandbox 提供代码解释器 + 命令 + 文件 + 生命周期，且服务端独立部署，贴合 MoAI 多团队多会话。故仅接 OpenSandbox（其 .NET SDK `Alibaba.OpenSandbox` / `.CodeInterpreter`）。
 - **D16 沙箱配置走 execution_settings JSON**：应用是否开沙箱等扩展配置写入 JSON 对象，**不新增数据库列**，后续扩展无需改表与 rescaffold；Save/Query 命令透传 `executionSettings`（null 表示不覆盖，避免旧前端清空）。
 - **D17 每会话一沙箱 + TTL**：`threadId`（会话）粒度；首次用到沙箱工具才创建（惰性），同会话复用，剩余 TTL 不足自动续期；沙箱自身 TTL 与 Hangfire 回收任务双保险，避免资源泄漏。
+- **D18 流程对话压缩独立于 Agent 管线**（2026-09-20）：流程应用（Workflow）不走 `ChatClientAgent` 的 AIContextProviders（常规框架压缩不生效），其 `sys.history` 在 `WorkflowAppChatInvoker`（Workflow.Core）内**单独使用 MAF 压缩组件**：同一 `AppCompactionStrategyFactory` 按 `execution_settings` 组装策略，静态 `CompactionProvider.CompactAsync` 压缩后注入；压缩异常退回最近 20 条原文。策略工厂因此被 Agent 运行时/落库 flush/流程对话三处共用。
 
 ## 6. 已知问题 / 下阶段
 

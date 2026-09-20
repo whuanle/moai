@@ -139,12 +139,26 @@ public class AppController : ControllerBase
             Prompt = req.Prompt,
             WikiIds = req.WikiIds,
             Plugins = req.Plugins,
+            WorkflowApps = req.WorkflowApps,
+            Skills = req.Skills,
             OpeningStatement = req.OpeningStatement,
             OpeningStatementEnabled = req.OpeningStatementEnabled,
+            QuickInputs = req.QuickInputs,
             ExecutionSettings = req.ExecutionSettings
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询沙箱资源上限（每个应用可配置的存活时间 / CPU / 内存最大值，由超级管理员在系统设置调整），登录用户即可访问.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySandboxLimitsCommandResponse"/>.</returns>
+    [HttpGet("sandbox-limits")]
+    public Task<QuerySandboxLimitsCommandResponse> QuerySandboxLimits(CancellationToken ct)
+    {
+        return _mediator.Send(new QuerySandboxLimitsCommand(), ct);
     }
 
     /// <summary>
@@ -308,5 +322,17 @@ public class AppController : ControllerBase
         var cmd = new QueryAppUsageCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 对话附件文本提取：对已上传到公开 chat 目录的文档做 Maomi.ToMarkdown 提取，返回 markdown；登录用户即可调用，目录校验在请求模型 Validate 前置.
+    /// </summary>
+    /// <param name="req">提取请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="ExtractChatAttachmentResponse"/>.</returns>
+    [HttpPost("chat-attachment/extract")]
+    public Task<ExtractChatAttachmentResponse> ExtractChatAttachment([FromBody] ExtractChatAttachmentCommand req, CancellationToken ct)
+    {
+        return _mediator.Send(req, ct);
     }
 }

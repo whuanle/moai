@@ -79,15 +79,19 @@ public class QuestionClassifierNodeExecutor : INodeExecutor
         try
         {
             answer = await _aiChatClient.CompleteAsync(
-                systemPrompt,
-                query,
-                history,
-                model,
+                new AiChatRequest
+                {
+                    SystemPrompt = systemPrompt,
+                    Prompt = query,
+                    History = history,
+                    Model = model,
+                },
                 async chunk => await context.ReportProgressAsync(chunk, cancellationToken),
                 cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // 仅外部真实取消才上抛；内部超时（TaskCanceled 等）走下方通用失败分支，避免 500/实例卡死
             throw;
         }
         catch (Exception ex)

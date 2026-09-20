@@ -11,6 +11,11 @@ public class QueryServerInfoCommandResponse
     public string Name { get; init; }
 
     /// <summary>
+    /// 网站 Logo（存储中的 ObjectKey，空表示使用前端默认 Logo）.
+    /// </summary>
+    public string LogoPath { get; init; } = string.Empty;
+
+    /// <summary>
     /// 系统访问地址.
     /// </summary>
     public string ServiceUrl { get; init; } = default!;

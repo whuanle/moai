@@ -7,8 +7,6 @@ import {
   CloudServerOutlined,
   DashboardOutlined,
   LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   MoonOutlined,
   SettingOutlined,
   ShopOutlined,
@@ -19,11 +17,12 @@ import {
   TranslationOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Dropdown, Layout, Menu, Select, Tooltip, Typography } from 'antd'
+import { Avatar, Dropdown, Layout, Menu, Select, Typography } from 'antd'
 import type { MenuProps } from 'antd'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
+import { AppLogo } from '@/layouts/components/AppLogo'
+import { useSystemName } from '@/layouts/useSystemLogo'
 import {
   useAppStore,
   type Locale,
@@ -89,6 +88,7 @@ export function AppSider() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const systemName = useSystemName()
   const themeKey = useAppStore((state) => state.themeKey)
   const setThemeKey = useAppStore((state) => state.setThemeKey)
   const locale = useAppStore((state) => state.locale)
@@ -97,7 +97,6 @@ export function AppSider() {
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
-  const [collapsed, setCollapsed] = useState(false)
   // 一级菜单不再展示知识库/知识图谱，统一从团队详情分区进入
   // 提示词编辑器等 /prompts 子路径归入「提示词市场」高亮，技能中心（市场/我的）归入「技能市场」高亮
   const selectedKey =
@@ -151,11 +150,6 @@ export function AppSider() {
   return (
     <Sider
       width={232}
-      collapsedWidth={64}
-      collapsible
-      collapsed={collapsed}
-      onCollapse={setCollapsed}
-      trigger={null}
       theme={themeKey}
       style={{
         borderRight: `1px solid ${dividerColor}`,
@@ -174,61 +168,11 @@ export function AppSider() {
         }}
       >
       <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        {collapsed ? (
-          <Tooltip title={t('common.expandMenu')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<MenuUnfoldOutlined />}
-              onClick={() => setCollapsed(false)}
-              aria-label={t('common.expandMenu')}
-              style={{ marginLeft: -8 }}
-            />
-          </Tooltip>
-        ) : (
-          <>
-            <img src="/logo.svg" width={28} height={28} alt="logo" />
-            <Typography.Text strong style={{ fontSize: 16, flex: 1 }}>
-              {t('app.name')}
-            </Typography.Text>
-            <Tooltip title={t('common.collapseMenu')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<MenuFoldOutlined />}
-                onClick={() => setCollapsed(true)}
-                aria-label={t('common.collapseMenu')}
-              />
-            </Tooltip>
-          </>
-        )}
+        <AppLogo size={28} />
+        <Typography.Text strong ellipsis style={{ fontSize: 16, flex: 1 }}>
+          {systemName}
+        </Typography.Text>
       </div>
-
-      <Dropdown menu={{ items: userMenuItems }} placement="bottomLeft" trigger={['click']}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '8px 16px 16px',
-            cursor: 'pointer',
-          }}
-        >
-          <Avatar size={34} icon={<UserOutlined />} src={userInfo?.avatar ?? undefined}>
-            {displayName?.charAt(0) ?? 'U'}
-          </Avatar>
-          {!collapsed && (
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <Typography.Text strong ellipsis style={{ display: 'block', fontSize: 14 }}>
-                {displayName}
-              </Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {userInfo?.email ?? userInfo?.userName}
-              </Typography.Text>
-            </div>
-          )}
-        </div>
-      </Dropdown>
 
       <Menu
         mode="inline"
@@ -247,6 +191,33 @@ export function AppSider() {
           gap: 8,
         }}
       >
+        <Dropdown menu={{ items: userMenuItems }} placement="topLeft" trigger={['click']}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '4px 4px 2px',
+              cursor: 'pointer',
+            }}
+          >
+            <Avatar size={32} icon={<UserOutlined />} src={userInfo?.avatar ?? undefined}>
+              {displayName?.charAt(0) ?? 'U'}
+            </Avatar>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Typography.Text strong ellipsis style={{ display: 'block', fontSize: 14 }}>
+                {displayName}
+              </Typography.Text>
+              <Typography.Text
+                type="secondary"
+                ellipsis
+                style={{ display: 'block', fontSize: 12 }}
+              >
+                {userInfo?.email ?? userInfo?.userName}
+              </Typography.Text>
+            </div>
+          </div>
+        </Dropdown>
         <Select
           value={themeKey}
           options={themeOptions}
@@ -254,16 +225,14 @@ export function AppSider() {
           style={{ width: '100%' }}
           popupMatchSelectWidth={false}
         />
-        {!collapsed && (
-          <Select
-            value={locale}
-            options={localeOptions}
-            onChange={(value: Locale) => setLocale(value)}
-            suffixIcon={<TranslationOutlined />}
-            style={{ width: '100%' }}
-            popupMatchSelectWidth={false}
-          />
-        )}
+        <Select
+          value={locale}
+          options={localeOptions}
+          onChange={(value: Locale) => setLocale(value)}
+          suffixIcon={<TranslationOutlined />}
+          style={{ width: '100%' }}
+          popupMatchSelectWidth={false}
+        />
       </div>
       </div>
     </Sider>

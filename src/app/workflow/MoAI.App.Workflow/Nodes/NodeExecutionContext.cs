@@ -79,6 +79,72 @@ public class NodeExecutionContext
     }
 
     /// <summary>
+    /// 从配置中读取浮点属性（缺失或非法返回 null；字符串形式数字亦接受）.
+    /// </summary>
+    public float? GetConfigFloat(string name)
+    {
+        if (Config.ValueKind != JsonValueKind.Object || !Config.TryGetProperty(name, out var value))
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetSingle(out var number))
+        {
+            return number;
+        }
+
+        if (value.ValueKind == JsonValueKind.String && float.TryParse(value.GetString(), out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 从配置中读取布尔属性（缺失返回 false；"true"/"false" 字符串亦接受）.
+    /// </summary>
+    public bool GetConfigBool(string name)
+    {
+        if (Config.ValueKind != JsonValueKind.Object || !Config.TryGetProperty(name, out var value))
+        {
+            return false;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String when bool.TryParse(value.GetString(), out var parsed) => parsed,
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// 从配置中读取 Guid 数组属性（过滤非法与空值）.
+    /// </summary>
+    public IReadOnlyList<Guid> GetConfigGuidArray(string name)
+    {
+        if (Config.ValueKind != JsonValueKind.Object
+            || !Config.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var result = new List<Guid>();
+        foreach (var item in value.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String && Guid.TryParse(item.GetString(), out var id) && id != Guid.Empty)
+            {
+                result.Add(id);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// 推送节点执行进度事件（AI 流式输出、长任务进度等）.
     /// </summary>
     public async Task ReportProgressAsync(string message, CancellationToken cancellationToken = default)

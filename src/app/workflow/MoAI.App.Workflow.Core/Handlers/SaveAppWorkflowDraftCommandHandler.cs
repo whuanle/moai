@@ -82,8 +82,28 @@ public class SaveAppWorkflowDraftCommandHandler : IRequestHandler<SaveAppWorkflo
         definition.Id = request.AppId.ToString();
         definition.Status = DefinitionStatus.Draft;
 
+        // 核心节点不变量：开始节点恰好一个、结束节点至少一个（设计器加载侧会自愈补齐，这里在保存入口拦住违反契约的定义）
+        if (definition.Nodes.Count == 0)
+        {
+            throw new BusinessException("流程必须包含至少一个节点.") { StatusCode = 400 };
+        }
+
+        var startCount = definition.Nodes.Count(n => n.Type == NodeTypes.Start);
+        if (startCount != 1)
+        {
+            throw new BusinessException($"流程必须恰好包含一个开始节点，当前 {startCount} 个.") { StatusCode = 400 };
+        }
+
+        if (definition.Nodes.All(n => n.Type != NodeTypes.End))
+        {
+            throw new BusinessException("流程必须包含至少一个结束节点.") { StatusCode = 400 };
+        }
+
         // 知识库检索节点引用的知识库必须属于本团队
         await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
+
+        // Agent 应用节点不得与当前流程构成循环嵌套（流程 → Agent 节点 → Agent 流程工具 → 本流程）
+        await Services.AgentWorkflowCycleGuard.EnsureNoCycleAsync(_databaseContext, request.AppId, Services.AgentWorkflowCycleGuard.CollectAgentAppIds(definition), cancellationToken);
 
         _executionContext.TeamId = app.TeamId;
         await _definitionStore.SaveDefinitionAsync(definition, cancellationToken);

@@ -1,6 +1,10 @@
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Models;
 using MoAI.Infra.Service;
 using MoAI.Variable.Services;
 
@@ -9,14 +13,8 @@ namespace MoAI.Variable.Services;
 /// <summary>
 /// 变量服务实现.
 /// </summary>
-public partial class VariableService : IVariableService
+public class VariableService : IVariableService
 {
-    /// <summary>
-    /// <c>${key}</c> 占位符：字母开头，字母/数字/下划线.
-    /// </summary>
-    [GeneratedRegex(@"\$\{([A-Za-z][A-Za-z0-9_]*)\}")]
-    private static partial Regex PlaceholderRegex();
-
     private readonly DatabaseContext _databaseContext;
     private readonly IAESProvider _aesProvider;
 
@@ -34,20 +32,32 @@ public partial class VariableService : IVariableService
     /// <inheritdoc/>
     public async Task<string> SubstituteAsync(long teamId, string content, CancellationToken cancellationToken = default)
     {
-        var variables = await _databaseContext.TeamVariables
-            .Where(x => x.TeamId == teamId)
-            .ToDictionaryAsync(x => x.Key, x => x, StringComparer.Ordinal, cancellationToken);
+        var variables = await LoadDecryptedAsync(teamId, cancellationToken);
+        return TeamVariableTemplate.Format(content, variables);
+    }
 
-        return PlaceholderRegex().Replace(content, match =>
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<KeyValueString>> SubstituteAsync(long teamId, IReadOnlyCollection<KeyValueString> values, CancellationToken cancellationToken = default)
+    {
+        if (values.Count == 0)
         {
-            var key = match.Groups[1].Value;
-            if (!variables.TryGetValue(key, out var variable))
-            {
-                // 未匹配到变量的占位符保留原文，便于调用方排查配置缺漏
-                return match.Value;
-            }
+            return [];
+        }
 
-            return variable.IsSecret ? _aesProvider.Decrypt(variable.Value) : variable.Value;
-        });
+        var variables = await LoadDecryptedAsync(teamId, cancellationToken);
+        return values
+            .Select(kv => new KeyValueString { Key = kv.Key, Value = TeamVariableTemplate.Format(kv.Value ?? string.Empty, variables) })
+            .ToList();
+    }
+
+    private async Task<Dictionary<string, string>> LoadDecryptedAsync(long teamId, CancellationToken cancellationToken)
+    {
+        return await _databaseContext.TeamVariables
+            .Where(x => x.TeamId == teamId)
+            .ToDictionaryAsync(
+                x => x.Key,
+                x => x.IsSecret ? _aesProvider.Decrypt(x.Value) : x.Value,
+                StringComparer.Ordinal,
+                cancellationToken);
     }
 }

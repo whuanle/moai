@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { AppConfigSection, type AppDetail } from '../AppConfigSection'
-import { getAppAgentConfig, saveAppAgentConfig } from '@/api/app'
+import { getAppAgentConfig, getApps, getSandboxLimits, publishApp, saveAppAgentConfig } from '@/api/app'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getSkillOptions } from '@/api/skills'
@@ -11,9 +11,10 @@ import { getWikis } from '@/api/wiki'
 vi.mock('@/api/app', () => ({
   getAppDetail: vi.fn(),
   getAppAgentConfig: vi.fn(),
+  getApps: vi.fn(),
+  getSandboxLimits: vi.fn(),
   saveAppAgentConfig: vi.fn().mockResolvedValue(undefined),
-  updateApp: vi.fn().mockResolvedValue(undefined),
-  uploadAppAvatar: vi.fn().mockResolvedValue(''),
+  publishApp: vi.fn().mockResolvedValue(undefined),
   createDebugSession: vi.fn().mockResolvedValue('s1'),
 }))
 
@@ -21,13 +22,6 @@ vi.mock('@/api/agentChat', () => ({
   createAppChatAgent: vi.fn(() => ({})),
   runAppChat: vi.fn().mockResolvedValue(undefined),
   abortAppChat: vi.fn(),
-}))
-
-vi.mock('@/api/publication', () => ({
-  applyPublication: vi.fn().mockResolvedValue('1'),
-  getTeamPublicationList: vi.fn().mockResolvedValue([]),
-  withdrawPublication: vi.fn().mockResolvedValue(undefined),
-  reviewPublication: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/api/gateway', () => ({
@@ -68,7 +62,6 @@ function renderSection(detail: AppDetail = AGENT_DETAIL, canManage = true) {
         detail={detail}
         loading={false}
         canManage={canManage}
-        onReload={vi.fn()}
       />
     </MemoryRouter>,
   )
@@ -87,6 +80,11 @@ describe('AppConfigSection（应用配置分区）', () => {
       wikiIds: [7],
       plugins: ['p1'],
       myRole: 2,
+    })
+    vi.mocked(getSandboxLimits).mockResolvedValue({
+      maxTtlSeconds: 86400,
+      maxCpu: '2',
+      maxMemory: '2Gi',
     })
     vi.mocked(getTeamGatewayModels).mockResolvedValue([
       { aiModelId: MODEL_ID, name: 'Qwen3.5 9B', modelId: 'qwen/qwen3.5-9b' },
@@ -112,18 +110,28 @@ describe('AppConfigSection（应用配置分区）', () => {
     vi.mocked(getSkillOptions).mockResolvedValue([
       { id: 'sk1', key: 'docx_writer', name: '文档撰写', description: '', isSystem: true, teamId: 0 },
     ])
+    vi.mocked(getApps).mockResolvedValue({
+      teamId: 3,
+      myRole: 2,
+      items: [
+        { appId: 'a1', teamId: 3, name: '客服助手', appType: 'agent', publishStatus: 1 },
+        { appId: 'wf1', teamId: 3, name: '工单分派流程', appType: 'workflow', publishStatus: 1 },
+        // 未发布的流程应用不能绑定为工具，应被过滤
+        { appId: 'wf2', teamId: 3, name: '草稿流程', appType: 'workflow', publishStatus: 0 },
+      ],
+    })
   })
 
-  it('左栏应用信息与右栏 Agent 配置同时呈现', async () => {
+  it('呈现 Agent 配置表单（模型/提示词/插件/流程应用/默认技能/知识库）', async () => {
     renderSection()
 
-    expect(await screen.findByText('应用信息')).toBeTruthy()
-    expect(screen.getByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('Agent 配置')).toBeTruthy()
     expect(screen.getByText('对话模型')).toBeTruthy()
     expect(screen.getByText('提示词')).toBeTruthy()
     expect(screen.getByText('插件')).toBeTruthy()
+    expect(screen.getByText('流程应用')).toBeTruthy()
+    expect(screen.getByText('默认技能')).toBeTruthy()
     expect(screen.getByText('知识库')).toBeTruthy()
-    await waitFor(() => expect((screen.getByLabelText('应用名称') as HTMLInputElement).value).toBe('客服助手'))
   })
 
   it('回显团队可用模型与本团队知识库、已绑定插件', async () => {
@@ -182,11 +190,125 @@ describe('AppConfigSection（应用配置分区）', () => {
         prompt: '你是售前客服',
         wikiIds: [7],
         plugins: ['p1'],
+        workflowApps: [],
         skills: [],
         openingStatement: '',
         openingStatementEnabled: false,
-        executionSettings: { sandbox: { enabled: false, renewOnAccess: true } },
+        quickInputs: [],
+        executionSettings: {
+          sandbox: { enabled: false, renewOnAccess: true },
+          toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: false },
+        },
       }),
+    )
+  })
+
+  it('审批策略：回显自动放行插件与沙箱开关，随保存一并提交', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [7],
+      plugins: ['p1'],
+      myRole: 2,
+      executionSettings: {
+        toolApproval: { autoApprovePlugins: ['p1'], sandboxAutoApproved: true },
+      },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('审批策略')).toBeTruthy()
+    expect(screen.getByText('沙箱自动放行')).toBeTruthy()
+    expect(screen.getByText('自动放行插件')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            toolApproval: { autoApprovePlugins: ['p1'], sandboxAutoApproved: true },
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('审批策略：自动放行插件收敛为本次绑定插件的子集，未绑定项被剔除', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [7],
+      plugins: [],
+      myRole: 2,
+      executionSettings: {
+        toolApproval: { autoApprovePlugins: ['p1'], sandboxAutoApproved: false },
+      },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('审批策略')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+
+    // 未绑定的插件从自动放行白名单中剔除（后端强校验，前端先收敛）
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: false },
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('快捷输入：回显配置内容，编辑后随保存一并提交', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      skills: [],
+      quickInputs: ['帮我总结一份文档的核心要点', ''],
+      myRole: 2,
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('快捷输入')).toBeTruthy()
+    // 配置中的空串项同样渲染为一行输入框，取第一行编辑
+    const inputs = screen.getAllByPlaceholderText('例如：帮我总结一份文档的核心要点') as HTMLInputElement[]
+    expect(inputs.length).toBe(2)
+    expect(inputs[0].value).toBe('帮我总结一份文档的核心要点')
+
+    // 修改既有项 + 追加一项
+    fireEvent.change(inputs[0], { target: { value: '帮我总结文档要点' } })
+    fireEvent.click(screen.getByRole('button', { name: /添加快捷输入/ }))
+    const afterAdd = screen.getAllByPlaceholderText('例如：帮我总结一份文档的核心要点')
+    fireEvent.change(afterAdd[afterAdd.length - 1], { target: { value: '写一段产品介绍' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+
+    // 空白项被过滤，非空项去首尾空格后提交
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          quickInputs: ['帮我总结文档要点', '写一段产品介绍'],
+        }),
+      ),
     )
   })
 
@@ -235,7 +357,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     renderSection()
     await screen.findByText('天气查询')
 
-    // 四个下拉依次为 对话模型 / 插件 / 技能 / 知识库
+    // 五个下拉依次为 对话模型 / 插件 / 流程应用 / 默认技能 / 知识库
     fireEvent.mouseDown(screen.getAllByRole('combobox')[1])
 
     await waitFor(() => {
@@ -246,21 +368,77 @@ describe('AppConfigSection（应用配置分区）', () => {
     })
   })
 
-  it('流程应用只保留应用信息，配置区提示未开放', async () => {
-    renderSection({ ...AGENT_DETAIL, appId: 'a2', name: '审批流', description: '', appType: 'workflow', isPublic: false })
+  it('流程应用选项只取本团队已发布流程应用，回显已绑定项并随保存提交', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      workflowApps: ['wf1'],
+      myRole: 2,
+    })
 
-    expect(await screen.findByText('应用信息')).toBeTruthy()
+    renderSection()
+    // 已绑定项回显为选中标签
+    expect(await screen.findByText('工单分派流程')).toBeTruthy()
+
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[2])
+    await waitFor(() => {
+      const options = document.querySelectorAll('.ant-select-item-option')
+      const texts = Array.from(options).map((node) => node.textContent ?? '')
+      expect(texts.some((text) => text.includes('工单分派流程'))).toBe(true)
+      // 未发布流程与 Agent 应用不可绑定
+      expect(texts.some((text) => text.includes('草稿流程'))).toBe(false)
+      expect(texts.some((text) => text.includes('客服助手'))).toBe(false)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({ workflowApps: ['wf1'] }),
+      ),
+    )
+  })
+
+  it('已发布且有未发布配置变更：警告条提供「重新发布」，点击后草稿上线并清除警告', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      skills: [],
+      status: 0,
+      myRole: 2,
+    })
+
+    renderSection({ ...AGENT_DETAIL, publishStatus: 1 })
+
+    expect(await screen.findByText(/已有未发布的配置修改/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '重新发布' }))
+
+    await waitFor(() => expect(publishApp).toHaveBeenCalledWith('a1'))
+    await waitFor(() => expect(screen.queryByText(/已有未发布的配置修改/)).toBeNull())
+  })
+
+  it('流程应用配置区仅提示未开放（基础信息在「信息」分区维护）', async () => {    renderSection({ ...AGENT_DETAIL, appId: 'a2', name: '审批流', description: '', appType: 'workflow', isPublic: false })
+
+    expect(screen.getByText(/流程应用的配置能力尚未开放/)).toBeTruthy()
     expect(screen.queryByText('对话模型')).toBeNull()
     expect(screen.queryByText('提示词')).toBeNull()
-    expect(screen.getByText(/流程应用的配置能力尚未开放/)).toBeTruthy()
     expect(getAppAgentConfig).not.toHaveBeenCalled()
   })
 
   it('普通成员只读：无保存入口并提示需要团队管理员', async () => {
     renderSection({ ...AGENT_DETAIL, myRole: 0 }, false)
 
-    expect(await screen.findByText('应用信息')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /保存信息/ })).toBeNull()
+    expect(await screen.findByText('Agent 配置')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /保存配置/ })).toBeNull()
     expect(screen.getByText(/创建与配置需要团队管理员/)).toBeTruthy()
   })

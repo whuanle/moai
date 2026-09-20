@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
 import { radius, spacing } from '@/design-system/theme'
 import { register } from '@/api/auth'
+import { AppLogo } from '@/layouts/components/AppLogo'
 
 interface RegisterFormValues {
   userName: string
@@ -62,7 +63,7 @@ export function Register() {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: spacing.lg }}>
-          <img src="/logo.svg" width={48} height={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
+          <AppLogo size={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
           <Typography.Title level={3} style={{ marginBottom: 4 }}>
             {t('auth.registerTitle')}
           </Typography.Title>

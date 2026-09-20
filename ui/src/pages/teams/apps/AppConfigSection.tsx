@@ -1,33 +1,33 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Col, Divider, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { Alert, Button, Col, Divider, Form, Input, InputNumber, Row, Select, Spin, Switch } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { AvatarUpload, Card as DSCard, feedback } from '@/design-system'
-import { fontSize, spacing } from '@/design-system/theme'
+import { Card as DSCard, feedback } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import {
   getAppAgentConfig,
+  getApps,
+  getSandboxLimits,
+  publishApp,
   saveAppAgentConfig,
-  updateApp,
-  uploadAppAvatar,
   type AppKind,
+  type AppItem,
+  type SandboxLimits,
 } from '@/api/app'
-import {
-  applyPublication,
-  getTeamPublicationList,
-  withdrawPublication,
-  type PublicationReviewItem,
-} from '@/api/publication'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
 import { getSkillOptions, type SkillOption } from '@/api/skills'
 import { getWikis, type WikiItem } from '@/api/wiki'
 import { resolveStorageUrl } from '@/utils/storage'
+import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
 import { AppDebugChat } from './chat/AppDebugChat'
-
-const { Text } = Typography
 
 /** 后端 memory 静态插件无 DB 记录，pluginId 为空 Guid，不能作为绑定目标 */
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
+
+/** 快捷输入上限（与后端 SaveAppAgentConfigCommand 校验一致），每条最长 200 字符由 Input maxLength 限制 */
+const MAX_QUICK_INPUTS = 10
 
 export interface AppDetail {
   appId?: string | null
@@ -44,27 +44,24 @@ export interface AppDetail {
   myRole?: number | null
 }
 
-interface InfoFormValues {
-  name: string
-  description?: string
-  isAuth?: boolean
-}
-
 export interface AppConfigSectionProps {
   teamId: number
   appId: string
   detail: AppDetail | null
   loading: boolean
   canManage: boolean
-  onReload: () => Promise<void> | void
+  /** 配置状态（工作台持有的真值，头部「重新发布」与本地警告条共用）：0=草稿有未发布变更 1=一致；null/缺省回退本地加载值 */
+  configStatus?: number | null
+  /** 配置状态变化上报（加载/保存/重新发布时） */
+  onConfigStatusChange?: (status: number) => void
 }
 
 /**
- * 应用「配置」分区：左栏应用信息（头像/名称/描述/授权与公开），
- * 右栏 Agent 配置（对话模型、系统提示词、插件与知识库、沙箱参数）与调试对话面板。
- * 资源绑定只能选择该团队有权使用的模型/插件/知识库；工作流应用仅展示应用信息与未开放提示。
+ * 应用「配置」分区：左栏 Agent 配置（对话模型、系统提示词、插件与知识库、沙箱参数），
+ * 右栏调试对话面板。资源绑定只能选择该团队有权使用的模型/插件/知识库；
+ * 基础信息（头像/名称/公开状态）在「信息」分区维护（AppInfoSection）。
  */
-export function AppConfigSection({ teamId, appId, detail, loading, canManage, onReload }: AppConfigSectionProps) {
+export function AppConfigSection({ teamId, appId, detail, loading, canManage, configStatus, onConfigStatusChange }: AppConfigSectionProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
 
@@ -72,8 +69,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
   const [prompt, setPrompt] = useState('')
   const [openingEnabled, setOpeningEnabled] = useState(false)
   const [openingStatement, setOpeningStatement] = useState('')
+  const [quickInputs, setQuickInputs] = useState<string[]>([])
   const [wikiIds, setWikiIds] = useState<number[]>([])
   const [pluginIds, setPluginIds] = useState<string[]>([])
+  const [workflowAppIds, setWorkflowAppIds] = useState<string[]>([])
+  const [workflowAppOptions, setWorkflowAppOptions] = useState<AppItem[]>([])
   const [skillIds, setSkillIds] = useState<string[]>([])
   const [sandboxEnabled, setSandboxEnabled] = useState(false)
   const [sandboxTimeout, setSandboxTimeout] = useState<number | null>(null)
@@ -82,30 +82,42 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
   const [sandboxMemory, setSandboxMemory] = useState('')
   const [sandboxNetworkAction, setSandboxNetworkAction] = useState<string>()
   const [sandboxEgress, setSandboxEgress] = useState('')
+  const [sandboxLimits, setSandboxLimits] = useState<SandboxLimits | null>(null)
   const [executionSettings, setExecutionSettings] = useState<Record<string, unknown>>({})
+  // 审批策略：审批模式下自动放行的插件白名单与沙箱开关（存于 executionSettings.toolApproval）
+  const [autoApprovePluginIds, setAutoApprovePluginIds] = useState<string[]>([])
+  const [sandboxAutoApproved, setSandboxAutoApproved] = useState(false)
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
   const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
   const [modelOptions, setModelOptions] = useState<{ value: string; label: string }[]>([])
   const [optionsLoading, setOptionsLoading] = useState(false)
-  const [savingInfo, setSavingInfo] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [infoForm] = Form.useForm<InfoFormValues>()
+  const [republishing, setRepublishing] = useState(false)
+  // 0=草稿有未发布变更 1=草稿与已发布一致（已发布应用 0 时线上仍按发布快照执行）
+  const [localConfigStatus, setLocalConfigStatus] = useState(0)
 
   const isAgent = detail?.appType !== 'workflow'
+
+  // 警告条/发布入口使用的状态：工作台传入的真值优先（头部重新发布后同步清除），否则用本地加载值
+  const effectiveConfigStatus = configStatus ?? localConfigStatus
 
   useEffect(() => {
     if (loading || !appId || !isAgent) return
     const loadConfig = async () => {
       try {
-        const config = await getAppAgentConfig(appId)
+        const [config, limits] = await Promise.all([getAppAgentConfig(appId), getSandboxLimits()])
+        setSandboxLimits(limits)
+        setLocalConfigStatus(config.status ?? 0)
+        onConfigStatusChange?.(config.status ?? 0)
         setModelId(config.modelId ?? undefined)
         setPrompt(config.prompt ?? '')
         setOpeningEnabled(Boolean(config.openingStatementEnabled))
         setOpeningStatement(config.openingStatement ?? '')
+        setQuickInputs(config.quickInputs ?? [])
         setWikiIds(config.wikiIds ?? [])
         setPluginIds(config.plugins ?? [])
+        setWorkflowAppIds(config.workflowApps ?? [])
         setSkillIds(config.skills ?? [])
         const settings = config.executionSettings ?? {}
         setExecutionSettings(settings)
@@ -113,6 +125,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         setSandboxEnabled(Boolean(sandbox.enabled))
         setSandboxTimeout(typeof sandbox.timeoutSeconds === 'number' ? (sandbox.timeoutSeconds as number) : null)
         setSandboxRenew(sandbox.renewOnAccess !== false)
+        const toolApproval = (settings.toolApproval ?? {}) as Record<string, unknown>
+        const autoPlugins = toolApproval.autoApprovePlugins
+        setAutoApprovePluginIds(Array.isArray(autoPlugins) ? autoPlugins.map((x) => String(x)) : [])
+        setSandboxAutoApproved(toolApproval.sandboxAutoApproved === true)
         const resource = (sandbox.resource ?? {}) as Record<string, unknown>
         setSandboxCpu(typeof resource.cpu === 'string' ? (resource.cpu as string) : '')
         setSandboxMemory(typeof resource.memory === 'string' ? (resource.memory as string) : '')
@@ -126,85 +142,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
       }
     }
     void loadConfig()
-  }, [appId, isAgent, loading])
-
-  useEffect(() => {
-    if (!detail) return
-    infoForm.setFieldsValue({
-      name: detail.name ?? '',
-      description: detail.description ?? undefined,
-      isAuth: detail.isAuth ?? false,
-    })
-  }, [detail, infoForm])
-
-  // 上架审核：应用公开（is_public）需系统管理员审批，团队侧可申请/撤回并查看审批状态
-  const [publicationItems, setPublicationItems] = useState<PublicationReviewItem[]>([])
-  const [publicationLoading, setPublicationLoading] = useState(false)
-  const [applyOpen, setApplyOpen] = useState(false)
-  const [applyReason, setApplyReason] = useState('')
-  const [applying, setApplying] = useState(false)
-
-  const pendingPublication = publicationItems.find((x) => x.state === 'pending')
-  const lastRejected = publicationItems.find((x) => x.state === 'rejected')
-
-  const loadPublications = useCallback(async () => {
-    if (!Number.isFinite(teamId) || teamId <= 0) return
-    setPublicationLoading(true)
-    try {
-      const list = await getTeamPublicationList(teamId, { resourceType: 'app' })
-      setPublicationItems(list.filter((x) => x.resourceId === appId))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setPublicationLoading(false)
-    }
-  }, [teamId, appId])
-
-  useEffect(() => {
-    void loadPublications()
-  }, [loadPublications])
-
-  const handleApplyPublication = async () => {
-    setApplying(true)
-    try {
-      await applyPublication({
-        resourceType: 'app',
-        resourceId: appId,
-        applyReason: applyReason.trim() || undefined,
-      })
-      feedback.success(t('appManage.applySuccess'))
-      setApplyOpen(false)
-      setApplyReason('')
-      await loadPublications()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setApplying(false)
-    }
-  }
-
-  const handleWithdrawPublication = async () => {
-    if (!pendingPublication?.publicationId) return
-    try {
-      await withdrawPublication(pendingPublication.publicationId)
-      feedback.success(t('appManage.withdrawSuccess'))
-      await loadPublications()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
+  }, [appId, isAgent, loading, onConfigStatusChange])
 
   /** 团队可访问的模型/插件/知识库选项（资源绑定的取值范围） */
   const loadOptions = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setOptionsLoading(true)
     try {
-      const [models, plugins, wikis, skills] = await Promise.all([
+      const [models, plugins, wikis, skills, apps] = await Promise.all([
         getTeamGatewayModels(teamId),
         getTeamPlugins(teamId),
         getWikis(teamId),
-        // 应用绑定场景不含个人技能；此处绑定即锁定，用户在对话中不可移除
+        // 默认技能不含个人技能；配置后默认启用，用户在对话的应用设置中可取消勾选
         getSkillOptions({ teamId }),
+        // 流程应用绑定候选：本团队已发布的内部流程应用（对话中作为工具调用）
+        getApps(teamId),
       ])
       setModelOptions(
         models
@@ -219,6 +171,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
       )
       setSkillOptions(skills)
       setWikiOptions(wikis.items ?? [])
+      setWorkflowAppOptions(
+        (apps.items ?? []).filter(
+          (item) => item.appType === 'workflow' && item.publishStatus === 1 && item.appId,
+        ),
+      )
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -231,28 +188,45 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
     void loadOptions()
   }, [isAgent, loadOptions])
 
-  const handleSaveInfo = async () => {
-    if (!appId) return
-    const values = await infoForm.validateFields()
-    setSavingInfo(true)
-    try {
-      await updateApp(appId, {
-        name: values.name,
-        description: values.description,
-        isExternal: detail?.isExternal ?? false,
-        isAuth: values.isAuth ?? false,
-      })
-      feedback.success(t('appManage.updateSuccess'))
-      await onReload()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSavingInfo(false)
+  /** 启用沙箱时校验存活时间 / CPU / 内存不得超出系统上限（后端保存时会再次强校验） */
+  const validateSandboxLimits = (): boolean => {
+    if (!sandboxEnabled || !sandboxLimits) return true
+    if (sandboxTimeout && sandboxTimeout > sandboxLimits.maxTtlSeconds) {
+      feedback.error(t('appManage.sandboxLimitTtlExceeded', { max: sandboxLimits.maxTtlSeconds }))
+      return false
     }
+    const cpuText = sandboxCpu.trim()
+    if (cpuText) {
+      const cpuValue = parseCpuMillicores(cpuText)
+      const cpuLimit = parseCpuMillicores(sandboxLimits.maxCpu)
+      if (cpuValue == null || cpuLimit == null) {
+        feedback.error(t('appManage.sandboxQuantityInvalid'))
+        return false
+      }
+      if (cpuValue > cpuLimit) {
+        feedback.error(t('appManage.sandboxLimitCpuExceeded', { max: sandboxLimits.maxCpu }))
+        return false
+      }
+    }
+    const memoryText = sandboxMemory.trim()
+    if (memoryText) {
+      const memoryValue = parseMemoryBytes(memoryText)
+      const memoryLimit = parseMemoryBytes(sandboxLimits.maxMemory)
+      if (memoryValue == null || memoryLimit == null) {
+        feedback.error(t('appManage.sandboxQuantityInvalid'))
+        return false
+      }
+      if (memoryValue > memoryLimit) {
+        feedback.error(t('appManage.sandboxLimitMemoryExceeded', { max: sandboxLimits.maxMemory }))
+        return false
+      }
+    }
+    return true
   }
 
   const handleSaveConfig = async () => {
     if (!appId) return
+    if (!validateSandboxLimits()) return
     setSavingConfig(true)
     try {
       const sandbox: Record<string, unknown> = { enabled: sandboxEnabled, renewOnAccess: sandboxRenew }
@@ -274,18 +248,28 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
         }
       }
 
+      // 审批策略：自动放行插件收敛为本次绑定插件的子集（后端强校验），避免解绑插件后保存失败
+      const toolApproval = {
+        autoApprovePlugins: autoApprovePluginIds.filter((id) => pluginIds.includes(id)),
+        sandboxAutoApproved,
+      }
+
       await saveAppAgentConfig(appId, {
         modelId: modelId ?? null,
         prompt,
         wikiIds,
         plugins: pluginIds,
+        workflowApps: workflowAppIds,
         skills: skillIds,
         openingStatement,
         openingStatementEnabled: openingEnabled,
+        quickInputs: quickInputs.map((x) => x.trim()).filter(Boolean),
         // 与已加载的执行参数合并，避免覆盖压缩等其他扩展配置
-        executionSettings: { ...executionSettings, sandbox },
+        executionSettings: { ...executionSettings, sandbox, toolApproval },
       })
-      feedback.success(t('appManage.configSaveSuccess'))
+      feedback.success(t(detail?.publishStatus === 1 ? 'appManage.configSaveDraftSuccess' : 'appManage.configSaveSuccess'))
+      setLocalConfigStatus(0)
+      onConfigStatusChange?.(0)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -293,23 +277,20 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
     }
   }
 
-  /** 校验并上传应用头像；非法文件直接忽略 */
-  const handleAvatarFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      feedback.error(t('appManage.avatarTypeError'))
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      feedback.error(t('appManage.avatarSizeError'))
-      return
-    }
+  /** 重新发布：把当前草稿配置推入发布快照，线上对话立即生效（发布接口本身即重发语义） */
+  const handleRepublish = async () => {
     if (!appId) return
-    setUploadingAvatar(true)
-    uploadAppAvatar(appId, file)
-      .then(() => feedback.success(t('appManage.avatarSuccess')))
-      .then(() => onReload())
-      .catch(() => undefined)
-      .finally(() => setUploadingAvatar(false))
+    setRepublishing(true)
+    try {
+      await publishApp(appId)
+      feedback.success(t('appManage.republishSuccess'))
+      setLocalConfigStatus(1)
+      onConfigStatusChange?.(1)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setRepublishing(false)
+    }
   }
 
   const pluginSelectOptions = pluginOptions.map((item) => ({
@@ -322,15 +303,24 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
     label: item.name || item.key || '-',
   }))
 
+  const workflowAppSelectOptions = workflowAppOptions.map((item) => ({
+    value: String(item.appId),
+    label: item.name || '-',
+  }))
+
   const wikiSelectOptions = wikiOptions
     .filter((item) => item.wikiId != null)
     .map((item) => ({ value: Number(item.wikiId), label: item.name || '-' }))
 
-  const appName = detail?.name ?? ''
-
   return (
     <Row gutter={[spacing.md, spacing.md]} align="top">
-      <Col xs={24} lg={15} xxl={16}>
+      {/* 配置项较多：左栏内部滚动（不把调试对话栏顶出可视区），并让出更多宽度给右栏 */}
+      <Col
+        xs={24}
+        lg={11}
+        xxl={11}
+        style={{ maxHeight: 'calc(100vh - 160px)', minHeight: 480, overflowY: 'auto', paddingRight: spacing.xs }}
+      >
         {!canManage && (
           <Alert
             type="info"
@@ -339,100 +329,20 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
             style={{ marginBottom: spacing.md }}
           />
         )}
-        <DSCard title={t('appManage.sectionInfo')}>
-          <Form form={infoForm} layout="vertical" disabled={!canManage}>
-            <Form.Item label={t('appManage.avatar')}>
-              <Space direction="vertical" size={spacing.xs}>
-                <AvatarUpload
-                  src={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
-                  fallback={appName.slice(0, 1).toUpperCase()}
-                  shape="square"
-                  size={96}
-                  uploading={uploadingAvatar}
-                  disabled={!canManage}
-                  onSelect={handleAvatarFile}
-                />
-                <Text type="secondary" style={{ fontSize: fontSize.xs }}>
-                  {t('appManage.avatarHint')}
-                </Text>
-              </Space>
-            </Form.Item>
-            <Form.Item label={t('appManage.type')}>
-              {isAgent ? (
-                <Tag color="blue">{t('appManage.typeAgent')}</Tag>
-              ) : (
-                <Tag color="purple">{t('appManage.typeWorkflow')}</Tag>
-              )}
-            </Form.Item>
-            <Form.Item
-              name="name"
-              label={t('appManage.name')}
-              rules={[
-                { required: true, message: t('appManage.namePlaceholder') },
-                { max: 20, message: `${t('appManage.name')} ≤ 20` },
-              ]}
-            >
-              <Input placeholder={t('appManage.namePlaceholder')} maxLength={20} />
-            </Form.Item>
-            <Form.Item name="description" label={t('appManage.description')} rules={[{ max: 255 }]}>
-              <Input.TextArea placeholder={t('appManage.descriptionPlaceholder')} maxLength={255} rows={4} />
-            </Form.Item>
-            {detail?.isExternal ? (
-              <Form.Item
-                name="isAuth"
-                label={t('appManage.isAuth')}
-                valuePropName="checked"
-                extra={t('appManage.isAuthHint')}
-              >
-                <Switch checkedChildren={t('appManage.authOn')} unCheckedChildren={t('appManage.authOff')} />
-              </Form.Item>
-            ) : (
-              <Form.Item label={t('appManage.publicationStatus')} extra={t('appManage.publicationHint')}>
-                {detail?.isPublic ? (
-                  <Tag color="green">{t('appManage.publicOn')}</Tag>
-                ) : pendingPublication ? (
-                  <Space size={spacing.sm}>
-                    <Tag color="orange">{t('appManage.publicationPending')}</Tag>
-                    {canManage && (
-                      <Popconfirm title={t('appManage.withdrawConfirm')} onConfirm={() => void handleWithdrawPublication()}>
-                        <Button size="small" loading={publicationLoading}>
-                          {t('appManage.withdrawApplication')}
-                        </Button>
-                      </Popconfirm>
-                    )}
-                  </Space>
-                ) : (
-                  <Space size={spacing.sm}>
-                    {lastRejected && (
-                      <Tooltip
-                        title={
-                          lastRejected.reviewComment
-                            ? `${t('appManage.reviewCommentLabel')}: ${lastRejected.reviewComment}`
-                            : undefined
-                        }
-                      >
-                        <Tag color="error">{t('appManage.publicationRejected')}</Tag>
-                      </Tooltip>
-                    )}
-                    {canManage ? (
-                      <Button size="small" type="primary" onClick={() => setApplyOpen(true)}>
-                        {lastRejected ? t('appManage.reapplyPublication') : t('appManage.applyPublication')}
-                      </Button>
-                    ) : (
-                      <Tag>{t('appManage.publicOff')}</Tag>
-                    )}
-                  </Space>
-                )}
-              </Form.Item>
-            )}
-            {canManage && (
-              <Button type="primary" loading={savingInfo} onClick={() => void handleSaveInfo()}>
-                {t('appManage.saveInfo')}
+        {canManage && detail?.publishStatus === 1 && effectiveConfigStatus === 0 && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('appManage.draftPendingHint')}
+            action={
+              <Button size="small" type="primary" loading={republishing} onClick={() => void handleRepublish()}>
+                {t('appManage.republish')}
               </Button>
-            )}
-          </Form>
-        </DSCard>
-        <DSCard title={t('appManage.agentConfigTitle')} style={{ marginTop: spacing.md }}>
+            }
+            style={{ marginBottom: spacing.md }}
+          />
+        )}
+        <DSCard title={t('appManage.agentConfigTitle')}>
           {!isAgent ? (
             <Alert
               type="info"
@@ -488,6 +398,40 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                     />
                   </Form.Item>
                 )}
+                <Form.Item label={t('appManage.quickInputs')} extra={t('appManage.quickInputsHint')}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xs, maxWidth: 480 }}>
+                    {quickInputs.map((text, index) => (
+                      <div key={index} style={{ display: 'flex', gap: spacing.xs, alignItems: 'center' }}>
+                        <Input
+                          value={text}
+                          maxLength={200}
+                          showCount
+                          placeholder={t('appManage.quickInputsPlaceholder')}
+                          onChange={(e) =>
+                            setQuickInputs((prev) => prev.map((x, i) => (i === index ? e.target.value : x)))
+                          }
+                        />
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          aria-label={t('appManage.quickInputsRemove')}
+                          onClick={() => setQuickInputs((prev) => prev.filter((_, i) => i !== index))}
+                        />
+                      </div>
+                    ))}
+                    {quickInputs.length < MAX_QUICK_INPUTS && (
+                      <Button
+                        type="dashed"
+                        icon={<PlusOutlined />}
+                        style={{ maxWidth: 240 }}
+                        onClick={() => setQuickInputs((prev) => [...prev, ''])}
+                      >
+                        {t('appManage.quickInputsAdd')}
+                      </Button>
+                    )}
+                  </div>
+                </Form.Item>
                 <Form.Item label={t('appManage.sectionPlugins')} extra={t('appManage.pluginsHint')}>
                   <Select
                     mode="multiple"
@@ -501,6 +445,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                     onChange={setPluginIds}
                     options={pluginSelectOptions}
                     notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.pluginsEmpty')}
+                  />
+                </Form.Item>
+                <Form.Item label={t('appManage.sectionWorkflowApps')} extra={t('appManage.workflowAppsHint')}>
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: '100%' }}
+                    placeholder={t('appManage.workflowAppsPlaceholder')}
+                    loading={optionsLoading}
+                    value={workflowAppIds}
+                    onChange={setWorkflowAppIds}
+                    options={workflowAppSelectOptions}
+                    notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.workflowAppsEmpty')}
                   />
                 </Form.Item>
                 <Form.Item label={t('appManage.sectionSkills')} extra={t('appManage.skillsHint')}>
@@ -543,10 +502,15 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                   <>
                     <Row gutter={spacing.md}>
                       <Col xs={24} md={12}>
-                        <Form.Item label={t('appManage.sandboxTimeout')} extra={t('appManage.sandboxTimeoutHint')}>
+                        <Form.Item
+                          label={t('appManage.sandboxTimeout')}
+                          extra={`${t('appManage.sandboxTimeoutHint')}${
+                            sandboxLimits ? t('appManage.sandboxLimitSuffix', { max: sandboxLimits.maxTtlSeconds }) : ''
+                          }`}
+                        >
                           <InputNumber
                             min={60}
-                            max={86400}
+                            max={sandboxLimits?.maxTtlSeconds ?? 86400}
                             style={{ width: '100%' }}
                             value={sandboxTimeout ?? undefined}
                             onChange={(value) => setSandboxTimeout(typeof value === 'number' ? value : null)}
@@ -563,7 +527,12 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                     </Row>
                     <Row gutter={spacing.md}>
                       <Col xs={24} md={12}>
-                        <Form.Item label={t('appManage.sandboxCpu')} extra={t('appManage.sandboxCpuHint')}>
+                        <Form.Item
+                          label={t('appManage.sandboxCpu')}
+                          extra={`${t('appManage.sandboxCpuHint')}${
+                            sandboxLimits ? t('appManage.sandboxLimitSuffix', { max: sandboxLimits.maxCpu }) : ''
+                          }`}
+                        >
                           <Input
                             value={sandboxCpu}
                             onChange={(e) => setSandboxCpu(e.target.value)}
@@ -572,7 +541,12 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                         </Form.Item>
                       </Col>
                       <Col xs={24} md={12}>
-                        <Form.Item label={t('appManage.sandboxMemory')} extra={t('appManage.sandboxMemoryHint')}>
+                        <Form.Item
+                          label={t('appManage.sandboxMemory')}
+                          extra={`${t('appManage.sandboxMemoryHint')}${
+                            sandboxLimits ? t('appManage.sandboxLimitSuffix', { max: sandboxLimits.maxMemory }) : ''
+                          }`}
+                        >
                           <Input
                             value={sandboxMemory}
                             onChange={(e) => setSandboxMemory(e.target.value)}
@@ -607,6 +581,33 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
                   </>
                 )}
               </Form>
+              <Divider style={{ margin: `${spacing.md}px 0` }} />
+              <Form layout="vertical" disabled={!canManage}>
+                <Form.Item label={t('appManage.toolApprovalSection')} extra={t('appManage.toolApprovalHint')}>
+                  <Form.Item
+                    label={t('appManage.toolApprovalSandbox')}
+                    valuePropName="checked"
+                    extra={t('appManage.toolApprovalSandboxHint')}
+                    style={{ marginBottom: spacing.sm }}
+                  >
+                    <Switch checked={sandboxAutoApproved} onChange={setSandboxAutoApproved} />
+                  </Form.Item>
+                  <Form.Item label={t('appManage.toolApprovalPlugins')} extra={t('appManage.toolApprovalPluginsHint')}>
+                    <Select
+                      mode="multiple"
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      style={{ width: '100%' }}
+                      placeholder={t('appManage.toolApprovalPluginsPlaceholder')}
+                      value={autoApprovePluginIds}
+                      onChange={setAutoApprovePluginIds}
+                      options={pluginSelectOptions.filter((opt) => pluginIds.includes(opt.value))}
+                      notFoundContent={t('appManage.toolApprovalPluginsEmpty')}
+                    />
+                  </Form.Item>
+                </Form.Item>
+              </Form>
               {canManage && (
                 <Button
                   type="primary"
@@ -621,7 +622,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
           )}
         </DSCard>
       </Col>
-      <Col xs={24} lg={9} xxl={8}>
+      <Col xs={24} lg={13} xxl={13}>
         <DSCard title={t('appDebug.title')}>
           {isAgent && canManage ? (
             <AppDebugChat
@@ -634,28 +635,6 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, on
           )}
         </DSCard>
       </Col>
-      <Modal
-        open={applyOpen}
-        title={t('appManage.applyPublication')}
-        onCancel={() => setApplyOpen(false)}
-        confirmLoading={applying}
-        onOk={() => void handleApplyPublication()}
-        okText={t('appManage.applySubmit')}
-        cancelText={t('appManage.cancel')}
-        maskClosable={false}
-        destroyOnHidden
-      >
-        <Text type="secondary" style={{ display: 'block', marginBottom: spacing.xs, fontSize: 12 }}>
-          {t('appManage.applyHint')}
-        </Text>
-        <Input.TextArea
-          value={applyReason}
-          onChange={(e) => setApplyReason(e.target.value)}
-          placeholder={t('appManage.applyReasonPlaceholder')}
-          maxLength={255}
-          rows={3}
-        />
-      </Modal>
     </Row>
   )
 }

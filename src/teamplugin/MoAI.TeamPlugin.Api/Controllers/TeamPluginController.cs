@@ -116,6 +116,8 @@ public class TeamPluginController : ControllerBase
             Name = req.Name,
             Title = req.Title,
             Description = req.Description,
+            Header = req.Header,
+            Query = req.Query,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

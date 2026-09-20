@@ -88,4 +88,9 @@ public partial class PromptEntity : IFullAudited
     /// 所属团队id.
     /// </summary>
     public int TeamId { get; set; }
+
+    /// <summary>
+    /// 被选为专家提示词的使用次数，每次绑定时加一.
+    /// </summary>
+    public int UseCount { get; set; }
 }

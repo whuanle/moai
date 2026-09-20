@@ -110,3 +110,48 @@ export async function uploadImageWithKey(file: File): Promise<UploadedImage> {
 export async function uploadImage(file: File): Promise<string> {
   return (await uploadImageWithKey(file)).url
 }
+
+/**
+ * 上传对话附件（文档/图片，public/chat 目录，≤20MB），返回 ObjectKey 和可访问的完整地址.
+ * <para>
+ * 与图片预上传同流程，走专用 pre_upload_chat_file 端点（后端校验扩展名白名单与大小上限）。
+ * </para>
+ */
+export async function uploadChatFile(file: File): Promise<UploadedImage> {
+  const client = getApiClient()
+  const buffer = await file.arrayBuffer()
+  const shA256 = await sha256(buffer)
+
+  const pre = await client.api.storage.public.pre_upload_chat_file.post({
+    fileName: file.name,
+    contentType: file.type || 'application/octet-stream',
+    fileSize: file.size,
+    shA256,
+  })
+
+  if (!pre?.objectKey) {
+    throw new Error('uploadFileFailed')
+  }
+
+  if (!pre.isExist) {
+    if (!pre.uploadUrl) {
+      throw new Error('uploadFileFailed')
+    }
+
+    const res = await fetch(pre.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    })
+    if (!res.ok) {
+      throw new Error('uploadFileFailed')
+    }
+
+    await client.api.storage.complate_url.post({
+      fileId: pre.fileId ?? '',
+      isSuccess: true,
+    })
+  }
+
+  return { objectKey: pre.objectKey, url: resolveStorageUrl(pre.objectKey) }
+}

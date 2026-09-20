@@ -338,6 +338,44 @@
   margin: 0 2px;
 }
 
+/* 头部 Tab（设计/调试/配置）：居中不参与压缩 */
+.wf-header-tabs {
+  flex-shrink: 0;
+}
+
+/* 流程应用全屏外壳内容区（调试/配置/运行历史分区共用）：头部之下弹性填充，左菜单+右内容 */
+.wf-app-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  background: var(--ant-color-bg-layout, #f5f5f5);
+}
+
+/* 「配置」分区左侧菜单（信息/日志/监控/外部渠道，与内部应用工作台菜单同形态） */
+.wf-app-menu {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 8px 8px 0;
+  background: #fff;
+  border-right: 1px solid rgba(5, 5, 5, 0.06);
+  overflow-y: auto;
+}
+
+/* 分区内容：可滚动；调试分区（对话）整体撑满不滚动，内部自己滚 */
+.wf-app-body-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.wf-app-body-content > .wfd-chat {
+  height: 100%;
+  min-height: 320px;
+}
+
 .wf-canvas-zoom {
   min-width: 42px;
   text-align: center;

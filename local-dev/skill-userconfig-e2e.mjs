@@ -1,6 +1,7 @@
-// 技能三级权限 + 用户级应用配置 e2e（SK）
+// 技能三级权限 + 应用默认技能 + 用户级应用配置 e2e（SK/UC）
 // 用法：node local-dev/skill-userconfig-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 APP_BASE 覆盖）
-// 覆盖：个人/团队技能维护权限、options 可见范围、app_user_config 保存回显与校验
+// 覆盖：个人/团队技能维护权限、options 可见范围、管理员配置默认技能、
+//       用户技能勾选仅限默认范围、专家按个人/团队可用范围校验
 import crypto from 'node:crypto'
 
 const BASE = process.env.APP_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5000'
@@ -87,30 +88,64 @@ async function main() {
   const dis = await api('PUT', `/api/skill/${TEAM_SKILL}/disable`, { token: tMember.token, body: { isDisable: true } })
   check('SK-11 Member 禁用团队技能 403', dis.status === 403)
 
-  console.log('\n== 用户级应用配置（app_user_config）==')
-  const uc1 = await api('PUT', `/api/app/${APP_ID}/userconfig`, { token: tMember.token, body: { promptId: 0, skills: [TEAM_SKILL] } })
-  check('UC-01 团队成员保存用户配置 200', uc1.status === 200)
+  console.log('\n== 应用默认技能配置（app_agent_config）==')
+  // 团队提示词：作为成员可用的专家提示词
+  const p1 = await api('POST', '/api/prompt', { token: tOwner.token, body: { teamId: TID, name: '团队专家', description: '', content: '你是团队专家', promptClassId: 0 } })
+  check('UC-01 Owner 创建团队提示词 200', p1.status === 200 && !!p1.json?.value)
+  const TEAM_PROMPT = Number(p1.json?.value ?? 0)
+
+  // 他人个人提示词：对团队成员不可用
+  const alicePrompt = await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: '他人个人专家', description: '', content: 'x', promptClassId: 0 } })
+  check('UC-02 个人提示词创建 200', alicePrompt.status === 200 && !!alicePrompt.json?.value)
+  const OTHER_PROMPT = Number(alicePrompt.json?.value ?? 0)
+
+  const ac1 = await api('PUT', `/api/app/${APP_ID}/agent-config`, {
+    token: tOwner.token,
+    body: { modelId: null, prompt: '系统提示词', wikiIds: [], plugins: [], skills: [TEAM_SKILL], openingStatement: '', openingStatementEnabled: false },
+  })
+  check('UC-03 管理员保存默认技能 200', ac1.status === 200)
+  const acq = await api('GET', `/api/app/${APP_ID}/agent-config`, { token: tOwner.token })
+  check('UC-04 应用配置回显 skills', acq.status === 200
+    && JSON.stringify(acq.json.skills ?? []) === JSON.stringify([TEAM_SKILL]))
+
+  console.log('\n== 用户级应用配置（app_user_config，技能仅限默认范围勾选）==')
   const q1 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: tMember.token })
-  check('UC-02 查询回显 skills', q1.status === 200 && JSON.stringify(q1.json.skills ?? []) === JSON.stringify([TEAM_SKILL]))
-  check('UC-03 未绑定应用技能时 lockedSkills 为空', JSON.stringify(q1.json.lockedSkills ?? []) === '[]')
-  check('UC-04 未设置专家时 promptId=0', Number(q1.json.promptId ?? 0) === 0)
+  check('UC-05 未配置过：默认技能全部启用且目录回显', q1.status === 200
+    && JSON.stringify(q1.json.skills ?? []) === JSON.stringify([TEAM_SKILL])
+    && (q1.json.defaultSkills ?? []).some((x) => String(x.id) === TEAM_SKILL)
+    && Number(q1.json.promptId ?? -1) === 0)
+
+  const uc1 = await api('PUT', `/api/app/${APP_ID}/userconfig`, { token: tMember.token, body: { promptId: TEAM_PROMPT, skills: [TEAM_SKILL] } })
+  check('UC-06 团队成员保存可用专家与默认范围内技能 200', uc1.status === 200)
+  const q2 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: tMember.token })
+  check('UC-07 保存后回显 promptId 与 skills', Number(q2.json.promptId) === TEAM_PROMPT && JSON.stringify(q2.json.skills ?? []) === JSON.stringify([TEAM_SKILL]))
 
   const uc2 = await api('PUT', `/api/app/${APP_ID}/userconfig`, { token: tMember.token, body: { promptId: 0, skills: [MY_SKILL] } })
-  check('UC-05 保存含他人个人技能 400', uc2.status === 400)
-  const uc3 = await api('PUT', `/api/app/${APP_ID}/userconfig`, { token: tMember.token, body: { promptId: 999999, skills: [] } })
-  check('UC-06 保存不可用提示词 404', uc3.status === 404)
+  check('UC-08 保存应用未开放的技能（他人个人技能）400', uc2.status === 400)
+  const uc3 = await api('PUT', `/api/app/${APP_ID}/userconfig`, { token: tMember.token, body: { promptId: OTHER_PROMPT, skills: [] } })
+  check('UC-09 保存不可用专家（他人个人提示词）404', uc3.status === 404)
 
-  // 覆盖保存（upsert 幂等）：再次保存清空技能
+  // 覆盖保存（upsert 幂等）：全部取消后查询为空
   const uc4 = await api('PUT', `/api/app/${APP_ID}/userconfig`, { token: tMember.token, body: { promptId: 0, skills: [] } })
-  const q2 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: tMember.token })
-  check('UC-07 重复保存为覆盖语义', uc4.status === 200 && (q2.json.skills ?? []).length === 0)
+  const q3 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: tMember.token })
+  check('UC-10 重复保存为覆盖语义（可取消全部默认技能）', uc4.status === 200 && (q3.json.skills ?? []).length === 0 && Number(q3.json.promptId) === 0)
 
-  const q3 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: bob.token })
-  check('UC-08 非团队成员查询 404', q3.status === 404)
+  const q4 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: bob.token })
+  check('UC-11 非团队成员查询 404', q4.status === 404)
+
+  console.log('\n== 会话专家绑定（个人/团队可用范围）==')
+  // Member 发起会话要求应用已发布
+  const pub = await api('POST', `/api/app/${APP_ID}/publish`, { token: tOwner.token })
+  check('UC-12 发布应用 200', pub.status === 200)
+  const s2 = await api('POST', `/api/app/${APP_ID}/session`, { token: tMember.token, body: { promptId: TEAM_PROMPT } })
+  check('UC-13 创建会话绑定团队提示词 200', s2.status === 200 && !!s2.json?.value)
+  if (s2.json?.value) await api('DELETE', `/api/app/session/${s2.json.value}`, { token: tMember.token })
 
   console.log('\n== 清理 ==')
   const d2 = await api('DELETE', `/api/skill/${MY_SKILL}`, { token: alice.token })
   check('SK-12 归属人删除个人技能 200', d2.status === 200)
+  await api('DELETE', `/api/prompt/${OTHER_PROMPT}`, { token: alice.token })
+  await api('DELETE', `/api/prompt/${TEAM_PROMPT}`, { token: tOwner.token })
 
   console.log(`\n结果：${passed} 通过 / ${failed} 失败`)
   if (failed > 0) process.exit(1)

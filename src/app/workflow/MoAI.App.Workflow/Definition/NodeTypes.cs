@@ -57,4 +57,9 @@ public static class NodeTypes
     /// HTTP 请求节点 - 发起自定义 HTTP 请求（方法/地址/查询参数/请求头/请求体/鉴权），支持提取响应字段.
     /// </summary>
     public const string Http = "http";
+
+    /// <summary>
+    /// Agent 应用节点 - 调用 <see cref="Nodes.IWorkflowAgentAppClient"/> 驱动一次已发布 Agent 应用对话（一轮）.
+    /// </summary>
+    public const string AgentApp = "agentApp";
 }

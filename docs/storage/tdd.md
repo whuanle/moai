@@ -17,6 +17,7 @@
 | @STO-S4、@STO-S5、@STO-S8 ~ @STO-S14、@STO-S17、@STO-S18 | @manual HTTP 走查（[SOP 第 4 节](./sop.md)；401/损坏/抢占/过期等分支 2026-09-01 第二轮深度 API 互证） | PASS（2026-09-01） |
 | @STO-S19 ~ @STO-S21 | @manual 代码走查（IStorageService 状态机与 S3Client 实现，见 SDD 关键决策） | PASS（2026-09-01） |
 | @STO-S22 ~ @STO-S24 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)） | PASS（2026-09-01/02） |
+| @STO-S25 | chat-attachment-e2e.mjs（CA-01 未登录/CA-02 白名单与大小/CA-03/05 直传成功） | PASS 12/12（2026-09-20） |
 
 ## 回归命令
 

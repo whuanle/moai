@@ -59,10 +59,13 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             ModelId = config?.ModelId ?? Guid.Empty,
             WikiIds = AppAgentConfigJson.ParseLongList(config?.WikiIds),
             Plugins = AppAgentConfigJson.ParseGuidList(config?.Plugins),
+            WorkflowApps = AppAgentConfigJson.ParseGuidList(config?.WorkflowApps),
             Skills = AppAgentConfigJson.ParseGuidList(config?.Skills),
             ExecutionSettings = AppAgentConfigJson.ParseJsonObject(config?.ExecutionSettings),
             OpeningStatement = config?.OpeningStatement ?? string.Empty,
             OpeningStatementEnabled = config?.OpeningStatementEnabled ?? false,
+            QuickInputs = AppAgentConfigJson.ParseStringList(config?.QuickInputs),
+            Status = config?.Status ?? 0,
             MyRole = (int)myRole.Value
         };
     }

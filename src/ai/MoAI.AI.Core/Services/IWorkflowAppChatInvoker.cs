@@ -33,6 +33,12 @@ public class WorkflowAppChatRequest
     /// 本轮用户消息文本.
     /// </summary>
     public string Query { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否按最新草稿定义执行（工作台「调试」Tab）：免发布，仅团队管理员可用；
+    /// false 时按已发布快照执行（正式对话）.
+    /// </summary>
+    public bool UseDraft { get; set; }
 }
 
 /// <summary>

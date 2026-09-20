@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   collectEdges,
+  convergeStartContract,
   inputsFromPluginSchema,
   outputsFromPluginSchema,
   collectUpstreamVariables,
   normalizeEditorData,
   normalizeReferences,
   createDefaultEditorData,
+  ensureCoreNodes,
   fromEditorFormat,
   nodeDataFromTemplate,
   toEditorFormat,
@@ -28,14 +30,14 @@ function buildDefinition(): WorkflowDefinition {
         name: '开始',
         type: 'start',
         inputs: {},
-        outputs: [{ name: 'query', fieldType: 'string', isRequired: true }],
+        outputs: [{ name: 'question', fieldType: 'string', isRequired: true }],
       },
       {
         key: 'search',
         name: '检索',
         type: 'plugin',
         config: { pluginKey: 'mock.knowledgeSearch' },
-        inputs: { query: { expressionType: 'variable', value: 'start.query', required: true } },
+        inputs: { query: { expressionType: 'variable', value: 'start.question', required: true } },
         outputs: [
           { name: 'documents', fieldType: 'array' },
           { name: 'hasResult', fieldType: 'boolean' },
@@ -56,7 +58,7 @@ function buildDefinition(): WorkflowDefinition {
         inputs: {
           prompt: {
             expressionType: 'interpolation',
-            value: '问题：{start.query}',
+            value: '问题：{start.question}',
             required: true,
           },
         },
@@ -67,7 +69,7 @@ function buildDefinition(): WorkflowDefinition {
         name: '兜底',
         type: 'plugin',
         config: { pluginKey: 'mock.fallback' },
-        inputs: { query: { expressionType: 'variable', value: 'start.query' } },
+        inputs: { query: { expressionType: 'variable', value: 'start.question' } },
         outputs: [{ name: 'answer', fieldType: 'string' }],
       },
       {
@@ -152,12 +154,48 @@ describe('workflow converter', () => {
     expect(validateEditorData(createDefaultEditorData())).toEqual([])
   })
 
+  it('ensureCoreNodes：空画布回退默认 start → end 编排', () => {
+    const repaired = ensureCoreNodes({ nodes: [], edges: [] })
+    expect(repaired.nodes.map((n) => n.type)).toEqual(['start', 'end'])
+    expect(collectEdges(repaired).length).toBe(1)
+    expect(validateEditorData(repaired)).toEqual([])
+  })
+
+  it('ensureCoreNodes：缺失的开始/结束节点按现有节点范围补齐', () => {
+    const full = toEditorFormat(buildDefinition())
+
+    const withoutStart = { ...full, nodes: full.nodes.filter((n) => n.type !== 'start') }
+    const repairedStart = ensureCoreNodes(withoutStart)
+    expect(repairedStart.nodes.filter((n) => n.type === 'start').length).toBe(1)
+    const minX = Math.min(...withoutStart.nodes.map((n) => n.meta?.position?.x ?? 0))
+    expect(repairedStart.nodes.find((n) => n.type === 'start')?.meta?.position?.x).toBeLessThan(minX)
+
+    const withoutEnd = { ...full, nodes: full.nodes.filter((n) => n.type !== 'end') }
+    const repairedEnd = ensureCoreNodes(withoutEnd)
+    expect(repairedEnd.nodes.filter((n) => n.type === 'end').length).toBe(1)
+    const maxX = Math.max(...withoutEnd.nodes.map((n) => n.meta?.position?.x ?? 0))
+    expect(repairedEnd.nodes.find((n) => n.type === 'end')?.meta?.position?.x).toBeGreaterThan(maxX)
+  })
+
+  it('ensureCoreNodes：重复的开始节点仅保留首个（不可删除节点的去重自愈）', () => {
+    const full = toEditorFormat(buildDefinition())
+    const duplicated = { ...full, nodes: [...full.nodes, ...full.nodes.filter((n) => n.type === 'start')] }
+    const repaired = ensureCoreNodes(duplicated)
+    expect(repaired.nodes.filter((n) => n.type === 'start').length).toBe(1)
+    expect(repaired.nodes.length).toBe(full.nodes.length)
+  })
+
+  it('ensureCoreNodes：完整画布原样返回', () => {
+    const editor = toEditorFormat(buildDefinition())
+    expect(ensureCoreNodes(editor)).toBe(editor)
+  })
+
   it('collectUpstreamVariables 提供 sys 与祖先节点输出', () => {
     const editor = toEditorFormat(buildDefinition())
     const options = collectUpstreamVariables(editor, 'check')
     const values = options.map((o) => o.value)
     expect(values).toContain('sys.instanceId')
-    expect(values).toContain('start.query')
+    expect(values).toContain('start.question')
     expect(values).toContain('search.hasResult')
     // end 不是 check 的上游
     expect(values.some((v) => v.startsWith('end.'))).toBe(false)
@@ -189,7 +227,7 @@ describe('workflow converter', () => {
     const editor = toEditorFormat(buildDefinition())
     // toEditorFormat：start 的 outputs 声明映射为 data.inputs（run 形态）
     const start = editor.nodes.find((n) => n.id === 'start')!
-    const decl = start.data!.inputs!.query!
+    const decl = start.data!.inputs!.question!
     expect(decl.expressionType).toBe('run')
     expect(decl.required).toBe(true)
     expect(decl.fieldType).toBe('string')
@@ -199,7 +237,211 @@ describe('workflow converter', () => {
     const startDef = restored.nodes.find((n) => n.key === 'start')!
     expect(startDef.inputs).toEqual({})
     expect(startDef.outputs).toHaveLength(1)
-    expect(startDef.outputs[0]).toMatchObject({ name: 'query', fieldType: 'string', isRequired: true })
+    expect(startDef.outputs[0]).toMatchObject({ name: 'question', fieldType: 'string', isRequired: true })
+  })
+
+  it('toEditorFormat：旧定义自定义开始参数收敛为固定 question', () => {
+    const legacy = buildDefinition()
+    legacy.nodes[0]!.outputs = [
+      { name: 'query', fieldType: 'string', isRequired: true },
+      { name: 'foo', fieldType: 'string', isRequired: false },
+    ]
+    const legacyEditor = toEditorFormat(legacy)
+    const start = legacyEditor.nodes.find((n) => n.type === 'start')!
+    expect(Object.keys(start.data!.inputs!)).toEqual(['question'])
+    expect(start.data!.inputs!.question).toMatchObject({ expressionType: 'run', required: true, fieldType: 'string' })
+  })
+
+  it('fromEditorFormat：开始节点忽略画布声明固定输出 question（不可自定义输入/输出字段）', () => {
+    const editor = createDefaultEditorData()
+    const start = editor.nodes.find((n) => n.type === 'start')!
+    start.data = { ...start.data, inputs: { foo: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }
+    const def = fromEditorFormat(editor, 'x')
+    const startDef = def.nodes.find((n) => n.type === 'start')!
+    expect(startDef.inputs).toEqual({})
+    expect(startDef.outputs).toEqual([{ name: 'question', fieldType: 'string', isRequired: true }])
+  })
+
+  it('convergeStartContract：旧草稿画布收敛固定 question 并迁移 start.query 引用', () => {
+    // 旧草稿：start 声明自定义 query/foo 参数，下游以 start<key>.query 引用（变量/插值/脚本/分支）
+    const editor = createDefaultEditorData()
+    const start = editor.nodes.find((n) => n.type === 'start')!
+    const key = start.id
+    start.data = {
+      ...start.data,
+      inputs: {
+        query: { expressionType: 'run', value: '', required: true, fieldType: 'string' },
+        foo: { expressionType: 'run', value: '', required: false, fieldType: 'string' },
+      },
+    }
+    const end = editor.nodes.find((n) => n.type === 'end')!
+    end.data = {
+      ...end.data,
+      inputs: {
+        output: { expressionType: 'variable', value: `${key}.query`, required: false },
+        raw: { expressionType: 'variable', value: `${key}.queryExtra`, required: false },
+        custom: { expressionType: 'variable', value: `${key}.foo`, required: false },
+      },
+    }
+    editor.nodes.push({
+      id: 'js1',
+      type: 'javaScript',
+      blocks: [],
+      edges: [],
+      data: {
+        title: 'JS',
+        content: '',
+        inputs: {},
+        outputs: [{ name: 'result', fieldType: 'string' }],
+        settings: { code: `return { q: nodes.${key}.query }` },
+      },
+    })
+    editor.nodes.push({
+      id: 'http1',
+      type: 'http',
+      blocks: [],
+      edges: [],
+      data: {
+        title: 'HTTP',
+        content: '',
+        inputs: {},
+        outputs: [],
+        settings: { method: 'POST', url: `https://x.dev/q?k={${key}.query}`, body: `{"q":"{${key}.query}"}` },
+      },
+    })
+    editor.nodes.push({
+      id: 'sw1',
+      type: 'switch',
+      blocks: [],
+      edges: [],
+      data: {
+        title: '多条件',
+        content: '',
+        inputs: {},
+        outputs: [],
+        branches: [{ id: 'b1', label: '条件 1', binding: { expressionType: 'variable', value: `${key}.query`, required: true } }],
+      },
+    })
+
+    const converged = convergeStartContract(editor)
+    const startNode = converged.nodes.find((n) => n.type === 'start')!
+    expect(Object.keys(startNode.data!.inputs!)).toEqual(['question'])
+    expect(startNode.data!.inputs!.question).toMatchObject({ expressionType: 'run', required: true, fieldType: 'string' })
+
+    const endNode = converged.nodes.find((n) => n.type === 'end')!
+    expect(endNode.data!.inputs!.output!.value).toBe(`${key}.question`)
+    // queryExtra/foo 不是 query，不迁移
+    expect(endNode.data!.inputs!.raw!.value).toBe(`${key}.queryExtra`)
+    expect(endNode.data!.inputs!.custom!.value).toBe(`${key}.foo`)
+
+    const js = converged.nodes.find((n) => n.id === 'js1')!
+    expect(js.data!.settings!.code).toBe(`return { q: nodes.${key}.question }`)
+    const http = converged.nodes.find((n) => n.id === 'http1')!
+    expect(http.data!.settings!.url).toBe(`https://x.dev/q?k={${key}.question}`)
+    expect(http.data!.settings!.body).toBe(`{"q":"{${key}.question}"}`)
+    const sw = converged.nodes.find((n) => n.id === 'sw1')!
+    expect(sw.data!.branches![0].binding.value).toBe(`${key}.question`)
+
+    // 收敛幂等；再保存时 start 输出即固定 question 契约
+    expect(convergeStartContract(converged)).toEqual(converged)
+    const def = fromEditorFormat(converged, 'x')
+    const startDef = def.nodes.find((n) => n.type === 'start')!
+    expect(startDef.outputs).toEqual([{ name: 'question', fieldType: 'string', isRequired: true }])
+    expect(def.nodes.find((n) => n.key === 'end')?.inputs.output.value).toBe(`${key}.question`)
+  })
+
+  it('convergeStartContract：无开始节点时原样返回', () => {
+    const editor = createDefaultEditorData()
+    editor.nodes = editor.nodes.filter((n) => n.type !== 'start')
+    expect(convergeStartContract(editor)).toEqual(editor)
+  })
+
+  it('aiChat：模型/系统提示词/温度随保存进入引擎 config，越界温度丢弃', () => {
+    const editor = toEditorFormat(buildDefinition())
+    const ai = editor.nodes.find((n) => n.type === 'aiChat')!
+    ai.data = {
+      ...ai.data,
+      settings: { aiModelId: 'model-1', systemPrompt: '你是严谨的助手', temperature: 0.7 },
+    }
+    const def = fromEditorFormat(editor, 'x')
+    const aiDef = def.nodes.find((n) => n.type === 'aiChat')!
+    expect(aiDef.config).toMatchObject({ aiModelId: 'model-1', systemPrompt: '你是严谨的助手', temperature: 0.7 })
+
+    // 温度越界（>2）被清洗丢弃
+    ai.data = { ...ai.data, settings: { aiModelId: 'model-1', temperature: 3 } }
+    const def2 = fromEditorFormat(editor, 'x')
+    expect((def2.nodes.find((n) => n.type === 'aiChat')?.config ?? {}) as Record<string, unknown>).not.toHaveProperty('temperature')
+  })
+
+  it('aiChat：技能/沙箱随保存进入引擎 config（技能 id 去重过滤非法值，沙箱仅显式 true）', () => {
+    const editor = toEditorFormat(buildDefinition())
+    const ai = editor.nodes.find((n) => n.type === 'aiChat')!
+    const guid1 = '11111111-2222-3333-4444-555555555555'
+    ai.data = {
+      ...ai.data,
+      settings: {
+        aiModelId: 'model-1',
+        skillIds: [guid1, guid1, 'not-a-guid'],
+        sandboxEnabled: true,
+      },
+    }
+    const def = fromEditorFormat(editor, 'x')
+    const config = (def.nodes.find((n) => n.type === 'aiChat')?.config ?? {}) as Record<string, unknown>
+    expect(config.skillIds).toEqual([guid1])
+    expect(config.sandboxEnabled).toBe(true)
+
+    // 沙箱关闭时键被清洗；空技能列表不保留
+    ai.data = { ...ai.data, settings: { aiModelId: 'model-1', skillIds: [], sandboxEnabled: false } }
+    const def2 = fromEditorFormat(editor, 'x')
+    const config2 = (def2.nodes.find((n) => n.type === 'aiChat')?.config ?? {}) as Record<string, unknown>
+    expect(config2).not.toHaveProperty('skillIds')
+    expect(config2).not.toHaveProperty('sandboxEnabled')
+  })
+
+  it('agentApp：应用 id 随保存进入引擎 config，未选择应用保存校验报错', () => {
+    const editor = createDefaultEditorData()
+    const appId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+    editor.nodes.splice(1, 0, {
+      id: 'agent1',
+      type: 'agentApp',
+      blocks: [],
+      edges: [],
+      data: {
+        title: '专家',
+        content: '',
+        inputs: { prompt: { expressionType: 'variable', value: 'start.question', required: true } },
+        outputs: [{ name: 'answer', fieldType: 'string' }],
+        settings: { agentAppId: appId },
+      },
+    })
+    // 连线 start → agent1 → end（清掉默认画布的节点内连线，避免出边重复）
+    editor.nodes.forEach((n) => { n.edges = [] })
+    editor.edges = [
+      { sourceNodeID: 'start', targetNodeID: 'agent1' },
+      { sourceNodeID: 'agent1', targetNodeID: 'end' },
+    ]
+    expect(validateEditorData(editor)).toEqual([])
+    const def = fromEditorFormat(editor, 'x')
+    expect(def.nodes.find((n) => n.type === 'agentApp')?.config).toMatchObject({ agentAppId: appId })
+
+    // 未选择应用 → 校验报错并指明节点名
+    const agent = editor.nodes.find((n) => n.type === 'agentApp')!
+    agent.data = { ...agent.data, settings: {} }
+    const errors = validateEditorData(editor)
+    const hit = errors.find((e) => e.message.includes('未选择应用'))
+    expect(hit).toBeDefined()
+    expect(hit!.message).toBe('Agent 应用节点「专家」未选择应用，请在节点配置中选择 Agent 应用')
+  })
+
+  it('aiChat：未配置模型保存校验报错并指明节点名', () => {
+    const editor = toEditorFormat(buildDefinition())
+    const ai = editor.nodes.find((n) => n.type === 'aiChat')!
+    ai.data = { ...ai.data, title: 'AI 回答', settings: { ...ai.data?.settings, aiModelId: '' } }
+    const errors = validateEditorData(editor)
+    const hit = errors.find((e) => e.message.includes('未配置模型'))
+    expect(hit).toBeDefined()
+    expect(hit!.message).toBe('AI 对话节点「AI 回答」未配置模型，请在节点配置中选择 AI 模型')
+    expect(hit!.nodeId).toBe(ai.id)
   })
 
   it('输入绑定保留 fieldType 元数据', () => {
@@ -260,13 +502,32 @@ describe('workflow validation', () => {
     const errors = validateEditorData(editor)
     expect(errors.some((e) => e.message.includes('非上游节点'))).toBe(true)
   })
+
+  it('删除节点后残留引用报错并指明所在节点（含节点名）', () => {
+    // 复现：删除条件/fallback 分支节点后，结束节点仍保留 fallback 输入绑定
+    const editor = createDefaultEditorData()
+    const end = editor.nodes.find((n) => n.type === 'end')!
+    end.data = {
+      ...end.data,
+      title: '结束',
+      inputs: {
+        answer: { expressionType: 'variable', value: 'start.question', required: false },
+        fallback: { expressionType: 'variable', value: 'fallback.answer', required: false },
+      },
+    }
+    const errors = validateEditorData(editor)
+    const hit = errors.find((e) => e.message.includes('不存在的节点'))
+    expect(hit).toBeDefined()
+    expect(hit!.message).toBe('节点「结束」的输入 fallback 引用了不存在的节点：fallback.answer')
+    expect(hit!.nodeId).toBe(end.id)
+  })
 })
 
 describe('节点 Key（data.key 覆盖）', () => {
   /** 带自定义 key 的画布：js_1 改名为 lookup、cond_1 改名为 check，引用仍写旧 id（改 key 未重载的场景） */
   const keyEditor = (): import('../types').EditorWorkflowJSON => ({
     nodes: [
-      { id: 'start', type: 'start', data: { title: '开始', inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'js_1' }] },
+      { id: 'start', type: 'start', data: { title: '开始', inputs: { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'js_1' }] },
       { id: 'js_1', type: 'javaScript', data: { key: 'lookup', title: '检索', outputs: [{ name: 'summary', fieldType: 'string' }] }, blocks: [], edges: [{ sourceNodeID: 'js_1', targetNodeID: 'cond_1' }] },
       { id: 'cond_1', type: 'condition', data: { key: 'check', inputs: { condition: { expressionType: 'variable', value: 'js_1.summary', required: true } } }, blocks: [], edges: [{ sourceNodeID: 'cond_1', targetNodeID: 'end', sourcePortID: 'true' }, { sourceNodeID: 'cond_1', targetNodeID: 'end', sourcePortID: 'false' }] },
       { id: 'end', type: 'end', data: { inputs: { result: { expressionType: 'variable', value: 'check.result', required: false } } }, blocks: [], edges: [] },
@@ -295,7 +556,7 @@ describe('节点 Key（data.key 覆盖）', () => {
   it('collectUpstreamVariables 提示值使用有效 key', () => {
     const options = collectUpstreamVariables(keyEditor(), 'end').map((o) => o.value)
     expect(options).toContain('lookup.summary')
-    expect(options).toContain('start.query')
+    expect(options).toContain('start.question')
   })
 
   it('validateEditorData 拦截重复/非法/保留字 Key', () => {
@@ -352,7 +613,7 @@ describe('多条件节点（switch）', () => {
     nodes: [
       { id: 'start', type: 'start', data: { inputs: { flag: { expressionType: 'run', value: '', required: true, fieldType: 'boolean' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'sw' }] },
       { id: 'sw', type: 'switch', data: { branches: [
-        { id: 'b1', label: '条件 1', binding: { expressionType: 'variable', value: 'start.flag', required: true } },
+        { id: 'b1', label: '条件 1', binding: { expressionType: 'variable', value: 'start.question', required: true } },
         { id: 'b2', label: '条件 2', binding: { expressionType: 'fixed', value: 'true', required: true } },
       ] }, blocks: [], edges: [
         { sourceNodeID: 'sw', targetNodeID: 'end', sourcePortID: 'b1' },
@@ -367,7 +628,7 @@ describe('多条件节点（switch）', () => {
     const def = fromEditorFormat(switchEditor(), 'x')
     expect(def.nodes.find((n) => n.key === 'sw')?.config).toEqual({
       branches: [
-        { id: 'b1', label: '条件 1', binding: { expressionType: 'variable', value: 'start.flag', required: true } },
+        { id: 'b1', label: '条件 1', binding: { expressionType: 'variable', value: 'start.question', required: true } },
         { id: 'b2', label: '条件 2', binding: { expressionType: 'fixed', value: 'true', required: true } },
       ],
     })
@@ -467,14 +728,14 @@ describe('输出连线限制（单出边）', () => {
 describe('问题分类节点（questionClassifier）', () => {
   const clfEditor = (): import('../types').EditorWorkflowJSON => ({
     nodes: [
-      { id: 'start', type: 'start', data: { inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'clf' }] },
+      { id: 'start', type: 'start', data: { inputs: { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'clf' }] },
       {
         id: 'clf',
         type: 'questionClassifier',
         data: {
           title: '问题分类',
           inputs: {
-            query: { expressionType: 'variable', value: 'start.query', required: true },
+            query: { expressionType: 'variable', value: 'start.question', required: true },
             history: { expressionType: 'variable', value: 'start.history', required: false },
           },
           outputs: [
@@ -534,7 +795,7 @@ describe('问题分类节点（questionClassifier）', () => {
     expect(clf?.type).toBe('questionClassifier')
     expect(clf?.data?.classes?.map((c) => c.id)).toEqual(['c1', 'c2'])
     expect(clf?.data?.settings).toEqual({ aiModelId: 'm1', backgroundKnowledge: '商城知识', historyCount: 4 })
-    expect(clf?.data?.inputs?.query.value).toBe('start.query')
+    expect(clf?.data?.inputs?.query.value).toBe('start.question')
     expect(validateEditorData(editor2)).toEqual([])
   })
 
@@ -562,14 +823,14 @@ describe('问题分类节点（questionClassifier）', () => {
 describe('知识库检索节点（knowledgeSearch）', () => {
   const ksEditor = (): import('../types').EditorWorkflowJSON => ({
     nodes: [
-      { id: 'start', type: 'start', data: { inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'ks' }] },
+      { id: 'start', type: 'start', data: { inputs: { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'ks' }] },
       {
         id: 'ks',
         type: 'knowledgeSearch',
         data: {
           title: '检索知识库',
           inputs: {
-            query: { expressionType: 'variable', value: 'start.query', required: true },
+            query: { expressionType: 'variable', value: 'start.question', required: true },
             wikiId: { expressionType: 'variable', value: 'start.wikiId', required: false },
           },
           outputs: [
@@ -609,7 +870,7 @@ describe('知识库检索节点（knowledgeSearch）', () => {
     const ks = editor2.nodes.find((n) => n.id === 'ks')
     expect(ks?.type).toBe('knowledgeSearch')
     expect(ks?.data?.settings).toEqual({ wikiId: 7, topK: 9 })
-    expect(ks?.data?.inputs?.query.value).toBe('start.query')
+    expect(ks?.data?.inputs?.query.value).toBe('start.question')
     expect(ks?.data?.inputs?.wikiId?.value).toBe('start.wikiId')
     expect(validateEditorData(editor2)).toEqual([])
   })
@@ -618,7 +879,7 @@ describe('知识库检索节点（knowledgeSearch）', () => {
 describe('HTTP 请求节点（http）', () => {
   const httpEditor = (): import('../types').EditorWorkflowJSON => ({
     nodes: [
-      { id: 'start', type: 'start', data: { inputs: { query: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'http1' }] },
+      { id: 'start', type: 'start', data: { inputs: { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'http1' }] },
       {
         id: 'http1',
         type: 'http',
@@ -634,12 +895,12 @@ describe('HTTP 请求节点（http）', () => {
           ],
           settings: {
             method: 'post',
-            url: 'https://api.example.com/{start.query}',
+            url: 'https://api.example.com/{start.question}',
             timeoutSeconds: 60,
-            params: [{ name: 'q', value: '{start.query}' }, { name: '', value: 'dropped' }],
+            params: [{ name: 'q', value: '{start.question}' }, { name: '', value: 'dropped' }],
             headers: [{ name: 'X-Trace', value: 't-1' }],
             bodyType: 'json',
-            body: '{"q":"{start.query}"}',
+            body: '{"q":"{start.question}"}',
             auth: { type: 'bearer', token: 'tk-1' },
             errorCapture: true,
             extract: [
@@ -678,12 +939,12 @@ describe('HTTP 请求节点（http）', () => {
     const http = def.nodes.find((n) => n.key === 'http1')!
     expect(http.config).toEqual({
       method: 'POST',
-      url: 'https://api.example.com/{start.query}',
+      url: 'https://api.example.com/{start.question}',
       timeoutSeconds: 60,
-      params: [{ name: 'q', value: '{start.query}' }],
+      params: [{ name: 'q', value: '{start.question}' }],
       headers: [{ name: 'X-Trace', value: 't-1' }],
       bodyType: 'json',
-      body: '{"q":"{start.query}"}',
+      body: '{"q":"{start.question}"}',
       auth: { type: 'bearer', token: 'tk-1' },
       errorCapture: true,
       extract: [{ name: 'title', path: '$.data.title', fieldType: 'string' }],

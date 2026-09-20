@@ -34,6 +34,10 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 
 业务模块接入契约（`MoAI.Feishu.Shared/Services/`）：实现 `IFeishuEventHandler`（声明 `ChannelType`，内部按 `EventType` 过滤并自捕获异常）并在提供方模块注册（`AiCoreModule` 注册 `AddSingleton<IFeishuEventHandler, AppFeishuMessageHandler>()`）。事件消息为 `FeishuEventMessage`（事件原文在 `Payload`）。
 
+### 前端入口：应用工作台「外部渠道」分区
+
+`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部 Agent 应用的 Admin+ 可见（流程应用暂不支持对话渠道、外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；支持「接入飞书应用」（创建连接并直接绑定，新建连接必然未绑定故绑定不会 409）、「绑定已有连接」（仅列未绑定连接）、停用/启用、解绑、删除；应用未发布时提示消息不会被处理（对应消费侧发布门禁）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
+
 ## 应用渠道回复链路（AppFeishuMessageHandler）
 
 `MoAI.AI.Core` 实现（引用 Feishu.Shared 契约，避免基座反向依赖 AI 运行时），与 AG-UI 共用同一套应用 Agent 管线：

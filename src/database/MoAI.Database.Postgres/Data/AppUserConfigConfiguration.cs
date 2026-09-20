@@ -47,11 +47,16 @@ internal partial class AppUserConfigConfiguration : IEntityTypeConfiguration<App
             .HasColumnName("prompt_id");
         entity.Property(e => e.Skills)
             .HasDefaultValueSql("'[]'::text")
-            .HasComment("用户自选技能 id 列表 JSON 数组，与应用绑定技能取并集生效")
+            .HasComment("用户勾选启用的技能 id 列表 JSON 数组，须为应用默认技能（app_agent_config.skills）的子集")
             .HasColumnName("skills");
         entity.Property(e => e.TeamId)
             .HasComment("所属团队 id，逻辑关联 app.team_id，冗余用于团队维度过滤")
             .HasColumnName("team_id");
+        entity.Property(e => e.ToolApprovalMode)
+            .HasMaxLength(16)
+            .HasDefaultValueSql("'auto'::character varying")
+            .HasComment("工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准")
+            .HasColumnName("tool_approval_mode");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasColumnName("update_time");

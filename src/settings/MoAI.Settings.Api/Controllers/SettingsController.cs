@@ -68,4 +68,22 @@ public class SettingsController : ControllerBase
 
         return await _mediator.Send(req, ct);
     }
+
+    /// <summary>
+    /// 更新网站 Logo（仅超级管理员可修改；ObjectKey 为空恢复默认）.
+    /// </summary>
+    /// <param name="req">更新 Logo 请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("logo")]
+    public async Task<EmptyCommandResponse> UpdateSystemLogo([FromBody] UpdateSystemLogoCommand req, CancellationToken ct)
+    {
+        var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
+        if (!userState.IsRoot)
+        {
+            throw new BusinessException("只有超级管理员可以修改网站 Logo") { StatusCode = 403 };
+        }
+
+        return await _mediator.Send(req, ct);
+    }
 }

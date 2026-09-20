@@ -43,6 +43,11 @@ public class PromptItem : AuditsInfo
     public int Counter { get; set; }
 
     /// <summary>
+    /// 被选为专家提示词的使用次数，top_used 列表按其倒序.
+    /// </summary>
+    public int UseCount { get; set; }
+
+    /// <summary>
     /// 所属团队 id，0 表示个人提示词.
     /// </summary>
     public int TeamId { get; set; }

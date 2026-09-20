@@ -55,6 +55,11 @@ function toMcpKeyValue(values: McpFormValues, mode: 'header' | 'query'): KeyValu
   return base
 }
 
+/** 将 OpenAPI 表单 header/query 转为后端键值对数组. */
+function toOpenApiKeyValue(items: OpenApiFormValues['header']): KeyValueItem[] {
+  return (items ?? []).filter((item) => item.key && item.value)
+}
+
 /** 团队插件项映射为管理员自定义插件类型，供复用弹窗使用. */
 function toCustomPlugin(item: TeamCustomPluginItem): CustomPlugin {
   return {
@@ -178,6 +183,8 @@ export function TeamCustomPluginPanel({
       name: values.name,
       title: values.title,
       description: values.description ?? '',
+      header: toOpenApiKeyValue(values.header),
+      query: toOpenApiKeyValue(values.query),
       classifyId: values.classifyId,
     })
     feedback.success(pluginId ? t('plugins.updatePluginSuccess') : t('plugins.importOpenApiSuccess'))

@@ -180,6 +180,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         description: values.description,
         serverUrl: values.serverUrl,
         header: (values.header ?? []).map((i) => ({ key: i.key, value: i.value })),
+        query: (values.query ?? []).map((i) => ({ key: i.key, value: i.value })),
         fileId,
         fileName: file?.name,
         isPublic: values.isPublic,

@@ -13,7 +13,7 @@ import {
   type WorkflowDebugRunResult,
 } from '@/api/workflow'
 import type { EditorWorkflowJSON, GlobalVariableDef, NodeRunState, WorkflowDefinition } from './types'
-import { fromEditorFormat, normalizeEditorData, normalizeReferences, toEditorFormat } from './utils'
+import { convergeStartContract, createDefaultEditorData, ensureCoreNodes, fromEditorFormat, normalizeEditorData, normalizeReferences, toEditorFormat } from './utils'
 
 export interface WorkflowDesignerState {
   appId: string
@@ -92,17 +92,35 @@ export const useWorkflowDesignerStore = create<WorkflowDesignerState>((set, get)
         getWorkflowConfig(appId, teamId),
         getAppAgentConfig(appId).catch(() => null),
       ])
-      const initialData = config.draftEditorData
-        ? normalizeReferences(normalizeEditorData(JSON.parse(config.draftEditorData) as EditorWorkflowJSON))
-        : toEditorFormat(null)
-      let variables: GlobalVariableDef[] = []
+
+      // 定义解析：同时供画布重建（快照缺失时）与全局变量读取
+      let definition: WorkflowDefinition | null = null
       if (config.draftDefinition) {
         try {
-          variables = (JSON.parse(config.draftDefinition) as WorkflowDefinition).variables ?? []
+          definition = JSON.parse(config.draftDefinition) as WorkflowDefinition
         } catch {
-          variables = []
+          definition = null
         }
       }
+
+      // 画布快照解析：历史调用可能只写定义（editorData 落库为 '{}'）或快照损坏，
+      // 此时不直接渲染空白画布，而是用引擎定义重建；两者皆缺则回退默认 start→end 画布
+      let rawEditor: EditorWorkflowJSON | null = null
+      if (config.draftEditorData) {
+        try {
+          rawEditor = JSON.parse(config.draftEditorData) as EditorWorkflowJSON
+        } catch {
+          rawEditor = null
+        }
+      }
+      const initialData =
+        rawEditor && Array.isArray(rawEditor.nodes) && rawEditor.nodes.length > 0
+          ? convergeStartContract(normalizeReferences(ensureCoreNodes(normalizeEditorData(rawEditor))))
+          : definition && Array.isArray(definition.nodes) && definition.nodes.length > 0
+            ? ensureCoreNodes(toEditorFormat(definition))
+            : createDefaultEditorData()
+
+      const variables = definition?.variables ?? []
       set({
         initialData,
         variables,

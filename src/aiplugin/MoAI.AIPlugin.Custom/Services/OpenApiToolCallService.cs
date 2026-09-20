@@ -115,7 +115,8 @@ public sealed class OpenApiToolCallService
         }
 
         var baseUrl = (custom.Server ?? string.Empty).TrimEnd('/');
-        var url = baseUrl + path + (queryParts.Count > 0 ? "?" + string.Join("&", queryParts) : string.Empty);
+        var queryString = BuildQueryString(custom, queryParts);
+        var url = baseUrl + path + (queryString.Length > 0 ? "?" + queryString : string.Empty);
 
         using var request = new HttpRequestMessage(new HttpMethod(operation.Method), url);
         foreach (var header in DeserializeKeyValues(custom.Headers).Where(x => !x.Key.StartsWith('.')))
@@ -165,6 +166,27 @@ public sealed class OpenApiToolCallService
 
             return string.IsNullOrWhiteSpace(text) ? "{\"success\":true}" : text;
         }
+    }
+
+    /// <summary>
+    /// 合并插件自定义 Query 与文档参数生成的 query 到请求 URL 查询串（自定义 Query 先，文档参数后，均 URL 编码）.
+    /// </summary>
+    private static string BuildQueryString(PluginCustomEntity custom, List<string> queryParts)
+    {
+        var customQueries = DeserializeKeyValues(custom.Queries);
+        if (customQueries.Count == 0)
+        {
+            return string.Join("&", queryParts);
+        }
+
+        var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        foreach (var kv in customQueries)
+        {
+            query[kv.Key] = kv.Value;
+        }
+
+        var customPart = query.ToString() ?? string.Empty;
+        return queryParts.Count > 0 ? customPart + "&" + string.Join("&", queryParts) : customPart;
     }
 
     private static Dictionary<string, JsonElement> ParseArguments(string? argumentsJson)

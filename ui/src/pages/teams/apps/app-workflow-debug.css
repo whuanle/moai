@@ -1,0 +1,13 @@
+/**
+ * 流程应用「调试」分区容器：复用 app-chat.css 的会话/气泡样式（--mc-* 变量由 chatCssVars 注入）。
+ * 高度由全屏外壳内容区决定（.wf-app-body-content > .wfd-chat { height: 100% }）。
+ */
+.wfd-chat {
+  display: flex;
+  height: 100%;
+  min-height: 320px;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  overflow: hidden;
+  background: var(--mc-bg);
+}

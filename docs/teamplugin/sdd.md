@@ -58,6 +58,18 @@
 
 前端不再自绘简化表格：自定义/动态两个 Tab 复用管理员面板同款弹窗组件（`McpPluginModal`/`OpenApiModal`/`FunctionListModal`/`PluginRunDrawer`），通过可选注入的 `loadDetail`/`loadFunctions`/`uploadFile`/`runPlugin` 适配团队接口；`TeamPlugins` 仅负责拉取一次列表并按 `kind` 分发。
 
+## 4b. 团队变量插值（2026-09-20）
+
+团队自定义插件（MCP/OpenAPI）的 **Header/Query 值**支持 `{key}` 引用团队变量（语法与语义见 [../variable/sdd.md](../variable/sdd.md) D3，SmartFormat.NET 实现），让 token/key 类配置不必写死在插件里：
+
+- **三处插值点**
+  - 导入/刷新 MCP：`SaveTeamMcpPluginCommandHandler` / `RefreshTeamMcpPluginCommandHandler` 在调用 `McpServerConnector` 连接前插值（连接必需），**落库仍保存原始占位符**
+  - Agent 运行时：`PluginAppToolProvider.BuildCustomToolsAsync` 构建工具闭包前按 `PluginEntity.TeamId` 经 `CustomPluginVariableInterpolator`（`MoAI.AIPlugin.Custom`）插值出实体副本使用
+  - OpenAPI 运行时：`OpenApiToolCallService` 同时消费 `custom.Headers` 与 `custom.Queries`（Queries 合并进请求 URL，与 MCP 对齐）
+- **作用域**：按**插件归属团队**（`plugin.TeamId > 0`）取变量，管理员/系统插件（TeamId=0）不插值；仅 Header/Query 的 Value 参与插值，Server 地址不插值
+- **团队 OpenAPI 补齐**：`SaveTeamOpenApiPluginCommand` 新增 `Header`/`Query` 字段（此前团队 OpenAPI 落库恒为空数组），前端 `OpenApiModal` 增加 Query 编辑；MCP/OpenAPI 弹窗值输入提示「支持 {变量名} 引用团队变量」
+- **安全边界**：插值结果（含私密解密值）仅存在于服务端内存；错误消息沿用既有 wrap，不回显 Header 值；验证见 [bdd.md](./bdd.md) TP-S29~S32（MCP 桩校验插值后明文）
+
 ## 5. 关键决策
 
 - **D1 授权对象用插件记录 Id（Guid）**：与 aiplugin 系统插件管理（`QueryPluginManageListCommand` 返回 `Id`）一致，前端 `pluginId` 直传。

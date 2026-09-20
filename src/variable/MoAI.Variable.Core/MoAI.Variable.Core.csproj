@@ -6,6 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="SmartFormat.NET" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.Variable.Api\MoAI.Variable.Api.csproj" />

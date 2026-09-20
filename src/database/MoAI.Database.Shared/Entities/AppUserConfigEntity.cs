@@ -40,7 +40,7 @@ public partial class AppUserConfigEntity : IFullAudited
     public int PromptId { get; set; }
 
     /// <summary>
-    /// 用户自选技能 id 列表 JSON 数组，与应用绑定技能取并集生效.
+    /// 用户勾选启用的技能 id 列表 JSON 数组，须为应用默认技能（app_agent_config.skills）的子集.
     /// </summary>
     public string Skills { get; set; } = default!;
 
@@ -53,4 +53,9 @@ public partial class AppUserConfigEntity : IFullAudited
     public DateTimeOffset UpdateTime { get; set; }
 
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准.
+    /// </summary>
+    public string ToolApprovalMode { get; set; } = default!;
 }

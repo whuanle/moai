@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleGuidFromDiscriminatorValue, serializeCreateAppCommand, serializeSimpleGuid, type BusinessValidationResult, type CreateAppCommand, type SimpleGuid } from '../../models/index.js';
 // @ts-ignore
+import { ChatAttachmentRequestBuilderNavigationMetadata, type ChatAttachmentRequestBuilder } from './chatAttachment/index.js';
+// @ts-ignore
 import { ExternalRequestBuilderNavigationMetadata, type ExternalRequestBuilder } from './external/index.js';
 // @ts-ignore
 import { AppItemRequestBuilderNavigationMetadata, AppItemRequestBuilderRequestsMetadata, type AppItemRequestBuilder } from './item/index.js';
@@ -11,6 +13,8 @@ import { AppItemRequestBuilderNavigationMetadata, AppItemRequestBuilderRequestsM
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
 import { PublicRequestBuilderNavigationMetadata, type PublicRequestBuilder } from './public/index.js';
+// @ts-ignore
+import { SandboxLimitsRequestBuilderRequestsMetadata, type SandboxLimitsRequestBuilder } from './sandboxLimits/index.js';
 // @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
@@ -23,6 +27,10 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  */
 export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder> {
     /**
+     * The chatAttachment property
+     */
+    get chatAttachment(): ChatAttachmentRequestBuilder;
+    /**
      * The external property
      */
     get external(): ExternalRequestBuilder;
@@ -34,6 +42,10 @@ export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder>
      * The public property
      */
     get public(): PublicRequestBuilder;
+    /**
+     * The sandboxLimits property
+     */
+    get sandboxLimits(): SandboxLimitsRequestBuilder;
     /**
      * The session property
      */
@@ -81,6 +93,9 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
         navigationMetadata: AppItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
+    chatAttachment: {
+        navigationMetadata: ChatAttachmentRequestBuilderNavigationMetadata,
+    },
     external: {
         navigationMetadata: ExternalRequestBuilderNavigationMetadata,
     },
@@ -89,6 +104,9 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
     },
     public: {
         navigationMetadata: PublicRequestBuilderNavigationMetadata,
+    },
+    sandboxLimits: {
+        requestsMetadata: SandboxLimitsRequestBuilderRequestsMetadata,
     },
     session: {
         navigationMetadata: SessionRequestBuilderNavigationMetadata,

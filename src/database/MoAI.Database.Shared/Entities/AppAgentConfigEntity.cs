@@ -93,4 +93,29 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 是否启用对话开场白.
     /// </summary>
     public bool OpeningStatementEnabled { get; set; }
+
+    /// <summary>
+    /// 开放给用户选择的可选专家提示词ID列表，JSON int 数组文本，元素为 prompt.id，如 [1,2].
+    /// </summary>
+    public string Prompts { get; set; } = default!;
+
+    /// <summary>
+    /// 发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs/workflowApps），发布应用时写入，正式会话按此快照执行；null=从未发布.
+    /// </summary>
+    public string? PublishedConfig { get; set; }
+
+    /// <summary>
+    /// 配置状态，0=草稿有未发布变更 1=当前草稿与已发布一致.
+    /// </summary>
+    public short Status { get; set; }
+
+    /// <summary>
+    /// 快捷输入列表，JSON 数组文本，元素为字符串（管理员配置，用户在对话欢迎态点击即发送），空为&apos;[]&apos;.
+    /// </summary>
+    public string QuickInputs { get; set; } = default!;
+
+    /// <summary>
+    /// 绑定的流程应用ID列表（作为工具使用），JSON 数组文本，元素为 app.id（uuid 字符串，须为本团队已发布流程应用），空为&apos;[]&apos;.
+    /// </summary>
+    public string WorkflowApps { get; set; } = default!;
 }

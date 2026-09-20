@@ -1,7 +1,7 @@
-// 变量管理 E2E（场景 @VR-Sn；后端 127.0.0.1:5210）
+// 变量管理 E2E（场景 @VR-Sn；后端 127.0.0.1:5210，可用 VR_BASE 覆盖）
 import crypto from 'node:crypto'
 
-const BASE = 'http://127.0.0.1:5210'
+const BASE = process.env.VR_BASE ?? 'http://127.0.0.1:5210'
 let PASS = 0, FAIL = 0
 const check = (name, cond, detail = '') => {
   if (cond) { PASS++; console.log(`PASS | ${name}`) }
@@ -46,7 +46,7 @@ async function main() {
   const outsider = await mkuser('vx')
 
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'var-team-' + TS } })).json.value)
-  await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 2 } })
+  await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 'member' } })
 
   // VR-01 无 token 401
   check('VR-01 无 token 查列表 401', (await api('GET', `/api/variable/list?teamId=${TID}`)).status === 401)
@@ -77,7 +77,7 @@ async function main() {
     const items = r.json?.items ?? []
     const plain = items.find(i => i.key === 'WIKI_NAME')
     const secret = items.find(i => i.key === 'FEISHU_SECRET')
-    check('VR-06a Member 列表 200 且 myRole=2', r.status === 200 && r.json.myRole === 2)
+    check('VR-06a Member 列表 200 且 myRole=0(member)', r.status === 200 && r.json.myRole === 0)
     check('VR-06b 普通变量成员可见值', plain?.value === '团队知识库', JSON.stringify(plain))
     check('VR-06c 私密变量值掩码(字段不回传)且名字可见', !!secret && secret.isSecret === true && secret.value == null, JSON.stringify(secret))
   }
@@ -106,32 +106,39 @@ async function main() {
   // 私密值留空(null)保持：通过 substitute 校验（详情不再回传 value）
   check('VR-09d 私密留空(null)保持不变', await (async () => {
     await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { description: '飞书密钥改' } })
-    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET}' } })
+    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '{FEISHU_SECRET}' } })
     return r.json?.content === 'super-secret-abc'
   })())
   // 私密提供新值则覆盖
   check('VR-09e 私密提供新值则更新', await (async () => {
     await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { value: 'rotated-secret-xyz' } })
-    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET}' } })
+    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '{FEISHU_SECRET}' } })
     return r.json?.content === 'rotated-secret-xyz'
   })())
   // key 可修改，并保持团队内唯一（改名后替换按新 key 命中）
   check('VR-09f key 可修改', await (async () => {
     const up = await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { key: 'FEISHU_SECRET_V2' } })
     if (up.status !== 200) return false
-    const oldRef = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET}' } })
-    const newRef = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '${FEISHU_SECRET_V2}' } })
-    return oldRef.json?.content === '${FEISHU_SECRET}' && newRef.json?.content === 'rotated-secret-xyz'
+    const oldRef = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '{FEISHU_SECRET}' } })
+    const newRef = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '{FEISHU_SECRET_V2}' } })
+    return oldRef.json?.content === '{FEISHU_SECRET}' && newRef.json?.content === 'rotated-secret-xyz'
   })())
   check('VR-09g key 改名后同团队冲突 409', (await api('PUT', `/api/variable/${SECRET_ID}`, { token: owner.token, body: { key: 'WIKI_NAME' } })).status === 409)
 
   // VR-10 替换：普通+私密均替换；未知保留；Member 403
   {
-    const content = 'feishu app=${WIKI_NAME} secret=${FEISHU_SECRET_V2} unknown=${NOPE_KEY}'
+    const content = 'feishu app={WIKI_NAME} secret={FEISHU_SECRET_V2} unknown={NOPE_KEY}'
     const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content } })
-    check('VR-10a 替换含私密与未知保留', r.status === 200 && r.json?.content === 'feishu app=团队知识库 v2 secret=rotated-secret-xyz unknown=${NOPE_KEY}', JSON.stringify(r.json))
+    check('VR-10a 替换含私密与未知保留', r.status === 200 && r.json?.content === 'feishu app=团队知识库 v2 secret=rotated-secret-xyz unknown={NOPE_KEY}', JSON.stringify(r.json))
     check('VR-10b Member 替换 403', (await api('POST', '/api/variable/substitute', { token: member.token, body: { teamId: TID, content: 'x' } })).status === 403)
   }
+
+  // VR-13 JSON 文本插值：命中替换、未命中与字面花括号原样保留（此时 WIKI_NAME 为「团队知识库 v2」）
+  check('VR-13 JSON 花括号与变量混排', await (async () => {
+    const content = '{"name":"{WIKI_NAME}","keep":"{0}","raw":1}'
+    const r = await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content } })
+    return r.status === 200 && r.json?.content === '{"name":"团队知识库 v2","keep":"{0}","raw":1}'
+  })(), JSON.stringify(await api('POST', '/api/variable/substitute', { token: owner.token, body: { teamId: TID, content: '{"name":"{WIKI_NAME}","keep":"{0}","raw":1}' } }).then(r => r.json)))
 
   // VR-11 名称筛选
   check('VR-11 名称筛选命中', await (async () => {

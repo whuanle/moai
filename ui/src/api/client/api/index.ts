@@ -30,7 +30,7 @@ import { PromptRequestBuilderNavigationMetadata, PromptRequestBuilderRequestsMet
 // @ts-ignore
 import { PublicationRequestBuilderNavigationMetadata, type PublicationRequestBuilder } from './publication/index.js';
 // @ts-ignore
-import { SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
+import { SettingsRequestBuilderNavigationMetadata, SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
 // @ts-ignore
 import { SkillRequestBuilderNavigationMetadata, SkillRequestBuilderRequestsMetadata, type SkillRequestBuilder } from './skill/index.js';
 // @ts-ignore
@@ -193,6 +193,7 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     settings: {
         requestsMetadata: SettingsRequestBuilderRequestsMetadata,
+        navigationMetadata: SettingsRequestBuilderNavigationMetadata,
     },
     skill: {
         requestsMetadata: SkillRequestBuilderRequestsMetadata,

@@ -26,6 +26,7 @@ export interface OpenApiFormValues {
   description?: string
   isPublic: boolean
   header?: KeyValueItem[]
+  query?: KeyValueItem[]
 }
 
 const EMPTY_KEY_VALUES = (): KeyValueItem[] => []
@@ -52,9 +53,17 @@ interface OpenApiModalProps {
 /** 将详情回填为表单初始值（OpenApi 编辑用）. */
 function fromDetail(detail: CustomPluginDetail | null): OpenApiFormValues {
   if (!detail) {
-    return { name: '', title: '', serverUrl: '', isPublic: false, header: EMPTY_KEY_VALUES() }
+    return {
+      name: '',
+      title: '',
+      serverUrl: '',
+      isPublic: false,
+      header: EMPTY_KEY_VALUES(),
+      query: EMPTY_KEY_VALUES(),
+    }
   }
   const header = (detail.header ?? []) as CustomKeyValue[]
+  const query = (detail.query ?? []) as CustomKeyValue[]
   return {
     name: detail.pluginName ?? '',
     title: detail.title ?? '',
@@ -63,6 +72,7 @@ function fromDetail(detail: CustomPluginDetail | null): OpenApiFormValues {
     description: detail.description ?? '',
     isPublic: detail.isPublic ?? false,
     header: header.map((item) => ({ key: item.key ?? '', value: item.value ?? '' })),
+    query: query.map((item) => ({ key: item.key ?? '', value: item.value ?? '' })),
   }
 }
 
@@ -217,6 +227,7 @@ export function OpenApiModal({
             {progress > 0 && progress < 100 && <Progress percent={progress} size="small" style={{ marginTop: 8 }} />}
           </Form.Item>
           <KeyValueConfig name="header" title="Header" />
+          <KeyValueConfig name="query" title="Query" />
         </Form>
       </Spin>
     </Modal>

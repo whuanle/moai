@@ -33,6 +33,9 @@ comment on column prompt.avatar_path is '头像地址';
 comment on column prompt.is_public is '是否公开';
 comment on column prompt.is_audit is '审核通过';
 comment on column prompt.counter is '计数器，市场提示词被他人查看一次加一';
+-- 存量库补充列：专家使用次数（绑定为会话/用户默认专家时加一）
+alter table prompt add column if not exists use_count integer not null default 0;
+comment on column prompt.use_count is '被选为专家提示词的使用次数，每次绑定时加一';
 comment on column prompt.create_user_id is '创建人';
 comment on column prompt.create_time is '创建时间';
 comment on column prompt.update_user_id is '更新人';

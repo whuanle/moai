@@ -2,13 +2,13 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/variable-e2e.mjs](../../local-dev/variable-e2e.mjs)
 
-- 日期：2026-09-03
-- 状态：数据库 + API + 前端已实现；插件参数定义处的 ${key} 引用随插件模块落地
+- 日期：2026-09-03（2026-09-20 更新：SmartFormat 化 + 插件消费落地）
+- 状态：数据库 + API + 前端已实现；团队自定义插件 Header/Query 已消费 `{key}`（见 [../teamplugin/sdd.md](../teamplugin/sdd.md)）
 - 领域：`src/variable`（Shared/Core/Api），前端 `ui/src/pages/variables`
 
 ## 1. 目标
 
-参考 GitHub Actions 的 vars/secrets 模型，为团队提供变量管理：插件配置等场景以 `${key}` 引用变量，运行时由服务端替换。私密变量（如飞书应用密钥）的值永不回传前端，仅运行时替换使用。
+参考 GitHub Actions 的 vars/secrets 模型，为团队提供变量管理：插件配置等场景以 `{key}` 引用变量，运行时由服务端替换（SmartFormat.NET 引擎，`MoAI.Variable.Core/Services/TeamVariableTemplate.cs`）。私密变量（如飞书应用密钥）的值永不回传前端，仅运行时替换使用。
 
 ## 2. 数据模型
 
@@ -35,13 +35,14 @@
 | DELETE | `/api/variable/{id}` | 软删除 |
 | GET | `/api/variable/list?teamId=&name=&keyword=` | 列表（含 myRole，私密值掩码） |
 | GET | `/api/variable/{id}` | 详情（私密值恒 null） |
-| POST | `/api/variable/substitute` | `${key}` 替换（仅管理员，服务端解密） |
+| POST | `/api/variable/substitute` | `{key}` 替换（仅管理员，服务端解密） |
 
-## 5. 替换语义（决策 D3）
+## 5. 替换语义（决策 D3，2026-09-20 更新）
 
-- 语法：`${key}`，正则 `\$\{([A-Za-z][A-Za-z0-9_]*)\}`（与变量名规则一致）
-- 未匹配到变量的占位符**保留原文**（便于排查配置缺漏）；普通与私密变量均替换（私密解密）
-- 服务：`IVariableService.SubstituteAsync(teamId, content)` 供插件运行时在服务端内部调用；面向成员的替换接口不开放（防私密值经响应泄露）
+- 语法：`{key}`（key 为字母开头的字母/数字/下划线，与变量名规则一致），基于 SmartFormat.NET
+- **白名单语义**：只有变量表中存在的 key 会被求值；未匹配的 `{key}`、字面花括号（JSON 片段、`{0}` 等）一律按字面量保留（便于排查配置缺漏）；普通与私密变量均替换（私密解密）
+- 服务：`IVariableService.SubstituteAsync`（文本重载 + `KeyValueString` 批量重载）供插件运行时在服务端内部调用；面向成员的替换接口不开放（防私密值经响应泄露）
+- 2026-09-20 前 JSON 键值内 `${key}` 语法已废弃：SubstituteAsync 此前无外部消费方，随插件消费一并迁移
 
 ## 5b. 前端设计（/variable 页）
 
@@ -51,11 +52,11 @@
 
 ## 6. 关键决策
 
-- **D1** key 团队内唯一、name 仅组织用途：保证 `${key}` 在团队运行时寻址无歧义
+- **D1** key 团队内唯一、name 仅组织用途：保证 `{key}` 在团队运行时寻址无歧义
 - **D2** 私密值 AES 加密落库 + **接口永不向任何人回显私密值**（详情/列表均恒 null）；编辑时留空表示保持不变、填写新值才覆盖
 - **D3** 替换服务端内部化（见上）；**D4** key 可变更（团队唯一校验兜底），类型不可变更（避免引用失效）
 
 ## 7. 已知问题 / 下阶段
 
-- 插件参数定义处引用 `${key}` 的校验（引用不存在的变量给出提示）随插件模块落地
+- ~~插件参数定义处引用 `${key}` 的校验~~ 已落地：团队插件 Header/Query 运行时插值（2026-09-20）；引用不存在的变量保留原文（前端提示后续考虑）
 - 变量名称目前为自由文本，可升级为独立的名称字典；审计日志（谁在何时读取过私密值）下阶段考虑

@@ -56,6 +56,16 @@ public class SaveTeamOpenApiPluginCommand : IUserIdContext, IRequest<SimpleGuid>
     /// </summary>
     public string Description { get; init; } = default!;
 
+    /// <summary>
+    /// Header 头部信息，值支持 <c>{变量名}</c> 引用团队变量，运行时按插件所属团队插值.
+    /// </summary>
+    public IReadOnlyCollection<KeyValueString> Header { get; init; } = Array.Empty<KeyValueString>();
+
+    /// <summary>
+    /// Query 参数，值支持 <c>{变量名}</c> 引用团队变量，运行时按插件所属团队插值.
+    /// </summary>
+    public IReadOnlyCollection<KeyValueString> Query { get; init; } = Array.Empty<KeyValueString>();
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<SaveTeamOpenApiPluginCommand> validate)
     {
@@ -75,5 +85,11 @@ public class SaveTeamOpenApiPluginCommand : IUserIdContext, IRequest<SimpleGuid>
             .Length(2, 100).WithMessage("文件名称长度在 2-100 之间.");
         validate.RuleFor(x => x.FileId)
             .GreaterThan(0).WithMessage("文件 ID 必须大于 0.");
+        validate.RuleFor(x => x.Header)
+            .Must(headers => headers.All(x => !string.IsNullOrWhiteSpace(x.Key)))
+            .WithMessage("Header 的 key 不能为空.");
+        validate.RuleFor(x => x.Query)
+            .Must(queries => queries.All(x => !string.IsNullOrWhiteSpace(x.Key)))
+            .WithMessage("Query 的 key 不能为空.");
     }
 }

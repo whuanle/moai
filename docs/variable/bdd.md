@@ -81,9 +81,15 @@ Scenario: 更新
 Scenario: 运行时替换
   When Admin 对文本执行替换
   Then 普通与私密变量均被替换为对应值
-  And 未定义的 ${占位符} 保留原文
+  And 未定义的 {占位符} 保留原文
   When Member 执行替换
   Then 返回禁止
+
+@VR-S13 @auto:e2e
+Scenario: JSON 等含字面花括号文本的替换
+  When Admin 对 JSON 形文本执行替换，其中包含已定义 {变量} 与字面 {0}
+  Then 已定义变量被替换为对应值（含私密变量解密）
+  And 字面 {0} 等非变量花括号原样保留
 ```
 
 ## Feature: 名称与删除

@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQuerySettingsCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeSaveSettingCommand, type BusinessValidationResult, type EmptyCommandResponse, type QuerySettingsCommandResponse, type SaveSettingCommand } from '../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { LogoRequestBuilderRequestsMetadata, type LogoRequestBuilder } from './logo/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/settings
  */
 export interface SettingsRequestBuilder extends BaseRequestBuilder<SettingsRequestBuilder> {
+    /**
+     * The logo property
+     */
+    get logo(): LogoRequestBuilder;
     /**
      * 查询全部设置项（仅管理员可访问）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -51,6 +57,14 @@ export interface SettingsRequestBuilder extends BaseRequestBuilder<SettingsReque
  * Uri template for the request builder.
  */
 export const SettingsRequestBuilderUriTemplate = "{+baseurl}/api/settings";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const SettingsRequestBuilderNavigationMetadata: Record<Exclude<keyof SettingsRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    logo: {
+        requestsMetadata: LogoRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface UserconfigRequestBuilder extends BaseRequestBuilder<UserconfigRequestBuilder> {
     /**
-     * 查询当前用户在某应用下的个性化配置（专家提示词/自选技能）与应用锁定技能.
+     * 查询当前用户在某应用下的个性化配置（默认专家/技能勾选/工具审批模式）与应用默认技能目录.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAppUserConfigCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,8 +22,8 @@ export interface UserconfigRequestBuilder extends BaseRequestBuilder<UserconfigR
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAppUserConfigCommandResponse | undefined>;
     /**
-     * 保存当前用户在某应用下的个性化配置（专家提示词/自选技能），跨会话复用；应用绑定技能不受影响.
-     * @param body 保存用户级应用配置：用户对某个应用的个性化定制（专家提示词/自选技能），跨会话复用.
+     * 保存当前用户在某应用下的个性化配置（默认专家/技能勾选/工具审批模式），跨会话复用；技能仅能在应用默认范围内勾选.
+     * @param body 保存用户级应用配置：用户对某个应用的个性化定制（默认专家/默认技能的勾选），跨会话复用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -34,14 +34,14 @@ export interface UserconfigRequestBuilder extends BaseRequestBuilder<UserconfigR
      */
      put(body: SaveAppUserConfigCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 查询当前用户在某应用下的个性化配置（专家提示词/自选技能）与应用锁定技能.
+     * 查询当前用户在某应用下的个性化配置（默认专家/技能勾选/工具审批模式）与应用默认技能目录.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 保存当前用户在某应用下的个性化配置（专家提示词/自选技能），跨会话复用；应用绑定技能不受影响.
-     * @param body 保存用户级应用配置：用户对某个应用的个性化定制（专家提示词/自选技能），跨会话复用.
+     * 保存当前用户在某应用下的个性化配置（默认专家/技能勾选/工具审批模式），跨会话复用；技能仅能在应用默认范围内勾选.
+     * @param body 保存用户级应用配置：用户对某个应用的个性化定制（默认专家/默认技能的勾选），跨会话复用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

@@ -215,3 +215,19 @@ Background:
 - Given 团队提示词分区存在已上架与待审核提示词，分类「写作」配置了 emoji
 - When 打开团队详情「提示词」分区
 - Then 以卡片网格展示（头像、名称、状态、描述、分类、更新时间与操作），卡片按被使用次数降序排列，头部固定展示「全部/各分类」筛选列表（含 emoji），点击分类按分类 id 过滤，不提供表格视图与条数统计
+
+## Feature: 专家使用次数与热门推荐
+
+```gherkin
+@PT-S22 @auto:unit
+Scenario: 提示词被选为专家时累计使用次数并支撑热门推荐
+  Given 提示词存在 use_count（缺省 0）
+  When 创建会话或改绑会话专家时绑定该提示词
+  Then 其 use_count 加一
+  When 查询热门专家（GET /prompt/top_used?teamId=&limit=，limit 1~10）
+  Then 仅返回范围内（本人个人 + 指定团队）且 use_count > 0 的提示词，按使用次数倒序，最多 limit 条
+  When teamId 非法或 limit 超范围
+  Then 返回请求错误（400）
+  When 范围内无被使用过的提示词
+  Then 返回空列表（对话页不展示热门专家区块）
+```

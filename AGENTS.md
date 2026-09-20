@@ -6,7 +6,7 @@
 ## 项目简介
 
 开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
-已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用绑定锁定/用户自选，对话时沙箱加载执行）。进度见 [rounds-log.md](./docs/rounds-log.md)。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
@@ -79,15 +79,19 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 dotnet build src/MoAI/MoAI.csproj                 # 0 error
 cd ui && npm run typecheck && npm run lint && npm run test
 # E2E（需后端运行中）
-node local-dev/user-management-e2e.mjs   # UM 34
+node local-dev/user-management-e2e.mjs   # UM 37
 node local-dev/team-e2e.mjs              # TM 47
 node local-dev/wiki-e2e.mjs              # WK 32
-node local-dev/variable-e2e.mjs          # VR 26
-node local-dev/app-e2e.mjs               # AP 28
-node local-dev/workflow-e2e.mjs          # WF 82（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量）
+node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
+node local-dev/team-plugin-e2e.mjs       # TP 31（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显）
+node local-dev/app-e2e.mjs               # AP 29
+node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
+node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
+node local-dev/settings-logo-e2e.mjs    # SET 18（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认）
+node local-dev/workflow-e2e.mjs          # WF 111（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量）
 node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/撤回，is_public 审批制）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
-node local-dev/skill-userconfig-e2e.mjs  # SKL 20（技能三级归属权限 + 用户级应用配置：专家默认/技能自选）
+node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 102（实例管理 + 失败路径 + 内置模板注册 dynamic_greet/bocha_web_search/bocha_ai_search/feishu_web_hook_text/javascript_executor/postgres_query/mysql_query）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）

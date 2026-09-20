@@ -76,6 +76,8 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
         }
 
         _executionContext.TeamId = app.TeamId;
+        _executionContext.AppId = request.AppId;
+        _executionContext.UserId = request.ContextUserId;
         _executionContext.IsDebug = true;
 
         // 随调试隐式保存最新草稿（设计器"边改边试"），或使用已保存草稿
@@ -115,6 +117,12 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
             throw new BusinessException($"启动参数 JSON 无效：{ex.Message}") { StatusCode = 400 };
         }
 
+        // 旧编排兼容：与 WorkflowAppChatInvoker 一致，question 存在时补 query 镜像，绑定 start.query 的历史流程在调试中同样可解析
+        if (input.ContainsKey("question") && !input.ContainsKey("query"))
+        {
+            input["query"] = input["question"]!.DeepClone();
+        }
+
         JsonObject systemVariables;
         try
         {
@@ -128,6 +136,9 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
         // 知识库检索节点引用的知识库必须属于本团队（调试执行直接以当前定义跑，保存/发布之外的唯一入口）
         await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
 
+        // Agent 应用节点不得与当前流程构成循环嵌套（运行前拦截，运行期节点调用另有防线）
+        await Services.AgentWorkflowCycleGuard.EnsureNoCycleAsync(_databaseContext, request.AppId, Services.AgentWorkflowCycleGuard.CollectAgentAppIds(definition), cancellationToken);
+
         // 调试注入 sys.* 对话上下文：用户/应用为当前真实值，对话维度无会话故留空，保证设计器引用可解析
         var systemContext = new JsonObject
         {
@@ -139,13 +150,18 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
         };
 
         // 同步执行到终态；节点失败时实例为挂起态并携带错误信息，不抛异常
-        var instance = await _workflowEngine.StartWithDefinitionAsync(
-            definition,
-            input,
-            systemVariables,
-            systemContext,
-            Guid.CreateVersion7().ToString("N"),
-            cancellationToken);
+        // 根流程标记：Agent 节点嵌套调用流程工具时环检测以此为准
+        WorkflowInstance instance;
+        using (Services.WorkflowRootContext.Begin(request.AppId))
+        {
+            instance = await _workflowEngine.StartWithDefinitionAsync(
+                definition,
+                input,
+                systemVariables,
+                systemContext,
+                Guid.CreateVersion7().ToString("N"),
+                cancellationToken);
+        }
 
         try
         {

@@ -2,11 +2,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
+using MoAI.App.Validation;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Settings.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -18,16 +20,19 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly ISandboxSettingsService _sandboxSettingsService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SaveAppAgentConfigCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public SaveAppAgentConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="sandboxSettingsService">沙箱上限设置读取服务.</param>
+    public SaveAppAgentConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService, ISandboxSettingsService sandboxSettingsService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _sandboxSettingsService = sandboxSettingsService;
     }
 
     /// <inheritdoc/>
@@ -65,11 +70,15 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             return EmptyCommandResponse.Default;
         }
 
-        // 对话模型须在该团队可用；执行参数（execution_settings）尚未开放设置
+        // 对话模型须在该团队可用；执行参数含沙箱等扩展配置，启用沙箱时受系统上限约束
         var modelId = await ValidateModelIdAsync(app.TeamId, request.ModelId, cancellationToken);
         var wikiIds = await ValidateWikiIdsAsync(app.TeamId, request.WikiIds, cancellationToken);
         var pluginIds = await ValidatePluginIdsAsync(app.TeamId, request.Plugins, cancellationToken);
-        var skillIds = await ValidateSkillIdsAsync(request.Skills, cancellationToken);
+        var skillIds = await ValidateSkillIdsAsync(app.TeamId, request.Skills, cancellationToken);
+        var workflowAppIds = await ValidateWorkflowAppIdsAsync(app.TeamId, request.WorkflowApps, cancellationToken);
+
+        // 审批策略（execution_settings.toolApproval）：自动放行插件白名单必须是本次绑定插件的子集
+        ValidateToolApprovalPolicy(request.ExecutionSettings, pluginIds);
 
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
@@ -77,6 +86,15 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         var wikiJson = AppAgentConfigJson.SerializeWikiIds(wikiIds);
         var pluginJson = AppAgentConfigJson.SerializePluginIds(pluginIds);
         var executionJson = NormalizeExecutionSettings(request.ExecutionSettings);
+        // 快捷输入：仅请求显式携带时覆盖（去空白、去重），避免旧前端保存其他字段时清空
+        var quickInputs = NormalizeQuickInputs(request.QuickInputs);
+
+        // 本次保存携带执行参数且启用沙箱时，存活时间 / CPU / 内存不得超出系统设置的上限
+        if (executionJson != null)
+        {
+            var sandboxLimits = await _sandboxSettingsService.GetLimitsAsync(cancellationToken);
+            SandboxSettingsLimitValidator.Validate(request.ExecutionSettings!.Value, sandboxLimits);
+        }
 
         if (config == null)
         {
@@ -89,10 +107,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 ModelId = modelId,
                 WikiIds = wikiJson,
                 Plugins = pluginJson,
+                WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds ?? []),
                 Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
                 ExecutionSettings = executionJson ?? "{}",
                 OpeningStatement = request.OpeningStatement ?? string.Empty,
                 OpeningStatementEnabled = request.OpeningStatementEnabled,
+                QuickInputs = AppAgentConfigJson.SerializeStrings(quickInputs ?? []),
             };
             _databaseContext.AppAgentConfigs.Add(config);
         }
@@ -105,6 +125,17 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             config.OpeningStatement = request.OpeningStatement ?? string.Empty;
             config.OpeningStatementEnabled = request.OpeningStatementEnabled;
 
+            if (quickInputs != null)
+            {
+                config.QuickInputs = AppAgentConfigJson.SerializeStrings(quickInputs);
+            }
+
+            // 仅在请求显式携带流程应用列表时覆盖，避免旧前端保存时清空流程应用绑定
+            if (workflowAppIds != null)
+            {
+                config.WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds);
+            }
+
             // 仅在请求显式携带技能列表时覆盖，避免旧前端保存时清空技能配置
             if (skillIds != null)
             {
@@ -116,6 +147,9 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             {
                 config.ExecutionSettings = executionJson;
             }
+
+            // 保存即草稿变更：与已发布快照不一致，正式会话仍按快照执行
+            config.Status = 0;
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
@@ -147,6 +181,9 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         {
             config.OpeningStatement = request.OpeningStatement ?? string.Empty;
             config.OpeningStatementEnabled = request.OpeningStatementEnabled;
+
+            // 开场白草稿变更：与已发布快照不一致，重新发布后生效
+            config.Status = 0;
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
@@ -276,9 +313,43 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
     }
 
     /// <summary>
-    /// 校验技能：仅允许绑定启用中的技能，去重后返回；null 表示请求未携带技能字段（保持原值）.
+    /// 校验流程应用绑定：仅允许绑定本团队已发布、未禁用的内部流程应用（执行时按其发布快照驱动），去重后返回；
+    /// null 表示请求未携带该字段（保持原值）.
     /// </summary>
-    private async Task<List<Guid>?> ValidateSkillIdsAsync(IReadOnlyCollection<Guid>? skillIds, CancellationToken cancellationToken)
+    private async Task<List<Guid>?> ValidateWorkflowAppIdsAsync(int teamId, IReadOnlyCollection<Guid>? workflowAppIds, CancellationToken cancellationToken)
+    {
+        if (workflowAppIds == null)
+        {
+            return null;
+        }
+
+        var ids = workflowAppIds.Where(x => x != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        var validCount = await _databaseContext.Apps
+            .CountAsync(x => ids.Contains(x.Id)
+                && x.TeamId == teamId
+                && !x.IsExternal
+                && !x.IsDisable
+                && x.AppType == (int)AppType.Workflow
+                && x.PublishStatus == 1, cancellationToken);
+
+        if (validCount != ids.Count)
+        {
+            throw new BusinessException("包含不存在、未发布或无权使用的流程应用，请重新选择.") { StatusCode = 400 };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 校验技能：仅允许配置启用中的系统内置/市场公开/本团队技能（用户自选范围与管理端一致），去重后返回；
+    /// null 表示请求未携带技能字段（保持原值）.
+    /// </summary>
+    private async Task<List<Guid>?> ValidateSkillIdsAsync(int teamId, IReadOnlyCollection<Guid>? skillIds, CancellationToken cancellationToken)
     {
         if (skillIds == null)
         {
@@ -292,14 +363,89 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         }
 
         var validCount = await _databaseContext.Skills
-            .CountAsync(x => ids.Contains(x.Id) && !x.IsDisable, cancellationToken);
+            .CountAsync(x => ids.Contains(x.Id) && !x.IsDisable
+                && (x.IsSystem || x.IsPublic || x.TeamId == teamId), cancellationToken);
 
         if (validCount != ids.Count)
         {
-            throw new BusinessException("包含不存在或已禁用的技能，请重新选择.") { StatusCode = 400 };
+            throw new BusinessException("包含不存在、已禁用或无权使用的技能，请重新选择.") { StatusCode = 400 };
         }
 
         return ids;
+    }
+
+    /// <summary>
+    /// 校验审批策略（execution_settings.toolApproval）：sandboxAutoApproved 须为布尔值，
+    /// autoApprovePlugins 须为合法插件 id 数组且全部在本次绑定的插件范围内；未携带 toolApproval 节时跳过.
+    /// </summary>
+    private static void ValidateToolApprovalPolicy(JsonElement? executionSettings, List<Guid> boundPluginIds)
+    {
+        if (executionSettings is null || executionSettings.Value.ValueKind is not JsonValueKind.Object)
+        {
+            return;
+        }
+
+        if (!executionSettings.Value.TryGetProperty("toolApproval", out var node)
+            || node.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return;
+        }
+
+        if (node.ValueKind != JsonValueKind.Object)
+        {
+            throw new BusinessException("审批策略必须是 JSON 对象.") { StatusCode = 400 };
+        }
+
+        if (node.TryGetProperty("sandboxAutoApproved", out var sandbox)
+            && sandbox.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+        {
+            throw new BusinessException("审批策略的沙箱自动放行开关必须为布尔值.") { StatusCode = 400 };
+        }
+
+        if (!node.TryGetProperty("autoApprovePlugins", out var list)
+            || list.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return;
+        }
+
+        if (list.ValueKind != JsonValueKind.Array)
+        {
+            throw new BusinessException("审批策略的自动放行插件必须是插件 id 数组.") { StatusCode = 400 };
+        }
+
+        var invalid = new List<string>();
+        foreach (var item in list.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String
+                || !Guid.TryParse(item.GetString(), out var id)
+                || id == Guid.Empty
+                || !boundPluginIds.Contains(id))
+            {
+                invalid.Add(item.ToString());
+            }
+        }
+
+        if (invalid.Count > 0)
+        {
+            throw new BusinessException("自动放行插件必须为当前已绑定的插件，请先在插件列表中绑定.") { StatusCode = 400 };
+        }
+    }
+
+    /// <summary>
+    /// 规范化快捷输入：去首尾空白、丢弃空串、去重；null 表示请求未携带该字段（保持原值）.
+    /// </summary>
+    private static List<string>? NormalizeQuickInputs(IReadOnlyCollection<string>? quickInputs)
+    {
+        if (quickInputs == null)
+        {
+            return null;
+        }
+
+        return quickInputs
+            .Select(x => x?.Trim() ?? string.Empty)
+            .Where(x => x.Length > 0)
+            .Distinct()
+            .ToList();
     }
 
     /// <summary>

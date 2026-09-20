@@ -211,3 +211,31 @@ Scenario: 团队插件页分为自定义与动态两个 Tab
   And 动态 Tab 展示新建实例、运行、编辑、删除（团队自有时）
   And Member 仅可运行、查看函数与筛选，无管理入口
 ```
+
+## Feature: 团队插件——团队变量插值（Header/Query 值引用 {key}）
+
+```gherkin
+@TP-S29 @auto:e2e
+Scenario: 导入团队 MCP 插件时 Header/Query 值中的变量占位符在连接前插值
+  Given 团队已定义变量 TP_TOKEN（普通）与 TP_TENANT
+  And 自建 MCP 桩校验 Authorization 必须等于插值后的明文
+  When Owner 导入 MCP 插件，Header 值为 "Bearer {TP_TOKEN}"、Query 值为 "{TP_TENANT}"
+  Then 返回成功（桩确认收到插值后的 Authorization 与 tenant）
+
+@TP-S30 @auto:e2e
+Scenario: 落库保留原始占位符
+  When 查看该团队自定义插件详情
+  Then Header 回显 "Bearer {TP_TOKEN}"、Query 回显 "{TP_TENANT}" 原文
+  And 刷新工具列表再次以插值后的值连接并成功
+
+@TP-S31 @auto:e2e
+Scenario: 引用不存在的变量
+  When Owner 导入 Header 值引用未定义变量的 MCP 插件
+  Then 占位符保留原文，MCP 桩校验失败，导入返回冲突（409）
+
+@TP-S32 @auto:e2e
+Scenario: 团队 OpenAPI 插件支持 Header/Query 并保留占位符
+  When Owner 导入团队 OpenAPI 插件并配置 Header "X-Token: {TP_TOKEN}"、Query "tenant={TP_TENANT}"
+  Then 保存成功且详情回显占位符原文
+  And 运行时（Agent 工具调用）按插件所属团队插值后发起请求（单测覆盖：CustomPluginVariableInterpolatorTests）
+```

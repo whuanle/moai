@@ -62,11 +62,11 @@ Agent 运行时(src/ai)                 ▼
 
 - **归属模型**：`skill.team_id` 语义扩展——`is_system=1` 平台内置；`team_id>0` 团队技能；`team_id=0 且非内置` 个人技能（归属 `create_user_id`）。判定与提示词模块完全一致。新增 `is_public` 列（bool，市场上架审批通过置 true，本期仅存储与 options 过滤，审批流接 `PublicationResourceType.Skill` 为后续增量）。
 - **权限矩阵**：个人技能=归属人；团队技能=团队 Admin/Owner；平台管理员全通（`SkillAccessGuard`，Handler 目标保护）；`list`/`{id}` 详情仍 Controller IsAdmin 门禁；options/preupload/complete 登录即可。
-- **D7 用户级应用配置表 `app_user_config`**：(app_id, user_id) 唯一（partial 索引 is_deleted=0），字段 `prompt_id`（新会话默认专家，0=未设置）+ `skills` JSON uuid 数组（用户自选）。接口 `GET/PUT /api/app/{id}/userconfig`。**专家语义=新会话默认值**：前端进入对话页加载用户配置初始化专家选择，会话级专家面板（app 模块 @AP-S44/S45）仍可单独覆盖且优先；技能语义=运行时并集。
+- **D7 用户级应用配置表 `app_user_config`**：(app_id, user_id) 唯一（partial 索引 is_deleted=0），字段 `prompt_id`（新会话默认专家，0=未设置）+ `skills` JSON uuid 数组（用户自选）。接口 `GET/PUT /api/app/{id}/userconfig`。**专家语义=新会话默认值**：前端进入对话页加载用户配置初始化专家选择；2026-09-20 起会话内切换专家统一在应用设置面板保存生效（原独立专家面板移除，app 模块 @AP-S44/S45）；技能语义=运行时并集。
 - **D8 运行时并集与失效剔除**：`AppAgentFactory` 每次装配时查 `app_user_config`（调试会话跳过，保持应用默认视角），`生效技能 = config.Skills（锁定，不做可见性过滤）∪ FilterVisibleSkillIdsAsync(userConfig.Skills)`（系统内置∪公开∪本团队∪本人个人，且未禁用；失效项静默剔除）。会话不快照技能，用户配置变更即时对后续请求生效。
 - **D9 市场直接引用**：用户自选直接引用技能 id（可见性运行时兜底），不做"安装副本"；sha256 内容寻址下后续如需"下架保护"可加副本引用，成本为零。
 - 组件增量：`SkillAccessGuard`（权限断言）、`ISkillService.FilterVisibleSkillIdsAsync`、`Save/QueryAppUserConfigCommandHandler`（app 模块，校验复用 `SessionPromptHelper` 与 `FilterVisibleSkillIdsAsync`）、前端 `chat/AppUserSettings.tsx`（对话页应用设置面板）、`AppConfigSection` 技能绑定多选。
-- 前端约定：应用设置面板关闭时不渲染（避免与专家面板重复挂载同名列表项，vitest 踩坑）；i18n `appChat.userSettings*`/`appManage.sectionSkills*` zh-CN 与 en-US 同步。
+- 前端约定：应用设置面板关闭时不渲染（历史踩坑：曾与独立专家面板重复挂载同名列表项；2026-09-20 专家面板移除后保留该约定）；i18n `appChat.userSettings*`/`appManage.sectionSkills*` zh-CN 与 en-US 同步。
 
 ## 7. 增量设计（2026-09-17：技能市场 + 个人维护 + 下载）
 
@@ -82,3 +82,12 @@ Agent 运行时(src/ai)                 ▼
 - **命令**：`CreateSkillCommand/UpdateSkillCommand` 增加 `ClassifyId`（≥0）；Handler 校验 `ClassifyId>0` 时分类必须存在且 `Type=skill`，否则 404「技能分类不存在」。
 - **查询**：`my_list/team_list/market_list/list` 四个列表与详情响应均携带 `classifyId`；列表支持 `classifyId` 过滤（`QuerySkillListHelper.WhereClassify`）。
 - **前端**：技能中心两 Tab 头部固定分类 chip（CheckableTag + `classifyLabel` 展示 emoji），点击按分类过滤并回第一页；`SkillEditModal` 分类下拉；分类管理页新增「技能」页签。
+
+## 9. 增量设计（2026-09-19：应用默认技能，替代「锁定并集」模型）
+
+- **语义变更（D10）**：`app_agent_config.skills` 从「锁定必选（用户不可移除）」改为「**应用默认技能**——默认启用、用户可在应用设置中取消勾选」。存量绑定技能自然迁移为「默认启用」，无需数据搬迁。（同日曾增补 `prompts` 可选专家列并于当日移除：专家选择恢复为「本人个人 ∪ 本团队提示词」自由选择，应用配置不再绑定提示词。）
+- **运行时合并改交集（D11）**：`AppAgentFactory` 中 `生效技能 = 默认集 ∩ 用户勾选`（按默认集顺序）；**无用户配置行时=默认集全部启用**；调试会话=默认集（保持应用默认视角）。移除用户可见性过滤调用（范围已由管理员保存时校验限定：系统内置∪市场公开∪本团队且启用中），技能删除/禁用仍由运行时加载静默剔除。
+- **专家校验回归通用可用性**：`app_user_config.prompt_id` 与会话专家绑定仅按既有规则校验（本人个人提示词或本团队提示词，`SessionPromptHelper.EnsureUsableAsync`），不做应用集合限制；运行时提示词已删除时静默降级为仅应用提示词。
+- **userconfig 响应自带技能目录**：`GET /app/{id}/userconfig` 返回 `promptId`（当前选择）、`skills`（当前勾选，无行时=默认集）、`defaultSkills`（技能目录，含名称/描述，删除/禁用项静默缺失）；移除 `lockedSkills`。前端应用设置面板技能数据源收敛到该响应，不再拉取全量 options；专家列表由对话页从个人+团队提示词加载。
+- **前端**：应用配置页技能区文案改为「默认技能」语义，配置分区左栏内部滚动并缩窄（lg=11）、调试对话栏加宽（lg=13）；i18n 移除 `appChat.skillLocked/skillPersonal`。
+- **Kiota**：后端契约变更（userconfig 响应新增 defaultSkills），需 `dotnet run` 后执行 `npm run syncapi` 重新生成；封装层 `api/app.ts` 已按新契约通过原始 JSON 投射兼容过渡。

@@ -54,9 +54,19 @@ public sealed class AppAgentBuildContext
     public IReadOnlyList<Guid> PluginIds { get; init; } = [];
 
     /// <summary>
+    /// 绑定为工具的流程应用 id（执行时按其发布快照驱动一轮流程）.
+    /// </summary>
+    public IReadOnlyList<Guid> WorkflowAppIds { get; init; } = [];
+
+    /// <summary>
     /// 绑定的技能 id.
     /// </summary>
     public IReadOnlyList<Guid> SkillIds { get; init; } = [];
+
+    /// <summary>
+    /// 工具审批模式（auto/approval，来自对话 SSE 请求头），approval 时重要工具执行前需人工批准.
+    /// </summary>
+    public string ToolApprovalMode { get; init; } = MoAI.AI.AppToolApprovalContract.ModeAuto;
 }
 
 /// <summary>

@@ -143,18 +143,15 @@ public class QuestionClassifierNodeTests
         var harness = new WorkflowTestHarness();
         harness.AiChat
             .Setup(c => c.CompleteAsync(
-                It.IsAny<string?>(),
-                It.IsAny<string>(),
-                It.IsAny<JsonArray?>(),
-                It.IsAny<string?>(),
+                It.IsAny<AiChatRequest>(),
                 It.IsAny<Func<string, Task>?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(answer)
-            .Callback<string?, string, JsonArray?, string?, Func<string, Task>?, CancellationToken>((s, _p, h, m, _o, _ct) =>
+            .Callback<AiChatRequest, Func<string, Task>?, CancellationToken>((r, _o, _ct) =>
             {
-                system = s;
-                history = h;
-                model = m;
+                system = r.SystemPrompt;
+                history = r.History;
+                model = r.Model;
             });
         return (harness, () => (system, history, model));
     }
@@ -296,10 +293,7 @@ public class QuestionClassifierNodeTests
         Assert.Equal(NodeState.Failed, result.State);
         Assert.Contains("classes", result.ErrorMessage);
         harness.AiChat.Verify(c => c.CompleteAsync(
-            It.IsAny<string?>(),
-            It.IsAny<string>(),
-            It.IsAny<JsonArray?>(),
-            It.IsAny<string?>(),
+            It.IsAny<AiChatRequest>(),
             It.IsAny<Func<string, Task>?>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -314,10 +308,7 @@ public class QuestionClassifierNodeTests
         Assert.Equal(NodeState.Failed, result.State);
         Assert.Contains("query", result.ErrorMessage);
         harness.AiChat.Verify(c => c.CompleteAsync(
-            It.IsAny<string?>(),
-            It.IsAny<string>(),
-            It.IsAny<JsonArray?>(),
-            It.IsAny<string?>(),
+            It.IsAny<AiChatRequest>(),
             It.IsAny<Func<string, Task>?>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -339,10 +330,7 @@ public class QuestionClassifierNodeTests
         var harness = new WorkflowTestHarness();
         harness.AiChat
             .Setup(c => c.CompleteAsync(
-                It.IsAny<string?>(),
-                It.IsAny<string>(),
-                It.IsAny<JsonArray?>(),
-                It.IsAny<string?>(),
+                It.IsAny<AiChatRequest>(),
                 It.IsAny<Func<string, Task>?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("渠道不可用"));

@@ -82,7 +82,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             UserId = user.Id,
             UserName = user.UserName,
             NickName = user.NickName,
-            Email = user.Email
+            Email = user.Email,
+            // 刷新走内部认证体系，签发的 token 必须携带用户类型；缺失会话/日志会把内部用户当外部用户（如 app_agent_session.user_type 落 none）
+            UserType = Infra.Models.UserType.Normal
         };
 
         var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);

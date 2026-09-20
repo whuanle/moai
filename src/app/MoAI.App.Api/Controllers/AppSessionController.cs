@@ -103,6 +103,27 @@ public class AppSessionController : ControllerBase
     }
 
     /// <summary>
+    /// 对会话中挂起等待人工审批的工具调用做出决策（批准/拒绝）；仅会话归属用户可操作，
+    /// 返回 status=missing 表示无匹配待审批记录（已自动执行或已被处理）.
+    /// </summary>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="req">决策请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="DecideAppSessionToolApprovalResponse"/>.</returns>
+    [HttpPost("session/{sessionId:guid}/tool-approval")]
+    public async Task<DecideAppSessionToolApprovalResponse> DecideToolApproval([FromRoute] Guid sessionId, [FromBody] DecideAppSessionToolApprovalCommand req, CancellationToken ct)
+    {
+        var cmd = new DecideAppSessionToolApprovalCommand
+        {
+            SessionId = sessionId,
+            ToolName = req.ToolName,
+            Approved = req.Approved,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 删除会话（软删除，连同消息）；仅会话归属用户可操作.
     /// </summary>
     /// <param name="sessionId">会话 id.</param>
@@ -117,7 +138,28 @@ public class AppSessionController : ControllerBase
     }
 
     /// <summary>
-    /// 查询当前用户在某应用下的个性化配置（专家提示词/自选技能）与应用锁定技能.
+    /// 保存当前用户在某应用下的个性化配置（默认专家/技能勾选/工具审批模式），跨会话复用；技能仅能在应用默认范围内勾选.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="req">保存请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id:guid}/userconfig")]
+    public async Task<EmptyCommandResponse> SaveUserConfig([FromRoute] Guid id, [FromBody] SaveAppUserConfigCommand req, CancellationToken ct)
+    {
+        var cmd = new SaveAppUserConfigCommand
+        {
+            AppId = id,
+            PromptId = req.PromptId,
+            Skills = req.Skills,
+            ToolApprovalMode = req.ToolApprovalMode,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询当前用户在某应用下的个性化配置（默认专家/技能勾选/工具审批模式）与应用默认技能目录.
     /// </summary>
     /// <param name="id">应用 id.</param>
     /// <param name="ct">取消令牌.</param>
@@ -128,20 +170,5 @@ public class AppSessionController : ControllerBase
         var cmd = new QueryAppUserConfigCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 保存当前用户在某应用下的个性化配置（专家提示词/自选技能），跨会话复用；应用绑定技能不受影响.
-    /// </summary>
-    /// <param name="id">应用 id.</param>
-    /// <param name="req">保存请求.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPut("{id:guid}/userconfig")]
-    public async Task<EmptyCommandResponse> SaveUserConfig([FromRoute] Guid id, [FromBody] SaveAppUserConfigCommand req, CancellationToken ct)
-    {
-        var cmd = new SaveAppUserConfigCommand { AppId = id, PromptId = req.PromptId, Skills = req.Skills };
-        _userContextProvider.SetUserContext(cmd);
-        return await _mediator.Send(cmd, ct);
     }
 }

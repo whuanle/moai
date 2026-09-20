@@ -76,6 +76,27 @@ check('bob 登录', Boolean(bobToken))
 const aliceToken = await login(aliceName, 'alice12345')
 check('alice 登录', Boolean(aliceToken))
 
+// ---------- UM-36 刷新 token 携带用户类型 ----------
+// 回归：刷新链路曾漏设 UserType，签发的 access token typ=none，导致内部用户会话/日志被当成外部用户
+{
+  const decode = (token) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+  const loginBody = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: bobName, password: enc('bob12345') }),
+  }).then((r) => r.json())
+  const refreshed = await fetch(`${BASE}/api/auth/refresh_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: loginBody.refreshToken }),
+  }).then((r) => r.json())
+  const loginTyp = decode(loginBody.accessToken).typ
+  const refreshTyp = decode(refreshed.accessToken).typ
+  check('UM-36a 登录 token 携带 typ=normal', loginTyp === 'normal', `typ=${loginTyp}`)
+  check('UM-36b 刷新 token 携带 typ=normal（内部用户不被误标外部）', refreshTyp === 'normal', `typ=${refreshTyp}`)
+  check('UM-36c 刷新 token 仍携带用户身份 sub', decode(refreshed.accessToken).sub === String(loginBody.userId))
+}
+
 // 用户 id 查询
 const list0 = await api(adminToken, '/api/usermanage/users?pageNo=1&pageSize=500')
 const adminItem = list0.body?.items?.find((u) => u.userName === 'admin')

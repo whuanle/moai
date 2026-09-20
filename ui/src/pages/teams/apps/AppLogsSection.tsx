@@ -186,10 +186,17 @@ export function AppLogsSection({ appId }: AppLogsSectionProps) {
         title: t('appLogs.columnUser'),
         key: 'user',
         width: 180,
-        render: (_, record) =>
-          record.userType === 'normal'
-            ? record.createUserName || '-'
-            : `${t('appLogs.externalUser')} #${record.ownerId ?? '-'}`,
+        render: (_, record) => {
+          // 按用户类型精确归属：normal 显示用户名，external/externalApp 带类型前缀；
+          // none（识别不到）只显示 id，不误标为外部用户
+          if (record.userType === 'normal') {
+            return record.createUserName || `#${record.ownerId ?? '-'}`
+          }
+          if (record.userType === 'external' || record.userType === 'externalApp') {
+            return `${t(userTypeLabelKey(record.userType))} #${record.ownerId ?? '-'}`
+          }
+          return `#${record.ownerId ?? '-'}`
+        },
       },
       {
         title: t('appLogs.columnUserType'),

@@ -310,6 +310,27 @@ export interface AppAccessPointConfigResponse extends Parsable {
     title?: string | null;
 }
 /**
+ * Agent 应用可选项.
+ */
+export interface AppAgentOptionItem extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 头像 objectKey.
+     */
+    avatarPath?: string | null;
+    /**
+     * 引入该应用是否与当前流程构成循环嵌套（true 时前端禁选）.
+     */
+    circular?: boolean | null;
+    /**
+     * 应用名称.
+     */
+    name?: string | null;
+}
+/**
  * 应用项.
  */
 export interface AppItem extends Parsable {
@@ -552,6 +573,35 @@ export interface AppUsageSummary extends Parsable {
      * 合计 token.
      */
     totalTokens?: string | null;
+}
+/**
+ * 应用设置中展示的默认技能项.
+ */
+export interface AppUserSkillOption extends Parsable {
+    /**
+     * 技能描述.
+     */
+    description?: string | null;
+    /**
+     * 技能 id.
+     */
+    id?: Guid | null;
+    /**
+     * 是否平台内置技能.
+     */
+    isSystem?: boolean | null;
+    /**
+     * 技能全局唯一标识.
+     */
+    key?: string | null;
+    /**
+     * 技能名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id，0=系统内置或市场公开.
+     */
+    teamId?: number | null;
 }
 /**
  * 流程应用运行实例列表项.
@@ -1024,6 +1074,15 @@ export function createAppAccessPointConfigResponseFromDiscriminatorValue(parseNo
     return deserializeIntoAppAccessPointConfigResponse;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppAgentOptionItem}
+ */
+// @ts-ignore
+export function createAppAgentOptionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppAgentOptionItem;
+}
+/**
  * 创建团队应用，需要团队 Admin 及以上角色.
  */
 export interface CreateAppCommand extends Parsable {
@@ -1135,6 +1194,15 @@ export function createAppUsageModelItemFromDiscriminatorValue(parseNode: ParseNo
 // @ts-ignore
 export function createAppUsageSummaryFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAppUsageSummary;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppUserSkillOption}
+ */
+// @ts-ignore
+export function createAppUserSkillOptionFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppUserSkillOption;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1502,6 +1570,24 @@ export function createDebugRunAppWorkflowResponseFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DecideAppSessionToolApprovalCommand}
+ */
+// @ts-ignore
+export function createDecideAppSessionToolApprovalCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDecideAppSessionToolApprovalCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {DecideAppSessionToolApprovalResponse}
+ */
+// @ts-ignore
+export function createDecideAppSessionToolApprovalResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoDecideAppSessionToolApprovalResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {DeleteClassifyCommand}
  */
 // @ts-ignore
@@ -1561,6 +1647,24 @@ export function createEmbeddingDocumentCommandResponseFromDiscriminatorValue(par
 // @ts-ignore
 export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoEmptyCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExtractChatAttachmentCommand}
+ */
+// @ts-ignore
+export function createExtractChatAttachmentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExtractChatAttachmentCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExtractChatAttachmentResponse}
+ */
+// @ts-ignore
+export function createExtractChatAttachmentResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExtractChatAttachmentResponse;
 }
 /**
  * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
@@ -2045,6 +2149,15 @@ export function createPluginRunResultFromDiscriminatorValue(parseNode: ParseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadChatFileCommand}
+ */
+// @ts-ignore
+export function createPreUploadChatFileCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadChatFileCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreUploadFileCommandResponse}
  */
 // @ts-ignore
@@ -2313,6 +2426,15 @@ export function createQueryAllOAuthPrividerCommandResponseItemFromDiscriminatorV
 // @ts-ignore
 export function createQueryAppAgentConfigCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAppAgentConfigCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppAgentOptionsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppAgentOptionsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppAgentOptionsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2691,6 +2813,15 @@ export function createQueryPublicAppsCommandResponseFromDiscriminatorValue(parse
 // @ts-ignore
 export function createQueryPublicationReviewListResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryPublicationReviewListResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QuerySandboxLimitsCommandResponse}
+ */
+// @ts-ignore
+export function createQuerySandboxLimitsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQuerySandboxLimitsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3702,6 +3833,15 @@ export function createUpdateSkillCommandFromDiscriminatorValue(parseNode: ParseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateSystemLogoCommand}
+ */
+// @ts-ignore
+export function createUpdateSystemLogoCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateSystemLogoCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateTeamAvatarCommand}
  */
 // @ts-ignore
@@ -4014,6 +4154,28 @@ export interface DebugRunAppWorkflowResponse extends Parsable {
     status?: string | null;
 }
 /**
+ * 对会话中挂起等待人工审批的工具调用做出决策（批准/拒绝），由对话页审批卡触发；仅会话归属用户可操作.
+ */
+export interface DecideAppSessionToolApprovalCommand extends Parsable {
+    /**
+     * true=批准执行；false=拒绝.
+     */
+    approved?: boolean | null;
+    /**
+     * 真实工具名（call_tool 元工具的内层 toolName）.
+     */
+    toolName?: string | null;
+}
+/**
+ * 审批决策结果：approved/rejected 表示已生效；missing 表示无匹配的待审批记录.
+ */
+export interface DecideAppSessionToolApprovalResponse extends Parsable {
+    /**
+     * 决策后的状态：approved/rejected/missing.
+     */
+    status?: string | null;
+}
+/**
  * 删除分类.
  */
 export interface DeleteClassifyCommand extends Parsable {
@@ -4222,6 +4384,19 @@ export function deserializeIntoAppAccessPointConfigResponse(appAccessPointConfig
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAppAgentOptionItem(appAgentOptionItem: Partial<AppAgentOptionItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { appAgentOptionItem.appId = n.getGuidValue(); },
+        "avatarPath": n => { appAgentOptionItem.avatarPath = n.getStringValue(); },
+        "circular": n => { appAgentOptionItem.circular = n.getBooleanValue(); },
+        "name": n => { appAgentOptionItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAppItem(appItem: Partial<AppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { appItem.appId = n.getGuidValue(); },
@@ -4331,6 +4506,21 @@ export function deserializeIntoAppUsageSummary(appUsageSummary: Partial<AppUsage
         "completionTokens": n => { appUsageSummary.completionTokens = n.getStringValue(); },
         "promptTokens": n => { appUsageSummary.promptTokens = n.getStringValue(); },
         "totalTokens": n => { appUsageSummary.totalTokens = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAppUserSkillOption(appUserSkillOption: Partial<AppUserSkillOption> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { appUserSkillOption.description = n.getStringValue(); },
+        "id": n => { appUserSkillOption.id = n.getGuidValue(); },
+        "isSystem": n => { appUserSkillOption.isSystem = n.getBooleanValue(); },
+        "key": n => { appUserSkillOption.key = n.getStringValue(); },
+        "name": n => { appUserSkillOption.name = n.getStringValue(); },
+        "teamId": n => { appUserSkillOption.teamId = n.getNumberValue(); },
     }
 }
 /**
@@ -4847,6 +5037,27 @@ export function deserializeIntoDebugRunAppWorkflowResponse(debugRunAppWorkflowRe
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoDecideAppSessionToolApprovalCommand(decideAppSessionToolApprovalCommand: Partial<DecideAppSessionToolApprovalCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "approved": n => { decideAppSessionToolApprovalCommand.approved = n.getBooleanValue(); },
+        "toolName": n => { decideAppSessionToolApprovalCommand.toolName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoDecideAppSessionToolApprovalResponse(decideAppSessionToolApprovalResponse: Partial<DecideAppSessionToolApprovalResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "status": n => { decideAppSessionToolApprovalResponse.status = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoDeleteClassifyCommand(deleteClassifyCommand: Partial<DeleteClassifyCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "classifyId": n => { deleteClassifyCommand.classifyId = n.getNumberValue(); },
@@ -4913,6 +5124,29 @@ export function deserializeIntoEmbeddingDocumentCommandResponse(embeddingDocumen
 // @ts-ignore
 export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partial<EmptyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExtractChatAttachmentCommand(extractChatAttachmentCommand: Partial<ExtractChatAttachmentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileName": n => { extractChatAttachmentCommand.fileName = n.getStringValue(); },
+        "objectKey": n => { extractChatAttachmentCommand.objectKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExtractChatAttachmentResponse(extractChatAttachmentResponse: Partial<ExtractChatAttachmentResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentLength": n => { extractChatAttachmentResponse.contentLength = n.getNumberValue(); },
+        "markdown": n => { extractChatAttachmentResponse.markdown = n.getStringValue(); },
+        "truncated": n => { extractChatAttachmentResponse.truncated = n.getBooleanValue(); },
     }
 }
 /**
@@ -5357,6 +5591,19 @@ export function deserializeIntoPluginRunResult(pluginRunResult: Partial<PluginRu
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPreUploadChatFileCommand(preUploadChatFileCommand: Partial<PreUploadChatFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadChatFileCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadChatFileCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadChatFileCommand.fileSize = n.getNumberValue(); },
+        "shA256": n => { preUploadChatFileCommand.shA256 = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPreUploadFileCommandResponse(preUploadFileCommandResponse: Partial<PreUploadFileCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "expiration": n => { preUploadFileCommandResponse.expiration = n.getStringValue(); },
@@ -5506,6 +5753,7 @@ export function deserializeIntoPromptItem(promptItem: Partial<PromptItem> | unde
         "promptClassId": n => { promptItem.promptClassId = n.getNumberValue(); },
         "promptId": n => { promptItem.promptId = n.getNumberValue(); },
         "teamId": n => { promptItem.teamId = n.getNumberValue(); },
+        "useCount": n => { promptItem.useCount = n.getNumberValue(); },
     }
 }
 /**
@@ -5748,9 +5996,22 @@ export function deserializeIntoQueryAppAgentConfigCommandResponse(queryAppAgentC
         "openingStatementEnabled": n => { queryAppAgentConfigCommandResponse.openingStatementEnabled = n.getBooleanValue(); },
         "plugins": n => { queryAppAgentConfigCommandResponse.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { queryAppAgentConfigCommandResponse.prompt = n.getStringValue(); },
+        "quickInputs": n => { queryAppAgentConfigCommandResponse.quickInputs = n.getCollectionOfPrimitiveValues<string>(); },
         "skills": n => { queryAppAgentConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "status": n => { queryAppAgentConfigCommandResponse.status = n.getNumberValue(); },
         "teamId": n => { queryAppAgentConfigCommandResponse.teamId = n.getStringValue(); },
         "wikiIds": n => { queryAppAgentConfigCommandResponse.wikiIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "workflowApps": n => { queryAppAgentConfigCommandResponse.workflowApps = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppAgentOptionsCommandResponse(queryAppAgentOptionsCommandResponse: Partial<QueryAppAgentOptionsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAppAgentOptionsCommandResponse.items = n.getCollectionOfObjectValues<AppAgentOptionItem>(createAppAgentOptionItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -5774,6 +6035,7 @@ export function deserializeIntoQueryAppCommandResponse(queryAppCommandResponse: 
         "openingStatementEnabled": n => { queryAppCommandResponse.openingStatementEnabled = n.getBooleanValue(); },
         "publishStatus": n => { queryAppCommandResponse.publishStatus = n.getNumberValue(); },
         "publishTime": n => { queryAppCommandResponse.publishTime = n.getStringValue(); },
+        "quickInputs": n => { queryAppCommandResponse.quickInputs = n.getCollectionOfPrimitiveValues<string>(); },
         "teamId": n => { queryAppCommandResponse.teamId = n.getStringValue(); },
         "updateTime": n => { queryAppCommandResponse.updateTime = n.getStringValue(); },
     }
@@ -5857,9 +6119,14 @@ export function deserializeIntoQueryAppUsageCommandResponse(queryAppUsageCommand
 // @ts-ignore
 export function deserializeIntoQueryAppUserConfigCommandResponse(queryAppUserConfigCommandResponse: Partial<QueryAppUserConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "lockedSkills": n => { queryAppUserConfigCommandResponse.lockedSkills = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "defaultSkills": n => { queryAppUserConfigCommandResponse.defaultSkills = n.getCollectionOfObjectValues<AppUserSkillOption>(createAppUserSkillOptionFromDiscriminatorValue); },
         "promptId": n => { queryAppUserConfigCommandResponse.promptId = n.getNumberValue(); },
         "skills": n => { queryAppUserConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "toolApprovalAutoApprovedNames": n => { queryAppUserConfigCommandResponse.toolApprovalAutoApprovedNames = n.getCollectionOfPrimitiveValues<string>(); },
+        "toolApprovalAutoApprovedPrefixes": n => { queryAppUserConfigCommandResponse.toolApprovalAutoApprovedPrefixes = n.getCollectionOfPrimitiveValues<string>(); },
+        "toolApprovalExemptNames": n => { queryAppUserConfigCommandResponse.toolApprovalExemptNames = n.getCollectionOfPrimitiveValues<string>(); },
+        "toolApprovalExemptPrefixes": n => { queryAppUserConfigCommandResponse.toolApprovalExemptPrefixes = n.getCollectionOfPrimitiveValues<string>(); },
+        "toolApprovalMode": n => { queryAppUserConfigCommandResponse.toolApprovalMode = n.getStringValue(); },
     }
 }
 /**
@@ -6317,8 +6584,21 @@ export function deserializeIntoQueryPublicationReviewListResponse(queryPublicati
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQuerySandboxLimitsCommandResponse(querySandboxLimitsCommandResponse: Partial<QuerySandboxLimitsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "maxCpu": n => { querySandboxLimitsCommandResponse.maxCpu = n.getStringValue(); },
+        "maxMemory": n => { querySandboxLimitsCommandResponse.maxMemory = n.getStringValue(); },
+        "maxTtlSeconds": n => { querySandboxLimitsCommandResponse.maxTtlSeconds = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryServerInfoCommandResponse(queryServerInfoCommandResponse: Partial<QueryServerInfoCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "logoPath": n => { queryServerInfoCommandResponse.logoPath = n.getStringValue(); },
         "maxUploadFileSize": n => { queryServerInfoCommandResponse.maxUploadFileSize = n.getNumberValue(); },
         "name": n => { queryServerInfoCommandResponse.name = n.getStringValue(); },
         "publicStoreUrl": n => { queryServerInfoCommandResponse.publicStoreUrl = n.getStringValue(); },
@@ -6871,8 +7151,10 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
         "openingStatementEnabled": n => { saveAppAgentConfigCommand.openingStatementEnabled = n.getBooleanValue(); },
         "plugins": n => { saveAppAgentConfigCommand.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { saveAppAgentConfigCommand.prompt = n.getStringValue(); },
+        "quickInputs": n => { saveAppAgentConfigCommand.quickInputs = n.getCollectionOfPrimitiveValues<string>(); },
         "skills": n => { saveAppAgentConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "wikiIds": n => { saveAppAgentConfigCommand.wikiIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "workflowApps": n => { saveAppAgentConfigCommand.workflowApps = n.getCollectionOfPrimitiveValues<Guid>(); },
     }
 }
 /**
@@ -6885,6 +7167,7 @@ export function deserializeIntoSaveAppUserConfigCommand(saveAppUserConfigCommand
         "appId": n => { saveAppUserConfigCommand.appId = n.getGuidValue(); },
         "promptId": n => { saveAppUserConfigCommand.promptId = n.getNumberValue(); },
         "skills": n => { saveAppUserConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
+        "toolApprovalMode": n => { saveAppUserConfigCommand.toolApprovalMode = n.getStringValue(); },
     }
 }
 /**
@@ -6985,8 +7268,10 @@ export function deserializeIntoSaveTeamOpenApiPluginCommand(saveTeamOpenApiPlugi
         "description": n => { saveTeamOpenApiPluginCommand.description = n.getStringValue(); },
         "fileId": n => { saveTeamOpenApiPluginCommand.fileId = n.getStringValue(); },
         "fileName": n => { saveTeamOpenApiPluginCommand.fileName = n.getStringValue(); },
+        "header": n => { saveTeamOpenApiPluginCommand.header = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "name": n => { saveTeamOpenApiPluginCommand.name = n.getStringValue(); },
         "pluginId": n => { saveTeamOpenApiPluginCommand.pluginId = n.getGuidValue(); },
+        "query": n => { saveTeamOpenApiPluginCommand.query = n.getCollectionOfObjectValues<KeyValueString>(createKeyValueStringFromDiscriminatorValue); },
         "teamId": n => { saveTeamOpenApiPluginCommand.teamId = n.getStringValue(); },
         "title": n => { saveTeamOpenApiPluginCommand.title = n.getStringValue(); },
     }
@@ -7730,6 +8015,16 @@ export function deserializeIntoUpdateSkillCommand(updateSkillCommand: Partial<Up
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateSystemLogoCommand(updateSystemLogoCommand: Partial<UpdateSystemLogoCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "objectKey": n => { updateSystemLogoCommand.objectKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateTeamAvatarCommand(updateTeamAvatarCommand: Partial<UpdateTeamAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "objectKey": n => { updateTeamAvatarCommand.objectKey = n.getStringValue(); },
@@ -8057,6 +8352,36 @@ export interface EmbeddingDocumentCommandResponse extends Parsable {
  * 空数据.
  */
 export interface EmptyCommandResponse extends Parsable {
+}
+/**
+ * 对话附件文本提取命令：对已上传到公开 chat 目录的文档做 Maomi.ToMarkdown 提取，结果由前端拼进用户消息文本发送给模型（AG-UI 对话链路为纯文本）.
+ */
+export interface ExtractChatAttachmentCommand extends Parsable {
+    /**
+     * 原始文件名（带扩展名，提取器按扩展名选择解析器）.
+     */
+    fileName?: string | null;
+    /**
+     * 存储对象 key（必须位于 public/chat 目录，避免越权读取私有文件）.
+     */
+    objectKey?: string | null;
+}
+/**
+ * 附件提取结果.
+ */
+export interface ExtractChatAttachmentResponse extends Parsable {
+    /**
+     * 提取文本长度（截断前）.
+     */
+    contentLength?: number | null;
+    /**
+     * 提取出的 markdown 文本（超长时截断并附加截断标记）.
+     */
+    markdown?: string | null;
+    /**
+     * 是否发生截断.
+     */
+    truncated?: boolean | null;
 }
 /**
  * 飞书应用连接项.
@@ -8799,6 +9124,27 @@ export interface PluginRunResult extends Parsable {
 }
 export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
 /**
+ * 对话附件预上传命令，生成预签名上传地址（文档/图片，公开目录，供发送前文本提取）.
+ */
+export interface PreUploadChatFileCommand extends Parsable {
+    /**
+     * 文件类型 (MIME Type).
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小 (字节).
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 SHA-256.
+     */
+    shA256?: string | null;
+}
+/**
  * 文件预上传响应.
  */
 export interface PreUploadFileCommandResponse extends Parsable {
@@ -9076,6 +9422,10 @@ export interface PromptItem extends AuditsInfo, Parsable {
      * 所属团队 id，0 表示个人提示词.
      */
     teamId?: number | null;
+    /**
+     * 被选为专家提示词的使用次数，top_used 列表按其倒序.
+     */
+    useCount?: number | null;
 }
 export type PublicationResourceType = (typeof PublicationResourceTypeObject)[keyof typeof PublicationResourceTypeObject];
 /**
@@ -9531,9 +9881,17 @@ export interface QueryAppAgentConfigCommandResponse extends Parsable {
      */
     prompt?: string | null;
     /**
-     * 绑定的技能 id 列表（元素为 skill.id，uuid）.
+     * 快捷输入列表（管理员配置，用户在对话欢迎态点击即发送），未配置为空列表.
+     */
+    quickInputs?: string[] | null;
+    /**
+     * 应用默认使用的技能 id 列表（元素为 skill.id，uuid），用户可在应用设置中取消勾选.
      */
     skills?: Guid[] | null;
+    /**
+     * 配置状态：0=草稿有未发布变更 1=当前草稿与已发布一致；已发布应用 status=0 时线上仍按发布快照执行.
+     */
+    status?: number | null;
     /**
      * 所属团队 id.
      */
@@ -9542,6 +9900,19 @@ export interface QueryAppAgentConfigCommandResponse extends Parsable {
      * 绑定的知识库 id 列表（元素为 wiki.id）.
      */
     wikiIds?: string[] | null;
+    /**
+     * 绑定为工具的流程应用 id 列表（元素为 app.id，uuid，本团队已发布流程应用）.
+     */
+    workflowApps?: Guid[] | null;
+}
+/**
+ * Agent 应用可选项（流程设计器 agentApp 节点）.
+ */
+export interface QueryAppAgentOptionsCommandResponse extends Parsable {
+    /**
+     * 可选项列表.
+     */
+    items?: AppAgentOptionItem[] | null;
 }
 /**
  * 应用详情响应.
@@ -9603,6 +9974,10 @@ export interface QueryAppCommandResponse extends Parsable {
      * 发布时间，未发布为 null.
      */
     publishTime?: string | null;
+    /**
+     * 快捷输入列表（管理员配置，对话欢迎态点击即发送），未配置为空列表.
+     */
+    quickInputs?: string[] | null;
     /**
      * 所属团队 id.
      */
@@ -9715,21 +10090,41 @@ export interface QueryAppUsageCommandResponse extends Parsable {
     summary?: AppUsageSummary | null;
 }
 /**
- * 用户级应用配置.
+ * 用户级应用配置（含应用默认技能目录）.
  */
 export interface QueryAppUserConfigCommandResponse extends Parsable {
     /**
-     * 应用绑定技能 id 列表（应用所有者在应用配置中锁定，用户不可移除）.
+     * 应用默认使用的团队技能目录（管理员配置，按配置顺序），用户可取消勾选.
      */
-    lockedSkills?: Guid[] | null;
+    defaultSkills?: AppUserSkillOption[] | null;
     /**
-     * 用户为新会话选择的专家提示词 id，0=未设置（使用应用默认提示词）.
+     * 用户当前选择的专家提示词 id，0=未选择；无用户配置行时为 0.
      */
     promptId?: number | null;
     /**
-     * 用户自选技能 id 列表.
+     * 用户当前勾选的技能 id 列表（应用默认技能的子集）；无用户配置行时返回应用默认技能全集（默认全部启用）.
      */
     skills?: Guid[] | null;
+    /**
+     * 审批策略自动放行的工具名（应用配置白名单插件产出的工具，含 MCP/OpenAPI 函数工具）：审批模式下后端直接执行，前端不展示审批卡.
+     */
+    toolApprovalAutoApprovedNames?: string[] | null;
+    /**
+     * 审批策略自动放行的工具名前缀（沙箱工具 sandbox_）：审批模式下后端直接执行，前端不展示审批卡.
+     */
+    toolApprovalAutoApprovedPrefixes?: string[] | null;
+    /**
+     * 无需展示审批卡的工具名（只读检索类），与 ToolApprovalExemptPrefixes 供前端渲染审批卡判断.
+     */
+    toolApprovalExemptNames?: string[] | null;
+    /**
+     * 无需展示审批卡的工具名前缀（技能装载）.
+     */
+    toolApprovalExemptPrefixes?: string[] | null;
+    /**
+     * 工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准；无用户配置行时为 auto.
+     */
+    toolApprovalMode?: string | null;
 }
 /**
  * 流程应用编排配置响应.
@@ -10466,9 +10861,30 @@ export interface QueryPublicationReviewListResponse extends Parsable {
     items?: PublicationReviewItem[] | null;
 }
 /**
+ * 沙箱资源上限.
+ */
+export interface QuerySandboxLimitsCommandResponse extends Parsable {
+    /**
+     * 每个应用沙箱 CPU 限制上限（K8s 数量格式原文，如 "4"、"2000m"）.
+     */
+    maxCpu?: string | null;
+    /**
+     * 每个应用沙箱内存限制上限（K8s 数量格式原文，如 "8Gi"、"512Mi"）.
+     */
+    maxMemory?: string | null;
+    /**
+     * 每个应用沙箱最大存活时间（秒）.
+     */
+    maxTtlSeconds?: number | null;
+}
+/**
  * 服务器信息.
  */
 export interface QueryServerInfoCommandResponse extends Parsable {
+    /**
+     * 网站 Logo（存储中的 ObjectKey，空表示使用前端默认 Logo）.
+     */
+    logoPath?: string | null;
     /**
      * 最大可上传文件大小，单位为字节.
      */
@@ -11431,16 +11847,24 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      */
     prompt?: string | null;
     /**
-     * 允许使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的技能；null 表示保持已保存的技能不变.
+     * 快捷输入列表（管理员配置，用户在对话欢迎态点击即发送），最多 10 条、每条最长 200 字符；null 表示保持已保存的快捷输入不变.
+     */
+    quickInputs?: string[] | null;
+    /**
+     * 应用默认使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的系统内置/市场公开/本团队技能；用户进入对话后可在应用设置中取消勾选；null 表示保持已保存的技能不变.
      */
     skills?: Guid[] | null;
     /**
      * 允许使用的知识库 id 列表（元素为 wiki.id），须属于本团队.
      */
     wikiIds?: string[] | null;
+    /**
+     * 绑定为工具的流程应用 id 列表（元素为 app.id，uuid），须为本团队已发布流程应用；null 表示保持已保存的流程应用绑定不变.
+     */
+    workflowApps?: Guid[] | null;
 }
 /**
- * 保存用户级应用配置：用户对某个应用的个性化定制（专家提示词/自选技能），跨会话复用.
+ * 保存用户级应用配置：用户对某个应用的个性化定制（默认专家/默认技能的勾选），跨会话复用.
  */
 export interface SaveAppUserConfigCommand extends Parsable {
     /**
@@ -11448,13 +11872,17 @@ export interface SaveAppUserConfigCommand extends Parsable {
      */
     appId?: Guid | null;
     /**
-     * 用户选择的专家提示词 id，0=清除（新会话使用应用默认提示词）.
+     * 用户选择的专家提示词 id，须为本人个人提示词或本团队提示词，0=清除.
      */
     promptId?: number | null;
     /**
-     * 用户自选技能 id 列表，与应用绑定技能取并集生效；null=不修改.
+     * 用户勾选启用的技能 id 列表，须为应用默认技能的子集；null=不修改.
      */
     skills?: Guid[] | null;
+    /**
+     * 工具审批模式（auto/approval），null=不修改；approval 时重要工具调用前需人工批准.
+     */
+    toolApprovalMode?: string | null;
 }
 /**
  * 保存流程应用编排草稿（流程定义 JSON + 编辑器画布 JSON），需要团队 Admin 及以上角色.保存后草稿标记为未发布状态，不影响已发布版本.
@@ -11635,6 +12063,10 @@ export interface SaveTeamOpenApiPluginCommand extends Parsable {
      */
     fileName?: string | null;
     /**
+     * Header 头部信息，值支持 {变量名} 引用团队变量，运行时按插件所属团队插值.
+     */
+    header?: KeyValueString[] | null;
+    /**
      * 插件名称.
      */
     name?: string | null;
@@ -11642,6 +12074,10 @@ export interface SaveTeamOpenApiPluginCommand extends Parsable {
      * 插件记录 id；更新时传入，新建为空.
      */
     pluginId?: Guid | null;
+    /**
+     * Query 参数，值支持 {变量名} 引用团队变量，运行时按插件所属团队插值.
+     */
+    query?: KeyValueString[] | null;
     /**
      * 团队 id.
      */
@@ -11820,6 +12256,19 @@ export function serializeAppAccessPointConfigResponse(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAppAgentOptionItem(writer: SerializationWriter, appAgentOptionItem: Partial<AppAgentOptionItem> | undefined | null = {}) : void {
+    if (appAgentOptionItem) {
+        writer.writeGuidValue("appId", appAgentOptionItem.appId);
+        writer.writeStringValue("avatarPath", appAgentOptionItem.avatarPath);
+        writer.writeBooleanValue("circular", appAgentOptionItem.circular);
+        writer.writeStringValue("name", appAgentOptionItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAppItem(writer: SerializationWriter, appItem: Partial<AppItem> | undefined | null = {}) : void {
     if (appItem) {
         writer.writeGuidValue("appId", appItem.appId);
@@ -11929,6 +12378,21 @@ export function serializeAppUsageSummary(writer: SerializationWriter, appUsageSu
         writer.writeStringValue("completionTokens", appUsageSummary.completionTokens);
         writer.writeStringValue("promptTokens", appUsageSummary.promptTokens);
         writer.writeStringValue("totalTokens", appUsageSummary.totalTokens);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAppUserSkillOption(writer: SerializationWriter, appUserSkillOption: Partial<AppUserSkillOption> | undefined | null = {}) : void {
+    if (appUserSkillOption) {
+        writer.writeStringValue("description", appUserSkillOption.description);
+        writer.writeGuidValue("id", appUserSkillOption.id);
+        writer.writeBooleanValue("isSystem", appUserSkillOption.isSystem);
+        writer.writeStringValue("key", appUserSkillOption.key);
+        writer.writeStringValue("name", appUserSkillOption.name);
+        writer.writeNumberValue("teamId", appUserSkillOption.teamId);
     }
 }
 /**
@@ -12445,6 +12909,27 @@ export function serializeDebugRunAppWorkflowResponse(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeDecideAppSessionToolApprovalCommand(writer: SerializationWriter, decideAppSessionToolApprovalCommand: Partial<DecideAppSessionToolApprovalCommand> | undefined | null = {}) : void {
+    if (decideAppSessionToolApprovalCommand) {
+        writer.writeBooleanValue("approved", decideAppSessionToolApprovalCommand.approved);
+        writer.writeStringValue("toolName", decideAppSessionToolApprovalCommand.toolName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeDecideAppSessionToolApprovalResponse(writer: SerializationWriter, decideAppSessionToolApprovalResponse: Partial<DecideAppSessionToolApprovalResponse> | undefined | null = {}) : void {
+    if (decideAppSessionToolApprovalResponse) {
+        writer.writeStringValue("status", decideAppSessionToolApprovalResponse.status);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeDeleteClassifyCommand(writer: SerializationWriter, deleteClassifyCommand: Partial<DeleteClassifyCommand> | undefined | null = {}) : void {
     if (deleteClassifyCommand) {
         writer.writeNumberValue("classifyId", deleteClassifyCommand.classifyId);
@@ -12511,6 +12996,29 @@ export function serializeEmbeddingDocumentCommandResponse(writer: SerializationW
 // @ts-ignore
 export function serializeEmptyCommandResponse(writer: SerializationWriter, emptyCommandResponse: Partial<EmptyCommandResponse> | undefined | null = {}) : void {
     if (emptyCommandResponse) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExtractChatAttachmentCommand(writer: SerializationWriter, extractChatAttachmentCommand: Partial<ExtractChatAttachmentCommand> | undefined | null = {}) : void {
+    if (extractChatAttachmentCommand) {
+        writer.writeStringValue("fileName", extractChatAttachmentCommand.fileName);
+        writer.writeStringValue("objectKey", extractChatAttachmentCommand.objectKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExtractChatAttachmentResponse(writer: SerializationWriter, extractChatAttachmentResponse: Partial<ExtractChatAttachmentResponse> | undefined | null = {}) : void {
+    if (extractChatAttachmentResponse) {
+        writer.writeNumberValue("contentLength", extractChatAttachmentResponse.contentLength);
+        writer.writeStringValue("markdown", extractChatAttachmentResponse.markdown);
+        writer.writeBooleanValue("truncated", extractChatAttachmentResponse.truncated);
     }
 }
 /**
@@ -12955,6 +13463,19 @@ export function serializePluginRunResult(writer: SerializationWriter, pluginRunR
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePreUploadChatFileCommand(writer: SerializationWriter, preUploadChatFileCommand: Partial<PreUploadChatFileCommand> | undefined | null = {}) : void {
+    if (preUploadChatFileCommand) {
+        writer.writeStringValue("contentType", preUploadChatFileCommand.contentType);
+        writer.writeStringValue("fileName", preUploadChatFileCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadChatFileCommand.fileSize);
+        writer.writeStringValue("shA256", preUploadChatFileCommand.shA256);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePreUploadFileCommandResponse(writer: SerializationWriter, preUploadFileCommandResponse: Partial<PreUploadFileCommandResponse> | undefined | null = {}) : void {
     if (preUploadFileCommandResponse) {
         writer.writeStringValue("expiration", preUploadFileCommandResponse.expiration);
@@ -13104,6 +13625,7 @@ export function serializePromptItem(writer: SerializationWriter, promptItem: Par
         writer.writeNumberValue("promptClassId", promptItem.promptClassId);
         writer.writeNumberValue("promptId", promptItem.promptId);
         writer.writeNumberValue("teamId", promptItem.teamId);
+        writer.writeNumberValue("useCount", promptItem.useCount);
     }
 }
 /**
@@ -13346,9 +13868,22 @@ export function serializeQueryAppAgentConfigCommandResponse(writer: Serializatio
         writer.writeBooleanValue("openingStatementEnabled", queryAppAgentConfigCommandResponse.openingStatementEnabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", queryAppAgentConfigCommandResponse.plugins);
         writer.writeStringValue("prompt", queryAppAgentConfigCommandResponse.prompt);
+        writer.writeCollectionOfPrimitiveValues<string>("quickInputs", queryAppAgentConfigCommandResponse.quickInputs);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppAgentConfigCommandResponse.skills);
+        writer.writeNumberValue("status", queryAppAgentConfigCommandResponse.status);
         writer.writeStringValue("teamId", queryAppAgentConfigCommandResponse.teamId);
         writer.writeCollectionOfPrimitiveValues<string>("wikiIds", queryAppAgentConfigCommandResponse.wikiIds);
+        writer.writeCollectionOfPrimitiveValues<Guid>("workflowApps", queryAppAgentConfigCommandResponse.workflowApps);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppAgentOptionsCommandResponse(writer: SerializationWriter, queryAppAgentOptionsCommandResponse: Partial<QueryAppAgentOptionsCommandResponse> | undefined | null = {}) : void {
+    if (queryAppAgentOptionsCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppAgentOptionItem>("items", queryAppAgentOptionsCommandResponse.items, serializeAppAgentOptionItem);
     }
 }
 /**
@@ -13372,6 +13907,7 @@ export function serializeQueryAppCommandResponse(writer: SerializationWriter, qu
         writer.writeBooleanValue("openingStatementEnabled", queryAppCommandResponse.openingStatementEnabled);
         writer.writeNumberValue("publishStatus", queryAppCommandResponse.publishStatus);
         writer.writeStringValue("publishTime", queryAppCommandResponse.publishTime);
+        writer.writeCollectionOfPrimitiveValues<string>("quickInputs", queryAppCommandResponse.quickInputs);
         writer.writeStringValue("teamId", queryAppCommandResponse.teamId);
         writer.writeStringValue("updateTime", queryAppCommandResponse.updateTime);
     }
@@ -13455,9 +13991,14 @@ export function serializeQueryAppUsageCommandResponse(writer: SerializationWrite
 // @ts-ignore
 export function serializeQueryAppUserConfigCommandResponse(writer: SerializationWriter, queryAppUserConfigCommandResponse: Partial<QueryAppUserConfigCommandResponse> | undefined | null = {}) : void {
     if (queryAppUserConfigCommandResponse) {
-        writer.writeCollectionOfPrimitiveValues<Guid>("lockedSkills", queryAppUserConfigCommandResponse.lockedSkills);
+        writer.writeCollectionOfObjectValues<AppUserSkillOption>("defaultSkills", queryAppUserConfigCommandResponse.defaultSkills, serializeAppUserSkillOption);
         writer.writeNumberValue("promptId", queryAppUserConfigCommandResponse.promptId);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppUserConfigCommandResponse.skills);
+        writer.writeCollectionOfPrimitiveValues<string>("toolApprovalAutoApprovedNames", queryAppUserConfigCommandResponse.toolApprovalAutoApprovedNames);
+        writer.writeCollectionOfPrimitiveValues<string>("toolApprovalAutoApprovedPrefixes", queryAppUserConfigCommandResponse.toolApprovalAutoApprovedPrefixes);
+        writer.writeCollectionOfPrimitiveValues<string>("toolApprovalExemptNames", queryAppUserConfigCommandResponse.toolApprovalExemptNames);
+        writer.writeCollectionOfPrimitiveValues<string>("toolApprovalExemptPrefixes", queryAppUserConfigCommandResponse.toolApprovalExemptPrefixes);
+        writer.writeStringValue("toolApprovalMode", queryAppUserConfigCommandResponse.toolApprovalMode);
     }
 }
 /**
@@ -13915,8 +14456,21 @@ export function serializeQueryPublicationReviewListResponse(writer: Serializatio
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQuerySandboxLimitsCommandResponse(writer: SerializationWriter, querySandboxLimitsCommandResponse: Partial<QuerySandboxLimitsCommandResponse> | undefined | null = {}) : void {
+    if (querySandboxLimitsCommandResponse) {
+        writer.writeStringValue("maxCpu", querySandboxLimitsCommandResponse.maxCpu);
+        writer.writeStringValue("maxMemory", querySandboxLimitsCommandResponse.maxMemory);
+        writer.writeNumberValue("maxTtlSeconds", querySandboxLimitsCommandResponse.maxTtlSeconds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryServerInfoCommandResponse(writer: SerializationWriter, queryServerInfoCommandResponse: Partial<QueryServerInfoCommandResponse> | undefined | null = {}) : void {
     if (queryServerInfoCommandResponse) {
+        writer.writeStringValue("logoPath", queryServerInfoCommandResponse.logoPath);
         writer.writeNumberValue("maxUploadFileSize", queryServerInfoCommandResponse.maxUploadFileSize);
         writer.writeStringValue("name", queryServerInfoCommandResponse.name);
         writer.writeStringValue("publicStoreUrl", queryServerInfoCommandResponse.publicStoreUrl);
@@ -14469,8 +15023,10 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
         writer.writeBooleanValue("openingStatementEnabled", saveAppAgentConfigCommand.openingStatementEnabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", saveAppAgentConfigCommand.plugins);
         writer.writeStringValue("prompt", saveAppAgentConfigCommand.prompt);
+        writer.writeCollectionOfPrimitiveValues<string>("quickInputs", saveAppAgentConfigCommand.quickInputs);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppAgentConfigCommand.skills);
         writer.writeCollectionOfPrimitiveValues<string>("wikiIds", saveAppAgentConfigCommand.wikiIds);
+        writer.writeCollectionOfPrimitiveValues<Guid>("workflowApps", saveAppAgentConfigCommand.workflowApps);
     }
 }
 /**
@@ -14483,6 +15039,7 @@ export function serializeSaveAppUserConfigCommand(writer: SerializationWriter, s
         writer.writeGuidValue("appId", saveAppUserConfigCommand.appId);
         writer.writeNumberValue("promptId", saveAppUserConfigCommand.promptId);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppUserConfigCommand.skills);
+        writer.writeStringValue("toolApprovalMode", saveAppUserConfigCommand.toolApprovalMode);
     }
 }
 /**
@@ -14583,8 +15140,10 @@ export function serializeSaveTeamOpenApiPluginCommand(writer: SerializationWrite
         writer.writeStringValue("description", saveTeamOpenApiPluginCommand.description);
         writer.writeStringValue("fileId", saveTeamOpenApiPluginCommand.fileId);
         writer.writeStringValue("fileName", saveTeamOpenApiPluginCommand.fileName);
+        writer.writeCollectionOfObjectValues<KeyValueString>("header", saveTeamOpenApiPluginCommand.header, serializeKeyValueString);
         writer.writeStringValue("name", saveTeamOpenApiPluginCommand.name);
         writer.writeGuidValue("pluginId", saveTeamOpenApiPluginCommand.pluginId);
+        writer.writeCollectionOfObjectValues<KeyValueString>("query", saveTeamOpenApiPluginCommand.query, serializeKeyValueString);
         writer.writeStringValue("teamId", saveTeamOpenApiPluginCommand.teamId);
         writer.writeStringValue("title", saveTeamOpenApiPluginCommand.title);
     }
@@ -15321,6 +15880,16 @@ export function serializeUpdateSkillCommand(writer: SerializationWriter, updateS
         writer.writeStringValue("instructions", updateSkillCommand.instructions);
         writer.writeStringValue("name", updateSkillCommand.name);
         writer.writeGuidValue("skillId", updateSkillCommand.skillId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateSystemLogoCommand(writer: SerializationWriter, updateSystemLogoCommand: Partial<UpdateSystemLogoCommand> | undefined | null = {}) : void {
+    if (updateSystemLogoCommand) {
+        writer.writeStringValue("objectKey", updateSystemLogoCommand.objectKey);
     }
 }
 /**
@@ -16825,6 +17394,15 @@ export interface UpdateSkillCommand extends Parsable {
      * 技能 id.
      */
     skillId?: Guid | null;
+}
+/**
+ * 更新网站 Logo（ObjectKey 为空表示恢复默认 Logo）.
+ */
+export interface UpdateSystemLogoCommand extends Parsable {
+    /**
+     * Logo 图片在存储中的 ObjectKey，空串恢复默认.
+     */
+    objectKey?: string | null;
 }
 /**
  * 设置团队头像，仅 Owner/Admin 可操作；objectKey 需为已完成上传并登记的文件.

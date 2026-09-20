@@ -11,9 +11,10 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
-using MoAI.Skill.Services;
+using MoAI.Storage.Services;
 
 namespace MoAI.AI.Services;
 
@@ -29,8 +30,8 @@ public sealed class AppAgentFactory
     private readonly AppChatHotStore _hotStore;
     private readonly IAiModelUsageCounter _usageCounter;
     private readonly AppContextProviderFactory _contextProviderFactory;
-    private readonly ISkillService _skillService;
     private readonly IWorkflowAppChatInvoker _workflowChatInvoker;
+    private readonly IStorageService _storageService;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -42,8 +43,8 @@ public sealed class AppAgentFactory
     /// <param name="hotStore">会话热态存储.</param>
     /// <param name="usageCounter">模型使用计数器.</param>
     /// <param name="contextProviderFactory">上下文提供者工厂.</param>
-    /// <param name="skillService">技能领域服务.</param>
     /// <param name="workflowChatInvoker">流程应用对话执行端口（Workflow 应用对话时使用）.</param>
+    /// <param name="storageService">存储服务（对话图片附件多模态注入读取字节）.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
         DatabaseContext databaseContext,
@@ -52,8 +53,8 @@ public sealed class AppAgentFactory
         AppChatHotStore hotStore,
         IAiModelUsageCounter usageCounter,
         AppContextProviderFactory contextProviderFactory,
-        ISkillService skillService,
         IWorkflowAppChatInvoker workflowChatInvoker,
+        IStorageService storageService,
         ILoggerFactory loggerFactory)
     {
         _databaseContext = databaseContext;
@@ -62,8 +63,8 @@ public sealed class AppAgentFactory
         _hotStore = hotStore;
         _usageCounter = usageCounter;
         _contextProviderFactory = contextProviderFactory;
-        _skillService = skillService;
         _workflowChatInvoker = workflowChatInvoker;
+        _storageService = storageService;
         _loggerFactory = loggerFactory;
     }
 
@@ -77,8 +78,10 @@ public sealed class AppAgentFactory
     /// <param name="isDebug">是否调试会话：true 时不包裹用量计数器（不计数）.</param>
     /// <param name="promptId">会话绑定的专家提示词 id，0 表示未绑定；内容追加在应用提示词之后.</param>
     /// <param name="cancellationToken">取消令牌.</param>
+    /// <param name="toolApprovalMode">工具审批模式（auto/approval，来自对话 SSE 请求头），approval 时重要工具执行前需人工批准.</param>
+    /// <param name="workflowDraft">流程应用是否按最新草稿执行（工作台「调试」Tab 请求头 X-Moai-Workflow-Draft）.</param>
     /// <returns>内层 Agent.</returns>
-    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken)
+    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == appId, cancellationToken).ConfigureAwait(false);
         if (app == null || app.TeamId != teamId)
@@ -86,7 +89,7 @@ public sealed class AppAgentFactory
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
         }
 
-        // 流程应用对话：一轮消息 = 一次已发布流程执行（发布状态在会话创建/执行端口内校验）
+        // 流程应用对话：一轮消息 = 一次流程执行（「调试」Tab 按最新草稿免发布，正式对话按已发布快照；见执行端口）
         if (app.AppType == (int)Database.Enums.AppType.Workflow)
         {
             var request = new WorkflowAppChatRequest
@@ -95,6 +98,7 @@ public sealed class AppAgentFactory
                 TeamId = teamId,
                 UserId = userId,
                 SessionId = sessionId,
+                UseDraft = workflowDraft,
             };
             var workflowClient = new WorkflowAppChatClient(_workflowChatInvoker, request);
             var workflowHistory = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
@@ -110,12 +114,21 @@ public sealed class AppAgentFactory
         }
 
         var config = await _databaseContext.AppAgentConfigs.FirstOrDefaultAsync(x => x.AppId == appId, cancellationToken).ConfigureAwait(false);
-        if (config == null || config.ModelId == Guid.Empty)
+        if (config == null)
         {
             throw new BusinessException("应用尚未配置对话模型，无法对话.") { StatusCode = 400 };
         }
 
-        var pair = await _modelResolver.ResolveByIdAsync(config.ModelId, teamId, cancellationToken).ConfigureAwait(false);
+        // 正式会话按发布快照执行，管理员保存的草稿不影响线上；调试会话与未发布应用按实时草稿
+        // （存量已发布应用无快照时回退实时配置，重新发布后进入草稿/发布双轨）
+        var effectiveConfig = AppAgentConfigSnapshot.ResolveEffectiveConfig(app, config, preferPublished: !isDebug);
+
+        if (effectiveConfig.ModelId == Guid.Empty)
+        {
+            throw new BusinessException("应用尚未配置对话模型，无法对话.") { StatusCode = 400 };
+        }
+
+        var pair = await _modelResolver.ResolveByIdAsync(effectiveConfig.ModelId, teamId, cancellationToken).ConfigureAwait(false);
         if (pair == null)
         {
             throw new BusinessException("应用的对话模型不可用，请重新配置.") { StatusCode = 400 };
@@ -123,17 +136,22 @@ public sealed class AppAgentFactory
 
         var inner = await _chatClientProvider.GetChatClientAsync(pair.Value.Model, pair.Value.Channel, cancellationToken).ConfigureAwait(false);
 
+        // 图片附件多模态注入：发给模型前把用户消息中的图片标记块转为 ImageContent（内层最贴近 SDK）；
         // 调试会话不计入用量，避免污染应用的监控统计
+        var innerWithImages = new ChatAttachmentImageChatClient(
+            inner,
+            _storageService,
+            _loggerFactory.CreateLogger<ChatAttachmentImageChatClient>());
         IChatClient chatClient = isDebug
-            ? inner
-            : new UsageCapturingChatClient(inner, _usageCounter, _hotStore, pair.Value.Model.Id, teamId, userId, appId, sessionId);
+            ? innerWithImages
+            : new UsageCapturingChatClient(innerWithImages, _usageCounter, _hotStore, pair.Value.Model.Id, teamId, userId, appId, sessionId);
 
         var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
 
-        // 用户级应用配置：自选技能与应用绑定技能取并集生效；调试会话不查（保持应用默认视角）.
-        // 应用绑定技能是应用所有者锁定的，不做用户可见性过滤；用户自选技能过滤后静默剔除失效项.
-        var lockedSkillIds = ParsePluginIds(config.Skills);
-        var userSkillIds = new List<Guid>();
+        // 应用默认技能由管理员配置，用户可在应用设置中取消勾选（勾选集为默认集的子集）；
+        // 未保存过用户配置时默认全部启用；调试会话不查用户配置（保持应用默认视角）.
+        var defaultSkillIds = ParsePluginIds(effectiveConfig.Skills);
+        var effectiveSkillIds = defaultSkillIds;
         if (!isDebug)
         {
             var userConfig = await _databaseContext.AppUserConfigs.AsNoTracking()
@@ -142,26 +160,26 @@ public sealed class AppAgentFactory
                 .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (userConfig != null)
             {
-                var candidates = ParsePluginIds(userConfig.Skills);
-                if (candidates.Count > 0)
-                {
-                    var visible = await _skillService.FilterVisibleSkillIdsAsync(candidates, userId, teamId, cancellationToken).ConfigureAwait(false);
-                    userSkillIds.AddRange(visible);
-                }
+                var selected = ParsePluginIds(userConfig.Skills).ToHashSet();
+                effectiveSkillIds = defaultSkillIds.Where(id => selected.Contains(id)).ToList();
             }
         }
 
         var buildContext = new AppAgentBuildContext
         {
             App = app,
-            Config = config,
+            Config = effectiveConfig,
             AppId = appId,
             TeamId = teamId,
             UserId = userId,
             SessionId = sessionId,
-            WikiIds = ParseWikiIds(config.WikiIds),
-            PluginIds = ParsePluginIds(config.Plugins),
-            SkillIds = lockedSkillIds.Concat(userSkillIds).Distinct().ToList(),
+            WikiIds = ParseWikiIds(effectiveConfig.WikiIds),
+            PluginIds = ParsePluginIds(effectiveConfig.Plugins),
+            WorkflowAppIds = ParsePluginIds(effectiveConfig.WorkflowApps),
+            SkillIds = effectiveSkillIds,
+            ToolApprovalMode = MoAI.AI.AppToolApprovalContract.IsValidMode(toolApprovalMode)
+                ? toolApprovalMode!
+                : MoAI.AI.AppToolApprovalContract.ModeAuto,
         };
         var contextProviders = await _contextProviderFactory.BuildAsync(buildContext, cancellationToken).ConfigureAwait(false);
 
@@ -172,7 +190,7 @@ public sealed class AppAgentFactory
                 .Where(x => x.Id == promptId)
                 .Select(x => x.Content)
                 .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-        var instructions = config.Prompt;
+        var instructions = effectiveConfig.Prompt;
         if (!string.IsNullOrWhiteSpace(expertPrompt))
         {
             instructions = string.IsNullOrWhiteSpace(instructions)
@@ -191,12 +209,10 @@ public sealed class AppAgentFactory
             ChatHistoryProvider = history,
             AIContextProviders = contextProviders,
         };
-
         return new ChatClientAgent(chatClient, options, _loggerFactory);
     }
 
-    private static IReadOnlyList<long> ParseWikiIds(string? json)
-    {
+    private static IReadOnlyList<long> ParseWikiIds(string? json)    {
         if (string.IsNullOrWhiteSpace(json))
         {
             return [];

@@ -76,6 +76,9 @@ internal partial class PromptConfiguration : IEntityTypeConfiguration<PromptEnti
         entity.Property(e => e.UpdateUserId)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.UseCount)
+            .HasComment("被选为专家提示词的使用次数，每次绑定时加一")
+            .HasColumnName("use_count");
 
         OnConfigurePartial(entity);
     }

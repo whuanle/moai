@@ -5,7 +5,8 @@ namespace MoAI.App.Workflow.Nodes.Builtin;
 
 /// <summary>
 /// AI 对话节点执行器 - 通过 <see cref="IAiChatClient"/> 调用模型对话.
-/// 输入：prompt（必填）、system（可选）、history（可选 [{role, content}]）、model（可选）.
+/// config: { aiModelId（模型 id，与问题分类节点同键；model 为旧契约兼容）, systemPrompt（静态系统提示词）, temperature（0-2，可空） }.
+/// 输入：prompt（必填）、history（可选 [{role, content}]）、system（可选，覆盖 config.systemPrompt）、model（可选，覆盖 config）.
 /// 输出：{ "answer": "..." }；流式输出片段通过进度事件推送.
 /// </summary>
 public class AiChatNodeExecutor : INodeExecutor
@@ -32,11 +33,15 @@ public class AiChatNodeExecutor : INodeExecutor
         }
 
         var prompt = promptNode is JsonValue ? promptNode.GetValue<string>() : promptNode.ToJsonString();
+
+        // 系统提示词：输入绑定 system（动态）优先，其次 config.systemPrompt（静态）
         string? systemPrompt = null;
-        if (context.Inputs.TryGetPropertyValue("system", out var systemNode) && systemNode != null)
+        if (context.Inputs.TryGetPropertyValue("system", out var systemNode) && systemNode != null && systemNode is JsonValue)
         {
             systemPrompt = systemNode.GetValue<string>();
         }
+
+        systemPrompt = string.IsNullOrWhiteSpace(systemPrompt) ? context.GetConfigString("systemPrompt") : systemPrompt;
 
         JsonArray? history = null;
         if (context.Inputs.TryGetPropertyValue("history", out var historyNode) && historyNode is JsonArray historyArray)
@@ -44,19 +49,33 @@ public class AiChatNodeExecutor : INodeExecutor
             history = historyArray;
         }
 
-        string? model = context.GetConfigString("model");
-        if (context.Inputs.TryGetPropertyValue("model", out var modelNode) && modelNode != null)
+        // 模型：config.aiModelId（与问题分类节点/设计器同键）优先，config.model 为旧契约兼容；输入绑定 model 可覆盖
+        var model = context.GetConfigString("aiModelId") ?? context.GetConfigString("model");
+        if (context.Inputs.TryGetPropertyValue("model", out var modelNode) && modelNode != null && modelNode is JsonValue)
         {
             model = modelNode.GetValue<string>();
+        }
+
+        // 温度：0-2 有效，越界视为未设置（用渠道默认）
+        var temperature = context.GetConfigFloat("temperature");
+        if (temperature is < 0 or > 2)
+        {
+            temperature = null;
         }
 
         try
         {
             var answer = await _aiChatClient.CompleteAsync(
-                systemPrompt,
-                prompt,
-                history,
-                model,
+                new AiChatRequest
+                {
+                    SystemPrompt = systemPrompt,
+                    Prompt = prompt,
+                    History = history,
+                    Model = model,
+                    Temperature = temperature,
+                    SkillIds = context.GetConfigGuidArray("skillIds"),
+                    SandboxEnabled = context.GetConfigBool("sandboxEnabled"),
+                },
                 async chunk => await context.ReportProgressAsync(chunk, cancellationToken),
                 cancellationToken);
 
@@ -65,8 +84,9 @@ public class AiChatNodeExecutor : INodeExecutor
                 ["answer"] = answer,
             });
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // 仅外部真实取消才上抛；内部超时（TaskCanceled 等）走下方通用失败分支，避免 500/实例卡死
             throw;
         }
         catch (Exception ex)

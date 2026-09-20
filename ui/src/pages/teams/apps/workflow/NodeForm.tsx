@@ -3,8 +3,8 @@
  * 通过 useNodeRender().data / updateData 读写节点数据，变更自动触发画布内容事件.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AutoComplete, Button, Input, InputNumber, Popconfirm, Select, Tooltip } from 'antd'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { AutoComplete, Button, Input, InputNumber, Popconfirm, Select, Switch, Tooltip } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLinesData, WorkflowNodePortsData } from '@flowgram.ai/free-layout-editor'
@@ -12,11 +12,13 @@ import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLines
 import { getWikis } from '@/api/wiki'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getTeamGatewayModels } from '@/api/gateway'
+import { getMyPrompts, getPromptDetail, getTeamPrompts } from '@/api/prompt'
+import { getSkillOptions } from '@/api/skills'
+import { getWorkflowAgentOptions } from '@/api/workflow'
 import { useWorkflowDesignerStore } from './store'
 import { inputsFromPluginSchema, outputsFromPluginSchema } from './utils'
 import {
   EXPRESSION_TYPE_OPTIONS,
-  FIELD_TYPE_OPTIONS,
   useVariableOptions,
 } from './node-form-shared'
 import { RefValueInput, SectionTitle, TypeSelect } from './node-form-widgets'
@@ -117,7 +119,7 @@ function ExpressionValueEditor({
     <Input
       size="small"
       value={binding.value}
-      placeholder={binding.expressionType === 'interpolation' ? '{start.query} 模板' : t('workflowDesigner.exprFixed')}
+      placeholder={binding.expressionType === 'interpolation' ? '{start.question} 模板' : t('workflowDesigner.exprFixed')}
       onChange={(e) => onChange({ value: e.target.value })}
     />
   )
@@ -342,12 +344,17 @@ function SwitchBranchesEditor({
 // ==================== 问题分类节点：模型选择 + 背景知识/聊天记录 + 分类列表（动态端口） ====================
 
 /** 问题分类节点的 AI 模型选择（团队网关可用模型） */
-function ClassifierModelSelect({
+/** AI 模型选择（通用）：选项来自团队网关可用模型，写 settings.aiModelId */
+function ModelSelectSection({
   data,
   onUpdateData,
+  titleKey,
+  placeholderKey,
 }: {
   data: NodeData
   onUpdateData: (patch: Partial<NodeData>) => void
+  titleKey: string
+  placeholderKey: string
 }) {
   const { t } = useTranslation()
   const teamId = useWorkflowDesignerStore((s) => s.teamId)
@@ -380,7 +387,7 @@ function ClassifierModelSelect({
 
   return (
     <div className="wf-node-sec">
-      <SectionTitle text={t('workflowDesigner.classifierModel')} />
+      <SectionTitle text={t(titleKey)} />
       <Select
         size="small"
         style={{ width: '100%' }}
@@ -388,11 +395,221 @@ function ClassifierModelSelect({
         showSearch
         optionFilterProp="label"
         value={data.settings?.aiModelId || undefined}
-        placeholder={t('workflowDesigner.classifierModelPlaceholder')}
+        placeholder={t(placeholderKey)}
+        notFoundContent={t('workflowDesigner.aiModelEmpty')}
         options={models}
         onChange={(v) => onUpdateData({ settings: { ...data.settings, aiModelId: v } })}
       />
     </div>
+  )
+}
+
+/** Agent 应用节点：选择本团队已发布 Agent 应用（循环嵌套的选项禁选） */
+function AgentAppSelectSection({
+  data,
+  onUpdateData,
+}: {
+  data: NodeData
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const appId = useWorkflowDesignerStore((s) => s.appId)
+  const [options, setOptions] = useState<{ value: string; label: ReactNode; disabled: boolean; title: string }[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!teamId || !appId) return
+    let cancelled = false
+    setLoading(true)
+    getWorkflowAgentOptions(appId, teamId)
+      .then((items) => {
+        if (cancelled) return
+        setOptions(
+          items.map((item) => {
+            const circular = item.circular === true
+            const name = item.name || '-'
+            return {
+              value: String(item.appId ?? ''),
+              label: circular ? `${name}（会形成循环嵌套）` : name,
+              disabled: circular,
+              title: circular ? t('workflowDesigner.agentAppCircularTip') : name,
+            }
+          }),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId, appId, t])
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.agentAppTitle')} />
+      <Select
+        size="small"
+        style={{ width: '100%' }}
+        loading={loading}
+        showSearch
+        optionFilterProp="title"
+        value={data.settings?.agentAppId || undefined}
+        placeholder={t('workflowDesigner.agentAppPlaceholder')}
+        notFoundContent={t('workflowDesigner.agentAppEmpty')}
+        options={options}
+        onChange={(v) => onUpdateData({ settings: { ...data.settings, agentAppId: v } })}
+      />
+      <div className="wf-config-hint">{t('workflowDesigner.agentAppHint')}</div>
+    </div>
+  )
+}
+
+/** AI 对话节点：专家提示词填入 + 静态系统提示词 + 采样温度 + 技能 + 沙箱（均存 settings，随画布保存） */
+function AiChatSettingsSection({
+  data,
+  onUpdateData,
+}: {
+  data: NodeData
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const [promptOptions, setPromptOptions] = useState<{ value: number; label: string }[]>([])
+  const [skillOptions, setSkillOptions] = useState<{ value: string; label: string }[]>([])
+  const [fillingPrompt, setFillingPrompt] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    // 专家列表与对话页同源：本人个人 + 团队提示词合并
+    Promise.all([getMyPrompts(), getTeamPrompts(teamId)])
+      .then(([mine, team]) => {
+        if (cancelled) return
+        const seen = new Set<number>()
+        const merged = [...mine, ...team].filter((p) => {
+          if (!p.promptId || seen.has(p.promptId)) return false
+          seen.add(p.promptId)
+          return true
+        })
+        setPromptOptions(merged.map((p) => ({ value: p.promptId as number, label: p.name || `#${p.promptId}` })))
+      })
+      .catch(() => {
+        if (!cancelled) setPromptOptions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
+
+  useEffect(() => {
+    if (!teamId) return
+    let cancelled = false
+    getSkillOptions({ teamId })
+      .then((res) => {
+        if (cancelled) return
+        setSkillOptions(
+          res
+            .filter((s) => s.id)
+            .map((s) => ({ value: String(s.id), label: s.name || s.key || '-' })),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setSkillOptions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
+
+  const fillFromPrompt = async (promptId: number | undefined) => {
+    if (!promptId) return
+    setFillingPrompt(true)
+    try {
+      const detail = await getPromptDetail(promptId)
+      if (detail?.content) {
+        onUpdateData({ settings: { ...data.settings, systemPrompt: detail.content } })
+      }
+    } catch {
+      // 详情拉取失败保持现状（可重试或手写）
+    } finally {
+      setFillingPrompt(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="wf-node-sec">
+        <SectionTitle text={t('workflowDesigner.systemPromptTitle')} />
+        <Select
+          size="small"
+          style={{ width: '100%', marginBottom: 6 }}
+          showSearch
+          optionFilterProp="label"
+          loading={fillingPrompt}
+          value={undefined}
+          placeholder={t('workflowDesigner.expertPromptPlaceholder')}
+          options={promptOptions}
+          notFoundContent={t('workflowDesigner.expertPromptEmpty')}
+          onChange={(v) => void fillFromPrompt(v)}
+        />
+        <Input.TextArea
+          size="small"
+          rows={4}
+          value={data.settings?.systemPrompt ?? ''}
+          placeholder={t('workflowDesigner.systemPromptPlaceholder')}
+          onChange={(e) => onUpdateData({ settings: { ...data.settings, systemPrompt: e.target.value } })}
+        />
+      </div>
+      <div className="wf-node-sec">
+        <SectionTitle text={t('workflowDesigner.temperatureTitle')} />
+        <InputNumber
+          size="small"
+          style={{ width: '100%' }}
+          min={0}
+          max={2}
+          step={0.1}
+          precision={2}
+          value={typeof data.settings?.temperature === 'number' ? data.settings.temperature : undefined}
+          placeholder={t('workflowDesigner.temperaturePlaceholder')}
+          onChange={(v) =>
+            onUpdateData({
+              settings: {
+                ...data.settings,
+                temperature: typeof v === 'number' ? v : undefined,
+              },
+            })
+          }
+        />
+        <div className="wf-config-hint">{t('workflowDesigner.temperatureHint')}</div>
+      </div>
+      <div className="wf-node-sec">
+        <SectionTitle text={t('workflowDesigner.skillsTitle')} />
+        <Select
+          size="small"
+          mode="multiple"
+          style={{ width: '100%' }}
+          value={data.settings?.skillIds ?? []}
+          placeholder={t('workflowDesigner.skillsPlaceholder')}
+          options={skillOptions}
+          notFoundContent={t('workflowDesigner.skillsEmpty')}
+          onChange={(v) => onUpdateData({ settings: { ...data.settings, skillIds: v } })}
+        />
+        <div className="wf-config-hint">{t('workflowDesigner.skillsHint')}</div>
+      </div>
+      <div className="wf-node-sec">
+        <SectionTitle text={t('workflowDesigner.sandboxTitle')} />
+        <Switch
+          size="small"
+          checked={data.settings?.sandboxEnabled === true}
+          onChange={(v) => onUpdateData({ settings: { ...data.settings, sandboxEnabled: v } })}
+        />
+        <div className="wf-config-hint">{t('workflowDesigner.sandboxHint')}</div>
+      </div>
+    </>
   )
 }
 
@@ -744,7 +961,7 @@ function BindingsSection({
                 <Input
                   size="small"
                   value={binding.value}
-                  placeholder="{start.query} 模板"
+                  placeholder="{start.question} 模板"
                   onChange={(e) => update(name, { value: e.target.value })}
                 />
               ) : (
@@ -1057,7 +1274,7 @@ function PluginBindingsSection({
                 <Input
                   size="small"
                   value={binding.value}
-                  placeholder="{start.query} 模板"
+                  placeholder="{start.question} 模板"
                   onChange={(e) => update({ value: e.target.value })}
                 />
               ) : (
@@ -1146,11 +1363,26 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
         return (
           <>
             <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
-            <div className="wf-node-sec">
-              <SectionTitle text={t('workflowDesigner.inputFields')} />
-              <StartInputsEditor data={nodeData} onUpdateData={patch} />
-              <div className="wf-config-hint">{t('workflowDesigner.startInputsHint')}</div>
-            </div>
+            <OutputsSection
+              outputs={[
+                { name: 'question', fieldType: 'string', isRequired: true, description: t('workflowDesigner.startQuestionDesc') },
+              ]}
+            />
+            <div className="wf-config-hint">{t('workflowDesigner.startQuestionHint')}</div>
+          </>
+        )
+      case 'end':
+        return (
+          <>
+            <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <BindingsSection
+              data={nodeData}
+              nodeId={nodeId}
+              onUpdateData={patch}
+              titleKey="workflowDesigner.endCollectTitle"
+              addLabelKey="workflowDesigner.addInput"
+            />
+            <div className="wf-config-hint">{t('workflowDesigner.endCollectHint')}</div>
           </>
         )
       case 'condition': {
@@ -1212,6 +1444,13 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
         return (
           <>
             <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <ModelSelectSection
+              data={nodeData}
+              onUpdateData={patch}
+              titleKey="workflowDesigner.aiModel"
+              placeholderKey="workflowDesigner.aiModelPlaceholder"
+            />
+            <AiChatSettingsSection data={nodeData} onUpdateData={patch} />
             <BindingsSection
               data={nodeData}
               nodeId={nodeId}
@@ -1220,6 +1459,7 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
               addLabelKey="workflowDesigner.addInput"
             />
             <OutputsSection outputs={nodeData.outputs ?? []} />
+            <div className="wf-config-hint">{t('workflowDesigner.aiChatHint')}</div>
           </>
         )
       case 'javaScript':
@@ -1260,11 +1500,32 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
         )
       case 'http':
         return <HttpNodeForm data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+      case 'agentApp':
+        return (
+          <>
+            <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <AgentAppSelectSection data={nodeData} onUpdateData={patch} />
+            <BindingsSection
+              data={nodeData}
+              nodeId={nodeId}
+              onUpdateData={patch}
+              titleKey="workflowDesigner.inputFields"
+              addLabelKey="workflowDesigner.addInput"
+            />
+            <OutputsSection outputs={nodeData.outputs ?? []} />
+            <div className="wf-config-hint">{t('workflowDesigner.agentAppPromptHint')}</div>
+          </>
+        )
       case 'questionClassifier':
         return (
           <>
             <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
-            <ClassifierModelSelect data={nodeData} onUpdateData={patch} />
+            <ModelSelectSection
+              data={nodeData}
+              onUpdateData={patch}
+              titleKey="workflowDesigner.classifierModel"
+              placeholderKey="workflowDesigner.classifierModelPlaceholder"
+            />
             <ClassifierBackgroundSection data={nodeData} onUpdateData={patch} />
             <ClassifierHistoryCountSection data={nodeData} onUpdateData={patch} />
             <ClassifierQueryBinding data={nodeData} nodeId={nodeId} onUpdateData={patch} />
@@ -1281,81 +1542,4 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
   return <div className="wf-node-form">{body}</div>
 }
 
-// ==================== 开始节点的输入参数声明编辑 ====================
-
-function StartInputsEditor({
-  data,
-  onUpdateData,
-}: {
-  data: NodeData
-  onUpdateData: (patch: Partial<NodeData>) => void
-}) {
-  const { t } = useTranslation()
-  const inputs = data.inputs ?? {}
-  const names = Object.keys(inputs)
-
-  const update = (name: string, p: Partial<FieldBinding>) => {
-    onUpdateData({ inputs: { ...inputs, [name]: { ...inputs[name], ...p } } })
-  }
-  const rename = (oldName: string, newName: string) => {
-    const next: Record<string, FieldBinding> = {}
-    for (const [n, b] of Object.entries(inputs)) next[n === oldName ? newName : n] = b
-    onUpdateData({ inputs: next })
-  }
-  const add = () => {
-    let name = `param_${Date.now().toString(36)}`
-    while (name in inputs) name += 'x'
-    onUpdateData({ inputs: { ...inputs, [name]: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } })
-  }
-  const remove = (name: string) => {
-    const next = { ...inputs }
-    delete next[name]
-    onUpdateData({ inputs: next })
-  }
-
-  return (
-    <>
-      {names.map((name) => (
-        <div key={name} className="wf-b-row">
-          <div className="wf-b-row-top">
-            <Input
-              size="small"
-              value={name}
-              onChange={(e) => rename(name, e.target.value)}
-              placeholder="param_name"
-              className="wf-field-name"
-            />
-            <Select
-              size="small"
-              value={inputs[name].fieldType ?? 'string'}
-              onChange={(v) => update(name, { fieldType: v })}
-              className="wf-field-type"
-              popupMatchSelectWidth={false}
-              options={FIELD_TYPE_OPTIONS.map((ft) => ({ value: ft, label: ft }))}
-            />
-            <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(name)}>
-              <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </div>
-          <Input
-            size="small"
-            value={inputs[name].description ?? ''}
-            onChange={(e) => update(name, { description: e.target.value })}
-            placeholder={t('workflowDesigner.fieldDesc')}
-          />
-          <label className="wf-field-required">
-            <input
-              type="checkbox"
-              checked={inputs[name].required !== false}
-              onChange={(e) => update(name, { required: e.target.checked })}
-            />
-            {t('workflowDesigner.required')}
-          </label>
-        </div>
-      ))}
-      <Button size="small" type="dashed" block icon={<PlusOutlined />} onClick={add}>
-        {t('workflowDesigner.addInput')}
-      </Button>
-    </>
-  )
-}
+// ==================== 开始节点：固定 question 启动参数（只读展示，见 NodeForm case 'start'） ====================

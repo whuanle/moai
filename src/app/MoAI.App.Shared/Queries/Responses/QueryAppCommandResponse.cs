@@ -73,6 +73,11 @@ public class QueryAppCommandResponse
     public bool OpeningStatementEnabled { get; set; }
 
     /// <summary>
+    /// 快捷输入列表（管理员配置，对话欢迎态点击即发送），未配置为空列表.
+    /// </summary>
+    public IReadOnlyList<string> QuickInputs { get; set; } = new List<string>();
+
+    /// <summary>
     /// 我在所属团队中的角色：0=Member 1=Admin 2=Owner.
     /// </summary>
     public int MyRole { get; set; }

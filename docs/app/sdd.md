@@ -2,7 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/app-e2e.mjs](../../local-dev/app-e2e.mjs)
 
-- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33）；2026-09-16 增补：**会话专家提示词**（`app_agent_session.prompt_id` + 绑定接口 + 对话页右侧专家侧边栏，见 §2.1/§5.4 与 @AP-S44/@AP-S45）；2026-09-17 增补：**对话开场白**（`app_agent_config.opening_statement/-enabled` + 应用详情下发 + 聊天页/调试面板新会话展示，见 §2.1/§5.4 与 @AP-S46/@AP-S47））
+- 日期：2026-09-10（2026-09-11 增补：创建/编辑支持头像与外部开关；2026-09-11 增补：应用改卡片展示 + 应用管理页可配置插件/知识库/提示词；2026-09-11 增补：管理页改**单页左右分栏**并支持**对话模型**选择；2026-09-13 增补：**内部/外部应用区分**（`is_external` / `is_auth` / `is_public`）+ 「外部应用」团队分区 + 平台公开应用广场；2026-09-14 增补：**应用工作台**（左侧菜单：配置/日志/监控，外部应用 + 访问点占位）+ **Redis 调试会话**（左配置、右调试，未发布可调试、不落库不计用量）；2026-09-14 增补：**外部 token 体系**（`external_user` 表 + 应用/用户/匿名三类 token + `/api/external` 拦截器，见 §2.2/§4/D30~D33）；2026-09-16 增补：**会话专家提示词**（`app_agent_session.prompt_id` + 绑定接口 + 对话页右侧专家侧边栏，见 §2.1/§5.4 与 @AP-S44/@AP-S45）；2026-09-17 增补：**对话开场白**（`app_agent_config.opening_statement/-enabled` + 应用详情下发 + 聊天页/调试面板新会话展示，见 §2.1/§5.4 与 @AP-S46/@AP-S47）；2026-09-19 增补：**应用默认技能**（`app_agent_config.skills` 改默认语义，用户技能勾选仅限默认范围，见 [../skill/sdd.md](../skill/sdd.md) §9）与**工作台「信息」分区**（Agent 应用左侧菜单新增，基础信息自配置分区拆出，见 §5.4 与 @AP-S49）；2026-09-20 增补：**发布配置快照双轨**（`published_config`/`status` 快照列，发布即快照、保存只落草稿，正式会话/详情/落库压缩按快照执行，见 §2.1 与决策 D42、@AP-S54）；2026-09-20 增补：**对话附件**（输入卡上传文档/图片 → Maomi.ToMarkdown 提取注入消息文本，见 §4 与 §5.4、@AP-S55/@AP-S56）；2026-09-20 增补：**快捷输入**（`app_agent_config.quick_inputs` 管理员自定义 ≤10 条，应用详情随开场白下发，聊天页欢迎态点击即发送；输入框默认三行、移除欢迎态副标题，见 §2.1/§5.4、决策 D43 与 @AP-S57/@AP-S58）；2026-09-20 增补：**重新发布入口**（已发布且有草稿变更时，工作台头部主按钮 + 配置区警告条 action，复用发布接口把草稿推入快照，见 §5.4 与 @AP-S59）；2026-09-20 增补：**专家选择并入应用设置**（右上角独立专家入口移除，设置面板加宽至 380px、分区重排为 专家→技能→工具审批，会话内切换专家改经设置保存生效，见 §5.4 与 @AP-S44）；2026-09-20 增补：**图片附件多模态注入**（图片不再只以链接文本附带，后端 `ChatAttachmentImageChatClient` 装饰器在发往模型前把图片标记块转为 image/* DataContent 字节内联，图片块格式改带 objectKey 属性 + 裸下载地址，见 §4 与 §5.4、@AP-S64））
 - 状态：数据库 + 后端 API + 前端团队内页面（应用卡片列表 + 应用管理页 + 外部应用分区 + 应用广场）已实现；**发布**（`publish_status`/`publish_time`）与会话 CRUD 已实现；Agent 应用的**会话运行**（对话/上下文/知识库 RAG）见 [../ai/sdd.md](../ai/sdd.md)；**外部 token 体系与外部会话/对话端点（/api/external/agent/*）**已实现（D39，见 [外部应用/接入设计](../superpowers/specs/2026-09-13-external-app-and-access-design.md) 与 [访问点设计](../superpowers/specs/2026-09-14-access-point-design.md)）
 - 领域：`src/app`（Shared/Core/Api），前端 `ui/src/pages/teams/apps`（团队页「应用」分区 + 应用管理页）
 - Schema 真源：库表现状 + `src/database/MoAI.Database.Postgres/Data/App*.cs`（脚手架逆向生成）；原 `asserts/app.sql` / 库表 `app_agent_*` 已随仓库 DDL 清理移除
@@ -42,9 +42,14 @@
 | `model_id` | **uuid** | 对话模型（→ `ai_model.id`） |
 | `wiki_ids` | text | 绑定知识库ID JSON 数组（元素为 `wiki.id`，int），空 `[]` |
 | `plugins` | text | 绑定插件ID JSON 数组（元素为 `plugin.id`，uuid 字符串），空 `[]` |
+| `workflow_apps` | text | 绑定为工具的流程应用ID JSON 数组（元素为 `app.id`，uuid 字符串，须为本团队已发布流程应用），空 `[]`（2026-09-20 增补，存量库见 `asserts/app_agent_workflow_apps.sql`，决策 D44） |
+| `skills` | text | 应用默认使用的技能ID JSON 数组（元素为 `skill.id`，uuid 字符串），用户可在应用设置中取消勾选（语义见 [../skill/sdd.md](../skill/sdd.md) §9） |
 | `execution_settings` | text | 对话参数 JSON 对象（temperature/topP/maxTokens…），空 `{}` |
 | `opening_statement` | varchar(4000) | 对话开场白内容，空 `''`（2026-09-17 增补，存量库见 `asserts/app_agent_opening_statement.sql`） |
 | `opening_statement_enabled` | boolean | 是否启用对话开场白，默认 `false` |
+| `quick_inputs` | text | 快捷输入列表 JSON 数组文本（管理员自定义，聊天页欢迎态点击即发送），空 `[]`（2026-09-20 增补，存量库见 `asserts/app_agent_quick_inputs.sql`，决策 D43） |
+| `published_config` | text NULL | 发布配置快照 JSON（camelCase 全字段），发布时写入；null=从未发布，存量已发布应用回退实时配置（2026-09-20 增补，存量库见 `asserts/app_agent_published_config.sql`，决策 D42；流程应用仅开场白有意义，随流程发布一并快照） |
+| `status` | smallint | 配置状态，0=草稿有未发布变更 1=草稿与已发布一致（2026-09-20 增补） |
 | 审计四件 + `is_deleted` | | bigint 软删除 |
 
 **`app_agent_session`｜会话列表**
@@ -127,11 +132,11 @@
 | GET | `/api/app/list?teamId=` | 团队**内部**应用列表（固定 `is_external=false`，含 myRole、`isExternal/isAuth/isPublic`） | `QueryAppsCommandResponse` |
 | GET | `/api/app/external/list?teamId=` | 团队**外部**应用列表（`is_external=true`，Admin+） | `QueryAppsCommandResponse` |
 | GET | `/api/app/public/list` | 平台公开应用列表（`is_external=false && is_public && 已发布 && 未禁用`，任意登录用户） | `QueryPublicAppsCommandResponse` |
-| GET | `/api/app/{id}` | 应用详情（外部应用对内部用户 404；公开应用非成员可读）；Agent 应用随详情下发 `openingStatement`/`openingStatementEnabled`（成员可读，聊天页开场白取值点） | `QueryAppCommandResponse` |
+| GET | `/api/app/{id}` | 应用详情（外部应用对内部用户 404；公开应用非成员可读）；Agent 应用随详情下发 `openingStatement`/`openingStatementEnabled`/`quickInputs`（成员可读，聊天页开场白与快捷输入取值点） | `QueryAppCommandResponse` |
 | PUT | `/api/app/{id}` | 更新基础信息 `{name, description?, isExternal?, isAuth?, isPublic?}`（应用类型不可改，`isExternal` 以库内为准） | Empty |
 | POST | `/api/app/{id}/avatar` | 设置头像 `{objectKey}`（须为已登记上传文件；编辑态使用） | Empty |
 | GET | `/api/app/{id}/agent-config` | 查询 Agent 应用配置（未保存过时返回空配置，不 404） | `QueryAppAgentConfigCommandResponse` |
-| PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[], openingStatement?, openingStatementEnabled?}` | Empty |
+| PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[], openingStatement?, openingStatementEnabled?, quickInputs?}` | Empty |
 | GET | `/api/access-app/list?teamId=` | 团队应用接入列表（Admin+，回显完整 key，支持再次查看） | `QueryAccessAppsCommandResponse` |
 | POST | `/api/access-app` | 创建应用接入 `{teamId, name, description?, appIds[]}`，key 原文仅返回一次 | `CreateAccessAppCommandResponse` |
 | PUT | `/api/access-app/{id}` | 更新接入 `{name, description?, appIds[]}`（key 不可改） | Empty |
@@ -143,13 +148,19 @@
 | GET | `/api/external/agent/{appId}/session/list` | 该外部用户在某应用下的会话列表（按最后消息时间倒序） | `QueryExternalAgentSessionsCommandResponse` |
 | GET | `/api/external/session/{sessionId}/messages` | 外部会话消息（按 seq 升序；仅归属外部用户且应用在授权范围，否则 404） | `QueryAppSessionMessagesCommandResponse` |
 | POST | `/api/external/agent/{appId}/chat` | 外部对话（AG-UI SSE，与内部 `/api/agent/{appId}/chat` 同一 Agent/会话存储）；认证与授权范围由 `ExternalAuthenticationMiddleware` 在管道完成 | SSE 流 |
+| POST | `/api/app/session/{sessionId}/tool-approval` | 对会话中挂起等待人工审批的工具调用做出决策 `{toolName, approved}`；仅会话归属用户，返回 `{status: approved/rejected/missing}`（missing=无匹配待审批记录） | `DecideAppSessionToolApprovalResponse` |
 | GET | `/api/app/{id}/access-point` | 查询访问点配置（内部管理视图，未保存过返回默认值；Admin+） | `AppAccessPointConfigResponse` |
 | PUT | `/api/app/{id}/access-point` | 保存访问点配置（整体替换；仅外部应用，Admin+） | Empty |
 | GET | `/api/external/app/{appId}/access-point` | 访问点**公开**配置（匿名，悬浮组件用；含 appName/avatarUrl/isAuth/enabled） | `ExternalAccessPointResponse` |
+| POST | `/api/app/chat-attachment/extract` | 对话附件文本提取 `{objectKey, fileName}`（登录即可；objectKey 必须为 `public/chat/` 前缀防越权读私有文件；Maomi.ToMarkdown 进程内提取，超 12 万字符截断并标记） | `ExtractChatAttachmentResponse`（markdown/contentLength/truncated） |
+
+**对话附件注入模型的两条路径（文档=文本、图片=多模态，2026-09-20 增补）**：文档附件由前端提取后内联在消息文本；图片附件由后端 `ChatAttachmentImageChatClient`（`IChatClient` 装饰器，`AppAgentFactory` 装配在内层 SDK 客户端之上、`UsageCapturingChatClient` 之下）在**请求发往模型前**把用户消息中的图片标记块重写为 `[图片附件：文件名]` 占位 + 追加 image/* `DataContent`（字节内联，OpenAI/Anthropic/Gemini 各协议适配器原生支持）。要点：①会话落库与历史回放仍存标记文本（持久化发生在 agent 层，装饰器只改发往模型的请求），新一轮历史重放走同一转换；②objectKey 解析优先标记块 `objectKey` 属性、历史消息回退从 URL `/static/` 后缀提取，且强制 `public/chat/` 前缀与无 `..`（与 extract 端点同约束，防越权读私有文件）；③svg 不内联（主流视觉接口不接受 image/svg+xml，保持链接文本）、读取失败/超 20MB 降级保留原标记文本不阻断对话；④同一次运行的工具循环轮次间按 objectKey 缓存字节。流程应用（WorkflowAppChatClient）不经过该装饰器。
 
 > `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`。
 
-`QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / skills(uuid[]) / executionSettings / openingStatement / openingStatementEnabled / myRole`。
+`QueryAppUserConfigCommandResponse` 字段新增：`toolApprovalMode`（auto/approval，无配置行默认 auto）与 `toolApprovalExemptNames`/`toolApprovalExemptPrefixes`（审批卡豁免工具清单，源自 `MoAI.AI.AppToolApprovalContract`，与 AI 模块闸口同源）。保存接口 `PUT /api/app/{id}/userconfig` 请求体新增可选 `toolApprovalMode`（null=不修改，非法值 400）。
+
+`QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / skills(uuid[]) / executionSettings / openingStatement / openingStatementEnabled / quickInputs(string[]) / status / myRole`。
 
 **保存配置的校验链**（`SaveAppAgentConfigCommandHandler`，顺序固定）：
 
@@ -208,14 +219,20 @@
 
 ### 5.4 应用工作台（`ui/src/pages/teams/apps/AppWorkspace.tsx`，路由 `/team/:teamId/app/:appId/:section?`）
 
-- **左侧菜单**：`config`（配置）/ `logs`（日志）/ `monitor`（监控）；外部应用（`is_external=true`）额外 `access`（访问点）。采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，菜单项带图标（Setting/Profile/AreaChart/Api）；`section` 非法或缺省回落 `config`。原 `AppManage.tsx` 单页左右分栏已删除，配置内容迁入 `AppConfigSection`。
-- **分区可见性（前端渲染层）**：`logs`/`monitor` 仅团队 Owner/Admin 可见；`access` 仅 Owner/Admin 且外部应用可见；Member 只有 `config`（只读，无调试），深链 `/logs` 回落 `config`。
-- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=15`）为 应用信息 + Agent 配置（含沙箱）；右栏（`lg=9`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存信息/头像/发布后**静默刷新**（`load(true)`），不卸载调试面板。
+- **左侧菜单**：`config`（配置）/ `info`（信息，2026-09-19 增补，仅 Agent 应用，位于配置之后，成员可见）/ `logs`（日志）/ `monitor`（监控）；外部应用（`is_external=true`）额外 `access`（访问点）。采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，菜单项带图标（Setting/InfoCircle/Profile/AreaChart/Api）；`section` 非法或缺省回落 `config`。原 `AppManage.tsx` 单页左右分栏已删除，配置内容迁入 `AppConfigSection`。
+- **分区可见性（前端渲染层）**：`logs`/`monitor` 仅团队 Owner/Admin 可见；`access` 仅 Owner/Admin 且外部应用可见；Member 只有 `config` 与 `info`（只读，无调试），深链 `/logs` 回落 `config`。
+- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=15`）为 Agent 配置（含沙箱）；右栏（`lg=9`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存配置后**静默刷新**（`load(true)`），不卸载调试面板。基础信息（头像/名称/描述/授权与上架状态）自 2026-09-19 起拆至「信息」分区。
+- **信息分区**（`AppInfoSection.tsx`，2026-09-19 增补）：应用基础信息维护（头像上传/类型标签/名称/描述/外部应用访问授权开关；内部应用为上架状态区块——公开、待审核可撤回、被驳回可重新申请，申请走 publication 模块 Modal）。保存信息/头像后 `onReload` 静默刷新；Member 表单只读且无保存入口。
 - **调试会话（Redis 临时会话）**：`POST /api/app/{id}/debug/session`（Admin+）生成 `Guid.CreateVersion7()` 会话 id 并写 Redis 注册表 `appagent:debug:{id}`（TTL 2h 滑动）；对话仍走 `/api/agent/{appId}/chat`，`AppAgentDispatcher` 在无 `app_agent_session` 行时回落注册表（校验 `UserId`），以 `isDebug=true` 装配（跳过 `UsageCapturingChatClient`）；`AppChatFlushService.FlushAsync` 无 session 行即 return → 调试对话**不落库**。前端刷新即弃用会话 id。
 - **日志分区**（`AppLogsSection.tsx`，Phase 2 已交付）：`GET /api/app/{id}/logs`（Admin+，分页，支持 标题关键字 / 用户类型 / 最后消息时间范围 过滤；数据源为全用户的正式会话 `app_agent_session`，即压缩后视图）+ `GET /api/app/{id}/logs/{sessionId}/messages`（Admin+，按 `seq` 返回该会话消息）。列表条目 `AppLogItem : AuditsInfo`，内部用户人名由 `IUserInfoFillService.FillAsync` 填充，外部用户按 `userType` + `ownerId` 展示（不填内部人名）。前端 `DataTable` + 详情 `Drawer`。
 - **监控分区**（`AppMonitorSection.tsx`，Phase 3 已交付）：`GET /api/app/{id}/usage`（Admin+），返回用量汇总（调用次数 / 输入 / 输出 / 合计 token）与按模型分布。数据源为聚合表 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId` Guid + `team_id`），**最多滞后约 1 分钟**；调试会话不计数。本期**不含按日趋势**（聚合表无时间分桶）。
-- **对话页专家侧边栏（`AppChat.tsx`，2026-09-16 增补）**：顶栏「专家」按钮（`UserSwitchOutlined`，绑定时带 Badge 圆点）点击后右侧浮层展开专家列表 = 本人个人提示词（`getMyPrompts`）+ 所在团队提示词（`getTeamPrompts`），支持关键字本地过滤与 个人/团队 来源标签。点选即绑定：已有会话直接调 `PUT /app/session/{id}/prompt`，未发送过消息则暂存本地、首轮 `createAppSession` 随会话一并创建；再点同一项取消。选中专家在输入框上方以提示条展示（可点 × 清除）；切换会话按该会话 `promptId` 回显。
+- **对话页顶栏（`AppChat.tsx`，2026-09-20 调整）**：仅保留 菜单（移动端）/ 返回 / 应用品牌（头像+名称+发布标签）/ 应用设置（用户级配置，专家选择并入其中，**无独立专家按钮**）；**不提供「管理」入口**（应用管理统一从团队「应用」分区卡片右上角进入，对话页聚焦对话本身）。
+- **专家选择并入应用设置面板（`AppChat.tsx` + `chat/AppUserSettings.tsx`，2026-09-20 调整，原独立专家侧边栏移除）**：专家列表 = 本人个人提示词（`getMyPrompts`）+ 所在团队提示词（`getTeamPrompts`），含 个人/团队 来源标签。面板加宽至 380px，分区顺序为 专家 → 可用技能 → 工具审批；专家列表限高 300px 内滚。草稿以**当前生效专家**初始化（无会话=用户配置默认，有会话=会话 `promptId`）；保存时：无会话立即应用为当前专家（首轮 `createAppSession` 随会话一并创建），已有会话且专家变化则调 `PUT /app/session/{id}/prompt` 即时切换、再次点同一项保存取消（置 0），同时写入用户级配置作为新会话默认。选中专家仍在输入框上方提示条展示（可点 × 清除）；欢迎态热门专家胶囊点击即选用；切换会话按该会话 `promptId` 回显。
 - **对话开场白（`AppConfigSection.tsx` + `AppChat.tsx`/`AppDebugChat.tsx`，2026-09-17 增补）**：配置分区在系统提示词下方提供「对话开场白」开关 + 内容 `TextArea`（≤4000，关闭开关保留内容），随 `PUT /agent-config` 一次提交；应用详情（`GET /app/{id}`，成员可读）下发 `openingStatement`/`openingStatementEnabled`。聊天页在**新会话态**（详情加载完成且未选历史会话）以助手气泡展示开场白：切换历史会话按服务端历史渲染（不含开场白），删除当前会话回到新会话态时重新补展示；调试面板在挂载与「清空」后同样展示。开场白是**前端本地展示消息**（固定 id），不参与模型上下文、不入会话历史。
+- **快捷输入（`AppConfigSection.tsx` + `AppChat.tsx`，2026-09-20 增补）**：配置分区在开场白下方提供快捷输入列表编辑（增删改，≤10 条、单条 ≤200 字，保存时过滤空白项）；`PUT /agent-config` 携带 `quickInputs`（null=保持原值，兼容旧前端）。应用详情下发 `quickInputs`，聊天页欢迎态在输入卡下方以胶囊展示（未配置不渲染该区），**点击即直接发送**（`send(text)` 支持覆盖入参，首轮创建会话）；同时输入卡文本域默认三行（`minRows:3/maxRows:10`），移除欢迎态「输入问题开始对话」副标题（`landingSubtitle` 键删除，zh/en 同步）。已发布应用按发布快照下发（同开场白双轨，D42）。行为见 [@AP-S57](./bdd.md#ap-s57)/[@AP-S58](./bdd.md#ap-s58)。
+- **重新发布入口（`AppWorkspace.tsx` + `AppConfigSection.tsx`，2026-09-20 增补）**：发布快照双轨（D42）的前端闭环——配置状态由配置分区加载/保存时上报工作台（`configStatus`/`onConfigStatusChange`，工作台为真值、分区回退本地值），已发布且状态=0 时：工作台头部出现「重新发布」主按钮（Popconfirm 确认，「取消发布」降为次按钮），配置区「已有未发布的配置修改」警告条附带「重新发布」action；确认后调用 `POST /app/{id}/publish`（发布接口本身即重发语义）把草稿写入快照，线上对话立即生效，入口与警告条消失。行为见 [@AP-S59](./bdd.md#ap-s59)。
+- **对话输入卡与附件（`AppChat.tsx` + `chat/attachment.ts`，2026-09-20 增补；图片块格式同日随多模态注入调整；chip 展示同日加缩略图/类型图标）**：输入卡为两行式（文本域 + 底部工具行：左侧回形针附件按钮与审批模式标识、右侧深色方块上箭头发送/停止按钮）；开场白引导行在欢迎态为无边框纯文本。附件链路：`pre_upload_chat_file` 直传（`public/chat/{sha256}.{ext}`，白名单=文档+图片、≤20MB、一次最多 5 个）→ 文档调 `chat-attachment/extract` 提取 → chip 展示状态（上传中/提取中/就绪大小/失败可移除）；**chip 视觉**——就绪图片附件展示 32px 圆角缩略图（`getAttachmentFileIcon` 兜底：上传中/失败无地址回退图片图标），文档附件按扩展名展示类型图标（Word/Excel/PPT/PDF/Markdown/代码/通用文本，`attachment.ts` 的 `getAttachmentFileIcon` 映射），用户气泡 chip 同规则（图片 22px 缩略图 + `attachmentImageSrc` 兼容历史 `[图片附件](url)` 格式）；发送时拼 `buildOutgoingText`（用户输入 + `<moai-attachment name="…">提取内容</moai-attachment>` 标记块；图片块为 `<moai-attachment name="…" objectKey="…">裸下载地址</moai-attachment>`——objectKey 供后端读取字节做多模态注入、裸地址使气泡 chip 可点击打开，见 §4 与 @AP-S64），未就绪附件阻止发送；用户气泡经 `parseAttachmentMessage` 把标记块解析回附件 chip（正则兼容无 objectKey 属性的历史块；文档可展开查看提取文本、图片链接可打开），历史回看与服务端存储一致。
+- **流程应用共用对话页的裁剪（`AppChat.tsx`，2026-09-20 增补）**：流程应用发布后同样经 `AppChat` 对话，但按应用详情 `appType=workflow` 裁剪 Agent 专属能力——应用设置面板与入口、专家（当前/热门）、技能勾选、工具审批模式不展示且不发起对应请求（流程对话后端不装配这些能力）；会话/开场白/快捷输入/附件照常。详见 [../app-workflow/sdd.md](../app-workflow/sdd.md) D36（行为 [@WF-S42](../app-workflow/bdd.md#wf-s42)~[@WF-S44](../app-workflow/bdd.md#wf-s44)）。
 - **访问点**：仍为占位，Phase 4 交付。
 
 ## 6. 关键决策
@@ -260,6 +277,26 @@
 - **D32 监控基于聚合用量表（无趋势）**（Phase 3 已交付）：直接查 `ai_model_token_audit`（`UseType=App` + `use_resource_id == appId`，该列为 Guid，无需 D6 字符串化迁移）交付汇总 + 按模型分布；**不含按日趋势**（聚合表逐维一行、无时间分桶），趋势需逐次用量日志或按日聚合，留后续。
 - **D33 访问点本期占位**（Phase 4）：仅外部应用可见，先定地址形态与授权口径。
 - **D40 对话开场白为前端展示消息，随应用详情下发**：开场白（启用开关 + 内容）存 `app_agent_config`，语义是「新会话开始时的第一屏引导」——**不参与模型上下文、不入会话历史**（区别于系统提示词，也不经对话端点下发）。挂载点选 `GET /app/{id}` 应用详情而非 `/agent-config`：聊天页用户多为 Member，详情本就成员可读，避免为取开场白抬高权限门槛。开关与内容分离：关闭开关保留内容，重新打开无需重写；`enabled && 内容非空` 才生效。
+- **D41 沙箱资源上限强校验（2026-09-19）**：`execution_settings.sandbox` 的存活时间 / CPU / 内存不得超出超级管理员在系统设置配置的上限（见 [../settings/sdd.md](../settings/sdd.md) 决策 9）。校验在 `SaveAppAgentConfigCommandHandler` 经 `SandboxSettingsLimitValidator`（纯函数，`App.Core/Validation/`）执行：**仅本次保存启用沙箱时强校验**——未启用仅暂存不生效，避免 root 收紧上限后连带阻断其他字段的保存；CPU/内存按 K8s 数量解析比较（解析器 `SandboxQuantity` 在 Settings.Shared，前后端语义一致）。上限对配置页经 `GET /app/sandbox-limits` 下发（登录可读，非敏感值；`/api/settings` 为 admin 专属不能复用），前端 InputNumber max 与保存前拦截为体验层，后端 400 为最终防线。行为见 [@AP-S48](./bdd.md#ap-s48)。
+- **D42 发布配置快照双轨（2026-09-20）**：镜像 `app_workflow_config` 的 `PublishedDefinition` 模式——`app_agent_config` 现有列即「草稿」，新增 `published_config`（发布时整行快照 JSON，契约 `AppAgentConfigSnapshot` 于 Database.Shared，供 App.Core/App.Workflow.Core/AI.Core 三层共用）与 `status`（0=草稿有未发布变更）。**发布**（`PublishAppCommandHandler`，行不存在以默认值建行）写快照并置 status=1；**保存**（含流程应用开场白 upsert）只改草稿并置 status=0；**取消发布**保留快照（与流程保留 `PublishedDefinition` 一致），运行时按 `publish_status` 门控。**读取**：`AppAgentFactory` 对正式会话（非调试）解析快照克隆实体（模型/提示词/插件/技能/执行参数与 `context.Config` 下游全走快照，调试会话与未发布应用走草稿；快照为 null 的存量已发布应用回退草稿行）；`QueryAppCommandHandler` 详情开场白、`AppChatFlushService` 落库压缩同规则；`agent-config` 查询响应新增 `status` 供前端提示「重新发布后生效」。流程应用开场白（D18 复用本表）随 `PublishAppWorkflowCommandHandler` 一并快照，`workflow/config` 的 `status` 合成「编排定义 ∧ 开场白」。行为见 [@AP-S54](./bdd.md#ap-s54)。
+- **D43 快捷输入为管理员配置的展示型数据（2026-09-20）**：存 `app_agent_config.quick_inputs`（JSON 字符串数组，与 wiki_ids/plugins 同模式），**不参与模型上下文**，仅聊天页欢迎态展示与点击发送；随 `GET /app/{id}` 应用详情下发（复用 D40 开场白的挂载点与发布快照双轨，D42 契约 `AppAgentConfigSnapshot` 增 `quickInputs` 字段）。上限 10 条 × 200 字在命令 Validate 与前端双侧校验；保存语义对齐 `skills`：请求携带才覆盖（null=保持原值），空数组清空，入库前规范化（去空白/丢空串/去重）。流程应用不开放编辑（设计器系统设置仅维护开场白）。行为见 [@AP-S57](./bdd.md#ap-s57)。
+- **D44 流程应用绑定为工具（2026-09-20）**：Agent 应用可把本团队**已发布**流程应用绑定为工具（`app_agent_config.workflow_apps`，保存时强校验团队/类型/发布状态；null=保持原值、空数组清空，随 D42 快照整行发布）。运行期由 `WorkflowAppToolProvider`（AI.Core/Tools，Order=11）装配：每个绑定的流程应用产出一个 `workflow__<应用名>` 工具（同名加短 id 后缀），参数契约 `{"query": "..."}`（兼容 question/input/text/prompt 与纯 JSON 字符串），调用经 `IWorkflowAppChatInvoker` **按发布快照**执行一轮流程，结束节点输出以 `{success, reply, instanceId}` 回传（中文不转义）；会话 id 透传使流程内 `sys.conversationId/sys.history` 与当前对话一致。**关键约束**：`IWorkflowAppChatInvoker` 在本提供者必须经 `IServiceProvider` 惰性解析——其实现构造链（WorkflowEngine → INodeExecutorRegistry → AiChatNodeExecutor → 宿主 IAiChatClient → AppContextProviderFactory）回到 `IEnumerable<IAppToolProvider>` 本身，构造注入形成 DI 环导致解析死锁（E2E AP-59 实测）。流程应用被取消发布/禁用后工具自然下线；审批模式下 workflow 属重要工具需人工批准。行为见 [@AP-S61](./bdd.md#ap-s61)/[@AP-S62](./bdd.md#ap-s62)/[@AP-S63](./bdd.md#ap-s63)。
+
+### 工具人工审批（D-工具审批）
+
+- 契约与键格式集中于 `MoAI.AI.AppToolApprovalContract`（AI.Shared，App.Core 引用之，避免环形依赖）：请求头 `X-Moai-Tool-Approval`（auto/approval，未携带按 auto）、Redis 键 `appagent:toolapproval:{id}`（记录）与 `appagent:toolapproval:pending:{sessionId}`（hash: field=审批 id, value=工具名，供决策接口按会话+工具名定位）。
+- 闸口位置在 `AppToolContextProvider.InvokeJsonAsync`（call_tool 唯一同步调用点）：审批模式且工具 Kind ∈ {sandbox, dynamic, static, mcp, openapi} 时先 `AppToolApprovalService.WaitDecisionAsync`（400ms 轮询，最长 300 秒）再执行；拒绝/超时向模型返回说明性错误 JSON，对话流不断。
+- 审批模式为**用户级**偏好（`app_user_config.tool_approval_mode`），随每轮对话 SSE 请求头即时下发（改模式无需重启/下一轮即生效）；外部渠道/飞书等无请求头场景恒为自动模式。
+- 前端审批卡由 AG-UI `TOOL_CALL_END` 事件解析 call_tool 内层 `toolName/argumentsJson` 驱动；豁免清单由 userconfig 下发（`search_knowledge_base` 与 `skill_*` 前缀），保证前后端判定同源。
+- 审批等待期间 SSE 连接保持（无字节输出），Kestrel 无空闲响应超时；反向代理场景需放宽读超时（>300 秒）。
+
+### 审批策略（D45 插件白名单与沙箱自动放行）
+
+- **D45 审批策略（2026-09-20）**：审批模式下的**应用级**放行白名单，存 `execution_settings.toolApproval` 节（`{ autoApprovePlugins: ["<pluginId>"], sandboxAutoApproved: bool }`，与沙箱配置同载体）——免加列、随 D42 快照整行发布（发布后改草稿不影响线上放行）。契约 `MoAI.AI.AppToolApprovalPolicy`（AI.Shared，闸口/保存校验/userconfig 三方共用）。
+  - 判定：`AppTool` 新增 `SourceId`（插件/流程应用 id，由 Plugin/Workflow 提供者填充），闸口在 Kind 命中重要工具后再查策略——沙箱开关命中 `kind=sandbox`，或 `SourceId` 在插件白名单内 → 直接执行，不建待审批记录；其余工具仍按 D-工具审批挂起。用户切回自动模式则策略无差别全放行（既有语义）。
+  - 保存校验：白名单必须是本次绑定插件的子集（未绑定/非法 id/结构不合法一律 400）；前端保存前先收敛（解绑插件自动剔出白名单）。
+  - 下发：userconfig 按发布快照解析策略并展开为**工具名**清单（静态/动态=插件名，MCP/OpenAPI=`{插件名}__{函数名}`，拼装契约 `AppPluginToolNaming`）与沙箱前缀 `sandbox_`，前端据此免展示审批卡（与豁免清单同一判定函数）。
+  - 行为见 [@AP-S65](./bdd.md#ap-s65)~[@AP-S68](./bdd.md#ap-s68)。
 
 ## 7. 已知问题 / 下阶段
 
@@ -269,7 +306,7 @@
 - 应用删除、启用/禁用、分类绑定、列表分页与关键字筛选未实现；当前列表为团队维度全量。
 - **「使用」应用尚无动作**：Member 在应用分区只能看到只读卡片——打开应用/对话依赖 Agent 运行时（会话），属下阶段；当前不放置无效的「打开」按钮。
 - 应用列表未展示创建人（未接入 `IUserInfoFillService`）。
-- **Agent 应用配置已可读写，但尚未运行**：`app_agent_config` 的 `model_id`/`prompt`/`wiki_ids`/`plugins` 已有读写接口与管理页；**`execution_settings` 仍无设置入口**（新建配置行时落 `{}`，temperature/topP/maxTokens 等默认值由运行时决定），会话（`app_agent_session`/`app_agent_message`）与对话运行未实现。**未选模型是合法状态**（空 Guid），「不指定模型时用什么」留待会话运行阶段定义。
+- **Agent 应用配置已可读写，但尚未运行**：`app_agent_config` 的 `model_id`/`prompt`/`wiki_ids`/`plugins` 已有读写接口与管理页；`execution_settings` 的 `sandbox` 子对象可经配置页读写（启用沙箱时受系统上限强校验，见 D41），其余键（temperature/topP/maxTokens 等）新建配置行时落 `{}`、默认值由运行时决定，会话（`app_agent_session`/`app_agent_message`）与对话运行未实现。**未选模型是合法状态**（空 Guid），「不指定模型时用什么」留待会话运行阶段定义。
 - **绑定无反向查询**：`wiki_ids`/`plugins` 为 JSON 文本，删除插件/知识库时不会级联清理引用（D10 的代价）；已绑定的资源被删除后，管理页会显示一个无法解析为选项的 id（表现为裸 id 标签）。**模型同理**：模型被停用/取消授权后，已保存的 `model_id` 不会自动清空，管理页会显示空标签（选项已不在列表里）。
 - 流程应用的应用级配置（`app_workflow_design` 等）未实现；管理页对流程应用只开放基础信息。
 - 消息表未落 `status`（生成中/完成/失败）与逐条 token；会话表已按会话维度累计 token。

@@ -48,4 +48,16 @@ public class PublicController : ControllerBase
     {
         return await _mediator.Send(req, ct);
     }
+
+    /// <summary>
+    /// 获取对话附件预上传地址（文档/图片，公开目录 chat 前缀，发送前做文本提取）.
+    /// </summary>
+    /// <param name="req">预上传请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>预上传响应，包含上传地址和文件信息.</returns>
+    [HttpPost("pre_upload_chat_file")]
+    public async Task<PreUploadFileCommandResponse> PreUploadChatFile([FromBody] PreUploadChatFileCommand req, CancellationToken ct = default)
+    {
+        return await _mediator.Send(req, ct);
+    }
 }

@@ -4,6 +4,8 @@ using MoAI.App.Workflow.Commands;
 using MoAI.App.Workflow.Definition;
 using MoAI.App.Workflow.Stores;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
+using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -93,8 +95,35 @@ public class PublishAppWorkflowCommandHandler : IRequestHandler<PublishAppWorkfl
         // 知识库检索节点引用的知识库必须属于本团队
         await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
 
+        // Agent 应用节点不得与当前流程构成循环嵌套（按发布后的工具闭包判定）
+        await Services.AgentWorkflowCycleGuard.EnsureNoCycleAsync(_databaseContext, request.AppId, Services.AgentWorkflowCycleGuard.CollectAgentAppIds(definition), cancellationToken);
+
         _executionContext.TeamId = app.TeamId;
         await _definitionStore.PublishAsync(request.AppId.ToString(), cancellationToken);
+
+        // 开场白随发布快照：流程应用的开场白存于 app_agent_config，正式会话/详情按发布快照下发
+        var agentConfig = await _databaseContext.AppAgentConfigs
+            .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
+
+        if (agentConfig == null)
+        {
+            agentConfig = new AppAgentConfigEntity
+            {
+                Id = Guid.CreateVersion7(),
+                TeamId = app.TeamId,
+                AppId = app.Id,
+                Prompt = string.Empty,
+                WikiIds = "[]",
+                Plugins = "[]",
+                Skills = "[]",
+                ExecutionSettings = "{}",
+                OpeningStatement = string.Empty,
+            };
+            _databaseContext.AppAgentConfigs.Add(agentConfig);
+        }
+
+        agentConfig.PublishedConfig = AppAgentConfigSnapshot.Serialize(agentConfig);
+        agentConfig.Status = 1;
 
         if (app.PublishStatus != 1)
         {

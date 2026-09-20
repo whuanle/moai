@@ -1,54 +1,55 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CheckOutlined, CloseOutlined, LockOutlined } from '@ant-design/icons'
-import { Button, Checkbox, Spin, Tag, Input } from 'antd'
+import { CheckOutlined, CloseOutlined, SafetyCertificateOutlined, ThunderboltFilled } from '@ant-design/icons'
+import { Button, Checkbox, Spin, Tag, Input, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { feedback } from '@/design-system'
-import { getAppUserConfig, saveAppUserConfig } from '@/api/app'
-import { getSkillOptions, type SkillOption } from '@/api/skills'
+import { getAppUserConfig, saveAppUserConfig, type AppUserSkillOption } from '@/api/app'
+import type { ToolApprovalMode } from '@/api/agentChat'
 import type { PromptItem } from '@/api/prompt'
 import { resolveStorageUrl } from '@/utils/storage'
 
 interface AppUserSettingsProps {
   open: boolean
   appId: string
-  teamId: number
   experts: PromptItem[]
+  /** 当前生效的专家提示词 id（无会话为新会话默认，有会话为会话绑定值），作为面板草稿初始值 */
+  currentPromptId: number
   onClose: () => void
-  /** 保存成功后回调，携带新会话默认专家提示词 id */
-  onSaved: (promptId: number) => void
+  /** 保存成功后回调，携带选中的专家提示词 id 与工具审批模式 */
+  onSaved: (promptId: number, approvalMode: ToolApprovalMode) => void
 }
 
 /**
  * 应用设置面板（右侧滑出）：用户对该应用的个性化定制，跨会话复用。
- * 专家=新会话默认提示词；技能=自选技能与应用绑定技能（锁定）取并集生效。
+ * 专家=提示词（本人个人 + 本团队），保存后作为新会话默认并在会话中即时切换；
+ * 技能只能从管理员配置的默认技能目录中勾选/取消（默认全部启用），范围外内容不展示也不可提交；
+ * 工具审批模式控制重要工具是否需人工批准。
  */
-export function AppUserSettings({ open, appId, teamId, experts, onClose, onSaved }: AppUserSettingsProps) {
+export function AppUserSettings({ open, appId, experts, currentPromptId, onClose, onSaved }: AppUserSettingsProps) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [draftPromptId, setDraftPromptId] = useState(0)
   const [draftSkills, setDraftSkills] = useState<string[]>([])
-  const [lockedSkills, setLockedSkills] = useState<SkillOption[]>([])
-  const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
+  const [skillOptions, setSkillOptions] = useState<AppUserSkillOption[]>([])
+  const [draftApprovalMode, setDraftApprovalMode] = useState<ToolApprovalMode>('auto')
 
   useEffect(() => {
     if (!open || !appId) return
     setLoading(true)
-    Promise.all([
-      getAppUserConfig(appId),
-      getSkillOptions({ teamId, includePersonal: true }).catch(() => [] as SkillOption[]),
-    ])
-      .then(([cfg, options]) => {
-        setDraftPromptId(cfg.promptId)
+    setSearch('')
+    // 专家草稿从当前生效值初始化（而非持久化默认），保证面板所见即当前会话实际使用的专家
+    setDraftPromptId(currentPromptId)
+    getAppUserConfig(appId)
+      .then((cfg) => {
         setDraftSkills(cfg.skills)
-        const lockedIds = new Set(cfg.lockedSkills)
-        setLockedSkills(options.filter((o) => lockedIds.has(String(o.id))))
-        setSkillOptions(options.filter((o) => !lockedIds.has(String(o.id))))
+        setSkillOptions(cfg.defaultSkills)
+        setDraftApprovalMode(cfg.toolApprovalMode)
       })
       .catch(() => undefined)
       .finally(() => setLoading(false))
-  }, [open, appId, teamId])
+  }, [open, appId, currentPromptId])
 
   const visibleSkills = useCallback(() => {
     const kw = search.trim().toLowerCase()
@@ -65,16 +66,20 @@ export function AppUserSettings({ open, appId, teamId, experts, onClose, onSaved
   const handleSave = useCallback(async () => {
     setSaving(true)
     try {
-      await saveAppUserConfig(appId, { promptId: draftPromptId, skills: draftSkills })
+      await saveAppUserConfig(appId, {
+        promptId: draftPromptId,
+        skills: draftSkills,
+        toolApprovalMode: draftApprovalMode,
+      })
       feedback.success(t('appChat.settingsSaved'))
-      onSaved(draftPromptId)
+      onSaved(draftPromptId, draftApprovalMode)
       onClose()
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setSaving(false)
     }
-  }, [appId, draftPromptId, draftSkills, onClose, onSaved, t])
+  }, [appId, draftApprovalMode, draftPromptId, draftSkills, onClose, onSaved, t])
 
   const skills = visibleSkills()
 
@@ -97,7 +102,7 @@ export function AppUserSettings({ open, appId, teamId, experts, onClose, onSaved
       ) : (
         <>
           <div className="moai-chat__settings-body">
-            <div className="moai-chat__settings-section">{t('appChat.defaultExpert')}</div>
+            <div className="moai-chat__settings-section">{t('appChat.experts')}</div>
             <div className="moai-chat__experts-list">
               {experts.length === 0 && <div className="moai-chat__sessions-empty">{t('appChat.expertsEmpty')}</div>}
               {experts.map((item) => {
@@ -143,18 +148,9 @@ export function AppUserSettings({ open, appId, teamId, experts, onClose, onSaved
               />
             </div>
             <div className="moai-chat__settings-skills">
-              {lockedSkills.length === 0 && skills.length === 0 && (
+              {skills.length === 0 && (
                 <div className="moai-chat__sessions-empty">{t('appChat.skillsEmpty')}</div>
               )}
-              {lockedSkills.map((item) => (
-                <div key={String(item.id)} className="moai-chat__settings-skill is-locked">
-                  <Checkbox checked disabled />
-                  <span className="moai-chat__settings-skill-name">{item.name || item.key}</span>
-                  <Tag className="moai-chat__settings-skill-lock">
-                    <LockOutlined /> {t('appChat.skillLocked')}
-                  </Tag>
-                </div>
-              ))}
               {skills.map((item) => {
                 const id = String(item.id)
                 const checked = draftSkills.includes(id)
@@ -165,12 +161,33 @@ export function AppUserSettings({ open, appId, teamId, experts, onClose, onSaved
                     {!item.isSystem && (item.teamId ?? 0) > 0 && (
                       <Tag className="moai-chat__expert-source is-team">{t('appChat.skillTeam')}</Tag>
                     )}
-                    {!item.isSystem && (item.teamId ?? 0) === 0 && (
-                      <Tag className="moai-chat__expert-source">{t('appChat.skillPersonal')}</Tag>
-                    )}
                   </div>
                 )
               })}
+            </div>
+
+            <div className="moai-chat__settings-section">{t('appChat.approvalModeLabel')}</div>
+            <div className="moai-chat__settings-modes">
+              <Tooltip title={t('appChat.modeAutoHint')} placement="top">
+                <button
+                  type="button"
+                  className={`moai-chat__settings-mode${draftApprovalMode === 'auto' ? ' is-active' : ''}`}
+                  onClick={() => setDraftApprovalMode('auto')}
+                >
+                  <ThunderboltFilled />
+                  {t('appChat.modeAuto')}
+                </button>
+              </Tooltip>
+              <Tooltip title={t('appChat.modeApprovalHint')} placement="top">
+                <button
+                  type="button"
+                  className={`moai-chat__settings-mode${draftApprovalMode === 'approval' ? ' is-active' : ''}`}
+                  onClick={() => setDraftApprovalMode('approval')}
+                >
+                  <SafetyCertificateOutlined />
+                  {t('appChat.modeApproval')}
+                </button>
+              </Tooltip>
             </div>
           </div>
           <div className="moai-chat__settings-footer">

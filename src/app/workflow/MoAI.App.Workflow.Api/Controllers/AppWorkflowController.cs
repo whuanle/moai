@@ -84,6 +84,21 @@ public class AppWorkflowController : ControllerBase
     }
 
     /// <summary>
+    /// 查询流程设计器可选的 Agent 应用列表（本团队已发布），并标记引入后是否与当前流程构成循环嵌套.
+    /// </summary>
+    /// <param name="appId">当前流程应用 id.</param>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppAgentOptionsCommandResponse"/>.</returns>
+    [HttpGet("agent-options")]
+    public Task<QueryAppAgentOptionsCommandResponse> QueryAgentOptions([FromQuery] Guid appId, [FromQuery] long teamId, CancellationToken ct)
+    {
+        var cmd = new QueryAppAgentOptionsCommand { AppId = appId, TeamId = teamId };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 分页查询流程应用运行实例列表，需要团队管理员.
     /// </summary>
     /// <param name="cmd">查询请求.</param>

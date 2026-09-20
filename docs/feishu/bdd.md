@@ -162,3 +162,40 @@ Feature: 群聊/私聊消息回复
     When 再次发送文本消息
     Then 应用 Agent 带上该会话历史生成回复
     And 会话消息与用量与站内对话一致落库
+
+Feature: 应用工作台外部渠道页
+  @FS-S24 @auto:vitest
+  Scenario: 外部渠道菜单可见性
+    Given 团队管理员打开内部 Agent 应用的应用工作台
+    Then 左侧菜单出现「外部渠道」入口
+    But 普通成员、外部应用与流程应用的工作台不出现该入口
+
+  @FS-S25 @auto:vitest
+  Scenario: 从应用页接入飞书应用
+    Given 管理员打开内部 Agent 应用的外部渠道页
+    When 填写连接名称、飞书 AppID 与 AppSecret 后提交接入
+    Then 平台创建飞书应用连接并直接绑定到当前应用
+    And 渠道表格只回显绑定到当前应用的连接（名称、AppID、状态、绑定时间）
+
+  @FS-S26 @auto:vitest
+  Scenario: 绑定已有连接与解除绑定
+    Given 团队内存在未绑定渠道的飞书连接
+    When 管理员在外部渠道页选择该连接绑定到当前应用
+    Then 绑定成功且团队内无可绑定连接时绑定入口不可用
+    When 管理员对该连接发起解绑
+    Then 二次确认后解绑生效
+
+  @FS-S27 @auto:vitest
+  Scenario: 渠道连接管理操作
+    Given 外部渠道页存在绑定到当前应用的飞书连接
+    When 管理员停用或删除该连接
+    Then 均需二次确认后生效
+    When 管理员启用已停用的连接
+    Then 直接生效无需确认
+    But 普通成员进入页面时不可见任何操作入口
+
+  @FS-S28 @auto:vitest
+  Scenario: 未发布应用提示
+    Given 内部 Agent 应用尚未发布
+    When 管理员打开外部渠道页
+    Then 页面提示飞书消息不会被处理，需先发布应用

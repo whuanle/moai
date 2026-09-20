@@ -102,7 +102,8 @@ state=STATE
             UserId = userEntity.Id,
             UserName = userEntity.UserName,
             NickName = userEntity.NickName,
-            Email = userEntity.Email
+            Email = userEntity.Email,
+            UserType = Infra.Models.UserType.Normal
         };
 
         var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);

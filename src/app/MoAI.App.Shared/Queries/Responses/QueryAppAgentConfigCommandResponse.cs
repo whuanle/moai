@@ -44,7 +44,12 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<Guid> Plugins { get; set; } = new List<Guid>();
 
     /// <summary>
-    /// 绑定的技能 id 列表（元素为 skill.id，uuid）.
+    /// 绑定为工具的流程应用 id 列表（元素为 app.id，uuid，本团队已发布流程应用）.
+    /// </summary>
+    public IReadOnlyList<Guid> WorkflowApps { get; set; } = new List<Guid>();
+
+    /// <summary>
+    /// 应用默认使用的技能 id 列表（元素为 skill.id，uuid），用户可在应用设置中取消勾选.
     /// </summary>
     public IReadOnlyList<Guid> Skills { get; set; } = new List<Guid>();
 
@@ -62,6 +67,16 @@ public class QueryAppAgentConfigCommandResponse
     /// 是否启用对话开场白；启用且内容非空时，新会话开始时展示.
     /// </summary>
     public bool OpeningStatementEnabled { get; set; }
+
+    /// <summary>
+    /// 快捷输入列表（管理员配置，用户在对话欢迎态点击即发送），未配置为空列表.
+    /// </summary>
+    public IReadOnlyList<string> QuickInputs { get; set; } = new List<string>();
+
+    /// <summary>
+    /// 配置状态：0=草稿有未发布变更 1=当前草稿与已发布一致；已发布应用 status=0 时线上仍按发布快照执行.
+    /// </summary>
+    public short Status { get; set; }
 
     /// <summary>
     /// 我在所属团队中的角色：0=Member 1=Admin 2=Owner.

@@ -4,6 +4,18 @@
 
 ## 自检记录
 
+- 审批策略轮（插件白名单 + 沙箱自动放行，@AP-S65~S68）：策略落在 `execution_settings.toolApproval` 节（免加列、随发布快照双轨），闸口按 `AppTool.SourceId` 白名单与沙箱开关放行；userconfig 按发布快照下发自动放行工具名/前缀。
+  - 后端：`MoAI.App.Core`/`MoAI.AI.Core` 单项目编译 **0 error**（宿主 Debug 输出被并行实例锁定，改用 `-o local-dev/backend-dist` 独立输出并在 5000 起实例验证）；`dotnet test tests/MoAI.AI.Core.Tests` → **48/48**（新增 `AppToolApprovalPolicyTests` 7 例 + `AppToolContextProviderTests` 闸口放行 4 例）。
+  - E2E：`node local-dev/app-e2e.mjs` → **172/172 PASS**（新增 AP-60a~j：保存校验 400×2、userconfig 下发、白名单直执行决策 missing、非白名单挂起拒绝收敛、自动模式全放行、发布快照双轨）。
+  - 前端：`npm run syncapi`（5000 实例）后 typecheck/lint **0 error（既有 warning）**；`AppConfigSection.test.tsx` **14/14**（+审批策略回显/提交/收敛 2 例）、`AppChat.test.tsx` **17/17**（+策略自动放行免审批卡 1 例）（2026-09-20）。
+
+- 后端构建（对话界面重构 + 工具审批轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-20；`MoAI.App.Core`/`MoAI.AI.Core`/`MoAI.Prompt.Core` 单项目亦 0 error，宿主 Debug 输出被在跑进程锁定属预期）。
+- 存量库加列：`prompt.use_count`、`app_user_config.tool_approval_mode`（脚本同步至 `asserts/prompt.sql`、`asserts/app_user_config.sql`，已对开发库执行）（2026-09-20）。
+- 后端单测：`dotnet test tests/MoAI.AI.Core.Tests` → **28/28**、`tests/MoAI.App.Tests` → **35/35**（2026-09-20）。
+- Kiota：独立 5010 实例（`-c SyncApi` 输出）重跑 `npm run syncapi`，新增 `/api/prompt/top_used`、`/api/app/session/{sessionId}/tool-approval` 与 userconfig 新字段进入生成物（2026-09-20）。
+- 前端：`npm run typecheck` → **0 error**；`npm run lint` → **0 error（9 个既有 warning）**；对话相关单测 `AppChat`(10)/`AppUserSettings`(3)/`AppDebugChat`/`agentChat`(4) 全过，全量 vitest 仅既有并行超时 flaky（隔离运行全过）（2026-09-20）。
+- 浏览器真实链路验收（5010 新后端 + 4001 前端 + mock OpenAI 模型）：欢迎态/热门专家（top_used 真实数据）/审批模式开关持久化/**审批卡 挂起→批准（已批准·执行中）/拒绝（已拒绝）→ 模型续写** 全链路实测通过（2026-09-20）。
+
 - 后端构建（对话开场白轮）：`dotnet build src/MoAI/MoAI.csproj` → **0 error**（2026-09-17）。
 - 存量库加列：`app_agent_config.opening_statement varchar(4000) not null default ''` + `opening_statement_enabled boolean not null default false`（本机 psql/docker 不可用，临时 Npgsql console 对开发库执行成功，脚本同步至 `asserts/app_agent_opening_statement.sql`）（2026-09-17）。
 - E2E：`node local-dev/app-e2e.mjs` → **121/121 PASS**（2026-09-17；新增 AP-45a~h 覆盖开场白 Member 403、保存回读、应用详情下发（Member 可读）、关闭开关内容保留、超长 400 不写入、流程应用详情恒空）。
@@ -70,7 +82,7 @@
 | @AP-S22 | TeamExternalApps.test.tsx + AppPlaza.test.tsx + TeamManage.test.tsx（分区与导航） | PASS（2026-09-13） |
 | @AP-S23 | app-e2e.mjs（AP-13s~y）+ TeamAccessApps.test.tsx | PASS（2026-09-13） |
 | @AP-S15 | TeamApps.test.tsx（卡片 + 卡片右上角「管理」点击进入管理页；Member 只读） | PASS 6/6（2026-09-11） |
-| @AP-S16 | AppConfigSection.test.tsx（工作台配置分区：左「应用信息」+「Agent 配置」；流程应用只提示未开放。原单页分栏已被工作台取代，见 @AP-S40） | PASS 7/7（2026-09-14） |
+| @AP-S16 | AppConfigSection.test.tsx（工作台配置分区「Agent 配置」；2026-09-19 起应用信息拆至「信息」分区 @AP-S49。原单页分栏已被工作台取代，见 @AP-S40） | PASS 9/9（2026-09-19） |
 | @AP-S17 | app-e2e.mjs（AP-15a-c、AP-16b/c、AP-19a） | PASS（2026-09-11） |
 | @AP-S18 | app-e2e.mjs（AP-16a/d/e、AP-17a/b/d、AP-20a-e）+ AppConfigSection.test.tsx（选项来自团队模型/团队插件/本团队知识库） | PASS（2026-09-14） |
 | @AP-S19 | app-e2e.mjs（AP-17c、AP-18、AP-19a/b） | PASS 121/121（2026-09-17，AP-18 契约更新：流程应用保存只写开场白字段返回 200） |
@@ -78,7 +90,7 @@
 | 应用工作台配置分区（原单页分栏 + 模型） | ui/src/pages/teams/apps/__tests__/AppConfigSection.test.tsx | PASS 7/7（2026-09-14） |
 | 团队页分区与角色可见性 | ui/src/pages/teams/__tests__/TeamManage.test.tsx | PASS 14/14（2026-09-11） |
 | 前端静态检查 | eslint（全量 src） | PASS 0 error（2026-09-11） |
-| 浏览器走查 | @manual（团队页「应用」卡片新建 Agent/流程应用并带头像、开关「公开到平台」、卡片右上角「管理」进**应用工作台**（左侧菜单 配置/日志/监控，外部应用含访问点；配置分区左信息+Agent 配置、右调试对话），未发布即可调试且刷新丢失调试会话；Member 只见 信息/应用/知识库 且应用卡片只读） | 待执行 |
+| 浏览器走查 | @manual（团队页「应用」卡片新建 Agent/流程应用并带头像、开关「公开到平台」、卡片右上角「管理」进**应用工作台**（Agent 应用左侧菜单 配置/信息/日志/监控，外部应用含访问点；「信息」分区维护基础信息与上架状态，「配置」分区左 Agent 配置、右调试对话），未发布即可调试且刷新丢失调试会话；Member 只见 信息/应用/知识库 且应用卡片只读） | 待执行 |
 | @AP-S40 | app-e2e.mjs（AP-40d、AP-40e） | PASS（2026-09-14） |
 | @AP-S41 | app-e2e.mjs（AP-40a-c、AP-40f） | PASS（2026-09-14） |
 | 应用工作台（左侧菜单 / 分区可见性） | ui/src/pages/teams/apps/__tests__/AppWorkspace.test.tsx | PASS 3/3（2026-09-14） |
@@ -88,10 +100,27 @@
 | 应用对话日志看板 | ui/src/pages/teams/apps/__tests__/AppLogsSection.test.tsx | PASS 3/3（2026-09-14） |
 | @AP-S43 | app-e2e.mjs（AP-43a-e） | PASS（2026-09-14） |
 | 应用用量监控看板 | ui/src/pages/teams/apps/__tests__/AppMonitorSection.test.tsx | PASS 3/3（2026-09-14） |
-| @AP-S44 | app-e2e.mjs（AP-44c/d/i/k）+ AppChat.test.tsx（专家侧边栏/未建会话本地暂存随创建绑定/已有会话绑定与取消） | PASS 113/113、6/6（2026-09-16） |
+| @AP-S44 | app-e2e.mjs（AP-44c/d/i/k）+ AppChat.test.tsx（应用设置面板选择专家/未建会话本地暂存随创建绑定/已有会话保存切换与取消） | PASS 113/113、6/6（2026-09-16）；UI 并入设置面板后 AppChat + AppUserSettings 18/18（2026-09-20） |
 | @AP-S45 | app-e2e.mjs（AP-44a/e/f/g/h/j） | PASS 113/113（2026-09-16） |
 | @AP-S46 | app-e2e.mjs（AP-45b/c/d）+ AppConfigSection.test.tsx（开场白回显、随保存提交） | PASS 121/121、9/9（2026-09-17） |
 | @AP-S47 | app-e2e.mjs（AP-45a/e/f/g/h） | PASS 121/121（2026-09-17） |
+| @AP-S48 | sandbox-limits-e2e.mjs（SB-01/03/05/06/07/08）+ [tests/MoAI.App.Tests](../../tests/MoAI.App.Tests/)（`SandboxSettingsLimitValidatorTests` 超限/非法/未启用放行）+ AppConfigSection.test.tsx（上限提示与前端拦截） | PASS 21/21、35/35、9/9（2026-09-19） |
+| @AP-S49 | AppInfoSection.test.tsx（信息分区回显/申请上架/保存/成员只读）+ AppWorkspace.test.tsx（Agent 菜单含 信息 项且位于 配置 之后、Member 可见）+ AppConfigSection.test.tsx（配置区不再含应用信息） | PASS 4/4、3/3、9/9（2026-09-19，全仓 vitest 352/352、typecheck 0、lint 0 error） |
+| @AP-S54 | app-e2e.mjs（AP-54a~i：发布快照/草稿隔离/重新发布生效/未发布实时） | PASS 130/130（2026-09-20） |
+| @AP-S55 | chat-attachment-e2e.mjs（CA-01~08：直传/提取/白名单/大小上限/目录越权/404/未登录） | PASS 12/12（2026-09-20） |
+| @AP-S56 | AppChat.test.tsx（附件上传提取拼接/图片不提取带 objectKey 裸 URL 块/输入卡图片缩略图与文档类型图标/气泡缩略图/处理中禁发） | PASS 17/17（2026-09-20 复跑，图片块格式随 @AP-S64 调整、chip 展示随 122 轮缩略图/类型图标调整；全仓 vitest 397/397、typecheck 0、lint 0 error；浏览器实测缩略图 32px/Word·Markdown 图标正常） |
+| @AP-S57 | app-e2e.mjs（AP-57a~k：权限/保存回读/详情下发/规范化/条数与长度上限/不携带保持原值/空数组清空/发布快照） | PASS 141/141（2026-09-20） |
+| @AP-S58 | AppChat.test.tsx（欢迎态快捷输入展示、副标题移除、点击即发送）+ AppConfigSection.test.tsx（快捷输入编辑回显与提交） | PASS 14/14、10/10（2026-09-20，全仓 vitest 373/373、typecheck 0、lint 0 error） |
+| @AP-S59 | AppWorkspace.test.tsx（头部重新发布入口、确认后草稿上线并清除警告）+ AppConfigSection.test.tsx（警告条 action 重新发布） | PASS 4/4、11/11（2026-09-20，typecheck 0、lint 0 error） |
+| @AP-S60 | AppLogsSection.test.tsx（用户列按类型归属：normal 用户名 / external 外部用户 #id / none 仅 #id 不误标） | PASS 4/4（2026-09-20） |
+| @AP-S61 | app-e2e.mjs（AP-58a~l：绑定权限与越权 400/回读一致/不携带保持原值/空数组清空/发布快照状态） | PASS 162/162（2026-09-20） |
+| @AP-S62 | app-e2e.mjs（AP-59a~i：桩模型 call_tool 驱动已发布流程执行并回传 reply、解绑发布后工具下线） | PASS 162/162（2026-09-20，无 admin 账号时 SKIP） |
+| @AP-S63 | AppConfigSection.test.tsx（流程应用选项仅取已发布流程、回显已绑定项并随保存提交） | PASS 12/12（2026-09-20，全仓 vitest 392/392、typecheck 0、lint 0 error） |
+| @AP-S64 | [tests/MoAI.AI.Core.Tests](../../tests/MoAI.AI.Core.Tests/) `ChatAttachmentImageRewriterTests`（objectKey/历史 URL 双格式解析、文档块与助手消息不动、越权目录不读、读取失败降级、svg 不内联、多图顺序与缓存、MayContainAttachment 快路径） | PASS 9/9（2026-09-20，AI.Core 全套 37/37、dotnet build 0 error） |
+| @AP-S65 | app-e2e.mjs（AP-60a~d/i/j：白名单须为绑定插件子集 400/非法结构 400/合法保存并发布/草稿改策略不影响线上、重新发布后新策略生效） | PASS 172/172（2026-09-20） |
+| @AP-S66 | app-e2e.mjs（AP-60e~h：审批模式白名单插件直接执行决策 missing/非白名单沙箱挂起拒绝收敛/自动模式全放行/userconfig 下发自动放行工具名与沙箱前缀） | PASS 172/172（2026-09-20） |
+| @AP-S67 | AppConfigSection.test.tsx（审批策略区渲染回显、随保存提交并收敛为绑定插件子集） | PASS 14/14（2026-09-20） |
+| @AP-S68 | AppChat.test.tsx（策略自动放行的插件名与沙箱前缀工具不展示审批卡、不调决策接口） | PASS 17/17（2026-09-20） |
 | @EA-S1 | external-app-e2e.mjs（EA-01、EA-02） | PASS 28/28（2026-09-14） |
 | @EA-S2 | external-app-e2e.mjs（EA-03~EA-06） | PASS（2026-09-14） |
 | @EA-S3 | external-app-e2e.mjs（EA-07） | PASS（2026-09-14） |
@@ -113,7 +142,8 @@
 dotnet build src/MoAI/MoAI.csproj          # 0 error
 cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
-node local-dev/app-e2e.mjs                 # 期望 121/121 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白）
+node local-dev/app-e2e.mjs                 # 期望 172/172 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白 / AP-54 发布配置快照双轨 / AP-57 快捷输入 / AP-58 流程应用绑定 / AP-59 对话调用流程工具 / AP-60 审批策略，AP-59/AP-60 需 admin 账号否则 SKIP）
+node local-dev/chat-attachment-e2e.mjs     # 期望 12/12 PASS（@AP-S55 对话附件：直传/提取/白名单/越权防护）
 node local-dev/external-app-e2e.mjs        # 期望 42/42 PASS（@EA-S1~S10 外部 token + 外部会话/对话，需先执行 asserts/external_app.sql）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test

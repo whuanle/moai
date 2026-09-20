@@ -10,6 +10,8 @@ import { PromptRequestBuilderRequestsMetadata, type PromptRequestBuilder } from 
 // @ts-ignore
 import { TitleRequestBuilderRequestsMetadata, type TitleRequestBuilder } from './title/index.js';
 // @ts-ignore
+import { ToolApprovalRequestBuilderRequestsMetadata, type ToolApprovalRequestBuilder } from './toolApproval/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -28,6 +30,10 @@ export interface WithSessionItemRequestBuilder extends BaseRequestBuilder<WithSe
      * The title property
      */
     get title(): TitleRequestBuilder;
+    /**
+     * The toolApproval property
+     */
+    get toolApproval(): ToolApprovalRequestBuilder;
     /**
      * 删除会话（软删除，连同消息）；仅会话归属用户可操作.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -62,6 +68,9 @@ export const WithSessionItemRequestBuilderNavigationMetadata: Record<Exclude<key
     },
     title: {
         requestsMetadata: TitleRequestBuilderRequestsMetadata,
+    },
+    toolApproval: {
+        requestsMetadata: ToolApprovalRequestBuilderRequestsMetadata,
     },
 };
 /**

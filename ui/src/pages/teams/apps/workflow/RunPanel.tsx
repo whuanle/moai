@@ -8,8 +8,9 @@ import { CaretRightOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { WorkflowDebugRunResult, WorkflowNodeExecution } from '@/api/workflow'
 import { formatDateTime } from '@/utils/datetime'
+import { getNodeTemplate } from './constants'
 import { useWorkflowDesignerStore } from './store'
-import type { EditorWorkflowJSON, GlobalVariableDef } from './types'
+import type { GlobalVariableDef } from './types'
 
 const { Text } = Typography
 
@@ -37,11 +38,10 @@ function buildSystemJson(variables: GlobalVariableDef[], values: Record<string, 
   return JSON.stringify(json)
 }
 
-/** 从画布提取开始节点声明的输入参数（必需项），生成启动参数模板 */
-function buildInputTemplate(editorJSON: EditorWorkflowJSON | null): string {
-  const startNode = editorJSON?.nodes?.find((n) => n.type === 'start')
+/** 启动参数模板：开始节点固定唯一启动参数 question（契约见 constants start 模板），不从画布推导以免疫旧草稿残留 */
+function buildInputTemplate(): string {
   const template: Record<string, unknown> = {}
-  for (const [name, binding] of Object.entries(startNode?.data?.inputs ?? {})) {
+  for (const [name, binding] of Object.entries(getNodeTemplate('start')?.inputs ?? {})) {
     if (binding.required !== true || !name) continue
     template[name] = binding.fieldType === 'number' ? 0 : binding.fieldType === 'boolean' ? false : ''
   }
@@ -58,12 +58,11 @@ const STATE_COLOR: Record<string, string> = {
 
 export function RunPanel({ running, result, onRun }: RunPanelProps) {
   const { t } = useTranslation()
-  const canvasJSON = useWorkflowDesignerStore((s) => s.editorJSON ?? s.initialData)
   const variables = useWorkflowDesignerStore((s) => s.variables)
   const [inputOverride, setInputOverride] = useState<string>('')
   const [systemValues, setSystemValues] = useState<Record<string, string>>({})
 
-  const inputJson = inputOverride || buildInputTemplate(canvasJSON)
+  const inputJson = inputOverride || buildInputTemplate()
 
   const setSystemValue = (name: string, value: string) =>
     setSystemValues((prev) => ({ ...prev, [name]: value }))

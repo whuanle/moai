@@ -42,6 +42,11 @@ public class UpdateAppSessionPromptCommandHandler : IRequestHandler<UpdateAppSes
         if (request.PromptId != 0)
         {
             await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, session.TeamId, request.ContextUserId, cancellationToken);
+
+            // 选用专家 +1 使用次数（top_used 推荐依据）；可用性已在上面校验
+            await _databaseContext.Prompts
+                .Where(x => x.Id == request.PromptId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.UseCount, x => x.UseCount + 1), cancellationToken);
         }
 
         session.PromptId = request.PromptId;

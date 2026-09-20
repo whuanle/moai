@@ -56,6 +56,13 @@ public class QueryAppWorkflowConfigCommandHandler : IRequestHandler<QueryAppWork
 
         var config = await _definitionStore.FindConfigEntityAsync(request.AppId, cancellationToken);
 
+        // 开场白存于 app_agent_config（草稿/发布双轨）：编排定义与开场白均为「已发布且无草稿变更」时 status 才为 1
+        var agentConfigStatus = await _databaseContext.AppAgentConfigs
+            .Where(x => x.AppId == request.AppId)
+            .Select(x => (int?)x.Status)
+            .FirstOrDefaultAsync(cancellationToken);
+        var combinedStatus = config?.Status == 1 && agentConfigStatus == 1 ? 1 : 0;
+
         return new QueryAppWorkflowConfigCommandResponse
         {
             AppId = request.AppId,
@@ -64,7 +71,7 @@ public class QueryAppWorkflowConfigCommandHandler : IRequestHandler<QueryAppWork
             DraftEditorData = config?.DraftEditorData,
             PublishedDefinition = config?.PublishedDefinition,
             Version = config?.Version ?? 0,
-            Status = config?.Status ?? 0,
+            Status = (short)combinedStatus,
             PublishTime = config?.PublishTime,
         };
     }

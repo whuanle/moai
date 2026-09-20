@@ -41,6 +41,7 @@ ui/src/utils/storage.ts    resolveStorageUrl / uploadImageWithKey / uploadImage
 |---|---|---|
 | POST | `/storage/public/pre_upload_image` | 公开图片，ObjectKey=`public/images/{sha256}.{ext}` |
 | POST | `/storage/public/pre_upload_temp` | 临时文件，ObjectKey=`temp/{sha256}.{ext}`（非公开） |
+| POST | `/storage/public/pre_upload_chat_file` | 对话附件（文档/图片白名单 + ≤20MB），ObjectKey=`public/chat/{sha256}.{ext}`（公开，供发送前文本提取） |
 | POST | `/storage/complate_url` | 完成上传回调（历史拼写 complate） |
 
 预上传响应：`isExist`（秒传）/`fileId`/`objectKey`/`uploadUrl`（秒传为空）/`expiration`；完成响应：`fileId`/`objectKey`/`accessUrl`（公开文件为 `/static` 地址，私有为 null）。

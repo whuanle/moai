@@ -1,6 +1,8 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MoAI.Common.Queries.Response;
 using MoAI.Database;
+using MoAI.Database.Seed;
 using MoAI.Infra;
 using MoAI.Infra.Services;
 using MoAI.Storage.Services;
@@ -34,13 +36,26 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
     {
         var endpoint = new Uri(new Uri(_systemOptions.Server), IStorageService.StaticRoutePrefix.TrimStart('/'));
 
+        // 网站 Logo 为公开信息（登录/注册页也要展示），缺失时回退内置默认空串
+        var logoPath = await _databaseContext.Settings
+            .Where(s => s.Key == SettingDefinitions.SystemLogoKey)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
+
+        // 网站名称仅影响前端展示，设置项为空时回退配置文件中的默认名称
+        var systemName = (await _databaseContext.Settings
+            .Where(s => s.Key == SettingDefinitions.SystemNameKey)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty).Trim();
+
         return new QueryServerInfoCommandResponse
         {
             PublicStoreUrl = endpoint.ToString(),
             ServiceUrl = _systemOptions.Server,
             RsaPublic = _rsaProvider.GetPublicKey(),
             MaxUploadFileSize = _systemOptions.MaxUploadFileSize,
-            Name = _systemOptions.Name
+            Name = systemName.Length > 0 ? systemName : _systemOptions.Name,
+            LogoPath = logoPath.Trim()
         };
     }
 }

@@ -20,7 +20,11 @@ comment on column app_user_config.app_id is '应用 id，逻辑关联 app.id';
 comment on column app_user_config.user_id is '用户 id，逻辑关联 user.id';
 comment on column app_user_config.team_id is '所属团队 id，逻辑关联 app.team_id，冗余用于团队维度过滤';
 comment on column app_user_config.prompt_id is '用户为新会话选择的专家提示词 id，0=未设置';
-comment on column app_user_config.skills is '用户自选技能 id 列表 JSON 数组，与应用绑定技能取并集生效';
+comment on column app_user_config.skills is '用户勾选启用的技能 id 列表 JSON 数组，须为应用默认技能（app_agent_config.skills）的子集';
+
+-- 存量库补充列：工具审批模式（auto=自动执行；approval=重要工具需人工批准）
+alter table app_user_config add column if not exists tool_approval_mode varchar(16) not null default 'auto';
+comment on column app_user_config.tool_approval_mode is '工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准';
 
 create unique index if not exists idx_app_user_config_app_user_live_uindex on app_user_config (app_id, user_id) where (is_deleted = 0);
 create index if not exists idx_app_user_config_team_id on app_user_config (team_id);
