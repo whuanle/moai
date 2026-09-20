@@ -93,4 +93,9 @@ public partial class WikiEntity : IFullAudited
     /// 重排序模型的id，可选；为空表示不使用重排序（锁定后仍可修改）.
     /// </summary>
     public Guid? RerankModelId { get; set; }
+
+    /// <summary>
+    /// 默认工作流配置（JSON：切割/元数据生成/向量化三步预设），空串表示未配置.
+    /// </summary>
+    public string DefaultWorkflowConfig { get; set; } = default!;
 }

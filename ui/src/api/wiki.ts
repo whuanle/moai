@@ -398,3 +398,130 @@ export async function getWikiModelOptions(teamId: number): Promise<WikiModelOpti
   const client = getApiClient()
   return client.api.wiki.modelOptions.get({ queryParameters: { teamId } })
 }
+
+// ==================== 默认工作流 / 批量执行 ====================
+
+export type WikiWorkflowPartitionMode = 'normal' | 'ai'
+
+export interface WikiWorkflowPartitionConfig {
+  mode?: WikiWorkflowPartitionMode | null
+  splitMode?: WikiDocumentPartitionSplitMode | null
+  chunkSize?: number | null
+  chunkOverlap?: number | null
+  overlapUnit?: WikiDocumentPartitionOverlapUnit | null
+  sizeUnit?: WikiDocumentPartitionSizeUnit | null
+  tokenEncodingOrModel?: string | null
+  aiModelId?: string | null
+  promptTemplate?: string | null
+}
+
+export interface WikiWorkflowMetadataConfig {
+  metadataModelId?: string | null
+  strategyTypes?: WikiMetadataGenerationStrategy[] | null
+}
+
+export interface WikiWorkflowEmbeddingConfig {
+  embedSourceText?: boolean | null
+  embedMetadata?: boolean | null
+}
+
+/** 知识库默认工作流配置：切割 / 生成元数据 / 向量化三步预设，null 表示未配置该步骤 */
+export interface WikiWorkflowConfig {
+  partition?: WikiWorkflowPartitionConfig | null
+  metadata?: WikiWorkflowMetadataConfig | null
+  embedding?: WikiWorkflowEmbeddingConfig | null
+}
+
+/** 批量工作流单文档执行结果 */
+export interface BatchWorkflowDocumentResult {
+  documentId?: number | null
+  fileName?: string | null
+  success?: boolean | null
+  message?: string | null
+  taskId?: string | null
+}
+
+export interface BatchRunWorkflowPayload {
+  documentIds: number[]
+  isPartition: boolean
+  isAiPartition?: boolean
+  aiModelId?: string
+  promptTemplate?: string | null
+  splitMode?: WikiDocumentPartitionSplitMode
+  chunkSize?: number
+  chunkOverlap?: number
+  overlapUnit?: WikiDocumentPartitionOverlapUnit
+  sizeUnit?: WikiDocumentPartitionSizeUnit
+  tokenEncodingOrModel?: string | null
+  isGenerateMetadata: boolean
+  metadataModelId?: string
+  strategyTypes?: WikiMetadataGenerationStrategy[] | null
+  isEmbedding: boolean
+  embedSourceText?: boolean
+  embedMetadata?: boolean
+}
+
+/** 更新知识库默认工作流配置（整体覆盖保存，null 步骤表示清除；需要团队 Admin） */
+export async function updateWikiWorkflowConfig(wikiId: number, payload: WikiWorkflowConfig): Promise<void> {
+  const client = getApiClient()
+  await client.api.wiki.byId(String(wikiId)).workflowConfig.put({
+    wikiId: String(wikiId),
+    partition: payload.partition
+      ? {
+        mode: payload.partition.mode ?? 'normal',
+        aiModelId: payload.partition.aiModelId ?? null,
+        promptTemplate: payload.partition.mode === 'ai' ? (payload.partition.promptTemplate || null) : null,
+        splitMode: payload.partition.splitMode ?? 'markdown',
+        chunkSize: payload.partition.chunkSize ?? 0,
+        chunkOverlap: payload.partition.chunkOverlap ?? 0,
+        overlapUnit: payload.partition.overlapUnit ?? 'character',
+        sizeUnit: payload.partition.sizeUnit ?? 'character',
+        tokenEncodingOrModel: payload.partition.sizeUnit === 'token' ? (payload.partition.tokenEncodingOrModel || null) : null,
+      }
+      : null,
+    metadata: payload.metadata
+      ? {
+        metadataModelId: payload.metadata.metadataModelId ?? null,
+        strategyTypes: payload.metadata.strategyTypes ?? null,
+      }
+      : null,
+    embedding: payload.embedding
+      ? {
+        embedSourceText: payload.embedding.embedSourceText ?? true,
+        embedMetadata: payload.embedding.embedMetadata ?? true,
+      }
+      : null,
+  })
+}
+
+/** 批量执行文档工作流：按勾选步骤（切割/生成元数据/向量化）一次性处理多个文档，返回逐文档结果 */
+export async function batchRunWikiDocumentsWorkflow(wikiId: number, payload: BatchRunWorkflowPayload): Promise<BatchWorkflowDocumentResult[]> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).documents.batchWorkflow.post({
+    wikiId: String(wikiId),
+    documentIds: payload.documentIds.map((id) => String(id)),
+    isPartition: payload.isPartition,
+    isAiPartition: payload.isPartition ? (payload.isAiPartition ?? false) : undefined,
+    aiModelId: payload.isPartition && payload.isAiPartition ? (payload.aiModelId ?? null) : null,
+    promptTemplate: payload.isPartition && payload.isAiPartition ? (payload.promptTemplate || null) : null,
+    splitMode: payload.isPartition && !payload.isAiPartition ? (payload.splitMode ?? 'markdown') : undefined,
+    chunkSize: payload.isPartition && !payload.isAiPartition ? (payload.chunkSize ?? 0) : undefined,
+    chunkOverlap: payload.isPartition && !payload.isAiPartition ? (payload.chunkOverlap ?? 0) : undefined,
+    overlapUnit: payload.isPartition && !payload.isAiPartition ? (payload.overlapUnit ?? 'character') : undefined,
+    sizeUnit: payload.isPartition && !payload.isAiPartition ? (payload.sizeUnit ?? 'character') : undefined,
+    tokenEncodingOrModel: payload.isPartition && !payload.isAiPartition && payload.sizeUnit === 'token' ? (payload.tokenEncodingOrModel || null) : null,
+    isGenerateMetadata: payload.isGenerateMetadata,
+    metadataModelId: payload.isGenerateMetadata ? (payload.metadataModelId ?? null) : null,
+    strategyTypes: payload.isGenerateMetadata ? (payload.strategyTypes ?? null) : null,
+    isEmbedding: payload.isEmbedding,
+    embedSourceText: payload.isEmbedding ? (payload.embedSourceText ?? true) : undefined,
+    embedMetadata: payload.isEmbedding ? (payload.embedMetadata ?? true) : undefined,
+  })
+  return (res?.items ?? []).map((item) => ({
+    documentId: item.documentId != null ? Number(item.documentId) : null,
+    fileName: item.fileName,
+    success: item.success,
+    message: item.message,
+    taskId: item.taskId,
+  }))
+}

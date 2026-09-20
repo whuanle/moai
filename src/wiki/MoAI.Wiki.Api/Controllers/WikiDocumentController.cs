@@ -287,6 +287,41 @@ public class WikiDocumentController : ControllerBase
     }
 
     /// <summary>
+    /// 批量执行知识库文档工作流：按勾选步骤（切割 / 生成元数据 / 向量化）一次性处理多个文档，也可只执行其中一步，仅团队成员可访问.
+    /// 切割同步执行并逐文档隔离失败；元数据生成与向量化为异步任务，逐文档返回任务 id.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="req">批量工作流请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="BatchRunWikiDocumentWorkflowCommandResponse"/>.</returns>
+    [HttpPost("batch-workflow")]
+    public Task<BatchRunWikiDocumentWorkflowCommandResponse> BatchRunWorkflow(long wikiId, [FromBody] BatchRunWikiDocumentWorkflowCommand req, CancellationToken ct)
+    {
+        var cmd = new BatchRunWikiDocumentWorkflowCommand
+        {
+            WikiId = wikiId,
+            DocumentIds = req.DocumentIds,
+            IsPartition = req.IsPartition,
+            IsAiPartition = req.IsAiPartition,
+            AiModelId = req.AiModelId,
+            PromptTemplate = req.PromptTemplate,
+            SplitMode = req.SplitMode,
+            ChunkSize = req.ChunkSize,
+            ChunkOverlap = req.ChunkOverlap,
+            OverlapUnit = req.OverlapUnit,
+            SizeUnit = req.SizeUnit,
+            TokenEncodingOrModel = req.TokenEncodingOrModel,
+            IsGenerateMetadata = req.IsGenerateMetadata,
+            MetadataModelId = req.MetadataModelId,
+            StrategyTypes = req.StrategyTypes,
+            IsEmbedding = req.IsEmbedding,
+            EmbedSourceText = req.EmbedSourceText,
+            EmbedMetadata = req.EmbedMetadata,
+        };
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 查询知识库文档向量化详情，仅团队成员可访问.
     /// </summary>
     /// <param name="wikiId">知识库 id.</param>

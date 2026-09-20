@@ -12,6 +12,11 @@ public interface IWorkflowEventPublisher
     void Subscribe(Func<WorkflowEvent, Task> handler);
 
     /// <summary>
+    /// 取消订阅（线程安全）.
+    /// </summary>
+    void Unsubscribe(Func<WorkflowEvent, Task> handler);
+
+    /// <summary>
     /// 发布事件.
     /// </summary>
     Task PublishAsync(WorkflowEvent workflowEvent, CancellationToken cancellationToken = default);

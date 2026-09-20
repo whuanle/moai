@@ -12,8 +12,27 @@ export interface AgentToolCallInfo {
   args?: Record<string, unknown>
 }
 
+/** AG-UI 自定义事件名：流程应用执行过程（后端 WorkflowProgressContent 映射） */
+export const WORKFLOW_CHAT_EVENT_NAME = 'moai.workflow'
+
+/** 流程应用执行过程事件负载（与后端 WorkflowAppChatClient 映射契约一致） */
+export interface WorkflowChatEventPayload {
+  event: 'started' | 'node' | 'suspended' | 'completed'
+  /** started 事件：流程实例 id */
+  instanceId?: string
+  nodeKey?: string
+  nodeName?: string
+  nodeType?: string
+  nodeState?: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
+  errorMessage?: string | null
+  elapsedMilliseconds?: number | null
+  attempt?: number
+  /** suspended 事件：挂起原因 */
+  message?: string
+}
+
 /**
- * AG-UI 对话回调：流式增量、工具调用（含解析后参数）、结束与错误。
+ * AG-UI 对话回调：流式增量、工具调用（含解析后参数）、流程执行过程、结束与错误。
  * 服务端以 threadId 作为会话 id，历史由服务端管理，因此每轮只发送最新用户消息。
  */
 export interface AgentChatHandlers {
@@ -22,6 +41,8 @@ export interface AgentChatHandlers {
   onToolCall?: (name: string) => void
   /** 工具调用参数流结束：args 为完整解析对象（call_tool 时含真实 toolName/argumentsJson） */
   onToolCallEnd?: (info: AgentToolCallInfo) => void
+  /** 流程应用执行过程事件（仅流程应用产生；Agent 应用对话不触发） */
+  onWorkflowEvent?: (evt: WorkflowChatEventPayload) => void
   onDone?: () => void
   onError?: (message: string) => void
 }
@@ -79,6 +100,11 @@ export async function runAppChat(
       onToolCallStartEvent: ({ event }) => handlers.onToolCall?.(event.toolCallName),
       onToolCallEndEvent: ({ event, toolCallName, toolCallArgs }) =>
         handlers.onToolCallEnd?.({ id: event.toolCallId, name: toolCallName, args: toolCallArgs }),
+      onCustomEvent: ({ event }) => {
+        if (event.name === WORKFLOW_CHAT_EVENT_NAME) {
+          handlers.onWorkflowEvent?.(event.value as WorkflowChatEventPayload)
+        }
+      },
       onRunErrorEvent: ({ event }) => handlers.onError?.(event.message),
       onRunFinishedEvent: () => handlers.onDone?.(),
     },

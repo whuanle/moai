@@ -42,6 +42,10 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.CreateUserId)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
+        entity.Property(e => e.DefaultWorkflowConfig)
+            .HasDefaultValueSql("''::text")
+            .HasComment("默认工作流配置（JSON：切割/元数据生成/向量化三步预设），空串表示未配置")
+            .HasColumnName("default_workflow_config");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
             .HasComment("知识库描述")

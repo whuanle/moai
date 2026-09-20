@@ -15,7 +15,9 @@ import { getWikiDetail, getWikiModelOptions, updateWiki, updateWikiEmbeddingConf
 import { getTeamDetail } from '@/api/team'
 import { resolveStorageUrl } from '@/utils/storage'
 import { useAppStore } from '@/store/app'
+import type { WikiWorkflowConfig } from '@/api/wiki'
 import { WikiDocuments } from './WikiDocuments'
+import { WikiWorkflowSettings } from './WikiWorkflowSettings'
 
 const { Sider, Content } = Layout
 const { Text } = Typography
@@ -39,6 +41,7 @@ interface WikiDetail {
   isLock?: boolean | null
   rerankModelId?: string | null
   createTime?: string | null
+  workflowConfig?: WikiWorkflowConfig | null
 }
 
 interface SettingsFormValues {
@@ -451,6 +454,16 @@ export function WikiDetail() {
                         {t('wiki.rerank.save')}
                       </Button>
                     </Form>
+                  )}
+                  {modelOptionsLoaded && (
+                    <WikiWorkflowSettings
+                      wikiId={wikiId}
+                      config={wiki.workflowConfig}
+                      conversationModels={modelOptions.conversationModels}
+                      modelsLoading={modelOptionsLoading}
+                      modelsFailed={modelOptionsFailed}
+                      onSaved={() => void reload()}
+                    />
                   )}
                 </>
               ) : (

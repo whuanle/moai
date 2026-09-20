@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, serializeDeleteWikiDocumentsCommand, serializeEmptyCommandResponse, type BusinessValidationResult, type DeleteWikiDocumentsCommand, type EmptyCommandResponse } from '../../../../models/index.js';
 // @ts-ignore
+import { BatchWorkflowRequestBuilderRequestsMetadata, type BatchWorkflowRequestBuilder } from './batchWorkflow/index.js';
+// @ts-ignore
 import { CompleteRequestBuilderRequestsMetadata, type CompleteRequestBuilder } from './complete/index.js';
 // @ts-ignore
 import { type WithDocumentItemRequestBuilder, WithDocumentItemRequestBuilderNavigationMetadata } from './item/index.js';
@@ -18,6 +20,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/wiki/{-id}/documents
  */
 export interface DocumentsRequestBuilder extends BaseRequestBuilder<DocumentsRequestBuilder> {
+    /**
+     * The batchWorkflow property
+     */
+    get batchWorkflow(): BatchWorkflowRequestBuilder;
     /**
      * The complete property
      */
@@ -67,6 +73,9 @@ export const DocumentsRequestBuilderNavigationMetadata: Record<Exclude<keyof Doc
     byDocumentId: {
         navigationMetadata: WithDocumentItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["documentId"],
+    },
+    batchWorkflow: {
+        requestsMetadata: BatchWorkflowRequestBuilderRequestsMetadata,
     },
     complete: {
         requestsMetadata: CompleteRequestBuilderRequestsMetadata,

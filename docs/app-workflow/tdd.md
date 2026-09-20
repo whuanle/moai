@@ -71,3 +71,4 @@
 1. 存量库执行 DDL：`psql -f asserts/app_workflow.sql`（新库由 EnsureCreated 自动建）。
 2. 后端运行中：`cd src/MoAI && dotnet run`。
 3. 执行：`node local-dev/workflow-e2e.mjs`。
+| @WF-S54 | tests/MoAI.AI.Core.Tests/WorkflowAppChatClientTests.cs（事件映射/AI 节点文本过滤/classifier 过滤/回复去重/嵌套实例过滤/失败传播/退订 10 例）+ WorkflowAppChatMafIntegrationTests.cs（MAF 包装慢速 invoker 流式 + AGUI MapContent DataContent→CUSTOM 直连）+ local-dev/workflow-e2e.mjs（WF-27a~g：CUSTOM started/node/completed 序列、instanceId、AI 正文 TEXT_MESSAGE_CONTENT、回复不重复、事件先于正文） | PASS 65/65 / PASS 118/118（2026-09-20） |

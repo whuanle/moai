@@ -687,6 +687,117 @@ export interface BatchDeleteAIModelCommand extends Parsable {
     modelIds?: Guid[] | null;
 }
 /**
+ * 批量执行知识库文档工作流：多选文档后按勾选步骤（切割 / 生成元数据 / 向量化）一次性完成，也可只执行其中一步，仅团队成员可操作.切割（内容缺失时自动提取）在请求内同步逐文档执行并逐文档隔离失败；元数据生成与向量化复用向量化后台任务（WorkerTask + MQ）异步执行，每个文档一个任务.
+ */
+export interface BatchRunWikiDocumentWorkflowCommand extends Parsable {
+    /**
+     * AI 智能切割使用的对话模型 id，AI 切割时必填.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 切片重叠大小（0-8192，单位由 OverlapUnit 决定），仅普通切割.
+     */
+    chunkOverlap?: number | null;
+    /**
+     * 切片大小（1-8192，单位由 SizeUnit 决定），仅普通切割.
+     */
+    chunkSize?: number | null;
+    /**
+     * 目标文档 id 集合（去重后最多 50 个）.
+     */
+    documentIds?: string[] | null;
+    /**
+     * 是否对生成的元数据向量化.
+     */
+    embedMetadata?: boolean | null;
+    /**
+     * 是否对原文切片内容向量化.
+     */
+    embedSourceText?: boolean | null;
+    /**
+     * 是否使用 AI 智能切割（对话模型按语义输出 JSON 字符串数组，异步任务执行）；为否时按普通切割参数同步切割.
+     */
+    isAiPartition?: boolean | null;
+    /**
+     * 是否执行向量化（异步任务执行）.
+     */
+    isEmbedding?: boolean | null;
+    /**
+     * 是否执行元数据生成（对文档全部切片替换式生成，异步任务执行）.
+     */
+    isGenerateMetadata?: boolean | null;
+    /**
+     * 是否执行文档切割（内容缺失时自动提取）；重新切割会替换已有切片并清空旧元数据与向量.
+     */
+    isPartition?: boolean | null;
+    /**
+     * 元数据生成使用的对话模型 id，勾选元数据生成时必填.
+     */
+    metadataModelId?: Guid | null;
+    /**
+     * 重叠单位.
+     */
+    overlapUnit?: DocumentPartitionOverlapUnit | null;
+    /**
+     * AI 切割提示词模板，为空使用内置默认；仅 AI 切割.
+     */
+    promptTemplate?: string | null;
+    /**
+     * 切片大小计量单位.
+     */
+    sizeUnit?: DocumentPartitionSizeUnit | null;
+    /**
+     * 切割模式为普通切割时的切割方式.
+     */
+    splitMode?: DocumentPartitionSplitMode | null;
+    /**
+     * 元数据生成策略（可多选）；为空时生成全套元数据.
+     */
+    strategyTypes?: MetadataGenerationStrategy[] | null;
+    /**
+     * Token 计量时使用的编码名或模型名，为空默认 cl100k_base，仅普通切割.
+     */
+    tokenEncodingOrModel?: string | null;
+    /**
+     * 知识库 id，由 Controller 从路由参数回填.
+     */
+    wikiId?: string | null;
+}
+/**
+ * 批量执行工作流的响应：逐文档执行结果.
+ */
+export interface BatchRunWikiDocumentWorkflowCommandResponse extends Parsable {
+    /**
+     * 每个文档的处理结果，顺序与请求的文档 id 顺序一致.
+     */
+    items?: BatchRunWikiDocumentWorkflowDocumentItem[] | null;
+}
+/**
+ * 批量执行工作流的单文档结果.
+ */
+export interface BatchRunWikiDocumentWorkflowDocumentItem extends Parsable {
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 文档名称，文档不存在时可能为空.
+     */
+    fileName?: string | null;
+    /**
+     * 结果说明（成功为已执行/已提交的步骤描述，失败为原因）.
+     */
+    message?: string | null;
+    /**
+     * 本次是否成功（切割完成或任务已提交）.
+     */
+    success?: boolean | null;
+    /**
+     * 异步任务 id；本文档提交了元数据生成/向量化任务时返回，纯切割时为空.
+     */
+    taskId?: Guid | null;
+}
+/**
  * 批量启用/禁用模型.
  */
 export interface BatchUpdateAIModelCommand extends Parsable {
@@ -1230,6 +1341,33 @@ export function createAuditsInfoFromDiscriminatorValue(parseNode: ParseNode | un
 // @ts-ignore
 export function createBatchDeleteAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoBatchDeleteAIModelCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BatchRunWikiDocumentWorkflowCommand}
+ */
+// @ts-ignore
+export function createBatchRunWikiDocumentWorkflowCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBatchRunWikiDocumentWorkflowCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BatchRunWikiDocumentWorkflowCommandResponse}
+ */
+// @ts-ignore
+export function createBatchRunWikiDocumentWorkflowCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBatchRunWikiDocumentWorkflowCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BatchRunWikiDocumentWorkflowDocumentItem}
+ */
+// @ts-ignore
+export function createBatchRunWikiDocumentWorkflowDocumentItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBatchRunWikiDocumentWorkflowDocumentItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3968,6 +4106,15 @@ export function createUpdateWikiRerankModelCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateWikiWorkflowCommand}
+ */
+// @ts-ignore
+export function createUpdateWikiWorkflowCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateWikiWorkflowCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UserStateInfo}
  */
 // @ts-ignore
@@ -4068,6 +4215,42 @@ export function createWikiItemFromDiscriminatorValue(parseNode: ParseNode | unde
 // @ts-ignore
 export function createWikiModelOptionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoWikiModelOptionItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiWorkflowConfig}
+ */
+// @ts-ignore
+export function createWikiWorkflowConfigFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiWorkflowConfig;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiWorkflowEmbeddingOptions}
+ */
+// @ts-ignore
+export function createWikiWorkflowEmbeddingOptionsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiWorkflowEmbeddingOptions;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiWorkflowMetadataOptions}
+ */
+// @ts-ignore
+export function createWikiWorkflowMetadataOptionsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiWorkflowMetadataOptions;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiWorkflowPartitionOptions}
+ */
+// @ts-ignore
+export function createWikiWorkflowPartitionOptionsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiWorkflowPartitionOptions;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4566,6 +4749,57 @@ export function deserializeIntoAuditsInfo(auditsInfo: Partial<AuditsInfo> | unde
 export function deserializeIntoBatchDeleteAIModelCommand(batchDeleteAIModelCommand: Partial<BatchDeleteAIModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "modelIds": n => { batchDeleteAIModelCommand.modelIds = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBatchRunWikiDocumentWorkflowCommand(batchRunWikiDocumentWorkflowCommand: Partial<BatchRunWikiDocumentWorkflowCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { batchRunWikiDocumentWorkflowCommand.aiModelId = n.getGuidValue(); },
+        "chunkOverlap": n => { batchRunWikiDocumentWorkflowCommand.chunkOverlap = n.getNumberValue(); },
+        "chunkSize": n => { batchRunWikiDocumentWorkflowCommand.chunkSize = n.getNumberValue(); },
+        "documentIds": n => { batchRunWikiDocumentWorkflowCommand.documentIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "embedMetadata": n => { batchRunWikiDocumentWorkflowCommand.embedMetadata = n.getBooleanValue(); },
+        "embedSourceText": n => { batchRunWikiDocumentWorkflowCommand.embedSourceText = n.getBooleanValue(); },
+        "isAiPartition": n => { batchRunWikiDocumentWorkflowCommand.isAiPartition = n.getBooleanValue(); },
+        "isEmbedding": n => { batchRunWikiDocumentWorkflowCommand.isEmbedding = n.getBooleanValue(); },
+        "isGenerateMetadata": n => { batchRunWikiDocumentWorkflowCommand.isGenerateMetadata = n.getBooleanValue(); },
+        "isPartition": n => { batchRunWikiDocumentWorkflowCommand.isPartition = n.getBooleanValue(); },
+        "metadataModelId": n => { batchRunWikiDocumentWorkflowCommand.metadataModelId = n.getGuidValue(); },
+        "overlapUnit": n => { batchRunWikiDocumentWorkflowCommand.overlapUnit = n.getEnumValue<DocumentPartitionOverlapUnit>(DocumentPartitionOverlapUnitObject); },
+        "promptTemplate": n => { batchRunWikiDocumentWorkflowCommand.promptTemplate = n.getStringValue(); },
+        "sizeUnit": n => { batchRunWikiDocumentWorkflowCommand.sizeUnit = n.getEnumValue<DocumentPartitionSizeUnit>(DocumentPartitionSizeUnitObject); },
+        "splitMode": n => { batchRunWikiDocumentWorkflowCommand.splitMode = n.getEnumValue<DocumentPartitionSplitMode>(DocumentPartitionSplitModeObject); },
+        "strategyTypes": n => { batchRunWikiDocumentWorkflowCommand.strategyTypes = n.getCollectionOfEnumValues<MetadataGenerationStrategy>(MetadataGenerationStrategyObject); },
+        "tokenEncodingOrModel": n => { batchRunWikiDocumentWorkflowCommand.tokenEncodingOrModel = n.getStringValue(); },
+        "wikiId": n => { batchRunWikiDocumentWorkflowCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBatchRunWikiDocumentWorkflowCommandResponse(batchRunWikiDocumentWorkflowCommandResponse: Partial<BatchRunWikiDocumentWorkflowCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { batchRunWikiDocumentWorkflowCommandResponse.items = n.getCollectionOfObjectValues<BatchRunWikiDocumentWorkflowDocumentItem>(createBatchRunWikiDocumentWorkflowDocumentItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBatchRunWikiDocumentWorkflowDocumentItem(batchRunWikiDocumentWorkflowDocumentItem: Partial<BatchRunWikiDocumentWorkflowDocumentItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentId": n => { batchRunWikiDocumentWorkflowDocumentItem.documentId = n.getStringValue(); },
+        "fileName": n => { batchRunWikiDocumentWorkflowDocumentItem.fileName = n.getStringValue(); },
+        "message": n => { batchRunWikiDocumentWorkflowDocumentItem.message = n.getStringValue(); },
+        "success": n => { batchRunWikiDocumentWorkflowDocumentItem.success = n.getBooleanValue(); },
+        "taskId": n => { batchRunWikiDocumentWorkflowDocumentItem.taskId = n.getGuidValue(); },
     }
 }
 /**
@@ -6876,6 +7110,7 @@ export function deserializeIntoQueryWikiCommandResponse(queryWikiCommandResponse
         "rerankModelName": n => { queryWikiCommandResponse.rerankModelName = n.getStringValue(); },
         "teamId": n => { queryWikiCommandResponse.teamId = n.getStringValue(); },
         "wikiId": n => { queryWikiCommandResponse.wikiId = n.getStringValue(); },
+        "workflowConfig": n => { queryWikiCommandResponse.workflowConfig = n.getObjectValue<WikiWorkflowConfig>(createWikiWorkflowConfigFromDiscriminatorValue); },
     }
 }
 /**
@@ -8198,6 +8433,19 @@ export function deserializeIntoUpdateWikiRerankModelCommand(updateWikiRerankMode
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateWikiWorkflowCommand(updateWikiWorkflowCommand: Partial<UpdateWikiWorkflowCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "embedding": n => { updateWikiWorkflowCommand.embedding = n.getObjectValue<WikiWorkflowEmbeddingOptions>(createWikiWorkflowEmbeddingOptionsFromDiscriminatorValue); },
+        "metadata": n => { updateWikiWorkflowCommand.metadata = n.getObjectValue<WikiWorkflowMetadataOptions>(createWikiWorkflowMetadataOptionsFromDiscriminatorValue); },
+        "partition": n => { updateWikiWorkflowCommand.partition = n.getObjectValue<WikiWorkflowPartitionOptions>(createWikiWorkflowPartitionOptionsFromDiscriminatorValue); },
+        "wikiId": n => { updateWikiWorkflowCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { userStateInfo.avatar = n.getStringValue(); },
@@ -8284,6 +8532,58 @@ export function deserializeIntoWikiModelOptionItem(wikiModelOptionItem: Partial<
         "id": n => { wikiModelOptionItem.id = n.getGuidValue(); },
         "modelKind": n => { wikiModelOptionItem.modelKind = n.getStringValue(); },
         "name": n => { wikiModelOptionItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiWorkflowConfig(wikiWorkflowConfig: Partial<WikiWorkflowConfig> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "embedding": n => { wikiWorkflowConfig.embedding = n.getObjectValue<WikiWorkflowEmbeddingOptions>(createWikiWorkflowEmbeddingOptionsFromDiscriminatorValue); },
+        "metadata": n => { wikiWorkflowConfig.metadata = n.getObjectValue<WikiWorkflowMetadataOptions>(createWikiWorkflowMetadataOptionsFromDiscriminatorValue); },
+        "partition": n => { wikiWorkflowConfig.partition = n.getObjectValue<WikiWorkflowPartitionOptions>(createWikiWorkflowPartitionOptionsFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiWorkflowEmbeddingOptions(wikiWorkflowEmbeddingOptions: Partial<WikiWorkflowEmbeddingOptions> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "embedMetadata": n => { wikiWorkflowEmbeddingOptions.embedMetadata = n.getBooleanValue(); },
+        "embedSourceText": n => { wikiWorkflowEmbeddingOptions.embedSourceText = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiWorkflowMetadataOptions(wikiWorkflowMetadataOptions: Partial<WikiWorkflowMetadataOptions> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "metadataModelId": n => { wikiWorkflowMetadataOptions.metadataModelId = n.getGuidValue(); },
+        "strategyTypes": n => { wikiWorkflowMetadataOptions.strategyTypes = n.getCollectionOfEnumValues<MetadataGenerationStrategy>(MetadataGenerationStrategyObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiWorkflowPartitionOptions(wikiWorkflowPartitionOptions: Partial<WikiWorkflowPartitionOptions> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { wikiWorkflowPartitionOptions.aiModelId = n.getGuidValue(); },
+        "chunkOverlap": n => { wikiWorkflowPartitionOptions.chunkOverlap = n.getNumberValue(); },
+        "chunkSize": n => { wikiWorkflowPartitionOptions.chunkSize = n.getNumberValue(); },
+        "mode": n => { wikiWorkflowPartitionOptions.mode = n.getEnumValue<WorkflowPartitionMode>(WorkflowPartitionModeObject); },
+        "overlapUnit": n => { wikiWorkflowPartitionOptions.overlapUnit = n.getEnumValue<DocumentPartitionOverlapUnit>(DocumentPartitionOverlapUnitObject); },
+        "promptTemplate": n => { wikiWorkflowPartitionOptions.promptTemplate = n.getStringValue(); },
+        "sizeUnit": n => { wikiWorkflowPartitionOptions.sizeUnit = n.getEnumValue<DocumentPartitionSizeUnit>(DocumentPartitionSizeUnitObject); },
+        "splitMode": n => { wikiWorkflowPartitionOptions.splitMode = n.getEnumValue<DocumentPartitionSplitMode>(DocumentPartitionSplitModeObject); },
+        "tokenEncodingOrModel": n => { wikiWorkflowPartitionOptions.tokenEncodingOrModel = n.getStringValue(); },
     }
 }
 /**
@@ -11342,6 +11642,10 @@ export interface QueryWikiCommandResponse extends Parsable {
      * 知识库 id.
      */
     wikiId?: string | null;
+    /**
+     * 默认工作流配置（切割/元数据生成/向量化三步预设），未配置时为 null.
+     */
+    workflowConfig?: WikiWorkflowConfig | null;
 }
 /**
  * 知识库文档向量化详情响应.元数据生成模型 id 仅在触发向量化时使用，不持久化到本响应.切割配置来源于文档 SliceConfig JSON（最后一次该文档触发的配置）.
@@ -12438,6 +12742,58 @@ export function serializeAuditsInfo(writer: SerializationWriter, auditsInfo: Par
 export function serializeBatchDeleteAIModelCommand(writer: SerializationWriter, batchDeleteAIModelCommand: Partial<BatchDeleteAIModelCommand> | undefined | null = {}) : void {
     if (batchDeleteAIModelCommand) {
         writer.writeCollectionOfPrimitiveValues<Guid>("modelIds", batchDeleteAIModelCommand.modelIds);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBatchRunWikiDocumentWorkflowCommand(writer: SerializationWriter, batchRunWikiDocumentWorkflowCommand: Partial<BatchRunWikiDocumentWorkflowCommand> | undefined | null = {}) : void {
+    if (batchRunWikiDocumentWorkflowCommand) {
+        writer.writeGuidValue("aiModelId", batchRunWikiDocumentWorkflowCommand.aiModelId);
+        writer.writeNumberValue("chunkOverlap", batchRunWikiDocumentWorkflowCommand.chunkOverlap);
+        writer.writeNumberValue("chunkSize", batchRunWikiDocumentWorkflowCommand.chunkSize);
+        writer.writeCollectionOfPrimitiveValues<string>("documentIds", batchRunWikiDocumentWorkflowCommand.documentIds);
+        writer.writeBooleanValue("embedMetadata", batchRunWikiDocumentWorkflowCommand.embedMetadata);
+        writer.writeBooleanValue("embedSourceText", batchRunWikiDocumentWorkflowCommand.embedSourceText);
+        writer.writeBooleanValue("isAiPartition", batchRunWikiDocumentWorkflowCommand.isAiPartition);
+        writer.writeBooleanValue("isEmbedding", batchRunWikiDocumentWorkflowCommand.isEmbedding);
+        writer.writeBooleanValue("isGenerateMetadata", batchRunWikiDocumentWorkflowCommand.isGenerateMetadata);
+        writer.writeBooleanValue("isPartition", batchRunWikiDocumentWorkflowCommand.isPartition);
+        writer.writeGuidValue("metadataModelId", batchRunWikiDocumentWorkflowCommand.metadataModelId);
+        writer.writeEnumValue<DocumentPartitionOverlapUnit>("overlapUnit", batchRunWikiDocumentWorkflowCommand.overlapUnit);
+        writer.writeStringValue("promptTemplate", batchRunWikiDocumentWorkflowCommand.promptTemplate);
+        writer.writeEnumValue<DocumentPartitionSizeUnit>("sizeUnit", batchRunWikiDocumentWorkflowCommand.sizeUnit);
+        writer.writeEnumValue<DocumentPartitionSplitMode>("splitMode", batchRunWikiDocumentWorkflowCommand.splitMode);
+        if(batchRunWikiDocumentWorkflowCommand.strategyTypes)
+        writer.writeCollectionOfEnumValues<MetadataGenerationStrategy>("strategyTypes", batchRunWikiDocumentWorkflowCommand.strategyTypes);
+        writer.writeStringValue("tokenEncodingOrModel", batchRunWikiDocumentWorkflowCommand.tokenEncodingOrModel);
+        writer.writeStringValue("wikiId", batchRunWikiDocumentWorkflowCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBatchRunWikiDocumentWorkflowCommandResponse(writer: SerializationWriter, batchRunWikiDocumentWorkflowCommandResponse: Partial<BatchRunWikiDocumentWorkflowCommandResponse> | undefined | null = {}) : void {
+    if (batchRunWikiDocumentWorkflowCommandResponse) {
+        writer.writeCollectionOfObjectValues<BatchRunWikiDocumentWorkflowDocumentItem>("items", batchRunWikiDocumentWorkflowCommandResponse.items, serializeBatchRunWikiDocumentWorkflowDocumentItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBatchRunWikiDocumentWorkflowDocumentItem(writer: SerializationWriter, batchRunWikiDocumentWorkflowDocumentItem: Partial<BatchRunWikiDocumentWorkflowDocumentItem> | undefined | null = {}) : void {
+    if (batchRunWikiDocumentWorkflowDocumentItem) {
+        writer.writeStringValue("documentId", batchRunWikiDocumentWorkflowDocumentItem.documentId);
+        writer.writeStringValue("fileName", batchRunWikiDocumentWorkflowDocumentItem.fileName);
+        writer.writeStringValue("message", batchRunWikiDocumentWorkflowDocumentItem.message);
+        writer.writeBooleanValue("success", batchRunWikiDocumentWorkflowDocumentItem.success);
+        writer.writeGuidValue("taskId", batchRunWikiDocumentWorkflowDocumentItem.taskId);
     }
 }
 /**
@@ -14748,6 +15104,7 @@ export function serializeQueryWikiCommandResponse(writer: SerializationWriter, q
         writer.writeStringValue("rerankModelName", queryWikiCommandResponse.rerankModelName);
         writer.writeStringValue("teamId", queryWikiCommandResponse.teamId);
         writer.writeStringValue("wikiId", queryWikiCommandResponse.wikiId);
+        writer.writeObjectValue<WikiWorkflowConfig>("workflowConfig", queryWikiCommandResponse.workflowConfig, serializeWikiWorkflowConfig);
     }
 }
 /**
@@ -16070,6 +16427,19 @@ export function serializeUpdateWikiRerankModelCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateWikiWorkflowCommand(writer: SerializationWriter, updateWikiWorkflowCommand: Partial<UpdateWikiWorkflowCommand> | undefined | null = {}) : void {
+    if (updateWikiWorkflowCommand) {
+        writer.writeObjectValue<WikiWorkflowEmbeddingOptions>("embedding", updateWikiWorkflowCommand.embedding, serializeWikiWorkflowEmbeddingOptions);
+        writer.writeObjectValue<WikiWorkflowMetadataOptions>("metadata", updateWikiWorkflowCommand.metadata, serializeWikiWorkflowMetadataOptions);
+        writer.writeObjectValue<WikiWorkflowPartitionOptions>("partition", updateWikiWorkflowCommand.partition, serializeWikiWorkflowPartitionOptions);
+        writer.writeStringValue("wikiId", updateWikiWorkflowCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUserStateInfo(writer: SerializationWriter, userStateInfo: Partial<UserStateInfo> | undefined | null = {}) : void {
     if (userStateInfo) {
         writer.writeStringValue("avatar", userStateInfo.avatar);
@@ -16156,6 +16526,59 @@ export function serializeWikiModelOptionItem(writer: SerializationWriter, wikiMo
         writer.writeGuidValue("id", wikiModelOptionItem.id);
         writer.writeStringValue("modelKind", wikiModelOptionItem.modelKind);
         writer.writeStringValue("name", wikiModelOptionItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiWorkflowConfig(writer: SerializationWriter, wikiWorkflowConfig: Partial<WikiWorkflowConfig> | undefined | null = {}) : void {
+    if (wikiWorkflowConfig) {
+        writer.writeObjectValue<WikiWorkflowEmbeddingOptions>("embedding", wikiWorkflowConfig.embedding, serializeWikiWorkflowEmbeddingOptions);
+        writer.writeObjectValue<WikiWorkflowMetadataOptions>("metadata", wikiWorkflowConfig.metadata, serializeWikiWorkflowMetadataOptions);
+        writer.writeObjectValue<WikiWorkflowPartitionOptions>("partition", wikiWorkflowConfig.partition, serializeWikiWorkflowPartitionOptions);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiWorkflowEmbeddingOptions(writer: SerializationWriter, wikiWorkflowEmbeddingOptions: Partial<WikiWorkflowEmbeddingOptions> | undefined | null = {}) : void {
+    if (wikiWorkflowEmbeddingOptions) {
+        writer.writeBooleanValue("embedMetadata", wikiWorkflowEmbeddingOptions.embedMetadata);
+        writer.writeBooleanValue("embedSourceText", wikiWorkflowEmbeddingOptions.embedSourceText);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiWorkflowMetadataOptions(writer: SerializationWriter, wikiWorkflowMetadataOptions: Partial<WikiWorkflowMetadataOptions> | undefined | null = {}) : void {
+    if (wikiWorkflowMetadataOptions) {
+        writer.writeGuidValue("metadataModelId", wikiWorkflowMetadataOptions.metadataModelId);
+        if(wikiWorkflowMetadataOptions.strategyTypes)
+        writer.writeCollectionOfEnumValues<MetadataGenerationStrategy>("strategyTypes", wikiWorkflowMetadataOptions.strategyTypes);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiWorkflowPartitionOptions(writer: SerializationWriter, wikiWorkflowPartitionOptions: Partial<WikiWorkflowPartitionOptions> | undefined | null = {}) : void {
+    if (wikiWorkflowPartitionOptions) {
+        writer.writeGuidValue("aiModelId", wikiWorkflowPartitionOptions.aiModelId);
+        writer.writeNumberValue("chunkOverlap", wikiWorkflowPartitionOptions.chunkOverlap);
+        writer.writeNumberValue("chunkSize", wikiWorkflowPartitionOptions.chunkSize);
+        writer.writeEnumValue<WorkflowPartitionMode>("mode", wikiWorkflowPartitionOptions.mode);
+        writer.writeEnumValue<DocumentPartitionOverlapUnit>("overlapUnit", wikiWorkflowPartitionOptions.overlapUnit);
+        writer.writeStringValue("promptTemplate", wikiWorkflowPartitionOptions.promptTemplate);
+        writer.writeEnumValue<DocumentPartitionSizeUnit>("sizeUnit", wikiWorkflowPartitionOptions.sizeUnit);
+        writer.writeEnumValue<DocumentPartitionSplitMode>("splitMode", wikiWorkflowPartitionOptions.splitMode);
+        writer.writeStringValue("tokenEncodingOrModel", wikiWorkflowPartitionOptions.tokenEncodingOrModel);
     }
 }
 /**
@@ -17663,6 +18086,27 @@ export interface UpdateWikiRerankModelCommand extends Parsable {
     wikiId?: string | null;
 }
 /**
+ * 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），需要团队 Admin 及以上角色.整体覆盖保存：某步骤传 null 表示清除该步骤预设.仅保存预设，不触发任何文档处理；批量执行见 BatchRunWikiDocumentWorkflowCommand.
+ */
+export interface UpdateWikiWorkflowCommand extends Parsable {
+    /**
+     * 向量化预设，为空表示未配置该步骤.
+     */
+    embedding?: WikiWorkflowEmbeddingOptions | null;
+    /**
+     * 元数据生成预设，为空表示未配置该步骤.
+     */
+    metadata?: WikiWorkflowMetadataOptions | null;
+    /**
+     * 文档切割预设，为空表示未配置该步骤.
+     */
+    partition?: WikiWorkflowPartitionOptions | null;
+    /**
+     * 知识库 id，由 Controller 从路由参数回填.
+     */
+    wikiId?: string | null;
+}
+/**
  * UserStateInfo.
  */
 export interface UserStateInfo extends Parsable {
@@ -17846,6 +18290,90 @@ export interface WikiModelOptionItem extends Parsable {
     name?: string | null;
 }
 /**
+ * 知识库默认工作流配置：切割 / 元数据生成 / 向量化三步预设.由 UpdateWikiWorkflowCommand 整体保存，批量执行工作流时作为前端预填默认值.
+ */
+export interface WikiWorkflowConfig extends Parsable {
+    /**
+     * 向量化预设，为空表示未配置该步骤.
+     */
+    embedding?: WikiWorkflowEmbeddingOptions | null;
+    /**
+     * 元数据生成预设，为空表示未配置该步骤.
+     */
+    metadata?: WikiWorkflowMetadataOptions | null;
+    /**
+     * 文档切割预设，为空表示未配置该步骤.
+     */
+    partition?: WikiWorkflowPartitionOptions | null;
+}
+/**
+ * 默认工作流·向量化预设.
+ */
+export interface WikiWorkflowEmbeddingOptions extends Parsable {
+    /**
+     * 是否对生成的元数据向量化.
+     */
+    embedMetadata?: boolean | null;
+    /**
+     * 是否对原文切片内容向量化.
+     */
+    embedSourceText?: boolean | null;
+}
+/**
+ * 默认工作流·元数据生成预设.
+ */
+export interface WikiWorkflowMetadataOptions extends Parsable {
+    /**
+     * 元数据生成使用的对话模型 id.
+     */
+    metadataModelId?: Guid | null;
+    /**
+     * 元数据生成策略（可多选）；为空或 null 时生成全套元数据.
+     */
+    strategyTypes?: MetadataGenerationStrategy[] | null;
+}
+/**
+ * 默认工作流·文档切割预设.
+ */
+export interface WikiWorkflowPartitionOptions extends Parsable {
+    /**
+     * 切割模式为 AI 切割时使用的对话模型 id.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 切片重叠大小（0-8192，单位由 OverlapUnit 决定），仅普通切割.
+     */
+    chunkOverlap?: number | null;
+    /**
+     * 切片大小（1-8192，单位由 SizeUnit 决定），仅普通切割.
+     */
+    chunkSize?: number | null;
+    /**
+     * 切割模式；缺省为普通切割（兼容历史 JSON）.
+     */
+    mode?: WorkflowPartitionMode | null;
+    /**
+     * 重叠单位.
+     */
+    overlapUnit?: DocumentPartitionOverlapUnit | null;
+    /**
+     * AI 切割提示词模板，为空使用内置默认；仅 AI 切割.
+     */
+    promptTemplate?: string | null;
+    /**
+     * 切片大小计量单位.
+     */
+    sizeUnit?: DocumentPartitionSizeUnit | null;
+    /**
+     * 切割模式为普通切割时的切割方式.
+     */
+    splitMode?: DocumentPartitionSplitMode | null;
+    /**
+     * Token 计量时使用的编码名或模型名，为空默认 cl100k_base.
+     */
+    tokenEncodingOrModel?: string | null;
+}
+/**
  * 撤回上架申请，仅待审核状态可撤回；需要资源所属团队的 Admin 及以上角色.
  */
 export interface WithdrawPublicationCommand extends Parsable {
@@ -17899,6 +18427,7 @@ export interface WorkflowNodeExecution extends Parsable {
      */
     state?: string | null;
 }
+export type WorkflowPartitionMode = (typeof WorkflowPartitionModeObject)[keyof typeof WorkflowPartitionModeObject];
 /**
  * 访问点悬浮位置.
  */
@@ -18012,6 +18541,13 @@ export const UserTypeObject = {
     External: "external",
     ExternalApp: "externalApp",
     Normal: "normal",
+} as const;
+/**
+ * 工作流切割模式：普通切割或 AI 智能切割.
+ */
+export const WorkflowPartitionModeObject = {
+    Normal: "normal",
+    Ai: "ai",
 } as const;
 /* tslint:enable */
 /* eslint-enable */

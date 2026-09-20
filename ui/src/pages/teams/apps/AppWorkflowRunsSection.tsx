@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Button, Drawer, Space, Table, Tag, Typography } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router'
 import { DataTable } from '@/design-system'
 import { getWorkflowInstance, getWorkflowInstances, type WorkflowInstanceDetail, type WorkflowInstanceItem } from '@/api/workflow'
 import { formatDateTime } from '@/utils/datetime'
@@ -20,6 +21,7 @@ const STATUS_COLOR: Record<number, string> = {
 
 export function AppWorkflowRunsSection({ teamId, appId, canManage }: { teamId: number; appId: string; canManage: boolean }) {
   const { t } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [items, setItems] = useState<WorkflowInstanceItem[]>([])
   const [total, setTotal] = useState(0)
@@ -46,6 +48,15 @@ export function AppWorkflowRunsSection({ teamId, appId, canManage }: { teamId: n
   useEffect(() => {
     void load()
   }, [load])
+
+  // 支持对话执行过程「查看运行详情」带 ?instanceId= 直开实例 Drawer
+  const deepLinkInstanceId = searchParams.get('instanceId')
+  useEffect(() => {
+    if (!deepLinkInstanceId || detail) return
+    void openDetail(deepLinkInstanceId)
+    setSearchParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkInstanceId])
 
   const openDetail = async (instanceId: string) => {
     setDetailLoading(true)

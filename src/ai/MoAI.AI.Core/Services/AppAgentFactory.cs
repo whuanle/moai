@@ -31,6 +31,7 @@ public sealed class AppAgentFactory
     private readonly IAiModelUsageCounter _usageCounter;
     private readonly AppContextProviderFactory _contextProviderFactory;
     private readonly IWorkflowAppChatInvoker _workflowChatInvoker;
+    private readonly IWorkflowChatEventSource _workflowChatEventSource;
     private readonly IStorageService _storageService;
     private readonly ILoggerFactory _loggerFactory;
 
@@ -44,6 +45,7 @@ public sealed class AppAgentFactory
     /// <param name="usageCounter">模型使用计数器.</param>
     /// <param name="contextProviderFactory">上下文提供者工厂.</param>
     /// <param name="workflowChatInvoker">流程应用对话执行端口（Workflow 应用对话时使用）.</param>
+    /// <param name="workflowChatEventSource">流程执行事件源（Workflow 应用对话流式过程推送）.</param>
     /// <param name="storageService">存储服务（对话图片附件多模态注入读取字节）.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
@@ -54,6 +56,7 @@ public sealed class AppAgentFactory
         IAiModelUsageCounter usageCounter,
         AppContextProviderFactory contextProviderFactory,
         IWorkflowAppChatInvoker workflowChatInvoker,
+        IWorkflowChatEventSource workflowChatEventSource,
         IStorageService storageService,
         ILoggerFactory loggerFactory)
     {
@@ -64,6 +67,7 @@ public sealed class AppAgentFactory
         _usageCounter = usageCounter;
         _contextProviderFactory = contextProviderFactory;
         _workflowChatInvoker = workflowChatInvoker;
+        _workflowChatEventSource = workflowChatEventSource;
         _storageService = storageService;
         _loggerFactory = loggerFactory;
     }
@@ -100,7 +104,7 @@ public sealed class AppAgentFactory
                 SessionId = sessionId,
                 UseDraft = workflowDraft,
             };
-            var workflowClient = new WorkflowAppChatClient(_workflowChatInvoker, request);
+            var workflowClient = new WorkflowAppChatClient(_workflowChatInvoker, request, _workflowChatEventSource);
             var workflowHistory = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
             return new ChatClientAgent(
                 workflowClient,

@@ -13,7 +13,7 @@ using MoAI.Wiki.Services;
 namespace MoAI.Wiki.Consumers;
 
 /// <summary>
-/// 知识库文档向量化消费者：复用已提取内容 + 已切割切片，执行 可选元数据生成 → 向量化.
+/// 知识库文档工作流消费者：按任务数据执行 AI 切割 → 元数据生成 → 向量化（各步骤可选）.
 /// </summary>
 [Consumer("wiki.document.embedding", Qos = 1)]
 public class EmbeddingDocumentConsumer : IConsumer<EmbeddingDocumentTaskMessage>
@@ -22,19 +22,19 @@ public class EmbeddingDocumentConsumer : IConsumer<EmbeddingDocumentTaskMessage>
     private const string SuccessfulMessage = "任务已完成";
 
     private readonly DatabaseContext _databaseContext;
-    private readonly IWikiEmbeddingProcessor _embeddingProcessor;
+    private readonly IWikiWorkflowProcessor _workflowProcessor;
     private readonly ILogger<EmbeddingDocumentConsumer> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmbeddingDocumentConsumer"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="embeddingProcessor">向量化流水线服务.</param>
+    /// <param name="workflowProcessor">文档工作流处理器.</param>
     /// <param name="logger">日志.</param>
-    public EmbeddingDocumentConsumer(DatabaseContext databaseContext, IWikiEmbeddingProcessor embeddingProcessor, ILogger<EmbeddingDocumentConsumer> logger)
+    public EmbeddingDocumentConsumer(DatabaseContext databaseContext, IWikiWorkflowProcessor workflowProcessor, ILogger<EmbeddingDocumentConsumer> logger)
     {
         _databaseContext = databaseContext;
-        _embeddingProcessor = embeddingProcessor;
+        _workflowProcessor = workflowProcessor;
         _logger = logger;
     }
 
@@ -80,26 +80,24 @@ public class EmbeddingDocumentConsumer : IConsumer<EmbeddingDocumentTaskMessage>
             return;
         }
 
-        if (data == null || data.WikiId <= 0 || data.DocumentId <= 0 || (!data.IsEmbedSourceText && !data.IsEmbedMetadata))
+        if (data == null || data.WikiId <= 0 || data.DocumentId <= 0
+            || (!data.IsEmbedSourceText && !data.IsEmbedMetadata && data.MetadataModelId == Guid.Empty && data.AiPartitionModelId == Guid.Empty))
         {
-            await MarkTaskFailedIfPendingAsync(message.TaskId, "任务数据无效：缺少有效的知识库、文档或向量化选项配置。");
+            await MarkTaskFailedIfPendingAsync(message.TaskId, "任务数据无效：缺少有效的知识库、文档或处理步骤配置。");
             return;
         }
 
         _logger.LogInformation(
-            "Starting document embedding. TaskId={TaskId}, WikiId={WikiId}, DocumentId={DocumentId}",
+            "Starting document workflow task. TaskId={TaskId}, WikiId={WikiId}, DocumentId={DocumentId}, AiPartition={AiPartition}, GenerateMetadata={GenerateMetadata}",
             message.TaskId,
             data.WikiId,
-            data.DocumentId);
+            data.DocumentId,
+            data.AiPartitionModelId != Guid.Empty,
+            data.MetadataModelId != Guid.Empty);
 
         try
         {
-            await _embeddingProcessor.ProcessAsync(
-                data.WikiId,
-                data.DocumentId,
-                data.IsEmbedSourceText,
-                data.IsEmbedMetadata,
-                CancellationToken.None);
+            await _workflowProcessor.ProcessAsync(data, CancellationToken.None);
 
             await _databaseContext.WorkerTasks
                 .Where(x => x.Id == message.TaskId && x.IsDeleted == 0 && x.State == (int)MoAI.Infra.Models.WorkerState.Processing)

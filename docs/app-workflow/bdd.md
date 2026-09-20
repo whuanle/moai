@@ -393,3 +393,13 @@ Scenario: 开始/结束节点必须存在（核心节点保护与空白画布自
   And 开始/结束节点不响应画布右键删除
   When 通过接口保存无开始节点、开始节点重复或无结束节点的流程定义
   Then 保存被 400 拒绝并提示原因
+
+@WF-S54 @auto:e2e
+Scenario: 流程应用对话实时过程（节点状态推送 + AI 回复流式）
+  Given 已发布流程包含 aiChat 节点，用户在对话页（或工作台调试 Tab）发送消息
+  When AG-UI 对话流（SSE）开始
+  Then 先收到 CUSTOM(moai.workflow) started 事件，携带流程实例 id（可中途跳转运行详情）
+  And 每个节点进入 running/completed/failed/skipped 时收到对应 node 事件（节点 key/名称/类型/耗时/错误）
+  And aiChat/agentApp 节点的模型增量文本直接作为对话正文 TEXT_MESSAGE_CONTENT 流式下发（问题分类节点的序号输出不进正文）
+  And 流程结束后收到 completed 事件；最终回复与已流式正文一致时不重复下发，模板组合输出时才追加最终回复
+  And Agent 应用对话不产生上述事件，行为不变

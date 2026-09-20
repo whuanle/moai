@@ -16,9 +16,12 @@
 
 ## 2. 数据模型
 
-- `wiki`：`id / team_id / name / description / is_public / avatar_path / counter / embedding_model_id / embedding_dimensions / rerank_model_id / is_lock` + 审计（bool 软删除，同 team 约定 D1）
+- `wiki`：`id / team_id / name / description / is_public / avatar_path / counter / embedding_model_id / embedding_dimensions / rerank_model_id / is_lock / default_workflow_config` + 审计（bool 软删除，同 team 约定 D1）
   - `embedding_dimensions` 上限 2000（pgvector 建 hnsw 索引的硬上限）
   - `rerank_model_id` **可空**：未绑定表示检索不做重排序；与向量化配置解耦，锁定后仍可修改
+  - `default_workflow_config`：默认工作流三步预设 JSON（`{partition?, metadata?, embedding?}`，null=未配置该步骤；序列化 camelCase + camelCase 枚举，`WikiWorkflowConfigJson`），仅作批量执行预填，空串表示未配置；增量 DDL `asserts/wiki_workflow.sql`
+    - `partition`：`mode`（`WorkflowPartitionMode` normal/ai，缺省 normal 兼容旧 JSON）；普通切割带 `splitMode/chunkSize/chunkOverlap/overlapUnit/sizeUnit/tokenEncodingOrModel`；AI 切割带 `aiModelId/promptTemplate`
+    - `metadata`：`metadataModelId` + `strategyTypes`（多选，空/null=全套）
   - **无** `metadata_model_id` / `chunk_size` / `chunk_overlap` 列，这些参数属于单文档触发口径，不再由 wiki 持有
 - `wiki_document` 与切片/向量表不变；`wiki_document.slice_config` 保存该文档上次触发的切片 JSON（`splitMode/chunkSize/chunkOverlap/overlapUnit/sizeUnit/tokenEncodingOrModel`），用于展示历史
 - 文档内容持久化：`wiki_document_content`（按 `document_id` 唯一一行），保存最近一次触发由 Maomi.ToMarkdown 抽取出的完整 markdown，供后续编辑/重抽/溯源使用
@@ -39,7 +42,8 @@
 | 详情（公开库） | ✅ | ✅ | ✅ 只读（`myRole=0`） |
 | 更新 wiki embedding 模型 / 维度 | ✅ | 403 | 404 |
 | 更新 wiki rerank 模型（含解绑） | ✅ | 403 | 404 |
-| 触发文档向量化 | ✅ | ✅ | 404 |
+| 更新默认工作流配置 | ✅ | 403 | 404 |
+| 触发文档向量化 / 批量工作流 | ✅ | ✅ | 404 |
 
 - 角色判定注入 `MoAI.Team.Shared` 的 `ITeamService`（跨域接口复用，实现由 Team 模块注册）
 - 列表/详情响应携带 `myRole`；公开库对非成员返回 `myRole=0`，前端据此隐藏管理操作
@@ -59,6 +63,7 @@
 | GET | `/api/wiki/model-options?teamId=` | 可用模型候选（公开 + 已授权 conversation / embedding / rerank），仅团队成员 | `QueryWikiModelOptionsCommandResponse` |
 | PUT | `/api/wiki/{id}/embedding-config` | 绑定向量模型 + 维度（1-2000），仅 Admin+；已锁定 wiki 返回 409 | Empty |
 | PUT | `/api/wiki/{id}/rerank-model` | 绑定/更换重排序模型（`rerankModelId` 可空），仅 Admin+；**已锁定 wiki 仍可修改** | Empty |
+| PUT | `/api/wiki/{id}/workflow-config` | 保存默认工作流三步预设（`partition?/metadata?/embedding?`，null 步骤=清除），仅 Admin+，整体覆盖；不触发文档处理 | Empty |
 | POST | `/api/wiki/{id}/documents/preupload` | 预上传 | `PreUploadWikiDocumentCommandResponse` |
 | POST | `/api/wiki/{id}/documents/complete` | 完成上传 | Empty |
 | POST | `/api/wiki/{id}/documents/list` | 文档分页 | `QueryWikiDocumentsCommandResponse` |
@@ -70,6 +75,7 @@
 | POST | `/api/wiki/{id}/documents/{documentId}/chunks/{chunkId}/metadata/generate` | 为单个切片生成/重生成元数据，传 `metadataModelId`，仅团队成员 | Empty |
 | POST | `/api/wiki/{id}/documents/{documentId}/chunks/metadata/generate` | 为文档切片批量生成/重生成元数据，传 `metadataModelId`，`chunkIds` 为空表示全部切片，仅团队成员 | Empty |
 | POST | `/api/wiki/{id}/documents/{documentId}/embedding` | 触发向量化，传 `isEmbedSourceText/isEmbedMetadata`（至少一项为真），仅团队成员 | `{ taskId }` |
+| POST | `/api/wiki/{id}/documents/batch-workflow` | 批量执行工作流：`documentIds`(1-50) + 三步开关（切割/生成元数据/向量化，可只选一步）+ 各步参数（切割支持 `isAiPartition`+`aiModelId`+`promptTemplate` 或普通切割参数；元数据 `strategyTypes` 多选，空=全套），仅团队成员；逐文档返回 `{documentId, fileName, success, message, taskId?}` | `BatchRunWikiDocumentWorkflowCommandResponse` |
 | GET | `/api/wiki/{id}/documents/{documentId}/embedding` | 查询文档向量化详情（含 wiki embedding 模型/维度、上次切割配置、切片列表） | `QueryWikiDocumentEmbeddingCommandResponse` |
 
 > 原文档层接口（`/documents/{id}` GET）已随实体重做移除；内容/文档能力下阶段按文件接入模型重建。
@@ -80,6 +86,8 @@
 - `/wiki` 页卡片点击 → `/team/{teamId}/wiki/{wikiId}`：知识库详情页，左侧菜单（文件列表 / 召回测试 / 设置）；设置页可编辑名称/简介/公开、上传头像（仅 Admin+），以及绑定 embedding 模型与向量维度（1-2000）。**元数据模型 / 切片参数不在 wiki 设置页**。文件列表与召回测试为占位。**详情路由为团队嵌套**（`/team/:teamId/wiki/:wikiId/:section?`）。
 - `/team/{teamId}/wiki/{wikiId}/document/{documentId}/embedding` 文档级页：展示文档内容、普通/AI 切割与向量化；普通切割可选择 Maomi.ToMarkdown 切割方式、长度单位（字符/Token）、重叠单位、切片长度与切片重叠；无历史切割配置时，前端按 wiki 向量维度默认推荐 Markdown 感知 + Token 计量 + 句子重叠 1 的最佳配置，并提供「应用推荐值」恢复推荐；选择句子优先/段落优先切割时，前端自动切换并锁定对应重叠单位；选择 Token 时前端下拉提供后端明确支持的编码；AI 切割提供可直接使用的默认提示词模板，不再额外展示说明提示；切片预览可选择对话模型后对单个切片或全部切片生成/重生成元数据；向量化仅选择是否对原文切片/已生成元数据向量化，两项均未勾选时阻止提交，元数据生成模型选择器不在向量化表单中。
 - **团队详情「知识库」tab（`TeamWikis`）**：真正的知识库管理（新建/修改/删除），仅 Owner/Admin 可操作，Member 只读。数据源 `getWikis(teamId)` 的 `myRole` 判定。
+- **设置页「默认工作流」卡（`WikiWorkflowSettings`，仅 Admin+）**：编辑三步预设（步骤勾选 + 切割参数/元数据模型与策略/向量化开关），与文档操作页共用 `WikiWorkflowFormFields` 表单字段组；保存走 `PUT workflow-config` 整体覆盖。
+- **文件列表批量处理（`BatchWorkflowModal`）**：多选行 → 工具栏「批量处理」→ 弹窗三步勾选（参数从知识库默认工作流预填，未配置步骤用通用默认值）→ 提交后展示逐文档成败列表；向量化模型未配置时禁用提交并提示；批量删除按钮同步补齐 Popconfirm。
 - `store/app.ts` 现有 `currentTeamId`（persist）与 `myTeams`（内存）保持；`Teams.tsx` 增删后同步 `myTeams`。
 
 ## 6. 关键决策
@@ -104,6 +112,8 @@
 - **D18** 切片元数据生成可独立于向量化执行：切片预览区支持单片与全部切片生成/重生成元数据，结果直接保存到 `wiki_document_chunk_metadata`；向量化勾选元数据时直接复用这些已生成元数据，不再生成元数据
 - **D19** 普通切割默认推荐值由 wiki 向量维度决定：`<=384 → 320`、`<=768 → 512`、`<=1024 → 700`、`<=1536 → 900`、`>1536 → 1100`（单位均为 Token）；默认重叠为 1 个句子，用户仍可自由覆盖
 - **D20** 向量化只做向量化：文档操作页的向量化表单仅保留「对原文切片向量化 / 对元数据向量化」两个开关（至少选一项），删除元数据生成模型选择器；元数据生成是切片预览区的独立步骤与接口，向量化触发请求体只含 `isEmbedSourceText` 与 `isEmbedMetadata`
+- **D21** 默认工作流为 wiki 级 JSON 预设（`default_workflow_config`）：切割/生成元数据/向量化三步各自可空，仅作批量执行预填，不触发处理、不参与 IsLock；权限与 rerank 一致（Admin+ 可改，锁定不限制）
+- **D22** 批量工作流 = 三步开关自由组合（支持单步）：普通切割同步逐文档执行（内容缺失自动提取，重新切割清空旧元数据与向量，已有活跃任务的文档跳过并逐文档报告）；**AI 切割为 LLM 调用，随异步任务执行**（提交时同步兜底提取内容，任务内 AiPartition → 元数据 → 向量化）；元数据生成同样并入任务（`WikiDocumentEmbeddingTaskData` 携带全部步骤参数），`strategyTypes` 多选、空=全套（全套含聚合段），按所选策略过滤元数据类型并以联合 Prompt 单次 LLM 调用；向量化沿用既有任务机制与唯一约束。编排收口在 `WikiWorkflowProcessor`（`IWikiWorkflowProcessor`，组合 `WikiDocumentProcessingService` 与 `WikiEmbeddingService`）。前置不满足（未提取/未切割/无元数据）在提交时逐文档报告而非投递必败任务；重新切割后勾选元数据向量化但未勾选元数据生成的组合在提交时拒绝；单文档失败不影响其他文档
 
 ## 7. 已知问题 / 下阶段
 

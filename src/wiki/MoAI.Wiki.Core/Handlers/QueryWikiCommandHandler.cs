@@ -74,6 +74,7 @@ public class QueryWikiCommandHandler : IRequestHandler<QueryWikiCommand, QueryWi
             IsLock = wiki.IsLock,
             RerankModelId = wiki.RerankModelId,
             RerankModelName = rerankModelName,
+            WorkflowConfig = Models.WikiWorkflowConfigJson.Deserialize(wiki.DefaultWorkflowConfig),
         };
 
         // 公开知识库：非团队成员可只读访问（myRole 置 0 = 非成员），但不得进入操作

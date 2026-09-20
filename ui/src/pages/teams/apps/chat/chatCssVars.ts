@@ -12,6 +12,7 @@ export function chatCssVars(token: GlobalToken): CSSProperties {
     '--mc-warning-bg': token.colorWarningBg,
     '--mc-warning-border': token.colorWarningBorder,
     '--mc-success': token.colorSuccess,
+    '--mc-danger': token.colorError,
     '--mc-bg': token.colorBgContainer,
     '--mc-bg-layout': token.colorBgLayout,
     '--mc-bg-elevated': token.colorBgElevated,

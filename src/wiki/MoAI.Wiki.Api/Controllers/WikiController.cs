@@ -146,6 +146,27 @@ public class WikiController : ControllerBase
     }
 
     /// <summary>
+    /// 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），仅团队 Admin 及以上可操作.
+    /// 整体覆盖保存：某步骤传 null 表示清除该步骤预设；仅保存预设不触发文档处理.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">默认工作流配置请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id}/workflow-config")]
+    public Task<EmptyCommandResponse> UpdateWikiWorkflowConfig(long id, [FromBody] UpdateWikiWorkflowCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateWikiWorkflowCommand
+        {
+            WikiId = id,
+            Partition = req.Partition,
+            Metadata = req.Metadata,
+            Embedding = req.Embedding,
+        };
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 更新知识库重排序模型配置，仅团队 Admin 及以上可操作.
     /// 重排序模型可选：传 null（或不传）表示不使用重排序.
     /// 与向量化配置解耦：知识库锁定（IsLock=true）后仍可绑定、更换或解绑.

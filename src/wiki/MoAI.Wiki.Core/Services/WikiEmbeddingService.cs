@@ -18,12 +18,11 @@ using System.Threading.Tasks;
 namespace MoAI.Wiki.Services;
 
 /// <summary>
-/// 知识库文档向量化流水线：复用已提取内容 + 已切割切片，执行 可选元数据生成 → 向量化.
-/// 内容提取见 <see cref="WikiDocumentProcessingService.ExtractAsync"/>，切割见其 PartitionAsync / AiPartitionAsync.
-/// 向量模型/维度由知识库配置；元数据模型由本次触发任务动态传入.
+/// 知识库文档向量化领域服务：元数据生成（可多策略）与向量化（复用已提取内容 + 已切割切片）.
+/// 批量工作流的 AI 切割 → 元数据 → 向量化编排见 <see cref="WikiWorkflowProcessor"/>.
 /// </summary>
 [InjectOnScoped]
-public class WikiEmbeddingService : IWikiEmbeddingProcessor
+public class WikiEmbeddingService
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IEmbeddingGeneratorProvider _embeddingGeneratorProvider;
@@ -58,7 +57,7 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
     }
 
     /// <summary>
-    /// 执行文档向量化流水线（复用已提取内容 + 已切割切片）.
+    /// 执行文档向量化（复用已提取内容 + 已切割切片及已生成元数据）.
     /// </summary>
     /// <param name="wikiId">知识库 id.</param>
     /// <param name="documentId">文档 id.</param>
@@ -195,10 +194,10 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
     /// <param name="metadataModelId">元数据生成使用的对话模型 id.</param>
     /// <param name="chunkIds">目标切片 id；为空时处理全部切片.</param>
     /// <param name="appendExisting">是否保留已有元数据并追加生成结果.</param>
-    /// <param name="strategyType">元数据生成策略；为空时生成全套元数据.</param>
+    /// <param name="strategyTypes">元数据生成策略（可多选）；为空或空集合时生成全套元数据.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>生成的元数据数量.</returns>
-    internal async Task<int> GenerateAndSaveChunkMetadataAsync(int wikiId, int documentId, Guid metadataModelId, List<long> chunkIds, bool appendExisting = false, MetadataGenerationStrategy? strategyType = null, CancellationToken cancellationToken = default)
+    internal async Task<int> GenerateAndSaveChunkMetadataAsync(int wikiId, int documentId, Guid metadataModelId, List<long> chunkIds, bool appendExisting = false, List<MetadataGenerationStrategy>? strategyTypes = null, CancellationToken cancellationToken = default)
     {
         var wiki = await _databaseContext.Wikis.FirstOrDefaultAsync(x => x.Id == wikiId && x.IsDeleted == 0, cancellationToken)
             ?? throw new InvalidOperationException($"知识库不存在: {wikiId}");
@@ -227,7 +226,7 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
         }
 
         var metadataByChunk = new Dictionary<long, List<WikiDocumentChunkMetadatumEntity>>();
-        var failures = await GenerateMetadataAsync(wiki, document, metadataModelId, chunks, metadataByChunk, strategyType, cancellationToken);
+        var failures = await GenerateMetadataAsync(wiki, document, metadataModelId, chunks, metadataByChunk, strategyTypes, cancellationToken);
         var generatedCount = metadataByChunk.Values.Sum(x => x.Count);
         if (generatedCount == 0)
         {
@@ -252,7 +251,7 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
         Guid metadataModelId,
         List<WikiDocumentChunkContentEntity> chunks,
         Dictionary<long, List<WikiDocumentChunkMetadatumEntity>> metadataByChunk,
-        MetadataGenerationStrategy? strategyType,
+        List<MetadataGenerationStrategy>? strategyTypes,
         CancellationToken cancellationToken)
     {
         var (model, channel) = await ResolveChatAsync(metadataModelId, wiki.TeamId, cancellationToken);
@@ -262,34 +261,40 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
         {
             try
             {
-                var metadata = await GenerateChunkMetadataAsync(model, channel, chunk.SliceContent, strategyType, cancellationToken);
+                var metadata = await GenerateChunkMetadataAsync(model, channel, chunk.SliceContent, strategyTypes, cancellationToken);
                 if (metadata == null)
                 {
                     continue;
                 }
 
                 var entities = new List<WikiDocumentChunkMetadatumEntity>();
-                if (!string.IsNullOrWhiteSpace(metadata.Outline))
+                if (WantsMetadataType(strategyTypes, 1) && !string.IsNullOrWhiteSpace(metadata.Outline))
                 {
                     entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 1, metadata.Outline));
                 }
 
-                foreach (var question in metadata.Questions)
+                if (WantsMetadataType(strategyTypes, 2))
                 {
-                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 2, question));
+                    foreach (var question in metadata.Questions)
+                    {
+                        entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 2, question));
+                    }
                 }
 
-                foreach (var keyword in metadata.Keywords)
+                if (WantsMetadataType(strategyTypes, 3))
                 {
-                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 3, keyword));
+                    foreach (var keyword in metadata.Keywords)
+                    {
+                        entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 3, keyword));
+                    }
                 }
 
-                if (!string.IsNullOrWhiteSpace(metadata.Summary))
+                if (WantsMetadataType(strategyTypes, 4) && !string.IsNullOrWhiteSpace(metadata.Summary))
                 {
                     entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 4, metadata.Summary));
                 }
 
-                if (!string.IsNullOrWhiteSpace(metadata.Aggregated))
+                if (WantsMetadataType(strategyTypes, 5) && !string.IsNullOrWhiteSpace(metadata.Aggregated))
                 {
                     entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 5, metadata.Aggregated));
                 }
@@ -311,6 +316,29 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
         return failures;
     }
 
+    /// <summary>
+    /// 判断指定元数据类型是否在所选生成策略范围内；未选择任何策略时生成全部类型.
+    /// </summary>
+    /// <param name="strategyTypes">所选生成策略.</param>
+    /// <param name="metadataType">元数据类型（1=大纲 2=问题 3=关键词 4=摘要 5=聚合段）.</param>
+    /// <returns>是否生成该类型.</returns>
+    private static bool WantsMetadataType(List<MetadataGenerationStrategy>? strategyTypes, int metadataType)
+    {
+        if (strategyTypes == null || strategyTypes.Count == 0)
+        {
+            return true;
+        }
+
+        return metadataType switch
+        {
+            1 => strategyTypes.Contains(MetadataGenerationStrategy.OutlineGeneration),
+            2 => strategyTypes.Contains(MetadataGenerationStrategy.QuestionGeneration),
+            3 or 4 => strategyTypes.Contains(MetadataGenerationStrategy.KeywordSummaryFusion),
+            5 => strategyTypes.Contains(MetadataGenerationStrategy.SemanticAggregation),
+            _ => false,
+        };
+    }
+
     private async Task<Dictionary<long, List<WikiDocumentChunkMetadatumEntity>>> LoadMetadataByChunkAsync(List<long> chunkIds, CancellationToken cancellationToken)
     {
         if (chunkIds.Count == 0)
@@ -326,60 +354,38 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
             .ToDictionary(x => x.Key, x => x.ToList());
     }
 
-    private async Task<ChunkMetadata?> GenerateChunkMetadataAsync(AiModelEntity model, AiChannelEntity channel, string content, MetadataGenerationStrategy? strategyType, CancellationToken cancellationToken)
+    private async Task<ChunkMetadata?> GenerateChunkMetadataAsync(AiModelEntity model, AiChannelEntity channel, string content, List<MetadataGenerationStrategy>? strategyTypes, CancellationToken cancellationToken)
     {
-        var prompt = strategyType switch
+        var none = strategyTypes == null || strategyTypes.Count == 0;
+        var promptFields = new List<string>();
+        if (none || strategyTypes!.Contains(MetadataGenerationStrategy.OutlineGeneration))
         {
-            MetadataGenerationStrategy.OutlineGeneration => $@"
-/no_think
-请关闭深度思考，直接阅读以下文档切片，提取简洁结构化大纲，并严格返回 JSON（不要返回其他内容）：
-{{
-    ""outline"": ""该切片的大纲/主题""
-}}
+            promptFields.Add("\"outline\": \"该切片的大纲/主题\"");
+        }
+
+        if (none || strategyTypes!.Contains(MetadataGenerationStrategy.QuestionGeneration))
+        {
+            promptFields.Add("\"questions\": [\"该切片可以回答的问题1\", \"问题2\"]");
+        }
+
+        if (none || strategyTypes!.Contains(MetadataGenerationStrategy.KeywordSummaryFusion))
+        {
+            promptFields.Add("\"keywords\": [\"关键词1\", \"关键词2\"]");
+            promptFields.Add("\"summary\": \"该切片的摘要\"");
+        }
+
+        if (none || strategyTypes!.Contains(MetadataGenerationStrategy.SemanticAggregation))
+        {
+            promptFields.Add("\"aggregated\": \"该切片的核心语义聚合结果\"");
+        }
+
+        var jsonShape = "{\n  " + string.Join(",\n  ", promptFields) + "\n}";
+        var prompt = $@"/no_think
+请关闭深度思考，直接阅读以下文档切片，提取以下字段，并严格返回 JSON（不要返回其他内容）：
+{jsonShape}
 
 文档切片：
-{content}",
-            MetadataGenerationStrategy.QuestionGeneration => $@"
-/no_think
-请关闭深度思考，直接阅读以下文档切片，生成该切片可以回答的核心问题，并严格返回 JSON（不要返回其他内容）：
-{{
-    ""questions"": [""该切片可以回答的问题1"", ""问题2""]
-}}
-
-文档切片：
-{content}",
-            MetadataGenerationStrategy.KeywordSummaryFusion => $@"
-/no_think
-请关闭深度思考，直接阅读以下文档切片，提取关键词并生成摘要，并严格返回 JSON（不要返回其他内容）：
-{{
-    ""keywords"": [""关键词1"", ""关键词2""],
-    ""summary"": ""该切片的摘要""
-}}
-
-文档切片：
-{content}",
-            MetadataGenerationStrategy.SemanticAggregation => $@"
-/no_think
-请关闭深度思考，直接阅读以下文档切片，将核心语义聚合为一个简洁片段，并严格返回 JSON（不要返回其他内容）：
-{{
-    ""aggregated"": ""该切片的核心语义聚合结果""
-}}
-
-文档切片：
-{content}",
-                        _ => $@"
-/no_think
-请关闭深度思考，直接阅读以下文档切片，提取大纲、问题、关键词和摘要，并严格返回 JSON（不要返回其他内容）：
-{{
-  ""outline"": ""该切片的大纲/主题"",
-  ""questions"": [""该切片可以回答的问题1"", ""问题2""],
-  ""keywords"": [""关键词1"", ""关键词2""],
-  ""summary"": ""该切片的摘要""
-}}
-
-文档切片：
-{content}",
-    };
+{content}";
 
         var text = (await _chatCompletionService.CompleteTextAsync(
             model,
@@ -400,23 +406,23 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
 
         try
         {
-            return ParseChunkMetadata(text, strategyType);
+            return ParseChunkMetadata(text, strategyTypes);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "解析切片元数据 JSON 失败. Text={Text}", text);
-            return ParsePlainTextMetadata(text, strategyType);
+            return ParsePlainTextMetadata(text, strategyTypes);
         }
     }
 
-    private static ChunkMetadata ParseChunkMetadata(string text, MetadataGenerationStrategy? strategyType)
+    private static ChunkMetadata ParseChunkMetadata(string text, List<MetadataGenerationStrategy>? strategyTypes)
     {
         var metadata = new ChunkMetadata();
         using var document = JsonDocument.Parse(ExtractJson(text));
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
         {
-            return ParsePlainTextMetadata(text, strategyType);
+            return ParsePlainTextMetadata(text, strategyTypes);
         }
 
         metadata.Outline = ReadString(root, "outline", "title", "topic");
@@ -425,10 +431,10 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
         metadata.Summary = ReadString(root, "summary", "abstract", "description");
         metadata.Aggregated = ReadString(root, "aggregated", "aggregatedSubParagraph", "semanticAggregation", "processedText", "content", "text");
 
-        return HasMetadata(metadata) ? metadata : ParsePlainTextMetadata(text, strategyType);
+        return HasMetadata(metadata) ? metadata : ParsePlainTextMetadata(text, strategyTypes);
     }
 
-    private static ChunkMetadata ParsePlainTextMetadata(string text, MetadataGenerationStrategy? strategyType)
+    private static ChunkMetadata ParsePlainTextMetadata(string text, List<MetadataGenerationStrategy>? strategyTypes)
     {
         var content = text.Trim();
         if (string.IsNullOrWhiteSpace(content))
@@ -436,13 +442,18 @@ public class WikiEmbeddingService : IWikiEmbeddingProcessor
             return new ChunkMetadata();
         }
 
-        return strategyType switch
+        if (strategyTypes != null && strategyTypes.Count == 1)
         {
-            MetadataGenerationStrategy.QuestionGeneration => new ChunkMetadata { Questions = ReadLines(content) },
-            MetadataGenerationStrategy.KeywordSummaryFusion => new ChunkMetadata { Summary = content },
-            MetadataGenerationStrategy.SemanticAggregation => new ChunkMetadata { Aggregated = content },
-            _ => new ChunkMetadata { Outline = content },
-        };
+            return strategyTypes[0] switch
+            {
+                MetadataGenerationStrategy.QuestionGeneration => new ChunkMetadata { Questions = ReadLines(content) },
+                MetadataGenerationStrategy.KeywordSummaryFusion => new ChunkMetadata { Summary = content },
+                MetadataGenerationStrategy.SemanticAggregation => new ChunkMetadata { Aggregated = content },
+                _ => new ChunkMetadata { Outline = content },
+            };
+        }
+
+        return new ChunkMetadata { Outline = content };
     }
 
     private static bool HasMetadata(ChunkMetadata metadata)

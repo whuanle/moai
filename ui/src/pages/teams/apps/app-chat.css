@@ -1511,3 +1511,122 @@ a.moai-chat__bubble-attachment-name:hover {
     background: rgba(16, 24, 40, 0.35);
   }
 }
+
+/* 流程执行过程步骤条（WorkflowRunSteps） */
+.moai-chat__wf-steps {
+  margin: 4px 24px 16px;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  background: var(--mc-bg);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.moai-chat__wf-steps.is-failed {
+  border-color: var(--mc-danger);
+}
+
+.moai-chat__wf-steps-head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--mc-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.moai-chat__wf-steps-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.moai-chat__wf-steps-head .is-done-icon {
+  color: var(--mc-success);
+}
+
+.moai-chat__wf-steps-head .is-failed-icon {
+  color: var(--mc-danger);
+}
+
+.moai-chat__wf-steps-count {
+  color: var(--mc-text-tertiary);
+}
+
+.moai-chat__wf-steps-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+
+.moai-chat__wf-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 20px;
+  color: var(--mc-text);
+}
+
+.moai-chat__wf-step .is-running-icon {
+  color: var(--mc-primary);
+}
+
+.moai-chat__wf-step .is-done-icon {
+  color: var(--mc-success);
+}
+
+.moai-chat__wf-step .is-failed-icon {
+  color: var(--mc-danger);
+}
+
+.moai-chat__wf-step .is-skipped-icon,
+.moai-chat__wf-step .is-pending-icon {
+  color: var(--mc-text-tertiary);
+}
+
+.moai-chat__wf-step-name {
+  font-weight: 500;
+}
+
+.moai-chat__wf-step.is-running .moai-chat__wf-step-name {
+  color: var(--mc-primary);
+}
+
+.moai-chat__wf-step.is-failed .moai-chat__wf-step-name {
+  color: var(--mc-danger);
+}
+
+.moai-chat__wf-step-hint {
+  color: var(--mc-text-tertiary);
+}
+
+.moai-chat__wf-step-elapsed {
+  margin-left: auto;
+  color: var(--mc-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.moai-chat__wf-step-error {
+  max-width: 60%;
+  overflow: hidden;
+  color: var(--mc-danger);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moai-chat__wf-step-error-line {
+  padding: 2px 0 2px 24px;
+  color: var(--mc-danger);
+}
+
+.moai-chat__wf-steps-link {
+  align-self: flex-start;
+  height: auto;
+  padding: 0;
+}

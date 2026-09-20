@@ -17,6 +17,8 @@ import {
 } from '@/api/app'
 import { abortAppChat, createAppChatAgent, runAppChat } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage } from './chat/ChatMessageList'
+import { useWorkflowRunSteps } from './chat/useWorkflowRunSteps'
+import { WorkflowRunSteps } from './chat/WorkflowRunSteps'
 import { chatCssVars } from './chat/chatCssVars'
 import type { AppDetail } from './AppConfigSection'
 import './app-chat.css'
@@ -39,6 +41,7 @@ const OPENING_MESSAGE_ID = 'opening-statement'
  * 复用 app-chat.css 的流式气泡与会话样式，容器高度按工作台内嵌场景计算.
  */
 export function AppWorkflowDebugSection({
+  teamId,
   appId,
   detail,
 }: {
@@ -62,6 +65,9 @@ export function AppWorkflowDebugSection({
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+
+  // 执行过程实时状态（AG-UI CustomEvent 推送）
+  const { steps: runSteps, instanceId: runInstanceId, running: runRunning, error: runError, reset: runReset, finish: runFinish, handleEvent: runHandleEvent } = useWorkflowRunSteps()
 
   const appName = detail?.name ?? ''
   const appAvatar = resolveStorageUrl(detail?.avatarPath ?? null)
@@ -160,6 +166,7 @@ export function AppWorkflowDebugSection({
     setMessages((prev) => [...prev, userMessage, { id: assistantId, role: 'assistant', content: '' }])
     setInput('')
     setSending(true)
+    runReset()
 
     agentRef.current = createAppChatAgent(appId, sessionId, { workflowDraft: true })
 
@@ -168,6 +175,7 @@ export function AppWorkflowDebugSection({
         onDelta: (buffer) => {
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: buffer } : m)))
         },
+        onWorkflowEvent: runHandleEvent,
         onError: (message) => {
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantId ? { ...m, content: message || t('appChat.runError') } : m)),
@@ -178,9 +186,10 @@ export function AppWorkflowDebugSection({
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: t('appChat.runError') } : m)))
     } finally {
       setSending(false)
+      runFinish()
       void loadSessions()
     }
-  }, [activeSessionId, appId, input, loadSessions, sending, t])
+  }, [activeSessionId, appId, input, loadSessions, sending, t, runFinish, runHandleEvent, runReset])
 
   const stop = useCallback(() => {
     if (agentRef.current) abortAppChat(agentRef.current)
@@ -276,6 +285,16 @@ export function AppWorkflowDebugSection({
               </div>
             }
           />
+          {(runSteps.length > 0 || runError) && (
+            <WorkflowRunSteps
+              steps={runSteps}
+              running={runRunning}
+              error={runError}
+              instanceId={runInstanceId}
+              teamId={teamId}
+              appId={appId}
+            />
+          )}
         </div>
 
         <div className="moai-chat__composer-wrap">

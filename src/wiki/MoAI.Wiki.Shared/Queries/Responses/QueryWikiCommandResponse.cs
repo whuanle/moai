@@ -77,4 +77,9 @@ public class QueryWikiCommandResponse
     /// 重排序模型名称，未绑定时为空串.
     /// </summary>
     public string RerankModelName { get; set; } = default!;
+
+    /// <summary>
+    /// 默认工作流配置（切割/元数据生成/向量化三步预设），未配置时为 null.
+    /// </summary>
+    public MoAI.Wiki.Models.WikiWorkflowConfig? WorkflowConfig { get; set; }
 }

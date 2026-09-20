@@ -61,13 +61,16 @@ public class GenerateDocumentChunkMetadataCommandHandler : IRequestHandler<Gener
         }
 
         await EnsureMetadataModelAsync(request.MetadataModelId, wiki.TeamId, cancellationToken);
+        var strategyTypes = request.StrategyType.HasValue
+            ? new List<MoAI.Wiki.Models.MetadataGenerationStrategy> { request.StrategyType.Value }
+            : null;
         var generatedCount = await _embeddingService.GenerateAndSaveChunkMetadataAsync(
             (int)request.WikiId,
             (int)request.DocumentId,
             request.MetadataModelId,
             request.ChunkIds,
             request.AppendExisting,
-            request.StrategyType,
+            strategyTypes,
             cancellationToken);
         return generatedCount;
     }

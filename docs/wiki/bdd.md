@@ -228,6 +228,80 @@ Scenario: 超管设置知识库最大文件大小并全局生效
   Then 预上传通过（平台硬上限 1GB 仍然生效）
 ```
 
+## Feature: 默认工作流与批量处理（多选文件一键执行）
+
+```gherkin
+@WK-S27 @auto:e2e
+Scenario: 默认工作流配置权限、保存与校验
+  When Member 保存知识库默认工作流配置
+  Then 返回禁止
+  When Admin 保存切割（普通/AI 模式）/生成元数据（策略可多选）/向量化三步预设
+  Then 保存成功且知识库详情回读 workflowConfig 一致
+  And 保存时校验元数据模型存在且为团队可用对话模型：模型不存在返回不存在，向量化两项开关全关返回参数错误
+
+@WK-S28 @auto:e2e
+Scenario: 批量全流程（切割 + 生成元数据 + 向量化）
+  Given 团队成员在文件列表多选两个已上传文档
+  When 一次提交勾选切割、生成元数据（指定部分策略）、向量化三步的批量工作流
+  Then 切割同步完成且逐文档返回成功与异步任务 id
+  And 任务完成后两文档均已向量化且元数据数大于 0
+
+@WK-S29 @auto:e2e
+Scenario: 批量单步·只切割
+  When 多选文档仅勾选切割提交批量工作流
+  Then 同步完成且不创建异步任务
+  And 文档有切片、无元数据、未向量化
+
+@WK-S30 @auto:e2e
+Scenario: 批量单步·只生成元数据
+  Given 文档已有切片
+  When 仅勾选生成元数据提交批量工作流
+  Then 返回异步任务 id
+  And 任务完成后元数据数大于 0 且文档仍未向量化
+
+@WK-S31 @auto:e2e
+Scenario: 批量单步·只向量化
+  Given 文档已切割且元数据就绪
+  When 仅勾选向量化提交批量工作流
+  Then 返回异步任务 id 且任务完成后文档已向量化
+
+@WK-S32 @auto:e2e
+Scenario: 批量错误隔离
+  When 批量工作流包含一个不存在的文档 id
+  Then 该文档逐文档失败并携带原因
+  And 其余文档正常执行不受影响
+
+@WK-S33 @auto:e2e
+Scenario: 批量参数校验
+  When 空文档列表 / 三步全不勾 / 勾选元数据未选模型 / 勾选切割未传切片长度 / 超过 50 个文档
+  Then 返回参数错误
+
+@WK-S34 @auto:e2e
+Scenario: 批量前置校验
+  When 未切割文档仅勾选向量化
+  Then 该文档逐文档失败并提示先切割
+  When 未绑定向量模型的知识库勾选向量化
+  Then 返回冲突
+  When 非成员提交批量工作流
+  Then 返回不存在
+
+@WK-S35 @auto:e2e
+Scenario: 批量 AI 切割
+  When AI 切割未选择对话模型
+  Then 返回参数错误
+  When 仅选 AI 切割但未勾选切割步骤
+  Then 返回参数错误
+  When 勾选切割（AI 模式）并可同时组合元数据/向量化提交批量工作流
+  Then 无需切片参数且返回异步任务 id，AI 切割在后台任务执行
+
+@WK-S36 @auto:e2e
+Scenario: 多选生成策略
+  Given 文档已有切片
+  When 提交元数据生成并勾选部分生成策略
+  Then 提交成功并返回异步任务 id
+  And 任务仅按所选策略生成对应元数据类型，未勾选策略不生成
+```
+
 > 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-06），不复用 WK-\*。授权模型：应用 token 即团队级授权，设计见 [sdd.md §4.1](./sdd.md#41-外部开放接口apexternalwiki)。
 
 ## Feature: 外部开放接口（应用 token，WX-*）

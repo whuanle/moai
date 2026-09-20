@@ -675,7 +675,7 @@ async function main() {
       .map((e) => e.delta)
       .join('')
     const runError = events.find((e) => e.type === 'RUN_ERROR')?.message ?? null
-    return { status: res.status, reply, runError }
+    return { status: res.status, reply, runError, events }
   }
   const poll = async (fn, ms = 8000) => {
     const deadline = Date.now() + ms
@@ -911,6 +911,45 @@ async function main() {
     check('WF-26j 成环后保存草稿被拒 400', saveCyclic.status === 400 && (saveCyclic.text ?? '').includes('循环嵌套'), `${saveCyclic.status} ${saveCyclic.text.slice(0, 160)}`)
     const runCyclic = await api('POST', `/api/app/workflow/debug-run`, { token: owner.token, body: { appId: W3, teamId: TID, inputJson: JSON.stringify({ question: 'hi' }) } })
     check('WF-26k 成环后调试执行被拒 400', runCyclic.status === 400 && (runCyclic.text ?? '').includes('循环嵌套'), `${runCyclic.status} ${runCyclic.text.slice(0, 160)}`)
+  }
+
+  // ==================== WF-27 流程对话实时过程（CustomEvent + 流式正文） ====================
+  // aiChat 节点对话：实例 id 与节点状态经 AG-UI CUSTOM(moai.workflow) 实时下发；AI 文本增量
+  // 直接作为 TEXT_MESSAGE_CONTENT 流式正文；最终回复与已流式正文一致时不重复下发（防重复）。
+  if (usableModelId) {
+    const w4 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '实时对话' + TS, appType: 'workflow' } })
+    const W4 = String(w4.json?.value ?? '')
+    const buildStreamFlow = () => ({
+      id: '', name: 'wf-stream', version: 0, status: 'draft',
+      nodes: [
+        { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true }] },
+        { key: 'answer', name: 'AI 回答', type: 'aiChat', config: { aiModelId: usableModelId, systemPrompt: '无论用户问什么，都只原样输出这一句话：MOAI WORKFLOW STREAM TEST DONE', temperature: 0.1 }, inputs: { prompt: { expressionType: 'interpolation', value: '{start.question}', required: true } }, outputs: [{ name: 'answer', fieldType: 'string' }] },
+        { key: 'end', name: '结束', type: 'end', inputs: { reply: { expressionType: 'variable', value: 'answer.answer', required: true } }, outputs: [] },
+      ],
+      connections: [{ id: 's1', source: 'start', target: 'answer' }, { id: 's2', source: 'answer', target: 'end' }],
+      ui: {},
+    })
+    await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: W4, teamId: TID, definition: JSON.stringify(buildStreamFlow()), editorData: '{}' } })
+    const pub4 = await api('POST', '/api/app/workflow/publish', { token: owner.token, body: { appId: W4, teamId: TID } })
+    const sSession = await api('POST', `/api/app/${W4}/session`, { token: owner.token, body: { title: '实时对话会话', promptId: 0 } })
+    const S4 = String(sSession.json?.value ?? '')
+    const streamChat = await chatSse(W4, owner.token, S4, '开始测试')
+    const evts = streamChat.events ?? []
+    const customs = evts.filter((e) => e.type === 'CUSTOM' && e.name === 'moai.workflow')
+    const customPayloads = customs.map((e) => e.value ?? {})
+    const startedEvt = customPayloads.find((v) => v.event === 'started')
+    const nodeEvts = customPayloads.filter((v) => v.event === 'node')
+    const completedEvt = customPayloads.find((v) => v.event === 'completed')
+    const deltas = evts.filter((e) => e.type === 'TEXT_MESSAGE_CONTENT' && typeof e.delta === 'string')
+    const firstCustomIdx = evts.findIndex((e) => e.type === 'CUSTOM')
+    const firstTextIdx = evts.findIndex((e) => e.type === 'TEXT_MESSAGE_CONTENT')
+    check('WF-27a 流程应用发布 200', pub4.status === 200 && isGuid(W4), `${pub4.status} ${pub4.text.slice(0, 120)}`)
+    check('WF-27b 对话收到流程过程 CUSTOM 事件', streamChat.status === 200 && streamChat.runError === null && customs.length > 0, `status=${streamChat.status} customs=${customs.length} err=${streamChat.runError}`)
+    check('WF-27c started 事件携带实例 id', !!startedEvt && typeof startedEvt.instanceId === 'string' && startedEvt.instanceId.length >= 32, JSON.stringify(startedEvt ?? {}).slice(0, 200))
+    check('WF-27d 节点状态事件覆盖 AI 与结束节点', nodeEvts.some((v) => v.nodeKey === 'answer' && v.nodeName === 'AI 回答' && v.nodeState === 'completed') && nodeEvts.some((v) => v.nodeKey === 'end' && v.nodeState === 'completed'), JSON.stringify(nodeEvts).slice(0, 300))
+    check('WF-27e AI 正文经 TEXT_MESSAGE_CONTENT 下发（多片依赖模型流式能力，单测覆盖）', deltas.length >= 1 && streamChat.reply.length > 0, `deltas=${deltas.length} reply=${streamChat.reply.slice(0, 160)}`)
+    check('WF-27f 最终回复不重复（等于流式正文拼接）', deltas.map((d) => d.delta).join('') === streamChat.reply, `reply=${streamChat.reply.slice(0, 200)}`)
+    check('WF-27g 过程事件先于正文且 completed 收口', firstCustomIdx > -1 && firstCustomIdx < firstTextIdx && !!completedEvt, `firstCustom=${firstCustomIdx} firstText=${firstTextIdx} completed=${!!completedEvt}`)
   }
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)

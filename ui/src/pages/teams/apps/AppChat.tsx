@@ -42,6 +42,8 @@ import {
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts, type PromptItem } from '@/api/prompt'
 import { abortAppChat, createAppChatAgent, runAppChat, type ToolApprovalMode } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage, type ToolCallDisplay } from './chat/ChatMessageList'
+import { useWorkflowRunSteps } from './chat/useWorkflowRunSteps'
+import { WorkflowRunSteps } from './chat/WorkflowRunSteps'
 import { AppUserSettings } from './chat/AppUserSettings'
 import { chatCssVars } from './chat/chatCssVars'
 import {
@@ -345,6 +347,9 @@ export function AppChat() {
     )
   }, [])
 
+  // 流程应用对话的执行过程（AI 节点流式/节点状态经 AG-UI CustomEvent 推送；Agent 应用无事件，不渲染）
+  const { steps: runSteps, instanceId: runInstanceId, running: runRunning, error: runError, reset: runReset, finish: runFinish, handleEvent: runHandleEvent } = useWorkflowRunSteps()
+
   const send = useCallback(async (override?: string) => {
     const text = (override ?? input).trim()
     if ((!text && attachments.length === 0) || sending) return
@@ -370,6 +375,7 @@ export function AppChat() {
     setInput('')
     setAttachments([])
     setSending(true)
+    runReset()
 
     agentRef.current = createAppChatAgent(appId, sessionId, { toolApprovalMode: approvalMode })
 
@@ -379,6 +385,7 @@ export function AppChat() {
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: buffer } : m)))
           resolveToolCalls(assistantId)
         },
+        onWorkflowEvent: runHandleEvent,
         onToolCall: (name) => {
           // 渐进披露下工具调用统一为 call_tool 元工具，真实工具在参数里、由 onToolCallEnd 解析
           if (name !== 'call_tool') {
@@ -413,9 +420,10 @@ export function AppChat() {
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: t('appChat.runError') } : m)))
     } finally {
       setSending(false)
+      runFinish()
       void loadSessions()
     }
-  }, [activeSessionId, addToolCall, appId, approvalMode, attachments, input, isExemptTool, loadSessions, resolveToolCalls, selectedPromptId, sending, t])
+  }, [activeSessionId, addToolCall, appId, approvalMode, attachments, input, isExemptTool, loadSessions, resolveToolCalls, selectedPromptId, sending, t, runFinish, runHandleEvent, runReset])
 
   // 选择附件：直传存储 →（文档）文本提取 → 就绪；失败标记在 chip 上由用户移除
   const handleFiles = useCallback(
@@ -918,6 +926,16 @@ export function AppChat() {
                 onToolApprove={(messageId, toolCall) => void decideTool(messageId, toolCall, true)}
                 onToolReject={(messageId, toolCall) => void decideTool(messageId, toolCall, false)}
               />
+              {(runSteps.length > 0 || runError) && (
+                <WorkflowRunSteps
+                  steps={runSteps}
+                  running={runRunning}
+                  error={runError}
+                  instanceId={runInstanceId}
+                  teamId={teamId}
+                  appId={appId}
+                />
+              )}
             </div>
             <div className="moai-chat__composer-wrap">
               <div className="moai-chat__composer-inner">

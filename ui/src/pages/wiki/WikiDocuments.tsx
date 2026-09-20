@@ -17,6 +17,7 @@ import { DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatFileSize } from '@/utils/format'
 import { formatDateTime } from '@/utils/datetime'
+import { BatchWorkflowModal } from './BatchWorkflowModal'
 import {
   getWikiDocuments,
   preUploadWikiDocument,
@@ -69,6 +70,9 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
 
   // 多选
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
+
+  // 批量工作流
+  const [batchWorkflowOpen, setBatchWorkflowOpen] = useState(false)
 
   // 上传
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -417,9 +421,22 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
               {t('wiki.doc.upload')}
             </Button>
-            <Button icon={<DeleteOutlined />} danger disabled={selectedRowKeys.length === 0} onClick={() => void handleDelete(selectedRowKeys)}>
-              {t('wiki.doc.batchDelete')}
+            <Button
+              icon={<ThunderboltOutlined />}
+              disabled={selectedRowKeys.length === 0}
+              onClick={() => setBatchWorkflowOpen(true)}
+            >
+              {t('wiki.doc.batchWorkflow')}
             </Button>
+            <Popconfirm
+              title={t('wiki.doc.batchDeleteConfirm', { count: selectedRowKeys.length })}
+              okButtonProps={{ danger: true }}
+              onConfirm={() => void handleDelete(selectedRowKeys)}
+            >
+              <Button icon={<DeleteOutlined />} danger disabled={selectedRowKeys.length === 0}>
+                {t('wiki.doc.batchDelete')}
+              </Button>
+            </Popconfirm>
           </Space>
         }
         onRefresh={handleRefresh}
@@ -436,6 +453,18 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
           },
         }}
         rowSelection={{ selectedRowKeys, onChange: (keys) => setSelectedRowKeys(keys as number[]) }}
+      />
+
+      <BatchWorkflowModal
+        wikiId={wikiId}
+        teamId={teamId}
+        open={batchWorkflowOpen}
+        documentIds={selectedRowKeys}
+        onClose={() => setBatchWorkflowOpen(false)}
+        onDone={() => {
+          setSelectedRowKeys([])
+          void load(pageNo, pageSize, searchText)
+        }}
       />
 
       <Modal

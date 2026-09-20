@@ -82,13 +82,14 @@ cd ui && npm run typecheck && npm run lint && npm run test
 node local-dev/user-management-e2e.mjs   # UM 37
 node local-dev/team-e2e.mjs              # TM 47
 node local-dev/wiki-e2e.mjs              # WK 32
+node local-dev/wiki-workflow-e2e.mjs     # WK 27（默认工作流配置 + 多选批量工作流：切割/生成元数据/向量化三步自由组合与单步执行、错误隔离与参数校验；依赖模型渠道的场景在环境无可用模型时自动跳过）
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
 node local-dev/team-plugin-e2e.mjs       # TP 31（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显）
 node local-dev/app-e2e.mjs               # AP 29
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
 node local-dev/settings-logo-e2e.mjs    # SET 18（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认）
-node local-dev/workflow-e2e.mjs          # WF 111（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量）
+node local-dev/workflow-e2e.mjs          # WF 118（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量/对话实时过程：CUSTOM 节点事件 + AI 正文流式）
 node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/撤回，is_public 审批制）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）

@@ -25,7 +25,7 @@ public class WikiCoreModule : IModule
         context.Services.AddSingleton(sp => new PostgresVectorStore(sp.GetRequiredService<SystemOptions>().Database));
         context.Services.AddScoped<IWikiEmbeddingVectorStore, PgVectorWikiEmbeddingVectorStore>();
         context.Services.AddTextExtraction();
-        context.Services.AddScoped<IWikiEmbeddingProcessor>(sp => sp.GetRequiredService<WikiEmbeddingService>());
+        context.Services.AddScoped<IWikiWorkflowProcessor>(sp => sp.GetRequiredService<WikiWorkflowProcessor>());
         context.Services.AddScoped<IWikiUsageCounter, WikiUsageCounter>();
         context.Services.AddScoped<ICounterActivatorJob, WikiUsageCounterActivatorJob>();
     }
