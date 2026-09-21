@@ -123,19 +123,29 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(request.Config))
+        {
+            throw new BusinessException("kg_cypher_query 配置不能为空.") { StatusCode = 400 };
+        }
+
         long kgId;
         try
         {
-            using var doc = JsonDocument.Parse(request.Config);
-            var config = doc.RootElement;
-            if (!config.TryGetProperty("kgId", out var kgElement) && !config.TryGetProperty("KgId", out kgElement))
+            using var doc = JsonDocument.Parse(request.Config, new JsonDocumentOptions
             {
-                throw new BusinessException("kg_cypher_query 配置必须包含 kgId（绑定的知识图谱 id）.") { StatusCode = 400 };
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+            });
+            var config = doc.RootElement;
+            if (config.ValueKind != JsonValueKind.Object
+                || (!config.TryGetProperty("kgId", out var kgElement) && !config.TryGetProperty("KgId", out kgElement)))
+            {
+                throw new BusinessException("kg_cypher_query 配置必须是包含 kgId 属性的 JSON 对象.") { StatusCode = 400 };
             }
 
-            if (!kgElement.TryGetInt64(out kgId) || kgId <= 0)
+            if (kgElement.ValueKind != JsonValueKind.Number || !kgElement.TryGetInt64(out kgId) || kgId <= 0)
             {
-                throw new BusinessException("kg_cypher_query 配置的 kgId 必须大于 0.") { StatusCode = 400 };
+                throw new BusinessException("kg_cypher_query 配置的 kgId 必须是大于 0 的整数.") { StatusCode = 400 };
             }
         }
         catch (JsonException)
