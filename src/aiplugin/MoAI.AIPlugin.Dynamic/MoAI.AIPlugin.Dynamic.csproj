@@ -24,4 +24,8 @@
 		<Folder Include="Plugins\" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="MoAI.AIPlugin.Dynamic.Tests" />
+	</ItemGroup>
+
 </Project>
