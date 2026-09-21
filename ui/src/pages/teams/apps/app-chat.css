@@ -1515,15 +1515,7 @@ a.moai-chat__bubble-attachment-name:hover {
 /* 流程执行过程步骤条（WorkflowRunSteps） */
 .moai-chat__wf-steps {
   margin: 4px 24px 16px;
-  border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
-  background: var(--mc-bg);
   font-size: 13px;
-  overflow: hidden;
-}
-
-.moai-chat__wf-steps.is-failed {
-  border-color: var(--mc-danger);
 }
 
 .moai-chat__wf-steps-head {
