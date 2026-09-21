@@ -79,6 +79,10 @@ async function main() {
   check('DYN-S15c 博查模板带配置/参数示例', Boolean(bochaTpl) && /ApiKey/.test(bochaTpl.configExample ?? '') && /Query/.test(bochaTpl.paramsExample ?? ''), bochaTpl ? `${bochaTpl.configExample}` : '')
   check('DYN-S15d 博查模板配置类型已解析', (bochaTpl?.configType ?? '').includes('BoChaWebSearchConfig'), bochaTpl?.configType ?? '')
 
+  // kg_cypher_query 模板注册（知识图谱 Text2Cypher）
+  const kgCypherTpl = items.find((x) => x.key === 'kg_cypher_query')
+  check('DYN kg_cypher_query 模板已注册且为动态', Boolean(kgCypherTpl) && kgCypherTpl.isDynamic === true, JSON.stringify(items.map((x) => x.key)))
+
   // ---- S19 内置 AI 搜索模板出现在注册表 ----
   check('DYN-S19a 注册表含 bocha_ai_search 且为动态模板', Boolean(aiTpl) && aiTpl.isDynamic === true, templates.text.slice(0, 160))
   check('DYN-S19b AI 搜索模板带配置/参数示例', Boolean(aiTpl) && /ApiKey/.test(aiTpl.configExample ?? '') && /Query/.test(aiTpl.paramsExample ?? '') && /Answer/.test(aiTpl.paramsExample ?? ''), aiTpl ? aiTpl.paramsExample : '')
