@@ -22,6 +22,7 @@ namespace MoAI.AIPlugin.Dynamic.Plugins;
 /// <item><description>**资源层**：事务超时 + 行数截断在访问服务内兜底.</description></item>
 /// </list>
 /// Cypher 由对话模型生成（设计文档方案 A），纠错回路靠教学式错误信息回喂对话循环，无内置重试.
+/// 每次运行都由 <c>PluginExecutor</c> 创建独立 DI 作用域实例化，插件不持有跨请求状态（仅缓存配置）.
 /// </remarks>
 [AiPlugin(
     key: "kg_cypher_query",
@@ -109,6 +110,7 @@ public class KgCypherQueryPlugin : IDynamicPluginRuntime<KgCypherQueryRequest, K
                 EntityTypes = digest.EntityTypes,
                 RelationTypes = digest.RelationTypes,
                 SampleNodes = digest.SampleNodes,
+                PropertyKeys = digest.PropertyKeys,
                 Usage = digest.Usage,
             };
         }
@@ -141,7 +143,8 @@ public class KgCypherQueryPlugin : IDynamicPluginRuntime<KgCypherQueryRequest, K
     /// </summary>
     /// <param name="parameters">原始参数.</param>
     /// <returns>归一后的参数；空返回 null.</returns>
-    private static Dictionary<string, object?>? NormalizeParams(Dictionary<string, object?>? parameters)
+    /// <exception cref="BusinessException">参数值为数组/对象时抛出（Cypher 参数仅支持标量）.</exception>
+    internal static Dictionary<string, object?>? NormalizeParams(Dictionary<string, object?>? parameters)
     {
         if (parameters == null || parameters.Count == 0)
         {
@@ -151,6 +154,12 @@ public class KgCypherQueryPlugin : IDynamicPluginRuntime<KgCypherQueryRequest, K
         var result = new Dictionary<string, object?>(parameters.Count, StringComparer.Ordinal);
         foreach (var pair in parameters)
         {
+            // Cypher 参数只支持标量：数组/对象在进入图库驱动前带参数键名拒绝，给对话模型可自行纠正的教学式错误
+            if (pair.Value is JsonElement { ValueKind: JsonValueKind.Array or JsonValueKind.Object })
+            {
+                throw new BusinessException(400, $"查询参数仅支持字符串/数字/布尔：参数 {pair.Key} 传入了数组或对象，请改为标量值");
+            }
+
             result[pair.Key] = pair.Value switch
             {
                 null => null,
@@ -163,15 +172,19 @@ public class KgCypherQueryPlugin : IDynamicPluginRuntime<KgCypherQueryRequest, K
     }
 
     /// <summary>
-    /// JsonElement 转基础 CLR 类型.
+    /// JsonElement 转基础 CLR 类型；数组/对象已在 <see cref="NormalizeParams"/> 带键名拒绝，不会进入此处.
     /// </summary>
     private static object? ConvertElement(JsonElement element) => element.ValueKind switch
     {
         JsonValueKind.String => element.GetString(),
-        JsonValueKind.Number => element.TryGetInt64(out var longValue) ? longValue : element.GetDouble(),
+
+        // (object) 强制条件表达式按 object 统一类型：否则两支被推断为 double，整数装箱成 Double，图库会拒绝 LIMIT $n 的浮点实参
+        JsonValueKind.Number => element.TryGetInt64(out var longValue) ? (object)longValue : element.GetDouble(),
         JsonValueKind.True => true,
         JsonValueKind.False => false,
         JsonValueKind.Null => null,
+
+        // 死防御支路：Array/Object 在 NormalizeParams 已抛教学错误，且 STJ 反序列化不产生 Undefined，此支路不可达；保留 GetRawText 仅作穷举兜底
         _ => element.GetRawText(),
     };
 }

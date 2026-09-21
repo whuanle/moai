@@ -8,7 +8,7 @@ namespace MoAI.AIPlugin.Dynamic.Models;
 public class KgCypherQueryConfig
 {
     /// <summary>
-    /// 绑定的知识图谱 id.
+    /// 绑定的知识图谱 id。命名口径：读侧/KgCypher 族统一用 KgId，写侧 Command 用 KnowledgeGraphId.
     /// </summary>
     [Description("要绑定的知识图谱 id（本团队的托管图或接入图）")]
     public long KgId { get; set; }

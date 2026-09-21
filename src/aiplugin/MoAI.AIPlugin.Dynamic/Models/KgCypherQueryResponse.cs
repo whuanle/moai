@@ -45,6 +45,10 @@ public class KgCypherQueryResponse
     [Description("自描述模式：各类型节点名采样")]
     public IReadOnlyList<KgCypherSampleGroup> SampleNodes { get; set; } = [];
 
+    /// <summary>属性键清单.</summary>
+    [Description("自描述模式：接入图属性键清单（托管图为空）")]
+    public IReadOnlyList<string> PropertyKeys { get; set; } = [];
+
     /// <summary>用法说明.</summary>
     [Description("自描述模式：该图谱的查询用法说明（含 $kgId 指引）")]
     public string? Usage { get; set; }

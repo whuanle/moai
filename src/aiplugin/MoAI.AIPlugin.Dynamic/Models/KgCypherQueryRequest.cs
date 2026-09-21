@@ -18,7 +18,7 @@ public class KgCypherQueryRequest
     /// Cypher 查询参数.
     /// </summary>
     [Description("Cypher 查询参数对象：键为 $ 参数名（不含 $ 前缀），值只能是字符串/数字/布尔；kgId 为系统保留键，传入会被覆盖")]
-#pragma warning disable CA2227 // 请求模型由反序列化整体赋值，需保留 set 访问器（与同工程其他插件请求模型一致）
+#pragma warning disable CA2227 // STJ 反序列化需 set 访问器；Dictionary 可写集合属性触发 CA2227（同工程 IReadOnlyList 属性不受影响）
     public Dictionary<string, object?>? Params { get; set; }
 #pragma warning restore CA2227
 
