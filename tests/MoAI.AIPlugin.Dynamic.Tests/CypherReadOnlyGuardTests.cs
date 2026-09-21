@@ -104,6 +104,38 @@ public class CypherReadOnlyGuardTests
     }
 
     [Fact]
+    public void Validate_BacktickIdentifierContainingForbiddenKeyword_ReturnsNull()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (n:`CREATE`) RETURN n");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Validate_DollarParamNamedAfterForbiddenKeyword_ReturnsNull()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (n:KgNode {kgId: $kgId}) WHERE n.x = $set RETURN n");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Validate_BackslashLiteralInBacktickIdentifier_ReturnsError()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (`a\\`)-[]->(m) CREATE (m)-[:X]->(:P) RETURN m");
+
+        Assert.False(string.IsNullOrEmpty(result));
+    }
+
+    [Fact]
+    public void Validate_DoubledBacktickIdentifierStillClosed_ReturnsError()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (`a``b`)-[]->(m) CREATE (m)-[:X]->(:P) RETURN m");
+
+        Assert.False(string.IsNullOrEmpty(result));
+    }
+
+    [Fact]
     public void Validate_LowercaseForbidden_ReturnsError()
     {
         var result = CypherReadOnlyGuard.Validate("match (n:KgNode {kgId: $kgId}) create (m) return m");

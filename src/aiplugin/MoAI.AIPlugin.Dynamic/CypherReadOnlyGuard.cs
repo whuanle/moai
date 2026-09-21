@@ -250,7 +250,7 @@ internal static class CypherReadOnlyGuard
     }
 
     /// <summary>
-    /// 跳过引号包裹的字面量/标识符.
+    /// 跳过引号包裹的字面量/标识符。单双引号字符串用反斜杠转义；反引号标识符中反斜杠是字面字符、仅双写反引号转义，使守卫吞并区间与服务端词法精确重合.
     /// </summary>
     /// <param name="cypher">Cypher 文本.</param>
     /// <param name="index">引号之后的下标.</param>
@@ -261,7 +261,7 @@ internal static class CypherReadOnlyGuard
         index++;
         while (index < cypher.Length)
         {
-            if (cypher[index] == '\\' && index + 1 < cypher.Length)
+            if (quote != '`' && cypher[index] == '\\' && index + 1 < cypher.Length)
             {
                 index += 2;
                 continue;
@@ -269,6 +269,12 @@ internal static class CypherReadOnlyGuard
 
             if (cypher[index] == quote)
             {
+                if (quote == '`' && index + 1 < cypher.Length && cypher[index + 1] == quote)
+                {
+                    index += 2;
+                    continue;
+                }
+
                 return index + 1;
             }
 
