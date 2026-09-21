@@ -20,5 +20,6 @@ public class KnowledgeGraphCoreModule : IModule
         context.Services.AddScoped<IKnowledgeGraphAuthorizer>(sp => sp.GetRequiredService<KnowledgeGraphAuthorizer>());
         context.Services.AddScoped<IExternalKnowledgeGraphAuthorizer>(sp => sp.GetRequiredService<ExternalKnowledgeGraphAuthorizer>());
         context.Services.AddScoped<IKnowledgeGraphIntrospectionCache, KnowledgeGraphIntrospectionCache>();
+        context.Services.AddScoped<IKgCypherAccessService>(sp => sp.GetRequiredService<KgCypherAccessService>());
     }
 }
