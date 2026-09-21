@@ -25,7 +25,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<InternalsVisibleTo Include="MoAI.AIPlugin.Dynamic.Tests" />
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>MoAI.AIPlugin.Dynamic.Tests</_Parameter1>
+		</AssemblyAttribute>
 	</ItemGroup>
 
 </Project>

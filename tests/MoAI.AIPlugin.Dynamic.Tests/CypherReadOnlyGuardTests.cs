@@ -80,6 +80,30 @@ public class CypherReadOnlyGuardTests
     }
 
     [Fact]
+    public void Validate_UrlInsideStringLiteral_ReturnsNull()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (n:KgNode {kgId: $kgId}) WHERE n.url = 'http://x' RETURN n");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Validate_SemicolonInsideStringLiteral_ReturnsNull()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (n:KgNode {kgId: $kgId}) WHERE n.name = 'a;b' RETURN n");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Validate_UnclosedBlockComment_ReturnsNull()
+    {
+        var result = CypherReadOnlyGuard.Validate("MATCH (n:KgNode {kgId: $kgId}) RETURN n.name /* 未闭合");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void Validate_LowercaseForbidden_ReturnsError()
     {
         var result = CypherReadOnlyGuard.Validate("match (n:KgNode {kgId: $kgId}) create (m) return m");
