@@ -32,8 +32,6 @@ export interface NodeTemplate {
     aiModelId?: string
     systemPrompt?: string
     temperature?: number
-    skillIds?: string[]
-    sandboxEnabled?: boolean
     agentAppId?: string
     pluginKey?: string
     code?: string

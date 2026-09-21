@@ -5,7 +5,7 @@ namespace MoAI.App.Workflow.Nodes.Builtin;
 
 /// <summary>
 /// AI 对话节点执行器 - 通过 <see cref="IAiChatClient"/> 调用模型对话.
-/// config: { aiModelId（模型 id，与问题分类节点同键；model 为旧契约兼容）, systemPrompt（静态系统提示词）, temperature（0-2，可空） }.
+/// config: { aiModelId（模型 id，与问题分类节点同键；model 为旧契约兼容）, systemPrompt（静态系统提示词）, temperature（0-2，可空） }；不携带技能/沙箱，复杂 Agent 能力用 agentApp 节点编排.
 /// 输入：prompt（必填）、history（可选 [{role, content}]）、system（可选，覆盖 config.systemPrompt）、model（可选，覆盖 config）.
 /// 输出：{ "answer": "..." }；流式输出片段通过进度事件推送.
 /// </summary>
@@ -73,8 +73,6 @@ public class AiChatNodeExecutor : INodeExecutor
                     History = history,
                     Model = model,
                     Temperature = temperature,
-                    SkillIds = context.GetConfigGuidArray("skillIds"),
-                    SandboxEnabled = context.GetConfigBool("sandboxEnabled"),
                 },
                 async chunk => await context.ReportProgressAsync(chunk, cancellationToken),
                 cancellationToken);

@@ -19,4 +19,16 @@ public interface IWikiSearchService
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>按相似度降序的命中项.</returns>
     Task<IReadOnlyList<WikiSearchHit>> SearchAsync(IReadOnlyCollection<long> wikiIds, string query, int top, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 在单个知识库内检索（召回测试）：支持文档范围过滤与相似度阈值，命中项含元数据类型.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="query">查询文本.</param>
+    /// <param name="top">返回条数（1-50）.</param>
+    /// <param name="minScore">相似度阈值（0-1，含），null 表示不过滤.</param>
+    /// <param name="documentIds">文档范围过滤；null 或空表示全部文档.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>按相似度降序的命中项.</returns>
+    Task<IReadOnlyList<WikiSearchHit>> SearchInWikiAsync(int wikiId, string query, int top, double? minScore = null, IReadOnlyCollection<long>? documentIds = null, CancellationToken cancellationToken = default);
 }

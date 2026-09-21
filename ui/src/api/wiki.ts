@@ -399,6 +399,70 @@ export async function getWikiModelOptions(teamId: number): Promise<WikiModelOpti
   return client.api.wiki.modelOptions.get({ queryParameters: { teamId } })
 }
 
+// ==================== 召回测试 ====================
+
+export interface WikiRecallTestHit {
+  documentId?: number | null
+  documentName?: string | null
+  chunkId?: string | null
+  /** 0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段 */
+  metadataType?: number | null
+  content?: string | null
+  /** 相似度得分（越大越相似） */
+  score?: number | null
+}
+
+export interface WikiRecallTestResult {
+  query?: string | null
+  /** AI 优化后的查询文本；未开启优化时为空 */
+  optimizedQuery?: string | null
+  /** 基于召回内容生成的 AI 回答；未开启或无命中内容时为空 */
+  answer?: string | null
+  items?: WikiRecallTestHit[] | null
+}
+
+export interface WikiRecallTestPayload {
+  query: string
+  /** 文档范围过滤；空数组表示全部文档 */
+  documentIds?: number[]
+  /** 返回条数 1-50，默认 5 */
+  top?: number
+  /** 相似度阈值 0-1；不传表示不过滤 */
+  minScore?: number | null
+  /** AI 对话模型 id；开启优化或回答时必填 */
+  aiModelId?: string | null
+  isOptimizeQuery?: boolean
+  isAnswer?: boolean
+}
+
+/** 知识库召回测试：向量检索切片，支持文档范围过滤、阈值、AI 优化问题与 AI 生成回答 */
+export async function recallWikiTest(wikiId: number, payload: WikiRecallTestPayload): Promise<WikiRecallTestResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).recallTest.post({
+    wikiId: String(wikiId),
+    query: payload.query,
+    documentIds: (payload.documentIds ?? []).map((id) => String(id)),
+    top: payload.top ?? 5,
+    minScore: payload.minScore ?? null,
+    aiModelId: payload.aiModelId || null,
+    isOptimizeQuery: payload.isOptimizeQuery ?? false,
+    isAnswer: payload.isAnswer ?? false,
+  })
+  return {
+    query: res?.query,
+    optimizedQuery: res?.optimizedQuery,
+    answer: res?.answer,
+    items: (res?.items ?? []).map((item) => ({
+      documentId: item.documentId != null ? Number(item.documentId) : null,
+      documentName: item.documentName,
+      chunkId: item.chunkId,
+      metadataType: item.metadataType,
+      content: item.content,
+      score: item.score,
+    })),
+  }
+}
+
 // ==================== 默认工作流 / 批量执行 ====================
 
 export type WikiWorkflowPartitionMode = 'normal' | 'ai'

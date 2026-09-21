@@ -10,6 +10,8 @@ import { DocumentsRequestBuilderNavigationMetadata, DocumentsRequestBuilderReque
 // @ts-ignore
 import { EmbeddingConfigRequestBuilderRequestsMetadata, type EmbeddingConfigRequestBuilder } from './embeddingConfig/index.js';
 // @ts-ignore
+import { RecallTestRequestBuilderRequestsMetadata, type RecallTestRequestBuilder } from './recallTest/index.js';
+// @ts-ignore
 import { RerankModelRequestBuilderRequestsMetadata, type RerankModelRequestBuilder } from './rerankModel/index.js';
 // @ts-ignore
 import { type WorkflowConfigRequestBuilder, WorkflowConfigRequestBuilderRequestsMetadata } from './workflowConfig/index.js';
@@ -32,6 +34,10 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * The embeddingConfig property
      */
     get embeddingConfig(): EmbeddingConfigRequestBuilder;
+    /**
+     * The recallTest property
+     */
+    get recallTest(): RecallTestRequestBuilder;
     /**
      * The rerankModel property
      */
@@ -111,6 +117,9 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
     },
     embeddingConfig: {
         requestsMetadata: EmbeddingConfigRequestBuilderRequestsMetadata,
+    },
+    recallTest: {
+        requestsMetadata: RecallTestRequestBuilderRequestsMetadata,
     },
     rerankModel: {
         requestsMetadata: RerankModelRequestBuilderRequestsMetadata,

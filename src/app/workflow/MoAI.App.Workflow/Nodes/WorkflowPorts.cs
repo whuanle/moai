@@ -31,16 +31,6 @@ public sealed class AiChatRequest
     /// 采样温度 0-2（可为空，用渠道/模型默认）.
     /// </summary>
     public float? Temperature { get; init; }
-
-    /// <summary>
-    /// 引入的技能 id（挂载为模型可调用工具，为空时不带工具）.
-    /// </summary>
-    public IReadOnlyList<Guid> SkillIds { get; init; } = [];
-
-    /// <summary>
-    /// 是否开启沙箱（暴露代码执行等沙箱工具；技能脚本执行依赖沙箱）.
-    /// </summary>
-    public bool SandboxEnabled { get; init; }
 }
 
 /// <summary>
@@ -50,7 +40,7 @@ public sealed class AiChatRequest
 public interface IAiChatClient
 {
     /// <summary>
-    /// 发起一次对话补全（request.SkillIds/SandboxEnabled 非空时走带工具的 Agent 执行）.
+    /// 发起一次模型对话补全（纯对话，不带工具；复杂 Agent 能力用 agentApp 节点编排）.
     /// </summary>
     /// <param name="request">对话请求.</param>
     /// <param name="onProgress">流式输出回调（可为空）.</param>

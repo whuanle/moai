@@ -8,7 +8,7 @@ using MoAI.Database.Entities;
 namespace MoAI.AI.Services;
 
 /// <summary>
-/// 工作流 AI 节点对话请求（aiChat / 问题分类节点的统一模型接入入参）.
+/// 工作流 AI 节点对话请求（aiChat / 问题分类节点的统一模型接入入参，纯对话不带工具）.
 /// </summary>
 public class WorkflowNodeChatRequest
 {
@@ -51,16 +51,6 @@ public class WorkflowNodeChatRequest
     /// 采样温度 0-2（可为空，用渠道/模型默认）.
     /// </summary>
     public float? Temperature { get; init; }
-
-    /// <summary>
-    /// 引入的技能 id（挂载为模型可调用工具，为空时不带工具）.
-    /// </summary>
-    public IReadOnlyList<Guid> SkillIds { get; init; } = [];
-
-    /// <summary>
-    /// 是否开启沙箱（暴露代码执行等沙箱工具）.
-    /// </summary>
-    public bool SandboxEnabled { get; init; }
 }
 
 /// <summary>
@@ -102,7 +92,7 @@ public class WorkflowNodeAgentAppRequest
 public interface IWorkflowNodeAiInvoker
 {
     /// <summary>
-    /// 发起一次模型对话补全（SkillIds/SandboxEnabled 非空时走带工具的 Agent 执行）.
+    /// 发起一次模型对话补全（纯对话，不带工具）.
     /// </summary>
     /// <param name="request">对话请求.</param>
     /// <param name="onProgress">流式输出回调（可为空）.</param>

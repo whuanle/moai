@@ -53,7 +53,7 @@
 | @WF-S47 | @manual（浏览器走查：AI 对话节点模型选择/系统提示词/温度 + 未配模型保存拦截） | 待走查（2026-09-20） |
 | @WF-S48 | tests/MoAI.App.Workflow.Tests/AiChatNodeTests.cs（aiModelId 契约/旧键 model 兼容/输入覆盖优先级/温度归一化/缺 prompt）+ 真实模型端到端（debug-run：DeepSeek + systemPrompt + temperature completed） | PASS 5/5 / PASS（2026-09-20） |
 | @WF-S49 | @manual（浏览器走查：专家提示词下拉选择填入 + 技能多选 + 沙箱开关） | 待走查（2026-09-20） |
-| @WF-S50 | tests/MoAI.App.Workflow.Tests/AiChatNodeTests.cs（skillIds/sandboxEnabled 配置透传）+ 真实端到端（DeepSeek + 市场技能 + 沙箱开：模型列出 skill_*/sandbox_* 工具并 completed） | PASS 59/59 / PASS（2026-09-20） |
+| @WF-S50 | tests/MoAI.App.Workflow.Tests/AiChatNodeTests.cs（62/62，skillIds/sandboxEnabled 契约已移除）+ ui utils.test（历史残留键清洗丢弃）+ local-dev/workflow-e2e.mjs（118/118 回归；agentApp 节点 WF-26a~k 覆盖复杂 Agent 能力编排） | PASS 62/62 / PASS 54/54 / PASS 118/118（2026-09-21） |
 | @WF-S51 | @manual（浏览器走查：Agent 应用节点选择器/循环禁选/保存校验）+ ui utils.test（agentAppId 清洗与未选应用报错） | 待走查 / PASS 50/50（2026-09-20） |
 | @WF-S52 | tests/MoAI.App.Workflow.Tests/AgentAppNodeTests.cs（契约 4 用例）+ local-dev/workflow-e2e.mjs（WF-26a~k：Agent 节点执行/成环选项标记/保存与调试 400） | PASS 63/63 / PASS 108/108（2026-09-20） |
 | @WF-S53 | ui/src/pages/teams/apps/workflow/__tests__/utils.test.ts（ensureCoreNodes 4 用例）+ local-dev/workflow-e2e.mjs（WF-04c~e：无开始/无结束/双开始草稿 400） | PASS 54/54 / PASS 111/111（2026-09-20） |

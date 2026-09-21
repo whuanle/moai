@@ -63,9 +63,7 @@ export interface NodeSettings {
   /** aiChat：采样温度 0-2（空=渠道/模型默认） */
   temperature?: number
   /** aiChat：引入的技能 id（挂载为模型可调用工具，需配合沙箱执行技能脚本） */
-  skillIds?: string[]
   /** aiChat：开启沙箱（暴露代码执行等沙箱工具） */
-  sandboxEnabled?: boolean
   /** agentApp：要调用的 Agent 应用 id（本团队已发布） */
   agentAppId?: string
   /** plugin：插件 key */

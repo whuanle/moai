@@ -3198,6 +3198,33 @@ export function createQueryWikiModelOptionsCommandResponseFromDiscriminatorValue
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiRecallTestCommand}
+ */
+// @ts-ignore
+export function createQueryWikiRecallTestCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiRecallTestCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiRecallTestCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiRecallTestCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiRecallTestCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiRecallTestItem}
+ */
+// @ts-ignore
+export function createQueryWikiRecallTestItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiRecallTestItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikisCommandResponse}
  */
 // @ts-ignore
@@ -7184,6 +7211,53 @@ export function deserializeIntoQueryWikiModelOptionsCommandResponse(queryWikiMod
         "conversationModels": n => { queryWikiModelOptionsCommandResponse.conversationModels = n.getCollectionOfObjectValues<WikiModelOptionItem>(createWikiModelOptionItemFromDiscriminatorValue); },
         "embeddingModels": n => { queryWikiModelOptionsCommandResponse.embeddingModels = n.getCollectionOfObjectValues<WikiModelOptionItem>(createWikiModelOptionItemFromDiscriminatorValue); },
         "rerankModels": n => { queryWikiModelOptionsCommandResponse.rerankModels = n.getCollectionOfObjectValues<WikiModelOptionItem>(createWikiModelOptionItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiRecallTestCommand(queryWikiRecallTestCommand: Partial<QueryWikiRecallTestCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { queryWikiRecallTestCommand.aiModelId = n.getGuidValue(); },
+        "contextUserId": n => { queryWikiRecallTestCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { queryWikiRecallTestCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "documentIds": n => { queryWikiRecallTestCommand.documentIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "isAnswer": n => { queryWikiRecallTestCommand.isAnswer = n.getBooleanValue(); },
+        "isOptimizeQuery": n => { queryWikiRecallTestCommand.isOptimizeQuery = n.getBooleanValue(); },
+        "minScore": n => { queryWikiRecallTestCommand.minScore = n.getNumberValue(); },
+        "query": n => { queryWikiRecallTestCommand.query = n.getStringValue(); },
+        "top": n => { queryWikiRecallTestCommand.top = n.getNumberValue(); },
+        "wikiId": n => { queryWikiRecallTestCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiRecallTestCommandResponse(queryWikiRecallTestCommandResponse: Partial<QueryWikiRecallTestCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "answer": n => { queryWikiRecallTestCommandResponse.answer = n.getStringValue(); },
+        "items": n => { queryWikiRecallTestCommandResponse.items = n.getCollectionOfObjectValues<QueryWikiRecallTestItem>(createQueryWikiRecallTestItemFromDiscriminatorValue); },
+        "optimizedQuery": n => { queryWikiRecallTestCommandResponse.optimizedQuery = n.getStringValue(); },
+        "query": n => { queryWikiRecallTestCommandResponse.query = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryWikiRecallTestItem(queryWikiRecallTestItem: Partial<QueryWikiRecallTestItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkId": n => { queryWikiRecallTestItem.chunkId = n.getStringValue(); },
+        "content": n => { queryWikiRecallTestItem.content = n.getStringValue(); },
+        "documentId": n => { queryWikiRecallTestItem.documentId = n.getStringValue(); },
+        "documentName": n => { queryWikiRecallTestItem.documentName = n.getStringValue(); },
+        "metadataType": n => { queryWikiRecallTestItem.metadataType = n.getNumberValue(); },
+        "score": n => { queryWikiRecallTestItem.score = n.getNumberValue(); },
     }
 }
 /**
@@ -11812,6 +11886,101 @@ export interface QueryWikiModelOptionsCommandResponse extends Parsable {
     rerankModels?: WikiModelOptionItem[] | null;
 }
 /**
+ * 知识库召回测试：在单个知识库范围内检索切片，支持文档范围过滤、相似度阈值、AI 优化问题与 AI 生成回答，仅团队成员可访问.
+ */
+export interface QueryWikiRecallTestCommand extends Parsable {
+    /**
+     * AI 优化问题 / 生成回答使用的对话模型 id；开启 IsOptimizeQuery 或 IsAnswer 时必填.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 文档范围过滤（文档 id 集合）；为空表示全部文档.
+     */
+    documentIds?: string[] | null;
+    /**
+     * 是否基于召回内容生成 AI 回答.
+     */
+    isAnswer?: boolean | null;
+    /**
+     * 是否先由 AI 将问题优化为适合检索的查询文本.
+     */
+    isOptimizeQuery?: boolean | null;
+    /**
+     * 相似度阈值（0-1，含），null 表示不过滤；相似度得分低于阈值的命中项将被丢弃.
+     */
+    minScore?: number | null;
+    /**
+     * 查询文本.
+     */
+    query?: string | null;
+    /**
+     * 返回条数，1-50，默认 5.
+     */
+    top?: number | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
+ * 知识库召回测试响应.
+ */
+export interface QueryWikiRecallTestCommandResponse extends Parsable {
+    /**
+     * 基于召回内容生成的 AI 回答；未开启或无命中内容时为空串.
+     */
+    answer?: string | null;
+    /**
+     * 召回命中项（按相似度降序）.
+     */
+    items?: QueryWikiRecallTestItem[] | null;
+    /**
+     * AI 优化后的查询文本；未开启优化时为空串.
+     */
+    optimizedQuery?: string | null;
+    /**
+     * 原始查询文本.
+     */
+    query?: string | null;
+}
+/**
+ * 知识库召回测试命中项.
+ */
+export interface QueryWikiRecallTestItem extends Parsable {
+    /**
+     * 切片 id.
+     */
+    chunkId?: string | null;
+    /**
+     * 命中内容.
+     */
+    content?: string | null;
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 文档名称.
+     */
+    documentName?: string | null;
+    /**
+     * 命中内容的元数据类型：0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段.
+     */
+    metadataType?: number | null;
+    /**
+     * 相似度得分（越大越相似）.
+     */
+    score?: number | null;
+}
+/**
  * 知识库列表响应.
  */
 export interface QueryWikisCommandResponse extends Parsable {
@@ -15178,6 +15347,53 @@ export function serializeQueryWikiModelOptionsCommandResponse(writer: Serializat
         writer.writeCollectionOfObjectValues<WikiModelOptionItem>("conversationModels", queryWikiModelOptionsCommandResponse.conversationModels, serializeWikiModelOptionItem);
         writer.writeCollectionOfObjectValues<WikiModelOptionItem>("embeddingModels", queryWikiModelOptionsCommandResponse.embeddingModels, serializeWikiModelOptionItem);
         writer.writeCollectionOfObjectValues<WikiModelOptionItem>("rerankModels", queryWikiModelOptionsCommandResponse.rerankModels, serializeWikiModelOptionItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiRecallTestCommand(writer: SerializationWriter, queryWikiRecallTestCommand: Partial<QueryWikiRecallTestCommand> | undefined | null = {}) : void {
+    if (queryWikiRecallTestCommand) {
+        writer.writeGuidValue("aiModelId", queryWikiRecallTestCommand.aiModelId);
+        writer.writeStringValue("contextUserId", queryWikiRecallTestCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", queryWikiRecallTestCommand.contextUserType);
+        writer.writeCollectionOfPrimitiveValues<string>("documentIds", queryWikiRecallTestCommand.documentIds);
+        writer.writeBooleanValue("isAnswer", queryWikiRecallTestCommand.isAnswer);
+        writer.writeBooleanValue("isOptimizeQuery", queryWikiRecallTestCommand.isOptimizeQuery);
+        writer.writeNumberValue("minScore", queryWikiRecallTestCommand.minScore);
+        writer.writeStringValue("query", queryWikiRecallTestCommand.query);
+        writer.writeNumberValue("top", queryWikiRecallTestCommand.top);
+        writer.writeStringValue("wikiId", queryWikiRecallTestCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiRecallTestCommandResponse(writer: SerializationWriter, queryWikiRecallTestCommandResponse: Partial<QueryWikiRecallTestCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiRecallTestCommandResponse) {
+        writer.writeStringValue("answer", queryWikiRecallTestCommandResponse.answer);
+        writer.writeCollectionOfObjectValues<QueryWikiRecallTestItem>("items", queryWikiRecallTestCommandResponse.items, serializeQueryWikiRecallTestItem);
+        writer.writeStringValue("optimizedQuery", queryWikiRecallTestCommandResponse.optimizedQuery);
+        writer.writeStringValue("query", queryWikiRecallTestCommandResponse.query);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryWikiRecallTestItem(writer: SerializationWriter, queryWikiRecallTestItem: Partial<QueryWikiRecallTestItem> | undefined | null = {}) : void {
+    if (queryWikiRecallTestItem) {
+        writer.writeStringValue("chunkId", queryWikiRecallTestItem.chunkId);
+        writer.writeStringValue("content", queryWikiRecallTestItem.content);
+        writer.writeStringValue("documentId", queryWikiRecallTestItem.documentId);
+        writer.writeStringValue("documentName", queryWikiRecallTestItem.documentName);
+        writer.writeNumberValue("metadataType", queryWikiRecallTestItem.metadataType);
+        writer.writeNumberValue("score", queryWikiRecallTestItem.score);
     }
 }
 /**

@@ -365,11 +365,11 @@ Scenario: AI 对话节点从专家提示词填入系统提示词
   Then 提示词内容填入系统提示词文本域，可继续编辑后保存
 
 @WF-S50 @auto:e2e
-Scenario: AI 对话节点引入技能并开启沙箱
-  Given AI 对话节点配置了模型并勾选技能、开启沙箱
+Scenario: AI 对话节点为纯对话节点（不携带技能/沙箱）
+  Given AI 对话节点配置了模型（历史草稿残留的 skillIds/sandboxEnabled 配置随保存清洗丢弃）
   When 流程执行到该节点
-  Then 节点按 Agent 工具链执行：技能以 skill_* 工具、沙箱以代码执行等工具暴露给模型（渐进式披露），多轮工具调用后返回最终回答
-  And 未引入技能且未开启沙箱时保持直连模型的快路径
+  Then 节点直连模型对话（system/history/user 消息组装，流式输出增量），无工具调用
+  And 复杂 Agent 能力（技能/插件/知识库/流程工具/沙箱）由 agentApp 节点编排：创建 Agent 应用并作为节点引入流程
 
 @WF-S51 @manual
 Scenario: 设计器引入 Agent 应用节点

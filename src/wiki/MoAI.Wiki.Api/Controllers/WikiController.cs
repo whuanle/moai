@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using MoAI.Wiki.Commands;
 using MoAI.Wiki.Queries;
 using MoAI.Wiki.Queries.Responses;
@@ -15,14 +16,17 @@ namespace MoAI.Wiki.Controllers;
 public class WikiController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WikiController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 实例，用于发送命令/查询.</param>
-    public WikiController(IMediator mediator)
+    /// <param name="userContextProvider">用户上下文提供者.</param>
+    public WikiController(IMediator mediator, IUserContextProvider userContextProvider)
     {
         _mediator = mediator;
+        _userContextProvider = userContextProvider;
     }
 
     /// <summary>
@@ -122,6 +126,31 @@ public class WikiController : ControllerBase
     public Task<QueryWikiModelOptionsCommandResponse> QueryWikiModelOptions([FromQuery] int teamId, CancellationToken ct)
     {
         return _mediator.Send(new QueryWikiModelOptionsCommand { TeamId = teamId }, ct);
+    }
+
+    /// <summary>
+    /// 知识库召回测试：在知识库范围内检索切片，支持文档范围过滤、相似度阈值、AI 优化问题与 AI 生成回答，仅团队成员可访问.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">召回测试请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiRecallTestCommandResponse"/>.</returns>
+    [HttpPost("{id}/recall-test")]
+    public Task<QueryWikiRecallTestCommandResponse> QueryRecallTest(long id, [FromBody] QueryWikiRecallTestCommand req, CancellationToken ct)
+    {
+        var cmd = new QueryWikiRecallTestCommand
+        {
+            WikiId = id,
+            Query = req.Query,
+            DocumentIds = req.DocumentIds,
+            Top = req.Top,
+            MinScore = req.MinScore,
+            AiModelId = req.AiModelId,
+            IsOptimizeQuery = req.IsOptimizeQuery,
+            IsAnswer = req.IsAnswer,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>

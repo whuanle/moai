@@ -373,29 +373,21 @@ describe('workflow converter', () => {
     expect((def2.nodes.find((n) => n.type === 'aiChat')?.config ?? {}) as Record<string, unknown>).not.toHaveProperty('temperature')
   })
 
-  it('aiChat：技能/沙箱随保存进入引擎 config（技能 id 去重过滤非法值，沙箱仅显式 true）', () => {
+  it('aiChat：历史草稿残留的 skillIds/sandboxEnabled 随保存清洗丢弃', () => {
     const editor = toEditorFormat(buildDefinition())
     const ai = editor.nodes.find((n) => n.type === 'aiChat')!
-    const guid1 = '11111111-2222-3333-4444-555555555555'
     ai.data = {
       ...ai.data,
       settings: {
         aiModelId: 'model-1',
-        skillIds: [guid1, guid1, 'not-a-guid'],
+        skillIds: ['11111111-2222-3333-4444-555555555555'],
         sandboxEnabled: true,
-      },
+      } as import('../types').NodeSettings,
     }
     const def = fromEditorFormat(editor, 'x')
     const config = (def.nodes.find((n) => n.type === 'aiChat')?.config ?? {}) as Record<string, unknown>
-    expect(config.skillIds).toEqual([guid1])
-    expect(config.sandboxEnabled).toBe(true)
-
-    // 沙箱关闭时键被清洗；空技能列表不保留
-    ai.data = { ...ai.data, settings: { aiModelId: 'model-1', skillIds: [], sandboxEnabled: false } }
-    const def2 = fromEditorFormat(editor, 'x')
-    const config2 = (def2.nodes.find((n) => n.type === 'aiChat')?.config ?? {}) as Record<string, unknown>
-    expect(config2).not.toHaveProperty('skillIds')
-    expect(config2).not.toHaveProperty('sandboxEnabled')
+    expect(config).not.toHaveProperty('skillIds')
+    expect(config).not.toHaveProperty('sandboxEnabled')
   })
 
   it('agentApp：应用 id 随保存进入引擎 config，未选择应用保存校验报错', () => {

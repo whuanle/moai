@@ -48,8 +48,6 @@ public class WorkflowAiChatClient : IAiChatClient
             Prompt = request.Prompt,
             History = ConvertHistory(request.History),
             Temperature = request.Temperature,
-            SkillIds = request.SkillIds,
-            SandboxEnabled = request.SandboxEnabled,
         }, onProgress, cancellationToken);
     }
 

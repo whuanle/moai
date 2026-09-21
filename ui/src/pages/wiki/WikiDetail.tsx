@@ -17,6 +17,7 @@ import { resolveStorageUrl } from '@/utils/storage'
 import { useAppStore } from '@/store/app'
 import type { WikiWorkflowConfig } from '@/api/wiki'
 import { WikiDocuments } from './WikiDocuments'
+import { WikiRecallTest } from './WikiRecallTest'
 import { WikiWorkflowSettings } from './WikiWorkflowSettings'
 
 const { Sider, Content } = Layout
@@ -324,7 +325,7 @@ export function WikiDetail() {
             </Card>
           ) : section === 'recall' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
-              <Alert type="info" showIcon message={t('wiki.recallPlaceholder')} />
+              <WikiRecallTest wikiId={wikiId} teamId={teamId} />
             </Card>
           ) : (
             // 设置表单按设计系统 FormPage 同款 720 阅读宽度收口，输入框不铺满整屏

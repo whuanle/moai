@@ -99,7 +99,7 @@ public class PgVectorWikiEmbeddingVectorStore : IWikiEmbeddingVectorStore
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<WikiEmbeddingSearchResult>> SearchAsync(int wikiId, ReadOnlyMemory<float> queryVector, int top, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WikiEmbeddingSearchResult>> SearchAsync(int wikiId, ReadOnlyMemory<float> queryVector, int top, IReadOnlyCollection<int>? documentIds = null, CancellationToken cancellationToken = default)
     {
         var dimensions = await ResolveDimensionsAsync(wikiId, cancellationToken);
         var collection = GetCollection(wikiId, dimensions);
@@ -108,8 +108,15 @@ public class PgVectorWikiEmbeddingVectorStore : IWikiEmbeddingVectorStore
             return [];
         }
 
+        var options = new VectorSearchOptions<WikiEmbeddingVectorRecord>();
+        if (documentIds is { Count: > 0 })
+        {
+            var ids = documentIds.ToList();
+            options.Filter = x => ids.Contains(x.DocumentId);
+        }
+
         var results = new List<WikiEmbeddingSearchResult>();
-        await foreach (var result in collection.SearchAsync<ReadOnlyMemory<float>>(queryVector, top, null, cancellationToken))
+        await foreach (var result in collection.SearchAsync<ReadOnlyMemory<float>>(queryVector, top, options, cancellationToken))
         {
             results.Add(new WikiEmbeddingSearchResult
             {

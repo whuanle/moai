@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { AutoComplete, Button, Input, InputNumber, Popconfirm, Select, Switch, Tooltip } from 'antd'
+import { AutoComplete, Button, Input, InputNumber, Popconfirm, Select, Tooltip } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLinesData, WorkflowNodePortsData } from '@flowgram.ai/free-layout-editor'
@@ -13,7 +13,6 @@ import { getWikis } from '@/api/wiki'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getMyPrompts, getPromptDetail, getTeamPrompts } from '@/api/prompt'
-import { getSkillOptions } from '@/api/skills'
 import { getWorkflowAgentOptions } from '@/api/workflow'
 import { useWorkflowDesignerStore } from './store'
 import { inputsFromPluginSchema, outputsFromPluginSchema } from './utils'
@@ -480,7 +479,6 @@ function AiChatSettingsSection({
   const { t } = useTranslation()
   const teamId = useWorkflowDesignerStore((s) => s.teamId)
   const [promptOptions, setPromptOptions] = useState<{ value: number; label: string }[]>([])
-  const [skillOptions, setSkillOptions] = useState<{ value: string; label: string }[]>([])
   const [fillingPrompt, setFillingPrompt] = useState(false)
 
   useEffect(() => {
@@ -499,26 +497,6 @@ function AiChatSettingsSection({
       })
       .catch(() => {
         if (!cancelled) setPromptOptions([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [teamId])
-
-  useEffect(() => {
-    if (!teamId) return
-    let cancelled = false
-    getSkillOptions({ teamId })
-      .then((res) => {
-        if (cancelled) return
-        setSkillOptions(
-          res
-            .filter((s) => s.id)
-            .map((s) => ({ value: String(s.id), label: s.name || s.key || '-' })),
-        )
-      })
-      .catch(() => {
-        if (!cancelled) setSkillOptions([])
       })
     return () => {
       cancelled = true
@@ -585,29 +563,6 @@ function AiChatSettingsSection({
           }
         />
         <div className="wf-config-hint">{t('workflowDesigner.temperatureHint')}</div>
-      </div>
-      <div className="wf-node-sec">
-        <SectionTitle text={t('workflowDesigner.skillsTitle')} />
-        <Select
-          size="small"
-          mode="multiple"
-          style={{ width: '100%' }}
-          value={data.settings?.skillIds ?? []}
-          placeholder={t('workflowDesigner.skillsPlaceholder')}
-          options={skillOptions}
-          notFoundContent={t('workflowDesigner.skillsEmpty')}
-          onChange={(v) => onUpdateData({ settings: { ...data.settings, skillIds: v } })}
-        />
-        <div className="wf-config-hint">{t('workflowDesigner.skillsHint')}</div>
-      </div>
-      <div className="wf-node-sec">
-        <SectionTitle text={t('workflowDesigner.sandboxTitle')} />
-        <Switch
-          size="small"
-          checked={data.settings?.sandboxEnabled === true}
-          onChange={(v) => onUpdateData({ settings: { ...data.settings, sandboxEnabled: v } })}
-        />
-        <div className="wf-config-hint">{t('workflowDesigner.sandboxHint')}</div>
       </div>
     </>
   )

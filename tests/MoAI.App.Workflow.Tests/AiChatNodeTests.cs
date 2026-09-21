@@ -11,7 +11,7 @@ namespace MoAI.App.Workflow.Tests;
 
 /// <summary>
 /// AI 对话节点契约：config.aiModelId（兼容旧键 model）、config.systemPrompt、config.temperature、
-/// config.skillIds/config.sandboxEnabled 透传、输入覆盖优先级.
+/// 输入覆盖优先级.
 /// </summary>
 public class AiChatNodeTests
 {
@@ -76,27 +76,6 @@ public class AiChatNodeTests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task Config_SkillIdsAndSandbox_PassThrough()
-    {
-        var (client, executor) = Create();
-        var skill1 = Guid.NewGuid();
-        var skill2 = Guid.NewGuid();
-        var context = CreateContext(
-            new { aiModelId = "m", skillIds = new[] { skill1.ToString(), skill2.ToString(), "not-a-guid", Guid.Empty.ToString() }, sandboxEnabled = true },
-            new JsonObject { ["prompt"] = "执行技能" });
-
-        await executor.ExecuteAsync(context, CancellationToken.None);
-
-        client.Verify(c => c.CompleteAsync(
-            It.Is<AiChatRequest>(r =>
-                r.SkillIds.Count == 2
-                && r.SkillIds.Contains(skill1)
-                && r.SkillIds.Contains(skill2)
-                && r.SandboxEnabled),
-            It.IsAny<Func<string, Task>?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-    }
 
     [Fact]
     public async Task InputSystemOverridesConfigSystemPrompt_InputModelOverridesConfigModel()

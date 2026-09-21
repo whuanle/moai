@@ -73,10 +73,12 @@ describe('WikiDetail', () => {
     expect(getWikiDocuments).toHaveBeenCalled()
   })
 
-  it('召回测试 tab 展示占位', async () => {
+  it('召回测试 tab 展示召回测试表单', async () => {
     renderDetail('/team/3/wiki/7/recall')
 
-    expect(await screen.findByText('召回测试功能建设中，敬请期待')).toBeInTheDocument()
+    expect(await screen.findByText('查询问题')).toBeInTheDocument()
+    expect(screen.getByText('文档范围')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /搜\s*索召回/ })).toBeInTheDocument()
   })
 
   it('管理员设置 tab 可编辑并保存时调用 updateWiki', async () => {

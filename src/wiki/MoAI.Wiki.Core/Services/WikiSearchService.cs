@@ -5,9 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra.Exceptions;
 using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Services;
@@ -79,7 +81,7 @@ public class WikiSearchService : IWikiSearchService
                 continue;
             }
 
-            var results = await _vectorStore.SearchAsync(wiki.Id, vector.Value, top, cancellationToken);
+            var results = await _vectorStore.SearchAsync(wiki.Id, vector.Value, top, null, cancellationToken);
             foreach (var result in results)
             {
                 hits.Add(new WikiSearchHit
@@ -98,6 +100,84 @@ public class WikiSearchService : IWikiSearchService
             return hits;
         }
 
+        await FillDocumentNamesAsync(hits, cancellationToken);
+        return hits
+            .OrderByDescending(x => x.Score ?? double.MinValue)
+            .Take(top * ids.Count)
+            .ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<WikiSearchHit>> SearchInWikiAsync(int wikiId, string query, int top, double? minScore = null, IReadOnlyCollection<long>? documentIds = null, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query) || top <= 0)
+        {
+            return [];
+        }
+
+        var wiki = await _databaseContext.Wikis
+            .Where(x => x.Id == wikiId && x.IsDeleted == 0)
+            .Select(x => new { x.Id, x.TeamId, x.EmbeddingModelId, x.EmbeddingDimensions })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (wiki == null)
+        {
+            throw new BusinessException("知识库不存在.") { StatusCode = 404 };
+        }
+
+        if (wiki.EmbeddingModelId == Guid.Empty || wiki.EmbeddingDimensions <= 0)
+        {
+            throw new BusinessException("知识库未配置向量化模型，无法执行召回.") { StatusCode = 409 };
+        }
+
+        var pair = await ResolveModelAsync(wiki.EmbeddingModelId, wiki.TeamId, cancellationToken);
+        if (pair == null)
+        {
+            throw new BusinessException("向量化模型未授权给该团队或未启用.") { StatusCode = 409 };
+        }
+
+        var generator = await _embeddingGeneratorProvider.GetEmbeddingGeneratorAsync(pair.Value.Model, pair.Value.Channel, cancellationToken);
+        var embeddings = await generator.GenerateAsync(
+            [query],
+            options: new EmbeddingGenerationOptions { Dimensions = wiki.EmbeddingDimensions },
+            cancellationToken: cancellationToken);
+        var vector = embeddings.FirstOrDefault()?.Vector;
+        if (vector is null || vector.Value.IsEmpty)
+        {
+            throw new BusinessException("向量模型未返回查询向量.") { StatusCode = 502 };
+        }
+
+        var docFilter = documentIds?
+            .Where(x => x > 0)
+            .Select(x => (int)x)
+            .Distinct()
+            .ToList();
+        var results = await _vectorStore.SearchAsync(wiki.Id, vector.Value, top, docFilter, cancellationToken);
+
+        var hits = results
+            .Select(x => new WikiSearchHit
+            {
+                WikiId = x.Record.WikiId,
+                DocumentId = x.Record.DocumentId,
+                ChunkId = x.Record.ChunkId,
+                MetadataType = x.Record.MetadataType,
+                Content = x.Record.Content,
+                Score = x.Score,
+            })
+            .Where(x => !minScore.HasValue || (x.Score ?? double.MinValue) >= minScore.Value)
+            .OrderByDescending(x => x.Score ?? double.MinValue)
+            .ToList();
+
+        await FillDocumentNamesAsync(hits, cancellationToken);
+        return hits;
+    }
+
+    private async Task FillDocumentNamesAsync(List<WikiSearchHit> hits, CancellationToken cancellationToken)
+    {
+        if (hits.Count == 0)
+        {
+            return;
+        }
+
         var documentIds = hits.Select(x => x.DocumentId).Distinct().ToList();
         var documentNames = await _databaseContext.WikiDocuments
             .Where(x => documentIds.Contains(x.Id) && x.IsDeleted == 0)
@@ -111,11 +191,6 @@ public class WikiSearchService : IWikiSearchService
                 hit.DocumentName = name;
             }
         }
-
-        return hits
-            .OrderByDescending(x => x.Score ?? double.MinValue)
-            .Take(top * ids.Count)
-            .ToList();
     }
 
     private async Task<(AiModelEntity Model, AiChannelEntity Channel)?> ResolveModelAsync(Guid modelId, int teamId, CancellationToken cancellationToken)

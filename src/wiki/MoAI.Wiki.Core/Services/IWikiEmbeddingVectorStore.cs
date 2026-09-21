@@ -53,7 +53,8 @@ public interface IWikiEmbeddingVectorStore
     /// <param name="wikiId">知识库 id.</param>
     /// <param name="queryVector">查询向量.</param>
     /// <param name="top">返回条数.</param>
+    /// <param name="documentIds">文档范围过滤；null 或空表示不过滤.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>召回结果.</returns>
-    Task<IReadOnlyList<WikiEmbeddingSearchResult>> SearchAsync(int wikiId, ReadOnlyMemory<float> queryVector, int top, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<WikiEmbeddingSearchResult>> SearchAsync(int wikiId, ReadOnlyMemory<float> queryVector, int top, IReadOnlyCollection<int>? documentIds = null, CancellationToken cancellationToken = default);
 }

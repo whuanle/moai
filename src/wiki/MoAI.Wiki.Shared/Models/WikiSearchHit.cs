@@ -26,6 +26,11 @@ public class WikiSearchHit
     public long ChunkId { get; set; }
 
     /// <summary>
+    /// 命中内容的元数据类型：0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段.
+    /// </summary>
+    public int MetadataType { get; set; }
+
+    /// <summary>
     /// 切片内容.
     /// </summary>
     public string Content { get; set; } = string.Empty;

@@ -492,19 +492,6 @@ function sanitizeSettings(settings: Record<string, unknown> | NodeSettings | und
     result.temperature = Math.round(temperature * 100) / 100
   }
 
-  // aiChat：引入技能（Guid 数组去重，过滤非法值）
-  if (Array.isArray(settings.skillIds)) {
-    const ids = [...new Set(settings.skillIds.map(String).filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))]
-    if (ids.length > 0) {
-      result.skillIds = ids
-    }
-  }
-
-  // aiChat：沙箱开关（仅显式 true 保留）
-  if (settings.sandboxEnabled === true) {
-    result.sandboxEnabled = true
-  }
-
   // knowledgeSearch：静态知识库（单个）+ topK（每库召回条数，1-50）；wikiIds 为旧草稿兼容
   const wikiId = Number(settings.wikiId)
   if (Number.isInteger(wikiId) && wikiId > 0) {
