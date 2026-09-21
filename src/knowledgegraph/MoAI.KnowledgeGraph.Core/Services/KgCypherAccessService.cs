@@ -27,7 +27,9 @@ public class KgCypherAccessService : IKgCypherAccessService
     /// </summary>
     private const string ManagedUsageText = "托管图谱：节点标签固定为 KgNode（属性 id/kgId/entityTypeId/name/description/propsJson），边类型固定为 KG_REL（属性 relationTypeId）。所有 MATCH 必须带 {kgId: $kgId} 过滤，$kgId 由系统自动注入、请勿自行赋值；写操作不支持。";
 
-    private const string ManagedMissingKgIdMessage = "托管图谱查询必须包含 {kgId: $kgId} 过滤以隔离图谱数据，例如：MATCH (n:KgNode {kgId: $kgId}) RETURN n.name LIMIT 20；$kgId 参数由系统自动注入，请在查询中使用后重试";
+    private const string ManagedMissingKgIdMessage = "托管图谱查询必须包含 {kgId: $kgId} 过滤以隔离图谱数据，例如：MATCH (n:KgNode {kgId: $kgId}) RETURN n.name LIMIT 20；$kgId 参数由系统自动注入，请在查询中使用后重试。注意 $kgId 必须作为过滤参数出现在 MATCH/WHERE 中，写在字符串字面量内无效";
+
+    private const string ManagedKgIdMismatchMessage = "查询结果包含其他图谱的数据，已拒绝返回：请确认查询带有 {kgId: $kgId} 过滤";
 
     private const string UnavailableMessage = "无法连接图数据库，请检查系统设置中的连接配置。";
 
@@ -51,6 +53,7 @@ public class KgCypherAccessService : IKgCypherAccessService
     /// <inheritdoc/>
     public async Task<KgCypherQueryResult> ExecuteQueryAsync(long knowledgeGraphId, string cypher, IReadOnlyDictionary<string, object?>? parameters, int maxRows, int timeoutSeconds, CancellationToken cancellationToken)
     {
+        maxRows = Math.Clamp(maxRows, 1, 1000);
         var graph = await GetGraphAsync(knowledgeGraphId, cancellationToken);
         var isManaged = !string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal);
         if (isManaged && !cypher.Contains("$kgId", StringComparison.Ordinal))
@@ -108,6 +111,12 @@ public class KgCypherAccessService : IKgCypherAccessService
                 return rows;
             }, config => config.WithTimeout(TimeSpan.FromSeconds(clampedTimeout)));
         }
+
+        // 异常映射与 CypherKnowledgeGraphStore 保持同步（勿单方修改词法/路由语义）.
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new BusinessException($"查询超时（{clampedTimeout} 秒），请缩小查询范围（加 LIMIT 或收窄 MATCH）后重试") { StatusCode = 400 };
+        }
         catch (OperationCanceledException)
         {
             throw;
@@ -123,6 +132,12 @@ public class KgCypherAccessService : IKgCypherAccessService
         catch (ClientException ex)
         {
             throw new BusinessException(ex.Message) { StatusCode = 400 };
+        }
+
+        // 托管模式结果侧校验（主防线）：门禁 Contains 可被字符串字面量绕过，须对返回的图元素逐个核对 kgId.
+        if (isManaged)
+        {
+            ValidateManagedRecords(records, knowledgeGraphId);
         }
 
         var truncated = records.Count > maxRows;
@@ -205,38 +220,30 @@ public class KgCypherAccessService : IKgCypherAccessService
                 x.Description))
             .ToList();
 
-        var records = await RunInternalQueryAsync(
-            null,
-            "MATCH (n:KgNode {kgId: $kgId}) RETURN n.entityTypeId AS entityTypeId, n.name AS name LIMIT $limit",
-            new { kgId = graph.Id, limit = 300 },
-            cancellationToken);
-        var namesByTypeId = new Dictionary<long, List<string>>();
-        foreach (var record in records)
+        // 每类型一条采样查询，消除「单次 LIMIT 扫描前 N 行全属同一类型」的采样偏差.
+        var sampleNodes = new List<KgCypherSampleGroup>();
+        foreach (var entityType in entityTypeRows)
         {
-            var entityTypeId = record["entityTypeId"].As<long>();
-            var name = record["name"].As<string>() ?? string.Empty;
-            if (string.IsNullOrEmpty(name))
+            var records = await RunInternalQueryAsync(
+                null,
+                "MATCH (n:KgNode {kgId: $kgId, entityTypeId: $entityTypeId}) RETURN n.name AS name LIMIT 3",
+                new { kgId = graph.Id, entityTypeId = entityType.Id },
+                cancellationToken);
+            var names = new List<string>();
+            foreach (var record in records)
             {
-                continue;
+                var name = record["name"].As<string>() ?? string.Empty;
+                if (!string.IsNullOrEmpty(name) && names.Count < 3)
+                {
+                    names.Add(name);
+                }
             }
 
-            if (!namesByTypeId.TryGetValue(entityTypeId, out var names))
+            if (names.Count > 0)
             {
-                names = new List<string>();
-                namesByTypeId[entityTypeId] = names;
-            }
-
-            if (names.Count < 3)
-            {
-                names.Add(name);
+                sampleNodes.Add(new KgCypherSampleGroup(entityType.Name, names));
             }
         }
-
-        var sampleNodes = namesByTypeId
-            .Select(group => new KgCypherSampleGroup(
-                nameById.GetValueOrDefault(group.Key) ?? group.Key.ToString(CultureInfo.InvariantCulture),
-                group.Value))
-            .ToList();
 
         var (_, dialect) = await _provider.GetRuntimeAsync(cancellationToken);
         return new KgCypherSchemaDigest(graph.Mode, dialect, entityTypes, relationTypes, sampleNodes, Array.Empty<string>(), ManagedUsageText);
@@ -258,7 +265,8 @@ public class KgCypherAccessService : IKgCypherAccessService
         var (introspection, _, _) = await _introspectionCache.GetAsync(graph.Id, graph.Database, false, cancellationToken);
         var (_, dialect) = await _provider.GetRuntimeAsync(cancellationToken);
 
-        // 外部节点无统一 schema：labels(n) 做分组、name/title/id 启发式取名.
+        // 外部节点无统一 schema：labels(n) 做分组、name/title/id 启发式取名；
+        // 采样为近似结果（单次 LIMIT 100 扫描按首标签分组，类型多或数据倾斜时代表性有限）.
         var records = await RunInternalQueryAsync(
             graph.Database,
             "MATCH (n) RETURN labels(n) AS labels, coalesce(toString(n.name), toString(n.title), toString(n.id), '') AS name LIMIT 100",
@@ -300,6 +308,12 @@ public class KgCypherAccessService : IKgCypherAccessService
                 return await cursor.ToListAsync(cancellationToken);
             });
         }
+
+        // 异常映射与 CypherKnowledgeGraphStore 保持同步（勿单方修改词法/路由语义）.
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new BusinessException("图数据库查询超时，请稍后重试.") { StatusCode = 400 };
+        }
         catch (OperationCanceledException)
         {
             throw;
@@ -319,7 +333,97 @@ public class KgCypherAccessService : IKgCypherAccessService
     }
 
     /// <summary>
+    /// 托管模式结果侧校验（主防线）：遍历返回记录中的图元素值，kgId 缺失或不等于目标图谱即 403 拒绝.
+    /// 堵 $kgId 写进字符串字面量（如 CONTAINS '$kgId'）绕过 Contains 门禁的路径；纯属性投影（如 RETURN n.name）无图元素值，自然跳过.
+    /// </summary>
+    /// <param name="records">原始查询记录（NormalizeCell 之前）.</param>
+    /// <param name="knowledgeGraphId">目标图谱 id.</param>
+    private static void ValidateManagedRecords(List<IRecord> records, long knowledgeGraphId)
+    {
+        foreach (var record in records)
+        {
+            foreach (var pair in record.Values)
+            {
+                ValidateManagedCell(pair.Value, knowledgeGraphId, 0);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 递归校验单元格值中的图元素（与 NormalizeCell 同构的容器遍历，字典分支在 IEnumerable 之前）.
+    /// </summary>
+    /// <param name="value">原始单元格值.</param>
+    /// <param name="knowledgeGraphId">目标图谱 id.</param>
+    /// <param name="depth">当前嵌套深度.</param>
+    private static void ValidateManagedCell(object? value, long knowledgeGraphId, int depth)
+    {
+        if (value == null || depth > MaxCellDepth)
+        {
+            return;
+        }
+
+        switch (value)
+        {
+            case INode node:
+                ValidateManagedEntityKgId(node.Properties, knowledgeGraphId);
+                break;
+            case IRelationship relationship:
+                ValidateManagedEntityKgId(relationship.Properties, knowledgeGraphId);
+                break;
+            case IPath path:
+                foreach (var pathNode in path.Nodes)
+                {
+                    ValidateManagedEntityKgId(pathNode.Properties, knowledgeGraphId);
+                }
+
+                foreach (var pathRelationship in path.Relationships)
+                {
+                    ValidateManagedEntityKgId(pathRelationship.Properties, knowledgeGraphId);
+                }
+
+                break;
+            case IDictionary<string, object?> dictionary:
+                foreach (var pair in dictionary)
+                {
+                    ValidateManagedCell(pair.Value, knowledgeGraphId, depth + 1);
+                }
+
+                break;
+            case IReadOnlyDictionary<string, object?> readOnlyDictionary:
+                foreach (var pair in readOnlyDictionary)
+                {
+                    ValidateManagedCell(pair.Value, knowledgeGraphId, depth + 1);
+                }
+
+                break;
+            case IEnumerable<object?> enumerable:
+                foreach (var item in enumerable)
+                {
+                    ValidateManagedCell(item, knowledgeGraphId, depth + 1);
+                }
+
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 校验单个图元素的 kgId 属性：缺失、非 long 或不等于目标图谱均视为越界数据.
+    /// </summary>
+    /// <param name="properties">图元素属性（INode/IRelationship.Properties）.</param>
+    /// <param name="knowledgeGraphId">目标图谱 id.</param>
+    private static void ValidateManagedEntityKgId(IReadOnlyDictionary<string, object?> properties, long knowledgeGraphId)
+    {
+        if (!properties.TryGetValue("kgId", out var kgIdValue)
+            || kgIdValue is not long kgId
+            || kgId != knowledgeGraphId)
+        {
+            throw new BusinessException(ManagedKgIdMismatchMessage) { StatusCode = 403 };
+        }
+    }
+
+    /// <summary>
     /// 打开会话；仅 neo4j 方言（外部接入可能使用多数据库）按库名路由，memgraph 恒用默认库.
+    /// 与 CypherKnowledgeGraphStore.OpenSession 保持同步（勿单方修改词法/路由语义）.
     /// </summary>
     /// <param name="driver">图数据库驱动.</param>
     /// <param name="database">路由数据库.</param>
