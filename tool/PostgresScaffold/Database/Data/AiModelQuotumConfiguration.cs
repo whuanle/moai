@@ -47,6 +47,7 @@ internal partial class AiModelQuotumConfiguration : IEntityTypeConfiguration<AiM
             .HasComment("软删除")
             .HasColumnName("is_deleted");
         entity.Property(e => e.LastResetTime)
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("最近一次重置时间，null=创建后从未重置")
             .HasColumnName("last_reset_time");
         entity.Property(e => e.LimitId)

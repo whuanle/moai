@@ -14,6 +14,8 @@ import { RecallTestRequestBuilderRequestsMetadata, type RecallTestRequestBuilder
 // @ts-ignore
 import { RerankModelRequestBuilderRequestsMetadata, type RerankModelRequestBuilder } from './rerankModel/index.js';
 // @ts-ignore
+import { SourcesRequestBuilderNavigationMetadata, SourcesRequestBuilderRequestsMetadata, type SourcesRequestBuilder } from './sources/index.js';
+// @ts-ignore
 import { type WorkflowConfigRequestBuilder, WorkflowConfigRequestBuilderRequestsMetadata } from './workflowConfig/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
@@ -42,6 +44,10 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * The rerankModel property
      */
     get rerankModel(): RerankModelRequestBuilder;
+    /**
+     * The sources property
+     */
+    get sources(): SourcesRequestBuilder;
     /**
      * The workflowConfig property
      */
@@ -123,6 +129,10 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
     },
     rerankModel: {
         requestsMetadata: RerankModelRequestBuilderRequestsMetadata,
+    },
+    sources: {
+        requestsMetadata: SourcesRequestBuilderRequestsMetadata,
+        navigationMetadata: SourcesRequestBuilderNavigationMetadata,
     },
     workflowConfig: {
         requestsMetadata: WorkflowConfigRequestBuilderRequestsMetadata,

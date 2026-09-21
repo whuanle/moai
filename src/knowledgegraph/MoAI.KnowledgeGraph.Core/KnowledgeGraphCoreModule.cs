@@ -1,4 +1,5 @@
 using Maomi;
+using Maomi.ToMarkdown;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.KnowledgeGraph.Services;
 
@@ -14,6 +15,7 @@ public class KnowledgeGraphCoreModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        context.Services.AddTextExtraction();
         context.Services.AddSingleton<GraphDriverProvider>();
         context.Services.AddScoped<CypherKnowledgeGraphStore>();
         context.Services.AddScoped<IKnowledgeGraphStore>(sp => sp.GetRequiredService<CypherKnowledgeGraphStore>());

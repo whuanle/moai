@@ -40,7 +40,8 @@ export function KnowledgeGraphDetail() {
   useEffect(() => { void load() }, [load])
 
   const isConnected = graph?.mode === 'connected'
-  const defaultSection: SectionKey = isConnected ? 'schema' : 'canvas'
+  // 进入图谱默认处于图览，托管图与接入图一致
+  const defaultSection: SectionKey = 'canvas'
   const section: SectionKey =
     rawSection &&
     SECTION_KEYS.includes(rawSection as SectionKey) &&

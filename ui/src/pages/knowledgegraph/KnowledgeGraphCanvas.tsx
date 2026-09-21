@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Button, Empty, Input, Modal, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, Button, Descriptions, Drawer, Empty, Input, Modal, Space, Spin, Tag, Typography } from 'antd'
 import { Form, Select } from 'antd'
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { ImportOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { Graph } from '@antv/g6'
 import { feedback } from '@/design-system'
 import { PropertyInputs, serializePropertyValues, toPropertyDefs } from './PropertyFields'
+import { KnowledgeGraphImportModal } from './KnowledgeGraphImportModal'
 import { spacing } from '@/design-system/theme'
 import {
   createKnowledgeGraphEdge,
@@ -35,12 +36,17 @@ interface CanvasNode {
   typeKey: string
   entityTypeId?: number
   description?: string
+  /** 实例属性值（航段距离/运价等） */
+  properties?: Record<string, string>
 }
 
 interface CanvasEdge {
   id: string
   source: string
   target: string
+  relationTypeId?: number
+  /** 接入图直接带关系名；托管图按 relationTypeId 从模型解析 */
+  relationName?: string
 }
 
 interface NodeFormValues {
@@ -60,7 +66,7 @@ interface PendingEdge {
 }
 
 /** 图览画布：有界子图 + 类型过滤 + 关键字搜索 + 点选一跳展开；托管图 Admin+ 可画布编辑（右键建实体、拖拽连线建关系、右键删除） */
-export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnabled = true }: {
+export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, graphEnabled = true }: {
   graphId: number
   teamId?: number
   mode?: string | null
@@ -84,6 +90,9 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
   const [edgeOpen, setEdgeOpen] = useState(false)
   const [edgeSaving, setEdgeSaving] = useState(false)
   const [pendingEdge, setPendingEdge] = useState<PendingEdge | null>(null)
+  const [detailNode, setDetailNode] = useState<CanvasNode | null>(null)
+  const [detailEdge, setDetailEdge] = useState<CanvasEdge | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
   const [nodeForm] = Form.useForm<NodeFormValues>()
   const [edgeForm] = Form.useForm<EdgeFormValues>()
 
@@ -121,6 +130,16 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
     return map
   }, [relationTypes])
 
+  /** 边显示文本：优先接入图 relationName，托管图按关系类型解析 */
+  const edgeLabelOf = useCallback(
+    (edge: CanvasEdge) => {
+      if (edge.relationName) return edge.relationName
+      if (edge.relationTypeId != null) return relationInfo.get(edge.relationTypeId)?.name ?? ''
+      return ''
+    },
+    [relationInfo],
+  )
+
   const syncGraph = useCallback(() => {
     const graph = graphRef.current
     if (!graph) return
@@ -129,10 +148,10 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
     setEmpty(nodes.length === 0)
     graph.setData({
       nodes: nodes.map((n) => ({ id: n.id, data: { label: n.label, typeKey: n.typeKey } })),
-      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, data: {} })),
+      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, data: { relationLabel: edgeLabelOf(e) } })),
     })
     void graph.render()
-  }, [])
+  }, [edgeLabelOf])
 
   // ===== 新建实体（画布右键） =====
   const openCreateNode = useCallback(() => {
@@ -265,19 +284,25 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
           stroke: EDGE_COLOR,
           endArrow: true,
           endArrowSize: 8,
+          labelText: (datum: { data?: { relationLabel?: string } }) => String(datum.data?.relationLabel ?? ''),
+          labelPlacement: 'center',
+          labelBackground: true,
+          labelBackgroundRadius: 4,
+          labelFontSize: 11,
+          labelPadding: [1, 4],
         },
       },
       layout: { type: 'force', linkDistance: 120, preventOverlap: true, animated: false },
-      // 编辑态：拖节点=连线（create-edge），拖空白=平移、滚轮=缩放；只读态：拖节点=移动节点
+      // 拖节点=移动位置；编辑态建关系=点击起点节点再点击终点节点（两段式，与节点拖动/点选详情互不干扰）
       behaviors: [
         'drag-canvas',
         'zoom-canvas',
-        ...(canEdit ? [] : ['drag-element']),
-        // 拖拽连线建关系（仅可编辑的托管图启用）；松手后先移除临时边，弹窗选关系类型确认后才真正创建
+        'drag-element',
         ...(canEdit
           ? [{
               type: 'create-edge' as const,
-              trigger: 'drag' as const,
+              trigger: 'click' as const,
+              enable: (event: { targetType?: string }) => event.targetType === 'node',
               onFinish: (edge: { id?: string; source: string; target: string }) => {
                 // 先移除临时边，弹窗选关系类型确认后才以真实 id 重建
                 const id = edge.id ?? ''
@@ -349,6 +374,7 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
             typeKey: n.entityLabel != null ? String(n.entityLabel) : String(n.entityTypeId ?? 0),
             entityTypeId: n.entityTypeId != null ? Number(n.entityTypeId) : undefined,
             description: n.description ?? undefined,
+            properties: n.properties ?? undefined,
           })
         }
       }
@@ -358,6 +384,8 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
             id: String(e.edgeId),
             source: String(e.sourceNodeId ?? ''),
             target: String(e.targetNodeId ?? ''),
+            relationTypeId: e.relationTypeId != null ? Number(e.relationTypeId) : undefined,
+            relationName: e.relationName ?? undefined,
           })
         }
       }
@@ -385,13 +413,20 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
             typeKey: n.entityLabel != null ? String(n.entityLabel) : String(n.entityTypeId ?? 0),
             entityTypeId: n.entityTypeId != null ? Number(n.entityTypeId) : undefined,
             description: n.description ?? undefined,
+            properties: n.properties ?? undefined,
           })
         }
       }
       for (const e of res.edges) {
         const key = String(e.edgeId)
         if (e.edgeId != null && !edgesRef.current.has(key)) {
-          edgesRef.current.set(key, { id: key, source: String(e.sourceNodeId ?? ''), target: String(e.targetNodeId ?? '') })
+          edgesRef.current.set(key, {
+            id: key,
+            source: String(e.sourceNodeId ?? ''),
+            target: String(e.targetNodeId ?? ''),
+            relationTypeId: e.relationTypeId != null ? Number(e.relationTypeId) : undefined,
+            relationName: e.relationName ?? undefined,
+          })
         }
       }
       if (res.truncated) setTruncated(true)
@@ -401,14 +436,20 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
     }
   }, [graphId, syncGraph])
 
-  // 点选节点即展开一跳邻接
+  // 点选节点展开一跳邻接并查看详情；点选边查看关系信息（G6 v5 用 targetType 判定命中元素）
   useEffect(() => {
     const graph = graphRef.current
     if (!graph) return
-    const onClick = (event: { target?: { id?: string } }) => {
-      const nodeType = (event.target as { type?: string } | undefined)?.type
+    const onClick = (event: { targetType?: string; target?: { id?: string } }) => {
       const id = event.target?.id
-      if (nodeType === 'node' && typeof id === 'string') void handleExpand(id)
+      if (event.targetType === 'node' && typeof id === 'string') {
+        setDetailNode(nodesRef.current.get(id) ?? null)
+        setDetailEdge(null)
+        void handleExpand(id)
+      } else if (event.targetType === 'edge' && typeof id === 'string') {
+        setDetailEdge(edgesRef.current.get(id) ?? null)
+        setDetailNode(null)
+      }
     }
     graph.on('click', onClick as never)
     return () => {
@@ -431,6 +472,32 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
     ? (constraint.sourceTypeId != null && sourceNode?.entityTypeId != null && Number(constraint.sourceTypeId) !== sourceNode.entityTypeId) ||
       (constraint.targetTypeId != null && targetNode?.entityTypeId != null && Number(constraint.targetTypeId) !== targetNode.entityTypeId)
     : false
+
+  // 节点详情：属性按模型定义顺序优先，未定义的属性追加在后
+  const detailNodeTypeName = detailNode
+    ? (detailNode.entityTypeId != null ? typeInfo.get(detailNode.entityTypeId)?.name : null) ?? (isConnected ? detailNode.typeKey : '')
+    : ''
+  const detailDefs = detailNode?.entityTypeId != null ? toPropertyDefs(typeInfo.get(detailNode.entityTypeId)?.properties) : []
+  const detailProps: [string, string][] = (() => {
+    const props = detailNode?.properties ?? {}
+    const ordered: [string, string][] = []
+    const seen = new Set<string>()
+    for (const def of detailDefs) {
+      const value = props[def.name]
+      if (value) {
+        ordered.push([def.name, value])
+        seen.add(def.name)
+      }
+    }
+    for (const [key, value] of Object.entries(props)) {
+      if (!seen.has(key)) ordered.push([key, value])
+    }
+    return ordered
+  })()
+  const detailEdgeLabel = detailEdge ? edgeLabelOf(detailEdge) : ''
+  const detailEdgeSource = detailEdge ? nodesRef.current.get(detailEdge.source)?.label ?? detailEdge.source : ''
+  const detailEdgeTarget = detailEdge ? nodesRef.current.get(detailEdge.target)?.label ?? detailEdge.target : ''
+  const closeDetail = () => { setDetailNode(null); setDetailEdge(null) }
 
   return (
     <div onContextMenu={(e) => e.preventDefault()}>
@@ -470,19 +537,15 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
         <Button icon={<ReloadOutlined />} onClick={() => void load()}>
           {t('knowledgegraph.canvasReload')}
         </Button>
+        {canEdit && (
+          <Button type="primary" ghost icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>
+            {t('knowledgegraph.import.button')}
+          </Button>
+        )}
       </Space>
 
       {truncated && (
         <Alert type="warning" showIcon message={t('knowledgegraph.canvasTruncated')} style={{ marginBottom: spacing.md }} />
-      )}
-
-      {canEdit && (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: spacing.md }}
-          message={t('knowledgegraph.canvasEdit.hint')}
-        />
       )}
 
       <Spin spinning={loading}>
@@ -585,6 +648,50 @@ export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnable
       {!canEdit && (
         <div style={{ marginBottom: spacing.xs, opacity: 0.65 }}>{t('knowledgegraph.canvasHint')}</div>
       )}
+
+      <Drawer
+        open={detailNode != null || detailEdge != null}
+        onClose={closeDetail}
+        title={detailNode ? detailNode.label : detailEdge ? detailEdgeLabel : ''}
+        width={360}
+        mask={false}
+      >
+        {detailNode ? (
+          <>
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label={t('knowledgegraph.entity.colType')}>{detailNodeTypeName || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('knowledgegraph.entity.colDesc')}>{detailNode.description || '-'}</Descriptions.Item>
+            </Descriptions>
+            <Typography.Title level={5} style={{ marginTop: spacing.md, marginBottom: spacing.xs, fontSize: 13 }}>
+              {t('knowledgegraph.detail.propsTitle')}
+            </Typography.Title>
+            {detailProps.length > 0 ? (
+              <Descriptions column={1} size="small">
+                {detailProps.map(([key, value]) => (
+                  <Descriptions.Item key={key} label={key}>{value}</Descriptions.Item>
+                ))}
+              </Descriptions>
+            ) : (
+              <div style={{ opacity: 0.65 }}>{t('knowledgegraph.detail.noProps')}</div>
+            )}
+          </>
+        ) : detailEdge ? (
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label={t('knowledgegraph.relation.colType')}>{detailEdgeLabel || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('knowledgegraph.detail.endpoints')}>
+              {detailEdgeSource} → {detailEdgeTarget}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Drawer>
+
+      <KnowledgeGraphImportModal
+        open={importOpen}
+        teamId={teamId ?? 0}
+        graphId={graphId}
+        onClose={() => setImportOpen(false)}
+        onImported={() => void load()}
+      />
     </div>
   )
 }

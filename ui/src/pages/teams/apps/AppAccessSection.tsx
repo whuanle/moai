@@ -73,11 +73,14 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
 
   const serverUrl = Env.serverUrl.replace(/\/+$/, '')
   const chatEndpoint = `POST ${serverUrl}/api/external/agent/${appId}/chat`
+  // 嵌入代码用站点自身源（开发期即前端 dev server，生产为同源部署）；widget 默认以 script 源调用 API，
+  // 开发期由 Vite 代理 /api 到后端，分离部署可在 script 上加 data-server 指向后端
+  const siteOrigin = window.location.origin
   const embedSnippet = [
-    `<script src="${serverUrl}/embed/moai-widget.js"`,
+    `<!-- 可选：data-external-user-id 绑定外部身份以继承会话；data-nickname 外部用户显示名；data-server 后端地址（分离部署时） -->`,
+    `<script src="${siteOrigin}/embed/moai-widget.js"`,
     `        data-app-id="${appId}"`,
     ...(isAuth ? [`        data-key="<应用接入key>"`] : []),
-    `        data-external-user-id="<可选，绑定身份以继承会话>"`,
     `></script>`,
   ].join('\n')
 

@@ -119,6 +119,8 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
                 prompt,
                 new AiChatCompletionOptions
                 {
+                    // RAG 回答无需思维链：禁用思考避免推理型模型把输出预算耗在 reasoning 上导致正文为空
+                    DisableThinking = true,
                     MaxOutputTokens = 1024,
                     Temperature = 0.3f,
                 },

@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface WorkflowConfigRequestBuilder extends BaseRequestBuilder<WorkflowConfigRequestBuilder> {
     /**
      * 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），仅团队 Admin 及以上可操作.整体覆盖保存：某步骤传 null 表示清除该步骤预设；仅保存预设不触发文档处理.
-     * @param body 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），需要团队 Admin 及以上角色.整体覆盖保存：某步骤传 null 表示清除该步骤预设.仅保存预设，不触发任何文档处理；批量执行见 BatchRunWikiDocumentWorkflowCommand.
+     * @param body 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），需要团队 Admin 及以上角色.整体覆盖保存：某步骤传 null 表示清除该步骤预设；仅保存预设，不触发文档处理.该预设作为批量处理与外部源同步在工作流缺省时的回退值.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface WorkflowConfigRequestBuilder extends BaseRequestBuilder<Workflo
      put(body: UpdateWikiWorkflowCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
      * 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），仅团队 Admin 及以上可操作.整体覆盖保存：某步骤传 null 表示清除该步骤预设；仅保存预设不触发文档处理.
-     * @param body 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），需要团队 Admin 及以上角色.整体覆盖保存：某步骤传 null 表示清除该步骤预设.仅保存预设，不触发任何文档处理；批量执行见 BatchRunWikiDocumentWorkflowCommand.
+     * @param body 更新知识库默认工作流配置（切割 / 元数据生成 / 向量化三步预设），需要团队 Admin 及以上角色.整体覆盖保存：某步骤传 null 表示清除该步骤预设；仅保存预设，不触发文档处理.该预设作为批量处理与外部源同步在工作流缺省时的回退值.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

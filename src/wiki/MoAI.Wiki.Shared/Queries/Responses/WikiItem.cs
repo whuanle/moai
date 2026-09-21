@@ -26,9 +26,19 @@ public class WikiItem
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 是否公开，公开后所有人都可以使用（只读），但非团队成员不能进入操作.
+    /// 文档数量.
     /// </summary>
-    public bool IsPublic { get; set; }
+    public int DocumentCount { get; set; }
+
+    /// <summary>
+    /// 已切片数量（切片内容表行数）.
+    /// </summary>
+    public int ChunkCount { get; set; }
+
+    /// <summary>
+    /// 最近一次文档更新时间，无文档时为 null.
+    /// </summary>
+    public DateTimeOffset? LastDocumentUpdateTime { get; set; }
 
     /// <summary>
     /// 知识库头像的 ObjectKey（空串=未设置）.

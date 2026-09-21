@@ -52,7 +52,6 @@ public class QueryExternalWikiCommandHandler : IRequestHandler<QueryExternalWiki
             TeamId = wiki.TeamId,
             Name = wiki.Name,
             Description = wiki.Description,
-            IsPublic = wiki.IsPublic,
             AvatarPath = wiki.AvatarPath,
             CreateTime = wiki.CreateTime,
             EmbeddingModelId = wiki.EmbeddingModelId,

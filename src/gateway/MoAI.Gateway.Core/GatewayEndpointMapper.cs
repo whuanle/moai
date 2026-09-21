@@ -8,7 +8,7 @@ using MoAI.Gateway.Services;
 namespace MoAI.Gateway;
 
 /// <summary>
-/// 网关 OpenAI/Anthropic 兼容端点映射（/aiapi/{teamId}/v1/*，不走 /api 前缀约定）.
+/// 网关 OpenAI/Anthropic 兼容端点映射（/api/aigateway/{teamId}/v1/*）.
 /// 团队 id 入路由，每个团队拥有独立接入地址；teamId 须与 API Key 绑定的团队完全一致.
 /// </summary>
 public static class GatewayEndpointMapper
@@ -22,25 +22,25 @@ public static class GatewayEndpointMapper
     {
         // 网关端点显式调用 ApiKey 认证方案，不依赖全局授权中间件：
         // CustomAuthorizaMiddleware 只识别 JWT 上下文，对 ApiKey principal 会误判为匿名.
-        app.MapPost("/aiapi/{teamId}/v1/chat/completions", async (HttpContext http, int teamId, GatewayChatCore core) =>
+        app.MapPost("/api/aigateway/{teamId}/v1/chat/completions", async (HttpContext http, int teamId, GatewayChatCore core) =>
         {
             if (!await EnsureTeamAuthenticatedAsync(http, teamId)) return;
             await core.HandleAsync(http, GatewayInboundFormat.OpenAIChatCompletions);
         }).AllowAnonymous();
 
-        app.MapPost("/aiapi/{teamId}/v1/responses", async (HttpContext http, int teamId, GatewayChatCore core) =>
+        app.MapPost("/api/aigateway/{teamId}/v1/responses", async (HttpContext http, int teamId, GatewayChatCore core) =>
         {
             if (!await EnsureTeamAuthenticatedAsync(http, teamId)) return;
             await core.HandleAsync(http, GatewayInboundFormat.OpenAIResponses);
         }).AllowAnonymous();
 
-        app.MapPost("/aiapi/{teamId}/v1/messages", async (HttpContext http, int teamId, GatewayChatCore core) =>
+        app.MapPost("/api/aigateway/{teamId}/v1/messages", async (HttpContext http, int teamId, GatewayChatCore core) =>
         {
             if (!await EnsureTeamAuthenticatedAsync(http, teamId)) return;
             await core.HandleAsync(http, GatewayInboundFormat.AnthropicMessages);
         }).AllowAnonymous();
 
-        app.MapGet("/aiapi/{teamId}/v1/models", async (HttpContext http, int teamId, GatewayModelResolver resolver) =>
+        app.MapGet("/api/aigateway/{teamId}/v1/models", async (HttpContext http, int teamId, GatewayModelResolver resolver) =>
         {
             if (!await EnsureTeamAuthenticatedAsync(http, teamId)) return;
             await GatewayModelsEndpoint.HandleAsync(http, resolver);

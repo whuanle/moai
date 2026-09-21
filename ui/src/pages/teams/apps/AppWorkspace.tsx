@@ -302,7 +302,13 @@ export function AppWorkspace() {
     <Page
       breadcrumb={[
         { title: <Link to="/team">{t('team.title')}</Link> },
-        { title: <Link to={`/team/${teamId}/apps`}>{t('team.apps')}</Link> },
+        {
+          title: (
+            <Link to={isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}/apps`}>
+              {t(isExternal ? 'team.externalApps' : 'team.apps')}
+            </Link>
+          ),
+        },
         { title: detail?.name ?? '' },
       ]}
       extra={

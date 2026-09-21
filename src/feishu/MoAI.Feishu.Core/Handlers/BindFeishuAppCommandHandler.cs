@@ -64,13 +64,29 @@ public class BindFeishuAppCommandHandler : IRequestHandler<BindFeishuAppCommand,
             throw new BusinessException("渠道与飞书应用连接不属于同一团队.") { StatusCode = 403 };
         }
 
-        // 核心约束：同一飞书应用同时只能绑定一个渠道，否则一个事件会被多个渠道重复消费
-        var bound = await _databaseContext.FeishuAppBindings
-            .AnyAsync(x => x.FeishuAppId == feishuApp.Id, cancellationToken);
-
-        if (bound)
+        if (request.ChannelType == FeishuChannelType.App)
         {
-            throw new BusinessException("该飞书应用已绑定到其它渠道，请先解除绑定.") { StatusCode = 409 };
+            // 独占型渠道：同一飞书应用只能绑定一个团队应用，否则一条消息会被两个应用同时消费
+            var appBound = await _databaseContext.FeishuAppBindings
+                .AnyAsync(x => x.FeishuAppId == feishuApp.Id && x.ChannelType == (int)FeishuChannelType.App, cancellationToken);
+
+            if (appBound)
+            {
+                throw new BusinessException("该飞书应用已绑定到其它团队应用，请先解除绑定.") { StatusCode = 409 };
+            }
+        }
+        else
+        {
+            // 订阅型渠道（知识库外部源等）可一对多：同一飞书应用可同时服务多个外部源，仅禁止重复绑定同一渠道记录
+            var duplicate = await _databaseContext.FeishuAppBindings
+                .AnyAsync(x => x.FeishuAppId == feishuApp.Id
+                    && x.ChannelType == (int)request.ChannelType
+                    && x.ChannelId == request.ChannelId, cancellationToken);
+
+            if (duplicate)
+            {
+                throw new BusinessException("该渠道已绑定此飞书应用.") { StatusCode = 409 };
+            }
         }
 
         _databaseContext.FeishuAppBindings.Add(new FeishuAppBindingEntity
@@ -98,6 +114,20 @@ public class BindFeishuAppCommandHandler : IRequestHandler<BindFeishuAppCommand,
 
                 var teamId = await _databaseContext.Apps
                     .Where(x => x.Id == appId)
+                    .Select(x => (int?)x.TeamId)
+                    .FirstOrDefaultAsync(cancellationToken);
+                return teamId;
+            }
+
+            case FeishuChannelType.WikiSource:
+            {
+                if (!Guid.TryParse(channelId, out var sourceId))
+                {
+                    throw new BusinessException("渠道 id 不正确，知识库外部源渠道需为外部源 id.") { StatusCode = 400 };
+                }
+
+                var teamId = await _databaseContext.WikiSources
+                    .Where(x => x.Id == sourceId)
                     .Select(x => (int?)x.TeamId)
                     .FirstOrDefaultAsync(cancellationToken);
                 return teamId;

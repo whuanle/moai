@@ -10,7 +10,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 飞书应用绑定，将飞书应用绑定到应用/知识库等渠道；同一飞书应用同时只能绑定一个渠道.
+/// 飞书应用绑定，将飞书应用绑定到应用/知识库外部源等渠道；应用渠道独占，外部源等订阅型渠道可一对多.
 /// </summary>
 public partial class FeishuAppBindingEntity : IFullAudited
 {
@@ -25,12 +25,12 @@ public partial class FeishuAppBindingEntity : IFullAudited
     public Guid FeishuAppId { get; set; }
 
     /// <summary>
-    /// 渠道类型，见 FeishuChannelType.
+    /// 渠道类型，见 FeishuChannelType（0=app 独占型，1=wikiSource 订阅型可一对多）.
     /// </summary>
     public int ChannelType { get; set; }
 
     /// <summary>
-    /// 渠道记录 id 字符串，应用为 app.id（uuid），知识库为 wiki.id（数字）.
+    /// 渠道记录 id 字符串，应用渠道为 app.id（uuid），知识库外部源渠道为 wiki_source.id（uuid）.
     /// </summary>
     public string ChannelId { get; set; } = default!;
 

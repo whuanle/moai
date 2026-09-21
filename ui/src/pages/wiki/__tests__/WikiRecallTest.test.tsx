@@ -58,6 +58,8 @@ describe('WikiRecallTest', () => {
     expect(screen.getByText('文档范围')).toBeInTheDocument()
     expect(screen.getByText('相似度阈值')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /搜\s*索召回/ })).toBeInTheDocument()
+    // 未搜索时结果区展示引导空态
+    expect(screen.getByText('输入问题并点击「搜索召回」，命中结果将展示在这里')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(getWikiDocuments).toHaveBeenCalledWith(7, { pageNo: 1, pageSize: 100 })
@@ -129,12 +131,31 @@ describe('WikiRecallTest', () => {
 
     const queryInput = await screen.findByLabelText('查询问题')
     fireEvent.change(queryInput, { target: { value: '退货政策是什么' } })
+    fireEvent.click(screen.getByLabelText('AI 优化问题'))
+    fireEvent.click(screen.getByLabelText('AI 生成回答'))
     fireEvent.click(screen.getByRole('button', { name: /搜\s*索召回/ }))
 
-    expect(await screen.findByText('优化后的问题：退货政策')).toBeInTheDocument()
+    expect(await screen.findByText('退货政策')).toBeInTheDocument()
     expect(screen.getByText('AI 回答')).toBeInTheDocument()
     expect(screen.getByText('签收后 7 天内可无理由退货。')).toBeInTheDocument()
     expect(screen.getByText('没有符合条件的召回结果')).toBeInTheDocument()
+  })
+
+  it('开启 AI 回答但模型未返回内容时提示更换模型', async () => {
+    vi.mocked(recallWikiTest).mockResolvedValue({
+      query: '退货政策',
+      optimizedQuery: '',
+      answer: '',
+      items: [{ documentId: 101, documentName: '产品手册.md', chunkId: '1', metadataType: 0, content: '内容', score: 0.5 }],
+    })
+    renderRecall()
+
+    const queryInput = await screen.findByLabelText('查询问题')
+    fireEvent.change(queryInput, { target: { value: '退货政策' } })
+    fireEvent.click(screen.getByLabelText('AI 生成回答'))
+    fireEvent.click(screen.getByRole('button', { name: /搜\s*索召回/ }))
+
+    expect(await screen.findByText('AI 未返回回答内容，可尝试更换对话模型后重试。')).toBeInTheDocument()
   })
 
   it('查询内容为空时不提交请求', async () => {

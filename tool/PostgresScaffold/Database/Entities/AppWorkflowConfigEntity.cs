@@ -48,7 +48,7 @@ public partial class AppWorkflowConfigEntity : IFullAudited
     /// <summary>
     /// 最近发布时间，从未发布为 null.
     /// </summary>
-    public DateTime? PublishTime { get; set; }
+    public DateTimeOffset? PublishTime { get; set; }
 
     public long CreateUserId { get; set; }
 

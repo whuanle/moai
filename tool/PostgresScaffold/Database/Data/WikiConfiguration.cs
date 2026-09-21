@@ -42,6 +42,10 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.CreateUserId)
             .HasComment("创建人")
             .HasColumnName("create_user_id");
+        entity.Property(e => e.DefaultWorkflowConfig)
+            .HasDefaultValueSql("''::text")
+            .HasComment("默认工作流配置（JSON：切割/元数据生成/向量化三步预设），空串表示未配置")
+            .HasColumnName("default_workflow_config");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
             .HasComment("知识库描述")
@@ -60,9 +64,6 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.IsLock)
             .HasComment("是否已被锁定配置")
             .HasColumnName("is_lock");
-        entity.Property(e => e.IsPublic)
-            .HasComment("是否公开，公开后所有人都可以使用，但是不能进去操作")
-            .HasColumnName("is_public");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("知识库名称")

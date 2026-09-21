@@ -85,40 +85,59 @@ async function main() {
     check('KG-S1b 空白图谱 schema 无实体/关系类型且 mode=managed', s.status === 200 && (s.json?.entityTypes ?? []).length === 0 && (s.json?.relationTypes ?? []).length === 0 && s.json?.mode === 'managed', JSON.stringify(s.json).slice(0, 150))
   }
 
-  // ===== KG-S2 创建模板图谱（ops）=====
-  const opsName = 'kg-ops-' + TS
-  const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: opsName, templateKey: 'ops' } })
-  check('KG-S2a 创建 ops 模板图谱 200', c2.status === 200 && Number(c2.json?.value) > 0, `${c2.status} ${c2.text.slice(0, 120)}`)
+  // ===== KG-S2 创建模板图谱（logistics 物流运输）=====
+  const tplName = 'kg-logistics-' + TS
+  const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: tplName, templateKey: 'logistics' } })
+  check('KG-S2a 创建物流运输模板图谱 200', c2.status === 200 && Number(c2.json?.value) > 0, `${c2.status} ${c2.text.slice(0, 120)}`)
   const G2 = Number(c2.json?.value)
-  let svcTypeId = null
-  let pplTypeId = null
+  let portTypeId = null
+  let legTypeId = null
   {
     const s = await api('GET', `${kg(G2)}/schema`, { token })
     const et = s.json?.entityTypes ?? []
     const rt = s.json?.relationTypes ?? []
     const names = et.map(x => x.name)
     const byName = (arr, n) => arr.find(x => x.name === n)
-    const svc = byName(et, '服务')
-    const ppl = byName(et, '人员')
-    const prj = byName(et, '项目')
-    const maint = byName(rt, '维护')
-    const dep = byName(rt, '依赖')
-    svcTypeId = svc?.entityTypeId ?? null
-    pplTypeId = ppl?.entityTypeId ?? null
-    check('KG-S2b 模板实体类型含 服务/人员/项目', s.status === 200 && ['服务', '人员', '项目'].every(n => names.includes(n)), JSON.stringify(names))
-    check('KG-S2c 模板关系类型含 维护/依赖', ['维护', '依赖'].every(n => byName(rt, n)), JSON.stringify(rt.map(x => x.name)))
-    check('KG-S2d 维护 起止约束=人员→服务', maint?.sourceTypeId === ppl?.entityTypeId && maint?.targetTypeId === svc?.entityTypeId, JSON.stringify(maint))
-    check('KG-S2e 依赖 起止约束=项目→服务', dep?.sourceTypeId === prj?.entityTypeId && dep?.targetTypeId === svc?.entityTypeId, JSON.stringify(dep))
+    const port = byName(et, '港口')
+    const leg = byName(et, '航段')
+    const carrier = byName(et, '承运商')
+    const depart = byName(rt, '出发')
+    const arrive = byName(rt, '抵达')
+    const carry = byName(rt, '承运')
+    portTypeId = port?.entityTypeId ?? null
+    legTypeId = leg?.entityTypeId ?? null
+    check('KG-S2b 模板实体类型含 港口/航段/承运商', s.status === 200 && ['港口', '航段', '承运商'].every(n => names.includes(n)), JSON.stringify(names))
+    check('KG-S2c 模板关系类型含 出发/抵达/承运', ['出发', '抵达', '承运'].every(n => byName(rt, n)), JSON.stringify(rt.map(x => x.name)))
+    check('KG-S2d 出发 起止约束=航段→港口', depart?.sourceTypeId === leg?.entityTypeId && depart?.targetTypeId === port?.entityTypeId, JSON.stringify(depart))
+    check('KG-S2e 抵达 起止约束=航段→港口', arrive?.sourceTypeId === leg?.entityTypeId && arrive?.targetTypeId === port?.entityTypeId, JSON.stringify(arrive))
+    check('KG-S2d2 承运 起止约束=承运商→航段', carry?.sourceTypeId === carrier?.entityTypeId && carry?.targetTypeId === leg?.entityTypeId, JSON.stringify(carry))
+    check('KG-S2e2 航段预置属性含 距离公里/运输价格(number)', ['距离公里', '运输价格'].every(n => (leg?.properties ?? []).some(p => p.name === n && p.type === 'number')), JSON.stringify(leg?.properties))
   }
 
-  // 在 ops 图写入节点+边，供 KG-S11 内省看到 KgNode / KG_REL
+  // 在物流图写入节点+边，供 KG-S11 内省看到 KgNode / KG_REL
   {
-    const seedSvc = await api('POST', `${kg(G2)}/nodes`, { token, body: { entityTypeId: svcTypeId, name: 'seed-svc-' + TS } })
-    const seedPpl = await api('POST', `${kg(G2)}/nodes`, { token, body: { entityTypeId: pplTypeId, name: 'seed-ppl-' + TS } })
-    check('KG-S2f 模板图谱可新增节点 200', seedSvc.status === 200 && seedPpl.status === 200 && !!seedSvc.json?.value && !!seedPpl.json?.value, `${seedSvc.status}/${seedPpl.status} ${seedSvc.text.slice(0, 100)}`)
-    const maintRel = (await api('GET', `${kg(G2)}/schema`, { token })).json?.relationTypes?.find(x => x.name === '维护')
-    const seedEdge = await api('POST', `${kg(G2)}/edges`, { token, body: { relationTypeId: maintRel?.relationTypeId, sourceNodeId: seedPpl.json?.value, targetNodeId: seedSvc.json?.value } })
+    const seedPort = await api('POST', `${kg(G2)}/nodes`, { token, body: { entityTypeId: portTypeId, name: 'seed-port-' + TS } })
+    const seedLeg = await api('POST', `${kg(G2)}/nodes`, { token, body: { entityTypeId: legTypeId, name: 'seed-leg-' + TS } })
+    check('KG-S2f 模板图谱可新增节点 200', seedPort.status === 200 && seedLeg.status === 200 && !!seedPort.json?.value && !!seedLeg.json?.value, `${seedPort.status}/${seedLeg.status} ${seedPort.text.slice(0, 100)}`)
+    const departRel = (await api('GET', `${kg(G2)}/schema`, { token })).json?.relationTypes?.find(x => x.name === '出发')
+    const seedEdge = await api('POST', `${kg(G2)}/edges`, { token, body: { relationTypeId: departRel?.relationTypeId, sourceNodeId: seedLeg.json?.value, targetNodeId: seedPort.json?.value } })
     check('KG-S2g 模板图谱可新增边 200', seedEdge.status === 200 && !!seedEdge.json?.value, `${seedEdge.status} ${seedEdge.text.slice(0, 100)}`)
+  }
+
+  // ===== KG-S2 模板预置示例实例与关系（一次性建好模型+实例+关系）=====
+  {
+    const nodesAll = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { pageNo: 1, pageSize: 50 } })
+    check('KG-S2h 模板自带 11 示例实例 + 2 脚本种子 = 13', nodesAll.status === 200 && Number(nodesAll.json?.total) === 13, `total=${nodesAll.json?.total}`)
+
+    const edgesAll = await api('POST', `${kg(G2)}/edges/list`, { token, body: { pageNo: 1, pageSize: 50 } })
+    check('KG-S2i 模板自带 15 示例关系 + 1 脚本种子 = 16', edgesAll.status === 200 && Number(edgesAll.json?.total) === 16, `total=${edgesAll.json?.total}`)
+
+    const legList = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { keyword: '上海 → 宁波', pageNo: 1, pageSize: 5 } })
+    const legItem = (legList.json?.items ?? [])[0]
+    check('KG-S2j 航段示例带距离/价格属性', !!legItem && legItem.properties?.['距离公里'] === '250' && legItem.properties?.['运输价格'] === '800' && legItem.properties?.['运输方式'] === '海运', JSON.stringify(legItem?.properties))
+
+    const cv = await api('POST', `${kg(G2)}/canvas`, { token, body: { limit: 200 } })
+    check('KG-S2k 建图即得完整图览（≥11 节点 ≥15 边）', cv.status === 200 && (cv.json?.nodes ?? []).length >= 11 && (cv.json?.edges ?? []).length >= 15, JSON.stringify({ n: cv.json?.nodes?.length, e: cv.json?.edges?.length }))
   }
 
   // ===== KG-S3 同团队重名 409 =====
@@ -223,21 +242,21 @@ async function main() {
   {
     const cv = await api('POST', `${kg(G2)}/canvas`, { token, body: { limit: 200 } })
     check('KG-S13a 画布返回节点与节点集内部的边', cv.status === 200 && (cv.json?.nodes ?? []).length >= 2 && (cv.json?.edges ?? []).length >= 1, JSON.stringify({ n: cv.json?.nodes?.length, e: cv.json?.edges?.length }))
-    const cvf = await api('POST', `${kg(G2)}/canvas`, { token, body: { keyword: 'seed-svc-' + TS } })
+    const cvf = await api('POST', `${kg(G2)}/canvas`, { token, body: { keyword: 'seed-port-' + TS } })
     check('KG-S13b 关键字过滤仅命中 1 节点', cvf.status === 200 && (cvf.json?.nodes ?? []).length === 1, JSON.stringify(cvf.json?.nodes))
 
     // ===== KG-S14 一跳邻接展开 =====
-    const listR = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { keyword: 'seed-ppl-' + TS, pageNo: 1, pageSize: 5 } })
-    const pplNode = (listR.json?.items ?? [])[0]
-    const nb = await api('GET', `${kg(G2)}/nodes/${pplNode?.nodeId}/neighbors?limit=50`, { token })
-    check('KG-S14a 邻接含 seed-svc 且带维护边', nb.status === 200 && (nb.json?.nodes ?? []).some(x => x.name === 'seed-svc-' + TS) && (nb.json?.edges ?? []).length >= 1, JSON.stringify(nb.json).slice(0, 200))
+    const listR = await api('POST', `${kg(G2)}/nodes/list`, { token, body: { keyword: 'seed-leg-' + TS, pageNo: 1, pageSize: 5 } })
+    const legNode = (listR.json?.items ?? [])[0]
+    const nb = await api('GET', `${kg(G2)}/nodes/${legNode?.nodeId}/neighbors?limit=50`, { token })
+    check('KG-S14a 邻接含 seed-port 且带出发边', nb.status === 200 && (nb.json?.nodes ?? []).some(x => x.name === 'seed-port-' + TS) && (nb.json?.edges ?? []).length >= 1, JSON.stringify(nb.json).slice(0, 200))
     const nbGhost = await api('GET', `${kg(G2)}/nodes/ghost/neighbors`, { token })
     check('KG-S14b 不存在节点邻接 404', nbGhost.status === 404, `${nbGhost.status}`)
   }
 
   // ===== KG-S17 接入图画布（外部图库全量查询，elementId 定位 + label 展示）=====
   {
-    const cv = await api('POST', `${kg(CONN)}/canvas`, { token, body: { keyword: 'seed-svc-' + TS, limit: 50 } })
+    const cv = await api('POST', `${kg(CONN)}/canvas`, { token, body: { keyword: 'seed-port-' + TS, limit: 50 } })
     const nodes = cv.json?.nodes ?? []
     const node = nodes[0]
     check('KG-S17a 接入图画布返回带 entityLabel 的节点', cv.status === 200 && nodes.length >= 1 && typeof node?.entityLabel === 'string' && node.entityLabel.length > 0, JSON.stringify(nodes).slice(0, 200))
@@ -333,7 +352,7 @@ async function main() {
   {
     const team2 = await api('POST', '/api/team', { token, body: { name: 'kg-team2-' + TS } })
     const TID2 = Number(team2.json?.value)
-    check('KG-S16a 跨团队同名建图 409', Number.isFinite(TID2) && (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID2, name: opsName, templateKey: 'blank' } })).status === 409)
+    check('KG-S16a 跨团队同名建图 409', Number.isFinite(TID2) && (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID2, name: tplName, templateKey: 'blank' } })).status === 409)
     // 团队不可解散：清理改为管理员禁用归档
     await api('PUT', `/api/admin/team/${TID2}/disable`, { token, body: { isDisable: true } })
   }

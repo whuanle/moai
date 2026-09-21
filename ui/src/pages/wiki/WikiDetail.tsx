@@ -3,9 +3,10 @@ import {
   BookOutlined,
   ExperimentOutlined,
   FileTextOutlined,
+  GlobalOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
-import { Alert, AutoComplete, Button, Form, Input, Layout, Menu, Select, Space, Spin, Switch, Tag, Typography } from 'antd'
+import { Alert, AutoComplete, Button, Form, Input, Layout, Menu, Select, Space, Spin, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -15,10 +16,9 @@ import { getWikiDetail, getWikiModelOptions, updateWiki, updateWikiEmbeddingConf
 import { getTeamDetail } from '@/api/team'
 import { resolveStorageUrl } from '@/utils/storage'
 import { useAppStore } from '@/store/app'
-import type { WikiWorkflowConfig } from '@/api/wiki'
 import { WikiDocuments } from './WikiDocuments'
 import { WikiRecallTest } from './WikiRecallTest'
-import { WikiWorkflowSettings } from './WikiWorkflowSettings'
+import { WikiSources } from './WikiSources'
 
 const { Sider, Content } = Layout
 const { Text } = Typography
@@ -26,7 +26,7 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTION_KEYS = ['files', 'recall', 'settings'] as const
+const SECTION_KEYS = ['files', 'sources', 'recall', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 interface WikiDetail {
@@ -34,7 +34,6 @@ interface WikiDetail {
   teamId?: string | number | null
   name?: string | null
   description?: string | null
-  isPublic?: boolean | null
   avatarPath?: string | null
   myRole?: number | null
   embeddingModelId?: string | null
@@ -42,13 +41,12 @@ interface WikiDetail {
   isLock?: boolean | null
   rerankModelId?: string | null
   createTime?: string | null
-  workflowConfig?: WikiWorkflowConfig | null
+  /** 默认工作流配置（切割 / 元数据 / 向量化三步预设），为空表示未配置 */
 }
 
 interface SettingsFormValues {
   name: string
   description?: string
-  isPublic?: boolean
 }
 
 interface EmbeddingFormValues {
@@ -128,7 +126,6 @@ export function WikiDetail() {
       settingsForm.setFieldsValue({
         name: res.name ?? '',
         description: res.description ?? undefined,
-        isPublic: res.isPublic ?? false,
       })
       embeddingForm.setFieldsValue({
         embeddingModelId: res.embeddingModelId ?? undefined,
@@ -154,7 +151,6 @@ export function WikiDetail() {
       settingsForm.setFieldsValue({
         name: res.name ?? '',
         description: res.description ?? undefined,
-        isPublic: res.isPublic ?? false,
       })
       embeddingForm.setFieldsValue({
         embeddingModelId: res.embeddingModelId ?? undefined,
@@ -203,6 +199,7 @@ export function WikiDetail() {
   const menuItems: Required<MenuProps>['items'] = useMemo(
     () => [
       { key: 'files', icon: <FileTextOutlined />, label: t('wiki.menuFiles') },
+      { key: 'sources', icon: <GlobalOutlined />, label: t('wiki.menuSources') },
       { key: 'recall', icon: <ExperimentOutlined />, label: t('wiki.menuRecall') },
       { key: 'settings', icon: <SettingOutlined />, label: t('wiki.menuSettings') },
     ],
@@ -216,7 +213,6 @@ export function WikiDetail() {
       await updateWiki(wikiId, {
         name: values.name,
         description: values.description,
-        isPublic: values.isPublic,
       })
       feedback.success(t('wiki.saveSuccess'))
       void reload()
@@ -323,6 +319,10 @@ export function WikiDetail() {
             <Card styles={{ body: { padding: spacing.lg } }}>
               <WikiDocuments wikiId={wikiId} teamId={teamId} />
             </Card>
+          ) : section === 'sources' ? (
+            <Card styles={{ body: { padding: spacing.lg } }}>
+              <WikiSources wikiId={wikiId} myRole={wiki.myRole} />
+            </Card>
           ) : section === 'recall' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
               <WikiRecallTest wikiId={wikiId} teamId={teamId} />
@@ -358,9 +358,6 @@ export function WikiDetail() {
                   </Form.Item>
                   <Form.Item name="description" label={t('wiki.desc')} rules={[{ max: 255 }]}>
                     <Input.TextArea placeholder={t('wiki.descPlaceholder')} maxLength={255} rows={3} />
-                  </Form.Item>
-                  <Form.Item name="isPublic" label={t('wiki.public')} valuePropName="checked">
-                    <Switch checkedChildren={t('wiki.publicOn')} unCheckedChildren={t('wiki.publicOff')} />
                   </Form.Item>
                     <Button type="primary" loading={saving} onClick={() => void handleSaveSettings()}>
                       {t('wiki.save')}
@@ -456,16 +453,6 @@ export function WikiDetail() {
                       </Button>
                     </Form>
                   )}
-                  {modelOptionsLoaded && (
-                    <WikiWorkflowSettings
-                      wikiId={wikiId}
-                      config={wiki.workflowConfig}
-                      conversationModels={modelOptions.conversationModels}
-                      modelsLoading={modelOptionsLoading}
-                      modelsFailed={modelOptionsFailed}
-                      onSaved={() => void reload()}
-                    />
-                  )}
                 </>
               ) : (
                 <Space direction="vertical" size={spacing.md}>
@@ -476,12 +463,6 @@ export function WikiDetail() {
                   <div>
                     <Text type="secondary">{t('wiki.desc')}: </Text>
                     <Text strong>{wiki.description || '-'}</Text>
-                  </div>
-                  <div>
-                    <Text type="secondary">{t('wiki.public')}: </Text>
-                    <Tag color={wiki.isPublic ? 'blue' : 'default'}>
-                      {wiki.isPublic ? t('wiki.publicOn') : t('wiki.publicOff')}
-                    </Tag>
                   </div>
                   <Alert type="warning" showIcon message={t('wiki.noPermission')} />
                 </Space>

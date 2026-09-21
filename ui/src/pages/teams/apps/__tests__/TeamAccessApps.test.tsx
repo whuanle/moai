@@ -33,6 +33,7 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
 
     expect(await screen.findByText('ERP 接入')).toBeTruthy()
     expect(screen.getByText('moai-ac-abcd****')).toBeTruthy()
+    expect(screen.getByText(/第三方系统可通过应用接入 key/)).toBeTruthy()
     await waitFor(() => expect(getAccessApps).toHaveBeenCalledWith(1))
 
     fireEvent.click(screen.getByRole('button', { name: '点击查看完整 key' }))

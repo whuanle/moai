@@ -8,6 +8,8 @@ import { KnowledgeGraphItemRequestBuilderNavigationMetadata, KnowledgeGraphItemR
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { ModelOptionsRequestBuilderRequestsMetadata, type ModelOptionsRequestBuilder } from './modelOptions/index.js';
+// @ts-ignore
 import { TemplatesRequestBuilderRequestsMetadata, type TemplatesRequestBuilder } from './templates/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
@@ -20,6 +22,10 @@ export interface KnowledgeGraphRequestBuilder extends BaseRequestBuilder<Knowled
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The modelOptions property
+     */
+    get modelOptions(): ModelOptionsRequestBuilder;
     /**
      * The templates property
      */
@@ -65,6 +71,9 @@ export const KnowledgeGraphRequestBuilderNavigationMetadata: Record<Exclude<keyo
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    modelOptions: {
+        requestsMetadata: ModelOptionsRequestBuilderRequestsMetadata,
     },
     templates: {
         requestsMetadata: TemplatesRequestBuilderRequestsMetadata,

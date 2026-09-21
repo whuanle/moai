@@ -1,6 +1,6 @@
 // 团队模型网关 E2E 冒烟脚本（不依赖真实上游模型渠道）
 // 用法: node local-dev/gateway-e2e.mjs [baseUrl]   （需后端运行中，默认 http://127.0.0.1:5210）
-// 覆盖：密钥管理 API、/aiapi/{teamId}/v1/models 两种鉴权头、路由团队校验、禁用/删除即时失效、模型未授权 404、成员权限矩阵
+// 覆盖：密钥管理 API、/api/aigateway/{teamId}/v1/models 两种鉴权头、路由团队校验、禁用/删除即时失效、模型未授权 404、成员权限矩阵
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
 const crypto = await import('node:crypto')
 
@@ -72,7 +72,7 @@ check('注册成员 bob', (await register(`gwbob${ts}`, 'bob12345678')) === 200)
 const bobToken = await login(`gwbob${ts}`, 'bob12345678')
 check('bob 登录', Boolean(bobToken))
 
-const users = await api(adminToken, '/api/usermanage/users?pageNo=1&pageSize=500')
+const users = await api(adminToken, `/api/usermanage/users?pageNo=1&pageSize=50&searchText=gwbob${ts}`)
 const bobUser = (users.body?.items ?? []).find((x) => x.userName === `gwbob${ts}`)
 check('查到 bob 用户 id', Boolean(bobUser?.id), JSON.stringify(users.body?.items?.slice(0, 2)))
 
@@ -92,9 +92,9 @@ const keys = await api(adminToken, `/api/team/${teamId}/gateway/keys`)
 check('密钥列表不泄露原文', keys.status === 200 && keys.body?.items?.some((x) => x.id === keyId && x.keyPrefix && !JSON.stringify(x).includes(secret)))
 
 // ---------- 网关鉴权 ----------
-const gwBase = `${BASE}/aiapi/${teamId}/v1`
+const gwBase = `${BASE}/api/aigateway/${teamId}/v1`
 const noKey = await fetch(`${gwBase}/models`)
-check('无密钥访问 /aiapi/{teamId}/v1/models 返回 401', noKey.status === 401)
+check('无密钥访问 /api/aigateway/{teamId}/v1/models 返回 401', noKey.status === 401)
 
 const badKey = await fetch(`${gwBase}/models`, { headers: { Authorization: 'Bearer moai-invalidinvalidinvalidinvalidinvalid' } })
 check('伪造密钥返回 401', badKey.status === 401)
@@ -107,7 +107,7 @@ const okHeader = await fetch(`${gwBase}/models`, { headers: { 'x-api-key': secre
 check('x-api-key 密钥访问 models 返回 200', okHeader.status === 200)
 
 // 路由 teamId 严格校验：用错误的团队 id 访问，返回 403
-const wrongTeam = await fetch(`${BASE}/aiapi/${teamId + 1}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
+const wrongTeam = await fetch(`${BASE}/api/aigateway/${teamId + 1}/v1/models`, { headers: { Authorization: `Bearer ${secret}` } })
 check('路由团队 id 与密钥不一致返回 403', wrongTeam.status === 403)
 
 const chat404 = await fetch(`${gwBase}/chat/completions`, {

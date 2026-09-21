@@ -162,7 +162,7 @@ public class GatewayUsageService
     /// </summary>
     private async Task<List<AiModelLimitEntity>> ListActiveLimitsAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = DateTimeOffset.UtcNow;
         return await _databaseContext.AiModelLimits
             .Where(x => x.ModelId == modelId
                 && (x.TeamId == teamId || x.TeamId == 0)
@@ -216,7 +216,7 @@ public class GatewayUsageService
         quota.TotalLimit = limit.LimitValue;
         quota.PeriodStart = now;
         quota.PeriodEnd = QuotaPeriodHelper.ComputePeriodEnd(now, limit.PeriodValue, limit.PeriodUnit);
-        quota.LastResetTime = DateTime.Now;
+        quota.LastResetTime = DateTimeOffset.Now;
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return quota;
     }
@@ -236,7 +236,7 @@ public class GatewayUsageService
                 .SetProperty(x => x.TotalLimit, limit.LimitValue)
                 .SetProperty(x => x.PeriodStart, now)
                 .SetProperty(x => x.PeriodEnd, QuotaPeriodHelper.ComputePeriodEnd(now, limit.PeriodValue, limit.PeriodUnit))
-                .SetProperty(x => x.LastResetTime, DateTime.Now),
+                .SetProperty(x => x.LastResetTime, DateTimeOffset.Now),
                 cancellationToken);
 
         var remaining = await _databaseContext.AiModelQuota

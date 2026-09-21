@@ -1,6 +1,6 @@
 # 知识库模块行为场景（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)、[local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)、[local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)、[local-dev/wiki-source-e2e.mjs](../../local-dev/wiki-source-e2e.mjs)
 
 ## Feature: 访问控制
 
@@ -77,21 +77,26 @@ Scenario: 软删除
   And 详情返回不存在、列表不含、同团队同名可重建
 ```
 
-## Feature: 公开知识库（详细页只读）
+## Feature: 知识库门禁（公开概念已移除）
 
 ```gherkin
-@WK-S9 @auto:e2e
-Scenario: 公开库非成员只读
-  Given Admin 创建公开知识库
-  When 非成员查询详情
-  Then 返回 200 且 myRole=0 且 isPublic=true
-  And 非成员创建/更新/删除仍返回 404
-
 @WK-S10 @auto:e2e
-Scenario: 私有库保持团队门禁
-  Given Admin 创建私有知识库（isPublic=false）
+Scenario: 非成员一律不可见
+  Given Admin 创建知识库（2026-09-21 起无公开/私有之分）
   When 非成员查询详情
-  Then 返回 404
+  Then 返回不存在（404，不泄露存在性）
+  And 非成员更新/删除同样返回 404
+```
+
+## Feature: 列表统计
+
+```gherkin
+@WK-S40 @auto:e2e
+Scenario: 列表项携带统计信息
+  Given 团队下已有知识库
+  When 成员查询团队知识库列表
+  Then 每个卡片项包含文件数量、切片数量与最近文档更新时间
+  And 无文档的知识库统计为零且最近更新时间为空
 ```
 
 ## Feature: 前端列表聚合（卡片）
@@ -102,7 +107,6 @@ Scenario: 列表只展示我加入的团队
   Given 用户在团队 A/B
   When 访问 /wiki
   Then 卡片聚合 A/B 知识库
-  And 公开但用户不在其团队的知识库不展示
 
 @WK-S12 @auto:ui
 Scenario: 管理入口按角色
@@ -304,6 +308,41 @@ Scenario: 多选生成策略
 
 > 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-06），不复用 WK-\*。授权模型：应用 token 即团队级授权，设计见 [sdd.md §4.1](./sdd.md#41-外部开放接口apexternalwiki)。
 
+## Feature: 召回测试（文档范围过滤 + AI 优化问题 + AI 生成回答）
+
+```gherkin
+@WK-S37 @auto:e2e
+Scenario: 参数校验与团队门禁
+  When 团队成员以空查询/空白查询/非法文档 id 调用召回测试
+  Then 返回参数错误
+  When 返回条数 top 传 0 或 51，或相似度阈值 minScore 传 1.5
+  Then 返回参数错误
+  When 开启 AI 优化问题但未传对话模型 id
+  Then 返回参数错误
+  When 非团队成员调用召回测试
+  Then 返回不存在（404，不泄露存在性）
+
+@WK-S38 @auto:e2e
+Scenario: 向量召回、文档范围过滤与相似度阈值
+  Given 知识库已绑定向量模型且两文档已完成向量化
+  When 团队成员执行全库召回
+  Then 返回命中项且得分降序、携带文档名/切片 id/元数据类型
+  When 以 documentIds 限定单一文档范围召回
+  Then 命中项全部来自指定文档，限定不存在文档 id 时 0 命中
+  When 相似度阈值设为 1
+  Then 0 命中；阈值设为 0 时不丢命中
+
+@WK-S39 @auto:e2e
+Scenario: AI 优化问题与 AI 生成回答
+  Given 知识库可召回且已选团队可用对话模型
+  When 开启 AI 优化问题执行召回
+  Then 返回优化后查询文本且按优化文本召回命中，响应携带原始查询
+  When 开启 AI 生成回答执行召回
+  Then 基于命中内容返回非空回答
+  When 优化与回答同时开启
+  Then 两者结果同时返回
+```
+
 ## Feature: 外部开放接口（应用 token，WX-*）
 
 ```gherkin
@@ -353,3 +392,142 @@ Scenario: 外部接口仅接受应用 token
   When 无 token、伪造 token 或内部用户 JWT 调用外部接口
   Then 分别返回未认证/未认证/未认证或禁止
 ```
+
+## Feature: 外部源（飞书文档 / 网页爬虫）
+
+```gherkin
+@WS-S1 @auto:e2e
+Scenario: 未登录与非成员不可见
+  Given 某团队的知识库
+  When 未携带令牌访问其外部源
+  Then 返回未认证
+  When 非该团队成员查看/创建/修改/删除外部源或触发同步
+  Then 一律返回不存在
+
+@WS-S2 @auto:e2e
+Scenario: 普通成员只读
+  Given 团队普通成员
+  When 查询外部源列表或已同步文档
+  Then 返回成功且只读展示
+  When 创建、修改、删除外部源或触发同步
+  Then 返回禁止
+
+@WS-S3 @auto:e2e
+Scenario: 管理员创建时的参数校验
+  When 提交空名称、超长名称、非法定时表达式
+  Then 返回参数错误
+  When 爬虫源缺少配置、起始地址不是 http(s)、单轮页数超上限
+  Then 返回参数错误
+  When 飞书文档源未选择任何绑定方式、同时给了两种绑定方式、或缺少节点 token
+  Then 返回参数错误
+
+@WS-S4 @auto:e2e
+Scenario: 创建后立即拉取一次
+  Given 管理员配置了一个网页爬虫外部源
+  When 提交创建
+  Then 创建成功并立即完成一轮拉取，文档数大于 0 且同步状态为成功
+  When 再次查看该外部源
+  Then 类型、起始地址与配置原样回显
+
+@WS-S5 @auto:e2e
+Scenario: 抓取范围受路径前缀约束
+  Given 目标站点存在同域名但不在路径前缀下的页面
+  When 执行同步
+  Then 仅收录前缀内的页面
+  And 文档标题取自页面标题，子目录页面同样被收录
+
+@WS-S6 @auto:e2e
+Scenario: 内容未变化不重复写入，但新页面仍会被发现
+  Given 该外部源已完成一轮拉取
+  When 目标站点新增一个子页面后再次同步
+  Then 内容未变化的页面不重复处理
+  And 新页面被创建入库
+
+@WS-S7 @auto:e2e
+Scenario: 内容变化才更新
+  Given 某篇已同步的外部文档内容发生变化
+  When 再次同步
+  Then 仅该文档被更新，其余标记为无变化
+  When 以强制全量方式再次同步
+  Then 所有文档被重新处理
+
+@WS-S8 @auto:e2e
+Scenario: 已同步文档清单
+  When 分页查看某外部源已同步的文档
+  Then 分页大小生效且总数正确
+  When 按标题关键字筛选
+  Then 仅返回命中的文档
+
+@WS-S9 @auto:e2e
+Scenario: 名称在知识库内唯一
+  When 在同一知识库下创建同名外部源
+  Then 返回冲突
+  When 在另一知识库下创建同名外部源
+  Then 创建成功
+
+@WS-S10 @auto:e2e
+Scenario: 更新外部源
+  When 修改名称、描述与定时表达式
+  Then 回显新值，未提交的爬虫配置保持不变
+  When 提交空的定时表达式
+  Then 定时任务被关闭
+  When 提交非法的定时表达式
+  Then 返回参数错误
+
+@WS-S11 @auto:e2e
+Scenario: 停用后不再同步
+  When 停用某个外部源
+  Then 手动触发同步返回冲突
+  When 重新启用
+  Then 可以再次同步
+
+@WS-S12 @auto:e2e
+Scenario: 飞书文档源的凭证不入链表
+  Given 管理员用尚未验证的飞书应用凭证创建飞书文档源
+  When 创建提交
+  Then 外部源创建成功，首次拉取的失败落到同步状态上而不阻断创建
+  When 查看该外部源
+  Then 类型与节点 token 回显，且响应中不含任何密钥
+  When 删除该外部源
+  Then 飞书渠道绑定被解除
+
+@WS-S13 @auto:e2e
+Scenario: 删除外部源不删除已入库文档
+  Given 某外部源已同步若干文档
+  When 删除该外部源
+  Then 列表不再包含它，再次同步或查看文档返回不存在
+  And 已同步进知识库的文档仍然保留
+
+@WS-S14 @auto:e2e
+Scenario: 抓取频率受请求间隔约束
+  Given 管理员配置了一个网页爬虫外部源，请求间隔为若干秒
+  When 提交创建并完成一轮抓取
+  Then 抓取串行执行且相邻两次请求的间隔不小于配置值
+  And 请求间隔、超时与页数上限在配置回显中保持
+
+@WS-S15 @auto:e2e
+Scenario: 非爬虫源提交不触发爬虫校验
+  Given 管理员提交一个飞书文档源（未携带任何爬虫配置）
+  When 创建该外部源
+  Then 创建成功，不出现空引用错误
+  When 更新该飞书源的名称与定时表达式（未携带爬虫配置）
+  Then 更新成功且响应为成功
+  When 更新该外部源的爬虫配置（携带完整爬虫配置）
+  Then 更新成功且爬虫配置回显为新值
+
+@WS-S16 @auto:e2e
+Scenario: 无正文页面被跳过且不计入失败
+  Given 目标站点存在一个正文为空的页面
+  When 执行同步
+  Then 该页面被标记为跳过，且不生成知识库文档
+  And 该轮失败页数为零
+
+@WS-S17 @auto:e2e
+Scenario: 连续失败时提前熔断
+  Given 目标站点在若干页面后开始持续返回错误
+  When 执行同步
+  Then 连续失败达到阈值后本轮抓取提前中止
+  And 已成功抓取的页面保持入库结果
+```
+
+> 飞书事件订阅的成功路径依赖真实开放平台长连接，本期未纳入自动化（见 [sdd.md §6 D22](./sdd.md#6-关键决策)）。

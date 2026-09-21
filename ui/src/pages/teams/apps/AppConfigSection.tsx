@@ -98,6 +98,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [localConfigStatus, setLocalConfigStatus] = useState(0)
 
   const isAgent = detail?.appType !== 'workflow'
+  // 外部应用面向外部用户/匿名开放，不支持沙箱与技能（后端保存强校验 + 对话装配兜底强制关闭）
+  const isExternal = detail?.isExternal === true
 
   // 警告条/发布入口使用的状态：工作台传入的真值优先（头部重新发布后同步清除），否则用本地加载值
   const effectiveConfigStatus = configStatus ?? localConfigStatus
@@ -226,32 +228,37 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
 
   const handleSaveConfig = async () => {
     if (!appId) return
-    if (!validateSandboxLimits()) return
+    if (!isExternal && !validateSandboxLimits()) return
     setSavingConfig(true)
     try {
-      const sandbox: Record<string, unknown> = { enabled: sandboxEnabled, renewOnAccess: sandboxRenew }
-      if (sandboxTimeout && sandboxTimeout > 0) sandbox.timeoutSeconds = sandboxTimeout
-      if (sandboxCpu.trim() || sandboxMemory.trim()) {
-        sandbox.resource = {
-          ...(sandboxCpu.trim() ? { cpu: sandboxCpu.trim() } : {}),
-          ...(sandboxMemory.trim() ? { memory: sandboxMemory.trim() } : {}),
+      // 外部应用不支持沙箱：固定关闭，避免携带历史开启状态触发后端 400
+      const sandbox: Record<string, unknown> = isExternal
+        ? { enabled: false }
+        : { enabled: sandboxEnabled, renewOnAccess: sandboxRenew }
+      if (!isExternal) {
+        if (sandboxTimeout && sandboxTimeout > 0) sandbox.timeoutSeconds = sandboxTimeout
+        if (sandboxCpu.trim() || sandboxMemory.trim()) {
+          sandbox.resource = {
+            ...(sandboxCpu.trim() ? { cpu: sandboxCpu.trim() } : {}),
+            ...(sandboxMemory.trim() ? { memory: sandboxMemory.trim() } : {}),
+          }
         }
-      }
-      const egress = sandboxEgress
-        .split('\n')
-        .map((x) => x.trim())
-        .filter(Boolean)
-      if (sandboxNetworkAction || egress.length) {
-        sandbox.network = {
-          ...(sandboxNetworkAction ? { defaultAction: sandboxNetworkAction } : {}),
-          egress,
+        const egress = sandboxEgress
+          .split('\n')
+          .map((x) => x.trim())
+          .filter(Boolean)
+        if (sandboxNetworkAction || egress.length) {
+          sandbox.network = {
+            ...(sandboxNetworkAction ? { defaultAction: sandboxNetworkAction } : {}),
+            egress,
+          }
         }
       }
 
       // 审批策略：自动放行插件收敛为本次绑定插件的子集（后端强校验），避免解绑插件后保存失败
       const toolApproval = {
         autoApprovePlugins: autoApprovePluginIds.filter((id) => pluginIds.includes(id)),
-        sandboxAutoApproved,
+        sandboxAutoApproved: isExternal ? false : sandboxAutoApproved,
       }
 
       await saveAppAgentConfig(appId, {
@@ -260,7 +267,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         wikiIds,
         plugins: pluginIds,
         workflowApps: workflowAppIds,
-        skills: skillIds,
+        // 外部应用不支持技能：固定空列表（后端强校验拒绝非空）
+        skills: isExternal ? [] : skillIds,
         openingStatement,
         openingStatementEnabled: openingEnabled,
         quickInputs: quickInputs.map((x) => x.trim()).filter(Boolean),
@@ -462,21 +470,23 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.workflowAppsEmpty')}
                   />
                 </Form.Item>
-                <Form.Item label={t('appManage.sectionSkills')} extra={t('appManage.skillsHint')}>
-                  <Select
-                    mode="multiple"
-                    allowClear
-                    showSearch
-                    optionFilterProp="label"
-                    style={{ width: '100%' }}
-                    placeholder={t('appManage.skillsPlaceholder')}
-                    loading={optionsLoading}
-                    value={skillIds}
-                    onChange={setSkillIds}
-                    options={skillSelectOptions}
-                    notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.skillsEmpty')}
-                  />
-                </Form.Item>
+                {!isExternal && (
+                  <Form.Item label={t('appManage.sectionSkills')} extra={t('appManage.skillsHint')}>
+                    <Select
+                      mode="multiple"
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      style={{ width: '100%' }}
+                      placeholder={t('appManage.skillsPlaceholder')}
+                      loading={optionsLoading}
+                      value={skillIds}
+                      onChange={setSkillIds}
+                      options={skillSelectOptions}
+                      notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.skillsEmpty')}
+                    />
+                  </Form.Item>
+                )}
                 <Form.Item label={t('appManage.sectionKnowledge')} extra={t('appManage.knowledgeHint')}>
                   <Select
                     mode="multiple"
@@ -493,11 +503,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                   />
                 </Form.Item>
               </Form>
-              <Divider style={{ margin: `${spacing.md}px 0` }} />
-              <Form layout="vertical" disabled={!canManage}>
-                <Form.Item label={t('appManage.sandboxEnabled')} valuePropName="checked" extra={t('appManage.sandboxHint')}>
-                  <Switch checked={sandboxEnabled} onChange={setSandboxEnabled} />
-                </Form.Item>
+              {isExternal && (
+                <Alert
+                  type="info"
+                  showIcon
+                  message={t('appManage.externalRestrictionHint')}
+                  style={{ marginBottom: spacing.md }}
+                />
+              )}
+              {!isExternal && (
+                <>
+                  <Divider style={{ margin: `${spacing.md}px 0` }} />
+                  <Form layout="vertical" disabled={!canManage}>
+                    <Form.Item label={t('appManage.sandboxEnabled')} valuePropName="checked" extra={t('appManage.sandboxHint')}>
+                      <Switch checked={sandboxEnabled} onChange={setSandboxEnabled} />
+                    </Form.Item>
                 {sandboxEnabled && (
                   <>
                     <Row gutter={spacing.md}>
@@ -580,18 +600,22 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     )}
                   </>
                 )}
-              </Form>
+                  </Form>
+                </>
+              )}
               <Divider style={{ margin: `${spacing.md}px 0` }} />
               <Form layout="vertical" disabled={!canManage}>
                 <Form.Item label={t('appManage.toolApprovalSection')} extra={t('appManage.toolApprovalHint')}>
-                  <Form.Item
-                    label={t('appManage.toolApprovalSandbox')}
-                    valuePropName="checked"
-                    extra={t('appManage.toolApprovalSandboxHint')}
-                    style={{ marginBottom: spacing.sm }}
-                  >
-                    <Switch checked={sandboxAutoApproved} onChange={setSandboxAutoApproved} />
-                  </Form.Item>
+                  {!isExternal && (
+                    <Form.Item
+                      label={t('appManage.toolApprovalSandbox')}
+                      valuePropName="checked"
+                      extra={t('appManage.toolApprovalSandboxHint')}
+                      style={{ marginBottom: spacing.sm }}
+                    >
+                      <Switch checked={sandboxAutoApproved} onChange={setSandboxAutoApproved} />
+                    </Form.Item>
+                  )}
                   <Form.Item label={t('appManage.toolApprovalPlugins')} extra={t('appManage.toolApprovalPluginsHint')}>
                     <Select
                       mode="multiple"

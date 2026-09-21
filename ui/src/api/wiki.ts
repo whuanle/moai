@@ -7,8 +7,12 @@ export interface WikiItem {
   teamId?: string | number | null
   name?: string | null
   description?: string | null
-  /** 是否公开，公开后所有人都可以使用（只读） */
-  isPublic?: boolean | null
+  /** 文档数量 */
+  documentCount?: number | null
+  /** 已切片数量（切片内容表行数） */
+  chunkCount?: number | null
+  /** 最近一次文档更新时间，无文档时为 null */
+  lastDocumentUpdateTime?: string | null
   /** 知识库头像的 ObjectKey（空串=未设置），前端用 resolveStorageUrl 转可访问地址 */
   avatarPath?: string | null
   createTime?: string | null
@@ -49,15 +53,15 @@ export function getWikiDetail(wikiId: number) {
   return client.api.wiki.byId(String(wikiId)).get()
 }
 
-export async function createWiki(payload: { teamId: number; name: string; description?: string; isPublic?: boolean }): Promise<number> {
+export async function createWiki(payload: { teamId: number; name: string; description?: string }): Promise<number> {
   const client = getApiClient()
-  const res = await client.api.wiki.post({ teamId: String(payload.teamId), name: payload.name, description: payload.description, isPublic: payload.isPublic })
+  const res = await client.api.wiki.post({ teamId: String(payload.teamId), name: payload.name, description: payload.description })
   return Number(res?.value ?? 0)
 }
 
-export async function updateWiki(wikiId: number, payload: { name: string; description?: string; isPublic?: boolean }): Promise<void> {
+export async function updateWiki(wikiId: number, payload: { name: string; description?: string }): Promise<void> {
   const client = getApiClient()
-  await client.api.wiki.byId(String(wikiId)).put({ name: payload.name, description: payload.description, isPublic: payload.isPublic })
+  await client.api.wiki.byId(String(wikiId)).put({ name: payload.name, description: payload.description })
 }
 
 export async function deleteWiki(wikiId: number): Promise<void> {
@@ -463,38 +467,314 @@ export async function recallWikiTest(wikiId: number, payload: WikiRecallTestPayl
   }
 }
 
+// ==================== 默认工作流配置 ====================
+
+/**
+ * 知识库默认工作流配置：切割 / 元数据生成 / 向量化三步预设。
+ * 某步骤为 null 表示未配置该步骤；整体覆盖式保存。
+ */
+export interface WikiWorkflowConfig {
+  partition?: {
+    mode?: WikiWorkflowPartitionMode | null
+    splitMode?: WikiDocumentPartitionSplitMode | null
+    chunkSize?: number | null
+    chunkOverlap?: number | null
+    overlapUnit?: WikiDocumentPartitionOverlapUnit | null
+    sizeUnit?: WikiDocumentPartitionSizeUnit | null
+    tokenEncodingOrModel?: string | null
+    aiModelId?: string | null
+    promptTemplate?: string | null
+  } | null
+  metadata?: {
+    metadataModelId?: string | null
+    strategyTypes?: WikiMetadataGenerationStrategy[] | null
+  } | null
+  embedding?: {
+    embedSourceText?: boolean | null
+    embedMetadata?: boolean | null
+  } | null
+}
+
+// ==================== 外部源（飞书文档 / 网页爬虫） ====================
+/** 外部源类型：与后端 WikiSourceType 枚举的 JsonPropertyName 一致（Kiota 生成为字符串枚举） */
+export const WIKI_SOURCE_TYPE_FEISHU = 'feishuDoc'
+export const WIKI_SOURCE_TYPE_CRAWLER = 'crawler'
+
+export type WikiSourceType = typeof WIKI_SOURCE_TYPE_FEISHU | typeof WIKI_SOURCE_TYPE_CRAWLER
+
+/** 外部源最近一次同步状态：0=未同步 1=成功 2=失败 3=同步中 */
+export const WIKI_SOURCE_SYNC_NONE = 0
+export const WIKI_SOURCE_SYNC_SUCCESS = 1
+export const WIKI_SOURCE_SYNC_FAILED = 2
+export const WIKI_SOURCE_SYNC_SYNCING = 3
+
+export type WikiSourceSyncStatus =
+  | typeof WIKI_SOURCE_SYNC_NONE
+  | typeof WIKI_SOURCE_SYNC_SUCCESS
+  | typeof WIKI_SOURCE_SYNC_FAILED
+  | typeof WIKI_SOURCE_SYNC_SYNCING
+
+/** 外部源文档同步状态：0=待同步 1=已同步 2=同步失败 */
+export const WIKI_SOURCE_DOC_PENDING = 0
+export const WIKI_SOURCE_DOC_SYNCED = 1
+export const WIKI_SOURCE_DOC_FAILED = 2
+
+export type WikiSourceDocumentStatus =
+  | typeof WIKI_SOURCE_DOC_PENDING
+  | typeof WIKI_SOURCE_DOC_SYNCED
+  | typeof WIKI_SOURCE_DOC_FAILED
+
+/**
+ * 网页爬虫源配置。抓取范围采用「同站点 + 路径前缀限定」策略，
+ * 以深度/页数上限与请求间隔（限速）多重兜底，避免把目标站点抓崩。
+ */
+export interface WikiSourceCrawlerConfig {
+  /** 起始 URL（爬取入口），必填 */
+  startUrl: string
+  /** 抓取路径前缀限定；空串表示限定为起始 URL 所在目录 */
+  pathPrefix?: string | null
+  /** 链接遍历最大深度，1 表示仅抓起始页，0 表示取默认值 */
+  maxDepth?: number | null
+  /** 单轮爬取页面数量上限，0 表示取默认值 */
+  maxPages?: number | null
+  /** 相邻两次请求的最小间隔秒数（限速核心），0 表示取默认值 */
+  requestIntervalSeconds?: number | null
+  /** 单次请求超时秒数，0 表示取默认值 */
+  timeoutSeconds?: number | null
+  /** 请求 UserAgent，空串表示取默认值 */
+  userAgent?: string | null
+  /** 正文选择器（CSS），空串表示抽取整个 body */
+  contentSelector?: string | null
+  /** 是否覆盖已抓取且内容变化的页面；false 表示已存在的页面直接跳过 */
+  isOverwriteExisting?: boolean | null
+}
+
+/** 飞书文档源配置（不含任何密钥） */
+export interface WikiSourceFeishuConfig {
+  feishuAppId?: string | null
+  nodeToken?: string | null
+  spaceId?: string | null
+  includeSubNodes?: boolean | null
+  maxDepth?: number | null
+  maxDocuments?: number | null
+}
+
+/** 外部源工作流配置：与知识库默认工作流同构，为 null 表示回退知识库默认工作流 */
+export type WikiSourceWorkflowConfig = WikiWorkflowConfig
+
+export interface WikiSourceItem {
+  sourceId?: string | null
+  wikiId?: string | number | null
+  sourceType?: WikiSourceType | null
+  name?: string | null
+  description?: string | null
+  isEnable?: boolean | null
+  /** 定时同步 cron 表达式（UTC），空表示未开启 */
+  cron?: string | null
+  isEventSubscription?: boolean | null
+  workflowConfig?: WikiSourceWorkflowConfig | null
+  feishu?: WikiSourceFeishuConfig | null
+  crawler?: WikiSourceCrawlerConfig | null
+  feishuAppName?: string | null
+  feishuAppOpenId?: string | null
+  feishuAppOnline?: boolean | null
+  lastSyncStatus?: WikiSourceSyncStatus | null
+  lastSyncTime?: string | null
+  lastSyncMessage?: string | null
+  documentCount?: number | null
+  createUserId?: number | null
+  createUserName?: string | null
+  createTime?: string | null
+  updateTime?: string | null
+}
+
+export interface WikiSourcesResult {
+  /** 当前用户在知识库所属团队的角色：0=Member 1=Admin 2=Owner */
+  myRole?: number | null
+  items?: WikiSourceItem[] | null
+}
+
+/** 外部源文档映射项 */
+export interface WikiSourceDocumentItem {
+  sourceId?: string | null
+  externalKey?: string | null
+  externalTitle?: string | null
+  externalPath?: string | null
+  /** 知识库文档 id（后端 long 序列化为字符串） */
+  documentId?: string | null
+  fileName?: string | null
+  status?: WikiSourceDocumentStatus | null
+  lastSyncTime?: string | null
+  lastError?: string | null
+  revision?: string | null
+}
+
+export interface WikiSourceDocumentsResult {
+  total?: number | null
+  items?: WikiSourceDocumentItem[] | null
+}
+
+/** 外部源同步结果 */
+export interface WikiSourceSyncResult {
+  total?: number | null
+  created?: number | null
+  updated?: number | null
+  unchanged?: number | null
+  skipped?: number | null
+  failed?: number | null
+  workflowTriggered?: number | null
+  message?: string | null
+}
+
+/** 创建外部源入参：飞书与爬虫两种形态按 sourceType 二选一填写 */
+export interface CreateWikiSourcePayload {
+  sourceType: WikiSourceType
+  name: string
+  description?: string
+  /** 爬虫源配置（sourceType=1 时必填） */
+  crawler?: WikiSourceCrawlerConfig
+  /** 飞书文档源：方式一，选择已有飞书应用连接 */
+  feishuAppId?: string | null
+  /** 飞书文档源：方式二，新建连接 */
+  newAppName?: string | null
+  newAppId?: string | null
+  newAppSecret?: string | null
+  newAppDomain?: string | null
+  /** 飞书文档源：知识空间节点 token */
+  nodeToken?: string | null
+  includeSubNodes?: boolean | null
+  maxDepth?: number | null
+  maxDocuments?: number | null
+  /** 定时同步 cron 表达式（UTC） */
+  cron?: string | null
+  isEventSubscription?: boolean | null
+  isEnable?: boolean | null
+}
+
+/** 更新外部源入参：未传字段保持原值；cron 传空串表示关闭定时同步 */
+export interface UpdateWikiSourcePayload {
+  name?: string
+  description?: string
+  crawler?: WikiSourceCrawlerConfig
+  feishuAppId?: string | null
+  newAppName?: string | null
+  newAppId?: string | null
+  newAppSecret?: string | null
+  newAppDomain?: string | null
+  nodeToken?: string | null
+  includeSubNodes?: boolean | null
+  maxDepth?: number | null
+  maxDocuments?: number | null
+  cron?: string | null
+  isEventSubscription?: boolean | null
+  isEnable?: boolean | null
+}
+
+/** 查询知识库外部源列表（含爬虫配置与最近同步状态） */
+export async function getWikiSources(wikiId: number): Promise<WikiSourcesResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).sources.get()
+  return { myRole: res?.myRole, items: (res?.items ?? []) as unknown as WikiSourceItem[] }
+}
+
+/** 创建外部源（爬虫源创建后立即抓取一次；飞书源创建后自动绑定渠道并拉取一次） */
+export async function createWikiSource(wikiId: number, payload: CreateWikiSourcePayload): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).sources.post({
+    wikiId: String(wikiId),
+    sourceType: payload.sourceType,
+    name: payload.name,
+    description: payload.description,
+    crawler: payload.crawler as never,
+    feishuAppId: payload.feishuAppId ?? null,
+    newAppName: payload.newAppName ?? null,
+    newAppId: payload.newAppId ?? null,
+    newAppSecret: payload.newAppSecret ?? null,
+    newAppDomain: payload.newAppDomain ?? null,
+    nodeToken: payload.nodeToken ?? undefined,
+    includeSubNodes: payload.includeSubNodes ?? undefined,
+    maxDepth: payload.maxDepth ?? undefined,
+    maxDocuments: payload.maxDocuments ?? undefined,
+    cron: payload.cron ?? null,
+    isEventSubscription: payload.isEventSubscription ?? undefined,
+    isEnable: payload.isEnable ?? true,
+  })
+  return res?.value ?? ''
+}
+
+/** 更新外部源（整体覆盖式保存本次提交的配置） */
+export async function updateWikiSource(wikiId: number, sourceId: string, payload: UpdateWikiSourcePayload): Promise<void> {
+  const client = getApiClient()
+  await client.api.wiki.byId(String(wikiId)).sources.bySourceId(sourceId).put({
+    wikiId: String(wikiId),
+    sourceId,
+    name: payload.name,
+    description: payload.description,
+    crawler: payload.crawler as never,
+    feishuAppId: payload.feishuAppId ?? null,
+    newAppName: payload.newAppName ?? null,
+    newAppId: payload.newAppId ?? null,
+    newAppSecret: payload.newAppSecret ?? null,
+    newAppDomain: payload.newAppDomain ?? null,
+    nodeToken: payload.nodeToken ?? null,
+    includeSubNodes: payload.includeSubNodes ?? null,
+    maxDepth: payload.maxDepth ?? null,
+    maxDocuments: payload.maxDocuments ?? null,
+    cron: payload.cron ?? null,
+    isEventSubscription: payload.isEventSubscription ?? null,
+    isEnable: payload.isEnable ?? null,
+  })
+}
+
+/** 删除外部源；已同步进知识库的文档保留 */
+export async function deleteWikiSource(wikiId: number, sourceId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.wiki.byId(String(wikiId)).sources.bySourceId(sourceId).delete()
+}
+
+/** 手动触发外部源同步；force=true 时忽略内容哈希比对，对全部文档触发工作流 */
+export async function syncWikiSource(wikiId: number, sourceId: string, force = false): Promise<WikiSourceSyncResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).sources.bySourceId(sourceId).sync.post({
+    wikiId: String(wikiId),
+    sourceId,
+    force,
+  })
+  return {
+    total: res?.total,
+    created: res?.created,
+    updated: res?.updated,
+    unchanged: res?.unchanged,
+    skipped: res?.skipped,
+    failed: res?.failed,
+    workflowTriggered: res?.workflowTriggered,
+    message: res?.message,
+  }
+}
+
+/** 查询外部源已同步的文档列表 */
+export async function getWikiSourceDocuments(
+  wikiId: number,
+  sourceId: string,
+  params: { pageNo: number; pageSize: number; query?: string },
+): Promise<WikiSourceDocumentsResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).sources.bySourceId(sourceId).documents.post({
+    wikiId: String(wikiId),
+    sourceId,
+    pageNo: params.pageNo,
+    pageSize: params.pageSize,
+    query: params.query || undefined,
+  })
+  return {
+    total: res?.total != null ? Number(res.total) : 0,
+    items: (res?.items ?? []) as unknown as WikiSourceDocumentItem[],
+  }
+}
+
 // ==================== 默认工作流 / 批量执行 ====================
 
 export type WikiWorkflowPartitionMode = 'normal' | 'ai'
-
-export interface WikiWorkflowPartitionConfig {
-  mode?: WikiWorkflowPartitionMode | null
-  splitMode?: WikiDocumentPartitionSplitMode | null
-  chunkSize?: number | null
-  chunkOverlap?: number | null
-  overlapUnit?: WikiDocumentPartitionOverlapUnit | null
-  sizeUnit?: WikiDocumentPartitionSizeUnit | null
-  tokenEncodingOrModel?: string | null
-  aiModelId?: string | null
-  promptTemplate?: string | null
-}
-
-export interface WikiWorkflowMetadataConfig {
-  metadataModelId?: string | null
-  strategyTypes?: WikiMetadataGenerationStrategy[] | null
-}
-
-export interface WikiWorkflowEmbeddingConfig {
-  embedSourceText?: boolean | null
-  embedMetadata?: boolean | null
-}
-
-/** 知识库默认工作流配置：切割 / 生成元数据 / 向量化三步预设，null 表示未配置该步骤 */
-export interface WikiWorkflowConfig {
-  partition?: WikiWorkflowPartitionConfig | null
-  metadata?: WikiWorkflowMetadataConfig | null
-  embedding?: WikiWorkflowEmbeddingConfig | null
-}
 
 /** 批量工作流单文档执行结果 */
 export interface BatchWorkflowDocumentResult {
@@ -525,36 +805,14 @@ export interface BatchRunWorkflowPayload {
   embedMetadata?: boolean
 }
 
-/** 更新知识库默认工作流配置（整体覆盖保存，null 步骤表示清除；需要团队 Admin） */
-export async function updateWikiWorkflowConfig(wikiId: number, payload: WikiWorkflowConfig): Promise<void> {
+/** 保存知识库默认工作流配置（三步预设，整体覆盖；某步骤传 null 表示清除该预设） */
+export async function updateWikiWorkflowConfig(wikiId: number, payload: WikiSourceWorkflowConfig): Promise<void> {
   const client = getApiClient()
   await client.api.wiki.byId(String(wikiId)).workflowConfig.put({
     wikiId: String(wikiId),
-    partition: payload.partition
-      ? {
-        mode: payload.partition.mode ?? 'normal',
-        aiModelId: payload.partition.aiModelId ?? null,
-        promptTemplate: payload.partition.mode === 'ai' ? (payload.partition.promptTemplate || null) : null,
-        splitMode: payload.partition.splitMode ?? 'markdown',
-        chunkSize: payload.partition.chunkSize ?? 0,
-        chunkOverlap: payload.partition.chunkOverlap ?? 0,
-        overlapUnit: payload.partition.overlapUnit ?? 'character',
-        sizeUnit: payload.partition.sizeUnit ?? 'character',
-        tokenEncodingOrModel: payload.partition.sizeUnit === 'token' ? (payload.partition.tokenEncodingOrModel || null) : null,
-      }
-      : null,
-    metadata: payload.metadata
-      ? {
-        metadataModelId: payload.metadata.metadataModelId ?? null,
-        strategyTypes: payload.metadata.strategyTypes ?? null,
-      }
-      : null,
-    embedding: payload.embedding
-      ? {
-        embedSourceText: payload.embedding.embedSourceText ?? true,
-        embedMetadata: payload.embedding.embedMetadata ?? true,
-      }
-      : null,
+    partition: payload.partition as never,
+    metadata: payload.metadata as never,
+    embedding: payload.embedding as never,
   })
 }
 

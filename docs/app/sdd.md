@@ -298,6 +298,14 @@
   - 下发：userconfig 按发布快照解析策略并展开为**工具名**清单（静态/动态=插件名，MCP/OpenAPI=`{插件名}__{函数名}`，拼装契约 `AppPluginToolNaming`）与沙箱前缀 `sandbox_`，前端据此免展示审批卡（与豁免清单同一判定函数）。
   - 行为见 [@AP-S65](./bdd.md#ap-s65)~[@AP-S68](./bdd.md#ap-s68)。
 
+### 外部应用能力限制（D46 沙箱与技能强制关闭）
+
+- **D46 外部应用不能绑定技能也不能开启沙箱（2026-09-21）**：外部应用面向外部用户/匿名开放，技能包文件与代码执行面不可外溢，双层拦截：
+  - 保存侧 `SaveAppAgentConfigCommandHandler`：`app.IsExternal` 时显式携带非空技能或执行参数中 `sandbox.enabled=true` 一律 400（判定复用 `SandboxSettingsLimitValidator.IsSandboxEnabled`）；保存同时把 `Skills` 收敛为 `[]`，历史存量随保存清空。
+  - 装配侧 `AppAgentFactory`：对话装配对外部应用**克隆生效配置**（`ResolveEffectiveConfig` 结果可能是变更跟踪中的草稿行，禁止就地修改）——`Skills="[]"`、`Sandbox=null` 后回写 `ExecutionSettings`；沙箱/技能/审批策略工具链均按配置解析，一处生效覆盖发布快照与存量草稿、内部工作台/外部端点/调试全部对话入口。
+  - 前端：外部应用配置分区隐藏「默认技能」「沙箱参数」与审批策略沙箱开关并加提示，保存固定 `skills: []`、`sandbox.enabled=false`。
+  - 流程应用绑定为工具本就拒绝外部应用（`!IsExternal`），不受本决策影响。行为见 [@EA-S13](./bdd.md#ea-s13)、[@EA-S14](./bdd.md#ea-s14)。
+
 ## 7. 已知问题 / 下阶段
 
 - **外部应用的实际访问链路未实现**：`is_external`/`is_auth` 已落库并可管理，但「应用接入 key」「外部用户 token」「`/external` 对话端点」分别为设计文档的第 2、3 期，尚未交付。当前外部应用只能被创建/配置/发布，不能真正被外部调用。
@@ -311,7 +319,8 @@
 - 流程应用的应用级配置（`app_workflow_design` 等）未实现；管理页对流程应用只开放基础信息。
 - 消息表未落 `status`（生成中/完成/失败）与逐条 token；会话表已按会话维度累计 token。
 - `app` 表未建 partial 唯一索引，并发创建同名应用存在极小概率穿透（Handler 先查后写）。
-- **访问点组件走查待做**：工作台 `access` 分区（配置表单/端点/嵌入片段）与 `/embed/moai-widget.js` 已交付；浏览器真实悬浮对话走查（需配置桩模型渠道）随 4c 收尾。
+- **访问点组件浏览器走查已完成**（2026-09-21）：宿主页引入嵌入代码后悬浮按钮渲染、点击开面板、匿名换 token、建会话、AG-UI 流式回复全链路通过。嵌入代码 `src` 指向站点自身源（开发期由 Vite 中间件挂 `/embed/moai-widget.js` 并代理 `/api`；产物仍由 `npm run build:embed` 输出后端 wwwroot，分离部署用 `data-server` 覆盖）；widget 初始化失败/访问点未启用改为 console 告警不再静默，`crypto.randomUUID` 在非安全上下文降级。
+- **悬浮组件跨源宿主页兼容**（2026-09-21 补）：`file://`/沙箱等 `Origin: null` 宿主页的预检由后端 CORS `AllowAnyOrigin` 统一回答，开发期必须保持 Vite `server.cors: false`（内置 cors 只放行 localhost 系 origin，会抢答预检且不带 ACAO，报「No ACAO」的伪跨域错误）；代理对后端不可达回 502 `backend_unreachable` 并带 ACAO，避免误报成跨域；后端对 PNA（Private Network Access，公网页面→本机服务）预检回 `Access-Control-Allow-Private-Network: true`（Program.cs，置于 UseCors 之前）；widget 全部 `crypto.randomUUID` 调用走降级（`about:blank`/http 局域网 IP 宿主页为非安全上下文，直接调用必 TypeError）。
 - **外部对话端点的会话范围守卫在中间件**：`ExternalAuthenticationMiddleware` 对 `/api/external/agent/{appId}/chat` 校验 `appId ∈ token 授权范围` + 应用可用（已发布、未禁用）；对话中未配模型时派发器以 SSE 文本返回装配错误（HTTP 200），不计费。真实模型对话的端到端 E2E（需自建桩模型与渠道配置）随访问点 4c 交付。
 - **外部 access token 无即时吊销**：吊销接入/换绑应用依赖 refresh（≤7d）或 access 自然过期（2h）；期间已签发 access token 仍有效（无状态 JWT 取舍）。
 - **监控无按日趋势**：用量数据来自聚合表 `ai_model_token_audit`，无时间分桶，无法画日趋势；趋势需逐次用量日志或按日聚合表，留后续迭代。

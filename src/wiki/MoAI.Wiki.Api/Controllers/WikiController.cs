@@ -86,7 +86,7 @@ public class WikiController : ControllerBase
     [HttpPut("{id}")]
     public async Task<EmptyCommandResponse> UpdateWiki(long id, [FromBody] UpdateWikiCommand req, CancellationToken ct)
     {
-        var cmd = new UpdateWikiCommand { WikiId = id, Name = req.Name, Description = req.Description, IsPublic = req.IsPublic };
+        var cmd = new UpdateWikiCommand { WikiId = id, Name = req.Name, Description = req.Description };
         return await _mediator.Send(cmd, ct);
     }
 
@@ -192,6 +192,7 @@ public class WikiController : ControllerBase
             Metadata = req.Metadata,
             Embedding = req.Embedding,
         };
+        _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }
 

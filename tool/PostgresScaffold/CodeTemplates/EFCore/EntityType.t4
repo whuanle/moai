@@ -108,9 +108,15 @@ public partial class <#= EntityType.Name #>Entity : IFullAudited
         var needsInitializer = Options.UseNullableReferenceTypes && !property.IsNullable && !property.ClrType.IsValueType;
         
         var targetTypeName = code.Reference(property.ClrType);
+
+        // 项目规范：时间一律使用 DateTimeOffset（含可空），避免 DateTime 与时区语义混淆
         if(targetTypeName == "DateTime")
         {
             targetTypeName = "DateTimeOffset";
+        }
+        else if(targetTypeName == "DateTime?")
+        {
+            targetTypeName = "DateTimeOffset?";
         }
 
         var columnType = property.GetAnnotations().FirstOrDefault(x => x.Name == "Relational:ColumnType");

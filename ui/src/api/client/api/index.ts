@@ -12,6 +12,8 @@ import { AgentRequestBuilderNavigationMetadata, type AgentRequestBuilder } from 
 // @ts-ignore
 import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
 // @ts-ignore
+import { AigatewayRequestBuilderNavigationMetadata, type AigatewayRequestBuilder } from './aigateway/index.js';
+// @ts-ignore
 import { AppRequestBuilderNavigationMetadata, AppRequestBuilderRequestsMetadata, type AppRequestBuilder } from './app/index.js';
 // @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
@@ -70,6 +72,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The ai property
      */
     get ai(): AiRequestBuilder;
+    /**
+     * The aigateway property
+     */
+    get aigateway(): AigatewayRequestBuilder;
     /**
      * The app property
      */
@@ -158,6 +164,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     ai: {
         navigationMetadata: AiRequestBuilderNavigationMetadata,
+    },
+    aigateway: {
+        navigationMetadata: AigatewayRequestBuilderNavigationMetadata,
     },
     app: {
         requestsMetadata: AppRequestBuilderRequestsMetadata,

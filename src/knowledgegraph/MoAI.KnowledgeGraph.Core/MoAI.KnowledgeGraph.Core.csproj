@@ -6,14 +6,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\aichannel\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.KnowledgeGraph.Api\MoAI.KnowledgeGraph.Api.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Maomi.ToMarkdown" />
 		<PackageReference Include="Neo4j.Driver" />
 		<PackageReference Include="Npgsql" />
 		<PackageReference Include="StackExchange.Redis.Extensions.Core" />

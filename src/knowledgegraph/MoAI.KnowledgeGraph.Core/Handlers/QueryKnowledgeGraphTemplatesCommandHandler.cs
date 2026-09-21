@@ -19,7 +19,7 @@ public class QueryKnowledgeGraphTemplatesCommandHandler : IRequestHandler<QueryK
                 Key = x.Key,
                 Name = x.Name,
                 Description = x.Description,
-                EntityTypes = x.EntityTypes.ToList(),
+                EntityTypes = x.EntityTypes.Select(t => t.Name).ToList(),
                 RelationTypes = x.RelationTypes.Select(r => r.Name).ToList(),
             })
             .ToList();

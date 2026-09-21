@@ -47,7 +47,7 @@ public partial class AiModelLimitEntity : IFullAudited
     /// <summary>
     /// 规则本身的有效期，null=长期有效；注意区别于重置周期，到期后规则整体失效.
     /// </summary>
-    public DateTime? ExpirationTime { get; set; }
+    public DateTimeOffset? ExpirationTime { get; set; }
 
     /// <summary>
     /// 创建人.

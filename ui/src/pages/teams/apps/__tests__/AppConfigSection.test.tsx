@@ -175,6 +175,43 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect(screen.queryByText('沙箱镜像')).toBeNull()
   })
 
+  it('外部应用不展示技能与沙箱配置，保存固定技能为空、沙箱关闭', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+      // 存量配置携带已启用的沙箱：外部应用渲染时不展示，保存时固定关闭
+      executionSettings: { sandbox: { enabled: true } },
+    })
+
+    renderSection({ ...AGENT_DETAIL, isExternal: true })
+
+    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(screen.getByText(/不支持沙箱与技能/)).toBeTruthy()
+    expect(screen.queryByText('默认技能')).toBeNull()
+    expect(screen.queryByText('启用沙箱')).toBeNull()
+    expect(screen.queryByText('沙箱自动放行')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          skills: [],
+          executionSettings: expect.objectContaining({
+            sandbox: { enabled: false },
+            toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: false },
+          }),
+        }),
+      ),
+    )
+  })
+
   it('提示词、插件、知识库与模型同区保存，一次提交完整配置', async () => {
     renderSection()
 

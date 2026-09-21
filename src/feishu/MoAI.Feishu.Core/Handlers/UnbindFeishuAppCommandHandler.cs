@@ -51,15 +51,29 @@ public class UnbindFeishuAppCommandHandler : IRequestHandler<UnbindFeishuAppComm
             throw new BusinessException("只有团队管理员可以管理飞书应用绑定.") { StatusCode = 403 };
         }
 
-        var binding = await _databaseContext.FeishuAppBindings
-            .FirstOrDefaultAsync(x => x.FeishuAppId == feishuApp.Id, cancellationToken);
+        var query = _databaseContext.FeishuAppBindings.Where(x => x.FeishuAppId == feishuApp.Id);
 
-        if (binding == null)
+        // 订阅型渠道（知识库外部源等）可一对多，按渠道类型/id 精确解除，避免误伤同一飞书应用的其它绑定
+        if (request.ChannelType.HasValue)
+        {
+            var channelType = (int)request.ChannelType.Value;
+            query = query.Where(x => x.ChannelType == channelType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.ChannelId))
+        {
+            var channelId = request.ChannelId;
+            query = query.Where(x => x.ChannelId == channelId);
+        }
+
+        var bindingIds = await query.Select(x => x.Id).ToListAsync(cancellationToken);
+
+        if (bindingIds.Count == 0)
         {
             throw new BusinessException("该飞书应用未绑定渠道.") { StatusCode = 404 };
         }
 
-        await _databaseContext.SoftDeleteAsync(_databaseContext.FeishuAppBindings.Where(x => x.Id == binding.Id));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.FeishuAppBindings.Where(x => bindingIds.Contains(x.Id)));
 
         return EmptyCommandResponse.Default;
     }

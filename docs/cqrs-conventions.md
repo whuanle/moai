@@ -503,6 +503,14 @@ public enum AIProtocolFamily
 
 
 
+## 数据库字段
+
+数据库所有字段都必须是 not null。
+
+每个字段都需要注释。
+
+
+
 ## 列表数据审计属性
 
 返回列表数据时，模型应当实现 AuditsInfo，这样统一审计属性结构，方便统一查询。

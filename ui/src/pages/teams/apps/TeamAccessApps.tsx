@@ -210,6 +210,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+      <Alert type="info" showIcon message={t('accessApp.usageHint')} />
       <DSCard styles={{ body: { paddingTop: spacing.sm } }}>
         <DataTable<AccessAppItem>
           rowKey="accessAppId"

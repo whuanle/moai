@@ -39,11 +39,6 @@ describe('BatchWorkflowModal', () => {
       name: 'wk',
       embeddingModelId: 'emb-1',
       embeddingDimensions: 1024,
-      workflowConfig: {
-        partition: { mode: 'normal', splitMode: 'recursive', chunkSize: 512, chunkOverlap: 30, overlapUnit: 'character', sizeUnit: 'character' },
-        metadata: { metadataModelId: 'conv-1', strategyTypes: ['outlineGeneration', 'questionGeneration'] },
-        embedding: { embedSourceText: true, embedMetadata: false },
-      },
     } as never)
     vi.mocked(getWikiModelOptions).mockResolvedValue({
       embeddingModels: [],
@@ -56,10 +51,10 @@ describe('BatchWorkflowModal', () => {
     ])
   })
 
-  it('打开时按知识库默认工作流预填步骤', async () => {
+  it('打开时按通用默认值预填步骤（切割 + 向量化）', async () => {
     renderModal()
     await waitFor(() => expect(getWikiDetail).toHaveBeenCalledWith(7))
-    // 三个步骤都按默认工作流勾选
+    // 默认勾选切割与向量化两步（生成元数据默认不勾）
     await waitFor(() => {
       const checkboxes = screen.getAllByRole('checkbox')
       expect(checkboxes.length).toBeGreaterThanOrEqual(3)
@@ -69,11 +64,8 @@ describe('BatchWorkflowModal', () => {
   it('只勾选切割一步时提交负载仅包含切割步骤', async () => {
     const { onDone } = renderModal()
     await waitFor(() => expect(screen.getByText('批量处理文档')).toBeInTheDocument())
-    // 取消元数据与向量化，仅保留切割
-    const checkboxes = screen.getAllByRole('checkbox')
-    // 表单初始渲染包含 partition/metadata/embedding 三个步骤 checkbox（embedding 子项在勾选时才出现）
-    fireEvent.click(checkboxes[1])
-    fireEvent.click(checkboxes[2])
+    // 默认勾选切割 + 向量化，取消向量化仅保留切割（生成元数据默认未勾选）
+    fireEvent.click(screen.getByRole('checkbox', { name: '向量化' }))
     await waitFor(() => expect(screen.queryByText('生成元数据')).not.toBeNull())
 
     const submit = screen.getByRole('button', { name: /开始处理（2）/ })
@@ -83,23 +75,27 @@ describe('BatchWorkflowModal', () => {
     expect(payload.isPartition).toBe(true)
     expect(payload.isGenerateMetadata).toBe(false)
     expect(payload.isEmbedding).toBe(false)
-    expect(payload.chunkSize).toBe(512)
+    expect(payload.chunkSize).toBe(1000)
     await waitFor(() => expect(onDone).toHaveBeenCalled())
     // 结果列表展示逐文档成功/失败
     await waitFor(() => expect(screen.getByText('a.md')).toBeInTheDocument())
     expect(screen.getByText('切割失败：解析异常')).toBeInTheDocument()
   })
 
-  it('默认工作流含多选策略时提交负载携带策略数组', async () => {
+  it('直接提交时负载为默认三步组合（切割 + 向量化，无元数据策略）', async () => {
     const { onDone } = renderModal()
     await waitFor(() => expect(screen.getByText('批量处理文档')).toBeInTheDocument())
     const submit = screen.getByRole('button', { name: /开始处理（2）/ })
     fireEvent.click(submit)
     await waitFor(() => expect(batchRunWikiDocumentsWorkflow).toHaveBeenCalled())
     const payload = vi.mocked(batchRunWikiDocumentsWorkflow).mock.calls[0][1]
-    expect(payload.strategyTypes).toEqual(['outlineGeneration', 'questionGeneration'])
     expect(payload.isPartition).toBe(true)
     expect(payload.isAiPartition).toBe(false)
+    expect(payload.isGenerateMetadata).toBe(false)
+    expect(payload.strategyTypes).toBeNull()
+    expect(payload.isEmbedding).toBe(true)
+    expect(payload.embedSourceText).toBe(true)
+    expect(payload.embedMetadata).toBe(true)
     await waitFor(() => expect(onDone).toHaveBeenCalled())
   })
 
@@ -110,7 +106,6 @@ describe('BatchWorkflowModal', () => {
       name: 'wk',
       embeddingModelId: null,
       embeddingDimensions: 0,
-      workflowConfig: null,
     } as never)
     renderModal()
     await waitFor(() => expect(screen.getByRole('button', { name: /开始处理（2）/ })).toBeDisabled())

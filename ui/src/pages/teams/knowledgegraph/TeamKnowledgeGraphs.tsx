@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Avatar, Button, Col, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag } from 'antd'
 import { ClusterOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
-import { Card, feedback } from '@/design-system'
+import { AvatarUpload, Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl } from '@/utils/storage'
 import {
@@ -12,6 +12,7 @@ import {
   getKnowledgeGraphTemplates,
   getKnowledgeGraphs,
   updateKnowledgeGraph,
+  uploadKnowledgeGraphAvatar,
   type KnowledgeGraphItem,
   type KnowledgeGraphTemplateItem,
 } from '@/api/knowledgeGraph'
@@ -36,6 +37,8 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<KnowledgeGraphItem | null>(null)
   const [saving, setSaving] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
   const [form] = Form.useForm<FormValues>()
   const isAdminPlus = myRole !== null && myRole !== ROLE_MEMBER
 
@@ -56,16 +59,42 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
     if (enabled) void getKnowledgeGraphTemplates().then(setTemplates).catch(() => setTemplates([]))
   }, [enabled])
 
+  /** 弹窗关闭时清理待上传头像与预览地址 */
+  const resetAvatar = () => {
+    setAvatarFile(null)
+    setAvatarPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return undefined
+    })
+  }
+
   const openCreate = () => {
     setEditing(null)
     form.resetFields()
+    resetAvatar()
     setOpen(true)
   }
 
   const openEdit = (record: KnowledgeGraphItem) => {
     setEditing(record)
     form.setFieldsValue({ name: record.name ?? '', description: record.description ?? undefined })
+    resetAvatar()
     setOpen(true)
+  }
+
+  /** 创建弹窗内先本地校验头像，创建成功后再直传登记 */
+  const handleAvatarSelect = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      feedback.error(t('knowledgegraph.avatarTypeError'))
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      feedback.error(t('knowledgegraph.avatarSizeError'))
+      return
+    }
+    resetAvatar()
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
   }
 
   const handleSubmit = async () => {
@@ -83,7 +112,7 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
         feedback.success(t('knowledgegraph.saveSuccess'))
       } else {
         const mode = values.mode ?? 'managed'
-        await createKnowledgeGraph({
+        const kgId = await createKnowledgeGraph({
           teamId,
           name: values.name,
           description: values.description,
@@ -91,9 +120,17 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
           templateKey: mode === 'managed' ? values.templateKey : undefined,
           database: mode === 'connected' ? values.database : undefined,
         })
+        if (avatarFile && kgId > 0) {
+          try {
+            await uploadKnowledgeGraphAvatar(kgId, avatarFile)
+          } catch {
+            // 头像登记失败已由全局请求中间件提示，图谱创建不受影响，可在设置页补传
+          }
+        }
         feedback.success(t('knowledgegraph.createSuccess'))
       }
       setOpen(false)
+      resetAvatar()
       void load()
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -128,7 +165,7 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
             <Card
               hoverable
               style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/team/${teamId}/kg/${item.kgId}/entities`)}
+              onClick={() => navigate(`/team/${teamId}/kg/${item.kgId}/canvas`)}
             >
               <Space size={spacing.sm} align="start">
                 <Avatar shape="square" size={40} icon={<ClusterOutlined />} src={item.avatarPath?.trim() ? resolveStorageUrl(item.avatarPath) : undefined} />
@@ -166,12 +203,26 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
         open={open}
         title={editing ? t('knowledgegraph.editTitle') : t('knowledgegraph.createTitle')}
         onOk={() => void handleSubmit()}
-        onCancel={() => setOpen(false)}
+        onCancel={() => { setOpen(false); resetAvatar() }}
         confirmLoading={saving}
         destroyOnHidden
         maskClosable={false}
       >
         <Form form={form} layout="vertical">
+          {!editing && (
+            <Form.Item label={t('knowledgegraph.avatar')}>
+              <Space size={spacing.md} align="center">
+                <AvatarUpload
+                  src={avatarPreview}
+                  fallback={<ClusterOutlined />}
+                  shape="square"
+                  size={64}
+                  onSelect={handleAvatarSelect}
+                />
+                <span style={{ opacity: 0.65 }}>{t('knowledgegraph.avatarHint')}</span>
+              </Space>
+            </Form.Item>
+          )}
           <Form.Item
             name="name"
             label={t('knowledgegraph.name')}

@@ -291,12 +291,12 @@ async function main() {
 
   // ==================== WF-18 知识库检索节点（knowledgeSearch） ====================
   // owner 团队创建知识库（不配置 embedding → 检索时静默跳过、返回空命中）；outsider 建自己的团队与知识库用于越权校验
-  const kw = await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wf-wiki-' + TS, description: 'e2e', isPublic: false } })
+  const kw = await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wf-wiki-' + TS, description: 'e2e' } })
   const WIKI = Number(kw.json?.value ?? 0)
   check('WF-18a 创建团队知识库 200', kw.status === 200 && WIKI > 0, `${kw.status} ${kw.text.slice(0, 120)}`)
   const oTeamR = await api('POST', '/api/team', { token: outsider.token, body: { name: 'wf-oteam-' + TS } })
   const oTeam = Number(oTeamR.json?.value ?? 0)
-  const oWikiR = await api('POST', '/api/wiki', { token: outsider.token, body: { teamId: oTeam, name: 'wf-owiki-' + TS, isPublic: false } })
+  const oWikiR = await api('POST', '/api/wiki', { token: outsider.token, body: { teamId: oTeam, name: 'wf-owiki-' + TS } })
   const OWIKI = Number(oWikiR.json?.value ?? 0)
 
   const buildKsDefinition = (wikiIds) => ({

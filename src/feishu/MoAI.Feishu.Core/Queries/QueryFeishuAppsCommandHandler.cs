@@ -76,7 +76,8 @@ public class QueryFeishuAppsCommandHandler : IRequestHandler<QueryFeishuAppsComm
             })
             .ToListAsync(cancellationToken);
 
-        // 绑定与连接是一对零/一，先查行再内存补绑定，避免 EF 表达式中做 int→枚举 转换
+        // 一个飞书应用可绑定多个渠道（应用渠道独占 + 外部源等订阅型渠道一对多），
+        // 列表项只展示一条代表绑定：优先应用渠道，便于前端按绑定过滤本应用渠道
         var feishuAppIds = rows.Select(x => x.Id).ToList();
         var bindings = await _databaseContext.FeishuAppBindings
             .Where(x => feishuAppIds.Contains(x.FeishuAppId))
@@ -85,7 +86,9 @@ public class QueryFeishuAppsCommandHandler : IRequestHandler<QueryFeishuAppsComm
 
         var bindingMap = bindings
             .GroupBy(x => x.FeishuAppId)
-            .ToDictionary(x => x.Key, x => x.First());
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderBy(b => b.ChannelType == (int)FeishuChannelType.App ? 0 : 1).First());
 
         var items = rows
             .Select(x =>

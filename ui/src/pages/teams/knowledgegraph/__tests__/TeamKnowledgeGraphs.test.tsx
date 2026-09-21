@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useParams } from 'react-router'
 import { TeamKnowledgeGraphs } from '../TeamKnowledgeGraphs'
-import { createKnowledgeGraph, getKnowledgeGraphs, getKnowledgeGraphTemplates } from '@/api/knowledgeGraph'
+import { createKnowledgeGraph, getKnowledgeGraphs, getKnowledgeGraphTemplates, uploadKnowledgeGraphAvatar } from '@/api/knowledgeGraph'
 
 vi.mock('@/api/knowledgeGraph', () => ({
   getKnowledgeGraphs: vi.fn(),
@@ -10,6 +10,7 @@ vi.mock('@/api/knowledgeGraph', () => ({
   createKnowledgeGraph: vi.fn().mockResolvedValue(1),
   updateKnowledgeGraph: vi.fn().mockResolvedValue(undefined),
   deleteKnowledgeGraph: vi.fn().mockResolvedValue(undefined),
+  uploadKnowledgeGraphAvatar: vi.fn().mockResolvedValue(''),
 }))
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
@@ -22,12 +23,28 @@ function renderTeam() {
   )
 }
 
+function DetailProbe() {
+  const params = useParams<{ graphId: string; section?: string }>()
+  return <div>probe-{params.section ?? 'none'}</div>
+}
+
+function renderTeamWithRoutes() {
+  return render(
+    <MemoryRouter initialEntries={['/team/7/kg']}>
+      <Routes>
+        <Route path="/team/:teamId/kg" element={<TeamKnowledgeGraphs teamId={7} />} />
+        <Route path="/team/:teamId/kg/:graphId/:section?" element={<DetailProbe />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
+
 describe('TeamKnowledgeGraphs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getKnowledgeGraphTemplates).mockResolvedValue([
       { key: 'blank', name: '空白 / 自定义' },
-      { key: 'ops', name: '运维服务', entityTypes: ['服务', '人员'] },
+      { key: 'logistics', name: '物流运输', entityTypes: ['港口', '航段'] },
     ])
   })
 
@@ -108,5 +125,70 @@ describe('TeamKnowledgeGraphs', () => {
 
     expect(await screen.findByText('外部图谱')).toBeInTheDocument()
     expect(screen.getByText('外部接入 · 只读')).toBeInTheDocument()
+  })
+
+  it('点击图谱卡片默认进入图览', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: '7',
+      myRole: 2,
+      enabled: true,
+      items: [{ kgId: '1', teamId: '7', name: '支付域图谱' }],
+    })
+    renderTeamWithRoutes()
+
+    fireEvent.click(await screen.findByText('支付域图谱'))
+    expect(await screen.findByText('probe-canvas')).toBeInTheDocument()
+  })
+
+  it('创建时选择头像：建图成功后登记头像', async () => {
+    vi.mocked(createKnowledgeGraph).mockResolvedValue(9)
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] })
+    renderTeam()
+    fireEvent.click(await screen.findByRole('button', { name: /新建知识图谱/ }))
+
+    const modal = await screen.findByRole('dialog')
+    fireEvent.change(within(modal).getByLabelText('名称'), { target: { value: '带头像图谱' } })
+    const file = new File(['png'], 'avatar.png', { type: 'image/png' })
+    const input = modal.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
+
+    await waitFor(() => expect(uploadKnowledgeGraphAvatar).toHaveBeenCalledWith(9, expect.any(File)))
+    expect(createKnowledgeGraph).toHaveBeenCalledTimes(1)
+    // jsdom 不执行 CSS 动画，Modal 关闭动画不会结束；以创建后列表刷新为完成信号
+    await waitFor(() => expect(getKnowledgeGraphs).toHaveBeenCalledTimes(2))
+  })
+
+  it('头像登记失败不阻断图谱创建成功', async () => {
+    vi.mocked(createKnowledgeGraph).mockResolvedValue(9)
+    vi.mocked(uploadKnowledgeGraphAvatar).mockRejectedValueOnce(new Error('upload failed'))
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] })
+    renderTeam()
+    fireEvent.click(await screen.findByRole('button', { name: /新建知识图谱/ }))
+
+    const modal = await screen.findByRole('dialog')
+    fireEvent.change(within(modal).getByLabelText('名称'), { target: { value: '带头像图谱' } })
+    const file = new File(['png'], 'avatar.png', { type: 'image/png' })
+    const input = modal.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
+
+    await waitFor(() => expect(createKnowledgeGraph).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(uploadKnowledgeGraphAvatar).toHaveBeenCalled())
+    // 登记失败不阻断：创建成功仍触发列表刷新
+    await waitFor(() => expect(getKnowledgeGraphs).toHaveBeenCalledTimes(2))
+  })
+
+  it('创建时不选头像则不调用头像登记', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] })
+    renderTeam()
+    fireEvent.click(await screen.findByRole('button', { name: /新建知识图谱/ }))
+
+    const modal = await screen.findByRole('dialog')
+    fireEvent.change(within(modal).getByLabelText('名称'), { target: { value: '无头像图谱' } })
+    fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
+
+    await waitFor(() => expect(createKnowledgeGraph).toHaveBeenCalledTimes(1))
+    expect(uploadKnowledgeGraphAvatar).not.toHaveBeenCalled()
   })
 })

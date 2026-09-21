@@ -130,7 +130,7 @@ public class PublishAppWorkflowCommandHandler : IRequestHandler<PublishAppWorkfl
             app.PublishStatus = 1;
         }
 
-        app.PublishTime = DateTime.UtcNow;
+        app.PublishTime = DateTimeOffset.Now;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

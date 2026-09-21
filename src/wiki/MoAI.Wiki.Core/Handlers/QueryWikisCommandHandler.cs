@@ -53,9 +53,13 @@ public class QueryWikisCommandHandler : IRequestHandler<QueryWikisCommand, Query
                 TeamId = x.TeamId,
                 Name = x.Name,
                 Description = x.Description,
-                IsPublic = x.IsPublic,
                 AvatarPath = x.AvatarPath,
-                CreateTime = x.CreateTime
+                CreateTime = x.CreateTime,
+                DocumentCount = _databaseContext.WikiDocuments.Count(d => d.WikiId == x.Id),
+                ChunkCount = _databaseContext.WikiDocumentChunkContents.Count(c => c.WikiId == x.Id),
+                LastDocumentUpdateTime = _databaseContext.WikiDocuments
+                    .Where(d => d.WikiId == x.Id)
+                    .Max(d => (DateTimeOffset?)d.UpdateTime)
             })
             .ToListAsync(cancellationToken);
 

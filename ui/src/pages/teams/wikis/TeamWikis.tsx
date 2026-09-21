@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BookOutlined, DeleteOutlined, EditOutlined, GlobalOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Space, Switch, Tag, Tooltip, Typography } from 'antd'
+import { BookOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Space, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, feedback } from '@/design-system'
@@ -23,7 +23,6 @@ const ROLE_MEMBER = 0
 interface WikiFormValues {
   name: string
   description?: string
-  isPublic?: boolean
 }
 
 interface TeamWikisProps {
@@ -73,7 +72,6 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
     form.setFieldsValue({
       name: record.name ?? '',
       description: record.description ?? undefined,
-      isPublic: record.isPublic ?? false,
     })
     setFormOpen(true)
   }
@@ -83,9 +81,9 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
     setSaving(true)
     try {
       if (editing) {
-        await updateWiki(Number(editing.wikiId), { name: values.name, description: values.description, isPublic: values.isPublic })
+        await updateWiki(Number(editing.wikiId), { name: values.name, description: values.description })
       } else {
-        await createWiki({ teamId, name: values.name, description: values.description, isPublic: values.isPublic })
+        await createWiki({ teamId, name: values.name, description: values.description })
       }
       feedback.success(t(editing ? 'wiki.saveSuccess' : 'wiki.createSuccess'))
       setFormOpen(false)
@@ -146,36 +144,24 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
                     style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}
                     onClick={() => navigate(`/team/${teamId}/wiki/${card.wikiId}`)}
                   >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
-                        <Avatar shape="square" size={44} icon={<BookOutlined />} src={avatarSrc}>
-                          {name.slice(0, 1).toUpperCase()}
-                        </Avatar>
-                        <div style={{ minWidth: 0, alignSelf: 'center' }}>
-                          <div
-                            style={{
-                              fontWeight: 600,
-                              fontSize: 15,
-                              lineHeight: 1.4,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {name}
-                          </div>
-                          <div style={{ marginTop: 2 }}>
-                            <Tag style={{ marginInlineEnd: 0 }} color={card.isPublic ? 'blue' : 'default'}>
-                              {card.isPublic ? t('wiki.publicOn') : t('wiki.publicOff')}
-                            </Tag>
-                          </div>
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+                      <Avatar shape="square" size={44} icon={<BookOutlined />} src={avatarSrc}>
+                        {name.slice(0, 1).toUpperCase()}
+                      </Avatar>
+                      <div
+                        style={{
+                          minWidth: 0,
+                          alignSelf: 'center',
+                          fontWeight: 600,
+                          fontSize: 15,
+                          lineHeight: 1.4,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {name}
                       </div>
-                      {card.isPublic && (
-                        <Tooltip title={t('wiki.public')}>
-                          <GlobalOutlined style={{ color: neutralColors.textTertiary }} aria-label={t('wiki.public')} />
-                        </Tooltip>
-                      )}
                     </div>
                     <Paragraph
                       type="secondary"
@@ -184,6 +170,22 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
                     >
                       {card.description || '-'}
                     </Paragraph>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: spacing.md }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{card.documentCount ?? 0}</div>
+                        <div style={{ fontSize: 11, color: neutralColors.textTertiary, lineHeight: 1.4 }}>{t('wiki.statDocuments')}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{card.chunkCount ?? 0}</div>
+                        <div style={{ fontSize: 11, color: neutralColors.textTertiary, lineHeight: 1.4 }}>{t('wiki.statChunks')}</div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, whiteSpace: 'nowrap' }}>
+                          {card.lastDocumentUpdateTime ? formatDateTime(card.lastDocumentUpdateTime).slice(5) : '-'}
+                        </div>
+                        <div style={{ fontSize: 11, color: neutralColors.textTertiary, lineHeight: 1.4 }}>{t('wiki.statLastUpdate')}</div>
+                      </div>
+                    </div>
                     <div
                       style={{
                         display: 'flex',
@@ -249,9 +251,6 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
           </Form.Item>
           <Form.Item name="description" label={t('wiki.desc')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('wiki.descPlaceholder')} maxLength={255} rows={3} />
-          </Form.Item>
-          <Form.Item name="isPublic" label={t('wiki.public')} valuePropName="checked">
-            <Switch checkedChildren={t('wiki.publicOn')} unCheckedChildren={t('wiki.publicOff')} />
           </Form.Item>
         </Form>
       </Modal>

@@ -78,6 +78,7 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasComment("发布状态，0=草稿 1=已发布")
             .HasColumnName("publish_status");
         entity.Property(e => e.PublishTime)
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("发布时间，未发布为 null")
             .HasColumnName("publish_time");
         entity.Property(e => e.TeamId)

@@ -29,12 +29,7 @@ public class QueryWikiCommandResponse
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 是否公开，公开后所有人都可以使用（只读），但非团队成员不能进入操作.
-    /// </summary>
-    public bool IsPublic { get; set; }
-
-    /// <summary>
-    /// 我在所属团队中的角色：0=Owner 1=Admin 2=Member；非成员访问公开库时为 0.
+    /// 我在所属团队中的角色：0=Member 1=Admin 2=Owner.
     /// </summary>
     public int MyRole { get; set; }
 

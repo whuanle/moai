@@ -17,7 +17,7 @@ namespace MoAI.Feishu.Services;
 /// 事件经 <see cref="FeishuEventForwarder"/> 去重并按绑定转发到业务模块.
 /// </summary>
 [InjectOnSingleton]
-public sealed partial class FeishuConnectionManager
+public sealed partial class FeishuConnectionManager : IFeishuConnectionStatus
 {
     /// <summary>
     /// 飞书默认接入域名.

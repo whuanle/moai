@@ -237,6 +237,13 @@ Scenario: 应用接入增删改查与授权校验
   Then 返回成功且列表不再包含
 ```
 
+```gherkin
+@AP-S24 @auto:vitest
+Scenario: 应用接入区块顶部展示 key 用途提示
+  When 团队管理员进入团队管理的应用接入区块
+  Then 区块顶部展示提示：第三方系统可通过应用接入 key 换取外部 token，接入本平台并操作该团队的资源
+```
+
 ## Feature: 外部应用接入 token（/api/external）
 
 ```gherkin
@@ -449,6 +456,29 @@ Scenario: 悬浮组件的公开配置与脚本托管
   Then 返回不存在
   When 匿名请求 /embed/moai-widget.js
   Then 返回 200 的 JavaScript 脚本
+```
+
+## Feature: 外部应用能力限制（沙箱与技能）
+
+```gherkin
+@EA-S13 @auto:e2e
+Scenario: 外部应用不能绑定技能也不能开启沙箱
+  Given 团队已创建并发布外部 Agent 应用
+  When 管理员保存 Agent 配置且显式携带非空技能列表
+  Then 返回参数错误提示外部应用不能绑定技能
+  When 管理员保存 Agent 配置且执行参数中沙箱启用
+  Then 返回参数错误提示外部应用不能开启沙箱
+  When 管理员保存不带技能且沙箱关闭的配置
+  Then 保存成功且回读技能为空、沙箱未启用
+  When 内部应用保存启用沙箱的配置
+  Then 保存成功（限制仅作用于外部应用）
+
+@EA-S14 @manual
+Scenario: 外部应用对话装配强制关闭沙箱与技能
+  Given 外部应用的生效配置（发布快照或存量草稿）携带技能或已启用沙箱
+  When 外部用户或管理员与其对话装配 Agent
+  Then 按外部应用限制克隆生效配置：技能清空、沙箱关闭，不暴露任何沙箱/技能工具
+  And 原草稿行与发布快照不被修改
 ```
 
 ## Feature: 沙箱资源上限（应用配置强校验）

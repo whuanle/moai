@@ -2,16 +2,16 @@
 
 挂在团队下的模型 API 转发模块：团队管理员创建/维护 API Key，团队成员使用密钥以 OpenAI Chat Completions、OpenAI Responses 或 Anthropic Messages 三种协议调用团队可用的模型；网关负责协议转换（上游渠道支持 OpenAI Chat/OpenAI Responses/Anthropic Messages/Gemini 四种协议族）、额度校验与用量记账。
 
-## 开放端点（API Key 认证，不走 `/api` 前缀）
+## 开放端点（API Key 认证）
 
-团队 id 直接入路由，每个团队拥有独立的接入地址 `{host}/aiapi/{teamId}/v1/...`。路由中的 teamId 必须与 API Key 绑定的团队完全一致，否则返回 403。
+团队 id 直接入路由，每个团队拥有独立的接入地址 `{host}/api/aigateway/{teamId}/v1/...`。路由中的 teamId 必须与 API Key 绑定的团队完全一致，否则返回 403。
 
 | 端点 | 入口协议 |
 |---|---|
-| `POST /aiapi/{teamId}/v1/chat/completions` | OpenAI Chat Completions |
-| `POST /aiapi/{teamId}/v1/responses` | OpenAI Responses |
-| `POST /aiapi/{teamId}/v1/messages` | Anthropic Messages |
-| `GET /aiapi/{teamId}/v1/models` | 团队可用模型列表（OpenAI list 格式） |
+| `POST /api/aigateway/{teamId}/v1/chat/completions` | OpenAI Chat Completions |
+| `POST /api/aigateway/{teamId}/v1/responses` | OpenAI Responses |
+| `POST /api/aigateway/{teamId}/v1/messages` | Anthropic Messages |
+| `GET /api/aigateway/{teamId}/v1/models` | 团队可用模型列表（OpenAI list 格式） |
 
 - 密钥携带：`Authorization: Bearer moai-xxx` 或 `x-api-key: moai-xxx`。
 - 流式：请求体 `stream=true` 时返回 SSE；入口/上游格式不同也会逐事件转换。
@@ -42,7 +42,7 @@
 
 ## 认证设计注意点
 
-`/aiapi/{teamId}/v1/*` 端点使用 `AllowAnonymous` + 端点内显式 `AuthenticateAsync("GatewayApiKey")`，**不使用** `RequireAuthorization`。原因：`CustomAuthorizaMiddleware` 依赖 JWT 上下文解析用户（ApiKey principal 在其视角下为匿名 UserId=0，会误报"账号已被禁用"403）。密钥创建者的用户状态检查已移入 `GatewayApiKeyAuthenticationHandler`，治理语义不变。团队 id 入路由后，端点内额外校验路由 teamId 与密钥绑定的团队一致。
+`/api/aigateway/{teamId}/v1/*` 端点使用 `AllowAnonymous` + 端点内显式 `AuthenticateAsync("GatewayApiKey")`，**不使用** `RequireAuthorization`。原因：`CustomAuthorizaMiddleware` 依赖 JWT 上下文解析用户（ApiKey principal 在其视角下为匿名 UserId=0，会误报"账号已被禁用"403）。密钥创建者的用户状态检查已移入 `GatewayApiKeyAuthenticationHandler`，治理语义不变。团队 id 入路由后，端点内额外校验路由 teamId 与密钥绑定的团队一致。
 
 ## 已知边界
 

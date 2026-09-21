@@ -3,7 +3,7 @@
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md)、[../settings/sdd.md](../settings/sdd.md) ｜ 设计：[2026-09-10-knowledge-graph-design.md](../superpowers/specs/2026-09-10-knowledge-graph-design.md)、[2026-09-14-knowledge-graph-memgraph-canvas-design.md](../superpowers/specs/2026-09-14-knowledge-graph-memgraph-canvas-design.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)
 
 - 日期：2026-09-14（v2）
-- 状态：后端 v2 已实现（Memgraph 方言化 + 画布/邻接接口 + 权限收紧 + 名称全局唯一）；前端入口/画布已接线；E2E 待图数据库实例
+- 状态：后端 v2 已实现（Memgraph 方言化 + 画布/邻接接口 + 权限收紧 + 名称全局唯一）；前端入口/画布已接线；E2E 待图数据库实例。v2.5（2026-09-21）：内置模板「运维服务」改为「物流运输」（实体类型支持预置属性定义）；图谱详情（托管/接入）默认进入图览。v2.6（2026-09-21）：新建图谱弹窗支持同步上传头像——前端「创建成功 → 存储直传 → 复用 `POST {id}/avatar` 登记」串联既有链路，零后端改动；登记失败不阻断创建，可在设置页补传。v2.7（2026-09-21）：物流运输模板一次性预置示例实例与关系（11 节点/15 边写入图库，失败清理残留并整体回滚），建图即得完整图览。v2.8（2026-09-21）：图览交互升级——节点可拖动、点击节点/边弹详情抽屉（节点属性含距离/运价）、边显示关系类型名、建关系改两段式点击。v2.9（2026-09-21）：**AI 导入文件生成图谱**——图览工具栏「AI 导入」（文档直传 chat 公共目录）→ 后端 Maomi.ToMarkdown 提取 → 对话模型按图谱现有模型抽取实体/关系（`KnowledgeGraphImportParser` 容错解析）→ 类型/约束校验后入图；详见 §5 `/{id}/import-file`。
 - 领域：`src/knowledgegraph/{Shared,Core,Api}`；单测 `tests/MoAI.KnowledgeGraph.Tests/`
 - v1 设计：[前版 SDD 记录](../superpowers/specs/2026-09-10-knowledge-graph-design.md)（托管 + 接入双模式，D1~D13 仍有效）
 
@@ -43,7 +43,7 @@
 (:KgNode { ... })
 ```
 
-类型名 / 颜色回 PG 查询，改 schema 零迁移；`kgId` 隔离多图；删节点 `DETACH DELETE` 连带边；删托管图按 `kgId` 清空。模板目录（blank/ops/org/event）代码内置只读，建图时一次性复制（D1~D13 见 v1 设计稿）。
+类型名 / 颜色回 PG 查询，改 schema 零迁移；`kgId` 隔离多图；删节点 `DETACH DELETE` 连带边；删托管图按 `kgId` 清空。模板目录（blank/logistics/org/event）代码内置只读，建图时一次性复制：**实体类型可携带预置属性定义**（物流运输模板：航段预置 运输方式/距离公里/运输价格/时效天），**且可携带示例实例与关系**（物流运输预置 4 港口/5 航段/2 承运商与 15 条 出发/抵达/承运 边，建图时经 `IKnowledgeGraphStore` 写入图库——按「港口-航段-港口」串联即可计算 A 到 C 的最短距离与运价；图库写入失败时 `PurgeGraphAsync` 清理残留并抛出，由建图事务整体回滚，D1~D13 见 v1 设计稿）。
 
 ## 4. 权限（v2 收紧：Member 全只读，Handler 判定）
 
@@ -67,6 +67,8 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 | GET | `/{id}/nodes/{nodeId}/neighbors?limit=` | 一跳邻接（默认 100，上限 500）→ 同上结构；托管图按节点 id，接入图按 elementId（v2.1 起接入图开放） |
 | GET | `/{id}/schema?refresh=` | 接入图 schema 走 Redis 内省缓存（TTL 5 分钟），`refresh=true` 强制重新内省并返回相对基线的 `changes`（v2.1） |
 | POST | `/{id}/avatar` | 设置图谱头像 `{objectKey}`（v2.2）：仅 Owner/Admin；objectKey 须为已登记且完成上传的文件（伪造 404）；列表/详情回显 `avatarPath`（前端经 `/static/{key}` 解析） |
+| GET | `/model-options?teamId=` | 团队可用 AI 对话模型选项（公开+已授权，v2.9）：供 AI 导入文件选择模型，仅团队成员 |
+| POST | `/{id}/import-file` | **AI 导入文件生成图谱**（v2.9）：`{objectKey, fileName, aiModelId}` → Maomi.ToMarkdown 提取（截断 1.2 万字符）→ 对话模型按图谱现有模型抽取实体/关系（JSON）→ 类型存在性与起止约束校验后写入图库；返回导入统计；仅托管图 Owner/Admin；objectKey 须为公开 chat 目录已直传文件 |
 
 均为只读、Member 可用。请求模型实现 `IModelValidator<T>`。
 
@@ -90,7 +92,8 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 
 - 路由：`/knowledge-graph`（跨团队卡片墙，对齐 wiki 模式）+ `/team/:teamId/kg/:graphId/:section?`（详情）；团队详情独立「知识图谱」分区（`TeamKnowledgeGraphs`，建图 / 接入 / 编辑 / 删除），Member 可见但只读。
 - 侧边栏 mainNav 新增「知识图谱」（`ClusterOutlined`）；`/team/*/kg/**` 高亮该入口。
-- 详情 section：托管图默认「图览」（`@antv/g6` v5 力导向，类型色板过滤、关键字搜索、点节点一跳展开、截断提示、空态引导）→ 实体 → 关系 → 模型 → 设置；接入图仅模型 / 设置 + 只读徽标。
+- 详情 section：托管图与接入图进入详情均默认「图览」（v2.5 起，列表卡片跳转与缺省分区一致；`@antv/g6` v5 力导向，类型色板过滤、关键字搜索、点节点一跳展开、截断提示、空态引导）→ 实体 → 关系 → 模型 → 设置；接入图仅图览 / 模型 / 设置 + 只读徽标。
+- 图览交互（v2.8）：节点可拖动调整位置（编辑/只读态一致）；**建关系改两段式点击**（编辑态点起点节点再点终点节点，弹关系选择窗，替代 v2 的拖拽连线——与节点拖动手势冲突）；边中段显示关系类型名标签；点击节点弹详情抽屉（无遮罩，类型/描述/属性按模型定义排序，`mask=false` 不阻挡后续画布点击），点击边弹关系详情（关系名/起止）。注意 G6 v5 点击命中判定用 `event.targetType`（`target.type` 恒 undefined，v2~v2.7 点击展开实际失效）；Kiota 将节点 `properties` 字典收进 `additionalData`，消费方统一经 `flattenNodeProperties` 归一化。
 - Member 只读：实体 / 关系页按 `myRole` 不渲染新增 / 编辑 / 删除入口。
 
 ## 8. 关键决策（v2，D14~D21）

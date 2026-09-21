@@ -7,6 +7,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\feishu\MoAI.Feishu.Shared\MoAI.Feishu.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
@@ -18,6 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AngleSharp" />
 		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
 		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 		<PackageReference Include="Maomi.ToMarkdown" />

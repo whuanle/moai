@@ -92,7 +92,7 @@ public partial class AppEntity : IFullAudited
     /// <summary>
     /// 发布时间，未发布为 null.
     /// </summary>
-    public DateTime? PublishTime { get; set; }
+    public DateTimeOffset? PublishTime { get; set; }
 
     /// <summary>
     /// 是否外部应用.

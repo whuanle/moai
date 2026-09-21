@@ -69,7 +69,6 @@ public class UpdateWikiCommandHandler : IRequestHandler<UpdateWikiCommand, Empty
 
         wiki.Name = request.Name;
         wiki.Description = request.Description ?? string.Empty;
-        wiki.IsPublic = request.IsPublic;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

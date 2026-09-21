@@ -10,6 +10,23 @@ namespace MoAI.App.Validation;
 public static class SandboxSettingsLimitValidator
 {
     /// <summary>
+    /// 判断本次保存是否启用沙箱（sandbox.enabled=true）；未携带执行参数或未启用返回 false.
+    /// </summary>
+    /// <param name="executionSettings">执行参数 JSON.</param>
+    /// <returns>本次保存是否启用沙箱.</returns>
+    public static bool IsSandboxEnabled(JsonElement? executionSettings)
+    {
+        if (executionSettings is null || executionSettings.Value.ValueKind != JsonValueKind.Object
+            || !executionSettings.Value.TryGetProperty("sandbox", out var sandbox)
+            || sandbox.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        return sandbox.TryGetProperty("enabled", out var enabled) && enabled.ValueKind == JsonValueKind.True;
+    }
+
+    /// <summary>
     /// 校验执行参数中的沙箱配置；未携带沙箱或沙箱未启用时直接放行（保留存量配置，避免收紧上限后连其他字段的保存也被阻断）.
     /// </summary>
     /// <param name="executionSettings">执行参数 JSON 对象.</param>

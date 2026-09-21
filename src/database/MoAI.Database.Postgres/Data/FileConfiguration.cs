@@ -33,7 +33,7 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasColumnName("id");
         entity.Property(e => e.ContentType)
             .HasMaxLength(255)
-            .HasComment("文件类型（MIME，如 application/vnd.openxmlformats-officedocument.wordprocessingml.document 可达 70+ 字符）")
+            .HasComment("文件类型")
             .HasColumnName("content_type");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")

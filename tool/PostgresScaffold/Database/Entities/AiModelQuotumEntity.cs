@@ -57,7 +57,7 @@ public partial class AiModelQuotumEntity : IFullAudited
     /// <summary>
     /// 最近一次重置时间，null=创建后从未重置.
     /// </summary>
-    public DateTime? LastResetTime { get; set; }
+    public DateTimeOffset LastResetTime { get; set; }
 
     /// <summary>
     /// 创建人.

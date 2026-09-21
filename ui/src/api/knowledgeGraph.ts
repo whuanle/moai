@@ -104,6 +104,16 @@ export interface KnowledgeGraphNodeItem {
   properties?: Record<string, string> | null
 }
 
+/**
+ * Kiota 把后端 Dictionary<string,string> 映射为接口对象时，真实键值会落在 additionalData 里。
+ * 此处归一化为纯键值字典，节点属性的所有消费方（图览详情/实例列表/邻接）统一走这里。
+ */
+function flattenNodeProperties(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object') return {}
+  const inner = (raw as { additionalData?: Record<string, string> }).additionalData
+  return inner ?? (raw as Record<string, string>)
+}
+
 export interface KnowledgeGraphEdgeItem {
   edgeId?: string | null
   relationTypeId?: string | number | null
@@ -265,7 +275,7 @@ export async function getKnowledgeGraphNodes(
     pageNo: params.pageNo ?? 1,
     pageSize: params.pageSize ?? 20,
   })
-  return { items: (res?.items ?? []).map((x) => ({ ...x, properties: x.properties ?? {} }) as KnowledgeGraphNodeItem), total: Number(res?.total ?? 0) }
+  return { items: (res?.items ?? []).map((x) => ({ ...x, properties: flattenNodeProperties(x.properties) }) as KnowledgeGraphNodeItem), total: Number(res?.total ?? 0) }
 }
 
 export async function createKnowledgeGraphNode(
@@ -355,12 +365,58 @@ export async function getKnowledgeGraphCanvas(
     keyword: params.keyword,
     limit: params.limit ?? 200,
   })
-  return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: x.properties ?? {} }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+  return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: flattenNodeProperties(x.properties) }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
 }
 
 /** 节点一跳邻接展开（托管图按节点 id，接入图按 elementId） */
 export async function getKnowledgeGraphNodeNeighbors(kgId: number, nodeId: string, limit = 100): Promise<KnowledgeGraphSubgraph> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).nodes.byNodeId(nodeId).neighbors.get({ queryParameters: { limit } })
-  return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: x.properties ?? {} }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+  return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: flattenNodeProperties(x.properties) }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+}
+
+// ==================== AI 导入文件生成图谱 ====================
+
+export interface KnowledgeGraphModelOption {
+  id?: string | null
+  name?: string | null
+}
+
+/** 查询团队可用的 AI 对话模型选项（用于 AI 导入文件） */
+export async function getKnowledgeGraphModelOptions(teamId: number): Promise<KnowledgeGraphModelOption[]> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.modelOptions.get({ queryParameters: { teamId: String(teamId) } })
+  return res?.conversationModels ?? []
+}
+
+export interface KnowledgeGraphImportResult {
+  nodesCreated?: number | null
+  edgesCreated?: number | null
+  skippedNodes?: number | null
+  skippedEdges?: number | null
+  contentLength?: number | null
+  truncated?: boolean | null
+  message?: string | null
+}
+
+/** AI 导入文件生成图谱：objectKey 须为已直传到公开 chat 目录的文档文件 */
+export async function importKnowledgeGraphFile(
+  kgId: number,
+  payload: { objectKey: string; fileName: string; aiModelId: string },
+): Promise<KnowledgeGraphImportResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).importFile.post({
+    objectKey: payload.objectKey,
+    fileName: payload.fileName,
+    aiModelId: payload.aiModelId,
+  })
+  return {
+    nodesCreated: res?.nodesCreated ?? 0,
+    edgesCreated: res?.edgesCreated ?? 0,
+    skippedNodes: res?.skippedNodes ?? 0,
+    skippedEdges: res?.skippedEdges ?? 0,
+    contentLength: res?.contentLength ?? 0,
+    truncated: res?.truncated ?? false,
+    message: res?.message ?? null,
+  }
 }

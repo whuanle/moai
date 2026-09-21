@@ -222,6 +222,17 @@ async function main() {
   const widget = await fetch(`${BASE}/embed/moai-widget.js`)
   check('EA-28 组件脚本 /embed/moai-widget.js 200', widget.status === 200 && (widget.headers.get('content-type') ?? '').includes('javascript'), `${widget.status}`)
 
+  // ===== 外部应用沙箱/技能限制 =====
+  // EA-29 外部应用不允许技能与沙箱：保存显式携带即 400，正常保存后技能落空、沙箱关闭
+  const cfgBase = { modelId: null, prompt: '', wikiIds: [], plugins: [], workflowApps: [], openingStatement: '', openingStatementEnabled: false, quickInputs: [] }
+  check('EA-29a 外部应用携带技能保存 400', (await api('PUT', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [crypto.randomUUID()] } })).status === 400)
+  check('EA-29b 外部应用开启沙箱保存 400', (await api('PUT', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: true } } } })).status === 400)
+  const okCfg = await api('PUT', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: false } } } })
+  check('EA-29c 外部应用正常保存（无技能、沙箱关闭）200', okCfg.status === 200, `${okCfg.status} ${okCfg.text.slice(0, 140)}`)
+  const cfgRead = (await api('GET', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token })).json
+  check('EA-29d 配置回读技能为空且沙箱未启用', Array.isArray(cfgRead?.skills) && cfgRead.skills.length === 0 && cfgRead?.executionSettings?.sandbox?.enabled !== true, JSON.stringify(cfgRead)?.slice(0, 200))
+  check('EA-29e 内部应用开启沙箱不受限 200', (await api('PUT', `/api/app/${internalAppId}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: true } } } })).status === 200)
+
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)
 }

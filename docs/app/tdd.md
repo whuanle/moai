@@ -4,6 +4,11 @@
 
 ## 自检记录
 
+- 外部应用能力限制轮（沙箱与技能强制关闭，@EA-S13/S14，D46）：保存侧 `SaveAppAgentConfigCommandHandler` 对外部应用显式携带技能/启用沙箱即 400、存量技能随保存收敛为 `[]`；装配侧 `AppAgentFactory` 对外部应用克隆生效配置强制清技能/关沙箱（脱管行不污染变更跟踪，覆盖发布快照与全部对话入口）。
+  - E2E：`node local-dev/external-app-e2e.mjs` → **59/59 PASS**（新增 EA-29a~e：外部应用携带技能 400、开启沙箱 400、正常保存回读技能空且沙箱未启用、内部应用开沙箱不受限；5203 独立实例 `-o .e2e-run` 绕 5000 在跑实例 bin 锁）（2026-09-21）。
+  - 回归：`node local-dev/app-e2e.mjs` → **172/172 PASS**、`node local-dev/sandbox-limits-e2e.mjs` → **21/21 PASS**（2026-09-21）。
+  - 前端：外部应用隐藏默认技能/沙箱参数/审批沙箱开关并加提示，保存固定 `skills: []`、`sandbox.enabled=false`；`AppConfigSection.test.tsx` **15/15**（+外部应用 1 例）、apps 目录 vitest **133/133**、typecheck 0 error、改动文件 eslint 0 error（2026-09-21）。
+
 - 审批策略轮（插件白名单 + 沙箱自动放行，@AP-S65~S68）：策略落在 `execution_settings.toolApproval` 节（免加列、随发布快照双轨），闸口按 `AppTool.SourceId` 白名单与沙箱开关放行；userconfig 按发布快照下发自动放行工具名/前缀。
   - 后端：`MoAI.App.Core`/`MoAI.AI.Core` 单项目编译 **0 error**（宿主 Debug 输出被并行实例锁定，改用 `-o local-dev/backend-dist` 独立输出并在 5000 起实例验证）；`dotnet test tests/MoAI.AI.Core.Tests` → **48/48**（新增 `AppToolApprovalPolicyTests` 7 例 + `AppToolContextProviderTests` 闸口放行 4 例）。
   - E2E：`node local-dev/app-e2e.mjs` → **172/172 PASS**（新增 AP-60a~j：保存校验 400×2、userconfig 下发、白名单直执行决策 missing、非白名单挂起拒绝收敛、自动模式全放行、发布快照双轨）。
@@ -58,6 +63,8 @@
   - 修复 5：`AccessPointPosition` 枚举字符串被全局 `JsonStringEnumConverter(CamelCase)` 处理，`bottom-right` 形式无法反序列化——统一为 `bottomRight/bottomLeft`（与 `AppType` 同机制），列默认值同步。
   - 修复 6：`ExternalAuthenticationMiddleware` 的 Bearer 强制规则误拦访问点公开配置（匿名）——白名单补充 `/api/external/app/*/access-point`。
 - 前端（访问点轮）：`npm run typecheck`/`npm run lint` → **0 error**；`npm run test` 全量 **263/263（50 文件，含新增 `AppAccessSection.test.tsx` 5/5）**；`npm run build:embed` 产物 `src/MoAI/wwwroot/embed/moai-widget.js`（IIFE ~240KB）
+- 悬浮组件修复轮（2026-09-21）：`npm run typecheck`/`npm run lint` → **0 error**；`npm run test` 全量 **430/430（62 文件）**；`npm run build:embed` 重建产物（`emptyOutDir` 改 false——该目录还有 logo/models.json/monaco，防误删）；`embed.vite.config` 产物源不变，开发期由 Vite 中间件在 4000 端口托管 `/embed/moai-widget.js` 并代理 `/api`。浏览器走查见 sop「常见问题」与 sdd 已知问题（2026-09-21）。回归 `external-app-e2e.mjs` **58/59**：EA-29b 失败系 5000 运行中后端为旧构建、未含外部禁沙箱规则（该规则与 EA-29 用例同属 @EA-S13 轮 WIP，新构建下已录 59/59），非本轮改动。
+- 悬浮组件 null 源兼容轮（2026-09-21）：`file://`/`about:blank`（`Origin: null`、非安全上下文）宿主页修复验证——Vite `server.cors:false` 后预检穿透到后端（curl 断言经 4000 的 OPTIONS 带 `access-control-allow-origin: *`）；后端 PNA 预检支持（宿主 `dotnet build -o` 独立输出 **0 error**）；widget `randomUUID` 全量降级（重建产物）。`about:blank` 页面注入组件浏览器走查：按钮渲染→开面板→匿名 token 200→建会话 200→AG-UI 流式回复到达，全链路通过；typecheck/lint 0 error。
 
 ## 映射表
 
@@ -81,6 +88,7 @@
 | @AP-S21 | app-e2e.mjs（AP-13m-r、AP-13o2/o3 走上架审核）+ AppPlaza.test.tsx | PASS 101/101（2026-09-15） |
 | @AP-S22 | TeamExternalApps.test.tsx + AppPlaza.test.tsx + TeamManage.test.tsx（分区与导航） | PASS（2026-09-13） |
 | @AP-S23 | app-e2e.mjs（AP-13s~y）+ TeamAccessApps.test.tsx | PASS（2026-09-13） |
+| @AP-S24 | TeamAccessApps.test.tsx（区块顶部 key 用途提示） | PASS 3/3（2026-09-21） |
 | @AP-S15 | TeamApps.test.tsx（卡片 + 卡片右上角「管理」点击进入管理页；Member 只读） | PASS 6/6（2026-09-11） |
 | @AP-S16 | AppConfigSection.test.tsx（工作台配置分区「Agent 配置」；2026-09-19 起应用信息拆至「信息」分区 @AP-S49。原单页分栏已被工作台取代，见 @AP-S40） | PASS 9/9（2026-09-19） |
 | @AP-S17 | app-e2e.mjs（AP-15a-c、AP-16b/c、AP-19a） | PASS（2026-09-11） |
@@ -133,6 +141,8 @@
 | @EA-S10 | external-app-e2e.mjs（EA-22a-d、EA-23、EA-24a-d、EA-25） | PASS（2026-09-14） |
 | @EA-S11 | external-app-e2e.mjs（EA-26a-d） | PASS 51/51（2026-09-14） |
 | @EA-S12 | external-app-e2e.mjs（EA-27a-e、EA-28） | PASS（2026-09-14） |
+| @EA-S13 | external-app-e2e.mjs（EA-29a~e）+ AppConfigSection.test.tsx（外部应用不渲染技能/沙箱区、保存固定空值） | PASS 59/59、15/15（2026-09-21） |
+| @EA-S14 | 代码走查（`AppAgentFactory.CloneWithExternalRestrictions`：技能清空、沙箱关闭、脱管克隆不修改草稿/快照） | PASS（2026-09-21） |
 | 访问点配置分区 | ui/src/pages/teams/apps/__tests__/AppAccessSection.test.tsx | PASS 5/5（2026-09-14） |
 
 ## 复验命令
@@ -144,7 +154,7 @@ cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
 node local-dev/app-e2e.mjs                 # 期望 172/172 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白 / AP-54 发布配置快照双轨 / AP-57 快捷输入 / AP-58 流程应用绑定 / AP-59 对话调用流程工具 / AP-60 审批策略，AP-59/AP-60 需 admin 账号否则 SKIP）
 node local-dev/chat-attachment-e2e.mjs     # 期望 12/12 PASS（@AP-S55 对话附件：直传/提取/白名单/越权防护）
-node local-dev/external-app-e2e.mjs        # 期望 42/42 PASS（@EA-S1~S10 外部 token + 外部会话/对话，需先执行 asserts/external_app.sql）
+node local-dev/external-app-e2e.mjs        # 期望 59/59 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制，需先执行 asserts/external_app.sql）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test
 ```

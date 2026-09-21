@@ -14,6 +14,7 @@ using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
+using MoAI.AI.Models;
 using MoAI.Storage.Services;
 
 namespace MoAI.AI.Services;
@@ -24,6 +25,7 @@ namespace MoAI.AI.Services;
 [InjectOnScoped]
 public sealed class AppAgentFactory
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly DatabaseContext _databaseContext;
     private readonly IAiModelResolver _modelResolver;
     private readonly IChatClientProvider _chatClientProvider;
@@ -126,6 +128,13 @@ public sealed class AppAgentFactory
         // 正式会话按发布快照执行，管理员保存的草稿不影响线上；调试会话与未发布应用按实时草稿
         // （存量已发布应用无快照时回退实时配置，重新发布后进入草稿/发布双轨）
         var effectiveConfig = AppAgentConfigSnapshot.ResolveEffectiveConfig(app, config, preferPublished: !isDebug);
+
+        // 外部应用面向外部用户/匿名开放，不允许沙箱与技能：保存入口已拒绝新配置，
+        // 此处对生效配置（含发布快照与存量草稿）兜底强制关闭，克隆脱管行避免污染变更跟踪
+        if (app.IsExternal)
+        {
+            effectiveConfig = CloneWithExternalRestrictions(effectiveConfig);
+        }
 
         if (effectiveConfig.ModelId == Guid.Empty)
         {
@@ -230,6 +239,35 @@ public sealed class AppAgentFactory
         {
             return [];
         }
+    }
+
+    /// <summary>
+    /// 外部应用限制克隆：技能清空、沙箱关闭，其余字段原样拷贝；返回脱管行，仅用于读取.
+    /// </summary>
+    /// <param name="config">生效配置行（可能是变更跟踪中的草稿行，不可就地修改）.</param>
+    /// <returns>应用了外部应用限制的新配置行.</returns>
+    private static AppAgentConfigEntity CloneWithExternalRestrictions(AppAgentConfigEntity config)
+    {
+        var settings = AppAgentExecutionSettings.Parse(config.ExecutionSettings);
+        settings.Sandbox = null;
+        return new AppAgentConfigEntity
+        {
+            Id = config.Id,
+            TeamId = config.TeamId,
+            AppId = config.AppId,
+            Prompt = config.Prompt ?? string.Empty,
+            ModelId = config.ModelId,
+            WikiIds = config.WikiIds,
+            Plugins = config.Plugins,
+            WorkflowApps = config.WorkflowApps,
+            Skills = "[]",
+            ExecutionSettings = JsonSerializer.Serialize(settings, JsonOptions),
+            OpeningStatement = config.OpeningStatement ?? string.Empty,
+            OpeningStatementEnabled = config.OpeningStatementEnabled,
+            QuickInputs = config.QuickInputs,
+            PublishedConfig = config.PublishedConfig,
+            Status = config.Status,
+        };
     }
 
     private static IReadOnlyList<Guid> ParsePluginIds(string? json)

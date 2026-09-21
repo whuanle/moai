@@ -41,13 +41,40 @@ const TEXT_FALLBACK = {
   initFailed: '初始化失败，请稍后重试 / Initialization failed',
 }
 
+const LOG_TAG = '[moai-widget]'
+
+/** 受限嵌入环境（沙箱 iframe 等）访问 localStorage 会抛 SecurityError，降级为内存态（仅当次页面存活） */
+const memoryStore = new Map<string, string>()
+function storageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return memoryStore.get(key) ?? null
+  }
+}
+function storageSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    memoryStore.set(key, value)
+  }
+}
+
+/** crypto.randomUUID 仅在安全上下文可用（宿主页可能是非 localhost 的 http 页面），降级为随机串 */
+function randomId(): string {
+  const raw = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
+  return raw.replace(/-/g, '')
+}
+
 /** 随机临时外部身份，localStorage 持久化以继承会话 */
 function resolveExternalUserId(appId: string, provided?: string): string {
   const key = `moai-widget-uid-${appId}`
-  const existing = provided || localStorage.getItem(key)
+  const existing = provided || storageGet(key)
   if (existing) return existing
-  const generated = `ext-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`
-  localStorage.setItem(key, generated)
+  const generated = `ext-${randomId().slice(0, 16)}`
+  storageSet(key, generated)
   return generated
 }
 
@@ -63,15 +90,25 @@ export class MoaiWidget {
 
   constructor(private readonly opts: WidgetOptions) {}
 
-  /** 拉取公开配置；enabled=false 时不渲染任何内容 */
+  /** 拉取公开配置；enabled=false 时不渲染任何内容（console.warn 说明原因，便于宿主页排查） */
   async init(): Promise<void> {
-    const res = await fetch(`${this.opts.server}/api/external/app/${this.opts.appId}/access-point`)
-    if (!res.ok) return
-    this.config = (await res.json()) as AccessPointConfig
-    if (this.config.enabled === false) return
-    this.render()
-    if (this.config.defaultOpen) {
-      void this.open()
+    try {
+      const res = await fetch(`${this.opts.server}/api/external/app/${this.opts.appId}/access-point`)
+      if (!res.ok) {
+        console.warn(`${LOG_TAG} 拉取访问点配置失败 status=${res.status}，组件未渲染 / access-point fetch failed, widget not rendered`)
+        return
+      }
+      this.config = (await res.json()) as AccessPointConfig
+      if (this.config.enabled === false) {
+        console.warn(`${LOG_TAG} 访问点未启用（未发布/已禁用/开关关闭），组件未渲染 / access point disabled, widget not rendered`)
+        return
+      }
+      this.render()
+      if (this.config.defaultOpen) {
+        void this.open()
+      }
+    } catch (error) {
+      console.error(`${LOG_TAG} 初始化失败，组件未渲染 / initialization failed, widget not rendered`, error)
     }
   }
 
@@ -209,6 +246,7 @@ export class MoaiWidget {
         ),
       })
       if (!tokenRes.ok) {
+        console.warn(`${LOG_TAG} 换取外部 token 失败 status=${tokenRes.status} / token exchange failed`)
         this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
         return false
       }
@@ -220,13 +258,15 @@ export class MoaiWidget {
         body: JSON.stringify({}),
       })
       if (!sessionRes.ok) {
+        console.warn(`${LOG_TAG} 创建会话失败 status=${sessionRes.status} / create session failed`)
         this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
         return false
       }
       const session = (await sessionRes.json()) as { value: string }
       this.sessionId = session.value
       return true
-    } catch {
+    } catch (error) {
+      console.error(`${LOG_TAG} 初始化网络请求失败（服务不可达或被浏览器拦截，详见宿主页控制台的网络面板） / network request failed`, error)
       this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
       return false
     }
@@ -260,7 +300,7 @@ export class MoaiWidget {
         headers: { ...this.authHeaders() },
       })
       const buffers = new Map<string, string>()
-      agent.setMessages([{ id: crypto.randomUUID(), role: 'user', content: text }])
+      agent.setMessages([{ id: randomId(), role: 'user', content: text }])
       await agent.runAgent(
         {},
         {

@@ -131,7 +131,7 @@ public class GatewayModelResolver
                     LimitValue = limit.LimitValue,
                     UsedTokens = used,
                     PeriodEnd = periodEnd,
-                    ExpirationTime = limit.ExpirationTime.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(limit.ExpirationTime.Value, DateTimeKind.Utc)) : null,
+                    ExpirationTime = limit.ExpirationTime,
                 };
             }
 

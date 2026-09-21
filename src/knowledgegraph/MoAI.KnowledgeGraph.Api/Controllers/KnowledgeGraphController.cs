@@ -46,6 +46,16 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new QueryKnowledgeGraphsCommand { TeamId = teamId }, ct);
 
     /// <summary>
+    /// 查询团队可用的 AI 对话模型选项（用于 AI 导入文件）.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>对话模型列表.</returns>
+    [HttpGet("model-options")]
+    public Task<QueryKnowledgeGraphModelOptionsCommandResponse> ModelOptions([FromQuery] long teamId, CancellationToken ct)
+        => _mediator.Send(new QueryKnowledgeGraphModelOptionsCommand { TeamId = teamId }, ct);
+
+    /// <summary>
     /// 查询模板目录.
     /// </summary>
     /// <param name="ct">取消令牌.</param>
@@ -85,6 +95,17 @@ public class KnowledgeGraphController : ControllerBase
     [HttpPost("{id}/avatar")]
     public Task<EmptyCommandResponse> UpdateAvatar(long id, [FromBody] UpdateKnowledgeGraphAvatarCommand req, CancellationToken ct)
         => _mediator.Send(new UpdateKnowledgeGraphAvatarCommand { KnowledgeGraphId = id, ObjectKey = req.ObjectKey }, ct);
+
+    /// <summary>
+    /// AI 导入文件生成图谱：提取文件内容后由对话模型按图谱现有模型抽取实体与关系写入图库（仅托管图 Admin+）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">导入请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>导入统计.</returns>
+    [HttpPost("{id}/import-file")]
+    public Task<ImportKnowledgeGraphFromFileResponse> ImportFile(long id, [FromBody] ImportKnowledgeGraphFromFileCommand req, CancellationToken ct)
+        => _mediator.Send(new ImportKnowledgeGraphFromFileCommand { KnowledgeGraphId = id, ObjectKey = req.ObjectKey, FileName = req.FileName, AiModelId = req.AiModelId }, ct);
 
     /// <summary>
     /// 删除图谱.

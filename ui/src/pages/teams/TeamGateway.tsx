@@ -6,6 +6,7 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+import { Env } from '@/config/env'
 import { formatDateTime } from '@/utils/datetime'
 import {
   createTeamApiKey,
@@ -50,7 +51,8 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
   const [baseUrl, setBaseUrl] = useState('')
 
   useEffect(() => {
-    setBaseUrl(`${window.location.origin}/aiapi/${teamId}/v1`)
+    // 展示后端接入地址：dev 取 VITE_ServerUrl（后端 5000），生产同源部署回退 origin
+    setBaseUrl(`${Env.serverUrl}/api/aigateway/${teamId}/v1`)
   }, [teamId])
 
   const reloadKeys = useCallback(async () => {

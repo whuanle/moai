@@ -83,7 +83,7 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
         config.Status = 1;
 
         app.PublishStatus = 1;
-        app.PublishTime = DateTime.UtcNow;
+        app.PublishTime = DateTimeOffset.Now;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

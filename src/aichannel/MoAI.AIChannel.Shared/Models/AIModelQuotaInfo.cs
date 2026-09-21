@@ -35,5 +35,5 @@ public class AIModelQuotaInfo
     /// <summary>
     /// 规则本身的有效期，null=长期有效.
     /// </summary>
-    public DateTime? ExpirationTime { get; set; }
+    public DateTimeOffset? ExpirationTime { get; set; }
 }

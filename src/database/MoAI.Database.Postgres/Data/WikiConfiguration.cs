@@ -64,9 +64,6 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.IsLock)
             .HasComment("是否已被锁定配置")
             .HasColumnName("is_lock");
-        entity.Property(e => e.IsPublic)
-            .HasComment("是否公开，公开后所有人都可以使用，但是不能进去操作")
-            .HasColumnName("is_public");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("知识库名称")

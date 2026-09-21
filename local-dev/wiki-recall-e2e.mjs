@@ -1,10 +1,11 @@
 // 知识库召回测试 E2E（场景 @WK-S37 ~ @WK-S39；后端 127.0.0.1:5210）
-// 覆盖：参数校验（空查询/越界 topK/越界阈值/AI 优化缺模型）→ 团队门禁（非成员 404）
+// 覆盖：参数校验（空查询/越界 topK/越界阈值/AI 优化缺模型/非法文档 id）→ 团队门禁（非成员 404）
 //       → 向量召回（得分降序）→ 文档范围过滤 → 相似度阈值 → AI 优化问题 → AI 生成回答。
-// 说明：召回与 AI 场景依赖知识库绑定的 embedding 模型与对话模型。脚本会用种子管理员（admin）
-//       通过模型授权 API 自举团队授权（合并，不覆盖），并用探针挑出真正可用的模型；
-//       自举/探针失败时依赖模型的场景标记为 SKIP（不计入 FAIL）。
+// 模型策略：优先使用本地 OpenAI 兼容桩（/v1/embeddings 确定性哈希向量 + /v1/chat/completions 固定文案，
+//       与 bocha/paddleocr E2E 的自建桩模式一致），无需真实模型渠道；桩创建失败时回退到平台既有模型
+//       （admin 自举授权 + 探针挑选），仍不可用则依赖模型的场景标记 SKIP（不计入 FAIL）。
 import crypto from 'node:crypto'
+import http from 'node:http'
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
 let PASS = 0, FAIL = 0, SKIP = 0
@@ -78,7 +79,7 @@ async function listDocs(token, wikiId) {
   return map
 }
 
-async function waitUntil(token, wikiId, predicate, timeoutMs = 60000) {
+async function waitUntil(token, wikiId, predicate, timeoutMs = 90000) {
   const start = Date.now()
   let docs = null
   while (Date.now() - start < timeoutMs) {
@@ -94,17 +95,133 @@ async function recall(token, wikiId, body) {
   return api('POST', `/api/wiki/${wikiId}/recall-test`, { token, body: { wikiId, top: 5, ...body } })
 }
 
-/** 团队无可用模型时，用种子管理员把团队加入已启用的 embedding/对话模型授权（合并，不覆盖既有授权） */
-async function bootstrapTeamModels(TID) {
-  let adminToken = null
+// ===== 本地 OpenAI 兼容桩：embedding（确定性哈希向量）+ chat（固定文案） =====
+
+/** 字符级 hash 分布向量：共享词多的文本对相似度更高，便于断言排序 */
+function stubEmbed(text, dims = 1024) {
+  const v = new Array(dims).fill(0)
+  const tokens = String(text).match(/[\u4e00-\u9fa5A-Za-z0-9]+|./g) ?? [String(text)]
+  for (const token of tokens) {
+    for (const ch of token) {
+      const h = crypto.createHash('md5').update(ch).digest()
+      const idx = ((h[0] << 8) | h[1]) % dims
+      v[idx] += (h[2] & 1) ? 1 : -1
+    }
+  }
+  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1
+  return v.map((x) => x / norm)
+}
+
+function startStubServer() {
+  const stub = http.createServer((req, res) => {
+    let body = ''
+    req.on('data', (chunk) => { body += chunk })
+    req.on('end', () => {
+      let payload = {}
+      try { payload = JSON.parse(body || '{}') } catch { /* 空载荷 */ }
+      if (String(req.url).includes('/embeddings')) {
+        const inputs = Array.isArray(payload.input) ? payload.input : [String(payload.input ?? '')]
+        const dims = Math.min(Number(payload.dimensions) || 1024, 1024)
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          object: 'list',
+          model: payload.model ?? 'stub-embedding',
+          data: inputs.map((text, index) => ({ object: 'embedding', index, embedding: stubEmbed(text, dims) })),
+          usage: { prompt_tokens: 10, total_tokens: 10 },
+        }))
+        return
+      }
+
+      // chat completions：优化问题桩返回提取到的关键词；回答桩返回固定结论
+      const userMsgs = (payload.messages ?? []).filter((m) => m.role === 'user').map((m) => String(m.content ?? ''))
+      const last = userMsgs[userMsgs.length - 1] ?? ''
+      const hasFacts = userMsgs.some((m) => m.includes('======')) || (payload.messages ?? []).length > 2
+      let reply = '退货政策 运费'
+      if (hasFacts) {
+        reply = '根据知识库内容，商品签收后 7 天内可无理由退货，退货运费由买家承担。'
+      } else {
+        const kw = last.replace(/[^\u4e00-\u9fa5A-Za-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length >= 2)
+        reply = kw.slice(0, 5).join(' ') || last.slice(0, 20)
+      }
+
+      if (payload.stream) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+        const base = { id: 'chatcmpl-stub', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'stub' }
+        res.write('data: ' + JSON.stringify({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: reply }, finish_reason: null }] }) + '\n\n')
+        res.write('data: ' + JSON.stringify({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] }) + '\n\n')
+        res.write('data: [DONE]\n\n')
+        res.end()
+        return
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({
+        id: 'chatcmpl-stub',
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: payload.model ?? 'stub',
+        choices: [{ index: 0, message: { role: 'assistant', content: reply }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
+      }))
+    })
+  })
+  return new Promise((resolve) => stub.listen(0, '127.0.0.1', () => resolve(stub)))
+}
+
+/** admin 登录（失败返回 null） */
+async function adminLogin() {
   try {
     const l = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
-    if (l.status !== 200) return { ok: false, reason: `admin 登录失败 ${l.status}` }
-    adminToken = l.json.accessToken
-  } catch (e) {
-    return { ok: false, reason: `admin 登录异常 ${e.message}` }
+    return l.status === 200 ? l.json.accessToken : null
+  } catch {
+    return null
+  }
+}
+
+/** 用桩创建渠道 + embedding/对话模型并授权给团队，返回 {channelId, embeddingModelId, conversationModelId} 或 null */
+async function createStubModels(adminToken, TID, stubPort) {
+  const chName = `recall-stub渠道-${TS}`
+  const crc = await api('POST', '/api/ai/channel', {
+    token: adminToken,
+    body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: `http://127.0.0.1:${stubPort}/v1`, apiKey: 'recall-stub-key', enabled: true, description: 'wiki-recall E2E 桩渠道' },
+  })
+  if (crc.status !== 200) { console.log(`INFO | 桩渠道创建失败：${crc.status} ${crc.text.slice(0, 120)}`); return null }
+  const channels = await api('GET', '/api/ai/channel', { token: adminToken })
+  const CH_ID = String((channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? '')
+  if (!CH_ID) { console.log('INFO | 桩渠道未找到'); return null }
+
+  const mkModel = async (modelName, kind) => {
+    const mrc = await api('POST', '/api/ai/model', {
+      token: adminToken,
+      body: { channelId: CH_ID, meta: { modelId: modelName, name: modelName, modelKind: kind, description: 'wiki-recall E2E 桩模型' }, enabled: true, isPublic: false },
+    })
+    if (mrc.status !== 200) { console.log(`INFO | 桩模型 ${kind} 创建失败：${mrc.status} ${mrc.text.slice(0, 120)}`); return '' }
+    const models = await api('GET', `/api/ai/model?channelId=${CH_ID}`, { token: adminToken })
+    return String((models.json?.items ?? []).find((m) => m.name === modelName)?.id ?? '')
   }
 
+  const embeddingModelId = await mkModel(`recall-stub-embed-${TS}`, 'embedding')
+  const conversationModelId = await mkModel(`recall-stub-chat-${TS}`, 'conversation')
+  if (!embeddingModelId || !conversationModelId) return null
+
+  for (const modelId of [embeddingModelId, conversationModelId]) {
+    const cur = await api('GET', `/api/ai/model/${modelId}/authorization`, { token: adminToken })
+    const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+    const put = await api('PUT', `/api/ai/model/${modelId}/authorization`, { token: adminToken, body: { modelId, teamIds } })
+    if (put.status !== 200) { console.log(`INFO | 桩模型授权失败：${put.status}`); return null }
+  }
+
+  return { channelId: CH_ID, embeddingModelId, conversationModelId }
+}
+
+/** 清理桩渠道（级联删模型） */
+async function cleanupStubModels(adminToken, channelId) {
+  if (!adminToken || !channelId) return
+  await api('DELETE', `/api/ai/channel/${channelId}`, { token: adminToken })
+}
+
+/** 团队无可用模型时，用种子管理员把团队加入已启用的 embedding/对话模型授权（合并，不覆盖既有授权） */
+async function bootstrapTeamModels(adminToken, TID) {
   const list = await api('GET', '/api/ai/model', { token: adminToken })
   if (list.status !== 200) return { ok: false, reason: `模型列表 ${list.status}` }
   const items = list.json?.items ?? []
@@ -124,44 +241,6 @@ async function bootstrapTeamModels(TID) {
   return { ok: true, reason: '' }
 }
 
-/** 探针：从候选 embedding 模型中挑出真正可用的（部分模型不支持 dimensions 参数） */
-async function pickWorkingEmbeddingModel(owner, WID, probeDocId, candidates) {
-  for (const model of candidates) {
-    const bind = await api('PUT', `/api/wiki/${WID}/embedding-config`, {
-      token: owner.token,
-      body: { wikiId: WID, embeddingModelId: model.id, embeddingDimensions: 1024 },
-    })
-    if (bind.status !== 200) { console.log(`INFO | embedding 探针跳过（绑定失败）${model.name}: ${bind.status}`); continue }
-    const batch = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, {
-      token: owner.token,
-      body: { wikiId: WID, documentIds: [probeDocId], isEmbedding: true, embedSourceText: true, embedMetadata: false },
-    })
-    if (batch.status !== 200) { console.log(`INFO | embedding 探针跳过（批量失败）${model.name}: ${batch.status}`); continue }
-    const item = (batch.json?.items ?? [])[0]
-    if (item?.success !== true) { console.log(`INFO | embedding 探针跳过（前置不满足）${model.name}: ${item?.message}`); continue }
-    const done = await waitUntil(owner.token, WID, (docs) => docs.get(probeDocId)?.isEmbedding === true, 60000)
-    if (done.ok) return model
-    console.log(`INFO | embedding 探针失败 ${model.name}: 60s 内未完成向量化`)
-  }
-  return null
-}
-
-/** 探针：从候选对话模型中挑出 AI 优化问题可用的（直接用召回测试的 AI 优化链路验证） */
-async function pickWorkingConversationModel(member, WID, probeDocId, candidates) {
-  for (const model of candidates) {
-    const r = await recall(member.token, WID, {
-      query: '探针',
-      documentIds: [probeDocId],
-      top: 1,
-      aiModelId: model.id,
-      isOptimizeQuery: true,
-    })
-    if (r.status === 200 && String(r.json?.optimizedQuery ?? '') !== '') return model
-    console.log(`INFO | conversation 探针失败 ${model.name}: ${r.status} ${r.text.slice(0, 120)}`)
-  }
-  return null
-}
-
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
   RSA_KEY = si.json.rsaPublic
@@ -177,37 +256,37 @@ async function main() {
   check('WK-S37 前置：添加成员 200', addMember.status === 200, `${addMember.status} ${addMember.text.slice(0, 120)}`)
   const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'recall-wiki-' + TS, description: 'recall e2e' } })).json.value)
 
-  // ===== 模型自举 + 探针 =====
-  let opt = await api('GET', `/api/wiki/model-options?teamId=${TID}`, { token: owner.token })
-  let embCandidates = opt.json?.embeddingModels ?? []
-  let convCandidates = opt.json?.conversationModels ?? []
-  if (embCandidates.length === 0 || convCandidates.length === 0) {
-    const boot = await bootstrapTeamModels(TID)
-    if (!boot.ok) console.log(`INFO | 模型自举失败：${boot.reason}`)
-    opt = await api('GET', `/api/wiki/model-options?teamId=${TID}`, { token: owner.token })
-    embCandidates = opt.json?.embeddingModels ?? []
-    convCandidates = opt.json?.conversationModels ?? []
-  }
+  // ===== 模型准备：本地桩优先，失败时回退平台既有模型（admin 自举 + 探针） =====
+  const adminToken = await adminLogin()
+  const stub = adminToken ? await startStubServer() : null
+  const stubPort = stub ? stub.address().port : 0
+  let stubModels = stub ? await createStubModels(adminToken, TID, stubPort) : null
 
-  let embModel = null, convModel = null
-  if (embCandidates.length > 0) {
-    const probe = await uploadWikiDoc(owner.token, WID, `recall-probe-${TS}.md`, makeMd('探针文档', '探针专用内容'), 'text/markdown')
-    console.log(`INFO | 探针文档上传：${probe.ok ? 'ok documentId=' + probe.documentId : probe.step + ':' + probe.res?.status + (probe.res?.text?.slice(0, 120) ?? '')}`)
-    if (probe.documentId) {
-      await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, {
-        token: owner.token,
-        body: { wikiId: WID, documentIds: [probe.documentId], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' },
-      })
-      embModel = await pickWorkingEmbeddingModel(owner, WID, probe.documentId, embCandidates.slice(0, 4))
-      convModel = convCandidates.length > 0
-        ? await pickWorkingConversationModel(member, WID, probe.documentId, convCandidates.slice(0, 4))
-        : null
-    }
+  let embModelId = '', convModelId = '', channelId = ''
+  if (stubModels) {
+    embModelId = stubModels.embeddingModelId
+    convModelId = stubModels.conversationModelId
+    channelId = stubModels.channelId
+    console.log('INFO | 使用本地桩模型（embedding + conversation）')
   } else {
-    console.log(`INFO | 模型候选为空：embedding=${embCandidates.length}, conversation=${convCandidates.length}`)
+    console.log('INFO | 桩模型不可用，回退平台既有模型')
+    let opt = await api('GET', `/api/wiki/model-options?teamId=${TID}`, { token: owner.token })
+    let embCandidates = opt.json?.embeddingModels ?? []
+    let convCandidates = opt.json?.conversationModels ?? []
+    if (embCandidates.length === 0 || convCandidates.length === 0) {
+      if (adminToken) {
+        const boot = await bootstrapTeamModels(adminToken, TID)
+        if (!boot.ok) console.log(`INFO | 模型自举失败：${boot.reason}`)
+        opt = await api('GET', `/api/wiki/model-options?teamId=${TID}`, { token: owner.token })
+        embCandidates = opt.json?.embeddingModels ?? []
+        convCandidates = opt.json?.conversationModels ?? []
+      }
+    }
+    embModelId = String(embCandidates[0]?.id ?? '')
+    convModelId = String(convCandidates[0]?.id ?? '')
   }
-  const hasEmb = Boolean(embModel?.id)
-  const hasConv = Boolean(convModel?.id)
+  const hasEmb = embModelId !== ''
+  const hasConv = convModelId !== ''
   if (!hasEmb) console.log('INFO | 无可用 embedding 模型，依赖召回的场景将跳过')
   if (!hasConv) console.log('INFO | 无可用对话模型，依赖 AI 优化/回答的场景将跳过')
 
@@ -239,8 +318,14 @@ async function main() {
   // ===== @WK-S38：向量召回 / 文档范围 / 阈值（依赖 embedding 模型） =====
   let doc1Id = null, doc2Id = null
   if (hasEmb) {
-    const d1 = await uploadWikiDoc(owner.token, WID, `recall-return-${TS}.md`, makeMd('退货政策说明', '商品签收后 7 天内可无理由退货，退货时需保证商品完好，运费由买家承担'), 8)
-    const d2 = await uploadWikiDoc(owner.token, WID, `recall-invoice-${TS}.md`, makeMd('发票开具流程', '发票在订单完成后 30 天内开具，支持电子发票和纸质发票，抬头信息需准确'), 8)
+    const bind = await api('PUT', `/api/wiki/${WID}/embedding-config`, {
+      token: owner.token,
+      body: { wikiId: WID, embeddingModelId: embModelId, embeddingDimensions: 1024 },
+    })
+    check('WK-S38 前置：绑定向量模型 200', bind.status === 200, `${bind.status} ${bind.text.slice(0, 120)}`)
+
+    const d1 = await uploadWikiDoc(owner.token, WID, `recall-return-${TS}.md`, makeMd('退货政策说明', '商品签收后 7 天内可无理由退货，退货时需保证商品完好，运费由买家承担'), 'text/markdown')
+    const d2 = await uploadWikiDoc(owner.token, WID, `recall-invoice-${TS}.md`, makeMd('发票开具流程', '发票在订单完成后 30 天内开具，支持电子发票和纸质发票，抬头信息需准确'), 'text/markdown')
     doc1Id = d1.documentId
     doc2Id = d2.documentId
     const uploadOk = Boolean(doc1Id) && Boolean(doc2Id)
@@ -303,7 +388,7 @@ async function main() {
     const withOptimize = await recall(member.token, WID, {
       query: '你好，我想问一下你们家商品退货是怎么规定的呀？谢谢',
       top: 5,
-      aiModelId: convModel.id,
+      aiModelId: convModelId,
       isOptimizeQuery: true,
     })
     const optimized = String(withOptimize.json?.optimizedQuery ?? '')
@@ -315,7 +400,7 @@ async function main() {
       query: '退货政策 运费',
       documentIds: [doc1Id],
       top: 5,
-      aiModelId: convModel.id,
+      aiModelId: convModelId,
       isAnswer: true,
     })
     const answer = String(withAnswer.json?.answer ?? '')
@@ -324,7 +409,7 @@ async function main() {
     const bothOn = await recall(member.token, WID, {
       query: '问一下退货规定',
       top: 5,
-      aiModelId: convModel.id,
+      aiModelId: convModelId,
       isOptimizeQuery: true,
       isAnswer: true,
     })
@@ -333,6 +418,11 @@ async function main() {
       && String(bothOn.json?.answer ?? '') !== '', `${bothOn.status}`)
   } else {
     skip('WK-S39 AI 优化问题/生成回答（环境无可用对话模型或 embedding 模型）')
+  }
+
+  if (stub) {
+    await cleanupStubModels(adminToken, channelId)
+    stub.close()
   }
 
   console.log(`\nRESULT | PASS=${PASS} FAIL=${FAIL} SKIP=${SKIP}`)

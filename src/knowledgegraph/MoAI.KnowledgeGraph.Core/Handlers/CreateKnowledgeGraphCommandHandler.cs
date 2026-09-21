@@ -145,15 +145,16 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
         {
             var sort = 0;
             var entityTypes = new List<KnowledgeGraphEntityTypeEntity>();
-            foreach (var typeName in template.EntityTypes)
+            foreach (var typeDef in template.EntityTypes)
             {
                 var entityType = new KnowledgeGraphEntityTypeEntity
                 {
                     KnowledgeGraphId = graph.Id,
-                    Name = typeName,
-                    Description = string.Empty,
+                    Name = typeDef.Name,
+                    Description = typeDef.Description,
                     Color = string.Empty,
                     Sort = sort++,
+                    Properties = KnowledgeGraphPropertyJson.WriteDefinitions(typeDef.Properties),
                 };
                 _databaseContext.KnowledgeGraphEntityTypes.Add(entityType);
                 entityTypes.Add(entityType);
@@ -169,9 +170,10 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             }
 
             sort = 0;
+            var relationTypes = new List<KnowledgeGraphRelationTypeEntity>();
             foreach (var relation in template.RelationTypes)
             {
-                _databaseContext.KnowledgeGraphRelationTypes.Add(new KnowledgeGraphRelationTypeEntity
+                var relationType = new KnowledgeGraphRelationTypeEntity
                 {
                     KnowledgeGraphId = graph.Id,
                     Name = relation.Name,
@@ -180,14 +182,75 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                     Sort = sort++,
                     SourceTypeId = relation.SourceType != null && typeNameToId.TryGetValue(relation.SourceType, out var sid) ? sid : null,
                     TargetTypeId = relation.TargetType != null && typeNameToId.TryGetValue(relation.TargetType, out var tid) ? tid : null,
-                });
+                };
+                _databaseContext.KnowledgeGraphRelationTypes.Add(relationType);
+                relationTypes.Add(relationType);
             }
 
             await _databaseContext.SaveChangesAsync(cancellationToken);
+
+            // 自增 id 在 SaveChanges 后才生成，关系名称映射须在此之后构建
+            var relationNameToId = new Dictionary<string, long>(StringComparer.Ordinal);
+            foreach (var relationType in relationTypes)
+            {
+                relationNameToId[relationType.Name] = relationType.Id;
+            }
+
+            if (template.Nodes.Count > 0)
+            {
+                await SeedTemplateDataAsync(graph.Id, template, typeNameToId, relationNameToId, cancellationToken);
+            }
         }
 
         await transaction.CommitAsync(cancellationToken);
         return new SimpleLong { Value = graph.Id };
+    }
+
+    /// <summary>
+    /// 写入模板预置的示例实例与关系；任一失败清理图库残留并抛出，由外层事务回滚整个建图.
+    /// </summary>
+    private async Task SeedTemplateDataAsync(long graphId, KnowledgeGraphTemplate template, Dictionary<string, long> typeNameToId, Dictionary<string, long> relationNameToId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var nodeKeyToId = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var seed in template.Nodes)
+            {
+                if (!typeNameToId.TryGetValue(seed.EntityTypeName, out var entityTypeId))
+                {
+                    continue;
+                }
+
+                var record = await _store.CreateNodeAsync(graphId, entityTypeId, seed.Name, seed.Description, KnowledgeGraphPropertyJson.WriteValues(seed.Properties), cancellationToken);
+                nodeKeyToId[seed.Key] = record.Id;
+            }
+
+            foreach (var edge in template.Edges)
+            {
+                if (!relationNameToId.TryGetValue(edge.RelationName, out var relationTypeId)
+                    || !nodeKeyToId.TryGetValue(edge.SourceNodeKey, out var sourceNodeId)
+                    || !nodeKeyToId.TryGetValue(edge.TargetNodeKey, out var targetNodeId))
+                {
+                    continue;
+                }
+
+                await _store.CreateEdgeAsync(graphId, relationTypeId, sourceNodeId, targetNodeId, cancellationToken);
+            }
+        }
+        catch
+        {
+            // 模板数据要求整体成功：清理已写入的图库节点，再由调用方回滚 PG 事务
+            try
+            {
+                await _store.PurgeGraphAsync(graphId, cancellationToken);
+            }
+            catch
+            {
+                // 清理失败不掩盖原始异常
+            }
+
+            throw;
+        }
     }
 
     private static bool IsNameUniqueConstraintViolation(DbUpdateException exception)

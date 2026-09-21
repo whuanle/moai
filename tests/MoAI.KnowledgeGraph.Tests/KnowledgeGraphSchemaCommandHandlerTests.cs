@@ -25,6 +25,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var people = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
@@ -33,6 +34,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         };
         var service = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = string.Empty,
@@ -90,6 +92,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var entityType = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
@@ -120,6 +123,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var entityType = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
@@ -179,6 +183,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         db.Context.KnowledgeGraphEntityTypes.Add(new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
@@ -236,6 +241,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var service = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = "#123456",
@@ -244,6 +250,7 @@ public class KnowledgeGraphSchemaCommandHandlerTests
         };
         var people = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = "#abcdef",

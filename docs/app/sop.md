@@ -37,7 +37,7 @@
   3. **会话与对话**：`POST /api/external/agent/{appId}/session` 建会话（返回 sessionId，需外部**用户** token，应用 token 无用户身份会 403）；对话走 AG-UI SSE `POST /api/external/agent/{appId}/chat`（体为 AG-UI 协议，`threadId` = sessionId）；`GET /api/external/agent/{appId}/session/list` 与 `GET /api/external/session/{sessionId}/messages` 查会话与消息。会话归属按 `external_user.id` 校验，同一外部身份继承会话与消费记录。
   4. **刷新**：`POST /api/external/token/refresh` 传 `refreshToken` 换新 token 对；管理员调整接入授权范围后，**下次刷新即按最新配置生效**（access token 默认 2 小时、refresh 7 天）。
   5. **吊销**：删除应用接入后其 key 与全部 token 刷新即失效；已签发的 access token 在剩余有效期内仍可用。
-- **访问点（外部应用工作台 `access` 分区）**：配置面板标题/欢迎语/占位/主题色/位置/按钮文案/头像/尺寸/默认展开/启用；同页展示对话端点地址与 `<script>` 嵌入代码（需授权应用提示填 `data-key`，key 来自团队「应用接入」）。组件脚本由后端托管：宿主页引入 `{server}/embed/moai-widget.js` 即出现悬浮对话。
+- **访问点（外部应用工作台 `access` 分区）**：配置面板标题/欢迎语/占位/主题色/位置/按钮文案/头像/尺寸/默认展开/启用；同页展示对话端点地址与 `<script>` 嵌入代码（需授权应用提示填 `data-key`，key 来自团队「应用接入」）。嵌入代码 `src` 指向**站点自身源**的 `/embed/moai-widget.js`（开发期=前端 dev server 托管，生产=前后端同源）；组件默认以 script 源调用 API（开发期 Vite 代理 `/api` 到后端），前后端分离部署可在 script 上加 `data-server` 显式指向后端。注意：直接调对话端点时，**即使免授权应用也需先** `POST /api/external/token` 换外部 token（免授权仅传 `appId`），悬浮组件已自动处理。
 
 ## 3. 常见问题
 
@@ -50,6 +50,11 @@
 | 保存配置 403 | 非团队管理员；应用是团队产物，仅管理员可管理 |
 | 保存配置 400，提示包含无权使用的插件/知识库 | 绑定范围只含「该团队有权使用」的资源；插件需团队自有或系统公开/已授权，知识库需属于本团队。刷新页面取最新可选项后重选 |
 | 保存配置 400，提示模型不可用/无权使用 | 模型需启用且渠道启用；私有模型必须已授权本团队（管理员在「模型网关」里授权）。到团队「模型网关」分区确认后再选 |
+| 外部应用保存配置 400，提示不能绑定技能/不能开启沙箱 | 设计约束（D46）：外部应用面向外部用户/匿名开放，不允许技能与沙箱；配置页已隐藏对应区块，移除后保存。存量配置对话时也会被装配层强制关闭（[@EA-S13](./bdd.md#ea-s13)） |
+| 嵌入悬浮组件后宿主页无按钮 | 依次查：① 宿主页控制台 `[moai-widget]` 日志（配置拉取失败/访问点未启用均有告警）；② 应用已发布且「启用访问点」开启——未发布/已禁用/开关关闭时组件按设计不渲染；③ script src 站点能直达 `/embed/moai-widget.js`（404 时先 `cd ui && npm run build:embed` 重建产物）；④ 前后端分离部署需加 `data-server` 指向后端 |
+| 组件报「初始化失败」，控制台有 CORS preflight 报错 | 多为 `file://`/沙箱宿主页（`Origin: null`）或跨源环境：后端 CORS 已 `AllowAnyOrigin` 直接可用；开发期经 Vite 代理时须保持 `vite.config.ts` 的 `server.cors: false`（内置 cors 只放行 localhost 系 origin，会抢答 null origin 预检且不带 ACAO）。后端重启中代理会回 502 `backend_unreachable`，稍后重试即可 |
+| 组件报「发送失败」 | ① 控制台看 `[moai-widget]` 与网络面板：token/会话接口是否 200；② 旧版组件在非安全上下文（http 局域网 IP、about:blank 等，无 `crypto.randomUUID`）发送必失败，重建产物（`npm run build:embed`）后即修复；③ 模型渠道间歇性错误（如腾讯 MaaS 400001）也会以发送失败呈现，重试或换模型 |
+| 直接浏览器打开对话端点返回 401 invalid_token | 正常行为（[@EA-S1](./bdd.md#ea-s1)）：外部端点一律需外部 token，免授权≠免 token；按返回体提示先 `POST /api/external/token` 换 token（免授权应用 body 仅传 `appId`），或直接用悬浮组件（自动处理） |
 | 对话模型下拉为空 | 该团队还没有可用模型（无公开模型、也没有授权给本团队的私有模型）；先让管理员在「模型网关」里授权 |
 | 已保存的模型在管理页显示为空 | 该模型被停用或取消了对本团队的授权；绑定不会自动清理，重选一个可用模型并保存即可 |
 | 提示词保存 400 | 提示词最长 4000 字 |

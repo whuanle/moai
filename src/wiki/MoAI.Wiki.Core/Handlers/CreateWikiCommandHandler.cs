@@ -62,7 +62,6 @@ public class CreateWikiCommandHandler : IRequestHandler<CreateWikiCommand, Simpl
             TeamId = (int)request.TeamId,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
-            IsPublic = request.IsPublic,
         };
 
         _databaseContext.Wikis.Add(wiki);

@@ -113,7 +113,7 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<FeishuAppEntity> FeishuApps { get; set; }
 
     /// <summary>
-    /// 飞书应用绑定，将飞书应用绑定到应用/知识库等渠道；同一飞书应用同时只能绑定一个渠道.
+    /// 飞书应用绑定，将飞书应用绑定到应用/知识库外部源等渠道；应用渠道独占，外部源等订阅型渠道可一对多.
     /// </summary>
     public virtual DbSet<FeishuAppBindingEntity> FeishuAppBindings { get; set; }
 
@@ -242,6 +242,16 @@ public partial class DatabaseContext : DbContext
     /// 文档内容.
     /// </summary>
     public virtual DbSet<WikiDocumentContentEntity> WikiDocumentContents { get; set; }
+
+    /// <summary>
+    /// 知识库外部源，飞书文档/爬虫等外部数据入口，持有同步方式与工作流预设.
+    /// </summary>
+    public virtual DbSet<WikiSourceEntity> WikiSources { get; set; }
+
+    /// <summary>
+    /// 外部源文档，外部源条目与知识库文档的映射，记录内容哈希用于增量比对.
+    /// </summary>
+    public virtual DbSet<WikiSourceDocumentEntity> WikiSourceDocuments { get; set; }
 
     /// <summary>
     /// 工作任务.

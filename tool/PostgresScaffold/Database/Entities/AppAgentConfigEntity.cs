@@ -113,4 +113,9 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 快捷输入列表，JSON 数组文本，元素为字符串（管理员配置，用户在对话欢迎态点击即发送），空为&apos;[]&apos;.
     /// </summary>
     public string QuickInputs { get; set; } = default!;
+
+    /// <summary>
+    /// 绑定的流程应用ID列表（作为工具使用），JSON 数组文本，元素为 app.id（uuid 字符串，须为本团队已发布流程应用），空为&apos;[]&apos;.
+    /// </summary>
+    public string WorkflowApps { get; set; } = default!;
 }

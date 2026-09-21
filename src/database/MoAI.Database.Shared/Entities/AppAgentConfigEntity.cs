@@ -100,7 +100,7 @@ public partial class AppAgentConfigEntity : IFullAudited
     public string Prompts { get; set; } = default!;
 
     /// <summary>
-    /// 发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs/workflowApps），发布应用时写入，正式会话按此快照执行；null=从未发布.
+    /// 发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs），发布应用时写入，正式会话按此快照执行；null=从未发布.
     /// </summary>
     public string? PublishedConfig { get; set; }
 

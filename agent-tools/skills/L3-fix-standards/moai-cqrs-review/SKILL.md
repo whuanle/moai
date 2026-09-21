@@ -26,7 +26,9 @@ description: CQRS iron-law review checklist and fix standard for MoAI code. Use 
 **Shared 层**
 - [ ] Command/Query 继承 `IModelValidator<T>` 且 Validate 只校请求体字段（路由回填字段校验 = 恒 400）
 - [ ] IUserIdContext 只在真正需要用户上下文的命令上
-- [ ] 公开成员中文 XML 注释齐全
+- [ ] **可选配置对象的每条规则都有守卫，且判据是「本次是否提交了该配置」**（`When(x => x.Crawler != null)`），
+      不是 `SourceType == Xxx`。Update 命令里 `[JsonIgnore]` 的类型字段恒为默认值，按类型守卫 → 非目标类型的请求
+      一进来就抛 `NullReferenceException occurred when executing rule for ...`
 
 **Core 层**
 - [ ] Handler 无 IUserContextProvider/UserContext 注入
@@ -45,6 +47,13 @@ description: CQRS iron-law review checklist and fix standard for MoAI code. Use 
 - [ ] 图标操作列带 aria-label；危险操作红色 Popconfirm；`<DataTable sticky>`
 - [ ] 无硬编码颜色（token/antd token）；i18n 双语同步
 - [ ] 测试按 aria-label 断言图标按钮
+- [ ] **权限状态有初值**：以 `myRole` prop 作 `useState` 初值、只接受接口返回的升级，否则接口返回前
+      管理按钮处于「可点」的空档期（后端拦得住，但前端门禁失效，测试也会随机红）
+
+**测试断言（易踩的假象）**
+- [ ] antd 5.28 的 `Button` 禁用态 = **原生 `disabled` 属性**，不再有 `ant-btn-disabled` 类名；
+      `Switch` 仍用 `ant-switch-disabled`。按类名断言会得到「按钮没禁用」的假象
+- [ ] 全仓 `vitest run` 偶发 `Test timed out in 5000ms` 时，**先单跑失败文件**：单跑全过即并行负载噪音，非回归
 
 ### 修复五步标准
 
@@ -53,6 +62,16 @@ description: CQRS iron-law review checklist and fix standard for MoAI code. Use 
 3. **修复**：最小改动，不扩大接口范围、不做无关重构
 4. **文档**：行为变化 → 更新对应模块 sdd/bdd；踩新坑 → Obsidian `99-问题台账` + 视情况补进 L2 skill 反例
 5. **回归**：`dotnet build` + ui 三件套 + 相关 e2e 全绿；前端改动浏览器实机走查
+
+### 增量遍历类逻辑（爬虫/同步器）专项自检
+
+改「按队列/深度/分页遍历并增量比对」的代码（如 `WikiSourceCrawlerService`）时额外核对：
+
+- [ ] **每个分支都推进遍历**：`continue` 之前该入队的子链接入队了吗？「内容未变化」和「跳过」分支最容易漏，
+      漏了会导致**二次执行只处理首页**（症状：`total:1`，而首轮正常）
+- [ ] 局部函数的**签名与所有调用点一致**（带参函数被无参调用）；改动前先 `grep -n 函数名` 看磁盘现状，
+      别相信更早读到的版本（并行会话可能已改过同一文件）
+- [ ] 上限在**入队与主循环两处**都校验，保证任何入口都收敛
 
 ## REFERENCE
 

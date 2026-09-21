@@ -99,61 +99,67 @@ public sealed partial class FeishuEventForwarder
                 return;
             }
 
-            // 同一飞书应用同时只绑定一个渠道，事件只投递给该渠道
-            var binding = await databaseContext.FeishuAppBindings
+            // 一个飞书应用可绑定多个渠道：应用渠道独占一条，知识库外部源等订阅型渠道可多条
+            var bindings = await databaseContext.FeishuAppBindings
                 .Where(x => x.FeishuAppId == feishuAppId)
                 .Select(x => new { x.ChannelType, x.ChannelId })
-                .FirstOrDefaultAsync(cancellationToken);
+                .ToListAsync(cancellationToken);
 
-            if (binding == null)
+            if (bindings.Count == 0)
             {
                 _logger.LogDebug("飞书应用未绑定渠道，事件忽略，feishuAppId={FeishuAppId} eventType={EventType}.", feishuAppId, eventType);
                 return;
             }
 
-            var channelType = (FeishuChannelType)binding.ChannelType;
-            var handlers = scope.ServiceProvider.GetServices<IFeishuEventHandler>()
-                .Where(x => x.ChannelType == channelType)
-                .ToList();
+            var allHandlers = scope.ServiceProvider.GetServices<IFeishuEventHandler>().ToList();
 
-            if (handlers.Count == 0)
+            foreach (var group in bindings.GroupBy(x => (FeishuChannelType)x.ChannelType))
             {
-                _logger.LogWarning(
-                    "渠道 {ChannelType} 没有注册飞书事件处理器，事件忽略，feishuAppId={FeishuAppId} eventType={EventType}.",
-                    channelType,
-                    feishuAppId,
-                    eventType);
-                return;
-            }
+                var channelType = group.Key;
+                var handlers = allHandlers.Where(x => x.ChannelType == channelType).ToList();
 
-            var message = new FeishuEventMessage
-            {
-                FeishuAppId = feishuAppId,
-                AppId = appId,
-                TenantKey = tenantKey,
-                EventId = eventId,
-                EventType = eventType,
-                CreateTime = createTime,
-                Payload = eventPayload,
-                ChannelType = channelType,
-                ChannelId = binding.ChannelId,
-            };
-
-            foreach (var handler in handlers)
-            {
-                try
+                if (handlers.Count == 0)
                 {
-                    await handler.HandleAsync(message, cancellationToken);
+                    _logger.LogWarning(
+                        "渠道 {ChannelType} 没有注册飞书事件处理器，事件忽略，feishuAppId={FeishuAppId} eventType={EventType}.",
+                        channelType,
+                        feishuAppId,
+                        eventType);
+                    continue;
                 }
-                catch (Exception ex)
+
+                foreach (var binding in group)
                 {
-                    _logger.LogError(
-                        ex,
-                        "飞书事件处理器执行失败，handler={Handler} eventType={EventType} eventId={EventId} channelId={ChannelId}.",
-                        handler.GetType().Name,
-                        eventType,
-                        eventId,
-                        binding.ChannelId);
+                    var message = new FeishuEventMessage
+                    {
+                        FeishuAppId = feishuAppId,
+                        AppId = appId,
+                        TenantKey = tenantKey,
+                        EventId = eventId,
+                        EventType = eventType,
+                        CreateTime = createTime,
+                        Payload = eventPayload,
+                        ChannelType = channelType,
+                        ChannelId = binding.ChannelId,
+                    };
+
+                    foreach (var handler in handlers)
+                    {
+                        try
+                        {
+                            await handler.HandleAsync(message, cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(
+                                ex,
+                                "飞书事件处理器执行失败，handler={Handler} eventType={EventType} eventId={EventId} channelId={ChannelId}.",
+                                handler.GetType().Name,
+                                eventType,
+                                eventId,
+                                binding.ChannelId);
+                        }
+                    }
                 }
             }
         }

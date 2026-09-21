@@ -47,6 +47,7 @@ internal partial class AppWorkflowConfigConfiguration : IEntityTypeConfiguration
             .HasColumnName("draft_editor_data");
         entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
         entity.Property(e => e.PublishTime)
+            .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("最近发布时间，从未发布为 null")
             .HasColumnName("publish_time");
         entity.Property(e => e.PublishedDefinition)

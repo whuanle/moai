@@ -16,6 +16,10 @@ namespace MoAI.App;
 /// </summary>
 public class ExternalAuthenticationMiddleware : IMiddleware
 {
+    private const string InvalidTokenMessage =
+        "Invalid or missing external token. Exchange one first via POST /api/external/token"
+        + " (apps with authorization disabled only need {\"appId\": \"<id>\"} in the body).";
+
     private static readonly string[] AnonymousPaths =
     {
         "/api/external/token",
@@ -49,14 +53,14 @@ public class ExternalAuthenticationMiddleware : IMiddleware
                 return;
             }
 
-            await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "authentication_error", "invalid_token", "Invalid or missing external token.");
+            await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "authentication_error", "invalid_token", InvalidTokenMessage);
             return;
         }
 
         var authenticateResult = await context.AuthenticateAsync(ExternalAuthDefaults.AuthenticationScheme);
         if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
         {
-            await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "authentication_error", "invalid_token", "Invalid or missing external token.");
+            await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "authentication_error", "invalid_token", InvalidTokenMessage);
             return;
         }
 

@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using MediatR;
+using MoAI.Database.Enums;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -14,6 +15,16 @@ public class UnbindFeishuAppCommand : IRequest<EmptyCommandResponse>, IUserIdCon
     /// 飞书应用记录 id（来自路由）.
     /// </summary>
     public Guid FeishuAppId { get; init; }
+
+    /// <summary>
+    /// 要解除的渠道类型；为空表示解除该飞书应用的全部绑定（知识库外部源等订阅型渠道可一对多，需按渠道指定）.
+    /// </summary>
+    public FeishuChannelType? ChannelType { get; init; }
+
+    /// <summary>
+    /// 要解除的渠道记录 id；与 <see cref="ChannelType"/> 同时指定时只解除该条绑定.
+    /// </summary>
+    public string? ChannelId { get; init; }
 
     /// <inheritdoc/>
     [JsonIgnore]

@@ -70,6 +70,21 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             return EmptyCommandResponse.Default;
         }
 
+        // 外部应用面向外部用户/匿名开放，不允许技能与沙箱：显式携带即拒绝；
+        // 历史存量配置由对话装配兜底强制关闭，此处保存时同时收敛落库
+        if (app.IsExternal)
+        {
+            if (request.Skills is { Count: > 0 })
+            {
+                throw new BusinessException("外部应用不能绑定技能，请移除技能配置.") { StatusCode = 400 };
+            }
+
+            if (SandboxSettingsLimitValidator.IsSandboxEnabled(request.ExecutionSettings))
+            {
+                throw new BusinessException("外部应用不能开启沙箱.") { StatusCode = 400 };
+            }
+        }
+
         // 对话模型须在该团队可用；执行参数含沙箱等扩展配置，启用沙箱时受系统上限约束
         var modelId = await ValidateModelIdAsync(app.TeamId, request.ModelId, cancellationToken);
         var wikiIds = await ValidateWikiIdsAsync(app.TeamId, request.WikiIds, cancellationToken);
@@ -140,6 +155,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             if (skillIds != null)
             {
                 config.Skills = AppAgentConfigJson.SerializePluginIds(skillIds);
+            }
+
+            // 外部应用不允许技能：请求未携带时也强制清空，历史存量配置随保存收敛
+            if (app.IsExternal)
+            {
+                config.Skills = "[]";
             }
 
             // 仅在请求显式携带执行参数时覆盖，避免旧前端保存时清空沙箱等扩展配置

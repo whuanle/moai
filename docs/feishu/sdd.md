@@ -7,7 +7,7 @@
 
 复用飞书长连接的团队级通知基座：**同一个飞书应用（AppID）只建一条 WebSocket 长连接**，事件按绑定关系转发到业务模块，避免多处各建连接互相挤掉线、同一事件被多处消费。
 
-当前阶段落地**应用渠道**：飞书用户在群聊/私聊中发消息给绑定的团队应用 → 运行该应用的 Agent → 回复发回原会话。知识库（飞书文档变更→重新向量化）后续单独模块设计，届时扩展 `FeishuChannelType` 枚举即可接入本基座。
+当前阶段落地**应用渠道**，同时为**知识库外部源**提供订阅型渠道基座：飞书用户在群聊/私聊中发消息给绑定的团队应用 → 运行该应用的 Agent → 回复发回原会话；知识库外部源（见 [../wiki/sdd.md](../wiki/sdd.md)）复用同一条长连接接收云文档变更事件 → 重新拉取文档。二者通过 `FeishuChannelType` 区分。
 
 底层长连接能力来自 NuGet 包 `Maomi.FeishuWss`（[maomi.feishu](https://github.com/whuanle/maomi.feishu)，.NET 复刻 oapi-sdk-go/v3/ws）：endpoint 拉取 → WSS 持久连接 → protobuf 帧 → 自动重连。
 
@@ -52,14 +52,16 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 ## 数据
 
 - `feishu_app`（[asserts/feishu_app.sql](../../asserts/feishu_app.sql)）：飞书应用连接。`app_id` 唯一（未删除行）——同一飞书开放平台应用全局只能建一条连接，否则两条连接互踢。
-- `feishu_app_binding`：渠道绑定。**核心互斥约束**：`feishu_app_id` 唯一（未删除行）——同一飞书应用同时只能绑定一个渠道，杜绝两个渠道同时消费同一事件；反向索引 `(channel_type, channel_id)` 供渠道侧反查绑定。
-- 渠道用 `(FeishuChannelType, string ChannelId)` 弱关联（当前仅 `app` → app.id），绑定 Handler 校验渠道存在且与连接同团队。
-- 权限模型沿用团队资源：连接属于团队，写操作（增删改/绑定/解绑）Admin+，读列表 Member+。
+- `feishu_app_binding`：渠道绑定。**互斥约束按渠道类型分层**（改造脚本 [asserts/feishu_app_wiki_channel.sql](../../asserts/feishu_app_wiki_channel.sql)）：
+  - `FeishuChannelType.App`（0，**独占型**）：`(feishu_app_id) WHERE is_deleted=0 AND channel_type=0` 唯一——同一飞书应用只能绑定一个团队应用，否则同一条对话消息会被两个应用同时消费。
+  - 其余**订阅型**渠道（当前为 `FeishuChannelType.WikiSource`（1），知识库外部源，见 [../wiki/sdd.md](../wiki/sdd.md) D27）：同一飞书应用可绑定多条；仅 `(feishu_app_id, channel_type, channel_id)` 唯一防重复绑定同一条记录。
+- 渠道用 `(FeishuChannelType, string ChannelId)` 弱关联（`app` → app.id；`wikiSource` → wiki_source.id），绑定 Handler 校验渠道存在且与连接同团队。
+- 权限模型沿用团队资源：连接属于团队，写操作（增删改/绑定/解绑）Admin+，读列表 Member+。**订阅型渠道的绑定由业务模块在自身 Handler 内完成**（如创建/更新/删除外部源时），飞书模块不感知业务语义。
 
 ## 关键决策
 
 1. **连接复用而非转发总线**：每 AppID 一条连接由飞书模块独占；业务模块不感知 WSS，只消费 `IFeishuEventHandler`。
-2. **绑定互斥在 Handler + 数据库双层兜底**：Handler 查重返回 409，唯一过滤索引防并发窗口。
+2. **绑定互斥在 Handler + 数据库双层兜底**：Handler 查重返回 409，唯一过滤索引防并发窗口；应用渠道为**独占**、订阅型渠道（外部源）为**一对多**（同一条长连接的事件广播给所有绑定渠道，`FeishuEventForwarder` 按渠道类型分组投递）。
 3. **收帧线程零阻塞**：转发器立即 ack，业务处理转线程池；飞书侧重发由 event_id 去重器吸收。
 4. **禁用即断连**：`is_disable=true` 断开且不重连；事件到达时若应用已禁用/删除，转发器二次校验后丢弃。
 5. **删连接级联解绑**：删除 feishu_app 同时软删其绑定，渠道可立即被其它连接绑定。

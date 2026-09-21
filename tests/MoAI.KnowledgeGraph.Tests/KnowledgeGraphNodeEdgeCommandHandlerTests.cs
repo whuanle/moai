@@ -74,6 +74,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var people = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
@@ -82,6 +83,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         };
         var service = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = string.Empty,
@@ -133,6 +135,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var people = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "人员",
             Color = string.Empty,
@@ -141,6 +144,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         };
         var service = new KnowledgeGraphEntityTypeEntity
         {
+            Properties = "[]",
             KnowledgeGraphId = KnowledgeGraphId,
             Name = "服务",
             Color = string.Empty,

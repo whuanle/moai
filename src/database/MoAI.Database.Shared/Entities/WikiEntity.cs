@@ -30,11 +30,6 @@ public partial class WikiEntity : IFullAudited
     public string Description { get; set; } = default!;
 
     /// <summary>
-    /// 是否公开，公开后所有人都可以使用，但是不能进去操作.
-    /// </summary>
-    public bool IsPublic { get; set; }
-
-    /// <summary>
     /// 计数器.
     /// </summary>
     public int Counter { get; set; }
@@ -97,5 +92,5 @@ public partial class WikiEntity : IFullAudited
     /// <summary>
     /// 默认工作流配置（JSON：切割/元数据生成/向量化三步预设），空串表示未配置.
     /// </summary>
-    public string DefaultWorkflowConfig { get; set; } = default!;
+    public string? DefaultWorkflowConfig { get; set; }
 }

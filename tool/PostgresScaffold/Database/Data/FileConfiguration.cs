@@ -32,7 +32,7 @@ internal partial class FileConfiguration : IEntityTypeConfiguration<FileEntity>
             .HasComment("id")
             .HasColumnName("id");
         entity.Property(e => e.ContentType)
-            .HasMaxLength(50)
+            .HasMaxLength(255)
             .HasComment("文件类型")
             .HasColumnName("content_type");
         entity.Property(e => e.CreateTime)

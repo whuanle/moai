@@ -113,23 +113,26 @@ async function main() {
   check('WK-08d 删除后列表不含', !(await api('GET', `/api/wiki/list?teamId=${TID}`, { token: alice.token })).json.items.some(i => i.name === 'new-' + WNAME))
   check('WK-08e 删除后同名可重建', (await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'new-' + WNAME } })).status === 200)
 
-  // WK-09 公开库非成员只读
+  // WK-09 公开字段已移除：团队知识库不存在公开概念，非成员访问一律 404
   const pubName = 'pub-' + TS
-  const pub = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: pubName, isPublic: true } })
+  const pub = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: pubName } })
   const PUBID = Number(pub.json?.value)
-  {
-    const r = await api('GET', `/api/wiki/${PUBID}`, { token: outsider.token })
-    check('WK-09a 非成员查公开库详情 200', r.status === 200, `${r.status} ${r.text.slice(0, 120)}`)
-    check('WK-09b 公开库详情 myRole=0 且 isPublic=true', r.json?.myRole === 0 && r.json?.isPublic === true, JSON.stringify(r.json?.myRole) + '/' + r.json?.isPublic)
-    check('WK-09c 非成员更新公开库 404', (await api('PUT', `/api/wiki/${PUBID}`, { token: outsider.token, body: { name: 'hack' } })).status === 404)
-    check('WK-09d 非成员删除公开库 404', (await api('DELETE', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
-  }
+  check('WK-09a 非成员查详情 404（公开字段已移除）', (await api('GET', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
+  check('WK-09b 非成员更新 404', (await api('PUT', `/api/wiki/${PUBID}`, { token: outsider.token, body: { name: 'hack' } })).status === 404)
+  check('WK-09c 非成员删除 404', (await api('DELETE', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
 
-  // WK-10 私有库保持门禁
+  // WK-10 非成员门禁保持
   const privName = 'priv-' + TS
-  const prv = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: privName, isPublic: false } })
+  const prv = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: privName } })
   const PRIVID = Number(prv.json?.value)
-  check('WK-10 非成员查私有库详情 404', (await api('GET', `/api/wiki/${PRIVID}`, { token: outsider.token })).status === 404)
+  check('WK-10 非成员查详情 404', (await api('GET', `/api/wiki/${PRIVID}`, { token: outsider.token })).status === 404)
+
+  // WK-10b 列表项带统计字段（文件数/切片数/最近文档更新时间）
+  {
+    const listR = await api('GET', `/api/wiki/list?teamId=${TID}`, { token: alice.token })
+    const item = (listR.json?.items ?? []).find((i) => Number(i.wikiId) === PUBID)
+    check('WK-10b 列表项含统计字段 documentCount/chunkCount/lastDocumentUpdateTime', !!item && typeof item.documentCount === 'number' && typeof item.chunkCount === 'number' && (item.lastDocumentUpdateTime == null || typeof item.lastDocumentUpdateTime === 'string'), JSON.stringify(item ?? null).slice(0, 160))
+  }
 
   // WK-11 知识库最大文件大小（WIKI_MAX_FILE_SIZE_MB，超管设置，网页端与开放接口上传同时受限）
   {

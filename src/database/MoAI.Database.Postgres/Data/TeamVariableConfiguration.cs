@@ -12,7 +12,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 团队变量，插件配置以 {key} 引用.
+/// 团队变量，插件配置以 ${key} 引用.
 /// </summary>
 internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<TeamVariableEntity>
 {
@@ -22,7 +22,7 @@ internal partial class TeamVariableConfiguration : IEntityTypeConfiguration<Team
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("team_variable_pkey");
 
-        entity.ToTable("team_variable", tb => tb.HasComment("团队变量，插件配置以 {key} 引用"));
+        entity.ToTable("team_variable", tb => tb.HasComment("团队变量，插件配置以 ${key} 引用"));
 
         entity.HasIndex(e => e.TeamId, "idx_team_variable_team_id");
 

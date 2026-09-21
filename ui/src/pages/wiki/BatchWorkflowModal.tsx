@@ -9,13 +9,12 @@ import {
   getWikiModelOptions,
   type BatchWorkflowDocumentResult,
   type WikiModelOptionsResult,
-  type WikiWorkflowConfig,
 } from '@/api/wiki'
 import {
   WikiWorkflowFormFields,
 } from './WikiWorkflowForm'
 import {
-  workflowValuesFromConfig,
+  DEFAULT_WORKFLOW_VALUES,
   type ModelOption,
   type WikiWorkflowFormValues,
 } from './wikiWorkflow'
@@ -34,7 +33,7 @@ interface BatchWorkflowModalProps {
 
 /**
  * 批量处理文档弹窗：多选文件后按勾选步骤（切割 / 生成元数据 / 向量化）一次性执行，也可只勾选其中一步；
- * 步骤参数预填知识库默认工作流配置。
+ * 步骤参数每次打开时按通用默认值预填，由用户实时调整后提交。
  */
 export function BatchWorkflowModal({ wikiId, teamId, open, documentIds, onClose, onDone }: BatchWorkflowModalProps) {
   const { t } = useTranslation()
@@ -51,15 +50,16 @@ export function BatchWorkflowModal({ wikiId, teamId, open, documentIds, onClose,
     if (!open) return
     let cancelled = false
     setResults(null)
+    form.setFieldsValue({ ...DEFAULT_WORKFLOW_VALUES })
     getWikiDetail(wikiId)
       .then((res) => {
         if (cancelled) return
-        const detail = res as unknown as { workflowConfig?: WikiWorkflowConfig | null; embeddingModelId?: string | null; embeddingDimensions?: number | null }
+        const detail = res as unknown as { embeddingModelId?: string | null; embeddingDimensions?: number | null }
         setEmbeddingReady(Boolean(detail.embeddingModelId) && Number(detail.embeddingDimensions ?? 0) > 0)
-        form.setFieldsValue(workflowValuesFromConfig(detail.workflowConfig ?? null))
       })
       .catch(() => {
-        if (!cancelled) form.setFieldsValue(workflowValuesFromConfig(null))
+        // 详情读取失败不阻塞弹窗，仅按向量模型未配置处理
+        if (!cancelled) setEmbeddingReady(false)
       })
     if (Number.isFinite(teamId) && (teamId ?? 0) > 0) {
       setModelsLoading(true)

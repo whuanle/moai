@@ -28,6 +28,19 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+// 私有网络访问（PNA）：浏览器对「公网/受限来源页面 → 本机服务」的请求会在预检中携带
+// Access-Control-Request-Private-Network，要求响应显式带回 Allow 头才放行。外部悬浮组件
+// 的宿主页（https 站点或 file://）访问本机部署的 MoAI 即此场景，必须在 UseCors 短路预检之前追加。
+app.Use(async (context, next) =>
+{
+    if (context.Request.Headers.ContainsKey("Access-Control-Request-Private-Network"))
+    {
+        context.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+    }
+
+    await next(context);
+});
+
 app.UseCors("AllowSpecificOrigins");
 
 // 路由（显式声明，保证认证在端点分发之前执行）
