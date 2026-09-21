@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -20,6 +21,11 @@ namespace MoAI.TeamPlugin.Handlers;
 /// </summary>
 public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynamicPluginCommand, EmptyCommandResponse>
 {
+    /// <summary>
+    /// kg_cypher_query 模板 key：实例配置必须绑定本团队的知识图谱.
+    /// </summary>
+    private const string KgCypherTemplateKey = "kg_cypher_query";
+
     private readonly DatabaseContext _databaseContext;
     private readonly IPluginRegistry _registry;
     private readonly ITeamService _teamService;
@@ -47,6 +53,8 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
         {
             throw new BusinessException("动态插件模板不存在") { StatusCode = 404 };
         }
+
+        await EnsureKgBindingValidAsync(request, cancellationToken);
 
         var existing = await _databaseContext.PluginDynamics
             .FirstOrDefaultAsync(x => x.PluginKey == request.InstanceKey && x.IsDeleted == 0, cancellationToken);
@@ -101,6 +109,51 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
         }
 
         return EmptyCommandResponse.Default;
+    }
+
+    /// <summary>
+    /// kg_cypher_query 实例：校验配置里的 kgId 存在且属于本团队（创建与更新都校验）.
+    /// </summary>
+    /// <param name="request">保存请求.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    private async Task EnsureKgBindingValidAsync(SaveTeamDynamicPluginCommand request, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(request.TempleteKey, KgCypherTemplateKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        long kgId;
+        try
+        {
+            using var doc = JsonDocument.Parse(request.Config);
+            var config = doc.RootElement;
+            if (!config.TryGetProperty("kgId", out var kgElement) && !config.TryGetProperty("KgId", out kgElement))
+            {
+                throw new BusinessException("kg_cypher_query 配置必须包含 kgId（绑定的知识图谱 id）.") { StatusCode = 400 };
+            }
+
+            if (!kgElement.TryGetInt64(out kgId) || kgId <= 0)
+            {
+                throw new BusinessException("kg_cypher_query 配置的 kgId 必须大于 0.") { StatusCode = 400 };
+            }
+        }
+        catch (JsonException)
+        {
+            throw new BusinessException("kg_cypher_query 配置必须是合法 JSON.") { StatusCode = 400 };
+        }
+
+        var graph = await _databaseContext.KnowledgeGraphs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == kgId, cancellationToken);
+        if (graph == null)
+        {
+            throw new BusinessException("绑定的知识图谱不存在.") { StatusCode = 404 };
+        }
+
+        if (graph.TeamId != request.TeamId)
+        {
+            throw new BusinessException("只能绑定本团队的知识图谱.") { StatusCode = 403 };
+        }
     }
 
     private async Task EnsureManagerAsync(SaveTeamDynamicPluginCommand request, CancellationToken cancellationToken)
