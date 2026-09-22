@@ -39,4 +39,14 @@ public partial class KnowledgeGraphEntity : IFullAudited
     /// 头像地址.
     /// </summary>
     public string AvatarPath { get; set; } = default!;
+
+    /// <summary>
+    /// 向量化模型的 id（ai_model.id）；为空表示未配置、图谱不参与向量检索.
+    /// </summary>
+    public Guid? EmbeddingModelId { get; set; }
+
+    /// <summary>
+    /// 向量维度（1-2000，建 hnsw 索引的硬上限）.
+    /// </summary>
+    public int EmbeddingDimensions { get; set; }
 }

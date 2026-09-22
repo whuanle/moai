@@ -44,6 +44,13 @@ internal partial class KnowledgeGraphConfiguration : IEntityTypeConfiguration<Kn
             .HasMaxLength(255)
             .HasDefaultValueSql("''::character varying")
             .HasColumnName("description");
+        entity.Property(e => e.EmbeddingDimensions)
+            .HasDefaultValue(1024)
+            .HasComment("知识图谱向量维度（1-2000，建 hnsw 索引的硬上限）")
+            .HasColumnName("embedding_dimensions");
+        entity.Property(e => e.EmbeddingModelId)
+            .HasComment("向量化模型的id；为空表示未配置、图谱不参与向量检索")
+            .HasColumnName("embedding_model_id");
         entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
         entity.Property(e => e.Mode)
             .HasMaxLength(20)

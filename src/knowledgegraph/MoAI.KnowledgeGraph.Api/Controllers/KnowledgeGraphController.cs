@@ -46,11 +46,11 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new QueryKnowledgeGraphsCommand { TeamId = teamId }, ct);
 
     /// <summary>
-    /// 查询团队可用的 AI 对话模型选项（用于 AI 导入文件）.
+    /// 查询团队可用的 AI 模型选项（对话模型用于 AI 导入文件，向量化模型用于图检索配置）.
     /// </summary>
     /// <param name="teamId">团队 id.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>对话模型列表.</returns>
+    /// <returns>对话模型与向量化模型列表.</returns>
     [HttpGet("model-options")]
     public Task<QueryKnowledgeGraphModelOptionsCommandResponse> ModelOptions([FromQuery] long teamId, CancellationToken ct)
         => _mediator.Send(new QueryKnowledgeGraphModelOptionsCommand { TeamId = teamId }, ct);
@@ -84,6 +84,17 @@ public class KnowledgeGraphController : ControllerBase
     [HttpPut("{id}")]
     public Task<EmptyCommandResponse> Update(long id, [FromBody] UpdateKnowledgeGraphCommand req, CancellationToken ct)
         => _mediator.Send(new UpdateKnowledgeGraphCommand { KnowledgeGraphId = id, Name = req.Name, Description = req.Description }, ct);
+
+    /// <summary>
+    /// 配置知识图谱向量化模型，仅托管图 Owner/Admin 可操作.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">配置请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>空响应.</returns>
+    [HttpPut("{id}/embedding-config")]
+    public Task<EmptyCommandResponse> UpdateEmbeddingConfig(long id, [FromBody] UpdateKnowledgeGraphEmbeddingConfigCommand req, CancellationToken ct)
+        => _mediator.Send(new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = id, EmbeddingModelId = req.EmbeddingModelId, EmbeddingDimensions = req.EmbeddingDimensions }, ct);
 
     /// <summary>
     /// 设置图谱头像，仅 Owner/Admin 可操作.

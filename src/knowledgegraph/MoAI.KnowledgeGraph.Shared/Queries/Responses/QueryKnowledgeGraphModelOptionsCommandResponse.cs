@@ -1,7 +1,7 @@
 namespace MoAI.KnowledgeGraph.Queries.Responses;
 
 /// <summary>
-/// 团队可用 AI 对话模型选项响应.
+/// 团队可用 AI 模型选项响应.
 /// </summary>
 public class QueryKnowledgeGraphModelOptionsCommandResponse
 {
@@ -9,6 +9,11 @@ public class QueryKnowledgeGraphModelOptionsCommandResponse
     /// 可用的对话模型列表（用于 AI 导入文件）.
     /// </summary>
     public List<KnowledgeGraphModelOptionItem> ConversationModels { get; init; } = new();
+
+    /// <summary>
+    /// 可用的向量化模型列表（用于图谱向量检索配置）.
+    /// </summary>
+    public List<KnowledgeGraphModelOptionItem> EmbeddingModels { get; init; } = new();
 }
 
 /// <summary>

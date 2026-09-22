@@ -65,6 +65,11 @@ public class QueryKnowledgeGraphModelOptionsCommandHandler : IRequestHandler<Que
                 .OrderBy(x => x.Name)
                 .Select(x => new KnowledgeGraphModelOptionItem { Id = x.Id, Name = x.Name })
                 .ToList(),
+            EmbeddingModels = models
+                .Where(x => string.Equals(x.ModelKind, "embedding", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.Name)
+                .Select(x => new KnowledgeGraphModelOptionItem { Id = x.Id, Name = x.Name })
+                .ToList(),
         };
     }
 }
