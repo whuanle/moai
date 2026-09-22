@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Services;
 
 namespace MoAI.AI.Services;
@@ -25,6 +26,16 @@ public sealed class GraphAppToolProvider : IAppToolProvider
     private const int MinTopK = 1;
 
     private const int MaxTopK = 20;
+
+    private const int MaxPayloadLength = 16 * 1024;
+
+    private const int HitDescriptionMaxLength = 300;
+
+    private const int NeighborDescriptionMaxLength = 150;
+
+    private const int NameMaxLength = 60;
+
+    private const int RelationNameMaxLength = 40;
 
     private readonly IGraphSearchService _graphSearchService;
 
@@ -53,7 +64,7 @@ public sealed class GraphAppToolProvider : IAppToolProvider
         {
             Name = ToolName,
             Title = "知识图谱检索",
-            Description = "在应用绑定的知识图谱中检索实体及其一跳关系，适合多跳关联问题（如「A 和 B 什么关系」「有哪些 X」）；需要文档原文片段时改用知识库检索。",
+            Description = "在应用绑定的知识图谱中检索实体及其直接关系，适合「A 和 B 什么关系」「与 X 相关联的有哪些实体」类问题；仅返回一跳关系，跨多步的链式问题建议拆步提问；需要文档原文片段时改用知识库检索。topK 可选（1-20，默认 5，为每张绑定图谱各自的召回数）。",
             Kind = "graph",
             ParametersExample = "{\"query\":\"要检索的关键词或问题\",\"topK\":5}",
             InvokeAsync = (argsJson, ct) => SearchAsync(graphIds, argsJson, ct),
@@ -72,31 +83,81 @@ public sealed class GraphAppToolProvider : IAppToolProvider
 
         var topK = ExtractTopK(argsJson);
         var result = await _graphSearchService.SearchAsync(graphIds, query, topK, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var payload = JsonSerializer.Serialize(new
-        {
-            query,
-            count = result.Hits.Count,
-            hits = result.Hits.Select(h => new
-            {
-                graphId = h.KgId,
-                nodeId = h.NodeId,
-                name = h.Name,
-                entityType = h.EntityTypeName,
-                description = h.Description,
-                score = h.Score,
-                neighbors = h.Neighbors.Select(n => new
-                {
-                    relation = n.RelationName,
-                    direction = n.Direction,
-                    name = n.Name,
-                    description = n.Description,
-                }),
-            }),
-            skipped = result.SkippedHints,
-        }, JsonOptions);
+        var payload = BuildPayload(query, result);
 
         return AppToolResult.Ok(payload);
     }
+
+    private static string BuildPayload(string query, GraphSearchResult result)
+    {
+        var hits = new JsonArray();
+        var root = new JsonObject
+        {
+            ["query"] = query,
+            ["count"] = 0,
+            ["hits"] = hits,
+        };
+
+        var truncated = false;
+        foreach (var hit in result.Hits)
+        {
+            var hitNode = BuildHit(hit);
+            hits.Add(hitNode);
+            if (root.ToJsonString(JsonOptions).Length > MaxPayloadLength)
+            {
+                if (hits.Count > 1)
+                {
+                    hits.Remove(hitNode);
+                }
+
+                truncated = true;
+                break;
+            }
+        }
+
+        root["count"] = hits.Count;
+        if (truncated)
+        {
+            root["hitsTruncated"] = true;
+        }
+
+        var skipped = new JsonArray();
+        foreach (var hint in result.SkippedHints)
+        {
+            skipped.Add(hint);
+        }
+
+        root["skipped"] = skipped;
+        return root.ToJsonString(JsonOptions);
+    }
+
+    private static JsonObject BuildHit(GraphSearchHit hit)
+    {
+        var neighbors = new JsonArray();
+        foreach (var neighbor in hit.Neighbors)
+        {
+            neighbors.Add(new JsonObject
+            {
+                ["relation"] = Truncate(neighbor.RelationName, RelationNameMaxLength),
+                ["direction"] = neighbor.Direction,
+                ["name"] = Truncate(neighbor.Name, NameMaxLength),
+                ["description"] = Truncate(neighbor.Description, NeighborDescriptionMaxLength),
+            });
+        }
+
+        return new JsonObject
+        {
+            ["graphId"] = hit.KgId,
+            ["nodeId"] = hit.NodeId,
+            ["name"] = Truncate(hit.Name, NameMaxLength),
+            ["entityType"] = Truncate(hit.EntityTypeName, NameMaxLength),
+            ["description"] = Truncate(hit.Description, HitDescriptionMaxLength),
+            ["score"] = hit.Score,
+            ["neighbors"] = neighbors,
+        };
+    }
+
+    private static string Truncate(string? value, int maxLength) => string.IsNullOrEmpty(value) || value.Length <= maxLength ? value ?? string.Empty : value[..maxLength] + "…";
 
     private static string? ExtractQuery(string? argsJson)
     {
@@ -136,9 +197,9 @@ public sealed class GraphAppToolProvider : IAppToolProvider
             if (document.RootElement.ValueKind == JsonValueKind.Object &&
                 document.RootElement.TryGetProperty("topK", out var topK) &&
                 topK.ValueKind == JsonValueKind.Number &&
-                topK.TryGetInt32(out var value))
+                topK.TryGetDouble(out var value))
             {
-                return Math.Clamp(value, MinTopK, MaxTopK);
+                return (int)Math.Clamp(value, MinTopK, MaxTopK);
             }
 
             return DefaultTopK;
