@@ -97,6 +97,17 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = id, EmbeddingModelId = req.EmbeddingModelId, EmbeddingDimensions = req.EmbeddingDimensions }, ct);
 
     /// <summary>
+    /// 知识图谱语义检索（向量 topK + 一跳扩展）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">检索请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>检索结果.</returns>
+    [HttpPost("{id}/search")]
+    public Task<QueryKnowledgeGraphSearchCommandResponse> Search(long id, [FromBody] QueryKnowledgeGraphSearchCommand req, CancellationToken ct)
+        => _mediator.Send(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = id, Query = req.Query, TopK = req.TopK, MinScore = req.MinScore }, ct);
+
+    /// <summary>
     /// 设置图谱头像，仅 Owner/Admin 可操作.
     /// </summary>
     /// <param name="id">图谱 id.</param>

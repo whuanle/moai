@@ -155,6 +155,7 @@ public class GraphSearchService : IGraphSearchService
         CancellationToken cancellationToken)
     {
         var record = result.Record;
+        // 第三返回值 Truncated 被丢弃：邻居超 10 有意截断，不做文本提示（LLM 上下文成本考量）
         var (neighborNodes, edges, _) = await _store.GetNeighborsAsync(kgId, record.NodeId, NeighborLimit, cancellationToken);
 
         // 邻居节点按 id 建字典（同 id 多次返回取首个）

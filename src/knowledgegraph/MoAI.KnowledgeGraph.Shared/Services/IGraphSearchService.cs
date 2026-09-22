@@ -20,5 +20,6 @@ public interface IGraphSearchService
     /// <param name="minScore">相似度阈值（null 不过滤）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>检索结果（含跳过提示）.</returns>
+    /// <remarks>跨图得分来自不同 embedding 模型空间，归并排序仅为 best-effort 排序.</remarks>
     Task<GraphSearchResult> SearchAsync(IReadOnlyCollection<long> graphIds, string query, int topPerGraph = 5, double? minScore = null, CancellationToken cancellationToken = default);
 }

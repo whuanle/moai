@@ -108,6 +108,8 @@ public class GraphSearchServiceTests
         var modelId2 = await SeedEmbeddingModelAsync(db);
         await SeedGraphAsync(db, 2, modelId2);
 
+        // 图 1 按契约只应返回 topPerGraph=2 条，此处故意超发 3 条（防御向量 store 违约），
+        // 归并后总数仍须被 Take 截到 topPerGraph × 图数
         var vectorStore = new Mock<IKgEmbeddingVectorStore>();
         vectorStore
             .Setup(x => x.SearchAsync(1, It.IsAny<ReadOnlyMemory<float>>(), 2, It.IsAny<CancellationToken>()))
@@ -115,6 +117,7 @@ public class GraphSearchServiceTests
             {
                 Hit(1, "n1", "甲", "甲描述", 0.9),
                 Hit(1, "n2", "乙", "乙描述", 0.7),
+                Hit(1, "n3", "戊", "戊描述", 0.5),
             });
         vectorStore
             .Setup(x => x.SearchAsync(2, It.IsAny<ReadOnlyMemory<float>>(), 2, It.IsAny<CancellationToken>()))
@@ -296,6 +299,44 @@ public class GraphSearchServiceTests
         Assert.Equal(2, hit.KgId);
 
         vectorStore.Verify(x => x.SearchAsync(1, It.IsAny<ReadOnlyMemory<float>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenContentDoesNotStartWithName_FallsBackToFullContent()
+    {
+        using var db = TestSqliteContext.Create();
+        var modelId = await SeedEmbeddingModelAsync(db);
+        await SeedGraphAsync(db, 1, modelId);
+
+        // 向量化契约（KgEmbeddingService）为「名称\n描述」，此处 Content 不以 Name 开头：契约不符回退为整段 Content
+        var vectorStore = new Mock<IKgEmbeddingVectorStore>();
+        vectorStore
+            .Setup(x => x.SearchAsync(1, It.IsAny<ReadOnlyMemory<float>>(), 5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<KgEmbeddingSearchResult>
+            {
+                new()
+                {
+                    Record = new KgEmbeddingVectorRecord
+                    {
+                        Key = Guid.CreateVersion7(),
+                        KgId = 1,
+                        NodeId = "n1",
+                        EntityTypeId = 0,
+                        Name = "甲",
+                        Content = "不以名称开头的整段描述",
+                    },
+                    Score = 0.9,
+                },
+            });
+
+        var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object);
+
+        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, CancellationToken.None);
+
+        var hit = Assert.Single(result.Hits);
+        Assert.Equal("甲", hit.Name);
+        Assert.Equal("不以名称开头的整段描述", hit.Description);
+        Assert.Equal("甲：不以名称开头的整段描述", Assert.Single(result.Contents));
     }
 
     [Fact]
