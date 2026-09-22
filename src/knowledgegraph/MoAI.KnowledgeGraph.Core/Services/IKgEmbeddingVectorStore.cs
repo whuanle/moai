@@ -17,7 +17,7 @@ public interface IKgEmbeddingVectorStore
     /// <param name="dimensions">向量维度.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
-    Task EnsureCollectionAsync(int kgId, int dimensions, CancellationToken cancellationToken = default);
+    Task EnsureCollectionAsync(long kgId, int dimensions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 用新记录整体替换某节点的向量（先删后写）.
@@ -27,7 +27,7 @@ public interface IKgEmbeddingVectorStore
     /// <param name="records">向量记录.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
-    Task ReplaceNodeVectorsAsync(int kgId, string nodeId, IReadOnlyList<KgEmbeddingVectorRecord> records, CancellationToken cancellationToken = default);
+    Task ReplaceNodeVectorsAsync(long kgId, string nodeId, IReadOnlyList<KgEmbeddingVectorRecord> records, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除某节点的全部向量.
@@ -36,7 +36,7 @@ public interface IKgEmbeddingVectorStore
     /// <param name="nodeId">节点 id.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
-    Task DeleteNodeVectorsAsync(int kgId, string nodeId, CancellationToken cancellationToken = default);
+    Task DeleteNodeVectorsAsync(long kgId, string nodeId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除图谱的整个向量集合（删图时调用）.
@@ -44,7 +44,7 @@ public interface IKgEmbeddingVectorStore
     /// <param name="kgId">图谱 id.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
-    Task DeleteGraphVectorsAsync(int kgId, CancellationToken cancellationToken = default);
+    Task DeleteGraphVectorsAsync(long kgId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 按查询向量召回最相似的记录.
@@ -54,5 +54,5 @@ public interface IKgEmbeddingVectorStore
     /// <param name="top">返回条数.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>召回结果.</returns>
-    Task<IReadOnlyList<KgEmbeddingSearchResult>> SearchAsync(int kgId, ReadOnlyMemory<float> queryVector, int top, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<KgEmbeddingSearchResult>> SearchAsync(long kgId, ReadOnlyMemory<float> queryVector, int top, CancellationToken cancellationToken = default);
 }

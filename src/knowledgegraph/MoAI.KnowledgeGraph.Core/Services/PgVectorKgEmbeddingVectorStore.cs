@@ -33,17 +33,17 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
     /// </summary>
     /// <param name="kgId">图谱 id.</param>
     /// <returns>集合名.</returns>
-    public static string GetCollectionName(int kgId) => $"__kg_{kgId}";
+    public static string GetCollectionName(long kgId) => $"__kg_{kgId}";
 
     /// <inheritdoc/>
-    public async Task EnsureCollectionAsync(int kgId, int dimensions, CancellationToken cancellationToken = default)
+    public async Task EnsureCollectionAsync(long kgId, int dimensions, CancellationToken cancellationToken = default)
     {
         var collection = GetCollection(kgId, dimensions);
         await collection.EnsureCollectionExistsAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task ReplaceNodeVectorsAsync(int kgId, string nodeId, IReadOnlyList<KgEmbeddingVectorRecord> records, CancellationToken cancellationToken = default)
+    public async Task ReplaceNodeVectorsAsync(long kgId, string nodeId, IReadOnlyList<KgEmbeddingVectorRecord> records, CancellationToken cancellationToken = default)
     {
         var dimensions = await ResolveDimensionsAsync(kgId, cancellationToken);
         var collection = GetCollection(kgId, dimensions);
@@ -56,7 +56,7 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
     }
 
     /// <inheritdoc/>
-    public async Task DeleteNodeVectorsAsync(int kgId, string nodeId, CancellationToken cancellationToken = default)
+    public async Task DeleteNodeVectorsAsync(long kgId, string nodeId, CancellationToken cancellationToken = default)
     {
         var dimensions = await ResolveDimensionsOrZeroAsync(kgId, cancellationToken);
         if (dimensions <= 0)
@@ -74,7 +74,7 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
     }
 
     /// <inheritdoc/>
-    public async Task DeleteGraphVectorsAsync(int kgId, CancellationToken cancellationToken = default)
+    public async Task DeleteGraphVectorsAsync(long kgId, CancellationToken cancellationToken = default)
     {
         var dimensions = await ResolveDimensionsOrZeroAsync(kgId, cancellationToken);
         if (dimensions <= 0)
@@ -87,7 +87,7 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<KgEmbeddingSearchResult>> SearchAsync(int kgId, ReadOnlyMemory<float> queryVector, int top, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<KgEmbeddingSearchResult>> SearchAsync(long kgId, ReadOnlyMemory<float> queryVector, int top, CancellationToken cancellationToken = default)
     {
         var dimensions = await ResolveDimensionsAsync(kgId, cancellationToken);
         var collection = GetCollection(kgId, dimensions);
@@ -129,7 +129,7 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
         Properties =
         [
             new VectorStoreKeyProperty(nameof(KgEmbeddingVectorRecord.Key), typeof(Guid)),
-            new VectorStoreDataProperty(nameof(KgEmbeddingVectorRecord.KgId), typeof(int)) { IsIndexed = true },
+            new VectorStoreDataProperty(nameof(KgEmbeddingVectorRecord.KgId), typeof(long)) { IsIndexed = true },
             new VectorStoreDataProperty(nameof(KgEmbeddingVectorRecord.NodeId), typeof(string)) { IsIndexed = true },
             new VectorStoreDataProperty(nameof(KgEmbeddingVectorRecord.EntityTypeId), typeof(long)) { IsIndexed = true },
             new VectorStoreDataProperty(nameof(KgEmbeddingVectorRecord.Name), typeof(string)),
@@ -142,10 +142,10 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
         ],
     };
 
-    private VectorStoreCollection<Guid, KgEmbeddingVectorRecord> GetCollection(int kgId, int dimensions)
+    private VectorStoreCollection<Guid, KgEmbeddingVectorRecord> GetCollection(long kgId, int dimensions)
         => _vectorStore.GetCollection<Guid, KgEmbeddingVectorRecord>(GetCollectionName(kgId), BuildDefinition(dimensions));
 
-    private async Task<int> ResolveDimensionsAsync(int kgId, CancellationToken cancellationToken)
+    private async Task<int> ResolveDimensionsAsync(long kgId, CancellationToken cancellationToken)
     {
         var dimensions = await ResolveDimensionsOrZeroAsync(kgId, cancellationToken);
         if (dimensions <= 0)
@@ -156,7 +156,7 @@ public class PgVectorKgEmbeddingVectorStore : IKgEmbeddingVectorStore
         return dimensions;
     }
 
-    private Task<int> ResolveDimensionsOrZeroAsync(int kgId, CancellationToken cancellationToken)
+    private Task<int> ResolveDimensionsOrZeroAsync(long kgId, CancellationToken cancellationToken)
         => _databaseContext.KnowledgeGraphs
             .Where(x => x.Id == kgId)
             .Select(x => x.EmbeddingDimensions)

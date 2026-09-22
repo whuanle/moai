@@ -15,7 +15,7 @@ public class KgEmbeddingVectorRecord
     /// <summary>
     /// 图谱 id.
     /// </summary>
-    public int KgId { get; set; }
+    public long KgId { get; set; }
 
     /// <summary>
     /// 节点 id（KgNode.id，召回溯源的真源）.
