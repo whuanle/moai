@@ -85,6 +85,7 @@ node local-dev/wiki-e2e.mjs              # WK 32
 node local-dev/wiki-workflow-e2e.mjs     # WK 27（默认工作流配置 + 多选批量工作流：切割/生成元数据/向量化三步自由组合与单步执行、错误隔离与参数校验；依赖模型渠道的场景在环境无可用模型时自动跳过）
 node local-dev/wiki-recall-e2e.mjs      # WK 30（召回测试：参数校验/团队门禁 + 向量召回/文档范围过滤/相似度阈值 + AI 优化问题与生成回答；内置本地 OpenAI 兼容桩模型，无需真实模型渠道）
 node local-dev/wiki-source-e2e.mjs      # WS 66（外部源：权限与校验 + 爬虫真实抓取全链路 + 增量哈希比对 + 父页无变化仍发现新页面 + 强制全量 + 文档分页筛选 + 更新挡板/cron 语义 + 停用后同步 409 + 飞书源假凭证创建兜底 + 删除不删已入库文档；自带本地站点桩，无需外网）
+node local-dev/kg-text2cypher-e2e.mjs    # KT（知识图谱 Text2Cypher：实例绑定校验/schema 自描述/只读守卫/$kgId 隔离/行数截断/接入图；依赖 Memgraph，需含 kg_cypher_query 的新构建）
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
 node local-dev/team-plugin-e2e.mjs       # TP 31（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显）
 node local-dev/app-e2e.mjs               # AP 29

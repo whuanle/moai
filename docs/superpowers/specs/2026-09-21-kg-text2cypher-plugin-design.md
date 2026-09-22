@@ -122,7 +122,7 @@ KnowledgeGraph.Core 新服务 KgCypherAccessService
 
 | 图类型 | 实体/关系类型来源 | 采样来源 |
 |---|---|---|
-| 托管图 | PG `kg_entity_type`/`kg_relation_type`（含属性定义 jsonb、起止类型约束） | 图库按 `entityTypeId` 各采样 ≤3 个节点名 |
+| 托管图 | PG `knowledge_graph_entity_type`/`knowledge_graph_relation_type`（含属性定义 jsonb、起止类型约束） | 图库按 `entityTypeId` 各采样 ≤3 个节点名 |
 | 接入图 | 内省缓存 `IKnowledgeGraphIntrospectionCache`（labels + 关系类型） | 各 label 采样 ≤3 个节点名 |
 
 - 摘要即拼即用，不落缓存（管理页改 schema 后自然生效）。
@@ -132,8 +132,8 @@ KnowledgeGraph.Core 新服务 KgCypherAccessService
 
 ### 7.1 CypherReadOnlyGuard（新类，仿 `SqlReadOnlyGuard`）
 
-- 黑名单关键字（大小写不敏感，字符串与 `//`、`/* */` 注释内同样拒绝）：
-  `CREATE`、`MERGE`、`DELETE`、`DETACH`、`SET`、`REMOVE`、`LOAD CSV`、`FOREACH`、`CALL`、`DROP`。
+- 黑名单关键字（大小写不敏感）：`CREATE`、`MERGE`、`DELETE`、`DETACH`、`SET`、`REMOVE`、`LOAD CSV`、`FOREACH`、`CALL`、`DROP`。
+  实现语义澄清：守卫对注释与字符串字面量**先剥除后扫描**——注释/字面量内的黑名单词不触发拒绝，与 `SqlReadOnlyGuard` 同构；`$kgId` 门禁与结果侧归属校验由 KG 访问服务承担。
 - 空查询、超长查询（> 8000 字符）直接拒绝。
 - 命中即抛 `BusinessException(400, 教学式错误信息)`。
 
@@ -181,16 +181,16 @@ KnowledgeGraph.Core 新服务 KgCypherAccessService
 
 | 场景 | 内容 |
 |---|---|
-| KT-01 | 团队管理员创建 `kg_cypher_query` 实例（绑定托管图）成功，插件出现在模板列表 |
-| KT-02 | 越团队 kgId 创建实例 403 |
-| KT-03 | `schema:true` 回包含实体/关系类型与采样节点、usage 指引 |
-| KT-04 | 合法只读 Cypher（含 `$kgId`）返回正确表格结果 |
-| KT-05 | 缺 `$kgId` 的查询被拒，错误文案含教学指引 |
-| KT-06 | 写语句（CREATE/DELETE/MERGE/CALL 等）逐个被拒 |
-| KT-07 | 行数超 `maxRows` 截断且 `truncated:true` |
-| KT-08 | 超时配置生效（低超时 + 慢查询不可造则跳过，标注 SKIP 原因） |
-| KT-09 | 接入图绑定：schema 摘要来自内省、只读查询走通 |
-| KT-10 | 非团队成员/无实例团队运行 403 |
+| KT-S1 | 团队管理员创建 `kg_cypher_query` 实例（绑定托管图）成功，插件出现在模板列表 |
+| KT-S2 | 越团队 kgId 创建实例 403 |
+| KT-S3 | `schema:true` 回包含实体/关系类型与采样节点、usage 指引 |
+| KT-S4 | 合法只读 Cypher（含 `$kgId`）返回正确表格结果 |
+| KT-S5 | 缺 `$kgId` 的查询被拒，错误文案含教学指引 |
+| KT-S6 | 写语句（CREATE/DELETE/MERGE/CALL 等）逐个被拒 |
+| KT-S7 | 行数超 `maxRows` 截断且 `truncated:true` |
+| KT-S8 | 超时配置生效（低超时 + 慢查询不可造则跳过，标注 SKIP 原因） |
+| KT-S9 | 接入图绑定：schema 摘要来自内省、只读查询走通 |
+| KT-S10 | 非团队成员/无实例团队运行 403 |
 
 `local-dev/dynamic-plugin-e2e.mjs`（DYN）补 `kg_cypher_query` 模板注册与实例创建断言。
 
@@ -213,7 +213,7 @@ KnowledgeGraph.Core 新服务 KgCypherAccessService
 | `src/teamplugin/...SaveTeamDynamicPluginCommandHandler.cs` | 修改 | 保存实例时校验 kgId 团队归属（仅 `kg_cypher_query` 模板） |
 | `ui/src/...`（团队插件创建页） | 修改 | 绑定图谱下拉 + 名称/描述自动预填 |
 | `tests/...` | 新增 | Guard/摘要/截断单测 |
-| `local-dev/kg-text2cypher-e2e.mjs` | 新增 | KT-01~10 |
+| `local-dev/kg-text2cypher-e2e.mjs` | 新增 | KT-S1~S10 |
 | `local-dev/dynamic-plugin-e2e.mjs` | 修改 | DYN 注册/实例断言 |
 | 文档四件套 + AGENTS.md + rounds-log | 修改 | 按 §10.3 |
 

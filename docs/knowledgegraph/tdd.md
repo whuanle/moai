@@ -1,6 +1,6 @@
 # 知识图谱模块验证映射（TDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs) ｜ 单测：[tests/MoAI.KnowledgeGraph.Tests/](../../tests/MoAI.KnowledgeGraph.Tests/)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs) ｜ 单测：[tests/MoAI.KnowledgeGraph.Tests/](../../tests/MoAI.KnowledgeGraph.Tests/)、[tests/MoAI.AIPlugin.Dynamic.Tests/](../../tests/MoAI.AIPlugin.Dynamic.Tests/)
 
 ## 自检记录
 
@@ -17,6 +17,7 @@
 - v2.7 模板一次性预置示例实例与关系：单测 **45/45**（新增 `Handle_WithTemplate_SeedsExampleNodesAndEdges` 11 节点/15 边与端点映射断言、`Handle_WithTemplate_WhenSeedingFails_PurgesGraphAndRollsBack` 失败清理回滚）；E2E `node local-dev/kg-e2e.mjs http://127.0.0.1:5000` → **PASS 65/65**（2026-09-21，KG-S2 扩至 a…k：13 节点/16 边总数、示例航段属性、建图即得完整图览，两跑一致）。
 - v2.8 图览交互（拖动/详情/关系标签）：前端 typecheck 0、lint 0 错误（8 warning 存量）、vitest **429/429**；浏览器实测（走查团队物流图 105，G6 真渲染）：节点拖动保持、节点详情抽屉（类型/属性）、边详情抽屉（关系名/起止）、边关系名标签、两段式点击建边弹窗起止回显全过。顺带修复两处前端缺陷：①G6 v5 点击判定误用 `target.type`（恒 undefined）致点击节点展开邻接自 v2 起实际失效，改 `targetType`；②Kiota 把节点 `properties` 字典收进 `additionalData` 致属性读取恒空（实例列表同受影响），`flattenNodeProperties` 归一化。
 - v2.9 AI 导入文件生成图谱：单测 **49/49**（新增 `KnowledgeGraphImportParserTests` 4 例）；E2E `node local-dev/kg-import-e2e.mjs http://127.0.0.1:5000` → **PASS 7/7**（桩模型：模板图建图、model-options、非法 objectKey 400、导入 2 节点 1 边入图、画布计数、航段属性、空白模板图 409）；真实模型冒烟（Qwen3.5 9B 导入 txt：新增 6 节点 6 边，画布 11→17，航段属性完整）；前端 typecheck 0、lint 0 错误、vitest **430/430**；浏览器走查导入弹窗与结果展示。踩坑：`string.Equals(x, y, StringComparison)` 不可翻译为 SQL（model-options 首版放查询内 500，改为内存过滤）；GLM/DeepSeek 渠道对 `DisableThinking`（reasoning_effort=none）报 400001/402 为渠道侧问题，导入对模型无思考链要求时建议选 Qwen 系（2026-09-21）。
+- Text2Cypher 查图插件（KT）：单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests/MoAI.AIPlugin.Dynamic.Tests.csproj` → **PASS 36/36**（2026-09-22，`CypherReadOnlyGuardTests` 29 例 + `KgCypherQueryPluginParamsTests` 7 例）；E2E `node local-dev/kg-text2cypher-e2e.mjs` **已就绪待运行**（后端待重启加载含 `kg_cypher_query` 的新构建，运行前勿对旧构建执行）。
 
 ## 映射表
 
@@ -63,6 +64,25 @@
 | KX-06 | 批量导入 ≤200、任一失败整批 400 且数据不变 | 同上 |
 | KX-07 | connected 图谱外部写 409 | 同上 |
 | KX-08 | 无/伪造/内部 token 401·403 | 同上 |
+
+## Text2Cypher 查图插件映射（KT-S*，`/api/team/{teamId}/plugin/dynamic`）
+
+> 编号沿用证据脚本 [kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)（不复用 KG-\*/KX-\*）；行为场景见 [bdd Text2Cypher 段](./bdd.md#feature-text2cypher-查图插件消费kt-s)。单测挂 [tests/MoAI.AIPlugin.Dynamic.Tests/](../../tests/MoAI.AIPlugin.Dynamic.Tests/)（插件工程，非 KG 测试工程）；插件本体与安全设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)。
+
+| 场景 | 覆盖 | 结果 |
+|---|---|---|
+| @KT-S1 | —（模板注册走 `PluginRegistry` 自动扫描，由 `dynamic-plugin-e2e.mjs#DYN-S48` 断言）；实例创建由 teamplugin 保存 Handler 校验归属 | 单测 **PASS 36/36（2026-09-22）**；E2E 已就绪待运行 |
+| @KT-S2 | teamplugin `SaveTeamDynamicPluginCommandHandler` 图谱存在性与团队归属校验（越团队 403/图谱不存在 404） | E2E 已就绪待运行 |
+| @KT-S3 | `KgCypherAccessService` schema 摘要（托管图查 PG 类型表 + 图库采样；接入图走内省缓存） | E2E 已就绪待运行 |
+| @KT-S4 | `KgCypherAccessService` 托管图按 $kgId 执行 + 表格化 | E2E 已就绪待运行 |
+| @KT-S5 | `KgCypherAccessService` $kgId 门禁（托管图缺失报教学式错误）+ 结果侧 kgId 归属校验 | E2E 已就绪待运行 |
+| @KT-S6 | `CypherReadOnlyGuardTests`（黑名单 10 关键字逐个、注释/字面量剥除后扫描、大小写、多语句、非只读首关键字等 29 例） | 单测 **PASS 36/36（2026-09-22）**；E2E 已就绪待运行 |
+| @KT-S7 | `KgCypherAccessService` 行数截断（仿 `SqlResultReader`，超 `maxRows` 置 truncated） | E2E 已就绪待运行 |
+| @KT-S8 | —（依赖慢查询负载，@manual） | 人工验证 |
+| @KT-S9 | `KgCypherAccessService` 接入图按库路由（免 $kgId） | E2E 已就绪待运行 |
+| @KT-S10 | 团队插件运行门禁（跨团队实例 key 404） | E2E 已就绪待运行 |
+
+> 附带：`local-dev/dynamic-plugin-e2e.mjs#DYN-S48` 断言 `kg_cypher_query` 出现在动态模板注册表（不依赖图数据库，随 DYN 套件回归）。
 
 ## v2 前端映射（vitest）
 

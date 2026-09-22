@@ -108,4 +108,5 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 - 外部接口 schema 计数为逐类型计数（N+1）：类型很多时图库往返次数多，量级可控，暂不合并为单条 Cypher。
 - 外部接口「删除类型」与「批量写」存在毫秒级并发竞态（删除检查与批量校验非同一事务）；面向可信调用方可接受。
 - 平台存在双错误格式：`ExternalAuthenticationMiddleware` 的 `{error:...}` 与全局管道的 `BusinessValidationResult` 并存（既有行为，外部调用方需两者都兼容）。
-- 后续迭代：AI 抽取入图（审核流）、应用绑定 `graph_ids` 与图检索（graph as tool）、画布编辑、结构化导入、Cypher 控制台。
+- 消费端已落地：**Text2Cypher 查图插件**（2026-09-21）——内置动态插件模板 `kg_cypher_query` + KG 访问服务 `IKgCypherAccessService`（托管图 `$kgId` 门禁与结果侧 kgId 归属校验、接入图按库路由、schema 自描述）+ teamplugin 实例保存归属校验（越团队 403/图谱不存在 404），Agent 对话模型即席只读查图；设计见 [2026-09-21-kg-text2cypher-plugin-design.md](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)，场景 [@KT-S1~S10](./bdd.md#feature-text2cypher-查图插件消费kt-s)。
+- 后续迭代：AI 抽取入图（审核流）、**GraphRAG 应用绑定与图检索（SP-A，进行中）**、画布编辑、结构化导入、Cypher 控制台。

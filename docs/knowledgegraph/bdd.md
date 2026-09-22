@@ -1,6 +1,6 @@
 # 知识图谱模块行为场景（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)
 
 ## Feature: 托管图谱（managed）
 
@@ -303,4 +303,66 @@ Scenario: 接入图对外部只读
 Scenario: 外部接口仅接受应用 token
   When 无 token、伪造 token 或内部用户 JWT 调用外部接口
   Then 分别返回未认证/未认证/未认证或禁止
+```
+
+> Text2Cypher 查图插件消费场景编号沿用证据脚本 `kg-text2cypher-e2e.mjs` 的 KT-\* 体系（@KT-S1~S10），不复用 KG-\*/KX-\*。插件本体与安全设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)。**E2E 已就绪待运行**（后端待重启加载含 `kg_cypher_query` 的新构建），运行通过前不以「已通过」口径登记。
+
+## Feature: Text2Cypher 查图插件消费（KT-S*）
+
+```gherkin
+@KT-S1 @auto:e2e
+Scenario: 实例创建与模板注册
+  Given 动态插件注册表已自动扫描到内置模板 kg_cypher_query（isDynamic）
+  When 团队管理员以 templeteKey=kg_cypher_query 绑定本团队托管图创建实例
+  Then 创建成功且团队动态模板列表含 kg_cypher_query
+
+@KT-S2 @auto:e2e
+Scenario: 越团队绑定图谱被拒
+  Given 其他团队已存在一张托管图
+  When 本团队创建 kg_cypher_query 实例时绑定该他团队图谱
+  Then 返回禁止（403，实例保存校验图谱归属）
+
+@KT-S3 @auto:e2e
+Scenario: schema 自描述
+  Given 实例已绑定托管图且图内已有实体类型与节点
+  When 以 {"schema":true} 运行实例
+  Then 返回摘要含实体类型（≥1）、usage 指引（含 $kgId 用法）
+
+@KT-S4 @auto:e2e
+Scenario: 合法只读查询
+  When 提交含 {kgId: $kgId} 过滤的只读 Cypher
+  Then 返回结果表格且行数 ≥1
+
+@KT-S5 @auto:e2e
+Scenario: 缺 $kgId 的查询被拒
+  When 提交未含 $kgId 占位符的查询（托管图）
+  Then 返回失败且错误文案含 $kgId 教学指引
+
+@KT-S6 @auto:e2e
+Scenario: 写语句全部拒绝
+  When 分别提交 CREATE/MERGE/DETACH DELETE/SET/CALL 语句
+  Then 全部返回失败且错误提示只读（守卫先于连接，不依赖图库可达）
+
+@KT-S7 @auto:e2e
+Scenario: 行数超上限截断
+  Given 图内节点数大于实例 maxRows（如 maxRows=2 而图内 4 节点）
+  When 提交不带 LIMIT 的全量查询
+  Then 返回行数等于 maxRows 且 truncated=true
+
+@KT-S8 @manual
+Scenario: 超时配置生效
+  Given 实例 timeoutSeconds 配置为极小值
+  When 执行注入负载的慢查询
+  Then 查询按超时失败且会话不挂起（依赖慢查询负载，人工验证）
+
+@KT-S9 @auto:e2e
+Scenario: 接入图查询无需 $kgId
+  Given 实例绑定的图谱为外部接入图（整库即图，天然隔离）
+  When 提交不含 $kgId 的只读 Cypher
+  Then 查询成功（图库不可达时本场景自动降级 SKIP）
+
+@KT-S10 @auto:e2e
+Scenario: 非成员团队运行实例被拒
+  When 其他团队以本团队实例 key 运行插件
+  Then 返回不存在（404）或失败，不泄露实例与图数据
 ```

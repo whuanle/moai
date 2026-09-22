@@ -1,6 +1,6 @@
 # 知识图谱模块操作手册（SOP）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)
 
 ## 1. 前置条件
 
@@ -73,3 +73,22 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 | 2026-09-15 | v2.1 动态内省 + 接入图画布：单测 **40/40**、**E2E 47/47 PASS**（新增 S17~S19）、前端 typecheck/lint 0 错误、vitest 258/258 |
 | 2026-09-15 | v2.2 图谱头像：单测 **42/42**、**E2E 52/52 PASS**（新增 S20，真实存储直传验证）、前端 typecheck/lint 0 错误、vitest 258/258 |
 | 2026-09-21 | v2.5 物流模板 + 默认图览：单测 **43/43**、**E2E 61/61 PASS**（5310 独立实例）、前端 typecheck/lint 0 错误、vitest 424/424 |
+
+## 6. kg_cypher_query 插件运维（Text2Cypher）
+
+- **是什么**：平台内置动态插件模板 `kg_cypher_query`——把一张团队图谱（托管或接入）暴露为 Agent 工具，对话模型以只读 Cypher 即席查图：先 `{"schema":true}` 自描述拿图结构与用法，再写 MATCH 查询。设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)，场景 [@KT-S1~S10](./bdd.md#feature-text2cypher-查图插件消费kt-s)。
+- **实例创建入口**：团队详情「插件」→ 动态插件 → 新建，模板选 `kg_cypher_query`。「绑定图谱」下拉列本团队托管图 + 接入图，选中后前端自动预填工具名称与描述（从图谱 schema 拉实体/关系类型拼说明，保留手改自由度）。配置仅存 `kgId / timeoutSeconds(1-300，默认 30) / maxRows(1-1000，默认 200)`，不存连接串；保存时校验图谱存在（404）且属于本团队（越团队 403）。
+- **只读三层保障**：
+  1. **文本守卫** `CypherReadOnlyGuard`：对注释与字符串字面量**先剥除后扫描**，黑名单 CREATE/MERGE/DELETE/DETACH/SET/REMOVE/LOAD CSV/FOREACH/CALL/DROP + 只读首关键字白名单 + 单语句 + 8000 字符上限，命中即 400 教学式报错（校验先于连接，不依赖图库可达）；
+  2. **托管图隔离**：`$kgId` 由系统自动注入并强制出现在查询中（缺失报教学错误），结果侧再对返回图元素逐个核对 kgId 归属（防字面量绕过），跨图数据拒绝返回；接入图整库即图、免 `$kgId`；
+  3. **资源限制**：行数超 `maxRows` 截断（`truncated:true`），单次查询按 `timeoutSeconds` 超时。
+- **常见报错对照**：
+
+| 现象 | 说明与处理 |
+|---|---|
+| 报「托管图谱查询必须包含 {kgId: $kgId} 过滤…」 | 教学文案：模型漏写 `$kgId` 过滤，错误文本会回喂对话循环自行修正，无需人工干预；接入图无此要求 |
+| 报错含「只读」 | 写语句（CREATE/MERGE/DELETE/SET/CALL 等）被文本守卫拒绝，属预期防护 |
+| 创建实例返回 403「只能绑定本团队的知识图谱」 | 绑定的图谱属于其他团队；只能绑定本团队托管图/接入图 |
+| 创建实例返回 400 | 配置非法：kgId 非正整数、timeoutSeconds/maxRows 越界（1-300/1-1000）等，按提示修正 |
+
+- **验证**：`node local-dev/kg-text2cypher-e2e.mjs`（依赖 Memgraph 与含 `kg_cypher_query` 的新构建后端，图库不可达时托管图场景以错误退出）；单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests/` → 36/36。
