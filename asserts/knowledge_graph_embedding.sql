@@ -7,6 +7,6 @@ ALTER TABLE knowledge_graph
 COMMENT ON COLUMN knowledge_graph.embedding_model_id IS '向量化模型的id；为空表示未配置、图谱不参与向量检索';
 
 ALTER TABLE knowledge_graph
-    ADD COLUMN IF NOT EXISTS embedding_dimensions integer DEFAULT 1024;
+    ADD COLUMN IF NOT EXISTS embedding_dimensions integer NOT NULL DEFAULT 1024;
 
 COMMENT ON COLUMN knowledge_graph.embedding_dimensions IS '知识图谱向量维度（1-2000，建 hnsw 索引的硬上限）';

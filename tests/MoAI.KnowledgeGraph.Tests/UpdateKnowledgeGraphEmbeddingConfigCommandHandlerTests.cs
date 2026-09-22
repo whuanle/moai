@@ -37,12 +37,12 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
     private static IKnowledgeGraphAuthorizer CreateAuthorizer(KnowledgeGraphEntity graph)
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
-        authorizer.Setup(x => x.AuthorizeAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        authorizer.Setup(x => x.AuthorizeAsync(KnowledgeGraphId, true, It.IsAny<CancellationToken>()))
             .ReturnsAsync((graph, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer.Object;
     }
 
-    private static async Task SeedModelAsync(TestSqliteContext db, bool enabled = true, bool isPublic = true)
+    private static async Task SeedModelAsync(TestSqliteContext db, bool enabled = true, bool isPublic = true, string modelKind = "embedding", bool authorizeToTeam = false)
     {
         var channel = new AiChannelEntity
         {
@@ -61,10 +61,19 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
             ChannelId = channel.Id,
             ModelId = "text-embedding-3-small",
             Name = "桩向量化模型",
-            ModelKind = "embedding",
+            ModelKind = modelKind,
             Enabled = enabled,
             IsPublic = isPublic,
         });
+        if (authorizeToTeam)
+        {
+            db.Context.AiModelAuthorizations.Add(new AiModelAuthorizationEntity
+            {
+                AiModelId = ModelId,
+                TeamId = 1,
+            });
+        }
+
         await db.Context.SaveChangesAsync(CancellationToken.None);
     }
 
@@ -112,5 +121,38 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
         var saved = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
         Assert.Equal(ModelId, saved!.EmbeddingModelId);
         Assert.Equal(1536, saved.EmbeddingDimensions);
+    }
+
+    [Fact]
+    public async Task Handle_AuthorizedNonPublicModel_SavesConfig()
+    {
+        using var db = await CreateGraphAsync();
+        var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
+        await SeedModelAsync(db, enabled: true, isPublic: false, authorizeToTeam: true);
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+
+        await sut.Handle(
+            new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1024 },
+            CancellationToken.None);
+
+        var saved = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
+        Assert.Equal(ModelId, saved!.EmbeddingModelId);
+        Assert.Equal(1024, saved.EmbeddingDimensions);
+    }
+
+    [Fact]
+    public async Task Handle_ModelKindMismatch_Throws400()
+    {
+        using var db = await CreateGraphAsync();
+        var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
+        await SeedModelAsync(db, enabled: true, isPublic: true, modelKind: "conversation");
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
+            new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1024 },
+            CancellationToken.None));
+
+        Assert.Equal(400, ex.StatusCode);
+        Assert.Equal("所选模型不是向量化模型.", ex.Message);
     }
 }
