@@ -61,7 +61,7 @@ public sealed class AppTool
     public required string Description { get; init; }
 
     /// <summary>
-    /// 来源类型：static|dynamic|mcp|openapi|wiki.
+    /// 来源类型：static|dynamic|mcp|openapi|wiki|graph.
     /// </summary>
     public required string Kind { get; init; }
 
