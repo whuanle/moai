@@ -39,6 +39,8 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
             Name = graph.Name,
             Description = graph.Description,
             TemplateKey = graph.TemplateKey,
+            EmbeddingModelId = graph.EmbeddingModelId,
+            EmbeddingDimensions = graph.EmbeddingDimensions,
             MyRole = (int)role,
             Enabled = settings.Enabled,
             Mode = graph.Mode,

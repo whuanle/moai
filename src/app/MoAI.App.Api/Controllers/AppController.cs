@@ -138,6 +138,7 @@ public class AppController : ControllerBase
             ModelId = req.ModelId,
             Prompt = req.Prompt,
             WikiIds = req.WikiIds,
+            GraphIds = req.GraphIds,
             Plugins = req.Plugins,
             WorkflowApps = req.WorkflowApps,
             Skills = req.Skills,

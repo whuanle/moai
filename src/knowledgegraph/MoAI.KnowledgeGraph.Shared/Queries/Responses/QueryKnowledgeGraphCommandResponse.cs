@@ -33,6 +33,16 @@ public class QueryKnowledgeGraphCommandResponse
     public string? TemplateKey { get; init; }
 
     /// <summary>
+    /// 向量化模型 id（元素为 ai_model.id 的 uuid）；未配置向量化时为 null.
+    /// </summary>
+    public Guid? EmbeddingModelId { get; init; }
+
+    /// <summary>
+    /// 向量维度；未配置向量化时为 0.
+    /// </summary>
+    public int EmbeddingDimensions { get; init; }
+
+    /// <summary>
     /// 我的角色.
     /// </summary>
     public int MyRole { get; init; }

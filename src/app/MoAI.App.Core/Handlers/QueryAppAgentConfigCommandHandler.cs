@@ -58,6 +58,7 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             Prompt = config?.Prompt ?? string.Empty,
             ModelId = config?.ModelId ?? Guid.Empty,
             WikiIds = AppAgentConfigJson.ParseLongList(config?.WikiIds),
+            GraphIds = AppAgentConfigJson.ParseLongList(config?.GraphIds),
             Plugins = AppAgentConfigJson.ParseGuidList(config?.Plugins),
             WorkflowApps = AppAgentConfigJson.ParseGuidList(config?.WorkflowApps),
             Skills = AppAgentConfigJson.ParseGuidList(config?.Skills),

@@ -39,6 +39,11 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<long> WikiIds { get; set; } = new List<long>();
 
     /// <summary>
+    /// 绑定的知识图谱 id 列表（元素为 knowledge_graph.id）.
+    /// </summary>
+    public IReadOnlyList<long> GraphIds { get; set; } = new List<long>();
+
+    /// <summary>
     /// 绑定的插件 id 列表（元素为 plugin.id，uuid）.
     /// </summary>
     public IReadOnlyList<Guid> Plugins { get; set; } = new List<Guid>();
