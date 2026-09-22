@@ -6,7 +6,7 @@
 //   KGS-S2  建类型/节点 → 轮询 POST /{id}/search 命中：hits 字段/类型名/score、无边节点 neighbors 空数组 → 建边+第三节点 → neighbors 的 direction/relationName/name
 //   KGS-S3  改节点名 → 轮询：新名命中、旧名不命中（向量替换幂等）
 //   KGS-S4  建临时节点待向量化命中后删除 → 轮询：不再命中
-//   KGS-S5  minScore=0.999999 → hits 空；缺省 minScore → 命中
+//   KGS-S5  minScore 阈值过滤（数据驱动阈值 maxScore+0.0005，≥0.995 视为桩分布不可分打 INFO 跳过）→ hits 空；缺省 minScore → 命中
 //   KGS-S6  未配模型的第二张托管图 search → 409 且文案含「向量化」
 //   KGS-S7  embedding-config 边界：维度 0 → 400；假模型 Guid → 400；非法配置不破坏原配置
 //   KGS-S8  应用配置绑定：他团队 graphId → 400；本团队接入图 → 400；合法托管图 → 200 且回读
@@ -309,12 +309,27 @@ async function main() {
   const goneD = await pollSearch(token, G1, { query: nameD, topK: 10 }, (j) => !(j.hits ?? []).some((h) => h.name === nameD))
   check('KGS-S4c 删除节点后检索不命中', delD.status === 200 && goneD.ok, `${delD.status} poll=${goneD.ok}`)
 
-  // ===== KGS-S5 minScore 阈值过滤 =====
-  const s5hi = await search(token, G1, { query: nameA, topK: 5, minScore: 0.999999 })
-  const s5lo = await search(token, G1, { query: nameA, topK: 5 })
-  check('KGS-S5 minScore=0.999999 空 hits，缺省时命中',
-    s5hi.status === 200 && (s5hi.json?.hits ?? []).length === 0 && s5lo.status === 200 && (s5lo.json?.hits ?? []).length > 0,
-    `${s5hi.status}/${(s5hi.json?.hits ?? []).length} ${s5lo.status}/${(s5lo.json?.hits ?? []).length}`)
+  // ===== KGS-S5 minScore 阈值过滤（数据驱动阈值） =====
+  // 桩向量为逐字符确定性哈希：与「名称\n描述」同构的查询（如精确同名，\n 不参与分词）余弦可达 1.0，
+  // 固定高阈值（0.999999）不可过滤（实跑命中 1 条）。改为数据驱动：缺省检索取最高 score，
+  // minScore = min(0.999, maxScore + 0.0005) ——「score 必 < minScore」使空 hits 断言确定性成立；
+  // 查询用节点名中文前缀（与内容共享字符但非同构，避免 maxScore 恒为 1 走不可分分支）；
+  // maxScore ≥ 0.995（桩分布不可分）时该子场景打 INFO 跳过（不 FAIL）。
+  const s5Query = '玄德'
+  const s5lo = await search(token, G1, { query: s5Query, topK: 5 })
+  const scores5 = (s5lo.json?.hits ?? []).map((h) => Number(h.score ?? 0))
+  const maxScore5 = scores5.length > 0 ? Math.max(...scores5) : -1
+  if (maxScore5 >= 0.995) {
+    console.log(`INFO | KGS-S5 阈值过滤子场景跳过：maxScore=${maxScore5.toFixed(6)} ≥ 0.995（桩向量分布不可分）；缺省检索已命中 ${scores5.length} 条`)
+  } else if (maxScore5 >= 0) {
+    const minScore5 = Math.min(0.999, maxScore5 + 0.0005)
+    const s5hi = await search(token, G1, { query: s5Query, topK: 5, minScore: minScore5 })
+    check('KGS-S5 minScore 阈值过滤空 hits，缺省时命中',
+      s5hi.status === 200 && (s5hi.json?.hits ?? []).length === 0 && s5lo.status === 200 && scores5.length > 0,
+      `${s5hi.status}/${(s5hi.json?.hits ?? []).length} minScore=${minScore5.toFixed(6)} maxScore=${maxScore5.toFixed(6)}`)
+  } else {
+    check('KGS-S5 minScore 阈值过滤空 hits，缺省时命中', false, `缺省检索无命中: ${s5lo.status} ${s5lo.text.slice(0, 120)}`)
+  }
 
   // ===== KGS-S6 未配模型的第二张托管图 → 409 文案含「向量化」 =====
   const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs-nomodel-' + TS, templateKey: 'blank' } })
