@@ -17,6 +17,10 @@ namespace MoAI.KnowledgeGraph.Services;
 /// <summary>
 /// 知识图谱节点向量增量处理服务：按 delta 消息重建/删除节点向量（幂等，upsert 读图库最新状态）.
 /// </summary>
+/// <remarks>
+/// 收敛前提：同图谱 delta 走单队列 FIFO 按序消费（Qos=1）+ <see cref="IKgEmbeddingVectorStore.ReplaceNodeVectorsAsync"/> 每次重读图谱当前维度
+/// + 配置变更全量重嵌兜底；多实例并发消费同一队列会破坏该前提（一期为单体单实例部署）.
+/// </remarks>
 [InjectOnScoped]
 public class KgEmbeddingService : IKgEmbeddingService
 {

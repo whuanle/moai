@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Commands;
+using MoAI.KnowledgeGraph.Consumers.Events;
 using MoAI.KnowledgeGraph.Handlers;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Services;
@@ -257,6 +258,92 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task CreateNode_HappyPath_PublishesUpsertDelta()
+    {
+        using var db = TestSqliteContext.Create();
+        db.Context.KnowledgeGraphEntityTypes.Add(new KnowledgeGraphEntityTypeEntity
+        {
+            KnowledgeGraphId = KnowledgeGraphId,
+            Name = "人员",
+            Color = string.Empty,
+            Description = string.Empty,
+            Properties = "[]",
+            Sort = 0,
+        });
+        await db.Context.SaveChangesAsync(CancellationToken.None);
+
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.CreateNodeAsync(KnowledgeGraphId, It.IsAny<long>(), "节点", string.Empty, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("n1", KnowledgeGraphId, 1, "节点", string.Empty));
+
+        var (publisher, messages) = CreateCapturingPublisher();
+        var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, CreateAuthorizer().Object, store.Object, publisher.Object, CreateLogger<CreateKnowledgeGraphNodeCommandHandler>());
+
+        var result = await sut.Handle(
+            new CreateKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = 1, Name = "节点" },
+            CancellationToken.None);
+
+        Assert.Equal("n1", result.Value);
+        var message = Assert.Single(messages);
+        Assert.Equal(KnowledgeGraphId, message.KgId);
+        Assert.Equal(new[] { "n1" }, message.UpsertNodeIds);
+        Assert.Empty(message.DeleteNodeIds);
+    }
+
+    [Fact]
+    public async Task UpdateNode_HappyPath_PublishesUpsertDelta()
+    {
+        using var db = TestSqliteContext.Create();
+        db.Context.KnowledgeGraphEntityTypes.Add(new KnowledgeGraphEntityTypeEntity
+        {
+            KnowledgeGraphId = KnowledgeGraphId,
+            Name = "人员",
+            Color = string.Empty,
+            Description = string.Empty,
+            Properties = "[]",
+            Sort = 0,
+        });
+        await db.Context.SaveChangesAsync(CancellationToken.None);
+
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.GetNodeAsync(KnowledgeGraphId, "n1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("n1", KnowledgeGraphId, 1, "旧名", string.Empty));
+
+        var (publisher, messages) = CreateCapturingPublisher();
+        var sut = new UpdateKnowledgeGraphNodeCommandHandler(db.Context, CreateAuthorizer().Object, store.Object, publisher.Object, CreateLogger<UpdateKnowledgeGraphNodeCommandHandler>());
+
+        await sut.Handle(
+            new UpdateKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, NodeId = "n1", EntityTypeId = 1, Name = "新名" },
+            CancellationToken.None);
+
+        var message = Assert.Single(messages);
+        Assert.Equal(KnowledgeGraphId, message.KgId);
+        Assert.Equal(new[] { "n1" }, message.UpsertNodeIds);
+        Assert.Empty(message.DeleteNodeIds);
+    }
+
+    [Fact]
+    public async Task DeleteNode_HappyPath_PublishesDeleteDelta()
+    {
+        using var db = TestSqliteContext.Create();
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.DeleteNodeAsync(KnowledgeGraphId, "n1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var (publisher, messages) = CreateCapturingPublisher();
+        var sut = new DeleteKnowledgeGraphNodeCommandHandler(CreateAuthorizer().Object, store.Object, publisher.Object, CreateLogger<DeleteKnowledgeGraphNodeCommandHandler>());
+
+        await sut.Handle(
+            new DeleteKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, NodeId = "n1" },
+            CancellationToken.None);
+
+        var message = Assert.Single(messages);
+        Assert.Equal(KnowledgeGraphId, message.KgId);
+        Assert.Empty(message.UpsertNodeIds);
+        Assert.Equal(new[] { "n1" }, message.DeleteNodeIds);
+    }
+
     private static Mock<IKnowledgeGraphAuthorizer> CreateAuthorizer()
     {
         var authorizer = new Mock<IKnowledgeGraphAuthorizer>();
@@ -270,6 +357,18 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
     private static Maomi.MQ.IMessagePublisher CreateMessagePublisher()
         => Mock.Of<Maomi.MQ.IMessagePublisher>();
 
+    private static (Mock<Maomi.MQ.IMessagePublisher> Publisher, List<KgNodeEmbeddingDeltaMessage> Messages) CreateCapturingPublisher()
+    {
+        var messages = new List<KgNodeEmbeddingDeltaMessage>();
+        var publisher = new Mock<Maomi.MQ.IMessagePublisher>();
+        publisher
+            .Setup(x => x.AutoPublishAsync(Capture.In(messages), null, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return (publisher, messages);
+    }
+
     private static Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>()
         => Microsoft.Extensions.Logging.Abstractions.NullLogger<T>.Instance;
 }
+
+

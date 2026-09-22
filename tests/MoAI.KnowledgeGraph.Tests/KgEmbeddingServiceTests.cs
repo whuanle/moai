@@ -183,6 +183,51 @@ public class KgEmbeddingServiceTests
         vectorStore.Verify(x => x.ReplaceNodeVectorsAsync(KnowledgeGraphId, "bad", It.IsAny<IReadOnlyList<KgEmbeddingVectorRecord>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task ProcessDeltaAsync_AllUpsertFailed_Throws()
+    {
+        using var db = await CreateDbAsync();
+        var vectorStore = new Mock<IKgEmbeddingVectorStore>();
+        var graphStore = new Mock<IKnowledgeGraphStore>();
+        graphStore
+            .Setup(x => x.GetNodeAsync(KnowledgeGraphId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KnowledgeGraphNodeRecord("n", KnowledgeGraphId, 5, "节点", "描述"));
+
+        var generator = new Mock<IEmbeddingGenerator<string, Embedding<float>>>();
+        generator
+            .Setup(x => x.GenerateAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<EmbeddingGenerationOptions>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("向量模型不可用"));
+
+        var sut = CreateSut(db.Context, vectorStore.Object, provider: CreateGeneratorProvider(generator.Object).Object, graphStore: graphStore.Object);
+
+        // 全部 upsert 失败：抛出最后异常触发 MQ 重投
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessDeltaAsync(
+            new KgNodeEmbeddingDeltaMessage { KgId = KnowledgeGraphId, UpsertNodeIds = ["a", "b"] },
+            CancellationToken.None));
+
+        Assert.Equal("向量模型不可用", ex.Message);
+        vectorStore.Verify(x => x.ReplaceNodeVectorsAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<KgEmbeddingVectorRecord>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessDeltaAsync_AllDeleteFailed_Throws()
+    {
+        using var db = await CreateDbAsync();
+        var vectorStore = new Mock<IKgEmbeddingVectorStore>();
+        vectorStore
+            .Setup(x => x.DeleteNodeVectorsAsync(KnowledgeGraphId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("向量库不可用"));
+
+        var sut = CreateSut(db.Context, vectorStore.Object);
+
+        // 全部 delete 失败：抛出最后异常触发 MQ 重投
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessDeltaAsync(
+            new KgNodeEmbeddingDeltaMessage { KgId = KnowledgeGraphId, DeleteNodeIds = ["a", "b"] },
+            CancellationToken.None));
+
+        Assert.Equal("向量库不可用", ex.Message);
+    }
+
     private static KgEmbeddingService CreateSut(
         Database.DatabaseContext context,
         IKgEmbeddingVectorStore vectorStore,

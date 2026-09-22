@@ -64,6 +64,17 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
             .Where(x => x.KnowledgeGraphId == graph.Id)
             .ToListAsync(cancellationToken);
 
+        // 向量集合清理必须先行：软删后全局 IsDeleted 过滤器会让向量存储的维度解析查不到图谱（返回 0 直接跳过），清理会失效；
+        // 失败仅记日志，删除继续（孤儿集合仅占空间，不影响业务）
+        try
+        {
+            await _vectorStore.DeleteGraphVectorsAsync(graph.Id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "删除图谱向量集合失败（孤儿集合不影响业务）. KgId={KgId}", graph.Id);
+        }
+
         _databaseContext.KnowledgeGraphRelationTypes.RemoveRange(relationTypes);
         _databaseContext.KnowledgeGraphEntityTypes.RemoveRange(entityTypes);
         _databaseContext.KnowledgeGraphs.Remove(graph);
@@ -72,16 +83,6 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
         if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(graph.Database))
         {
             await _introspectionCache.RemoveAsync(graph.Id, graph.Database, cancellationToken);
-        }
-
-        // 删图成功后清理该图的 pgvector 集合；失败不阻塞删除响应（孤儿集合仅占空间，不影响业务）
-        try
-        {
-            await _vectorStore.DeleteGraphVectorsAsync(graph.Id, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "删除图谱向量集合失败（孤儿集合不影响业务）. KgId={KgId}", graph.Id);
         }
 
         return EmptyCommandResponse.Default;

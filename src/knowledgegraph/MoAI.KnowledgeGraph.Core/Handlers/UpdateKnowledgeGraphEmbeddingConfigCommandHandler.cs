@@ -20,6 +20,11 @@ namespace MoAI.KnowledgeGraph.Handlers;
 /// </summary>
 public class UpdateKnowledgeGraphEmbeddingConfigCommandHandler : IRequestHandler<UpdateKnowledgeGraphEmbeddingConfigCommand, EmptyCommandResponse>
 {
+    /// <summary>
+    /// 全量重嵌节点数上限（与 CypherKnowledgeGraphStore.GetNodeIdsAsync 的 LIMIT 保持一致）.
+    /// </summary>
+    private const int ReembedNodeLimit = 5000;
+
     private readonly DatabaseContext _databaseContext;
     private readonly IKnowledgeGraphAuthorizer _authorizer;
     private readonly IKnowledgeGraphStore _store;
@@ -106,6 +111,11 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandler : IRequestHandler
         {
             // 首次配置与变更配置都发全量 delta：让已有节点立即可检索（消费侧静默跳过未配置场景）
             var nodeIds = await _store.GetNodeIdsAsync(graph.Id, cancellationToken);
+            if (nodeIds.Count >= ReembedNodeLimit)
+            {
+                _logger.LogWarning("图谱 {KgId} 节点数达到全量重嵌上限 5000，超出部分未重建向量", graph.Id);
+            }
+
             if (nodeIds.Count > 0)
             {
                 await KgEmbeddingDeltaPublisher.PublishNodesUpsertAsync(_messagePublisher, _logger, graph.Id, nodeIds);
