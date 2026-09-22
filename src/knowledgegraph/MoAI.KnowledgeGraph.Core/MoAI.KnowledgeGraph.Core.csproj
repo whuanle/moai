@@ -16,7 +16,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
 		<PackageReference Include="Maomi.ToMarkdown" />
+		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
 		<PackageReference Include="Neo4j.Driver" />
 		<PackageReference Include="Npgsql" />
 		<PackageReference Include="StackExchange.Redis.Extensions.Core" />
