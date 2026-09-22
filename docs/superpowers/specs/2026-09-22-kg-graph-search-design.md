@@ -35,10 +35,14 @@
 
 ```
 节点 CRUD/批量导入/AI 导入完成
-   └→ MQ 消息 {kgId, upsertNodeIds[], deleteNodeIds[]}
-        └→ WorkerTask（bindType=kg_embedding, bindId=kgId, 活跃唯一）→ Consumer 认领
-             └→ 读 PG KgNode → IEmbeddingGeneratorProvider 向量化 name+description
+   └→ MQ delta 消息 {kgId, upsertNodeIds[], deleteNodeIds[]}（Maomi.MQ，RouterKey kg.node.embedding）
+        └→ Consumer 认领（[Consumer(Qos=1)]，模块程序集扫描自动注册）
+             └→ 逐节点读 PG KgNode → IEmbeddingGeneratorProvider 向量化 name+description
                   └→ __kg_{kgId} 集合：按 NodeId 先删后插；deleteNodeIds 直接删
+   说明：wiki 的 WorkerTask（活跃唯一约束）用于「手动触发、需 409 防重」的文档向量化；KG 的节点级
+   向量化由 CRUD 自动触发，任务冲突 409 会打断用户操作、活跃时跳过入队会丢 delta，故一期不建
+   WorkerTask，依赖 MQ 重投 + 消费幂等（upsert 读 PG 最新状态，多次 delta 自然合并）；
+   「全量重建 + 进度可见」留二期。
 
 Agent 对话：模型 call_tool search_knowledge_graph({query})
    └→ GraphAppToolProvider（绑定 GraphIds 非空才注册）
@@ -54,7 +58,7 @@ Agent 对话：模型 call_tool search_knowledge_graph({query})
 ## 4. 向量化基建
 
 - **存储**：`PgVectorKgEmbeddingVectorStore` 镜像 `PgVectorWikiEmbeddingVectorStore`；记录 `KgEmbeddingVectorRecord(Key=Guid, KgId, NodeId(string), EntityTypeId(long), Name, Content, Embedding)`；`__kg_{id}` 表、`DistanceFunction.CosineSimilarity` + `IndexKind.Hnsw`，维度取图谱配置（1-2000）
-- **模型配置**：`KnowledgeGraphEntity` 新增 `EmbeddingModelId(long?)`、`EmbeddingDimensions(int)`（1-2000，配置模型时可默认带出）；图谱设置页配置；未配置 → 图谱不参与检索
+- **模型配置**：`KnowledgeGraphEntity` 新增 `EmbeddingModelId(Guid?)`、`EmbeddingDimensions(int)`（1-2000，默认 1024，对齐 wiki 两列口径；ai_model 主键为 Guid）；图谱设置页配置；未配置 → 图谱不参与检索
 - **触发点**：`CreateNode`/`UpdateNode`/`DeleteNode` Handler、批量导入（UNWIND 批后）、AI 导入完成后——统一发 delta 消息；`DeleteKnowledgeGraph` → 删除 `__kg_{id}` 集合整表（修 wiki 缺口）；`UpdateNode` 若 name/description 未变则跳过向量化（消息里带内容哈希比对可后续优化，一期直接重嵌，量级可接受）
 - **失败语义**：消费失败走 MQ 重投与死信（对齐 wiki），应用层不重试；向量缺失的图谱检索降级为空结果+提示，不报错
 
