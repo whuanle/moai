@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Alert, Button, Descriptions, Form, Input, Popconfirm, Space } from 'antd'
+import { Alert, AutoComplete, Button, Descriptions, Form, Input, Popconfirm, Select, Space } from 'antd'
 import { ClusterOutlined } from '@ant-design/icons'
 import { AvatarUpload, Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -9,9 +9,12 @@ import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
 import {
   deleteKnowledgeGraph,
+  getKnowledgeGraphModelOptions,
   updateKnowledgeGraph,
+  updateKnowledgeGraphEmbeddingConfig,
   uploadKnowledgeGraphAvatar,
   type KnowledgeGraphDetail as GraphDetail,
+  type KnowledgeGraphModelOption,
 } from '@/api/knowledgeGraph'
 
 const ROLE_MEMBER = 0
@@ -20,6 +23,15 @@ interface SettingsFormValues {
   name: string
   description?: string
 }
+
+interface EmbeddingFormValues {
+  embeddingModelId: string
+  embeddingDimensions: number
+}
+
+/** 向量维度预设档位：维度由用户手动设置，上限 2000（pgvector 建 hnsw 索引硬上限），与知识库设置页一致 */
+const EMBEDDING_DIMENSION_OPTIONS = [256, 512, 1024, 2048]
+const EMBEDDING_DIMENSION_MAX = 2000
 
 interface KnowledgeGraphSettingsProps {
   graph: GraphDetail | null
@@ -32,6 +44,13 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [form] = Form.useForm<SettingsFormValues>()
+  const [embeddingForm] = Form.useForm<EmbeddingFormValues>()
+  const [embeddingSaving, setEmbeddingSaving] = useState(false)
+  const [embeddingModels, setEmbeddingModels] = useState<KnowledgeGraphModelOption[]>([])
+  const [modelOptionsLoading, setModelOptionsLoading] = useState(false)
+  const [modelOptionsLoaded, setModelOptionsLoaded] = useState(false)
+  const [modelOptionsFailed, setModelOptionsFailed] = useState(false)
+  const [dimensionsOpen, setDimensionsOpen] = useState(false)
 
   const isAdminPlus = graph?.myRole != null && graph.myRole !== ROLE_MEMBER
   const isConnected = graph?.mode === 'connected'
@@ -61,7 +80,41 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
       name: graph?.name ?? '',
       description: graph?.description ?? undefined,
     })
-  }, [graph, form])
+    embeddingForm.setFieldsValue({
+      embeddingModelId: graph?.embeddingModelId ?? '',
+      embeddingDimensions: graph?.embeddingDimensions ?? undefined,
+    })
+  }, [graph, form, embeddingForm])
+
+  // 向量化模型选项（仅托管图 + Admin+ 需要；模型渠道配置变化后重新进入页面可重取）
+  useEffect(() => {
+    const kgId = Number(graph?.kgId ?? 0)
+    const teamId = Number(graph?.teamId ?? 0)
+    if (!isAdminPlus || isConnected || !kgId || !teamId) return
+    let cancelled = false
+    setModelOptionsLoading(true)
+    setModelOptionsLoaded(false)
+    setModelOptionsFailed(false)
+    getKnowledgeGraphModelOptions(teamId)
+      .then((options) => {
+        if (cancelled) return
+        setEmbeddingModels(options.embeddingModels ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEmbeddingModels([])
+          setModelOptionsFailed(true)
+        }
+      })
+      .finally(() => {
+        if (cancelled) return
+        setModelOptionsLoading(false)
+        setModelOptionsLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isAdminPlus, isConnected, graph])
 
   const handleSave = async () => {
     if (!graph?.kgId) return
@@ -86,6 +139,24 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
       navigate('/kg')
     } catch {
       // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const handleSaveEmbeddingConfig = async () => {
+    if (!graph?.kgId || modelOptionsFailed) return
+    setEmbeddingSaving(true)
+    try {
+      const values = await embeddingForm.validateFields()
+      await updateKnowledgeGraphEmbeddingConfig(Number(graph.kgId), values)
+      feedback.success(t('knowledgegraph.embedding.saveSuccess'))
+      onChanged()
+    } catch (error) {
+      // 错误已由全局请求中间件统一提示；409（配置被并发修改等）时回读最新值
+      if (error instanceof Error && error.message.includes('409')) {
+        onChanged()
+      }
+    } finally {
+      setEmbeddingSaving(false)
     }
   }
 
@@ -126,6 +197,85 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
               {t('knowledgegraph.save')}
             </Button>
           </Form>
+          {isConnected ? (
+            <Alert
+              type="info"
+              showIcon
+              message={t('knowledgegraph.embedding.connectedHint')}
+              style={{ marginTop: spacing.lg }}
+            />
+          ) : (
+            modelOptionsLoaded && (
+              <Form
+                form={embeddingForm}
+                initialValues={{
+                  embeddingModelId: graph.embeddingModelId ?? '',
+                  embeddingDimensions: graph.embeddingDimensions ?? undefined,
+                }}
+                layout="vertical"
+                style={{ marginTop: spacing.lg }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: spacing.md }}>
+                  {t('knowledgegraph.embedding.title')}
+                </div>
+                {modelOptionsFailed && (
+                  <Alert
+                    type="error"
+                    showIcon
+                    message={t('knowledgegraph.embedding.optionsFailed')}
+                    style={{ marginBottom: spacing.md }}
+                  />
+                )}
+                <Form.Item
+                  name="embeddingModelId"
+                  label={t('knowledgegraph.embedding.model')}
+                  extra={t('knowledgegraph.embedding.extra')}
+                  rules={[{ required: true, message: t('knowledgegraph.embedding.modelRequired') }]}
+                >
+                  <Select
+                    options={embeddingModels.map((model) => ({ value: model.id ?? '', label: model.name ?? model.id ?? '' }))}
+                    loading={modelOptionsLoading}
+                    disabled={modelOptionsFailed}
+                    showSearch
+                    virtual={false}
+                    notFoundContent={t('knowledgegraph.embedding.modelEmpty')}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="embeddingDimensions"
+                  label={t('knowledgegraph.embedding.dimension')}
+                  extra={t('knowledgegraph.embedding.dimensionExtra')}
+                  normalize={(value) => (value === '' || value == null ? undefined : Number(value))}
+                  rules={[
+                    { required: true, message: t('knowledgegraph.embedding.dimensionRequired') },
+                    { type: 'number', min: 1, max: EMBEDDING_DIMENSION_MAX, message: t('knowledgegraph.embedding.dimensionInvalid') },
+                    { validator: (_, value) => (Number.isInteger(value) ? Promise.resolve() : Promise.reject(new Error(t('knowledgegraph.embedding.dimensionInvalid')))) },
+                  ]}
+                >
+                  <AutoComplete
+                    options={EMBEDDING_DIMENSION_OPTIONS.map((value) => ({ value: String(value), label: String(value) }))}
+                    disabled={modelOptionsFailed}
+                    open={dimensionsOpen}
+                    filterOption={(inputValue, option) => option?.value.includes(inputValue) ?? false}
+                    onFocus={() => setDimensionsOpen(true)}
+                    onChange={() => setDimensionsOpen(true)}
+                    onSelect={(value) => {
+                      embeddingForm.setFieldValue('embeddingDimensions', Number(value))
+                      setDimensionsOpen(false)
+                    }}
+                  />
+                </Form.Item>
+                <Button
+                  type="primary"
+                  loading={embeddingSaving}
+                  disabled={modelOptionsFailed}
+                  onClick={() => void handleSaveEmbeddingConfig()}
+                >
+                  {t('knowledgegraph.embedding.save')}
+                </Button>
+              </Form>
+            )
+          )}
           <Descriptions column={1} style={{ marginTop: spacing.lg }}>
             {isConnected ? (
               <Descriptions.Item label={t('knowledgegraph.database')}>{graph?.database || '-'}</Descriptions.Item>

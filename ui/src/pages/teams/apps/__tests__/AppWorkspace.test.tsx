@@ -18,6 +18,7 @@ vi.mock('@/api/app', () => ({
 vi.mock('@/api/gateway', () => ({ getTeamGatewayModels: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/team-plugin', () => ({ getTeamPlugins: vi.fn().mockResolvedValue({ items: [] }) }))
 vi.mock('@/api/wiki', () => ({ getWikis: vi.fn().mockResolvedValue({ items: [] }) }))
+vi.mock('@/api/knowledgeGraph', () => ({ getKnowledgeGraphs: vi.fn().mockResolvedValue({ items: [] }) }))
 vi.mock('@/api/agentChat', () => ({
   createAppChatAgent: vi.fn(() => ({})),
   runAppChat: vi.fn().mockResolvedValue(undefined),

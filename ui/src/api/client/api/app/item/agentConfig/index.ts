@@ -23,7 +23,7 @@ export interface AgentConfigRequestBuilder extends BaseRequestBuilder<AgentConfi
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAppAgentConfigCommandResponse | undefined>;
     /**
      * 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库必须在该团队有权使用的范围内，越权绑定返回 400.
-     * @param body 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库必须在该团队有权使用的范围内.
+     * @param body 保存 Agent 应用配置（对话模型、允许使用的插件、知识库、知识图谱与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库/知识图谱必须在该团队有权使用的范围内.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -41,7 +41,7 @@ export interface AgentConfigRequestBuilder extends BaseRequestBuilder<AgentConfi
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
      * 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库必须在该团队有权使用的范围内，越权绑定返回 400.
-     * @param body 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库必须在该团队有权使用的范围内.
+     * @param body 保存 Agent 应用配置（对话模型、允许使用的插件、知识库、知识图谱与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库/知识图谱必须在该团队有权使用的范围内.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

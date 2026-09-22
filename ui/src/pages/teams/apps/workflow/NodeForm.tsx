@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLinesData, WorkflowNodePortsData } from '@flowgram.ai/free-layout-editor'
 
 import { getWikis } from '@/api/wiki'
+import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getMyPrompts, getPromptDetail, getTeamPrompts } from '@/api/prompt'
@@ -1094,6 +1095,75 @@ function KnowledgeQueryBinding({
   )
 }
 
+// ==================== 知识图谱检索：图谱选择（静态，v1 不做变量绑定） + 召回条数 + 检索问题 ====================
+
+/** 知识图谱来源（单个静态选择）：仅本团队托管图（接入图不参与向量检索）；v1 不做变量绑定，与引擎契约一致 */
+function KnowledgeGraphSelectSection({
+  data,
+  onUpdateData,
+}: {
+  data: NodeData
+  onUpdateData: (patch: Partial<NodeData>) => void
+}) {
+  const { t } = useTranslation()
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const [graphOptions, setGraphOptions] = useState<{ value: number; label: string }[]>([])
+
+  useEffect(() => {
+    if (!teamId) return
+    let cancelled = false
+    getKnowledgeGraphs(teamId)
+      .then((res) => {
+        if (cancelled) return
+        setGraphOptions(
+          (res.items ?? [])
+            .filter((g) => g.mode === 'managed' && g.kgId != null)
+            .map((g) => ({ value: Number(g.kgId), label: String(g.name ?? g.kgId) })),
+        )
+      })
+      .catch(() => {
+        // 团队知识图谱列表加载失败时仅空选项，不阻塞节点编辑
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
+
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.kgGraph')} />
+      <Select
+        size="small"
+        style={{ width: '100%' }}
+        showSearch
+        optionFilterProp="label"
+        value={typeof data.settings?.graphId === 'number' && data.settings.graphId > 0 ? data.settings.graphId : undefined}
+        placeholder={t('workflowDesigner.kgGraphPlaceholder')}
+        notFoundContent={t('workflowDesigner.kgGraphEmpty')}
+        options={graphOptions}
+        onChange={(v) => onUpdateData({ settings: { ...data.settings, graphId: v } })}
+        allowClear
+      />
+      <div className="wf-b-row" style={{ marginTop: 8 }}>
+        <span className="wf-out-name" style={{ whiteSpace: 'nowrap' }}>{t('workflowDesigner.kgTopK')}</span>
+        <InputNumber
+          size="small"
+          min={1}
+          max={KNOWLEDGE_TOPK_MAX}
+          precision={0}
+          style={{ width: 88 }}
+          value={typeof data.settings?.topK === 'number' && data.settings.topK >= 1 ? data.settings.topK : 5}
+          onChange={(v) => {
+            if (v == null) return
+            onUpdateData({ settings: { ...data.settings, topK: Math.min(Math.max(Number(v), 1), KNOWLEDGE_TOPK_MAX) } })
+          }}
+        />
+      </div>
+      <div className="wf-config-hint">{t('workflowDesigner.kgGraphHint')}</div>
+    </div>
+  )
+}
+
 // ==================== 插件节点：团队工具选择 + 响应 schema 自动填充输出 ====================
 
 interface TeamToolOption {
@@ -1449,6 +1519,15 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
           <>
             <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
             <KnowledgeWikiSelect data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <KnowledgeQueryBinding data={nodeData} nodeId={nodeId} onUpdateData={patch} />
+            <OutputsSection outputs={nodeData.outputs ?? []} />
+          </>
+        )
+      case 'kgSearch':
+        return (
+          <>
+            <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <KnowledgeGraphSelectSection data={nodeData} onUpdateData={patch} />
             <KnowledgeQueryBinding data={nodeData} nodeId={nodeId} onUpdateData={patch} />
             <OutputsSection outputs={nodeData.outputs ?? []} />
           </>

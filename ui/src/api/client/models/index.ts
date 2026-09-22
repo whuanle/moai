@@ -2907,6 +2907,42 @@ export function createQueryKnowledgeGraphsCommandResponseFromDiscriminatorValue(
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphSearchCommand}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphSearchCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphSearchCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphSearchCommandResponse}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphSearchCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphSearchCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphSearchItem}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphSearchItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphSearchItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphSearchNeighborItem}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphSearchNeighborItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphSearchNeighborItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryKnowledgeGraphTemplatesCommandResponse}
  */
 // @ts-ignore
@@ -3991,6 +4027,15 @@ export function createUpdateKnowledgeGraphCommandFromDiscriminatorValue(parseNod
 // @ts-ignore
 export function createUpdateKnowledgeGraphEdgeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateKnowledgeGraphEdgeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateKnowledgeGraphEmbeddingConfigCommand}
+ */
+// @ts-ignore
+export function createUpdateKnowledgeGraphEmbeddingConfigCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateKnowledgeGraphEmbeddingConfigCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -6540,6 +6585,7 @@ export function deserializeIntoQueryAppAgentConfigCommandResponse(queryAppAgentC
         "appId": n => { queryAppAgentConfigCommandResponse.appId = n.getGuidValue(); },
         "appType": n => { queryAppAgentConfigCommandResponse.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "executionSettings": n => { queryAppAgentConfigCommandResponse.executionSettings = n.getObjectValue<UntypedNode>(createUntypedNodeFromDiscriminatorValue); },
+        "graphIds": n => { queryAppAgentConfigCommandResponse.graphIds = n.getCollectionOfPrimitiveValues<string>(); },
         "modelId": n => { queryAppAgentConfigCommandResponse.modelId = n.getGuidValue(); },
         "myRole": n => { queryAppAgentConfigCommandResponse.myRole = n.getNumberValue(); },
         "openingStatement": n => { queryAppAgentConfigCommandResponse.openingStatement = n.getStringValue(); },
@@ -6865,6 +6911,8 @@ export function deserializeIntoQueryKnowledgeGraphCommandResponse(queryKnowledge
         "createTime": n => { queryKnowledgeGraphCommandResponse.createTime = n.getStringValue(); },
         "database": n => { queryKnowledgeGraphCommandResponse.database = n.getStringValue(); },
         "description": n => { queryKnowledgeGraphCommandResponse.description = n.getStringValue(); },
+        "embeddingDimensions": n => { queryKnowledgeGraphCommandResponse.embeddingDimensions = n.getNumberValue(); },
+        "embeddingModelId": n => { queryKnowledgeGraphCommandResponse.embeddingModelId = n.getGuidValue(); },
         "enabled": n => { queryKnowledgeGraphCommandResponse.enabled = n.getBooleanValue(); },
         "kgId": n => { queryKnowledgeGraphCommandResponse.kgId = n.getStringValue(); },
         "mode": n => { queryKnowledgeGraphCommandResponse.mode = n.getStringValue(); },
@@ -6921,6 +6969,7 @@ export function deserializeIntoQueryKnowledgeGraphEdgesCommandResponse(queryKnow
 export function deserializeIntoQueryKnowledgeGraphModelOptionsCommandResponse(queryKnowledgeGraphModelOptionsCommandResponse: Partial<QueryKnowledgeGraphModelOptionsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "conversationModels": n => { queryKnowledgeGraphModelOptionsCommandResponse.conversationModels = n.getCollectionOfObjectValues<KnowledgeGraphModelOptionItem>(createKnowledgeGraphModelOptionItemFromDiscriminatorValue); },
+        "embeddingModels": n => { queryKnowledgeGraphModelOptionsCommandResponse.embeddingModels = n.getCollectionOfObjectValues<KnowledgeGraphModelOptionItem>(createKnowledgeGraphModelOptionItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -6999,6 +7048,62 @@ export function deserializeIntoQueryKnowledgeGraphsCommandResponse(queryKnowledg
         "items": n => { queryKnowledgeGraphsCommandResponse.items = n.getCollectionOfObjectValues<KnowledgeGraphItem>(createKnowledgeGraphItemFromDiscriminatorValue); },
         "myRole": n => { queryKnowledgeGraphsCommandResponse.myRole = n.getNumberValue(); },
         "teamId": n => { queryKnowledgeGraphsCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphSearchCommand(queryKnowledgeGraphSearchCommand: Partial<QueryKnowledgeGraphSearchCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "knowledgeGraphId": n => { queryKnowledgeGraphSearchCommand.knowledgeGraphId = n.getStringValue(); },
+        "minScore": n => { queryKnowledgeGraphSearchCommand.minScore = n.getNumberValue(); },
+        "query": n => { queryKnowledgeGraphSearchCommand.query = n.getStringValue(); },
+        "topK": n => { queryKnowledgeGraphSearchCommand.topK = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphSearchCommandResponse(queryKnowledgeGraphSearchCommandResponse: Partial<QueryKnowledgeGraphSearchCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contents": n => { queryKnowledgeGraphSearchCommandResponse.contents = n.getCollectionOfPrimitiveValues<string>(); },
+        "hits": n => { queryKnowledgeGraphSearchCommandResponse.hits = n.getCollectionOfObjectValues<QueryKnowledgeGraphSearchItem>(createQueryKnowledgeGraphSearchItemFromDiscriminatorValue); },
+        "skippedHints": n => { queryKnowledgeGraphSearchCommandResponse.skippedHints = n.getCollectionOfPrimitiveValues<string>(); },
+        "text": n => { queryKnowledgeGraphSearchCommandResponse.text = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphSearchItem(queryKnowledgeGraphSearchItem: Partial<QueryKnowledgeGraphSearchItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryKnowledgeGraphSearchItem.description = n.getStringValue(); },
+        "entityTypeId": n => { queryKnowledgeGraphSearchItem.entityTypeId = n.getStringValue(); },
+        "entityTypeName": n => { queryKnowledgeGraphSearchItem.entityTypeName = n.getStringValue(); },
+        "kgId": n => { queryKnowledgeGraphSearchItem.kgId = n.getStringValue(); },
+        "name": n => { queryKnowledgeGraphSearchItem.name = n.getStringValue(); },
+        "neighbors": n => { queryKnowledgeGraphSearchItem.neighbors = n.getCollectionOfObjectValues<QueryKnowledgeGraphSearchNeighborItem>(createQueryKnowledgeGraphSearchNeighborItemFromDiscriminatorValue); },
+        "nodeId": n => { queryKnowledgeGraphSearchItem.nodeId = n.getStringValue(); },
+        "score": n => { queryKnowledgeGraphSearchItem.score = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphSearchNeighborItem(queryKnowledgeGraphSearchNeighborItem: Partial<QueryKnowledgeGraphSearchNeighborItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryKnowledgeGraphSearchNeighborItem.description = n.getStringValue(); },
+        "direction": n => { queryKnowledgeGraphSearchNeighborItem.direction = n.getStringValue(); },
+        "name": n => { queryKnowledgeGraphSearchNeighborItem.name = n.getStringValue(); },
+        "relationName": n => { queryKnowledgeGraphSearchNeighborItem.relationName = n.getStringValue(); },
     }
 }
 /**
@@ -7788,6 +7893,7 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
     return {
         "appId": n => { saveAppAgentConfigCommand.appId = n.getGuidValue(); },
         "executionSettings": n => { saveAppAgentConfigCommand.executionSettings = n.getObjectValue<UntypedNode>(createUntypedNodeFromDiscriminatorValue); },
+        "graphIds": n => { saveAppAgentConfigCommand.graphIds = n.getCollectionOfPrimitiveValues<string>(); },
         "modelId": n => { saveAppAgentConfigCommand.modelId = n.getGuidValue(); },
         "openingStatement": n => { saveAppAgentConfigCommand.openingStatement = n.getStringValue(); },
         "openingStatementEnabled": n => { saveAppAgentConfigCommand.openingStatementEnabled = n.getBooleanValue(); },
@@ -8529,6 +8635,18 @@ export function deserializeIntoUpdateKnowledgeGraphEdgeCommand(updateKnowledgeGr
         "edgeId": n => { updateKnowledgeGraphEdgeCommand.edgeId = n.getStringValue(); },
         "knowledgeGraphId": n => { updateKnowledgeGraphEdgeCommand.knowledgeGraphId = n.getStringValue(); },
         "relationTypeId": n => { updateKnowledgeGraphEdgeCommand.relationTypeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateKnowledgeGraphEmbeddingConfigCommand(updateKnowledgeGraphEmbeddingConfigCommand: Partial<UpdateKnowledgeGraphEmbeddingConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "embeddingDimensions": n => { updateKnowledgeGraphEmbeddingConfigCommand.embeddingDimensions = n.getNumberValue(); },
+        "embeddingModelId": n => { updateKnowledgeGraphEmbeddingConfigCommand.embeddingModelId = n.getGuidValue(); },
+        "knowledgeGraphId": n => { updateKnowledgeGraphEmbeddingConfigCommand.knowledgeGraphId = n.getStringValue(); },
     }
 }
 /**
@@ -10784,6 +10902,10 @@ export interface QueryAppAgentConfigCommandResponse extends Parsable {
      */
     executionSettings?: UntypedNode | null;
     /**
+     * 绑定的知识图谱 id 列表（元素为 knowledge_graph.id）.
+     */
+    graphIds?: string[] | null;
+    /**
      * 对话使用的模型 id（uuid）；模型选择未开放时为空 Guid.
      */
     modelId?: Guid | null;
@@ -11367,6 +11489,14 @@ export interface QueryKnowledgeGraphCommandResponse extends Parsable {
      */
     description?: string | null;
     /**
+     * 向量维度；未配置向量化时为 0.
+     */
+    embeddingDimensions?: number | null;
+    /**
+     * 向量化模型 id（元素为 ai_model.id 的 uuid）；未配置向量化时为 null.
+     */
+    embeddingModelId?: Guid | null;
+    /**
      * 能力是否开启.
      */
     enabled?: boolean | null;
@@ -11459,13 +11589,17 @@ export interface QueryKnowledgeGraphEdgesCommandResponse extends Parsable {
     total?: string | null;
 }
 /**
- * 团队可用 AI 对话模型选项响应.
+ * 团队可用 AI 模型选项响应.
  */
 export interface QueryKnowledgeGraphModelOptionsCommandResponse extends Parsable {
     /**
      * 可用的对话模型列表（用于 AI 导入文件）.
      */
     conversationModels?: KnowledgeGraphModelOptionItem[] | null;
+    /**
+     * 可用的向量化模型列表（用于图谱向量检索配置）.
+     */
+    embeddingModels?: KnowledgeGraphModelOptionItem[] | null;
 }
 /**
  * 节点详情响应.
@@ -11592,6 +11726,106 @@ export interface QueryKnowledgeGraphsCommandResponse extends Parsable {
      * 团队 id.
      */
     teamId?: string | null;
+}
+/**
+ * 知识图谱语义检索（向量 topK + 一跳关系扩展，GraphRAG local search 轻量版）.
+ */
+export interface QueryKnowledgeGraphSearchCommand extends Parsable {
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 相似度阈值（可选，0-1）.
+     */
+    minScore?: number | null;
+    /**
+     * 查询文本.
+     */
+    query?: string | null;
+    /**
+     * 召回条数（1-50，默认 5）.
+     */
+    topK?: number | null;
+}
+/**
+ * 图谱语义检索响应.
+ */
+export interface QueryKnowledgeGraphSearchCommandResponse extends Parsable {
+    /**
+     * 命中节点文本列表（与 Hits 同序）.
+     */
+    contents?: string[] | null;
+    /**
+     * 命中列表（按得分降序）.
+     */
+    hits?: QueryKnowledgeGraphSearchItem[] | null;
+    /**
+     * 被跳过的图谱及原因（该端点经 Handler 先行校验，未配置向量化会直接 409，此字段通常仅含模型不可用等运行期提示）.
+     */
+    skippedHints?: string[] | null;
+    /**
+     * 文本化拼接结果（供 LLM 上下文，超长截断）.
+     */
+    text?: string | null;
+}
+/**
+ * 图谱语义检索命中项.
+ */
+export interface QueryKnowledgeGraphSearchItem extends Parsable {
+    /**
+     * 节点描述.
+     */
+    description?: string | null;
+    /**
+     * 实体类型 id.
+     */
+    entityTypeId?: string | null;
+    /**
+     * 实体类型名.
+     */
+    entityTypeName?: string | null;
+    /**
+     * 图谱 id.
+     */
+    kgId?: string | null;
+    /**
+     * 节点名.
+     */
+    name?: string | null;
+    /**
+     * 一跳邻居.
+     */
+    neighbors?: QueryKnowledgeGraphSearchNeighborItem[] | null;
+    /**
+     * 节点 id.
+     */
+    nodeId?: string | null;
+    /**
+     * 相似度得分（Cosine Similarity，来自向量库）.
+     */
+    score?: number | null;
+}
+/**
+ * 邻居关系摘要.
+ */
+export interface QueryKnowledgeGraphSearchNeighborItem extends Parsable {
+    /**
+     * 邻居描述.
+     */
+    description?: string | null;
+    /**
+     * out（出边）/ in（入边）.
+     */
+    direction?: string | null;
+    /**
+     * 邻居节点名.
+     */
+    name?: string | null;
+    /**
+     * 关系类型名（类型未定义时为 null）.
+     */
+    relationName?: string | null;
 }
 /**
  * 模板目录响应.
@@ -12892,7 +13126,7 @@ export interface SaveAppAccessPointCommand extends Parsable {
     title?: string | null;
 }
 /**
- * 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库必须在该团队有权使用的范围内.
+ * 保存 Agent 应用配置（对话模型、允许使用的插件、知识库、知识图谱与系统提示词），需要团队 Admin 及以上角色；绑定的模型/插件/知识库/知识图谱必须在该团队有权使用的范围内.
  */
 export interface SaveAppAgentConfigCommand extends Parsable {
     /**
@@ -12903,6 +13137,10 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      * 对话执行参数（JSON 对象，含沙箱等扩展配置）；为空表示不修改已保存的执行参数.
      */
     executionSettings?: UntypedNode | null;
+    /**
+     * 允许使用的知识图谱 id 列表（元素为 knowledge_graph.id），须属于本团队且为平台托管图（接入图不支持）.
+     */
+    graphIds?: string[] | null;
     /**
      * 对话使用的模型 id（元素为 ai_model.id 的 uuid）；null 或空 Guid 表示未选择模型.
      */
@@ -15057,6 +15295,7 @@ export function serializeQueryAppAgentConfigCommandResponse(writer: Serializatio
         writer.writeGuidValue("appId", queryAppAgentConfigCommandResponse.appId);
         writer.writeEnumValue<AppType>("appType", queryAppAgentConfigCommandResponse.appType);
         writer.writeObjectValue("executionSettings", queryAppAgentConfigCommandResponse.executionSettings);
+        writer.writeCollectionOfPrimitiveValues<string>("graphIds", queryAppAgentConfigCommandResponse.graphIds);
         writer.writeGuidValue("modelId", queryAppAgentConfigCommandResponse.modelId);
         writer.writeNumberValue("myRole", queryAppAgentConfigCommandResponse.myRole);
         writer.writeStringValue("openingStatement", queryAppAgentConfigCommandResponse.openingStatement);
@@ -15382,6 +15621,8 @@ export function serializeQueryKnowledgeGraphCommandResponse(writer: Serializatio
         writer.writeStringValue("createTime", queryKnowledgeGraphCommandResponse.createTime);
         writer.writeStringValue("database", queryKnowledgeGraphCommandResponse.database);
         writer.writeStringValue("description", queryKnowledgeGraphCommandResponse.description);
+        writer.writeNumberValue("embeddingDimensions", queryKnowledgeGraphCommandResponse.embeddingDimensions);
+        writer.writeGuidValue("embeddingModelId", queryKnowledgeGraphCommandResponse.embeddingModelId);
         writer.writeBooleanValue("enabled", queryKnowledgeGraphCommandResponse.enabled);
         writer.writeStringValue("kgId", queryKnowledgeGraphCommandResponse.kgId);
         writer.writeStringValue("mode", queryKnowledgeGraphCommandResponse.mode);
@@ -15438,6 +15679,7 @@ export function serializeQueryKnowledgeGraphEdgesCommandResponse(writer: Seriali
 export function serializeQueryKnowledgeGraphModelOptionsCommandResponse(writer: SerializationWriter, queryKnowledgeGraphModelOptionsCommandResponse: Partial<QueryKnowledgeGraphModelOptionsCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphModelOptionsCommandResponse) {
         writer.writeCollectionOfObjectValues<KnowledgeGraphModelOptionItem>("conversationModels", queryKnowledgeGraphModelOptionsCommandResponse.conversationModels, serializeKnowledgeGraphModelOptionItem);
+        writer.writeCollectionOfObjectValues<KnowledgeGraphModelOptionItem>("embeddingModels", queryKnowledgeGraphModelOptionsCommandResponse.embeddingModels, serializeKnowledgeGraphModelOptionItem);
     }
 }
 /**
@@ -15516,6 +15758,62 @@ export function serializeQueryKnowledgeGraphsCommandResponse(writer: Serializati
         writer.writeCollectionOfObjectValues<KnowledgeGraphItem>("items", queryKnowledgeGraphsCommandResponse.items, serializeKnowledgeGraphItem);
         writer.writeNumberValue("myRole", queryKnowledgeGraphsCommandResponse.myRole);
         writer.writeStringValue("teamId", queryKnowledgeGraphsCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphSearchCommand(writer: SerializationWriter, queryKnowledgeGraphSearchCommand: Partial<QueryKnowledgeGraphSearchCommand> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphSearchCommand) {
+        writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphSearchCommand.knowledgeGraphId);
+        writer.writeNumberValue("minScore", queryKnowledgeGraphSearchCommand.minScore);
+        writer.writeStringValue("query", queryKnowledgeGraphSearchCommand.query);
+        writer.writeNumberValue("topK", queryKnowledgeGraphSearchCommand.topK);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphSearchCommandResponse(writer: SerializationWriter, queryKnowledgeGraphSearchCommandResponse: Partial<QueryKnowledgeGraphSearchCommandResponse> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphSearchCommandResponse) {
+        writer.writeCollectionOfPrimitiveValues<string>("contents", queryKnowledgeGraphSearchCommandResponse.contents);
+        writer.writeCollectionOfObjectValues<QueryKnowledgeGraphSearchItem>("hits", queryKnowledgeGraphSearchCommandResponse.hits, serializeQueryKnowledgeGraphSearchItem);
+        writer.writeCollectionOfPrimitiveValues<string>("skippedHints", queryKnowledgeGraphSearchCommandResponse.skippedHints);
+        writer.writeStringValue("text", queryKnowledgeGraphSearchCommandResponse.text);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphSearchItem(writer: SerializationWriter, queryKnowledgeGraphSearchItem: Partial<QueryKnowledgeGraphSearchItem> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphSearchItem) {
+        writer.writeStringValue("description", queryKnowledgeGraphSearchItem.description);
+        writer.writeStringValue("entityTypeId", queryKnowledgeGraphSearchItem.entityTypeId);
+        writer.writeStringValue("entityTypeName", queryKnowledgeGraphSearchItem.entityTypeName);
+        writer.writeStringValue("kgId", queryKnowledgeGraphSearchItem.kgId);
+        writer.writeStringValue("name", queryKnowledgeGraphSearchItem.name);
+        writer.writeCollectionOfObjectValues<QueryKnowledgeGraphSearchNeighborItem>("neighbors", queryKnowledgeGraphSearchItem.neighbors, serializeQueryKnowledgeGraphSearchNeighborItem);
+        writer.writeStringValue("nodeId", queryKnowledgeGraphSearchItem.nodeId);
+        writer.writeNumberValue("score", queryKnowledgeGraphSearchItem.score);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphSearchNeighborItem(writer: SerializationWriter, queryKnowledgeGraphSearchNeighborItem: Partial<QueryKnowledgeGraphSearchNeighborItem> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphSearchNeighborItem) {
+        writer.writeStringValue("description", queryKnowledgeGraphSearchNeighborItem.description);
+        writer.writeStringValue("direction", queryKnowledgeGraphSearchNeighborItem.direction);
+        writer.writeStringValue("name", queryKnowledgeGraphSearchNeighborItem.name);
+        writer.writeStringValue("relationName", queryKnowledgeGraphSearchNeighborItem.relationName);
     }
 }
 /**
@@ -16305,6 +16603,7 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
     if (saveAppAgentConfigCommand) {
         writer.writeGuidValue("appId", saveAppAgentConfigCommand.appId);
         writer.writeObjectValue("executionSettings", saveAppAgentConfigCommand.executionSettings);
+        writer.writeCollectionOfPrimitiveValues<string>("graphIds", saveAppAgentConfigCommand.graphIds);
         writer.writeGuidValue("modelId", saveAppAgentConfigCommand.modelId);
         writer.writeStringValue("openingStatement", saveAppAgentConfigCommand.openingStatement);
         writer.writeBooleanValue("openingStatementEnabled", saveAppAgentConfigCommand.openingStatementEnabled);
@@ -17046,6 +17345,18 @@ export function serializeUpdateKnowledgeGraphEdgeCommand(writer: SerializationWr
         writer.writeStringValue("edgeId", updateKnowledgeGraphEdgeCommand.edgeId);
         writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphEdgeCommand.knowledgeGraphId);
         writer.writeStringValue("relationTypeId", updateKnowledgeGraphEdgeCommand.relationTypeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateKnowledgeGraphEmbeddingConfigCommand(writer: SerializationWriter, updateKnowledgeGraphEmbeddingConfigCommand: Partial<UpdateKnowledgeGraphEmbeddingConfigCommand> | undefined | null = {}) : void {
+    if (updateKnowledgeGraphEmbeddingConfigCommand) {
+        writer.writeNumberValue("embeddingDimensions", updateKnowledgeGraphEmbeddingConfigCommand.embeddingDimensions);
+        writer.writeGuidValue("embeddingModelId", updateKnowledgeGraphEmbeddingConfigCommand.embeddingModelId);
+        writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphEmbeddingConfigCommand.knowledgeGraphId);
     }
 }
 /**
@@ -18699,6 +19010,23 @@ export interface UpdateKnowledgeGraphEdgeCommand extends Parsable {
      * 关系类型 id.
      */
     relationTypeId?: string | null;
+}
+/**
+ * 配置知识图谱的向量化模型与维度（管理员）；配置后图谱参与向量检索.
+ */
+export interface UpdateKnowledgeGraphEmbeddingConfigCommand extends Parsable {
+    /**
+     * 向量维度（1-2000）.
+     */
+    embeddingDimensions?: number | null;
+    /**
+     * 向量化模型 id（需已启用且公开或已授权给该团队）.
+     */
+    embeddingModelId?: Guid | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
 }
 /**
  * 修改实体类型，需要团队 Admin 及以上角色.

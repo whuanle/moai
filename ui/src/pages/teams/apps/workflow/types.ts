@@ -29,7 +29,7 @@ export interface OutputField {
 }
 
 /** 节点类型（引擎已实现的节点） */
-export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch' | 'knowledgeSearch' | 'questionClassifier' | 'http' | 'agentApp'
+export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch' | 'knowledgeSearch' | 'kgSearch' | 'questionClassifier' | 'http' | 'agentApp'
 
 /** http 节点键值对（查询参数/请求头/表单字段），值支持 {引用} 插值 */
 export interface HttpKvItem {
@@ -80,6 +80,8 @@ export interface NodeSettings {
   wikiIds?: number[]
   /** knowledgeSearch：每个知识库召回条数（1-50，默认 5） */
   topK?: number
+  /** kgSearch：知识图谱 id（单个，静态选择，仅托管图；v1 不做变量绑定，与引擎契约一致） */
+  graphId?: number
   /** questionClassifier：背景知识（补充分类判断的领域信息，可选） */
   backgroundKnowledge?: string
   /** questionClassifier：聊天记录携带条数（0-50，默认 6） */

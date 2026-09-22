@@ -40,8 +40,9 @@ export function KnowledgeGraphImportModal({ open, teamId, graphId, onClose, onIm
     setModelsLoading(true)
     getKnowledgeGraphModelOptions(teamId)
       .then((options) => {
-        setModels(options)
-        if (options.length > 0) setAiModelId(options[0].id ?? undefined)
+        const models = options.conversationModels ?? []
+        setModels(models)
+        if (models.length > 0) setAiModelId(models[0].id ?? undefined)
       })
       .catch(() => setModels([]))
       .finally(() => setModelsLoading(false))

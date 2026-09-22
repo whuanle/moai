@@ -498,6 +498,12 @@ function sanitizeSettings(settings: Record<string, unknown> | NodeSettings | und
     result.wikiId = wikiId
   }
 
+  // kgSearch：静态知识图谱（单个，仅托管图；引擎从 config.graphId 读取）
+  const graphId = Number(settings.graphId)
+  if (Number.isInteger(graphId) && graphId > 0) {
+    result.graphId = graphId
+  }
+
   if (Array.isArray(settings.wikiIds)) {
     const ids = [...new Set(settings.wikiIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))]
     if (ids.length > 0) {

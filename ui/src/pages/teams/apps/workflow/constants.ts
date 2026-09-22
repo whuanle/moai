@@ -38,6 +38,7 @@ export interface NodeTemplate {
     wikiId?: number
     wikiIds?: number[]
     topK?: number
+    graphId?: number
     backgroundKnowledge?: string
     historyCount?: number
     /** http：请求配置（保存时经 sanitizeSettings 清洗为引擎 config） */
@@ -64,6 +65,7 @@ export const NODE_CONSTRAINTS: Record<NodeType, NodeConstraints> = {
   plugin: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   switch: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   knowledgeSearch: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
+  kgSearch: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   questionClassifier: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   http: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   agentApp: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
@@ -162,6 +164,26 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       { name: 'text', fieldType: 'string', description: '拼接后的检索文本' },
     ],
     settings: { topK: 5 },
+  },
+  {
+    type: 'kgSearch',
+    icon: '🕸️',
+    nameKey: 'workflowDesigner.nodeKnowledgeGraphSearch',
+    name: '知识图谱检索',
+    descKey: 'workflowDesigner.nodeKnowledgeGraphSearchDesc',
+    desc: '在团队知识图谱中语义检索实体及其一跳邻居子图',
+    color: '#722ed1',
+    inputs: {
+      query: { expressionType: 'variable', value: '', required: true, description: '检索问题' },
+    },
+    outputs: [
+      { name: 'query', fieldType: 'string', description: '检索问题' },
+      { name: 'count', fieldType: 'number', description: '命中数量' },
+      { name: 'hits', fieldType: 'array', description: '命中列表（name/entityType/description/score，不含邻居）' },
+      { name: 'contents', fieldType: 'array', description: '子图文本片段（与 hits 同序，每项=「名称：描述」+一跳邻居行，可直接作 LLM 上下文，非纯切片内容）' },
+      { name: 'text', fieldType: 'string', description: '全部片段按命中顺序拼接的检索文本' },
+    ],
+    settings: { graphId: undefined, topK: 5 },
   },
   {
     type: 'javaScript',

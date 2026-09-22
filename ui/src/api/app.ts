@@ -146,6 +146,8 @@ export interface AppAgentConfig {
   modelId?: string | null
   /** 允许使用的知识库 id 列表（元素为 wiki.id） */
   wikiIds?: number[] | null
+  /** 允许检索的知识图谱 id 列表（元素为 kg.id，仅托管图） */
+  graphIds?: number[] | null
   /** 允许使用的插件 id 列表（元素为 plugin.id，uuid 字符串） */
   plugins?: string[] | null
   /** 绑定为工具的流程应用 id 列表（元素为 app.id，uuid 字符串，本团队已发布流程应用） */
@@ -178,6 +180,7 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     modelId: res?.modelId ?? null,
     // Kiota 把后端 long 生成为 string，前端统一收敛为 number 便于与 wikiId 比较
     wikiIds: (res?.wikiIds ?? []).map((id) => Number(id)),
+    graphIds: (res?.graphIds ?? []).map((id) => Number(id)),
     plugins: (res?.plugins ?? []).map((id) => String(id)),
     workflowApps: (res?.workflowApps ?? []).map((id) => String(id)),
     skills: (res?.skills ?? []).map((id) => String(id)),
@@ -200,6 +203,8 @@ export async function saveAppAgentConfig(
     modelId?: string | null
     prompt: string
     wikiIds: number[]
+    /** 允许检索的知识图谱 id 列表（仅托管图，后端校验归属与模式） */
+    graphIds?: number[]
     plugins: string[]
     /** 绑定为工具的流程应用 id 列表；null / 缺省表示保持已保存的流程应用绑定不变 */
     workflowApps?: string[] | null
@@ -217,6 +222,8 @@ export async function saveAppAgentConfig(
     prompt: payload.prompt,
     // 后端 wiki_ids 为 long，Kiota 生成的请求体为 string[]，此处按生成类型传字符串
     wikiIds: payload.wikiIds.map((id) => String(id)),
+    // 后端 graph_ids 为 long（仅托管图），同样按生成类型传字符串
+    graphIds: (payload.graphIds ?? []).map((id) => String(id)),
     plugins: payload.plugins as Guid[],
     workflowApps: (payload.workflowApps ?? null) as Guid[] | null,
     skills: (payload.skills ?? null) as Guid[] | null,

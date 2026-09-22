@@ -17,7 +17,7 @@ import { useWorkflowDesignerStore } from './store'
 /** 面板分组：控制流 / AI 能力 / 数据处理 / 集成 */
 const GROUPS: { key: string; titleKey: string; types: string[] }[] = [
   { key: 'control', titleKey: 'workflowDesigner.groupControl', types: ['condition', 'switch'] },
-  { key: 'ai', titleKey: 'workflowDesigner.groupAi', types: ['aiChat', 'agentApp', 'knowledgeSearch', 'questionClassifier'] },
+  { key: 'ai', titleKey: 'workflowDesigner.groupAi', types: ['aiChat', 'agentApp', 'knowledgeSearch', 'kgSearch', 'questionClassifier'] },
   { key: 'data', titleKey: 'workflowDesigner.groupData', types: ['javaScript'] },
   { key: 'integration', titleKey: 'workflowDesigner.groupIntegration', types: ['plugin', 'http'] },
 ]

@@ -19,6 +19,7 @@ import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
 import { getSkillOptions, type SkillOption } from '@/api/skills'
 import { getWikis, type WikiItem } from '@/api/wiki'
+import { getKnowledgeGraphs, type KnowledgeGraphItem } from '@/api/knowledgeGraph'
 import { resolveStorageUrl } from '@/utils/storage'
 import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
 import { AppDebugChat } from './chat/AppDebugChat'
@@ -71,6 +72,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [openingStatement, setOpeningStatement] = useState('')
   const [quickInputs, setQuickInputs] = useState<string[]>([])
   const [wikiIds, setWikiIds] = useState<number[]>([])
+  const [graphIds, setGraphIds] = useState<number[]>([])
   const [pluginIds, setPluginIds] = useState<string[]>([])
   const [workflowAppIds, setWorkflowAppIds] = useState<string[]>([])
   const [workflowAppOptions, setWorkflowAppOptions] = useState<AppItem[]>([])
@@ -90,6 +92,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
   const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
+  const [graphOptions, setGraphOptions] = useState<KnowledgeGraphItem[]>([])
   const [modelOptions, setModelOptions] = useState<{ value: string; label: string }[]>([])
   const [optionsLoading, setOptionsLoading] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
@@ -118,6 +121,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setOpeningStatement(config.openingStatement ?? '')
         setQuickInputs(config.quickInputs ?? [])
         setWikiIds(config.wikiIds ?? [])
+        setGraphIds(config.graphIds ?? [])
         setPluginIds(config.plugins ?? [])
         setWorkflowAppIds(config.workflowApps ?? [])
         setSkillIds(config.skills ?? [])
@@ -146,12 +150,12 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     void loadConfig()
   }, [appId, isAgent, loading, onConfigStatusChange])
 
-  /** 团队可访问的模型/插件/知识库选项（资源绑定的取值范围） */
+  /** 团队可访问的模型/插件/知识库/知识图谱选项（资源绑定的取值范围） */
   const loadOptions = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setOptionsLoading(true)
     try {
-      const [models, plugins, wikis, skills, apps] = await Promise.all([
+      const [models, plugins, wikis, skills, apps, graphs] = await Promise.all([
         getTeamGatewayModels(teamId),
         getTeamPlugins(teamId),
         getWikis(teamId),
@@ -159,6 +163,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         getSkillOptions({ teamId }),
         // 流程应用绑定候选：本团队已发布的内部流程应用（对话中作为工具调用）
         getApps(teamId),
+        // 图谱绑定候选：仅托管图（接入图不参与应用侧向量检索，不开放绑定）
+        getKnowledgeGraphs(teamId),
       ])
       setModelOptions(
         models
@@ -173,6 +179,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
       )
       setSkillOptions(skills)
       setWikiOptions(wikis.items ?? [])
+      setGraphOptions((graphs.items ?? []).filter((item) => item.mode === 'managed' && item.kgId != null))
       setWorkflowAppOptions(
         (apps.items ?? []).filter(
           (item) => item.appType === 'workflow' && item.publishStatus === 1 && item.appId,
@@ -265,6 +272,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         modelId: modelId ?? null,
         prompt,
         wikiIds,
+        graphIds,
         plugins: pluginIds,
         workflowApps: workflowAppIds,
         // 外部应用不支持技能：固定空列表（后端强校验拒绝非空）
@@ -319,6 +327,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const wikiSelectOptions = wikiOptions
     .filter((item) => item.wikiId != null)
     .map((item) => ({ value: Number(item.wikiId), label: item.name || '-' }))
+
+  const graphSelectOptions = graphOptions.map((item) => ({
+    value: Number(item.kgId),
+    label: item.name || '-',
+  }))
 
   return (
     <Row gutter={[spacing.md, spacing.md]} align="top">
@@ -500,6 +513,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     onChange={setWikiIds}
                     options={wikiSelectOptions}
                     notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.knowledgeEmpty')}
+                  />
+                </Form.Item>
+                <Form.Item label={t('appManage.sectionGraphs')} extra={t('appManage.graphsHint')}>
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: '100%' }}
+                    placeholder={t('appManage.graphsPlaceholder')}
+                    loading={optionsLoading}
+                    value={graphIds}
+                    onChange={setGraphIds}
+                    options={graphSelectOptions}
+                    notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.graphsEmpty')}
                   />
                 </Form.Item>
               </Form>

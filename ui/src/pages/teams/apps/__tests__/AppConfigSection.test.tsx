@@ -7,6 +7,7 @@ import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getSkillOptions } from '@/api/skills'
 import { getWikis } from '@/api/wiki'
+import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
 
 vi.mock('@/api/app', () => ({
   getAppDetail: vi.fn(),
@@ -34,6 +35,10 @@ vi.mock('@/api/team-plugin', () => ({
 
 vi.mock('@/api/wiki', () => ({
   getWikis: vi.fn(),
+}))
+
+vi.mock('@/api/knowledgeGraph', () => ({
+  getKnowledgeGraphs: vi.fn(),
 }))
 
 vi.mock('@/api/skills', () => ({
@@ -105,6 +110,16 @@ describe('AppConfigSection（应用配置分区）', () => {
       items: [
         { wikiId: 7, teamId: 3, name: '产品文档' },
         { wikiId: 8, teamId: 3, name: '运维手册' },
+      ],
+    })
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: 3,
+      myRole: 2,
+      enabled: true,
+      items: [
+        { kgId: 11, teamId: 3, name: '支付域图谱', mode: 'managed' },
+        // 接入图不参与应用侧向量检索，不开放绑定，应被过滤
+        { kgId: 12, teamId: 3, name: '外部库接入', mode: 'connected' },
       ],
     })
     vi.mocked(getSkillOptions).mockResolvedValue([
@@ -226,6 +241,7 @@ describe('AppConfigSection（应用配置分区）', () => {
         modelId: MODEL_ID,
         prompt: '你是售前客服',
         wikiIds: [7],
+        graphIds: [],
         plugins: ['p1'],
         workflowApps: [],
         skills: [],
@@ -394,7 +410,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     renderSection()
     await screen.findByText('天气查询')
 
-    // 五个下拉依次为 对话模型 / 插件 / 流程应用 / 默认技能 / 知识库
+    // 六个下拉依次为 对话模型 / 插件 / 流程应用 / 默认技能 / 知识库 / 知识图谱
     fireEvent.mouseDown(screen.getAllByRole('combobox')[1])
 
     await waitFor(() => {
@@ -403,6 +419,41 @@ describe('AppConfigSection（应用配置分区）', () => {
       expect(texts.some((text) => text.includes('天气查询'))).toBe(true)
       expect(texts.some((text) => text.includes('内存插件'))).toBe(false)
     })
+  })
+
+  it('知识图谱选项只取本团队托管图：接入图不开放绑定，回显与保存携带 graphIds', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      graphIds: [11],
+      plugins: [],
+      myRole: 2,
+    })
+
+    renderSection()
+    // 已绑定托管图回显为选中标签
+    expect(await screen.findByText('支付域图谱')).toBeTruthy()
+
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[5])
+    await waitFor(() => {
+      const options = document.querySelectorAll('.ant-select-item-option')
+      const texts = Array.from(options).map((node) => node.textContent ?? '')
+      expect(texts.some((text) => text.includes('支付域图谱'))).toBe(true)
+      // 接入图不参与应用侧向量检索，不开放绑定
+      expect(texts.some((text) => text.includes('外部库接入'))).toBe(false)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({ graphIds: [11] }),
+      ),
+    )
   })
 
   it('流程应用选项只取本团队已发布流程应用，回显已绑定项并随保存提交', async () => {

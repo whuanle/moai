@@ -34,6 +34,10 @@ export interface KnowledgeGraphDetail {
   enabled?: boolean | null
   avatarPath?: string | null
   createTime?: string | null
+  /** 向量化模型 id（托管图配置后参与向量检索；未配置为空） */
+  embeddingModelId?: string | null
+  /** 向量维度（1-2000） */
+  embeddingDimensions?: number | null
 }
 
 export interface KnowledgeGraphTemplateItem {
@@ -382,11 +386,95 @@ export interface KnowledgeGraphModelOption {
   name?: string | null
 }
 
-/** 查询团队可用的 AI 对话模型选项（用于 AI 导入文件） */
-export async function getKnowledgeGraphModelOptions(teamId: number): Promise<KnowledgeGraphModelOption[]> {
+export interface KnowledgeGraphModelOptionsResult {
+  /** 可用的对话模型列表（用于 AI 导入文件） */
+  conversationModels?: KnowledgeGraphModelOption[] | null
+  /** 可用的向量化模型列表（用于图谱向量检索配置） */
+  embeddingModels?: KnowledgeGraphModelOption[] | null
+}
+
+/** 查询团队可用的 AI 模型选项（对话模型用于 AI 导入文件，向量化模型用于图检索配置） */
+export async function getKnowledgeGraphModelOptions(teamId: number): Promise<KnowledgeGraphModelOptionsResult> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.modelOptions.get({ queryParameters: { teamId: String(teamId) } })
-  return res?.conversationModels ?? []
+  return { conversationModels: res?.conversationModels ?? [], embeddingModels: res?.embeddingModels ?? [] }
+}
+
+// ==================== 向量化配置（设置页） ====================
+
+/** 配置知识图谱向量化模型与维度（仅托管图 Owner/Admin 可操作）；配置后图谱参与向量检索 */
+export async function updateKnowledgeGraphEmbeddingConfig(
+  kgId: number,
+  payload: { embeddingModelId: string; embeddingDimensions: number },
+): Promise<void> {
+  const client = getApiClient()
+  await client.api.knowledgeGraph.byId(String(kgId)).embeddingConfig.put({
+    knowledgeGraphId: String(kgId),
+    embeddingModelId: payload.embeddingModelId,
+    embeddingDimensions: payload.embeddingDimensions,
+  })
+}
+
+// ==================== 语义检索（向量 topK + 一跳扩展） ====================
+
+/** 图谱语义检索命中项 */
+export interface KnowledgeGraphSearchHit {
+  kgId?: string | null
+  nodeId?: string | null
+  name?: string | null
+  /** 实体类型名（类型未定义时为 null） */
+  entityTypeName?: string | null
+  description?: string | null
+  /** 相似度得分（Cosine Similarity，来自向量库） */
+  score?: number | null
+  /** 一跳邻居 */
+  neighbors?: KnowledgeGraphSearchNeighbor[] | null
+}
+
+/** 命中节点的一跳邻居摘要 */
+export interface KnowledgeGraphSearchNeighbor {
+  name?: string | null
+  /** 关系类型名（类型未定义时为 null） */
+  relationName?: string | null
+  /** out（出边）/ in（入边） */
+  direction?: string | null
+  description?: string | null
+}
+
+/** 图谱语义检索响应 */
+export interface KnowledgeGraphSearchResult {
+  /** 命中列表（按得分降序） */
+  hits: KnowledgeGraphSearchHit[]
+  /** 命中数量 */
+  count: number
+  /** 命中节点文本片段（与 hits 同序，每项为「名称：描述」+一跳邻居行，可直接作 LLM 上下文） */
+  contents: string[]
+  /** 全部片段按命中顺序拼接的检索文本（超长截断） */
+  text: string
+  /** 模型不可用等运行期提示（未配置向量化在 Handler 即 409，不进本响应） */
+  skippedHints: string[]
+}
+
+/** 图谱语义检索：向量 topK 召回 + 一跳关系扩展（GraphRAG local search 轻量版） */
+export async function searchKnowledgeGraph(
+  kgId: number,
+  payload: { query: string; topK?: number; minScore?: number },
+): Promise<KnowledgeGraphSearchResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).search.post({
+    knowledgeGraphId: String(kgId),
+    query: payload.query,
+    topK: payload.topK,
+    minScore: payload.minScore,
+  })
+  const hits = (res?.hits ?? []).map((x) => ({ ...x })) as KnowledgeGraphSearchHit[]
+  return {
+    hits,
+    count: hits.length,
+    contents: res?.contents ?? [],
+    text: res?.text ?? '',
+    skippedHints: res?.skippedHints ?? [],
+  }
 }
 
 export interface KnowledgeGraphImportResult {

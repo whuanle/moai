@@ -10,6 +10,8 @@ import { CanvasRequestBuilderRequestsMetadata, type CanvasRequestBuilder } from 
 // @ts-ignore
 import { EdgesRequestBuilderNavigationMetadata, EdgesRequestBuilderRequestsMetadata, type EdgesRequestBuilder } from './edges/index.js';
 // @ts-ignore
+import { EmbeddingConfigRequestBuilderRequestsMetadata, type EmbeddingConfigRequestBuilder } from './embeddingConfig/index.js';
+// @ts-ignore
 import { EntityTypesRequestBuilderNavigationMetadata, EntityTypesRequestBuilderRequestsMetadata, type EntityTypesRequestBuilder } from './entityTypes/index.js';
 // @ts-ignore
 import { ImportFileRequestBuilderRequestsMetadata, type ImportFileRequestBuilder } from './importFile/index.js';
@@ -19,6 +21,8 @@ import { NodesRequestBuilderNavigationMetadata, NodesRequestBuilderRequestsMetad
 import { RelationTypesRequestBuilderNavigationMetadata, RelationTypesRequestBuilderRequestsMetadata, type RelationTypesRequestBuilder } from './relationTypes/index.js';
 // @ts-ignore
 import { SchemaRequestBuilderRequestsMetadata, type SchemaRequestBuilder } from './schema/index.js';
+// @ts-ignore
+import { SearchRequestBuilderRequestsMetadata, type SearchRequestBuilder } from './search/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -39,6 +43,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      */
     get edges(): EdgesRequestBuilder;
     /**
+     * The embeddingConfig property
+     */
+    get embeddingConfig(): EmbeddingConfigRequestBuilder;
+    /**
      * The entityTypes property
      */
     get entityTypes(): EntityTypesRequestBuilder;
@@ -58,6 +66,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      * The schema property
      */
     get schema(): SchemaRequestBuilder;
+    /**
+     * The search property
+     */
+    get search(): SearchRequestBuilder;
     /**
      * 删除图谱.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -130,6 +142,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
         requestsMetadata: EdgesRequestBuilderRequestsMetadata,
         navigationMetadata: EdgesRequestBuilderNavigationMetadata,
     },
+    embeddingConfig: {
+        requestsMetadata: EmbeddingConfigRequestBuilderRequestsMetadata,
+    },
     entityTypes: {
         requestsMetadata: EntityTypesRequestBuilderRequestsMetadata,
         navigationMetadata: EntityTypesRequestBuilderNavigationMetadata,
@@ -147,6 +162,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
     },
     schema: {
         requestsMetadata: SchemaRequestBuilderRequestsMetadata,
+    },
+    search: {
+        requestsMetadata: SearchRequestBuilderRequestsMetadata,
     },
 };
 /**

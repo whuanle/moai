@@ -868,6 +868,72 @@ describe('知识库检索节点（knowledgeSearch）', () => {
   })
 })
 
+describe('知识图谱检索节点（kgSearch）', () => {
+  const kgEditor = (): import('../types').EditorWorkflowJSON => ({
+    nodes: [
+      { id: 'start', type: 'start', data: { inputs: { question: { expressionType: 'run', value: '', required: true, fieldType: 'string' } } }, blocks: [], edges: [{ sourceNodeID: 'start', targetNodeID: 'kg' }] },
+      {
+        id: 'kg',
+        type: 'kgSearch',
+        data: {
+          title: '检索知识图谱',
+          inputs: {
+            query: { expressionType: 'variable', value: 'start.question', required: true },
+          },
+          outputs: [
+            { name: 'query', fieldType: 'string' },
+            { name: 'text', fieldType: 'string' },
+          ],
+          // junkKey 为故意传入的未知属性，用于断言序列化时被丢弃
+          settings: { graphId: 11, topK: 3, junkKey: 'should.be.dropped' } as import('../types').NodeSettings,
+        },
+        blocks: [],
+        edges: [{ sourceNodeID: 'kg', targetNodeID: 'end' }],
+      },
+      { id: 'end', type: 'end', data: {}, blocks: [], edges: [] },
+    ],
+    edges: [],
+  })
+
+  it('nodeDataFromTemplate 提供默认图谱配置与五项输出声明', () => {
+    const data = nodeDataFromTemplate('kgSearch')
+    // 静态图谱 id 缺省未选（v1 不做变量绑定），召回条数默认 5
+    expect(data?.settings?.topK).toBe(5)
+    expect(data?.settings?.graphId).toBeUndefined()
+    // kgSearch 只保留 query 一个输入（图谱 id 为静态配置，不走输入绑定）
+    expect(Object.keys(data?.inputs ?? {})).toEqual(['query'])
+    expect(data?.inputs?.query.required).toBe(true)
+    expect(data?.outputs?.map((o) => o.name)).toEqual(['query', 'count', 'hits', 'contents', 'text'])
+  })
+
+  it('fromEditorFormat：settings 清洗为 graphId/topK，剔除非法与未知键', () => {
+    const def = fromEditorFormat(kgEditor(), 'x')
+    const kg = def.nodes.find((n) => n.key === 'kg')!
+    expect(kg.config).toEqual({ graphId: 11, topK: 3 })
+    expect(kg.inputs.query).toMatchObject({ value: 'start.question', required: true })
+  })
+
+  it('graphId 非法（0/负数/非整数）时被丢弃', () => {
+    for (const bad of [0, -3, 2.5]) {
+      const editor = kgEditor()
+      const kgNode = editor.nodes.find((n) => n.id === 'kg')!
+      kgNode.data = { ...kgNode.data, settings: { graphId: bad, topK: 3 } as import('../types').NodeSettings }
+      const def = fromEditorFormat(editor, 'x')
+      const kg = def.nodes.find((n) => n.key === 'kg')!
+      expect(kg.config).toEqual({ topK: 3 })
+    }
+  })
+
+  it('toEditorFormat 往返保留 kgSearch 节点与绑定', () => {
+    const editor2 = toEditorFormat(fromEditorFormat(kgEditor(), 'x'))
+    const kg = editor2.nodes.find((n) => n.id === 'kg')
+    expect(kg?.type).toBe('kgSearch')
+    expect(kg?.data?.settings).toEqual({ graphId: 11, topK: 3 })
+    expect(kg?.data?.inputs?.query.value).toBe('start.question')
+    expect(validateEditorData(editor2)).toEqual([])
+  })
+})
+
 describe('HTTP 请求节点（http）', () => {
   const httpEditor = (): import('../types').EditorWorkflowJSON => ({
     nodes: [
