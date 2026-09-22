@@ -48,8 +48,8 @@ public class KgCypherQueryPluginParamsTests
             KgCypherQueryPlugin.NormalizeParams(DeserializeParams("""{"arr": [1, 2]}""")));
 
         Assert.Equal(400, ex.StatusCode);
-        Assert.Contains("查询参数仅支持字符串/数字/布尔", ex.Message);
-        Assert.Contains("arr", ex.Message);
+        Assert.Contains("查询参数仅支持字符串/数字/布尔", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("arr", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public class KgCypherQueryPluginParamsTests
             KgCypherQueryPlugin.NormalizeParams(DeserializeParams("""{"k": {"a": 1}}""")));
 
         Assert.Equal(400, ex.StatusCode);
-        Assert.Contains("查询参数仅支持字符串/数字/布尔", ex.Message);
-        Assert.Contains("k", ex.Message);
+        Assert.Contains("查询参数仅支持字符串/数字/布尔", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("k", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -26,7 +26,7 @@ public class CypherReadOnlyGuardTests
 
         var result = CypherReadOnlyGuard.Validate(cypher);
 
-        Assert.Contains("8000", result);
+        Assert.Contains("8000", result, StringComparison.Ordinal);
     }
 
     [Fact]

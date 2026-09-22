@@ -11,7 +11,8 @@
 //   KT-S9 接入图（connected）查询无需 $kgId 成功
 //   KT-S10 跨团队运行实例：404 或 success=false
 // 运行前置：后端必须是含 kg_cypher_query 模板的**新构建**（旧构建无此模板必然失败，勿对旧构建执行）
-//   + Memgraph/图数据库可达 + KG_ENABLED=true；未开启/连不上时打印 SKIP 并退出码 0（CI 无图数据库不失败）
+//   + Memgraph/图数据库可达 + KG_ENABLED=true。SKIP 语义：KG 未开启→SKIP exit 0；后端不可达→SKIP exit 0；
+//   图库不可达时托管图场景将以错误退出（exit 2），仅接入图场景（KT-S9）自动降级 SKIP。
 import crypto from 'node:crypto'
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
