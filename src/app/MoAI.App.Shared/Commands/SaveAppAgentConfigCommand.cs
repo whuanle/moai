@@ -34,6 +34,11 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public IReadOnlyCollection<long> WikiIds { get; init; } = Array.Empty<long>();
 
     /// <summary>
+    /// 允许使用的知识图谱 id 列表（元素为 knowledge_graph.id），须属于本团队且为平台托管图（接入图不支持）.
+    /// </summary>
+    public IReadOnlyCollection<long> GraphIds { get; init; } = Array.Empty<long>();
+
+    /// <summary>
     /// 允许使用的插件 id 列表（元素为 plugin.id，uuid），须为本团队可访问插件.
     /// </summary>
     public IReadOnlyCollection<Guid> Plugins { get; init; } = Array.Empty<Guid>();
@@ -86,6 +91,7 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
         validate.RuleFor(x => x.Prompt).MaximumLength(4000).WithMessage("系统提示词最长 4000 个字符.");
         validate.RuleFor(x => x.OpeningStatement).MaximumLength(4000).WithMessage("对话开场白最长 4000 个字符.");
         validate.RuleFor(x => x.WikiIds).NotNull().WithMessage("知识库列表不能为 null.");
+        validate.RuleFor(x => x.GraphIds).NotNull().WithMessage("知识图谱列表不能为 null.");
         validate.RuleFor(x => x.Plugins).NotNull().WithMessage("插件列表不能为 null.");
         validate.RuleFor(x => x.QuickInputs).Must(list => list == null || list.Count <= 10)
             .WithMessage("快捷输入最多 10 条.");

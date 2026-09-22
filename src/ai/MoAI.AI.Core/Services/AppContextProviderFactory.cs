@@ -49,6 +49,11 @@ public sealed class AppAgentBuildContext
     public IReadOnlyList<long> WikiIds { get; init; } = [];
 
     /// <summary>
+    /// 绑定的知识图谱 id.
+    /// </summary>
+    public IReadOnlyList<long> GraphIds { get; init; } = [];
+
+    /// <summary>
     /// 绑定的插件 id.
     /// </summary>
     public IReadOnlyList<Guid> PluginIds { get; init; } = [];

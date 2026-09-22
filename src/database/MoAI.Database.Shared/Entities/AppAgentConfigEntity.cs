@@ -45,6 +45,11 @@ public partial class AppAgentConfigEntity : IFullAudited
     public string WikiIds { get; set; } = default!;
 
     /// <summary>
+    /// 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 &apos;[1,2]&apos;.
+    /// </summary>
+    public string GraphIds { get; set; } = default!;
+
+    /// <summary>
     /// 绑定的插件ID列表，JSON 数组文本，元素为 plugin.id（uuid 字符串），如 &apos;[&quot;...&quot;]&apos;.
     /// </summary>
     public string Plugins { get; set; } = default!;

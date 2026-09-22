@@ -187,6 +187,7 @@ public sealed class AppAgentFactory
             UserId = userId,
             SessionId = sessionId,
             WikiIds = ParseWikiIds(effectiveConfig.WikiIds),
+            GraphIds = ParseGraphIds(effectiveConfig.GraphIds),
             PluginIds = ParsePluginIds(effectiveConfig.Plugins),
             WorkflowAppIds = ParsePluginIds(effectiveConfig.WorkflowApps),
             SkillIds = effectiveSkillIds,
@@ -241,6 +242,23 @@ public sealed class AppAgentFactory
         }
     }
 
+    private static IReadOnlyList<long> ParseGraphIds(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<long>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>
     /// 外部应用限制克隆：技能清空、沙箱关闭，其余字段原样拷贝；返回脱管行，仅用于读取.
     /// </summary>
@@ -258,6 +276,7 @@ public sealed class AppAgentFactory
             Prompt = config.Prompt ?? string.Empty,
             ModelId = config.ModelId,
             WikiIds = config.WikiIds,
+            GraphIds = config.GraphIds,
             Plugins = config.Plugins,
             WorkflowApps = config.WorkflowApps,
             Skills = "[]",

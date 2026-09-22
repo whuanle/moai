@@ -70,6 +70,14 @@ internal static class AppAgentConfigJson
         => JsonSerializer.Serialize(wikiIds.ToList());
 
     /// <summary>
+    /// 序列化知识图谱 id 列表为 JSON 数组文本.
+    /// </summary>
+    /// <param name="graphIds">知识图谱 id 列表.</param>
+    /// <returns>JSON 文本.</returns>
+    public static string SerializeGraphIds(IEnumerable<long> graphIds)
+        => JsonSerializer.Serialize(graphIds.ToList());
+
+    /// <summary>
     /// 序列化为 JSON uuid 字符串数组文本（插件 id）.
     /// </summary>
     /// <param name="pluginIds">插件 id 列表.</param>

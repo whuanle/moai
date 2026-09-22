@@ -71,6 +71,7 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
                 AppId = app.Id,
                 Prompt = string.Empty,
                 WikiIds = "[]",
+                GraphIds = "[]",
                 Plugins = "[]",
                 Skills = "[]",
                 ExecutionSettings = "{}",

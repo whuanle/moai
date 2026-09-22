@@ -29,6 +29,11 @@ public sealed class AppAgentConfigSnapshot
     public string WikiIds { get; set; } = "[]";
 
     /// <summary>
+    /// 绑定的知识图谱ID列表，JSON 数组文本.
+    /// </summary>
+    public string GraphIds { get; set; } = "[]";
+
+    /// <summary>
     /// 绑定的插件ID列表，JSON 数组文本.
     /// </summary>
     public string Plugins { get; set; } = "[]";
@@ -75,6 +80,7 @@ public sealed class AppAgentConfigSnapshot
             Prompt = config.Prompt ?? string.Empty,
             ModelId = config.ModelId,
             WikiIds = string.IsNullOrWhiteSpace(config.WikiIds) ? "[]" : config.WikiIds,
+            GraphIds = string.IsNullOrWhiteSpace(config.GraphIds) ? "[]" : config.GraphIds,
             Plugins = string.IsNullOrWhiteSpace(config.Plugins) ? "[]" : config.Plugins,
             WorkflowApps = string.IsNullOrWhiteSpace(config.WorkflowApps) ? "[]" : config.WorkflowApps,
             Skills = string.IsNullOrWhiteSpace(config.Skills) ? "[]" : config.Skills,
@@ -137,6 +143,7 @@ public sealed class AppAgentConfigSnapshot
             Prompt = snapshot.Prompt,
             ModelId = snapshot.ModelId,
             WikiIds = snapshot.WikiIds,
+            GraphIds = snapshot.GraphIds,
             Plugins = snapshot.Plugins,
             WorkflowApps = snapshot.WorkflowApps,
             Skills = snapshot.Skills,

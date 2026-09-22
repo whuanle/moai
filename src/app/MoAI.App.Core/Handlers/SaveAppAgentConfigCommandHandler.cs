@@ -8,6 +8,7 @@ using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.KnowledgeGraph.Models;
 using MoAI.Settings.Services;
 using MoAI.Team.Services;
 
@@ -88,6 +89,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         // 对话模型须在该团队可用；执行参数含沙箱等扩展配置，启用沙箱时受系统上限约束
         var modelId = await ValidateModelIdAsync(app.TeamId, request.ModelId, cancellationToken);
         var wikiIds = await ValidateWikiIdsAsync(app.TeamId, request.WikiIds, cancellationToken);
+        var graphIds = await ValidateGraphIdsAsync(app.TeamId, request.GraphIds, cancellationToken);
         var pluginIds = await ValidatePluginIdsAsync(app.TeamId, request.Plugins, cancellationToken);
         var skillIds = await ValidateSkillIdsAsync(app.TeamId, request.Skills, cancellationToken);
         var workflowAppIds = await ValidateWorkflowAppIdsAsync(app.TeamId, request.WorkflowApps, cancellationToken);
@@ -99,6 +101,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
 
         var wikiJson = AppAgentConfigJson.SerializeWikiIds(wikiIds);
+        var graphJson = AppAgentConfigJson.SerializeGraphIds(graphIds);
         var pluginJson = AppAgentConfigJson.SerializePluginIds(pluginIds);
         var executionJson = NormalizeExecutionSettings(request.ExecutionSettings);
         // 快捷输入：仅请求显式携带时覆盖（去空白、去重），避免旧前端保存其他字段时清空
@@ -121,6 +124,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 Prompt = request.Prompt ?? string.Empty,
                 ModelId = modelId,
                 WikiIds = wikiJson,
+                GraphIds = graphJson,
                 Plugins = pluginJson,
                 WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds ?? []),
                 Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
@@ -136,6 +140,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             config.Prompt = request.Prompt ?? string.Empty;
             config.ModelId = modelId;
             config.WikiIds = wikiJson;
+            config.GraphIds = graphJson;
             config.Plugins = pluginJson;
             config.OpeningStatement = request.OpeningStatement ?? string.Empty;
             config.OpeningStatementEnabled = request.OpeningStatementEnabled;
@@ -273,6 +278,33 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         if (invalid.Count > 0)
         {
             throw new BusinessException("包含不属于该团队的知识库，请重新选择.") { StatusCode = 400 };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 校验知识图谱：仅允许绑定本团队的平台托管图（接入图不支持应用侧检索绑定），去重后返回.
+    /// </summary>
+    private async Task<List<long>> ValidateGraphIdsAsync(int teamId, IReadOnlyCollection<long>? graphIds, CancellationToken cancellationToken)
+    {
+        var ids = graphIds?.Where(x => x > 0).Distinct().ToList() ?? new List<long>();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        var owned = await _databaseContext.KnowledgeGraphs
+            .Where(x => x.TeamId == teamId && x.Mode == KnowledgeGraphModes.Managed)
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var ownedSet = owned.ToHashSet();
+        var invalid = ids.Where(x => !ownedSet.Contains(x)).ToList();
+
+        if (invalid.Count > 0)
+        {
+            throw new BusinessException("包含不属于该团队或不支持检索的知识图谱，请重新选择.") { StatusCode = 400 };
         }
 
         return ids;

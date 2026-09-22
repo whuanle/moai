@@ -91,6 +91,7 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
             UserId = request.UserId,
             SessionId = Guid.CreateVersion7(),
             WikiIds = ParseWikiIds(request.Config.WikiIds),
+            GraphIds = ParseGraphIds(request.Config.GraphIds),
             PluginIds = ParseGuidList(request.Config.Plugins),
             WorkflowAppIds = ParseGuidList(request.Config.WorkflowApps),
             SkillIds = ParseGuidList(request.Config.Skills),
@@ -147,6 +148,25 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
 
     /// <summary>解析 JSON long 数组（知识库 id，非法/非正数过滤）.</summary>
     private static IReadOnlyList<long> ParseWikiIds(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            var raw = JsonSerializer.Deserialize<List<long>>(json) ?? [];
+            return raw.Where(id => id > 0).ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>解析 JSON long 数组（知识图谱 id，非法/非正数过滤）.</summary>
+    private static IReadOnlyList<long> ParseGraphIds(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
