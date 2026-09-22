@@ -49,7 +49,7 @@ public class WorkflowWikiSearchClient : IWorkflowWikiSearchClient
             return [];
         }
 
-        var hits = await _wikiSearchService.SearchAsync(ownedIds, query, top, cancellationToken);
+        var hits = await _wikiSearchService.SearchAsync(validIds, query, top, cancellationToken);
         return hits.Select(x => new WorkflowWikiSearchHit
         {
             WikiId = x.WikiId,
