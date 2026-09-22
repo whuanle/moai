@@ -169,13 +169,18 @@ export function TeamDynamicPluginPanel({
     setModalOpen(true)
   }
 
-  // kg_cypher_query：选中图谱后自动预填描述与配置，仅作起点，用户可手改
+  // kg_cypher_query：选中图谱后自动预填描述与配置，仅作起点，用户可手改。
+  // 响应落地前复核绑定未变（含已切换/已清空/已切模板/弹窗已重置），丢弃过期响应，防绑定与展示脱节。
   const handleKgBindingChange = async (graphId: number) => {
+    const isStale = () =>
+      form.getFieldValue('kgId') !== graphId || form.getFieldValue('templeteKey') !== KG_CYPHER_TEMPLATE_KEY
     try {
       await prefillKgCypherQuery(teamId, graphId, (description, config) => {
+        if (isStale()) return
         form.setFieldsValue({ description, config })
       })
     } catch {
+      if (isStale()) return
       feedback.error(t('plugins.kgBindingLoadFailed'))
     }
   }
