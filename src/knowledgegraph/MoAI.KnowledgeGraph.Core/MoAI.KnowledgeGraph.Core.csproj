@@ -17,6 +17,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
+		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 		<PackageReference Include="Maomi.ToMarkdown" />
 		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
 		<PackageReference Include="Neo4j.Driver" />

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MoAI.Database;
@@ -82,7 +83,7 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
     {
         using var db = await CreateGraphAsync(mode: "connected");
         var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
-        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!), CreateGraphStore(), new Mock<IKgEmbeddingVectorStore>().Object, Mock.Of<Maomi.MQ.IMessagePublisher>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateKnowledgeGraphEmbeddingConfigCommandHandler>.Instance);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1024 },
@@ -97,7 +98,7 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
         using var db = await CreateGraphAsync();
         var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
         await SeedModelAsync(db, enabled: true, isPublic: false);
-        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!), CreateGraphStore(), new Mock<IKgEmbeddingVectorStore>().Object, Mock.Of<Maomi.MQ.IMessagePublisher>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateKnowledgeGraphEmbeddingConfigCommandHandler>.Instance);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1024 },
@@ -112,7 +113,7 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
         using var db = await CreateGraphAsync();
         var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
         await SeedModelAsync(db, enabled: true, isPublic: true);
-        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!), CreateGraphStore(), new Mock<IKgEmbeddingVectorStore>().Object, Mock.Of<Maomi.MQ.IMessagePublisher>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateKnowledgeGraphEmbeddingConfigCommandHandler>.Instance);
 
         await sut.Handle(
             new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1536 },
@@ -129,7 +130,7 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
         using var db = await CreateGraphAsync();
         var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
         await SeedModelAsync(db, enabled: true, isPublic: false, authorizeToTeam: true);
-        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!), CreateGraphStore(), new Mock<IKgEmbeddingVectorStore>().Object, Mock.Of<Maomi.MQ.IMessagePublisher>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateKnowledgeGraphEmbeddingConfigCommandHandler>.Instance);
 
         await sut.Handle(
             new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1024 },
@@ -146,7 +147,7 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
         using var db = await CreateGraphAsync();
         var graph = await db.Context.KnowledgeGraphs.FindAsync(KnowledgeGraphId);
         await SeedModelAsync(db, enabled: true, isPublic: true, modelKind: "conversation");
-        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!));
+        var sut = new UpdateKnowledgeGraphEmbeddingConfigCommandHandler(db.Context, CreateAuthorizer(graph!), CreateGraphStore(), new Mock<IKgEmbeddingVectorStore>().Object, Mock.Of<Maomi.MQ.IMessagePublisher>(), Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateKnowledgeGraphEmbeddingConfigCommandHandler>.Instance);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = KnowledgeGraphId, EmbeddingModelId = ModelId, EmbeddingDimensions = 1024 },
@@ -154,5 +155,13 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests
 
         Assert.Equal(400, ex.StatusCode);
         Assert.Equal("所选模型不是向量化模型.", ex.Message);
+    }
+
+    private static IKnowledgeGraphStore CreateGraphStore()
+    {
+        var store = new Mock<IKnowledgeGraphStore>();
+        store.Setup(x => x.GetNodeIdsAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
+        return store.Object;
     }
 }

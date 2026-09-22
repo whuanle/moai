@@ -29,7 +29,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
         var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var result = await sut.Handle(new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None);
 
         Assert.True(result.Value > 0);
@@ -51,7 +51,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.ProbeDatabaseAsync("ext", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" },
             CancellationToken.None));
@@ -73,7 +73,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.ProbeDatabaseAsync("ext", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var result = await sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = " ext " },
             CancellationToken.None);
@@ -97,7 +97,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
         var store = new Mock<IKnowledgeGraphStore>();
         store.Setup(x => x.ProbeDatabaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         await sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "外部图", Mode = KnowledgeGraphModes.Connected, Database = "ext" },
             CancellationToken.None);
@@ -121,7 +121,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = false });
 
         var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
 
@@ -140,7 +140,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = " " });
 
         var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
 
@@ -159,7 +159,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
 
         var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         await sut.Handle(new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None);
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "支付域" }, CancellationToken.None));
@@ -180,7 +180,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
 
         var store = new Mock<IKnowledgeGraphStore>();
         SetupStoreSeeding(store);
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var result = await sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "物流", TemplateKey = "logistics" },
             CancellationToken.None);
@@ -231,7 +231,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .Returns((long kgId, long relationTypeId, string sourceNodeId, string targetNodeId, CancellationToken _) =>
                 Task.FromResult(new KnowledgeGraphEdgeRecord(Guid.CreateVersion7().ToString(), kgId, relationTypeId, sourceNodeId, targetNodeId)));
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         var result = await sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "物流", TemplateKey = "logistics" },
             CancellationToken.None);
@@ -277,7 +277,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
         store.Setup(x => x.CreateEdgeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("graph down"));
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "物流", TemplateKey = "logistics" },
             CancellationToken.None));
@@ -313,7 +313,7 @@ public class CreateKnowledgeGraphCommandHandlerTests
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
         var store = new Mock<IKnowledgeGraphStore>();
 
-        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object);
+        var sut = new CreateKnowledgeGraphCommandHandler(db.Context, authorizer.Object, settings.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphCommandHandler>());
 
         await Assert.ThrowsAsync<DbUpdateException>(() => sut.Handle(
             new CreateKnowledgeGraphCommand { TeamId = 7, Name = "物流", TemplateKey = "logistics" },
@@ -323,4 +323,10 @@ public class CreateKnowledgeGraphCommandHandlerTests
         Assert.Empty(db.Context.KnowledgeGraphEntityTypes);
         Assert.Empty(db.Context.KnowledgeGraphRelationTypes);
     }
+
+    private static Maomi.MQ.IMessagePublisher CreateMessagePublisher()
+        => Mock.Of<Maomi.MQ.IMessagePublisher>();
+
+    private static Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>()
+        => Microsoft.Extensions.Logging.Abstractions.NullLogger<T>.Instance;
 }

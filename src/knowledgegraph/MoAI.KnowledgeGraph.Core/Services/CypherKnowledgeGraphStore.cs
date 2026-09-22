@@ -233,6 +233,17 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
     }
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> GetNodeIdsAsync(long KnowledgeGraphId, CancellationToken cancellationToken)
+    {
+        // 一期全量重嵌上限 5000 节点，超出截断
+        var records = await ReadAsync(
+            "MATCH (n:KgNode {kgId: $kgId}) RETURN n.id AS id ORDER BY n.id LIMIT $limit",
+            new { kgId = KnowledgeGraphId, limit = 5000 },
+            cancellationToken);
+        return records.Select(x => x["id"].As<string>()).ToList();
+    }
+
+    /// <inheritdoc/>
     public async Task<Dictionary<string, long>> GetNodeTypesByIdsAsync(long KnowledgeGraphId, IReadOnlyList<string> nodeIds, CancellationToken cancellationToken)
     {
         if (nodeIds.Count == 0)

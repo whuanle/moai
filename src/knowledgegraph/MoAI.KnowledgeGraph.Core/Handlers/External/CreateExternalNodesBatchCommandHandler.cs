@@ -1,5 +1,7 @@
+using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.External;
@@ -15,6 +17,8 @@ public class CreateExternalNodesBatchCommandHandler : IRequestHandler<CreateExte
     private readonly DatabaseContext _databaseContext;
     private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphStore _store;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly ILogger<CreateExternalNodesBatchCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateExternalNodesBatchCommandHandler"/> class.
@@ -22,11 +26,15 @@ public class CreateExternalNodesBatchCommandHandler : IRequestHandler<CreateExte
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="store">图存储.</param>
-    public CreateExternalNodesBatchCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store)
+    /// <param name="messagePublisher">消息发布器.</param>
+    /// <param name="logger">日志.</param>
+    public CreateExternalNodesBatchCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store, IMessagePublisher messagePublisher, ILogger<CreateExternalNodesBatchCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _externalAuthorizer = externalAuthorizer;
         _store = store;
+        _messagePublisher = messagePublisher;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -54,6 +62,11 @@ public class CreateExternalNodesBatchCommandHandler : IRequestHandler<CreateExte
             .Select(x => new KnowledgeGraphNodeInput(x.EntityTypeId, x.Name, x.Description ?? string.Empty))
             .ToList();
         var records = await _store.CreateNodesBatchAsync(request.KnowledgeGraphId, nodes, cancellationToken);
+        await KgEmbeddingDeltaPublisher.PublishNodesUpsertAsync(
+            _messagePublisher,
+            _logger,
+            request.KnowledgeGraphId,
+            records.Select(x => x.Id).ToList());
 
         return new ExternalBatchResponse
         {

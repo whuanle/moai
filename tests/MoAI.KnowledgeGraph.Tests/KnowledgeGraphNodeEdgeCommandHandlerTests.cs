@@ -23,7 +23,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var authorizer = CreateAuthorizer();
         var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object);
+        var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphNodeCommandHandler>());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = 999, Name = "节点" },
@@ -201,7 +201,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         store.Setup(x => x.DeleteNodeAsync(KnowledgeGraphId, "missing", It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var sut = new DeleteKnowledgeGraphNodeCommandHandler(authorizer.Object, store.Object);
+        var sut = new DeleteKnowledgeGraphNodeCommandHandler(authorizer.Object, store.Object, CreateMessagePublisher(), CreateLogger<DeleteKnowledgeGraphNodeCommandHandler>());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new DeleteKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, NodeId = "missing" },
@@ -247,7 +247,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         authorizer.Setup(x => x.AuthorizeManagedAsync(KnowledgeGraphId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new BusinessException("外部接入图谱为只读.") { StatusCode = 409 });
         var store = new Mock<IKnowledgeGraphStore>();
-        var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object);
+        var sut = new CreateKnowledgeGraphNodeCommandHandler(db.Context, authorizer.Object, store.Object, CreateMessagePublisher(), CreateLogger<CreateKnowledgeGraphNodeCommandHandler>());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => sut.Handle(
             new CreateKnowledgeGraphNodeCommand { KnowledgeGraphId = KnowledgeGraphId, EntityTypeId = 1, Name = "节点" },
@@ -266,4 +266,10 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
             .ReturnsAsync((new KnowledgeGraphEntity { Id = KnowledgeGraphId, TeamId = 1, Name = "图谱" }, MoAI.Database.Enums.TeamRole.Admin));
         return authorizer;
     }
+
+    private static Maomi.MQ.IMessagePublisher CreateMessagePublisher()
+        => Mock.Of<Maomi.MQ.IMessagePublisher>();
+
+    private static Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>()
+        => Microsoft.Extensions.Logging.Abstractions.NullLogger<T>.Instance;
 }

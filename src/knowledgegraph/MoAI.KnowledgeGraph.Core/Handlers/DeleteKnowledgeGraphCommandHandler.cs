@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.Commands;
@@ -19,6 +20,8 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
     private readonly IKnowledgeGraphStore _store;
     private readonly IKnowledgeGraphSettingsService _settingsService;
     private readonly IKnowledgeGraphIntrospectionCache _introspectionCache;
+    private readonly IKgEmbeddingVectorStore _vectorStore;
+    private readonly ILogger<DeleteKnowledgeGraphCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteKnowledgeGraphCommandHandler"/> class.
@@ -28,13 +31,17 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
     /// <param name="store">图存储.</param>
     /// <param name="settingsService">知识图谱设置.</param>
     /// <param name="introspectionCache">接入图内省缓存.</param>
-    public DeleteKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store, IKnowledgeGraphSettingsService settingsService, IKnowledgeGraphIntrospectionCache introspectionCache)
+    /// <param name="vectorStore">向量存储.</param>
+    /// <param name="logger">日志.</param>
+    public DeleteKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphStore store, IKnowledgeGraphSettingsService settingsService, IKnowledgeGraphIntrospectionCache introspectionCache, IKgEmbeddingVectorStore vectorStore, ILogger<DeleteKnowledgeGraphCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
         _store = store;
         _settingsService = settingsService;
         _introspectionCache = introspectionCache;
+        _vectorStore = vectorStore;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -65,6 +72,16 @@ public class DeleteKnowledgeGraphCommandHandler : IRequestHandler<DeleteKnowledg
         if (string.Equals(graph.Mode, KnowledgeGraphModes.Connected, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(graph.Database))
         {
             await _introspectionCache.RemoveAsync(graph.Id, graph.Database, cancellationToken);
+        }
+
+        // 删图成功后清理该图的 pgvector 集合；失败不阻塞删除响应（孤儿集合仅占空间，不影响业务）
+        try
+        {
+            await _vectorStore.DeleteGraphVectorsAsync(graph.Id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "删除图谱向量集合失败（孤儿集合不影响业务）. KgId={KgId}", graph.Id);
         }
 
         return EmptyCommandResponse.Default;

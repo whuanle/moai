@@ -1,5 +1,7 @@
+using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
@@ -23,6 +25,8 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
     private readonly IKnowledgeGraphAuthorizer _authorizer;
     private readonly IKnowledgeGraphSettingsService _settingsService;
     private readonly IKnowledgeGraphStore _store;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly ILogger<CreateKnowledgeGraphCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateKnowledgeGraphCommandHandler"/> class.
@@ -31,12 +35,16 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
     /// <param name="authorizer">权限判定.</param>
     /// <param name="settingsService">知识图谱设置.</param>
     /// <param name="store">图存储.</param>
-    public CreateKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphSettingsService settingsService, IKnowledgeGraphStore store)
+    /// <param name="messagePublisher">消息发布器.</param>
+    /// <param name="logger">日志.</param>
+    public CreateKnowledgeGraphCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphSettingsService settingsService, IKnowledgeGraphStore store, IMessagePublisher messagePublisher, ILogger<CreateKnowledgeGraphCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
         _settingsService = settingsService;
         _store = store;
+        _messagePublisher = messagePublisher;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -141,6 +149,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
             throw;
         }
 
+        var seededNodeIds = new List<string>();
         if (template != null && template.EntityTypes.Count > 0)
         {
             var sort = 0;
@@ -198,18 +207,26 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
 
             if (template.Nodes.Count > 0)
             {
-                await SeedTemplateDataAsync(graph.Id, template, typeNameToId, relationNameToId, cancellationToken);
+                seededNodeIds = await SeedTemplateDataAsync(graph.Id, template, typeNameToId, relationNameToId, cancellationToken);
             }
         }
 
         await transaction.CommitAsync(cancellationToken);
+
+        // 模板种子节点已落图库：发布一条全量 delta（当前建图必然未配向量化模型，消费侧会静默跳过；
+        // 此处保持「所有托管图节点写路径都发 delta」的完备性，且发布在事务提交之后）
+        if (seededNodeIds.Count > 0)
+        {
+            await KgEmbeddingDeltaPublisher.PublishNodesUpsertAsync(_messagePublisher, _logger, graph.Id, seededNodeIds);
+        }
+
         return new SimpleLong { Value = graph.Id };
     }
 
     /// <summary>
-    /// 写入模板预置的示例实例与关系；任一失败清理图库残留并抛出，由外层事务回滚整个建图.
+    /// 写入模板预置的示例实例与关系，返回成功写入的节点 id；任一失败清理图库残留并抛出，由外层事务回滚整个建图.
     /// </summary>
-    private async Task SeedTemplateDataAsync(long graphId, KnowledgeGraphTemplate template, Dictionary<string, long> typeNameToId, Dictionary<string, long> relationNameToId, CancellationToken cancellationToken)
+    private async Task<List<string>> SeedTemplateDataAsync(long graphId, KnowledgeGraphTemplate template, Dictionary<string, long> typeNameToId, Dictionary<string, long> relationNameToId, CancellationToken cancellationToken)
     {
         try
         {
@@ -236,6 +253,8 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
 
                 await _store.CreateEdgeAsync(graphId, relationTypeId, sourceNodeId, targetNodeId, cancellationToken);
             }
+
+            return nodeKeyToId.Values.ToList();
         }
         catch
         {

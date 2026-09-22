@@ -1,8 +1,10 @@
 using System.Text;
 using System.Text.Json;
+using Maomi.MQ;
 using Maomi.ToMarkdown;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -35,6 +37,8 @@ public class ImportKnowledgeGraphFromFileCommandHandler : IRequestHandler<Import
     private readonly IStorageService _storageService;
     private readonly TextExtractionService _textExtractionService;
     private readonly IAiChatCompletionService _chatCompletionService;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly ILogger<ImportKnowledgeGraphFromFileCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ImportKnowledgeGraphFromFileCommandHandler"/> class.
@@ -46,7 +50,9 @@ public class ImportKnowledgeGraphFromFileCommandHandler : IRequestHandler<Import
         IKnowledgeGraphStore store,
         IStorageService storageService,
         TextExtractionService textExtractionService,
-        IAiChatCompletionService chatCompletionService)
+        IAiChatCompletionService chatCompletionService,
+        IMessagePublisher messagePublisher,
+        ILogger<ImportKnowledgeGraphFromFileCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
@@ -55,6 +61,8 @@ public class ImportKnowledgeGraphFromFileCommandHandler : IRequestHandler<Import
         _storageService = storageService;
         _textExtractionService = textExtractionService;
         _chatCompletionService = chatCompletionService;
+        _messagePublisher = messagePublisher;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -215,6 +223,9 @@ public class ImportKnowledgeGraphFromFileCommandHandler : IRequestHandler<Import
             await _store.CreateEdgeAsync(request.KnowledgeGraphId, relationType.Id, sourceNodeId, targetNodeId, cancellationToken);
             edgesCreated++;
         }
+
+        // AI 导入批量写节点：一条 delta 消息带全部新建节点 id
+        await KgEmbeddingDeltaPublisher.PublishNodesUpsertAsync(_messagePublisher, _logger, request.KnowledgeGraphId, nodeKeyToId.Values.ToList());
 
         return new ImportKnowledgeGraphFromFileResponse
         {

@@ -1,5 +1,7 @@
+using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -16,6 +18,8 @@ public class CreateExternalNodeCommandHandler : IRequestHandler<CreateExternalNo
     private readonly DatabaseContext _databaseContext;
     private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphStore _store;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly ILogger<CreateExternalNodeCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateExternalNodeCommandHandler"/> class.
@@ -23,11 +27,15 @@ public class CreateExternalNodeCommandHandler : IRequestHandler<CreateExternalNo
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="store">图存储.</param>
-    public CreateExternalNodeCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store)
+    /// <param name="messagePublisher">消息发布器.</param>
+    /// <param name="logger">日志.</param>
+    public CreateExternalNodeCommandHandler(DatabaseContext databaseContext, IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store, IMessagePublisher messagePublisher, ILogger<CreateExternalNodeCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _externalAuthorizer = externalAuthorizer;
         _store = store;
+        _messagePublisher = messagePublisher;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -44,6 +52,7 @@ public class CreateExternalNodeCommandHandler : IRequestHandler<CreateExternalNo
 
         var propsJson = KnowledgeGraphPropertyJson.WriteValues(request.Properties ?? new Dictionary<string, string>(StringComparer.Ordinal));
         var node = await _store.CreateNodeAsync(request.KnowledgeGraphId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, propsJson, cancellationToken);
+        await KgEmbeddingDeltaPublisher.PublishNodeUpsertAsync(_messagePublisher, _logger, request.KnowledgeGraphId, node.Id);
         return new SimpleString { Value = node.Id };
     }
 }

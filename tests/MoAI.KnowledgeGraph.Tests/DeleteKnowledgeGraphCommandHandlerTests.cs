@@ -68,6 +68,6 @@ public class DeleteKnowledgeGraphCommandHandlerTests
         var settings = new Mock<IKnowledgeGraphSettingsService>();
         settings.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new KnowledgeGraphStoreSettings { Enabled = true, Uri = "neo4j://localhost:7687" });
-        return new DeleteKnowledgeGraphCommandHandler(db.Context, authorizer.Object, store, settings.Object, new Mock<IKnowledgeGraphIntrospectionCache>().Object);
+        return new DeleteKnowledgeGraphCommandHandler(db.Context, authorizer.Object, store, settings.Object, new Mock<IKnowledgeGraphIntrospectionCache>().Object, new Mock<IKgEmbeddingVectorStore>().Object, Microsoft.Extensions.Logging.Abstractions.NullLogger<DeleteKnowledgeGraphCommandHandler>.Instance);
     }
 }

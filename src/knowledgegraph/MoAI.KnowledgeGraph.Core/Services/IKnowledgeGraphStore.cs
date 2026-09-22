@@ -60,6 +60,11 @@ public interface IKnowledgeGraphStore
     Task<KnowledgeGraphNodeRecord?> GetNodeAsync(long KnowledgeGraphId, string nodeId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 列出图谱全部节点 id（配置变更全量重嵌用；一期上限 5000，超出部分截断）.
+    /// </summary>
+    Task<IReadOnlyList<string>> GetNodeIdsAsync(long KnowledgeGraphId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 批量获取指定节点的实体类型 id（仅返回存在的节点），用于批量端点预检与关系约束校验.
     /// </summary>
     Task<Dictionary<string, long>> GetNodeTypesByIdsAsync(long KnowledgeGraphId, IReadOnlyList<string> nodeIds, CancellationToken cancellationToken);

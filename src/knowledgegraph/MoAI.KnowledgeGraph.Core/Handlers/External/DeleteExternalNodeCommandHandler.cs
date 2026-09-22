@@ -1,4 +1,6 @@
+using Maomi.MQ;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.External;
@@ -13,16 +15,22 @@ public class DeleteExternalNodeCommandHandler : IRequestHandler<DeleteExternalNo
 {
     private readonly IExternalKnowledgeGraphAuthorizer _externalAuthorizer;
     private readonly IKnowledgeGraphStore _store;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly ILogger<DeleteExternalNodeCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteExternalNodeCommandHandler"/> class.
     /// </summary>
     /// <param name="externalAuthorizer">外部授权器.</param>
     /// <param name="store">图存储.</param>
-    public DeleteExternalNodeCommandHandler(IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store)
+    /// <param name="messagePublisher">消息发布器.</param>
+    /// <param name="logger">日志.</param>
+    public DeleteExternalNodeCommandHandler(IExternalKnowledgeGraphAuthorizer externalAuthorizer, IKnowledgeGraphStore store, IMessagePublisher messagePublisher, ILogger<DeleteExternalNodeCommandHandler> logger)
     {
         _externalAuthorizer = externalAuthorizer;
         _store = store;
+        _messagePublisher = messagePublisher;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -35,6 +43,7 @@ public class DeleteExternalNodeCommandHandler : IRequestHandler<DeleteExternalNo
             throw new BusinessException("节点不存在.") { StatusCode = 404 };
         }
 
+        await KgEmbeddingDeltaPublisher.PublishNodeDeleteAsync(_messagePublisher, _logger, request.KnowledgeGraphId, request.NodeId);
         return EmptyCommandResponse.Default;
     }
 }
