@@ -183,6 +183,16 @@ Scenario: 配置校验与类型约束
   Then 返回成功
   When 对不存在的应用查询/保存配置
   Then 返回不存在
+
+@AP-S69 @auto:e2e @auto:unit
+Scenario: 绑定知识图谱（仅本团队托管图）
+  When Admin 保存配置，绑定本团队托管知识图谱
+  Then 返回成功，重新查询回读 graphIds 一致
+  When 绑定不属于本团队的知识图谱
+  Then 返回参数错误且文案含「知识图谱」，原配置不被改写
+  When 绑定本团队接入图（connected）
+  Then 返回参数错误（接入图不支持应用侧检索绑定）
+  And 应用配置页图谱可选项仅列本团队托管图（前端过滤）
 ```
 
 ## Feature: 内部 / 外部应用

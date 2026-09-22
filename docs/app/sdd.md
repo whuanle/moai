@@ -42,6 +42,7 @@
 | `model_id` | **uuid** | 对话模型（→ `ai_model.id`） |
 | `wiki_ids` | text | 绑定知识库ID JSON 数组（元素为 `wiki.id`，int），空 `[]` |
 | `plugins` | text | 绑定插件ID JSON 数组（元素为 `plugin.id`，uuid 字符串），空 `[]` |
+| `graph_ids` | text | 绑定知识图谱ID JSON 数组（元素为 `knowledge_graph.id`，整数，**仅本团队托管图**），空 `[]`（2026-09-22 增补，SP-A；存量库见 `asserts/app_agent_config_graph_ids.sql`） |
 | `workflow_apps` | text | 绑定为工具的流程应用ID JSON 数组（元素为 `app.id`，uuid 字符串，须为本团队已发布流程应用），空 `[]`（2026-09-20 增补，存量库见 `asserts/app_agent_workflow_apps.sql`，决策 D44） |
 | `skills` | text | 应用默认使用的技能ID JSON 数组（元素为 `skill.id`，uuid 字符串），用户可在应用设置中取消勾选（语义见 [../skill/sdd.md](../skill/sdd.md) §9） |
 | `execution_settings` | text | 对话参数 JSON 对象（temperature/topP/maxTokens…），空 `{}` |
@@ -136,7 +137,7 @@
 | PUT | `/api/app/{id}` | 更新基础信息 `{name, description?, isExternal?, isAuth?, isPublic?}`（应用类型不可改，`isExternal` 以库内为准） | Empty |
 | POST | `/api/app/{id}/avatar` | 设置头像 `{objectKey}`（须为已登记上传文件；编辑态使用） | Empty |
 | GET | `/api/app/{id}/agent-config` | 查询 Agent 应用配置（未保存过时返回空配置，不 404） | `QueryAppAgentConfigCommandResponse` |
-| PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[], openingStatement?, openingStatementEnabled?, quickInputs?}` | Empty |
+| PUT | `/api/app/{id}/agent-config` | 保存 Agent 应用配置 `{modelId?, prompt, wikiIds[], plugins[], graphIds[], openingStatement?, openingStatementEnabled?, quickInputs?}`（整体替换，未携带的绑定字段视为清空） | Empty |
 | GET | `/api/access-app/list?teamId=` | 团队应用接入列表（Admin+，回显完整 key，支持再次查看） | `QueryAccessAppsCommandResponse` |
 | POST | `/api/access-app` | 创建应用接入 `{teamId, name, description?, appIds[]}`，key 原文仅返回一次 | `CreateAccessAppCommandResponse` |
 | PUT | `/api/access-app/{id}` | 更新接入 `{name, description?, appIds[]}`（key 不可改） | Empty |
@@ -156,11 +157,11 @@
 
 **对话附件注入模型的两条路径（文档=文本、图片=多模态，2026-09-20 增补）**：文档附件由前端提取后内联在消息文本；图片附件由后端 `ChatAttachmentImageChatClient`（`IChatClient` 装饰器，`AppAgentFactory` 装配在内层 SDK 客户端之上、`UsageCapturingChatClient` 之下）在**请求发往模型前**把用户消息中的图片标记块重写为 `[图片附件：文件名]` 占位 + 追加 image/* `DataContent`（字节内联，OpenAI/Anthropic/Gemini 各协议适配器原生支持）。要点：①会话落库与历史回放仍存标记文本（持久化发生在 agent 层，装饰器只改发往模型的请求），新一轮历史重放走同一转换；②objectKey 解析优先标记块 `objectKey` 属性、历史消息回退从 URL `/static/` 后缀提取，且强制 `public/chat/` 前缀与无 `..`（与 extract 端点同约束，防越权读私有文件）；③svg 不内联（主流视觉接口不接受 image/svg+xml，保持链接文本）、读取失败/超 20MB 降级保留原标记文本不阻断对话；④同一次运行的工具循环轮次间按 objectKey 缓存字节。流程应用（WorkflowAppChatClient）不经过该装饰器。
 
-> `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`。
+> `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`，`graphIds` 为 `knowledge_graph.id`（long，仅本团队托管图）。
 
 `QueryAppUserConfigCommandResponse` 字段新增：`toolApprovalMode`（auto/approval，无配置行默认 auto）与 `toolApprovalExemptNames`/`toolApprovalExemptPrefixes`（审批卡豁免工具清单，源自 `MoAI.AI.AppToolApprovalContract`，与 AI 模块闸口同源）。保存接口 `PUT /api/app/{id}/userconfig` 请求体新增可选 `toolApprovalMode`（null=不修改，非法值 400）。
 
-`QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / skills(uuid[]) / executionSettings / openingStatement / openingStatementEnabled / quickInputs(string[]) / status / myRole`。
+`QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / graphIds(long[]) / skills(uuid[]) / executionSettings / openingStatement / openingStatementEnabled / quickInputs(string[]) / status / myRole`。
 
 **保存配置的校验链**（`SaveAppAgentConfigCommandHandler`，顺序固定）：
 
@@ -168,9 +169,12 @@
 2. 应用类型必须是 Agent（否则 400）；
 3. `wikiIds`：逐个比对 `wiki.team_id == app.team_id`，越权 400；
 4. `plugins`：`plugin.team_id == teamId`（团队自有）**或** `plugin.is_system && team_id == 0 && (is_public || plugin_team_authorization 已授权本团队)`，越权 400；
-5. `prompt` 最长 4000（`IModelValidator`，超长 400，先于 Handler 执行）。
+5. `graphIds`：逐个校验为本团队 **managed** 托管图（他团队/不存在/接入图一律 400，文案「包含不属于该团队或不支持检索的知识图谱，请重新选择.」），去重后落库；
+6. `prompt` 最长 4000（`IModelValidator`，超长 400，先于 Handler 执行）。
 
 校验在写入前完成，失败时**不产生任何写入**（E2E AP-17d 验证）。`WikiIds`/`Plugins` 在库内是 JSON 数组文本，读写经 `AppAgentConfigJson` 收口（非法 JSON 解析为空列表而非抛异常）。
+
+**知识图谱绑定与图检索消费（SP-A，2026-09-22）**：`GraphIds` 与 `WikiIds` 同口径——发布时随 `PublishedConfig` 快照固化（`AppAgentConfigSnapshot.Serialize` 透传），运行期由 `AppAgentFactory`（Agent 对话）与 `WorkflowNodeAiInvoker`（流程 aiChat 节点构建上下文）双装配点解析，非空即向对话暴露 `search_knowledge_graph` 工具（见 [../ai/sdd.md](../ai/sdd.md)）。流程应用另有独立 **`kgSearch` 图检索节点**：`config.graphId` 静态选图 + `config.topK`（1-50 默认 5），输入必填 `query`，输出 `{query,count,hits,contents,text}`，保存草稿/发布/调试执行三入口经 `KnowledgeGraphSearchGuard` 校验 graphId 团队归属（400）——行为场景见 [@KGS-S9](../knowledgegraph/bdd.md#kgs-s9)。
 
 - 路由经 `ApiApplicationModelConvention("/api")` 统一加 `/api` 前缀。
 - `{id}` 为 Guid；应用 id 在响应中序列化为字符串（Kiota 侧 `byId(id: string)`）。

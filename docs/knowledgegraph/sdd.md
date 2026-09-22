@@ -1,9 +1,9 @@
 # 知识图谱模块设计规格（SDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md)、[../settings/sdd.md](../settings/sdd.md) ｜ 设计：[2026-09-10-knowledge-graph-design.md](../superpowers/specs/2026-09-10-knowledge-graph-design.md)、[2026-09-14-knowledge-graph-memgraph-canvas-design.md](../superpowers/specs/2026-09-14-knowledge-graph-memgraph-canvas-design.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md)、[../settings/sdd.md](../settings/sdd.md) ｜ 设计：[2026-09-10-knowledge-graph-design.md](../superpowers/specs/2026-09-10-knowledge-graph-design.md)、[2026-09-14-knowledge-graph-memgraph-canvas-design.md](../superpowers/specs/2026-09-14-knowledge-graph-memgraph-canvas-design.md)、[2026-09-22-kg-graph-search-design.md](../superpowers/specs/2026-09-22-kg-graph-search-design.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)
 
 - 日期：2026-09-14（v2）
-- 状态：后端 v2 已实现（Memgraph 方言化 + 画布/邻接接口 + 权限收紧 + 名称全局唯一）；前端入口/画布已接线；E2E 待图数据库实例。v2.5（2026-09-21）：内置模板「运维服务」改为「物流运输」（实体类型支持预置属性定义）；图谱详情（托管/接入）默认进入图览。v2.6（2026-09-21）：新建图谱弹窗支持同步上传头像——前端「创建成功 → 存储直传 → 复用 `POST {id}/avatar` 登记」串联既有链路，零后端改动；登记失败不阻断创建，可在设置页补传。v2.7（2026-09-21）：物流运输模板一次性预置示例实例与关系（11 节点/15 边写入图库，失败清理残留并整体回滚），建图即得完整图览。v2.8（2026-09-21）：图览交互升级——节点可拖动、点击节点/边弹详情抽屉（节点属性含距离/运价）、边显示关系类型名、建关系改两段式点击。v2.9（2026-09-21）：**AI 导入文件生成图谱**——图览工具栏「AI 导入」（文档直传 chat 公共目录）→ 后端 Maomi.ToMarkdown 提取 → 对话模型按图谱现有模型抽取实体/关系（`KnowledgeGraphImportParser` 容错解析）→ 类型/约束校验后入图；详见 §5 `/{id}/import-file`。
+- 状态：后端 v2 已实现（Memgraph 方言化 + 画布/邻接接口 + 权限收紧 + 名称全局唯一）；前端入口/画布已接线；E2E 待图数据库实例。v2.5（2026-09-21）：内置模板「运维服务」改为「物流运输」（实体类型支持预置属性定义）；图谱详情（托管/接入）默认进入图览。v2.6（2026-09-21）：新建图谱弹窗支持同步上传头像——前端「创建成功 → 存储直传 → 复用 `POST {id}/avatar` 登记」串联既有链路，零后端改动；登记失败不阻断创建，可在设置页补传。v2.7（2026-09-21）：物流运输模板一次性预置示例实例与关系（11 节点/15 边写入图库，失败清理残留并整体回滚），建图即得完整图览。v2.8（2026-09-21）：图览交互升级——节点可拖动、点击节点/边弹详情抽屉（节点属性含距离/运价）、边显示关系类型名、建关系改两段式点击。v2.9（2026-09-21）：**AI 导入文件生成图谱**——图览工具栏「AI 导入」（文档直传 chat 公共目录）→ 后端 Maomi.ToMarkdown 提取 → 对话模型按图谱现有模型抽取实体/关系（`KnowledgeGraphImportParser` 容错解析）→ 类型/约束校验后入图；详见 §5 `/{id}/import-file`。**SP-A 一期（2026-09-22）：图检索消费层已落地并 E2E 实跑通过**——实体向量化 + 检索 API + 应用绑定 + 对话工具 + 工作流节点五件，详见 §5.2 与 [设计文档](../superpowers/specs/2026-09-22-kg-graph-search-design.md)，场景 [@KGS-S1~S9](./bdd.md#feature-图检索消费层kgs-s)。
 - 领域：`src/knowledgegraph/{Shared,Core,Api}`；单测 `tests/MoAI.KnowledgeGraph.Tests/`
 - v1 设计：[前版 SDD 记录](../superpowers/specs/2026-09-10-knowledge-graph-design.md)（托管 + 接入双模式，D1~D13 仍有效）
 
@@ -31,8 +31,8 @@
 
 ### 3.1 PostgreSQL（只存目录与 schema，不存图数据）
 
-- `kg`：`id / team_id / name(50) / description(255) / template_key(50, null=自定义) / mode(20, 默认 managed) / database(100, 仅 connected) / is_deleted / 审计`
-  - 索引 `idx_knowledge_graph_team_id`；partial 唯一 `idx_knowledge_graph_name_live_uindex (name) WHERE is_deleted = 0`（v2 起名称**全平台唯一**，原 `(team_id, name)` 收紧）
+- `kg`：`id / team_id / name(50) / description(255) / template_key(50, null=自定义) / mode(20, 默认 managed) / database(100, 仅 connected) / embedding_model_id(uuid, null=未配置不参与检索) / embedding_dimensions(int, 1-2000 默认 1024, SP-A) / is_deleted / 审计`
+  - 索引 `idx_knowledge_graph_team_id`；partial 唯一 `idx_knowledge_graph_name_live_uindex (name) WHERE is_deleted = 0`（v2 起名称**全平台唯一**，原 `(team_id, name)` 收紧）；向量两列存量库见 `asserts/knowledge_graph_embedding.sql`
 - `kg_entity_type` / `kg_relation_type`：同 v1（关系类型带 `source_type_id / target_type_id` 起止约束）。
 
 ### 3.2 图库 keyspace
@@ -67,8 +67,10 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 | GET | `/{id}/nodes/{nodeId}/neighbors?limit=` | 一跳邻接（默认 100，上限 500）→ 同上结构；托管图按节点 id，接入图按 elementId（v2.1 起接入图开放） |
 | GET | `/{id}/schema?refresh=` | 接入图 schema 走 Redis 内省缓存（TTL 5 分钟），`refresh=true` 强制重新内省并返回相对基线的 `changes`（v2.1） |
 | POST | `/{id}/avatar` | 设置图谱头像 `{objectKey}`（v2.2）：仅 Owner/Admin；objectKey 须为已登记且完成上传的文件（伪造 404）；列表/详情回显 `avatarPath`（前端经 `/static/{key}` 解析） |
-| GET | `/model-options?teamId=` | 团队可用 AI 对话模型选项（公开+已授权，v2.9）：供 AI 导入文件选择模型，仅团队成员 |
+| GET | `/model-options?teamId=` | 团队可用 AI 模型选项（公开+已授权，仅团队成员）：v2.9 为 AI 导入提供对话模型，SP-A 起分桶返回 `conversationModels` / `embeddingModels` |
 | POST | `/{id}/import-file` | **AI 导入文件生成图谱**（v2.9）：`{objectKey, fileName, aiModelId}` → Maomi.ToMarkdown 提取（截断 1.2 万字符）→ 对话模型按图谱现有模型抽取实体/关系（JSON）→ 类型存在性与起止约束校验后写入图库；返回导入统计；仅托管图 Owner/Admin；objectKey 须为公开 chat 目录已直传文件 |
+| PUT | `/{id}/embedding-config` | 配置向量化模型 `{embeddingModelId, embeddingDimensions(1-2000)}`（SP-A，见 §5.2）：仅托管图 Owner/Admin；模型须启用、团队可用且 ModelKind=embedding（400）；接入图 409；配置变更清空旧向量集合并全量重嵌（≤5000 节点，超出告警） |
+| POST | `/{id}/search` | 图谱语义检索 `{query, topK, minScore?}` → `{hits[], contents[], text, skippedHints[]}`（SP-A，见 §5.2）：Member 可用；接入图 409、未配向量化模型 409 |
 
 均为只读、Member 可用。请求模型实现 `IModelValidator<T>`。
 
@@ -79,9 +81,21 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 - **语义**：跨团队或不存在一律 404（不泄露存在性）；connected 图谱写操作 409；批量导入节点/边 ≤200 条/次，**先整批校验后写入，任一条失败整批 400 拒绝**（类型存在、边端点存在于该图谱、超上限校验层拒绝）；删节点 DETACH 级联。
 - **Caller 注入模式**：Controller `RequireCaller()` 从 `HttpContext.Items` 取 `ExternalTokenContext` 组装 `ExternalGraphCaller{TeamId, AccessAppId}` 随命令下发；Core 侧 `IExternalKnowledgeGraphAuthorizer.AuthorizeAsync(kgId, teamId, write)` 统一 404/409，Handler 复用 `IKnowledgeGraphStore` 与内部命令同款校验规则（角色门禁替换为外部授权器），场景见 bdd `@KX-01…KX-08`、证据 [kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)。
 
+### 5.2 图检索消费层（SP-A 一期，五件）
+
+> 设计与二期边界见 [2026-09-22-kg-graph-search-design.md](../superpowers/specs/2026-09-22-kg-graph-search-design.md)；仅托管图参与，接入图继续由 Text2Cypher 插件覆盖。
+
+- **向量化**：节点 name+description 以「名称\n描述」嵌入 `__kg_{id}` pgvector 集合（HNSW+Cosine，维度取图谱配置）；10 处触发点（建图模板种子、节点增/改/删、外部节点增/改/删/批量、AI 导入、embedding-config 全量）经 MQ `kg.node.embedding` 发 delta 消息，Consumer Qos=1 **幂等消费**（upsert 读图库最新状态、同名多次 delta 自然合并；全部失败才抛出走重投，重试耗尽 Ack 放弃）；未配模型静默跳过；`IKnowledgeGraphStore` 删图链路在软删登记**前**清空向量集合（软删后 IsDeleted 全局过滤器会使维度解析失败，清理失效）。
+- **检索服务**：`GraphSearchService` 每图独立解析 embedding 模型（镜像 wiki `ResolveModelAsync`：双 Enabled + 公共或团队授权，KG 内实现并注明语义同步）→ 查询向量召回 top 实体 → 复用一跳邻接（邻居 ≤10）补方向/关系名/类型名 → `GraphSearchTextHelper` 片段文本化（**与工作流 kgSearch 节点共享**，两侧同源同形）。
+- **应用绑定**：`AppAgentConfigEntity.GraphIds`（JSON 数组，对齐 `WikiIds`）——保存校验仅本团队托管图（越权/接入图 400），发布快照固化，`AppAgentFactory` 与 `WorkflowNodeAiInvoker` 双装配点解析进构建上下文；登记见 [../app/sdd.md](../app/sdd.md)。
+- **对话工具**：`GraphAppToolProvider`（`src/ai`，Order=21）在绑定非空时暴露 `search_knowledge_graph`（Kind=graph，topK 1-20 每图、payload 16KB 预算 + `hitsTruncated`）；登记见 [../ai/sdd.md](../ai/sdd.md)。
+- **工作流节点**：`kgSearch`（config.graphId 静态 + topK 1-50 默认 5，输入必填 query，输出 `{query,count,hits,contents,text}`，text 8192 截断），Guard 于 draft/publish/debug-run 三入口校验 graphId 团队归属（400）。
+- **前端**：图谱设置页向量化模型配置（Admin+）、应用配置「知识图谱」多选（managed 过滤）、工作流节点面板与 i18n。
+
 ## 6. 关键流程与校验（Core）
 
 - 能力门禁、建图模板复制事务、接入探活、connected 只读、类型删除引用拦截、节点 / 边起止约束校验均同 v1（见 v1 设计稿 §6）。
+- **可空 Guid 判空约定（SP-A T1 审查确立）**：`EmbeddingModelId == null` 判空，**禁止 `== Guid.Empty` 哨兵**——KG 内统一（`KgEmbeddingService` / `GraphSearchService` / 检索与配置 Handler 均带注释），后续新增可空 Guid 字段照此办理。
 - **名称唯一（v2）**：预检 `AnyAsync(x => x.Name == …)` 不再限定团队；数据库约束 `idx_knowledge_graph_name_live_uindex` 兜底 409。
 - **图库不可达**：`ServiceUnavailableException` 等统一映射 503「无法连接图数据库」（v1 落 500 的遗留已修复）。
 - 画布查询：先取节点子集（`ORDER BY name LIMIT limit+1` 判截断），再取 `s.id IN $ids AND t.id IN $ids` 的内部边（上限 `min(limit*5, 5000)`）。
@@ -108,5 +122,6 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 - 外部接口 schema 计数为逐类型计数（N+1）：类型很多时图库往返次数多，量级可控，暂不合并为单条 Cypher。
 - 外部接口「删除类型」与「批量写」存在毫秒级并发竞态（删除检查与批量校验非同一事务）；面向可信调用方可接受。
 - 平台存在双错误格式：`ExternalAuthenticationMiddleware` 的 `{error:...}` 与全局管道的 `BusinessValidationResult` 并存（既有行为，外部调用方需两者都兼容）。
-- 消费端已落地：**Text2Cypher 查图插件**（2026-09-21）——内置动态插件模板 `kg_cypher_query` + KG 访问服务 `IKgCypherAccessService`（托管图 `$kgId` 门禁与结果侧 kgId 归属校验、接入图按库路由、schema 自描述）+ teamplugin 实例保存归属校验（越团队 403/图谱不存在 404），Agent 对话模型即席只读查图；设计见 [2026-09-21-kg-text2cypher-plugin-design.md](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)，场景 [@KT-S1~S10](./bdd.md#feature-text2cypher-查图插件消费kt-s)。
-- 后续迭代：AI 抽取入图（审核流）、**GraphRAG 应用绑定与图检索（SP-A，进行中）**、画布编辑、结构化导入、Cypher 控制台。
+- 消费端已落地：**Text2Cypher 查图插件**（2026-09-21）——内置动态插件模板 `kg_cypher_query` + KG 访问服务 `IKgCypherAccessService`（托管图 `$kgId` 门禁与结果侧 kgId 归属校验、接入图按库路由、schema 自描述）+ teamplugin 实例保存归属校验（越团队 403/图谱不存在 404），Agent 对话模型即席只读查图；设计见 [2026-09-21-kg-text2cypher-plugin-design.md](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)，场景 [@KT-S1~S10](./bdd.md#feature-text2cypher-查图插件消费kt-s)。**图检索消费层 SP-A 一期**（2026-09-22）已落地（见 §5.2）。
+- SP-A 二期展望：关系/边向量化与关系语义检索、rerank 接入、KG×wiki 混合召回与融合排序、召回测试 UI、答案挂 citation 子图、全量重建进度可见、自动注入模式（见 [设计文档 §11](../superpowers/specs/2026-09-22-kg-graph-search-design.md)）。
+- 后续迭代：AI 抽取入图（审核流）、画布编辑、结构化导入、Cypher 控制台。

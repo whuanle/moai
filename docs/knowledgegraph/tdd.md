@@ -1,6 +1,6 @@
 # 知识图谱模块验证映射（TDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs) ｜ 单测：[tests/MoAI.KnowledgeGraph.Tests/](../../tests/MoAI.KnowledgeGraph.Tests/)、[tests/MoAI.AIPlugin.Dynamic.Tests/](../../tests/MoAI.AIPlugin.Dynamic.Tests/)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)、[local-dev/kg-search-e2e.mjs](../../local-dev/kg-search-e2e.mjs) ｜ 单测：[tests/MoAI.KnowledgeGraph.Tests/](../../tests/MoAI.KnowledgeGraph.Tests/)、[tests/MoAI.AIPlugin.Dynamic.Tests/](../../tests/MoAI.AIPlugin.Dynamic.Tests/)
 
 ## 自检记录
 
@@ -17,7 +17,8 @@
 - v2.7 模板一次性预置示例实例与关系：单测 **45/45**（新增 `Handle_WithTemplate_SeedsExampleNodesAndEdges` 11 节点/15 边与端点映射断言、`Handle_WithTemplate_WhenSeedingFails_PurgesGraphAndRollsBack` 失败清理回滚）；E2E `node local-dev/kg-e2e.mjs http://127.0.0.1:5000` → **PASS 65/65**（2026-09-21，KG-S2 扩至 a…k：13 节点/16 边总数、示例航段属性、建图即得完整图览，两跑一致）。
 - v2.8 图览交互（拖动/详情/关系标签）：前端 typecheck 0、lint 0 错误（8 warning 存量）、vitest **429/429**；浏览器实测（走查团队物流图 105，G6 真渲染）：节点拖动保持、节点详情抽屉（类型/属性）、边详情抽屉（关系名/起止）、边关系名标签、两段式点击建边弹窗起止回显全过。顺带修复两处前端缺陷：①G6 v5 点击判定误用 `target.type`（恒 undefined）致点击节点展开邻接自 v2 起实际失效，改 `targetType`；②Kiota 把节点 `properties` 字典收进 `additionalData` 致属性读取恒空（实例列表同受影响），`flattenNodeProperties` 归一化。
 - v2.9 AI 导入文件生成图谱：单测 **49/49**（新增 `KnowledgeGraphImportParserTests` 4 例）；E2E `node local-dev/kg-import-e2e.mjs http://127.0.0.1:5000` → **PASS 7/7**（桩模型：模板图建图、model-options、非法 objectKey 400、导入 2 节点 1 边入图、画布计数、航段属性、空白模板图 409）；真实模型冒烟（Qwen3.5 9B 导入 txt：新增 6 节点 6 边，画布 11→17，航段属性完整）；前端 typecheck 0、lint 0 错误、vitest **430/430**；浏览器走查导入弹窗与结果展示。踩坑：`string.Equals(x, y, StringComparison)` 不可翻译为 SQL（model-options 首版放查询内 500，改为内存过滤）；GLM/DeepSeek 渠道对 `DisableThinking`（reasoning_effort=none）报 400001/402 为渠道侧问题，导入对模型无思考链要求时建议选 Qwen 系（2026-09-21）。
-- Text2Cypher 查图插件（KT）：单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests/MoAI.AIPlugin.Dynamic.Tests.csproj` → **PASS 36/36**（2026-09-22，`CypherReadOnlyGuardTests` 29 例 + `KgCypherQueryPluginParamsTests` 7 例）；E2E `node local-dev/kg-text2cypher-e2e.mjs` **已就绪待运行**（后端待重启加载含 `kg_cypher_query` 的新构建，运行前勿对旧构建执行）。
+- Text2Cypher 查图插件（KT）：单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests/MoAI.AIPlugin.Dynamic.Tests.csproj` → **PASS 36/36**（2026-09-22，`CypherReadOnlyGuardTests` 29 例 + `KgCypherQueryPluginParamsTests` 7 例）；E2E `node local-dev/kg-text2cypher-e2e.mjs http://127.0.0.1:5000` → **PASS 15/15**（2026-09-22，真实后端 + Memgraph）。
+- 图检索消费层（SP-A）：四套件单测 → KG.Tests **PASS 81/81**、App.Tests **PASS 39/39**、Workflow.Tests **PASS 77/77**、AI.Core.Tests **PASS 73/73**（2026-09-22，新增 `GraphSearchServiceTests` 10 例、`KgEmbeddingServiceTests` 11 例、`UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests` 5 例、`DeleteKnowledgeGraphCommandHandlerTests` 3 例、`GraphAppToolProviderTests` 7 例、`KnowledgeGraphSearchNodeTests` 7 例、`GraphSearchTextHelperTests` 8 例、App 侧 GraphIds 绑定 4 例）；E2E `node local-dev/kg-search-e2e.mjs http://127.0.0.1:5000` → **PASS 40/40**（2026-09-22，本地 OpenAI 兼容桩 embeddings，真实后端 + Memgraph + RabbitMQ + pgvector，零 SKIP）；前端 typecheck/lint 0 错误。
 
 ## 映射表
 
@@ -71,18 +72,36 @@
 
 | 场景 | 覆盖 | 结果 |
 |---|---|---|
-| @KT-S1 | —（模板注册走 `PluginRegistry` 自动扫描，由 `dynamic-plugin-e2e.mjs#DYN-S48` 断言）；实例创建由 teamplugin 保存 Handler 校验归属 | 单测 **PASS 36/36（2026-09-22）**；E2E 已就绪待运行 |
-| @KT-S2 | teamplugin `SaveTeamDynamicPluginCommandHandler` 图谱存在性与团队归属校验（越团队 403/图谱不存在 404） | E2E 已就绪待运行 |
-| @KT-S3 | `KgCypherAccessService` schema 摘要（托管图查 PG 类型表 + 图库采样；接入图走内省缓存） | E2E 已就绪待运行 |
-| @KT-S4 | `KgCypherAccessService` 托管图按 $kgId 执行 + 表格化 | E2E 已就绪待运行 |
-| @KT-S5 | `KgCypherAccessService` $kgId 门禁（托管图缺失报教学式错误）+ 结果侧 kgId 归属校验 | E2E 已就绪待运行 |
-| @KT-S6 | `CypherReadOnlyGuardTests`（黑名单 10 关键字逐个、注释/字面量剥除后扫描、大小写、多语句、非只读首关键字等 29 例） | 单测 **PASS 36/36（2026-09-22）**；E2E 已就绪待运行 |
-| @KT-S7 | `KgCypherAccessService` 行数截断（仿 `SqlResultReader`，超 `maxRows` 置 truncated） | E2E 已就绪待运行 |
+| @KT-S1 | —（模板注册走 `PluginRegistry` 自动扫描，由 `dynamic-plugin-e2e.mjs#DYN-S48` 断言）；实例创建由 teamplugin 保存 Handler 校验归属 | 单测 **PASS 36/36（2026-09-22）**；**E2E PASS 15/15（2026-09-22）** |
+| @KT-S2 | teamplugin `SaveTeamDynamicPluginCommandHandler` 图谱存在性与团队归属校验（越团队 403/图谱不存在 404） | **E2E PASS 15/15（2026-09-22）** |
+| @KT-S3 | `KgCypherAccessService` schema 摘要（托管图查 PG 类型表 + 图库采样；接入图走内省缓存） | **E2E PASS 15/15（2026-09-22）** |
+| @KT-S4 | `KgCypherAccessService` 托管图按 $kgId 执行 + 表格化 | **E2E PASS 15/15（2026-09-22）** |
+| @KT-S5 | `KgCypherAccessService` $kgId 门禁（托管图缺失报教学式错误）+ 结果侧 kgId 归属校验 | **E2E PASS 15/15（2026-09-22）** |
+| @KT-S6 | `CypherReadOnlyGuardTests`（黑名单 10 关键字逐个、注释/字面量剥除后扫描、大小写、多语句、非只读首关键字等 29 例） | 单测 **PASS 36/36（2026-09-22）**；**E2E PASS 15/15（2026-09-22）** |
+| @KT-S7 | `KgCypherAccessService` 行数截断（仿 `SqlResultReader`，超 `maxRows` 置 truncated） | **E2E PASS 15/15（2026-09-22）** |
 | @KT-S8 | —（依赖慢查询负载，@manual） | 人工验证 |
-| @KT-S9 | `KgCypherAccessService` 接入图按库路由（免 $kgId） | E2E 已就绪待运行 |
-| @KT-S10 | 团队插件运行门禁（跨团队实例 key 404） | E2E 已就绪待运行 |
+| @KT-S9 | `KgCypherAccessService` 接入图按库路由（免 $kgId） | **E2E PASS 15/15（2026-09-22）** |
+| @KT-S10 | 团队插件运行门禁（跨团队实例 key 404） | **E2E PASS 15/15（2026-09-22）** |
 
 > 附带：`local-dev/dynamic-plugin-e2e.mjs#DYN-S48` 断言 `kg_cypher_query` 出现在动态模板注册表（不依赖图数据库，随 DYN 套件回归）。
+
+## 图检索消费层映射（KGS-S*，`POST /api/knowledge-graph/{id}/search` 等）
+
+> 编号沿用证据脚本 [kg-search-e2e.mjs](../../local-dev/kg-search-e2e.mjs)（不复用 KG-\*/KX-\*/KT-\*）；行为场景见 [bdd 图检索消费层段](./bdd.md#feature-图检索消费层kgs-s)。单测分布：检索/向量化挂 [tests/MoAI.KnowledgeGraph.Tests/](../../tests/MoAI.KnowledgeGraph.Tests/)，对话工具挂 [tests/MoAI.AI.Core.Tests/GraphAppToolProviderTests.cs](../../tests/MoAI.AI.Core.Tests/GraphAppToolProviderTests.cs)，绑定挂 [tests/MoAI.App.Tests/](../../tests/MoAI.App.Tests/SaveAppAgentConfigCommandHandlerTests.cs)，工作流节点挂 [tests/MoAI.App.Workflow.Tests/](../../tests/MoAI.App.Workflow.Tests/)。
+
+| 场景 | 验证物（单测） | E2E | 结果（日期） |
+|---|---|---|---|
+| @KGS-S1 | `UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests`（合法/已授权非公开保存 2 例 + ModelKind 不符 400） | kg-search-e2e.mjs#KGS-S1a…c（S1c 详情回读为条件式断言） | 单测 PASS；**E2E PASS 40/40（2026-09-22）** |
+| @KGS-S2 | `GraphSearchServiceTests`（跨图按分合并与总量钳制、邻居方向/关系名/类型名、非法入参短路） | kg-search-e2e.mjs#KGS-S2a…k | 单测 PASS；**E2E PASS** |
+| @KGS-S3 | `KgEmbeddingServiceTests.ProcessDeltaAsync_UpsertNode_ReplacesWithExpectedRecord`（替换式 upsert） | kg-search-e2e.mjs#KGS-S3a/b | 单测 PASS；**E2E PASS** |
+| @KGS-S4 | `KgEmbeddingServiceTests.ProcessDeltaAsync_DeleteNode_CallsDeleteNodeVectors` | kg-search-e2e.mjs#KGS-S4a…c | 单测 PASS；**E2E PASS** |
+| @KGS-S5 | `GraphSearchServiceTests.SearchAsync_MinScore_FiltersLowAndNullScores` | kg-search-e2e.mjs#KGS-S5（数据驱动阈值：minScore=min(0.999, maxScore+0.0005)，桩分布不可分时 INFO 跳过） | 单测 PASS；**E2E PASS** |
+| @KGS-S6 | `GraphSearchServiceTests.SearchAsync_WhenGraphNotConfigured_SkipsWithHintAndSearchesOtherGraphs`（工具/服务路径跳过提示；检索 API 409 分支由 E2E 直断） | kg-search-e2e.mjs#KGS-S6a/b | 单测 PASS；**E2E PASS** |
+| @KGS-S7 | `UpdateKnowledgeGraphEmbeddingConfigCommandHandlerTests.Handle_ModelNotAuthorized_Throws400`（不存在/未授权 400） | kg-search-e2e.mjs#KGS-S7a…c | 单测 PASS；**E2E PASS** |
+| @KGS-S8 | `SaveAppAgentConfigCommandHandlerTests`（GraphIds：他团队 400、接入图 400、本团队托管图保存回读、空绑定落 []） | kg-search-e2e.mjs#KGS-S8a…g（S8g 回读为条件式断言） | 单测 PASS；**E2E PASS** |
+| @KGS-S9 | `KnowledgeGraphSearchNodeTests`（静态 graphId、输出结构、空命中、text 截断、缺 query/graphId 失败、topK 钳制）+ `GraphSearchTextHelperTests`（片段构造/截断 8 例） | kg-search-e2e.mjs#KGS-S9a…f | 单测 PASS；**E2E PASS** |
+
+> 附带覆盖（未单列场景）：`GraphAppToolProviderTests` 7 例——绑定空不注册工具、检索回传、缺 query 失败、topK 钳制（越界/缺省/超大）与 16KB payload 预算截断（`hitsTruncated`）；`DeleteKnowledgeGraphCommandHandlerTests` 3 例——删托管图清理向量集合（软删前）；`QueryKnowledgeGraphSearchCommandHandler` 接入图 409 分支由 E2E 直断。
 
 ## v2 前端映射（vitest）
 
@@ -97,4 +116,4 @@
 
 - `Handle_WhenDisabled_Throws409` / `Handle_WhenEnabledButUriEmpty_Throws409` / `CreateEntityType_WhenSettingsDisabled_Throws409` 覆盖能力门禁（对应 SDD §6，未单列场景编号）。
 - `AuthorizeManagedAsync` 的只读分支同时约束 schema 与节点 / 边写 Handler，@KG-S12 两个 E2E 检查分别验证节点与实体类型写被拒。
-- E2E 待具备 Neo4j 环境后在 [sop.md](./sop.md#4-验收流程) 记录执行结果。
+- E2E 执行结果统一记入 [sop.md 验收记录](./sop.md#验收记录)。

@@ -1,6 +1,6 @@
 # 知识图谱模块操作手册（SOP）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)、[local-dev/kg-search-e2e.mjs](../../local-dev/kg-search-e2e.mjs)
 
 ## 1. 前置条件
 
@@ -37,7 +37,8 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 - **接入外部图谱**：新建 →「接入已有」→ 填名称与目标 database（外部实例的库名；Memgraph 社区版单库，填默认库）。接入后只读内省标签 / 关系类型 / 属性键；外部服务直写图库的数据会随内省自动识别（schema 有 5 分钟 Redis 缓存，模型页可点「刷新内省」强制重新识别并对比上次基线显示新增 / 消失项）。
 - **接入图图览**：接入图详情也有「图览」——按标签色板过滤 + 关键字搜索 + 点节点一跳展开；外部节点无平台 id 体系，以 `elementId` 定位、`name/title/id` 属性启发式取名（要求 Memgraph ≥ 2.14）。
 - **设置图谱头像**：图谱详情「设置」页 → 点头像或「更换头像」上传（支持 JPG/PNG，≤5MB，走存储直传管线）；仅 Owner/Admin；列表卡片同步展示。
-- **删除图谱**：托管图 = 软删登记 + 清空该图在图库的节点与边；接入图 = **仅移除平台登记，绝不动外部数据**。
+- **配置向量化与图检索（SP-A）**：托管图详情「设置」页选 embedding 模型（团队可用向量化模型，`GET /model-options` 的 `embeddingModels` 桶）+ 维度（默认 1024）；配置保存后已有节点自动全量重嵌（上限 5000，超出部分告警不重嵌），之后的节点增删改经 MQ 增量同步，延迟秒级。配置好后可在图检索中语义搜实体（应用对话 `search_knowledge_graph` 工具、流程 `kgSearch` 节点、检索 API `POST /{id}/search`）；未配模型的图不参与检索（检索 API 直接 409 提示）。
+- **删除图谱**：托管图 = 软删登记 + 清空该图在图库的节点与边 + 清空 `__kg_{id}` 向量集合；接入图 = **仅移除平台登记，绝不动外部数据**。
 
 ## 4. 常见问题
 
@@ -59,10 +60,11 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 
 ## 5. 验收流程
 
-1. `dotnet build src/MoAI/MoAI.csproj` → 0 错误；`dotnet test tests/MoAI.KnowledgeGraph.Tests/` → 40/40。
+1. `dotnet build src/MoAI/MoAI.csproj` → 0 错误；`dotnet test tests/MoAI.KnowledgeGraph.Tests/`。
 2. 后端运行且 Memgraph 可达、`KG_ENABLED=true` 后执行 `node local-dev/kg-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KG-S1](../knowledgegraph/bdd.md#kg-s1)…[@KG-S19](../knowledgegraph/bdd.md#kg-s19)（S15 成员只读由单测覆盖）；无图数据库时脚本 SKIP。
 3. 外部开放接口验收：`node local-dev/kg-external-e2e.mjs http://127.0.0.1:5210` → 覆盖 KX-01~KX-08（应用 token 团队级授权、类型/节点/边 CRUD 与批量导入、connected 只读；前置：至少一个团队接入 key，脚本自建）；无图数据库或能力未开启时 SKIP。
-4. 浏览器走查：`/knowledge-graph` 与团队「知识图谱」分区建托管图（含模板）→ 图览过滤 / 搜索 / 展开 → 模型 / 节点 / 边维护（Member 只读）→ 删除清库；接入外部库 → 只读内省与刷新 → 接入图图览（标签过滤 / 展开）→ 删除仅移除登记；重启 Memgraph 容器验证快照恢复。
+4. 图检索验收（SP-A）：`node local-dev/kg-search-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KGS-S1](../knowledgegraph/bdd.md#kgs-s1)~[@KGS-S9](../knowledgegraph/bdd.md#kgs-s9)（前置：RabbitMQ + pgvector + 图数据库，脚本自建本地 embeddings 桩渠道，无需真实模型；向量化为 MQ 异步，脚本自带轮询）。
+5. 浏览器走查：`/knowledge-graph` 与团队「知识图谱」分区建托管图（含模板）→ 图览过滤 / 搜索 / 展开 → 模型 / 节点 / 边维护（Member 只读）→ 删除清库；接入外部库 → 只读内省与刷新 → 接入图图览（标签过滤 / 展开）→ 删除仅移除登记；重启 Memgraph 容器验证快照恢复。
 
 ### 验收记录
 
@@ -73,6 +75,7 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 | 2026-09-15 | v2.1 动态内省 + 接入图画布：单测 **40/40**、**E2E 47/47 PASS**（新增 S17~S19）、前端 typecheck/lint 0 错误、vitest 258/258 |
 | 2026-09-15 | v2.2 图谱头像：单测 **42/42**、**E2E 52/52 PASS**（新增 S20，真实存储直传验证）、前端 typecheck/lint 0 错误、vitest 258/258 |
 | 2026-09-21 | v2.5 物流模板 + 默认图览：单测 **43/43**、**E2E 61/61 PASS**（5310 独立实例）、前端 typecheck/lint 0 错误、vitest 424/424 |
+| 2026-09-22 | SP-A 图检索消费层：KG 单测 **81/81**、App **39/39**、Workflow **77/77**、AI.Core **73/73**；**KGS E2E 40/40 PASS**（kg-search-e2e，本地 embeddings 桩，真实后端 + Memgraph + RabbitMQ + pgvector）、KT E2E 15/15 PASS |
 
 ## 6. kg_cypher_query 插件运维（Text2Cypher）
 
@@ -92,3 +95,12 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 | 创建实例返回 400 | 配置非法：kgId 非正整数、timeoutSeconds/maxRows 越界（1-300/1-1000）等，按提示修正 |
 
 - **验证**：`node local-dev/kg-text2cypher-e2e.mjs`（依赖 Memgraph 与含 `kg_cypher_query` 的新构建后端，图库不可达时托管图场景以错误退出）；单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests/` → 36/36。
+
+## 7. 图检索运维（SP-A）
+
+- **向量不同步排查**（节点增删改后检索结果未更新）：
+  1. **MQ 死信**：RabbitMQ 控制台查 `kg.node.embedding` 队列积压——消费失败自动重投，**重试耗尽后 Ack 放弃**（仅后端日志 `kg embedding delta dropped after retries`，不阻塞队列）；放弃的节点在下次被编辑、或配置变更全量重嵌时自动补齐。
+  2. **未配模型静默跳过**：图谱未配置向量化模型时，增量 delta **不报错、直接跳过**（设计语义，非故障）——先到图谱设置页确认已选 embedding 模型；配置保存即触发全量重嵌补齐存量节点。
+  3. **5000 全量重嵌上限**：配置 embedding 模型时全量重嵌最多取 5000 个节点，超出部分仅记 WARNING（`达到全量重嵌上限 5000`）；超限图谱需分批触发（编辑节点或重改配置）。
+  4. **删图孤儿集合兜底**：删除托管图**先清 `__kg_{id}` 向量集合、后软删登记**（顺序不可换：软删后全局 IsDeleted 过滤器会让清理静默失效）；清理失败仅记日志、删除继续——孤儿集合只占存储，不影响业务（图谱 id 不会复用）。
+- **配置变更行为**：换模型或维度 → 旧向量集合与新维度不兼容，先**整集合删除**再全量重嵌（清理与重嵌均 best effort，失败仅日志、不影响已保存配置）；重复提交相同配置不清理集合、仅重发幂等 delta（无害）。

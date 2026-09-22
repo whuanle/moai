@@ -183,3 +183,17 @@
 - When 会话空闲超时或被删除
 - Then 对应沙箱被销毁且不影响其他会话
 
+
+## Feature：知识图谱检索工具（图检索消费层 SP-A）
+
+### @AI-S32 @auto:e2e 知识图谱转为检索工具
+- Given 应用绑定了已配置向量化模型的本团队托管知识图谱
+- When 模型需要实体关系类资料（如「A 和 B 什么关系」「与 X 相关联的有哪些实体」）
+- Then 存在 search_knowledge_graph 工具（Kind=graph）可检索并返回命中实体与一跳邻居（单图 topK 1-20）
+- And 未配置向量化模型或不可用的绑定图计入 skipped 提示而不阻断其余图检索；返回载荷超 16KB 时截断并标记 hitsTruncated
+
+### @AI-S33 @manual 未绑定知识图谱不暴露图检索工具
+- Given 应用未绑定知识图谱
+- When 对话
+- Then 不出现 search_knowledge_graph 工具
+

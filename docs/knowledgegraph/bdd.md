@@ -1,6 +1,6 @@
 # 知识图谱模块行为场景（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/kg-e2e.mjs](../../local-dev/kg-e2e.mjs)、[local-dev/kg-external-e2e.mjs](../../local-dev/kg-external-e2e.mjs)、[local-dev/kg-text2cypher-e2e.mjs](../../local-dev/kg-text2cypher-e2e.mjs)、[local-dev/kg-search-e2e.mjs](../../local-dev/kg-search-e2e.mjs)
 
 ## Feature: 托管图谱（managed）
 
@@ -305,7 +305,7 @@ Scenario: 外部接口仅接受应用 token
   Then 分别返回未认证/未认证/未认证或禁止
 ```
 
-> Text2Cypher 查图插件消费场景编号沿用证据脚本 `kg-text2cypher-e2e.mjs` 的 KT-\* 体系（@KT-S1~S10），不复用 KG-\*/KX-\*。插件本体与安全设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)。**E2E 已就绪待运行**（后端待重启加载含 `kg_cypher_query` 的新构建），运行通过前不以「已通过」口径登记。
+> Text2Cypher 查图插件消费场景编号沿用证据脚本 `kg-text2cypher-e2e.mjs` 的 KT-\* 体系（@KT-S1~S10），不复用 KG-\*/KX-\*。插件本体与安全设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)。**E2E 已通过 15/15（2026-09-22，真实后端）**。
 
 ## Feature: Text2Cypher 查图插件消费（KT-S*）
 
@@ -365,4 +365,72 @@ Scenario: 接入图查询无需 $kgId
 Scenario: 非成员团队运行实例被拒
   When 其他团队以本团队实例 key 运行插件
   Then 返回不存在（404）或失败，不泄露实例与图数据
+```
+
+> 图检索消费层场景编号沿用证据脚本 `kg-search-e2e.mjs` 的 KGS-\* 体系（@KGS-S1~S9），不复用 KG-\*/KX-\*/KT-\*。设计见 [图检索消费层设计文档](../superpowers/specs/2026-09-22-kg-graph-search-design.md)。**E2E 40/40 已通过（2026-09-22，真实后端 + 本地 embeddings 桩，零 SKIP）**。
+
+## Feature: 图检索消费层（KGS-S*）
+
+```gherkin
+@KGS-S1 @auto:e2e
+Scenario: 托管图配置向量化模型
+  Given 本地 embeddings 桩渠道与向量化模型已授权本团队
+  When 创建托管图并配置向量化模型（维度 1024）
+  Then 配置成功且重复配置幂等
+  And 图谱详情回读向量化模型与维度
+
+@KGS-S2 @auto:e2e
+Scenario: 节点向量化与语义检索命中
+  Given 托管图已配置向量化模型
+  When 新增实体类型、带起止约束的关系类型与节点
+  Then 轮询检索命中节点且命中项含 图谱 id/节点 id/类型 id/类型名/score
+  And 无边节点的邻居为空数组且响应含 contents/text/skippedHints 结构
+  When 建边后检索新节点
+  Then 命中且邻居含方向（out/in）、关系类型名与描述
+
+@KGS-S3 @auto:e2e
+Scenario: 改名后向量替换
+  When 修改一个已可检索命中节点的名称
+  Then 新名可检索命中且旧名不再命中（向量替换幂等）
+
+@KGS-S4 @auto:e2e
+Scenario: 删节点后向量移除
+  When 删除一个已可检索命中的临时节点
+  Then 轮询检索不再命中该节点
+
+@KGS-S5 @auto:e2e
+Scenario: 相似度阈值过滤
+  When 以高于全部命中 score 的 minScore 检索
+  Then 返回命中为空
+  When 缺省 minScore 检索
+  Then 返回命中非空
+
+@KGS-S6 @auto:e2e
+Scenario: 未配向量化模型检索被拒
+  When 创建第二张托管图且不配置向量化模型，对其发起检索
+  Then 返回冲突（409）且文案含「向量化」
+
+@KGS-S7 @auto:e2e
+Scenario: 向量化配置边界校验
+  When 以维度 0 配置向量化模型
+  Then 返回参数错误
+  When 以不存在的模型配置向量化
+  Then 返回参数错误
+  And 非法配置不破坏原配置（检索仍命中）
+
+@KGS-S8 @auto:e2e
+Scenario: 应用配置绑定知识图谱
+  When Agent 应用配置绑定他团队知识图谱
+  Then 返回参数错误且文案含「知识图谱」
+  When 绑定本团队接入图
+  Then 返回参数错误（仅托管图可绑定）
+  When 绑定本团队托管图
+  Then 保存成功且配置回读含该图谱
+
+@KGS-S9 @auto:e2e
+Scenario: 工作流图检索节点
+  When 流程草稿的图检索节点引用他团队图谱
+  Then 保存草稿返回参数错误且文案含「知识图谱」
+  When 改为本团队图谱后保存草稿、发布并调试执行
+  Then 运行完成且节点输出 count≥1、text 非空
 ```

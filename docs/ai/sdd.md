@@ -54,13 +54,14 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
 | `AppToolContextProviderContributor` | 聚合工具来源，装配「渐进式工具披露」元工具 Provider（Order=20） |
 | `AppToolContextProvider` | 暴露 `list_tools` / `call_tool` 两个元工具；不把全部工具注入每轮 |
 | `IAppToolProvider` / `PluginAppToolProvider` / `WikiAppToolProvider` | 工具来源：插件（静态/动态/MCP/OpenAPI）与知识库 |
+| `GraphAppToolProvider` | 工具来源：知识图谱——`search_knowledge_graph`（Kind=graph），仅应用绑定 `GraphIds` 非空时产出（SP-A） |
 | `SandboxAppToolProvider` | 工具来源：沙箱（代码/shell/文件），仅应用开启沙箱时产出 |
 | `IAppSandboxService` / `OpenSandboxService` | 会话沙箱：惰性创建/复用/续期/销毁 + 代码/命令/文件执行（封装 `Alibaba.OpenSandbox`） |
 | `SandboxReaperJob` + `SandboxReaperRegistrationService` | Hangfire 周期回收孤儿沙箱（每 5 分钟） |
 | `CompactionContextProviderContributor` | 压缩 Provider（置于管线最后） |
 | `UsageCapturingChatClient : DelegatingChatClient` | 捕获用量 → 会话热态 + `IAiModelUsageCounter`（`AiModelUseType.App`） |
 
-`src/wiki` 提供 `IWikiSearchService`（按知识库 embedding 模型生成查询向量并召回）；`src/aiplugin/MoAI.AIPlugin.Custom` 新增 `McpToolCallService` / `OpenApiToolCallService`（自定义插件的运行时调用，补齐此前仅有存储、无调用的缺口）；`src/app` 新增发布命令与会话 CRUD/CQRS。
+`src/wiki` 提供 `IWikiSearchService`（按知识库 embedding 模型生成查询向量并召回）；`src/knowledgegraph` 提供 `IGraphSearchService`（向量召回 + 一跳邻接扩展 + 子图文本化，SP-A）；`src/aiplugin/MoAI.AIPlugin.Custom` 新增 `McpToolCallService` / `OpenApiToolCallService`（自定义插件的运行时调用，补齐此前仅有存储、无调用的缺口）；`src/app` 新增发布命令与会话 CRUD/CQRS。
 
 ### 4.1 工具与知识库（渐进式披露）
 
@@ -68,7 +69,7 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
   - `nativePlugin`：静态（`plugin_statics.PluginKey` → 注册表）或动态实例（`plugin_dynamics` → 模板 + 配置）→ `IPluginExecutor`。
   - `mcp`：`plugin_customs` + `plugin_functions`，每个 MCP 工具一个工具项 → `McpToolCallService`（`McpClient.CallToolAsync`）。
   - `openapi`：每个 operation 一个工具项 → `OpenApiToolCallService`（按已上传文档的 method/path/参数发起 HTTP）。
-  `WikiAppToolProvider` 读取 `WikiIds`，生成 `search_knowledge_base` 工具 → `IWikiSearchService`。
+  `WikiAppToolProvider` 读取 `WikiIds`，生成 `search_knowledge_base` 工具 → `IWikiSearchService`；`GraphAppToolProvider`（Order=21）读取 `GraphIds`（本团队托管图谱），生成 `search_knowledge_graph` 工具（Kind=graph）→ KG 模块 `IGraphSearchService`。入参 `{query（必填）, topK?}`（topK 钳 1-20、默认 5，**为每张绑定图谱各自的召回数**）；工具描述引导模型「适合 A 和 B 什么关系类问题、仅返回一跳关系、要文档原文改用知识库检索」。返回 payload：`{query, count, hits[{graphId, nodeId, name, entityType, description, score, neighbors[{relation, direction, name, description}]}], skipped[], hitsTruncated?}`——总长超 **16KB** 预算即停止追加命中并置 `hitsTruncated=true`；未配置向量化/模型不可用的绑定图计入 `skipped` 可读提示回给模型（不阻断其余图）。
 - **渐进式披露**：`AppToolContextProvider` 只注入 `list_tools(query?)` 与 `call_tool(toolName, argumentsJson)` 两个元工具；模型先 `list_tools` 获取工具名与参数示例（MCP 参数 Schema 惰性拉取），再 `call_tool` 调用，避免把全部工具定义塞进每轮上下文。
 - **扩展点**：新增工具类型只需实现 `IAppToolProvider`（Maomi 自动注册），聚合与元工具无需改动。
 - **命名与去重**：MCP/OpenAPI 工具名为 `{插件名}__{函数名}`；同应用内按工具名去重。
