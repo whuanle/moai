@@ -136,6 +136,9 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
         // 知识库检索节点引用的知识库必须属于本团队（调试执行直接以当前定义跑，保存/发布之外的唯一入口）
         await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
 
+        // 知识图谱检索节点引用的知识图谱必须属于本团队（托管）
+        await Services.KnowledgeGraphSearchGuard.EnsureGraphsBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
+
         // Agent 应用节点不得与当前流程构成循环嵌套（运行前拦截，运行期节点调用另有防线）
         await Services.AgentWorkflowCycleGuard.EnsureNoCycleAsync(_databaseContext, request.AppId, Services.AgentWorkflowCycleGuard.CollectAgentAppIds(definition), cancellationToken);
 

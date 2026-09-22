@@ -98,3 +98,20 @@ public interface IWorkflowWikiSearchClient
     /// <returns>按相似度降序的命中项.</returns>
     Task<IReadOnlyList<WorkflowWikiSearchHit>> SearchAsync(IReadOnlyCollection<long> wikiIds, string query, int top, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// 工作流知识图谱检索客户端抽象 - 知识图谱检索节点通过此接口检索知识图谱.
+/// 引擎不绑定知识图谱实现，由宿主注入（实现方负责团队归属校验与向量检索）.
+/// </summary>
+public interface IWorkflowGraphSearchClient
+{
+    /// <summary>
+    /// 在指定知识图谱集合内检索与查询最相似的实体及其一跳邻居.
+    /// </summary>
+    /// <param name="kgIds">知识图谱 id 集合.</param>
+    /// <param name="query">查询文本.</param>
+    /// <param name="top">每个知识图谱返回条数.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>按相似度降序的命中项.</returns>
+    Task<IReadOnlyList<WorkflowGraphSearchHit>> SearchAsync(IReadOnlyCollection<long> kgIds, string query, int top, CancellationToken cancellationToken);
+}

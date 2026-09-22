@@ -19,6 +19,7 @@
 		<ProjectReference Include="..\..\..\aiplugin\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
 		<ProjectReference Include="..\..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\..\knowledgegraph\MoAI.KnowledgeGraph.Shared\MoAI.KnowledgeGraph.Shared.csproj" />
 		<ProjectReference Include="..\..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.App.Workflow.Api\MoAI.App.Workflow.Api.csproj" />

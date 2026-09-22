@@ -49,6 +49,11 @@ public static class NodeTypes
     public const string KnowledgeSearch = "knowledgeSearch";
 
     /// <summary>
+    /// 知识图谱检索节点 - 调用 <see cref="Nodes.IWorkflowGraphSearchClient"/> 在指定知识图谱中做向量检索.
+    /// </summary>
+    public const string KnowledgeGraphSearch = "kgSearch";
+
+    /// <summary>
     /// 问题分类节点 - 调用 <see cref="Nodes.IAiChatClient"/> 把用户问题归入预定义分类之一.
     /// </summary>
     public const string QuestionClassifier = "questionClassifier";

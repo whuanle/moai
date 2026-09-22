@@ -95,6 +95,9 @@ public class PublishAppWorkflowCommandHandler : IRequestHandler<PublishAppWorkfl
         // 知识库检索节点引用的知识库必须属于本团队
         await Services.KnowledgeSearchWikiGuard.EnsureWikisBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
 
+        // 知识图谱检索节点引用的知识图谱必须属于本团队（托管）
+        await Services.KnowledgeGraphSearchGuard.EnsureGraphsBelongToTeamAsync(_databaseContext, app.TeamId, definition, cancellationToken);
+
         // Agent 应用节点不得与当前流程构成循环嵌套（按发布后的工具闭包判定）
         await Services.AgentWorkflowCycleGuard.EnsureNoCycleAsync(_databaseContext, request.AppId, Services.AgentWorkflowCycleGuard.CollectAgentAppIds(definition), cancellationToken);
 
