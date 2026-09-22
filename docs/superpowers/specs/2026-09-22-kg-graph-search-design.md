@@ -87,7 +87,7 @@ Task<GraphSearchResult> SearchAsync(IReadOnlyList<long> graphIds, string query, 
 
 ## 8. 安全与边界
 
-- 仅托管图参与；接入图在绑定下拉可选但标注「仅 Text2Cypher 插件可用」（或一期直接排除出绑定下拉——实现计划定）
+- 仅托管图参与；**接入图一期直接排除出应用绑定下拉**（绑定即检索，不能检索的不开放绑定；其查询诉求由 Text2Cypher 插件覆盖，绑定下拉数据源过滤 `mode === 'managed'`）
 - 检索不返回 propsJson（内部属性 JSON 不外泄）；description 本就对外可见（管理页同权）
 - 工具与节点均受应用/工作流既有审批与门禁约束，无新增授权面
 
