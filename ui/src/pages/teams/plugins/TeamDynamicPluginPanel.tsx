@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -11,6 +11,7 @@ import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
 import type { PluginClassify } from '@/api/classify'
+import { getKnowledgeGraphs, getKnowledgeGraphSchema } from '@/api/knowledgeGraph'
 import type { DynamicPluginTemplate } from '@/api/plugin'
 import {
   deleteTeamPlugin,
@@ -29,7 +30,48 @@ interface DynamicFormValues {
   title: string
   description?: string
   classifyId?: number
+  kgId?: number
   config: string
+}
+
+const KG_CYPHER_TEMPLATE_KEY = 'kg_cypher_query'
+
+/** 从实例配置 JSON 中容错解析 KgId（编辑回显用） */
+function parseKgIdFromConfig(config: string | null | undefined): number | undefined {
+  try {
+    const kgId = Number((JSON.parse(config ?? '{}') as { KgId?: unknown }).KgId)
+    return Number.isFinite(kgId) && kgId > 0 ? kgId : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * kg_cypher_query：按选中图谱预填描述与配置（模型写对 Cypher 的第一喂养位）。
+ */
+async function prefillKgCypherQuery(
+  teamId: number,
+  kgId: number,
+  setFields: (description: string, config: string) => void,
+): Promise<void> {
+  const graphs = await getKnowledgeGraphs(teamId)
+  const graph = (graphs.items ?? []).find((g) => Number(g.kgId) === kgId)
+  if (!graph) return
+  let summary = ''
+  try {
+    const schema = await getKnowledgeGraphSchema(kgId)
+    const entityNames = (schema.entityTypes ?? []).map((x) => x.name ?? '').filter(Boolean)
+    const relationNames = (schema.relationTypes ?? []).map((x) => x.name ?? '').filter(Boolean)
+    summary = `实体类型：${entityNames.join('、') || '（未定义）'}；关系类型：${relationNames.join('、') || '（未定义）'}。`
+  } catch {
+    summary = ''
+  }
+  const usage =
+    graph.mode === 'connected'
+      ? '接入图谱：节点使用原生 label 与关系类型，查询无需 $kgId 过滤。'
+      : '托管图谱：节点标签为 KgNode（含 name/description 属性），所有 MATCH 必须带 {kgId: $kgId} 过滤，$kgId 由系统自动注入。'
+  const description = `${graph.description || graph.name || ''}。${summary}${usage}首次使用可传 {"Schema": true} 获取图谱结构。`
+  setFields(description.slice(0, 255), JSON.stringify({ KgId: kgId, MaxRows: 200, TimeoutSeconds: 30 }, null, 2))
 }
 
 interface TeamDynamicPluginPanelProps {
@@ -57,6 +99,12 @@ export function TeamDynamicPluginPanel({
   const [drawerTarget, setDrawerTarget] = useState<TeamDynamicPluginItem | null>(null)
   const [filter, setFilter] = useState('all')
   const [form] = Form.useForm<DynamicFormValues>()
+  const selectedTempleteKey = Form.useWatch('templeteKey', form)
+  const isKgCypherTemplate = selectedTempleteKey === KG_CYPHER_TEMPLATE_KEY
+  const [kgGraphOptions, setKgGraphOptions] = useState<{ value: number; label: string }[]>([])
+  const [kgEnabled, setKgEnabled] = useState(true)
+  const [kgGraphsLoading, setKgGraphsLoading] = useState(false)
+  const kgGraphsLoadedRef = useRef(false)
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -71,9 +119,34 @@ export function TeamDynamicPluginPanel({
     void loadTemplates()
   }, [loadTemplates])
 
+  const loadKgGraphOptions = useCallback(async () => {
+    setKgGraphsLoading(true)
+    try {
+      const res = await getKnowledgeGraphs(teamId)
+      setKgEnabled(res.enabled === true)
+      setKgGraphOptions(
+        (res.items ?? [])
+          .filter((g) => g.kgId != null)
+          .map((g) => ({ value: Number(g.kgId), label: g.name ?? String(g.kgId) })),
+      )
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setKgGraphsLoading(false)
+    }
+  }, [teamId])
+
+  // kg_cypher_query：弹窗打开且模板命中时懒加载一次本团队图谱列表
+  useEffect(() => {
+    if (!modalOpen || !isKgCypherTemplate || kgGraphsLoadedRef.current) return
+    kgGraphsLoadedRef.current = true
+    void loadKgGraphOptions()
+  }, [modalOpen, isKgCypherTemplate, loadKgGraphOptions])
+
   const reset = () => {
     setEditing(null)
     form.resetFields()
+    kgGraphsLoadedRef.current = false
   }
 
   const openCreate = () => {
@@ -82,6 +155,7 @@ export function TeamDynamicPluginPanel({
   }
 
   const openEdit = (record: TeamDynamicPluginItem) => {
+    kgGraphsLoadedRef.current = false
     setEditing(record)
     form.setFieldsValue({
       instanceKey: record.instanceKey ?? record.pluginName ?? '',
@@ -89,9 +163,21 @@ export function TeamDynamicPluginPanel({
       title: record.title ?? '',
       description: record.description ?? '',
       classifyId: record.classifyId || undefined,
+      kgId: parseKgIdFromConfig(record.config),
       config: record.config ?? '{}',
     })
     setModalOpen(true)
+  }
+
+  // kg_cypher_query：选中图谱后自动预填描述与配置，仅作起点，用户可手改
+  const handleKgBindingChange = async (graphId: number) => {
+    try {
+      await prefillKgCypherQuery(teamId, graphId, (description, config) => {
+        form.setFieldsValue({ description, config })
+      })
+    } catch {
+      feedback.error(t('plugins.kgBindingLoadFailed'))
+    }
   }
 
   const isDuplicateKey = (instanceKey: string) => items.some((i) => (i.instanceKey ?? i.pluginName) === instanceKey)
@@ -312,6 +398,22 @@ export function TeamDynamicPluginPanel({
               }}
             />
           </Form.Item>
+          {isKgCypherTemplate && (
+            <Form.Item name="kgId" label={t('plugins.kgBinding')}>
+              <Select
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                loading={kgGraphsLoading}
+                disabled={!kgEnabled}
+                placeholder={kgEnabled ? t('plugins.kgBindingPlaceholder') : t('plugins.kgBindingDisabled')}
+                options={kgGraphOptions}
+                onChange={(v) => {
+                  if (typeof v === 'number') void handleKgBindingChange(v)
+                }}
+              />
+            </Form.Item>
+          )}
           <Form.Item name="title" label={t('plugins.formPluginTitle')} rules={[{ required: true, message: t('plugins.pluginTitleRequired') }]}>
             <Input maxLength={30} />
           </Form.Item>
