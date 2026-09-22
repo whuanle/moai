@@ -4,6 +4,6 @@
 -- 新库由 EnsureCreated 依据实体/配置直接建成，无需执行本脚本。
 -- 执行后请重跑 tool/PostgresScaffold 逆向生成，保持库与实体一致。
 
--- 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如'[1,2]'
+-- 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 '[1,2]'
 alter table app_agent_config add column if not exists graph_ids text not null default '[]';
-comment on column app_agent_config.graph_ids is '绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如''[1,2]''';
+comment on column app_agent_config.graph_ids is '绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 ''[1,2]''';

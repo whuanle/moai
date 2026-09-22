@@ -8,8 +8,8 @@ using MoAI.Infra.Services;
 namespace MoAI.App.Commands;
 
 /// <summary>
-/// 保存 Agent 应用配置（对话模型、允许使用的插件、知识库与系统提示词），需要团队 Admin 及以上角色；
-/// 绑定的模型/插件/知识库必须在该团队有权使用的范围内.
+/// 保存 Agent 应用配置（对话模型、允许使用的插件、知识库、知识图谱与系统提示词），需要团队 Admin 及以上角色；
+/// 绑定的模型/插件/知识库/知识图谱必须在该团队有权使用的范围内.
 /// </summary>
 public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserIdContext, IModelValidator<SaveAppAgentConfigCommand>
 {
