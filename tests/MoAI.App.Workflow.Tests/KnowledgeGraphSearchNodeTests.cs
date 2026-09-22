@@ -1,4 +1,6 @@
 using System.Text.Json.Nodes;
+using MoAI.KnowledgeGraph.Models;
+using MoAI.KnowledgeGraph.Services;
 using Moq;
 using MoAI.App.Workflow.Definition;
 using MoAI.App.Workflow.DataTransfer;
@@ -11,10 +13,29 @@ namespace MoAI.App.Workflow.Tests;
 
 /// <summary>
 /// 知识图谱检索节点（kgSearch）：v1 仅支持 config.graphId 静态选图（无 graphId 输入变量绑定），
-/// 未配置图谱或缺少 query 输入时节点失败；topK 夹取 1-50；输出 hits 扁平（邻居信息在 contents/text 中）.
+/// 未配置图谱或缺少 query 输入时节点失败；topK 夹取 1-50；
+/// 输出 hits 扁平（邻居信息在 contents/text 中），contents/text 为 GraphSearchTextHelper 生成的片段（与检索 API 同源同形），text 超长截断.
 /// </summary>
 public class KnowledgeGraphSearchNodeTests
 {
+    /// <summary>
+    /// 构造一条命中：Text 经 <see cref="GraphSearchTextHelper.BuildHitFragment"/> 生成（与 Client 真实路径同源），避免手写格式漂移.
+    /// </summary>
+    private static WorkflowGraphSearchHit NewHit(string nodeId, string name, string? typeName, string description, double? score, params GraphNeighbor[] neighbors)
+    {
+        var hit = new GraphSearchHit(1, nodeId, name, description, 0, typeName, score, neighbors);
+        return new WorkflowGraphSearchHit
+        {
+            KgId = hit.KgId,
+            NodeId = hit.NodeId,
+            Name = hit.Name,
+            EntityTypeName = hit.EntityTypeName,
+            Description = hit.Description,
+            Score = hit.Score,
+            Text = GraphSearchTextHelper.BuildHitFragment(hit, hit.Neighbors),
+        };
+    }
+
     /// <summary>
     /// start(query) → kgs(知识图谱检索) → end.
     /// </summary>
@@ -85,7 +106,7 @@ public class KnowledgeGraphSearchNodeTests
 
     private static WorkflowTestHarness NewHarness()
     {
-        // 默认返回 2 条命中（第二条得分为空、类型未定义，覆盖可空字段序列化）
+        // 默认返回 2 条命中（第二条得分为空、类型未定义、无邻居，覆盖可空字段与未知类型兜底）
         var harness = new WorkflowTestHarness();
         harness.GraphSearch
             .Setup(c => c.SearchAsync(
@@ -95,8 +116,8 @@ public class KnowledgeGraphSearchNodeTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<WorkflowGraphSearchHit>
             {
-                new() { KgId = 1, NodeId = "n1", Name = "张三", EntityTypeName = "人物", Description = "MoAI 的作者", Score = 0.91, Text = "张三：MoAI 的作者\n  └─ 关联(out)→ 李四：同事" },
-                new() { KgId = 1, NodeId = "n2", Name = "MoAI", EntityTypeName = null, Description = "开源项目", Score = null, Text = "MoAI：开源项目" },
+                NewHit("n1", "张三", "人物", "MoAI 的作者", 0.91, new GraphNeighbor(null, "out", "李四", "同事")),
+                NewHit("n2", "MoAI", null, "开源项目", null),
             });
         return harness;
     }
@@ -149,15 +170,18 @@ public class KnowledgeGraphSearchNodeTests
         Assert.Null((double?)second["score"]);
         Assert.Null((string?)second["entityType"]);
 
+        // contents 与 text 为片段（头部【名称（类型）】描述 + 邻居行），与检索 API 的 Text 段同源同形
         var contents = Assert.IsType<JsonArray>(output["contents"]);
         Assert.Equal(2, contents.Count);
-        Assert.Contains("└─", (string?)contents[0]);
+        Assert.Contains("【张三（人物）】MoAI 的作者", (string?)contents[0], StringComparison.Ordinal);
+        Assert.Contains("  └─ 关联(out)→ 李四：同事", (string?)contents[0], StringComparison.Ordinal);
+        Assert.Contains("【MoAI（未知类型）】开源项目", (string?)contents[1], StringComparison.Ordinal);
 
         var text = (string?)output["text"];
         Assert.NotNull(text);
-        Assert.Contains("张三", text);
-        Assert.Contains("李四", text);
-        Assert.Contains("MoAI：开源项目", text);
+        Assert.Contains("【张三（人物）】MoAI 的作者", text, StringComparison.Ordinal);
+        Assert.Contains("李四：同事", text, StringComparison.Ordinal);
+        Assert.Contains("【MoAI（未知类型）】开源项目", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -175,6 +199,27 @@ public class KnowledgeGraphSearchNodeTests
         var output = instance.NodeStates["kgs"].Output;
         Assert.Equal(0, (int?)output["count"]);
         Assert.Equal(string.Empty, (string?)output["text"]);
+    }
+
+    [Fact]
+    public async Task Text_Truncated_WhenOverLimit()
+    {
+        var harness = NewHarness();
+        harness.GraphSearch
+            .Setup(c => c.SearchAsync(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<WorkflowGraphSearchHit>
+            {
+                new() { KgId = 1, NodeId = "n1", Name = "大节点", EntityTypeName = "人物", Description = "长描述", Score = 0.5, Text = new string('a', 9000) },
+            });
+        await harness.Store.SaveDefinitionAsync(CreateDefinition());
+
+        var instance = await harness.Engine.StartAsync("kgs-static", new JsonObject { ["query"] = "q" });
+
+        Assert.Equal(InstanceStatus.Completed, instance.Status);
+        var text = (string?)instance.NodeStates["kgs"].Output["text"];
+        Assert.NotNull(text);
+        Assert.EndsWith("…(已截断)", text, StringComparison.Ordinal);
+        Assert.Equal(8192 + "…(已截断)".Length, text.Length);
     }
 
     [Fact]

@@ -21,7 +21,6 @@ namespace MoAI.KnowledgeGraph.Services;
 public class GraphSearchService : IGraphSearchService
 {
     private const int NeighborLimit = 10;
-    private const int MaxTextLength = 8192;
 
     private readonly DatabaseContext _databaseContext;
     private readonly IEmbeddingGeneratorProvider _embeddingGeneratorProvider;
@@ -211,31 +210,23 @@ public class GraphSearchService : IGraphSearchService
 
     /// <summary>
     /// 子图文本化：每命中实体一段（首行节点 + 邻居行），段间空行，总长超限截断.
+    /// 行格式由 <see cref="GraphSearchTextHelper"/> 统一提供（与工作流 kgSearch 节点共享，保证两侧同源同形）.
     /// </summary>
     private static string BuildText(IReadOnlyList<GraphSearchHit> hits)
     {
         var builder = new StringBuilder();
         foreach (var hit in hits)
         {
-            builder.Append('【').Append(hit.Name).Append('（').Append(hit.EntityTypeName ?? "未知类型").Append("）】").AppendLine(hit.Description);
+            builder.AppendLine(GraphSearchTextHelper.BuildHitHeader(hit));
             foreach (var neighbor in hit.Neighbors)
             {
-                builder.Append("  └─ ")
-                    .Append(neighbor.RelationName ?? "关联")
-                    .Append('(').Append(neighbor.Direction).Append(")→ ")
-                    .Append(neighbor.Name).Append('：').AppendLine(neighbor.Description);
+                builder.AppendLine(GraphSearchTextHelper.BuildNeighborLine(neighbor));
             }
 
             builder.AppendLine();
         }
 
-        var text = builder.ToString().TrimEnd();
-        if (text.Length > MaxTextLength)
-        {
-            text = text[..MaxTextLength] + "…(已截断)";
-        }
-
-        return text;
+        return GraphSearchTextHelper.Truncate(builder.ToString().TrimEnd());
     }
 
     /// <summary>

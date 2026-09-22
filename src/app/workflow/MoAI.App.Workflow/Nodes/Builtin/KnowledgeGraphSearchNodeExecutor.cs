@@ -8,7 +8,8 @@ namespace MoAI.App.Workflow.Nodes.Builtin;
 /// 知识图谱检索节点执行器 - 通过 <see cref="IWorkflowGraphSearchClient"/> 在指定知识图谱中做向量检索（topK 实体 + 一跳邻居的子图文本）.
 /// 配置：{ "graphId": 1, "topK": 5 }（graphId 为单个知识图谱 id，topK 为召回条数，默认 5、上限 50）.
 /// 输入：query（必填，检索查询文本）.
-/// 输出：{ query, count, hits: [{kgId, nodeId, name, entityType, description, score}], contents: [string], text }.
+/// 输出：{ query, count, hits: [{kgId, nodeId, name, entityType, description, score}], contents: [string], text }；
+/// contents 与 text 均由含名称/类型/描述/邻居的文本化片段构成（与检索 API 的 Text 同源同形），text 超长时截断.
 /// </summary>
 /// <remarks>
 /// 与知识库检索节点（knowledgeSearch）的差异：v1 仅支持 config.graphId 静态选择图谱，
@@ -19,6 +20,10 @@ public class KnowledgeGraphSearchNodeExecutor : INodeExecutor
 {
     private const int DefaultTopK = 5;
     private const int MaxTopK = 50;
+
+    // 与检索 API 侧 GraphSearchTextHelper（KG.Shared）的上限/截断标记保持一致；
+    // 引擎工程不引用 KG.Shared（端口解耦），故在此本地收口
+    private const int MaxTextLength = 8192;
 
     private readonly IWorkflowGraphSearchClient _graphSearchClient;
 
@@ -73,14 +78,13 @@ public class KnowledgeGraphSearchNodeExecutor : INodeExecutor
                     ["description"] = hit.Description,
                     ["score"] = hit.Score.HasValue ? JsonValue.Create(hit.Score.Value) : null,
                 });
-                // contents 与 hits 同序，每项为该命中含邻居的文本化片段
+                // contents 与 hits 同序，每项为该命中的完整片段（头部【名称（类型）】描述 + 邻居行，与 text 段同源同形）
                 contentsArray.Add(hit.Text);
                 if (textBuilder.Length > 0)
                 {
                     textBuilder.Append("\n\n");
                 }
 
-                // Text 已含名称/类型/描述与邻居信息，不再像知识库节点那样追加【标题】前缀
                 textBuilder.Append(hit.Text);
             }
 
@@ -90,7 +94,7 @@ public class KnowledgeGraphSearchNodeExecutor : INodeExecutor
                 ["count"] = hits.Count,
                 ["hits"] = hitsArray,
                 ["contents"] = contentsArray,
-                ["text"] = textBuilder.ToString(),
+                ["text"] = TruncateText(textBuilder.ToString()),
             });
         }
         catch (OperationCanceledException)
@@ -126,4 +130,10 @@ public class KnowledgeGraphSearchNodeExecutor : INodeExecutor
 
         return DefaultTopK;
     }
+
+    /// <summary>
+    /// 超长截断（与检索 API 的 GraphSearchTextHelper.Truncate 行为一致）：超限截取前缀并追加「…(已截断)」.
+    /// </summary>
+    private static string TruncateText(string text)
+        => text.Length <= MaxTextLength ? text : text[..MaxTextLength] + "…(已截断)";
 }

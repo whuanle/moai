@@ -1,4 +1,3 @@
-using System.Text;
 using Maomi;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Workflow.Nodes;
@@ -52,7 +51,10 @@ public class WorkflowGraphSearchClient : IWorkflowGraphSearchClient
         }
 
         var result = await _graphSearchService.SearchAsync(validIds, query, top, cancellationToken: cancellationToken);
-        return result.Hits.Select((hit, index) => new WorkflowGraphSearchHit
+
+        // Text 用共享片段构造器按 hit 自身字段（含 hit.Neighbors）生成，与检索 API 的 Text 段同源同形；
+        // 不读 result.Contents（与 Hits 的位置耦合）也不拆 result.Text（API 侧整体拼接且可能已截断，无法安全按命中切段）
+        return result.Hits.Select(hit => new WorkflowGraphSearchHit
         {
             KgId = hit.KgId,
             NodeId = hit.NodeId,
@@ -60,26 +62,7 @@ public class WorkflowGraphSearchClient : IWorkflowGraphSearchClient
             EntityTypeName = hit.EntityTypeName,
             Description = hit.Description,
             Score = hit.Score,
-            Text = BuildHitText(hit, result.Contents[index]),
+            Text = GraphSearchTextHelper.BuildHitFragment(hit, hit.Neighbors),
         }).ToList();
-    }
-
-    /// <summary>
-    /// 单命中的文本化片段：<see cref="GraphSearchResult.Contents"/> 中与该命中同序的条目（「名称：描述」，同序契约来自 GraphSearchService）
-    /// 再拼上该命中的邻居段；不拆 <see cref="GraphSearchResult.Text"/>（整体拼接且可能被截断，无法安全按命中切段）.
-    /// 邻居行格式与 GraphSearchService.BuildText 的单段格式保持一致.
-    /// </summary>
-    private static string BuildHitText(GraphSearchHit hit, string content)
-    {
-        var builder = new StringBuilder(content);
-        foreach (var neighbor in hit.Neighbors)
-        {
-            builder.Append("\n  └─ ")
-                .Append(neighbor.RelationName ?? "关联")
-                .Append('(').Append(neighbor.Direction).Append(")→ ")
-                .Append(neighbor.Name).Append('：').Append(neighbor.Description);
-        }
-
-        return builder.ToString();
     }
 }

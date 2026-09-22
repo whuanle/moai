@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\app\workflow\MoAI.App.Workflow\MoAI.App.Workflow.csproj" />
+    <ProjectReference Include="..\..\src\knowledgegraph\MoAI.KnowledgeGraph.Shared\MoAI.KnowledgeGraph.Shared.csproj" />
   </ItemGroup>
 
 </Project>
