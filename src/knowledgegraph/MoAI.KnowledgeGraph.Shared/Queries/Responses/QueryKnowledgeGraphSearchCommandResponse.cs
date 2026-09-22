@@ -21,7 +21,7 @@ public class QueryKnowledgeGraphSearchCommandResponse
     public string Text { get; init; } = string.Empty;
 
     /// <summary>
-    /// 被跳过的图谱及原因（未配置向量化/模型不可用等）.
+    /// 被跳过的图谱及原因（该端点经 Handler 先行校验，未配置向量化会直接 409，此字段通常仅含模型不可用等运行期提示）.
     /// </summary>
     public List<string> SkippedHints { get; init; } = new();
 }

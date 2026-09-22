@@ -55,4 +55,32 @@ public class KnowledgeGraphQueryCommandValidatorTests
         Assert.False(validator.Validate(new QueryKnowledgeGraphEdgeCommand { KnowledgeGraphId = 1, EdgeId = string.Empty }).IsValid);
         Assert.True(validator.Validate(new QueryKnowledgeGraphEdgeCommand { KnowledgeGraphId = 1, EdgeId = "e1" }).IsValid);
     }
+
+    [Fact]
+    public void QuerySearch_Validate_RejectsOutOfRangeContractValues()
+    {
+        var validator = new InlineValidator<QueryKnowledgeGraphSearchCommand>();
+        QueryKnowledgeGraphSearchCommand.Validate(validator);
+
+        Assert.False(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = string.Empty, TopK = 5 }).IsValid);
+        Assert.False(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", TopK = 0 }).IsValid);
+        Assert.False(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", TopK = 51 }).IsValid);
+        Assert.False(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", TopK = 5, MinScore = 1.5 }).IsValid);
+    }
+
+    [Fact]
+    public void QuerySearch_Validate_DefaultsAndInclusiveBoundsPass()
+    {
+        var validator = new InlineValidator<QueryKnowledgeGraphSearchCommand>();
+        QueryKnowledgeGraphSearchCommand.Validate(validator);
+
+        // 默认值契约：TopK=5、MinScore=null
+        Assert.True(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询" }).IsValid);
+
+        // 数值契约边界（Kiota 客户端会固化）：TopK 与 MinScore 均为闭区间
+        Assert.True(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", TopK = 1 }).IsValid);
+        Assert.True(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", TopK = 50 }).IsValid);
+        Assert.True(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", MinScore = 0 }).IsValid);
+        Assert.True(validator.Validate(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = 1, Query = "查询", MinScore = 1 }).IsValid);
+    }
 }
