@@ -24,12 +24,12 @@ cd ui && npm run dev
 
 ```bash
 # 形态 B：Compose 一体（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
-cp .env.example .env          # 基础设施账号/端口
-vim configs/system.json       # 应用配置（Server/WebUI/AES/Storage.Endpoint 等）
-bash deploy/deploy-compose.sh # 预拉沙箱镜像 + 拉取/构建 + 启动
+cp .env.example .env          # 唯一配置来源：账号/端口/对外地址/S3 自定义域名等
+bash deploy/deploy-compose.sh # 按 .env 生成 configs/system.json → 预拉沙箱镜像 → 拉取/构建 → 启动
 curl http://localhost:8080/api/common/serverinfo   # 冒烟
 
 # 形态 A：Docker 单容器（仅前后端，外部提供 PG/Redis/MQ/OSS）
+cp configs/system.example.json configs/system.json   # 再按外部服务改 host
 docker run -d --name moai -p 8080:8080 \
   --add-host host.docker.internal:host-gateway \
   -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
@@ -37,7 +37,7 @@ docker run -d --name moai -p 8080:8080 \
   whuanle/moai:latest
 ```
 
-要点：**`configs/system.json` 必须穿透映射进容器**（缺文件容器会明确报错）；存储为纯 S3 实现，`Storage.Endpoint` 须浏览器可达（见 [docker.md 3.1](./docker.md)）；`rustfs-init` 自动建桶；OpenSandbox 为独立容器、沙箱镜像只拉不部署；图数据库按需接入（[docker.md 第 7 节](./docker.md)）。
+要点：Compose 以 `.env` 为唯一来源生成 `configs/system.json`（挂载路径由 `MOAI_CONFIG_FILE` 指定），无需手写；存储为纯 S3 实现，`Storage.Endpoint` 须浏览器可达（可用 `.env` 的 `S3_ENDPOINT` 配自定义域名，见 [docker.md 3.1](./docker.md)）；`rustfs-init` 自动建桶；OpenSandbox 为独立容器、沙箱镜像只拉不部署；图数据库按需接入（[docker.md 第 7 节](./docker.md)）。
 
 ## 3. 升级 / 回滚
 
@@ -71,7 +71,7 @@ docker run --rm -v moai_moai_files:/data -v "$PWD":/backup alpine tar czf /backu
 | `opensandbox-server` 退出 | 未配 API Key 且未确认 | `OPENSANDBOX_INSECURE_SERVER=YES` 或配置 `api_key`（[@DEP-S16](./bdd.md#dep-s16)） |
 | docker build 在 COPY ui/moai 失败 | 历史缺陷 D1（**已修复**，现路径为 ui/） | 若复现说明镜像基线过旧，核对 Dockerfile（[@DEP-S1](./bdd.md#dep-s1)） |
 | moai 容器反复重启，日志含 Uri/FormatException | 历史缺陷 D2（**已修复**，空值自动跳过） | 检查是否运行旧镜像；新代码 OTLP 未配置时不再抛异常（[@DEP-S4](./bdd.md#dep-s4)） |
-| 容器上传文件不在对象存储 | 历史缺陷 D3（**已修复**：`configs/system.json` 模板携带 `Storage` 五项） | 在 `configs/system.json` 配 `Storage`；预签名 host 须同时被应用与客户端可达（见 [docker.md 3.1](./docker.md)） |
+| 容器上传文件不在对象存储 | 历史缺陷 D3（**已修复**：由 `.env` 生成 `Storage` 五项） | 在 `.env` 配 `S3_*` / `S3_ENDPOINT`；预签名 host 须同时被应用与客户端可达（见 [docker.md 3.1](./docker.md)） |
 | 容器启动后自行退出，日志 `ACCESS_REFUSED`（RabbitMQ PLAIN） | MQ 凭据与 broker 不符（默认 guest/guest 常被拒） | 传 `RABBITMQ_USER/RABBITMQ_PASSWORD`（Maomi.MQ 消费者失败会 StopHost） |
 | 启动日志 `Cannot load library libgssapi_krb5.so.2` | 缺陷 D6：aspnet:10.0 无 Kerberos 库（**已修复**：final 阶段装 `libgssapi-krb5-2`） | 若仍出现说明镜像基线过旧，忽略也不影响功能 |
 | 启动报 `42P01 relation "external_id_seq" does not exist` | 旧镜像未在模型声明该序列，`EnsureCreated` 建 `external_user` 表时默认值解析失败 | 用含修复的新镜像；并**重建数据库卷**（`docker compose down -v` 后 up），因失败可能留下半套表导致后续 `EnsureCreated` 跳过 |

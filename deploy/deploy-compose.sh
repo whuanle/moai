@@ -3,20 +3,18 @@
 # MoAI 一体部署脚本（docker compose）
 #
 # 用法：
-#   bash deploy/deploy-compose.sh              # 拉镜像 + 启动
+#   bash deploy/deploy-compose.sh              # 生成配置 + 拉镜像 + 启动
 #   BUILD=1 bash deploy/deploy-compose.sh      # 本地源码构建 moai 镜像后启动
 #
 # 前置：
 #   1) 已安装 docker + docker compose v2
-#   2) 存在 configs/system.json（应用配置；compose 会 bind-mount 进容器）
-#   3) 可选：cp .env.example .env 并按需修改基础设施账号/端口
+#   2) cp .env.example .env 并按需修改（MOAI_HOST 留空会自动探测本机 IP）
 #
-# 说明：会拉取全部依赖镜像，包括
-#   - postgres 服务 = pgvector/pgvector:pg16（必须，不可用裸 postgres 镜像）
-#   - opensandbox/server（OpenSandbox 生命周期服务）
-#   - opensandbox/code-interpreter（沙箱运行时，仅拉取、不部署）
-#   - rustfs / redis / rabbitmq / aws-cli（建桶）
-# 沙箱容器由 opensandbox-server 在运行时按需创建。
+# 说明：
+#   - 以 .env 为唯一配置来源，生成 ${MOAI_CONFIG_FILE}（默认 ./configs/system.json）
+#     并挂载进容器 /app/configs/system.json，用户无需手写 system.json。
+#   - 会拉取全部依赖镜像：postgres=pgvector/pgvector:pg16、opensandbox/server、
+#     opensandbox/code-interpreter（仅拉取不部署）、rustfs/redis/rabbitmq/aws-cli。
 # ============================================================
 set -euo pipefail
 
@@ -24,11 +22,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
-# 沙箱执行/网络镜像不在 compose 中（由 deploy/opensandbox/sandbox.toml 引用），单独预拉
 OPENSANDBOX_EXECD_IMAGE="${OPENSANDBOX_EXECD_IMAGE:-opensandbox/execd:v1.1.0}"
 OPENSANDBOX_EGRESS_IMAGE="${OPENSANDBOX_EGRESS_IMAGE:-opensandbox/egress:v1.1.7}"
 
-# 探测本机对外 IP（用于 system.json 的 Server/WebUI/Storage.Endpoint，须浏览器可达）
+# 探测本机对外 IP（用于 Server/WebUI/Storage.Endpoint，须浏览器可达）
 detect_host_ip() {
   local ip=""
   if command -v ip >/dev/null 2>&1; then
@@ -43,31 +40,133 @@ detect_host_ip() {
   printf '%s' "$ip"
 }
 
+# JSON 字符串转义（反斜杠与双引号）
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
+}
+
 if [ ! -f .env ]; then
   echo "==> 未找到 .env，从 .env.example 复制"
   cp .env.example .env
 fi
 
-# 应用配置文件路径（.env 的 MOAI_CONFIG_FILE，默认 ./configs/system.json）
-MOAI_CONFIG_FILE="$(grep -E '^MOAI_CONFIG_FILE=' .env 2>/dev/null | head -n1 | cut -d= -f2-)"
+# 载入 .env（作为唯一配置来源）
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
 MOAI_CONFIG_FILE="${MOAI_CONFIG_FILE:-./configs/system.json}"
-if [ ! -f "${MOAI_CONFIG_FILE}" ]; then
-  echo "ERROR: 找不到应用配置文件 ${MOAI_CONFIG_FILE}（可由 .env 的 MOAI_CONFIG_FILE 指定）。请先按 docs/deployment/docker.md 准备。" >&2
-  exit 1
+MOAI_HOST="${MOAI_HOST:-}"
+MOAI_PORT="${MOAI_PORT:-8080}"
+MOAI_AES_KEY="${MOAI_AES_KEY:-please-change-this-aes-key}"
+POSTGRES_USER="${POSTGRES_USER:-postgres}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-moai123456}"
+POSTGRES_DB="${POSTGRES_DB:-moai}"
+RABBITMQ_USER="${RABBITMQ_USER:-guest}"
+RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD:-guest}"
+S3_BUCKET="${S3_BUCKET:-moai}"
+S3_ACCESS_KEY_ID="${S3_ACCESS_KEY_ID:-moaiadmin}"
+S3_ACCESS_KEY_SECRET="${S3_ACCESS_KEY_SECRET:-moaiadmin123}"
+RUSTFS_PORT="${RUSTFS_PORT:-9000}"
+OPENSANDBOX_SANDBOX_IMAGE="${OPENSANDBOX_SANDBOX_IMAGE:-opensandbox/code-interpreter:v1.1.0}"
+OPENSANDBOX_TIMEOUT_SECONDS="${OPENSANDBOX_TIMEOUT_SECONDS:-900}"
+OPENSANDBOX_RENEW_THRESHOLD_SECONDS="${OPENSANDBOX_RENEW_THRESHOLD_SECONDS:-300}"
+OTLP_TRACE="${OTLP_TRACE:-}"
+OTLP_METRICS="${OTLP_METRICS:-}"
+OTLP_PROTOCOL="${OTLP_PROTOCOL:-0}"
+
+# 未设置 MOAI_HOST 时自动探测本机 IP，并写回 .env（可用公网域名手动覆盖）
+if [ -z "${MOAI_HOST}" ]; then
+  MOAI_HOST="$(detect_host_ip)"
+  [ -z "${MOAI_HOST}" ] && MOAI_HOST="localhost"
+  if grep -qE '^MOAI_HOST=' .env; then
+    sed "s|^MOAI_HOST=.*|MOAI_HOST=${MOAI_HOST}|" .env > .env.tmp && mv .env.tmp .env
+  else
+    printf '\nMOAI_HOST=%s\n' "${MOAI_HOST}" >> .env
+  fi
+  echo "==> 已自动探测 MOAI_HOST=${MOAI_HOST}（如需公网域名/其他地址，请修改 .env 后重跑）"
 fi
 
-# 若 .env 未设置 MOAI_HOST，则自动探测本机 IP 写入（可用公网域名手动覆盖）
-CURRENT_HOST="$(grep -E '^MOAI_HOST=' .env 2>/dev/null | head -n1 | cut -d= -f2-)"
-if [ -z "${CURRENT_HOST}" ]; then
-  DETECTED_HOST="$(detect_host_ip)"
-  [ -z "${DETECTED_HOST}" ] && DETECTED_HOST="localhost"
-  if grep -qE '^MOAI_HOST=' .env; then
-    sed "s|^MOAI_HOST=.*|MOAI_HOST=${DETECTED_HOST}|" .env > .env.tmp && mv .env.tmp .env
-  else
-    printf '\nMOAI_HOST=%s\n' "${DETECTED_HOST}" >> .env
-  fi
-  echo "==> 已自动探测 MOAI_HOST=${DETECTED_HOST}（如需公网域名/其他地址，请修改 .env 后重跑）"
+# 对象存储对外地址：优先 .env 的 S3_ENDPOINT（自定义域名），否则用 主机:对象存储端口
+S3_ENDPOINT_RESOLVED="${S3_ENDPOINT:-http://${MOAI_HOST}:${RUSTFS_PORT}}"
+
+# 由 .env 生成应用配置
+mkdir -p "$(dirname "${MOAI_CONFIG_FILE}")"
+if [ -f "${MOAI_CONFIG_FILE}" ]; then
+  cp "${MOAI_CONFIG_FILE}" "${MOAI_CONFIG_FILE}.bak"
 fi
+cat > "${MOAI_CONFIG_FILE}" <<EOF
+{
+  "MoAI": {
+    "Name": "MoAI",
+    "Port": 8080,
+    "Server": "http://${MOAI_HOST}:${MOAI_PORT}",
+    "WebUI": "http://${MOAI_HOST}:${MOAI_PORT}",
+    "AES": "$(json_escape "${MOAI_AES_KEY}")",
+    "Database": "Database=$(json_escape "${POSTGRES_DB}");Host=postgres;Password=$(json_escape "${POSTGRES_PASSWORD}");Port=5432;Username=$(json_escape "${POSTGRES_USER}");Search Path=public",
+    "Redis": "redis:6379",
+    "RabbitMQ": "amqp://$(json_escape "${RABBITMQ_USER}"):$(json_escape "${RABBITMQ_PASSWORD}")@rabbitmq:5672",
+    "OpenSandBox": {
+      "Address": "http://opensandbox-server:8090",
+      "ApiKey": "",
+      "Image": "$(json_escape "${OPENSANDBOX_SANDBOX_IMAGE}")",
+      "TimeoutSeconds": ${OPENSANDBOX_TIMEOUT_SECONDS},
+      "RenewThresholdSeconds": ${OPENSANDBOX_RENEW_THRESHOLD_SECONDS}
+    },
+    "Storage": {
+      "Endpoint": "$(json_escape "${S3_ENDPOINT_RESOLVED}")",
+      "ForcePathStyle": true,
+      "Bucket": "$(json_escape "${S3_BUCKET}")",
+      "AccessKeyId": "$(json_escape "${S3_ACCESS_KEY_ID}")",
+      "AccessKeySecret": "$(json_escape "${S3_ACCESS_KEY_SECRET}")"
+    },
+    "MaxUploadFileSize": 104857600,
+    "OTLP": {
+      "Trace": "$(json_escape "${OTLP_TRACE}")",
+      "Metrics": "$(json_escape "${OTLP_METRICS}")",
+      "Protocol": ${OTLP_PROTOCOL}
+    }
+  },
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console"
+    ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft.AspNetCore.HttpLogging": "Information",
+        "ProtoBuf.Grpc.Server.ServicesExtensions.CodeFirstServiceMethodProvider": "Warning",
+        "Microsoft.EntityFrameworkCore": "Information",
+        "Microsoft.AspNetCore": "Warning",
+        "System.Net.Http.HttpClient.TenantManagerClient.LogicalHandler": "Warning",
+        "Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted": "Warning",
+        "System": "Information",
+        "Microsoft": "Information",
+        "Grpc": "Information",
+        "MySqlConnector": "Information"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithThreadId"
+    ]
+  }
+}
+EOF
+echo "==> 已根据 .env 生成应用配置 ${MOAI_CONFIG_FILE}"
 
 echo "==> [1/4] 拉取 Compose 全部镜像（postgres=pgvector/pgvector:pg16、opensandbox/server、沙箱镜像等）"
 docker compose --profile sandbox-images pull \

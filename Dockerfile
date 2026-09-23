@@ -58,8 +58,8 @@ COPY src/MoAI/wwwroot ./wwwroot
 # 复制前端构建产物到 wwwroot（同源托管；与后端静态资源合并）
 COPY --from=frontend-builder /app/dist ./wwwroot
 
-# 内置配置模板：无挂载时由 entrypoint 复制为 /app/configs/system.json
-COPY configs/system.json /app/configs/system.json.template
+# 内置配置模板（compose 默认值 + 对外地址占位符）：无挂载时由 entrypoint 复制为 /app/configs/system.json
+COPY configs/system.example.json /app/configs/system.json.template
 
 # 复制 entrypoint 脚本
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh

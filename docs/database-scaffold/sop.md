@@ -20,7 +20,7 @@
    SQL
    ```
 
-2. 逆向生成（前置：`src/MoAI/appsettings.Development.json` 含 MoAI:Database，gitignore 需本地自建，可从 `configs/system.json` 抽 MoAI 节）：`dotnet run --project tool/PostgresScaffold`。分发目标**先删后拷**（[@DB-S23](./bdd.md#db-s23)），跑前先提交工作区。**以 `__` 开头的运行时动态表会自动跳过**（[@DB-S24](./bdd.md#db-s24)）；需要额外排除其他前缀时改 `Program.cs` 的 `IgnoredTableNamePrefixes`。
+2. 逆向生成（前置：`src/MoAI/appsettings.Development.json` 含 MoAI:Database，gitignore 需本地自建，可从 `configs/system.example.json` 或 `.env` 抽 MoAI 节）：`dotnet run --project tool/PostgresScaffold`。分发目标**先删后拷**（[@DB-S23](./bdd.md#db-s23)），跑前先提交工作区。**以 `__` 开头的运行时动态表会自动跳过**（[@DB-S24](./bdd.md#db-s24)）；需要额外排除其他前缀时改 `Program.cs` 的 `IgnoredTableNamePrefixes`。
 3. 生成的实体类补 `: IFullAudited`（模板已自动 using MoAI.Database.Audits）；不补则无软删过滤与审计填充。
 4. （可选）加种子：`Seed/XxxSeed.Apply(modelBuilder)` 并注册进 SeedData，**显式指定 Id**（配合启动期序列重置，[@DB-S7](./bdd.md#db-s7)）。
 5. `dotnet build src/MoAI/MoAI.csproj` 0 错误；重建本地库（第 2 节）验证建表；业务模块注入 `DatabaseContext` 使用 `DbSet<DemoEntity>`。

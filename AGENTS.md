@@ -69,7 +69,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 - 后端：`cd src/MoAI && dotnet run`，默认 **5000**（同监听 5001），取自 `MoAI:Port`；`MAI_FILE=... ASPNETCORE_ENVIRONMENT=Development dotnet run` 可覆盖
 - 文档：`http://127.0.0.1:5000/openapi/v1.json` ｜ Scalar：`/scalar/v1`
 - 前端：`cd ui && npm run dev`（4000）
-- 一体部署：`docker compose up -d`（postgres 5432、redis 6379、rabbitmq 5672/15672、**rustfs 9000/9001**、opensandbox-server 18123、moai 8080）；配置经 `configs/system.json` 穿透映射注入。详见 [docs/deployment/docker.md](./docs/deployment/docker.md)。图数据库（Memgraph）不内置，按需接入
+- 一体部署：`bash deploy/deploy-compose.sh`（postgres 5432、redis 6379、rabbitmq 5672/15672、**rustfs 9000/9001**、opensandbox-server 18123、moai 8080）；配置以 `.env` 为来源自动生成 `configs/system.json` 后挂载注入。详见 [docs/deployment/docker.md](./docs/deployment/docker.md)。图数据库（Memgraph）不内置，按需接入
 - 种子账号：admin / abcd123456（root）
 - git 需代理：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 fetch`
 

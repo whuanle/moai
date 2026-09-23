@@ -22,74 +22,69 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 - 已放行端口：`8080`（MoAI）、`9000/9001`（RustFS，形态 B）、`18123`（OpenSandbox，形态 B）
 - 内存建议 ≥ 2 GB（含 RustFS 与 OpenSandbox）；沙箱运行时另需 Docker 可用磁盘空间
 
-## 3. 配置文件 `configs/system.json`（必读）
+## 3. 配置生成：`.env` → `configs/system.json`（必读）
 
-**无论哪种部署方式，都必须把 `system.json` 映射进容器**，后端通过 `MAI_FILE`（默认 `/app/configs/system.json`）加载：
+Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.sh` 生成应用配置并挂载进容器，**无需手写 `system.json`**：
 
-- **Compose**：`docker-compose.yml` 声明 `${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro`，源路径由 `.env` 的 `MOAI_CONFIG_FILE` 指定（默认 `./configs/system.json`，可填绝对路径）
-- **Docker run**：显式 `-v $(pwd)/configs/system.json:/app/configs/system.json:ro`
-- 未挂载时回退到镜像内置模板（`configs/system.json` 打包为 `/app/configs/system.json.template`）
+- 生成路径 = `.env` 的 `MOAI_CONFIG_FILE`（默认 `./configs/system.json`，可填绝对路径）；每次生成前把旧文件备份为 `<路径>.bak`。
+- `docker-compose.yml` 挂载 `${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro`；后端通过 `MAI_FILE`（默认 `/app/configs/system.json`）加载。
+- 仓库内 `configs/system.example.json` 是参考模板，也是镜像内置兜底（无挂载时复制为 `/app/configs/system.json.template`）。
 
-模板已按最新 `appsettings.Development.json` 结构生成，并对 compose 做了「零手工改」适配：
+`.env` 中与配置相关的变量：
 
-- 连接串/端口全部指向 compose 服务名：`postgres`、`redis`、`rabbitmq`、`opensandbox-server`、`rustfs`。
-- 对外地址使用占位符，由容器 entrypoint 启动时替换（无需手工改 IP）：
-  - `__MOAI_HOST__` ← `MOAI_HOST`（对外访问主机；`deploy-compose.sh` 会自动探测本机 IP）
-  - `__MOAI_PORT__` ← `MOAI_PORT`（MoAI 暴露端口，默认 8080）
-  - `__S3_PORT__` ← `S3_PORT`（对象存储暴露端口，默认 9000）
+| 变量 | 作用 | 默认 |
+|---|---|---|
+| `MOAI_HOST` | 对外访问主机（IP/域名），写入 `Server`/`WebUI` | 留空自动探测本机 IP |
+| `MOAI_PORT` | MoAI 对外端口，写入 `Server`/`WebUI` | `8080` |
+| `MOAI_AES_KEY` | AES 加密密钥 | `please-change-this-aes-key` |
+| `POSTGRES_*` / `RABBITMQ_*` | 数据库 / MQ 连接（host 固定为 compose 服务名） | 见 `.env.example` |
+| `S3_ENDPOINT` | 对象存储对外地址（**自定义域名 / 外部 OSS**）；留空用 `http://${MOAI_HOST}:${RUSTFS_PORT}` | 空 |
+| `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_ACCESS_KEY_SECRET` | 桶与凭据 | `moai` / `moaiadmin` / `moaiadmin123` |
+| `RUSTFS_PORT` | 内置 RustFS 对外端口 | `9000` |
+| `OPENSANDBOX_*` | 沙箱镜像与超时 | 见 `.env.example` |
+| `OTLP_*` | 可观测性（留空禁用） | 空 |
+
+生成的配置形如：
 
 ```jsonc
 {
   "MoAI": {
     "Port": 8080,
-    "Server": "http://__MOAI_HOST__:__MOAI_PORT__",   // 对外访问地址（OAuth 回调/静态资源前缀）
-    "WebUI":  "http://__MOAI_HOST__:__MOAI_PORT__",   // 前端地址（同源部署与 Server 相同）
-    "AES":    "please-change-this-aes-key",           // 生产建议改为随机串（不改也能跑）
-    "Database": "Database=moai;Host=postgres;Password=moai123456;Port=5432;Username=postgres;Search Path=public",
+    "Server": "http://<MOAI_HOST>:<MOAI_PORT>",
+    "WebUI":  "http://<MOAI_HOST>:<MOAI_PORT>",
+    "AES": "<MOAI_AES_KEY>",
+    "Database": "Database=<POSTGRES_DB>;Host=postgres;Password=<POSTGRES_PASSWORD>;Port=5432;Username=<POSTGRES_USER>;Search Path=public",
     "Redis":    "redis:6379",
-    "RabbitMQ": "amqp://guest:guest@rabbitmq:5672",
-    "OpenSandBox": {
-      "Address": "http://opensandbox-server:8090",    // 单容器部署改为 http://<host>:18123
-      "ApiKey":  "",
-      "Image":   "opensandbox/code-interpreter:v1.1.0",
-      "TimeoutSeconds": 900,
-      "RenewThresholdSeconds": 300
-    },
-    "Storage": {
-      "Endpoint": "http://__MOAI_HOST__:__S3_PORT__", // 见 3.1；自动解析为浏览器可达地址
-      "ForcePathStyle": true,
-      "Bucket": "moai",
-      "AccessKeyId": "moaiadmin",
-      "AccessKeySecret": "moaiadmin123"
-    },
+    "RabbitMQ": "amqp://<RABBITMQ_USER>:<RABBITMQ_PASSWORD>@rabbitmq:5672",
+    "OpenSandBox": { "Address": "http://opensandbox-server:8090", "Image": "...", "TimeoutSeconds": 900, "RenewThresholdSeconds": 300 },
+    "Storage": { "Endpoint": "<S3_ENDPOINT 或 http://<MOAI_HOST>:<RUSTFS_PORT>>", "ForcePathStyle": true, "Bucket": "...", "AccessKeyId": "...", "AccessKeySecret": "..." },
     "MaxUploadFileSize": 104857600,
     "OTLP": { "Trace": "", "Metrics": "", "Protocol": 0 }
   },
-  "Serilog": { /* 日志配置，见模板 */ }
+  "Serilog": { /* 固定日志配置 */ }
 }
 ```
 
-> 若把占位符换成写死的值，请自行保证该地址对「容器与浏览器」都可达。
-
 ### 3.1 存储端点与访问主机（重要）
 
-对象存储为**纯 S3 实现**，`Storage.Endpoint` 的 host 会直接出现在**预签名上传/下载 URL** 中，必须**同时被 MoAI 容器和浏览器（上传客户端）可达**；`Server` 同样会被前端用于拼接 `/static/{objectKey}` 访问地址。因此二者都应为「浏览器访问 MoAI 的地址」：
+对象存储为**纯 S3 实现**，`Storage.Endpoint` 的 host 会直接出现在**预签名上传/下载 URL** 中，必须**同时被 MoAI 容器和浏览器（上传客户端）可达**；`Server` 同样会被前端用于拼接 `/static/{objectKey}` 访问地址。
 
-- 默认（推荐）：保持占位符，`deploy-compose.sh` 自动探测本机 IP → 容器与浏览器都可达。
-- 从公网域名访问：在 `.env` 设 `MOAI_HOST=moai.example.com`（改过端口再加 `MOAI_PORT`）。
+- 默认：`deploy-compose.sh` 自动探测本机 IP，`Endpoint = http://<本机IP>:9000` → 容器与浏览器都可达。
+- 自定义域名 / 外部 OSS：设 `S3_ENDPOINT=https://s3.example.com`（须容器能解析且浏览器可达；外部 OSS 直接填其 endpoint）。
 - 不要写 `rustfs:9000`（浏览器解析不了）或 `127.0.0.1`（容器访问的是自身）。
 
-### 3.2 单容器部署时的连接串
+### 3.2 单容器部署时的配置
 
-形态 A 下数据库/Redis/RabbitMQ/OSS 都在宿主机或外部，`system.json` 中的 host 改为对应地址；若依赖跑在同一宿主机上，容器内可用 `host.docker.internal`（Linux 需 `--add-host host.docker.internal:host-gateway`）。
+形态 A 没有 `deploy-compose.sh`：复制 `configs/system.example.json` 为 `configs/system.json`，按外部服务改 host（数据库/Redis/MQ/OSS），或用 `-e MOAI_HOST` 注入对外地址；若依赖跑在同一宿主机上，容器内可用 `host.docker.internal`（Linux 需 `--add-host host.docker.internal:host-gateway`）。
 
 ## 4. 形态 A：Docker 单容器部署
 
 只需部署 `moai` 一个容器：
 
 ```bash
-# 1) 准备配置：Database/Redis/RabbitMQ/Storage/OpenSandBox 的 host 需指向你的外部服务
-#    （对外地址可保持模板占位符，由 -e MOAI_HOST 注入；也可直接改成具体值）
+# 1) 准备配置：cp configs/system.example.json configs/system.json，
+#    再把 Database/Redis/RabbitMQ/Storage/OpenSandBox 的 host 改成你的外部服务
+#    （对外地址可用 -e MOAI_HOST 注入，也可直接写死）
 # 2) 启动
 docker run -d \
   --name moai \
@@ -118,10 +113,9 @@ curl -fsS http://localhost:8080/api/common/serverinfo
 > **数据库镜像硬约束**：必须用 `pgvector/pgvector:pg16`（或自带 pgvector 的镜像），**不能用官方 `postgres` 镜像**。MoAI 依赖 `CREATE EXTENSION vector`（见 `init-pgvector.sql`），裸 `postgres` 镜像无该扩展，建库即失败。形态 A 使用外部数据库时同样要求已安装 pgvector 扩展。
 
 ```bash
-cp .env.example .env          # 按需修改基础设施账号/端口（MOAI_HOST 留空会自动探测）
-# configs/system.json 默认即可（对外地址由 MOAI_HOST 自动注入）
-bash deploy/deploy-compose.sh # 自动探测主机 → 预拉沙箱镜像 → 拉取/构建 → 启动
-# 或手动：
+cp .env.example .env          # 按需修改账号/端口；MOAI_HOST 留空会自动探测
+bash deploy/deploy-compose.sh # 按 .env 生成配置 → 预拉沙箱镜像 → 拉取/构建 → 启动
+# 或手动（需已生成 configs/system.json）：
 docker compose up -d
 ```
 
@@ -142,7 +136,7 @@ docker compose down -v         # 停止并删除数据卷（危险）
 
 - 镜像 `rustfs/rustfs:latest`，S3 API `:9000`，控制台 `:9001`，凭据由 `RUSTFS_ACCESS_KEY/RUSTFS_SECRET_KEY` 指定（`.env` 的 `S3_*`）。
 - `rustfs-init` 一次性容器等待 RustFS 就绪后幂等创建桶 `S3_BUCKET`（默认 `moai`）。
-- 使用外部 OSS（阿里云 OSS / S3 / COS 等）时：修改 `system.json` 的 `Storage`，并可从 compose 删除 `rustfs`/`rustfs-init`。
+- 使用外部 OSS（阿里云 OSS / S3 / COS 等）时：在 `.env` 设 `S3_ENDPOINT` 与 `S3_*`，可从 compose 删除 `rustfs`/`rustfs-init`。
 
 ### 5.2 OpenSandbox 沙箱
 

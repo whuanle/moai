@@ -27,7 +27,7 @@ FROM base AS final
 WORKDIR /app
 RUN mkdir -p /app/configs /app/files
 COPY --from=publish /app/publish .
-COPY configs/system.json /app/configs/system.json.template
+COPY configs/system.example.json /app/configs/system.json.template
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 ENV MAI_FILE=/app/configs/system.json

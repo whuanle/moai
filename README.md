@@ -75,13 +75,14 @@ MoAI 是一个功能丰富的开源 AI 应用平台，支持多种主流 AI 模�
 **方式一：Docker Compose 一体部署**（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
 
 ```bash
-cp .env.example .env          # 按需修改基础设施账号/端口；MOAI_HOST 留空会自动探测
-bash deploy/deploy-compose.sh # 自动探测主机 + 预拉沙箱镜像 + 拉取/构建 + 启动
+cp .env.example .env          # 按需修改账号/端口；MOAI_HOST 留空会自动探测
+bash deploy/deploy-compose.sh # 按 .env 生成配置 + 预拉沙箱镜像 + 拉取/构建 + 启动
 ```
 
 **方式二：Docker 单容器**（仅前后端；外部提供 PostgreSQL/Redis/RabbitMQ/OSS）
 
 ```bash
+cp configs/system.example.json configs/system.json   # 再按外部服务改 host
 docker run -d --name moai -p 8080:8080 \
   --add-host host.docker.internal:host-gateway \
   -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
@@ -89,7 +90,7 @@ docker run -d --name moai -p 8080:8080 \
   whuanle/moai:latest
 ```
 
-> 无论哪种方式，都必须把 `configs/system.json` 映射进容器（`MAI_FILE` 默认 `/app/configs/system.json`）。前端已编译进后端 `wwwroot` 同源托管，无需单独部署前端。
+> Compose 方式以 `.env` 为唯一配置来源（脚本生成 `configs/system.json`，无需手写）；前端已编译进后端 `wwwroot` 同源托管，无需单独部署前端。
 
 ### 服务组件（Compose）
 
@@ -151,7 +152,7 @@ npm run build
 
 ## 配置说明
 
-详细配置请参考 `configs/system.json`（模板）与 [docs/deployment/docker.md](./docs/deployment/docker.md)，主要配置项：
+详细配置见 [docs/deployment/docker.md](./docs/deployment/docker.md)：Compose 部署以 `.env` 为来源自动生成 `configs/system.json`（参考模板 `configs/system.example.json`）。主要配置项：
 
 - **Server / WebUI**: 服务端与前端访问地址
 - **AES**: 敏感数据加密密钥

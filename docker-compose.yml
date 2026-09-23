@@ -4,9 +4,9 @@
 #
 # 说明：
 #   - moai 镜像内含前端静态资源（wwwroot），由 .NET 同源托管，无前后端分离。
-#   - 配置文件通过 bind-mount 注入：./configs/system.json -> /app/configs/system.json
-#   - 图数据库（Memgraph/Neo4j）不内置，知识图谱按需接入，部署方式见 docs/deployment/docker.md。
-#   - 启动：cp .env.example .env && docker compose up -d
+#   - 配置由 deploy-compose.sh 按 .env 生成（默认 ./configs/system.json）并挂载进容器
+#   - 图数据库（Memgraph/Neo4j）不内置，知识图谱按需接入（见 docs/deployment/docker.md）
+#   - 启动：cp .env.example .env && bash deploy/deploy-compose.sh
 # ============================================================
 name: moai
 

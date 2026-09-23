@@ -391,3 +391,7 @@ local-dev/backend-*.log
 # Docker Compose 环境变量（含基础设施密码，勿提交）
 .env
 .env.local
+
+# 由 deploy/deploy-compose.sh 从 .env 生成的运行时配置（模板见 configs/system.example.json）
+/configs/system.json
+/configs/system.runtime.json

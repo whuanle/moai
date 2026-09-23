@@ -88,7 +88,7 @@ Feature: 本地开发环境
 Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
   @DEP-S13 @manual
   Scenario: Compose 一体启动
-    Given .env 与 configs/system.json 已按环境准备
+    Given .env 已按环境准备
     When 执行 docker compose up -d
     Then postgres/redis/rabbitmq/rustfs/opensandbox-server/moai 均启动
     And moai 在 postgres/redis/rabbitmq healthy 且 rustfs-init 成功后才启动
@@ -100,12 +100,12 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Then 幂等创建桶 S3_BUCKET（默认 moai），MoAI 存储可用
 
   @DEP-S15 @manual
-  Scenario: system.json 穿透映射与对外地址占位符
-    Given 宿主机存在 configs/system.json
-    When 启动 moai 容器
-    Then 容器内 /app/configs/system.json 为宿主机文件内容且 MAI_FILE 指向它
-    And 配置中的 __MOAI_HOST__/__MOAI_PORT__/__S3_PORT__ 按环境变量替换为运行时配置
-    But 宿主机缺失该文件时容器启动失败并给出明确错误
+  Scenario: 由 .env 生成并挂载 system.json
+    Given .env 已配置 MOAI_HOST/S3_ENDPOINT 等
+    When 执行 deploy-compose.sh
+    Then 按 MOAI_CONFIG_FILE（默认 configs/system.json）生成配置，Server/WebUI/Storage.Endpoint 取自 .env
+    And compose 将该文件挂载到容器 /app/configs/system.json（MAI_FILE）
+    But 未生成/缺失该文件时容器启动失败并给出明确错误
 
   @DEP-S16 @manual
   Scenario: OpenSandbox 独立容器与沙箱镜像预拉
