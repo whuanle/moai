@@ -1,27 +1,31 @@
 {
   "MoAI": {
+    "Name": "MoAI",
     "Port": 8080,
-    "Server": "http://127.0.0.1:5000",
-    "WebUI": "http://127.0.0.1:4000",
-    "AES": "abcdef1234",
-    "DBType": "postgres",
-    "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public",
-    "Redis": "192.168.50.199:6379",
-    "Wiki": {
-      "DBType": "postgres",
-      "Database": "Database=moai_wiki;Host=127.0.0.1;Password=123456;Port=5432;Username=postgres;Search Path=public"
-    },
-    "RabbitMQ": "amqp://guest:guest@127.0.0.1:5672",
+    "Server": "http://localhost:8080",
+    "WebUI": "http://localhost:8080",
+    "AES": "please-change-this-aes-key",
+    "Database": "Database=moai;Host=postgres;Password=moai123456;Port=5432;Username=postgres;Search Path=public",
+    "Redis": "redis:6379",
+    "RabbitMQ": "amqp://guest:guest@rabbitmq:5672",
     "OpenSandBox": {
-      "Address": "http://192.168.50.199:18123",
-      "TimeoutSeconds": 900
+      "Address": "http://opensandbox-server:8090",
+      "ApiKey": "",
+      "Image": "opensandbox/code-interpreter:v1.1.0",
+      "TimeoutSeconds": 900,
+      "RenewThresholdSeconds": 300
     },
     "Storage": {
-      "LocalPath": "E:\\configs\\maomi"
+      "Endpoint": "http://rustfs:9000",
+      "ForcePathStyle": true,
+      "Bucket": "moai",
+      "AccessKeyId": "moaiadmin",
+      "AccessKeySecret": "moaiadmin123"
     },
+    "MaxUploadFileSize": 104857600,
     "OTLP": {
-      "Trace": "http://127.0.0.1:4012/v1/traces",
-      "Metrics": "http://127.0.0.1:4012/v1/metrics",
+      "Trace": "",
+      "Metrics": "",
       "Protocol": 0
     }
   },

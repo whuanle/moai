@@ -1,6 +1,6 @@
 # 部署与本地环境（Deployment）操作手册（SOP）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md)（验收场景编号） ｜ [TDD](./tdd.md)（验证映射与回归命令） ｜ [SOP](./sop.md)。缺陷编号 D1~D5 见 [SDD 已知缺陷表](./sdd.md)。
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md)（验收场景编号） ｜ [TDD](./tdd.md)（验证映射与回归命令） ｜ [SOP](./sop.md) ｜ **详细部署手册：[docker.md](./docker.md)**。缺陷编号 D1~D8 见 [SDD 已知缺陷表](./sdd.md)。
 
 ## 1. 当前可用形态：本地开发环境
 
@@ -18,22 +18,36 @@ cd ui && npm run dev
 
 种子账号：admin / abcd123456（root）。验收场景：[@DEP-S12](./bdd.md#dep-s12)。
 
-## 2. Docker Compose 部署（✅ 2026-09-03 容器实测通过）
+## 2. Docker 部署（详见 [docker.md](./docker.md)）
 
-D1（路径/镜像/MAI_FILE）、D2（OTLP 空值容错）、D3（entrypoint 生成 S3 段）均已修复并实测，见 [TDD 修复记录](./tdd.md)。`.env` 需配置：`MOAI_SERVER_URL/MOAI_WEBUI_URL`（实际访问地址）、`MOAI_AES_KEY`（随机串）、**`S3_*` 五项（必配，存储为纯 S3 实现，不配则上传接口 500）**；OTLP 可选（勿照抄 `.env.example` 的 127.0.0.1:4012，见 D4，[@DEP-S6](./bdd.md#dep-s6)）。
+两种形态（[@DEP-S13](./bdd.md#dep-s13) / [@DEP-S17](./bdd.md#dep-s17)）：
 
 ```bash
-cp .env.example .env && vim .env
-docker compose up -d
-docker compose logs -f moai         # 确认启动无异常
+# 形态 B：Compose 一体（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
+cp .env.example .env          # 基础设施账号/端口
+vim configs/system.json       # 应用配置（Server/WebUI/AES/Storage.Endpoint 等）
+bash deploy/deploy-compose.sh # 预拉沙箱镜像 + 拉取/构建 + 启动
 curl http://localhost:8080/api/common/serverinfo   # 冒烟
+
+# 形态 A：Docker 单容器（仅前后端，外部提供 PG/Redis/MQ/OSS）
+docker run -d --name moai -p 8080:8080 \
+  --add-host host.docker.internal:host-gateway \
+  -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
+  -v moai_files:/app/files \
+  whuanle/moai:latest
 ```
+
+要点：**`configs/system.json` 必须穿透映射进容器**（缺文件容器会明确报错）；存储为纯 S3 实现，`Storage.Endpoint` 须浏览器可达（见 [docker.md 3.1](./docker.md)）；`rustfs-init` 自动建桶；OpenSandbox 为独立容器、沙箱镜像只拉不部署；图数据库按需接入（[docker.md 第 7 节](./docker.md)）。
 
 ## 3. 升级 / 回滚
 
 ```bash
-git pull && docker compose build moai && docker compose up -d moai
-# 回滚：镜像按 tag 固定后 down/up 对应 tag；数据在 named volume，不受影响
+# 发布方：构建并推送 whuanle/moai:<tag> 与 :latest
+bash deploy/publish.sh
+
+# 部署方：拉取新镜像并重启
+docker compose pull moai && docker compose up -d moai
+# 回滚：把 MOAI_IMAGE 固定到旧 tag 后 up -d；数据在 named volume，不受影响
 ```
 
 ## 4. 备份与恢复
@@ -41,17 +55,23 @@ git pull && docker compose build moai && docker compose up -d moai
 ```bash
 docker exec moai-postgres pg_dump -U postgres moai > moai-$(date +%F).sql
 # 恢复：cat moai-2026-09-02.sql | docker exec -i moai-postgres psql -U postgres -d moai
-# 上传文件（本地开发形态在 MinIO 桶 moai；容器形态在 moai_files volume）
-docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-files.tgz /data
+# 对象存储（RustFS）与上传文件卷；卷名前缀为 compose 项目名 moai_
+docker run --rm -v moai_rustfs_data:/data -v "$PWD":/backup alpine tar czf /backup/rustfs-data.tgz /data
+docker run --rm -v moai_moai_files:/data -v "$PWD":/backup alpine tar czf /backup/moai-files.tgz /data
 ```
 
 ## 5. 排障
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
+| 容器报 `$MAI_FILE 是目录` / 启动即退 | 宿主机缺 `configs/system.json`，docker 把挂载点建成了目录 | 补齐文件；挂载须 `文件:文件`（[@DEP-S15](./bdd.md#dep-s15)，[docker.md 3](./docker.md)） |
+| 上传 404 NoSuchBucket | RustFS 桶未创建 | 查 `docker logs moai-rustfs-init`；或控制台/`mc mb` 手动建桶（[@DEP-S14](./bdd.md#dep-s14)） |
+| 上传 500 或浏览器直传 403/失败 | `Storage.Endpoint` 仅容器可达（如 `rustfs:9000`） | 改为浏览器可达地址（[docker.md 3.1](./docker.md)） |
+| 沙箱工具超时 / 创建后连不上 | MoAI 容器无法回连宿主机端口 | 给 moai 加 `host.docker.internal:host-gateway`；确认 `sandbox.toml` `resolve_internal=false` |
+| `opensandbox-server` 退出 | 未配 API Key 且未确认 | `OPENSANDBOX_INSECURE_SERVER=YES` 或配置 `api_key`（[@DEP-S16](./bdd.md#dep-s16)） |
 | docker build 在 COPY ui/moai 失败 | 历史缺陷 D1（**已修复**，现路径为 ui/） | 若复现说明镜像基线过旧，核对 Dockerfile（[@DEP-S1](./bdd.md#dep-s1)） |
 | moai 容器反复重启，日志含 Uri/FormatException | 历史缺陷 D2（**已修复**，空值自动跳过） | 检查是否运行旧镜像；新代码 OTLP 未配置时不再抛异常（[@DEP-S4](./bdd.md#dep-s4)） |
-| 容器上传文件不在对象存储 | 历史缺陷 D3（**已修复**：entrypoint 生成 S3 段） | `.env` 配 S3_* 五项；预签名 host 须同时被应用与客户端可达（见 sdd 缺陷表） |
+| 容器上传文件不在对象存储 | 历史缺陷 D3（**已修复**：`configs/system.json` 模板携带 `Storage` 五项） | 在 `configs/system.json` 配 `Storage`；预签名 host 须同时被应用与客户端可达（见 [docker.md 3.1](./docker.md)） |
 | 容器启动后自行退出，日志 `ACCESS_REFUSED`（RabbitMQ PLAIN） | MQ 凭据与 broker 不符（默认 guest/guest 常被拒） | 传 `RABBITMQ_USER/RABBITMQ_PASSWORD`（Maomi.MQ 消费者失败会 StopHost） |
 | 启动日志 `Cannot load library libgssapi_krb5.so.2` | 缺陷 D6：aspnet:10.0 无 Kerberos 库 | 实测不影响功能，忽略；要消除需 final 加装 libgssapi-krb5-2 |
 | Apple Silicon `docker build` 报 SIGSEGV/MSB4184（amd64） | QEMU 仿真伪故障 | 用原生 arm64 构建（默认平台）；见 sdd「Apple Silicon 注意事项」 |
@@ -66,7 +86,8 @@ docker run --rm -v moai_files:/data -v $PWD:/backup alpine tar czf /backup/moai-
 2. 后端本地启动 + `/api/common/serverinfo` 冒烟 200（[@DEP-S11](./bdd.md#dep-s11)）。
 3. [local-dev/user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs)（后端 5210 运行中）全绿。
 4. 前端 `npm run typecheck && npm run lint && npm run test` 全绿。
-5. （修复 D1 后新增）`docker compose build moai` 成功并起容器，页面可登录（[@DEP-S2](./bdd.md#dep-s2)）。
+5. `docker compose up -d` 后全服务 Up、`rustfs-init` 建桶成功、`system.json` 挂载生效、页面可登录（[@DEP-S13](./bdd.md#dep-s13)~[@DEP-S16](./bdd.md#dep-s16)）。
+6. `bash deploy/publish.sh` 推送成功后服务器可 `docker compose pull moai`（[@DEP-S18](./bdd.md#dep-s18)）。
 
 ## 7. 远端部署实例：154 服务器（154.8.214.31）
 

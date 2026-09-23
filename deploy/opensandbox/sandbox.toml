@@ -1,0 +1,49 @@
+# ============================================================
+# OpenSandbox 生命周期服务配置（docker-compose 一体部署）
+# 挂载到容器：/etc/opensandbox/config.toml（SANDBOX_CONFIG_PATH）
+# 参考：https://github.com/opensandbox-group/OpenSandbox/blob/main/server/configuration.md
+# ============================================================
+
+[server]
+host = "0.0.0.0"
+port = 8090
+max_sandbox_timeout_seconds = 86400
+# 留空表示不启用 API Key 鉴权；容器内需 OPENSANDBOX_INSECURE_SERVER=YES（compose 已设置）。
+# 生产环境建议设置：api_key = "your-secret-key"，并同步配置 MoAI:OpenSandBox:ApiKey。
+# api_key = ""
+
+[proxy]
+# 服务端在容器中运行，且沙箱容器由宿主机 Docker 创建（挂载 docker.sock）。
+# 服务端无法直接路由到沙箱的 bridge 容器 IP，故改为返回宿主机已发布端口。
+resolve_internal = false
+
+[log]
+level = "INFO"
+
+[runtime]
+type = "docker"
+execd_image = "opensandbox/execd:v1.1.0"
+
+[store]
+# 生命周期服务自身的持久化（SQLite），挂载到 compose 卷 opensandbox_data。
+type = "sqlite"
+path = "/var/lib/opensandbox/opensandbox.db"
+
+[docker]
+network_mode = "bridge"
+# 服务端运行在容器内时，返回给客户端的沙箱地址需要能回到宿主机。
+host_ip = "host.docker.internal"
+# 沙箱发布到宿主机的端口范围（每个沙箱 2~3 个端口）。
+port_range_min = 40000
+port_range_max = 60000
+drop_capabilities = ["AUDIT_WRITE", "MKNOD", "NET_ADMIN", "NET_RAW", "SYS_ADMIN", "SYS_MODULE", "SYS_PTRACE", "SYS_TIME", "SYS_TTY_CONFIG"]
+no_new_privileges = true
+pids_limit = 4096
+
+[ingress]
+mode = "direct"
+
+[egress]
+image = "opensandbox/egress:v1.1.7"
+mode = "dns"
+readiness_timeout_seconds = 30.0

@@ -68,77 +68,47 @@ MoAI 是一个功能丰富的开源 AI 应用平台，支持多种主流 AI 模�
 
 ## 快速开始
 
-### Docker Compose 一键部署
+### Docker 部署
 
-1. 克隆项目
+支持两种方式，完整说明见 [docs/deployment/docker.md](./docs/deployment/docker.md)。
 
-```bash
-git clone https://github.com/AIDotNet/MoAI.git
-cd MoAI
-```
-
-2. 创建环境配置文件
+**方式一：Docker Compose 一体部署**（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # 按需修改基础设施账号/端口
+vim configs/system.json       # 应用配置：Server/WebUI/AES/Storage.Endpoint 等
+bash deploy/deploy-compose.sh # 预拉沙箱镜像 + 拉取/构建 + 启动
 ```
 
-3. 编辑 `.env` 文件，配置必要参数
-
-```env
-# 数据库配置
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=moai123456
-POSTGRES_DB=moai
-
-# Redis 配置 (使用默认即可)
-
-# RabbitMQ 配置
-RABBITMQ_USER=guest
-RABBITMQ_PASSWORD=guest
-
-# MoAI 服务配置 - 修改为你的实际访问地址
-MOAI_SERVER_URL=http://your-domain:8080
-MOAI_WEBUI_URL=http://your-domain:8080
-MOAI_AES_KEY=your_aes_key_here
-
-# MoAI 服务端口，容器暴露的端口
-MOAI_PORT=8080
-```
-
-4. 启动服务
+**方式二：Docker 单容器**（仅前后端；外部提供 PostgreSQL/Redis/RabbitMQ/OSS）
 
 ```bash
-docker-compose up -d
+docker run -d --name moai -p 8080:8080 \
+  --add-host host.docker.internal:host-gateway \
+  -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
+  -v moai_files:/app/files \
+  whuanle/moai:latest
 ```
 
-5. 访问服务
+> 无论哪种方式，都必须把 `configs/system.json` 映射进容器（`MAI_FILE` 默认 `/app/configs/system.json`）。前端已编译进后端 `wwwroot` 同源托管，无需单独部署前端。
 
-- 后端 API: `http://localhost:8080`
-
-
-
-### 服务组件
-
-Docker Compose 包含以下服务：
+### 服务组件（Compose）
 
 | 服务 | 说明 | 默认端口 |
 |------|------|----------|
-| moai | MoAI 后端服务 | 8080 |
+| moai | MoAI 服务（前端 + 后端） | 8080 |
 | postgres | PostgreSQL + pgvector | 5432 |
 | redis | Redis 缓存 | 6379 |
 | rabbitmq | RabbitMQ 消息队列 | 5672 / 15672 |
+| rustfs | RustFS 对象存储（S3 兼容，替代 MinIO） | 9000 / 9001 |
+| opensandbox-server | OpenSandbox 沙箱服务（可选能力） | 18123 |
 
-### 自定义配置
+图数据库（Memgraph/Neo4j）不内置，知识图谱按需接入，见部署文档。
 
-如需自定义配置，可挂载配置文件：
+### 镜像发布
 
 ```bash
-docker run -d \
-  -v /your/config/path:/app/configs \
-  -e MAI_CONFIG=/app/configs/system.yaml \
-  -p 8080:8080 \
-  registry.cn-hangzhou.aliyuncs.com/whuanle/moai:latest
+bash deploy/publish.sh          # 构建并推送 whuanle/moai:<tag> 与 :latest
 ```
 
 ## 文档
@@ -168,7 +138,7 @@ dotnet run --project src/MoAI/MoAI.csproj
 ### 前端
 
 ```bash
-cd ui/moai
+cd ui
 
 # 安装依赖
 npm install
@@ -182,15 +152,16 @@ npm run build
 
 ## 配置说明
 
-详细配置请参考 `configs/` 目录下的模板文件，主要配置项：
+详细配置请参考 `configs/system.json`（模板）与 [docs/deployment/docker.md](./docs/deployment/docker.md)，主要配置项：
 
-- **Server**: 服务端访问地址
+- **Server / WebUI**: 服务端与前端访问地址
 - **AES**: 敏感数据加密密钥
-- **Database**: 数据库连接配置
+- **Database**: PostgreSQL（pgvector）连接配置
 - **Redis**: 缓存服务配置
-- **Wiki**: 向量数据库配置
-- **Message**: 消息队列配置
-- **Storage**: 文件存储配置
+- **RabbitMQ**: 消息队列配置
+- **Storage**: S3 兼容对象存储配置（RustFS/MinIO/OSS/S3）
+- **OpenSandBox**: 沙箱服务地址、镜像与超时
+- **OTLP**: 可观测性上报（可选）
 
 ## License
 

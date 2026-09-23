@@ -1,3 +1,15 @@
+# ============================================================
+# MoAI 一体部署（docker compose）
+#   postgres(pgvector) + redis + rabbitmq + rustfs(S3/OSS) + opensandbox-server + moai
+#
+# 说明：
+#   - moai 镜像内含前端静态资源（wwwroot），由 .NET 同源托管，无前后端分离。
+#   - 配置文件通过 bind-mount 注入：./configs/system.json -> /app/configs/system.json
+#   - 图数据库（Memgraph/Neo4j）不内置，知识图谱按需接入，部署方式见 docs/deployment/docker.md。
+#   - 启动：cp .env.example .env && docker compose up -d
+# ============================================================
+name: moai
+
 services:
   # PostgreSQL 数据库 (带 pgvector 向量扩展)
   postgres:
@@ -60,62 +72,108 @@ services:
     networks:
       - moai-network
 
-  # Memgraph 图数据库 (知识图谱模块，可选；社区版单库，多图谱经 kgId 逻辑隔离)
-  memgraph:
-    image: memgraph/memgraph-platform:latest
-    container_name: moai-memgraph
+  # RustFS 对象存储（S3 兼容，替代 MinIO）
+  # 控制台：http://<host>:9001    S3 API：http://<host>:9000
+  rustfs:
+    image: ${RUSTFS_IMAGE:-rustfs/rustfs:latest}
+    container_name: moai-rustfs
     restart: unless-stopped
+    command: ["/data"]
     environment:
-      # 社区版默认纯内存，必须开启快照持久化 + 启动恢复，否则容器重启丢图
-      MEMGRAPH: "--storage-snapshot-interval-sec=300 --storage-snapshot-on-exit=true"
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:-moaiadmin}
+      RUSTFS_SECRET_KEY: ${S3_ACCESS_KEY_SECRET:-moaiadmin123}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_OBS_LOGGER_LEVEL: error
+      RUSTFS_OBS_LOG_DIRECTORY: /var/log/rustfs/
     volumes:
-      - memgraph_data:/var/lib/memgraph
+      - rustfs_data:/data
+      - rustfs_logs:/var/log/rustfs
     ports:
-      - "${MEMGRAPH_BOLT_PORT:-7687}:7687"
-      # MgLab 可视化控制台：http://localhost:3000
-      - "${MEMGRAPH_LAB_PORT:-3000}:3000"
+      - "${RUSTFS_PORT:-9000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
     networks:
       - moai-network
 
-  # MoAI 后端服务
+  # 初始化 RustFS 存储桶（幂等；等待 rustfs 就绪后建桶）
+  # 注：不用 minio/mc（其镜像基于 ubi-micro，无 shell）；aws-cli 镜像自带 sh。
+  rustfs-init:
+    image: ${RUSTFS_INIT_IMAGE:-amazon/aws-cli:latest}
+    container_name: moai-rustfs-init
+    restart: "no"
+    depends_on:
+      rustfs:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        export AWS_ACCESS_KEY_ID="$$S3_ACCESS_KEY_ID"
+        export AWS_SECRET_ACCESS_KEY="$$S3_ACCESS_KEY_SECRET"
+        export AWS_DEFAULT_REGION="$$S3_REGION"
+        until aws --endpoint-url "http://rustfs:9000" s3api list-buckets >/dev/null 2>&1; do
+          echo "waiting for rustfs ..."
+          sleep 2
+        done
+        if ! aws --endpoint-url "http://rustfs:9000" s3api head-bucket --bucket "$$S3_BUCKET" >/dev/null 2>&1; then
+          aws --endpoint-url "http://rustfs:9000" s3 mb "s3://$$S3_BUCKET"
+        fi
+        echo "RustFS bucket $$S3_BUCKET ready"
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-moaiadmin}
+      S3_ACCESS_KEY_SECRET: ${S3_ACCESS_KEY_SECRET:-moaiadmin123}
+      S3_BUCKET: ${S3_BUCKET:-moai}
+      S3_REGION: ${S3_REGION:-us-east-1}
+    networks:
+      - moai-network
+
+  # OpenSandbox 生命周期服务（独立镜像；不把 python/docker 塞进 .NET 服务，避免容器逃逸面扩大）
+  # 通过挂载宿主机 docker.sock 按需创建沙箱容器；控制台 API：http://<host>:18123
+  opensandbox-server:
+    image: ${OPENSANDBOX_SERVER_IMAGE:-opensandbox/server:latest}
+    container_name: moai-opensandbox
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${OPENSANDBOX_PORT:-18123}:8090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./deploy/opensandbox/sandbox.toml:/etc/opensandbox/config.toml:ro
+      - opensandbox_data:/var/lib/opensandbox
+    environment:
+      SANDBOX_CONFIG_PATH: /etc/opensandbox/config.toml
+      # sandbox.toml 未配置 api_key 时必须显式确认（非交互容器）
+      OPENSANDBOX_INSECURE_SERVER: ${OPENSANDBOX_INSECURE_SERVER:-YES}
+    networks:
+      - moai-network
+
+  # 沙箱镜像（仅用于预拉取，不参与运行）：docker compose --profile sandbox-images pull sandbox-image
+  sandbox-image:
+    image: ${OPENSANDBOX_SANDBOX_IMAGE:-opensandbox/code-interpreter:v1.1.0}
+    profiles: ["sandbox-images"]
+    entrypoint: ["/bin/true"]
+    restart: "no"
+
+  # MoAI 后端服务（内含前端静态资源，同源托管）
   moai:
-    image: registry.cn-hangzhou.aliyuncs.com/whuanle/moai:latest
+    image: ${MOAI_IMAGE:-whuanle/moai:latest}
     build:
       context: .
       dockerfile: Dockerfile
     container_name: moai
     restart: unless-stopped
+    extra_hosts:
+      # 沙箱直连模式：服务端返回的沙箱地址为 host.docker.internal:<port>
+      - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      # 数据库配置
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-moai123456}
-      - POSTGRES_DB=${POSTGRES_DB:-moai}
-      # Redis 配置
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      # RabbitMQ 配置
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
-      # MoAI 配置 - 用户需要在 .env 中配置外部访问地址
-      - MOAI_SERVER_URL=${MOAI_SERVER_URL:-http://localhost:8080}
-      - MOAI_WEBUI_URL=${MOAI_WEBUI_URL:-http://localhost:8080}
-      - MOAI_AES_KEY=${MOAI_AES_KEY:-moai_aes_key_2024}
-      # OTLP 配置 (可选)
-      - OTLP_TRACE=${OTLP_TRACE:-}
-      - OTLP_METRICS=${OTLP_METRICS:-}
-      - OTLP_PROTOCOL=${OTLP_PROTOCOL:-0}
-      # S3 兼容对象存储（必配：存储实现为纯 S3，不配置则业务接口 500）
-      - S3_ENDPOINT=${S3_ENDPOINT:-}
-      - S3_FORCE_PATH_STYLE=${S3_FORCE_PATH_STYLE:-true}
-      - S3_BUCKET=${S3_BUCKET:-}
-      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
-      - S3_ACCESS_KEY_SECRET=${S3_ACCESS_KEY_SECRET:-}
+      - MAI_FILE=/app/configs/system.json
+      - TZ=${TZ:-Asia/Shanghai}
     volumes:
+      # 配置穿透映射（宿主机文件必须存在，否则 docker 会创建同名目录）
+      - ./configs/system.json:/app/configs/system.json:ro
       - moai_files:/app/files
     ports:
       - "${MOAI_PORT:-8080}:8080"
@@ -126,6 +184,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
+      opensandbox-server:
+        condition: service_started
     networks:
       - moai-network
 
@@ -133,8 +195,10 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  rustfs_data:
+  rustfs_logs:
+  opensandbox_data:
   moai_files:
-  memgraph_data:
 
 networks:
   moai-network:

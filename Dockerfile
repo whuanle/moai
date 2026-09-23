@@ -1,4 +1,5 @@
 # ==================== 前端构建阶段 ====================
+# 前端编译为静态资源，最终由 .NET 后端从 wwwroot 托管（同源，无前后端分离部署）。
 FROM node:22-slim AS frontend-builder
 
 # 注：依赖均为纯 JS/预编译二进制（antd/vite/kiota/playwright），无 node-gyp 原生编译需求，
@@ -18,7 +19,7 @@ COPY ui/ .
 # 重新安装依赖以解决 Rollup 可选依赖项问题
 RUN rm -rf node_modules package-lock.json && npm install
 
-# 构建应用
+# 构建应用（不注入 VITE_ServerUrl，生产走同源请求）
 RUN npm run build
 
 # ==================== 后端构建阶段 ====================
@@ -41,18 +42,27 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # 创建配置和文件目录
-RUN mkdir -p /app/configs /app/files /app/wwwroot
+RUN mkdir -p /app/configs /app/files
 
 # 复制后端发布文件
 COPY --from=backend-builder /app/publish .
 
-# 复制前端构建产物到 wwwroot
+# 后端自带静态资源（wwwroot/embed 悬浮对话组件等），显式复制避免依赖 publish 行为
+COPY src/MoAI/wwwroot ./wwwroot
+
+# 复制前端构建产物到 wwwroot（同源托管；与后端静态资源合并）
 COPY --from=frontend-builder /app/dist ./wwwroot
+
+# 内置配置模板：无挂载时由 entrypoint 复制为 /app/configs/system.json
+COPY configs/system.json /app/configs/system.json.template
 
 # 复制 entrypoint 脚本
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
+# 配置注入链：MAI_FILE（默认 /app/configs/system.json）→ 后端配置加载器
 ENV MAI_FILE=/app/configs/system.json
+
+EXPOSE 8080
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -64,10 +64,11 @@ Feature: compose 依赖编排（docker compose up）
 
 Feature: 配置加载优先级（MAI_FILE）
   @DEP-S10 @manual
-  Scenario: 容器内不设 MAI_FILE
-    Given 工作目录 /app 且存在 entrypoint 生成的 /app/configs/system.json
-    When 后端启动
-    Then 加载该回退路径的配置（Dockerfile 的 ENV MAI_CONFIG 为无效变量）
+  Scenario: 未挂载配置时的内置模板回退
+    Given 容器未挂载 configs/system.json 且未显式设置 MAI_FILE
+    When entrypoint 执行
+    Then 以内置 system.json.template 初始化 /app/configs/system.json
+    And 后端按 MAI_FILE 默认值加载该文件
 
   @DEP-S11 @manual
   Scenario: 本地开发显式注入 MAI_FILE
@@ -83,4 +84,44 @@ Feature: 本地开发环境
     When 后端 5210 启动、前端 4000 dev server 启动
     Then 前端经 VITE_ServerUrl 直连 5210 完成登录与业务请求
     And 上传文件走 MinIO（127.0.0.1:9000，桶 moai）
+
+Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
+  @DEP-S13 @manual
+  Scenario: Compose 一体启动
+    Given .env 与 configs/system.json 已按环境准备
+    When 执行 docker compose up -d
+    Then postgres/redis/rabbitmq/rustfs/opensandbox-server/moai 均启动
+    And moai 在 postgres/redis/rabbitmq healthy 且 rustfs-init 成功后才启动
+
+  @DEP-S14 @manual
+  Scenario: RustFS 替代 MinIO 并自动建桶
+    Given rustfs 数据卷为空
+    When rustfs 就绪后 rustfs-init 执行
+    Then 幂等创建桶 S3_BUCKET（默认 moai），MoAI 存储可用
+
+  @DEP-S15 @manual
+  Scenario: system.json 穿透映射
+    Given 宿主机存在 configs/system.json
+    When 启动 moai 容器
+    Then 容器内 /app/configs/system.json 为宿主机文件内容且 MAI_FILE 指向它
+    But 宿主机缺失该文件时容器启动失败并给出明确错误
+
+  @DEP-S16 @manual
+  Scenario: OpenSandbox 独立容器与沙箱镜像预拉
+    Given opensandbox-server 容器已挂载 docker.sock 与 sandbox.toml
+    When 部署脚本预拉 code-interpreter/execd/egress 镜像
+    Then 沙箱运行时无需再拉取镜像即可创建沙箱
+    And 沙箱容器本身不随部署启动
+
+  @DEP-S17 @manual
+  Scenario: 单容器 Docker 部署
+    Given 外部提供 PostgreSQL/Redis/RabbitMQ/OSS
+    When 以 -v system.json 启动 moai 单容器
+    Then serverinfo 200、SPA 可登录，无需部署前端容器
+
+  @DEP-S18 @manual
+  Scenario: 镜像发布到 Docker Hub
+    Given 已 docker login（免密推送）
+    When 执行 bash deploy/publish.sh
+    Then 推送 whuanle/moai:<tag> 与 whuanle/moai:latest
 ```

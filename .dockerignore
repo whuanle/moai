@@ -28,3 +28,20 @@ README.md
 !.git/config
 !.git/packed-refs
 !.git/refs/heads/**
+
+# 本地私有配置（含密码/IP，禁止打进镜像）
+**/appsettings.Development.json
+local-dev/
+.env
+
+# 非构建所需的大目录
+docs/
+tests/
+tool/
+tmp/
+.tmp/
+.superpowers/
+.workbuddy/
+agent-tools/
+ui/dist/
+*.log
