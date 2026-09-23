@@ -77,6 +77,56 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
 
 形态 A 没有 `deploy-compose.sh`：复制 `configs/system.example.json` 为 `configs/system.json`，按外部服务改 host（数据库/Redis/MQ/OSS），或用 `-e MOAI_HOST` 注入对外地址；若依赖跑在同一宿主机上，容器内可用 `host.docker.internal`（Linux 需 `--add-host host.docker.internal:host-gateway`）。
 
+### 3.3 浏览器直传跨域（CORS）
+
+前端是**直传对象存储**（预签名 PUT），当 MoAI 站点与对象存储域名不同源时，浏览器会先发 OPTIONS 预检，要求对象存储返回 `Access-Control-Allow-Origin` 等头，否则报：
+
+```
+Access to fetch at 'https://<oss-domain>/...' from origin 'https://<moai-domain>' has been blocked by CORS policy
+```
+
+**方式一（推荐，RustFS 自带）**：给 RustFS 设允许源，重启即可。
+
+```env
+# .env（compose 会传给 RustFS 的 RUSTFS_CORS_ALLOWED_ORIGINS）
+S3_CORS_ALLOWED_ORIGINS=https://moai.example.com
+```
+
+**方式二（对象存储前有 Caddy/nginx 反代时）**：在反代层放行预检并补响应头。Caddyfile 示例：
+
+```caddyfile
+moaioss.example.com {
+    # 预检直接 204 返回，不转发给对象存储
+    @preflight method OPTIONS
+    handle @preflight {
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, PUT, HEAD, POST, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization, x-amz-*, X-Amz-*"
+        header Access-Control-Max-Age "3600"
+        header Vary "Origin"
+        respond "" 204
+    }
+
+    # 实际请求也补上 CORS 头
+    header Access-Control-Allow-Origin "*"
+    header Access-Control-Expose-Headers "ETag, x-amz-request-id"
+    header Vary "Origin"
+
+    reverse_proxy rustfs:9000
+}
+```
+
+> 预签名直传不带 cookie，`Access-Control-Allow-Origin: *` 即可；若要按源收紧，把 `*` 换成 `https://moai.example.com`（或 `{http.request.header.Origin}`）。`reverse_proxy` 默认保留 Host，SigV4 签名（`host` 参与签名）仍有效，勿改写 Host。
+
+验证（应回显 `Access-Control-Allow-Origin`）：
+
+```bash
+curl -i -X OPTIONS "https://<oss-domain>/<bucket>/test.png" \
+  -H "Origin: https://<moai-domain>" \
+  -H "Access-Control-Request-Method: PUT" \
+  -H "Access-Control-Request-Headers: content-type"
+```
+
 ## 4. 形态 A：Docker 单容器部署
 
 只需部署 `moai` 一个容器：
