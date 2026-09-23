@@ -30,27 +30,33 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 - **Docker run**：显式 `-v $(pwd)/configs/system.json:/app/configs/system.json:ro`
 - 未挂载时回退到镜像内置模板（`configs/system.json` 打包为 `/app/configs/system.json.template`）
 
-模板已按最新 `appsettings.Development.json` 结构生成，关键字段：
+模板已按最新 `appsettings.Development.json` 结构生成，并对 compose 做了「零手工改」适配：
+
+- 连接串/端口全部指向 compose 服务名：`postgres`、`redis`、`rabbitmq`、`opensandbox-server`、`rustfs`。
+- 对外地址使用占位符，由容器 entrypoint 启动时替换（无需手工改 IP）：
+  - `__MOAI_HOST__` ← `MOAI_HOST`（对外访问主机；`deploy-compose.sh` 会自动探测本机 IP）
+  - `__MOAI_PORT__` ← `MOAI_PORT`（MoAI 暴露端口，默认 8080）
+  - `__S3_PORT__` ← `S3_PORT`（对象存储暴露端口，默认 9000）
 
 ```jsonc
 {
   "MoAI": {
     "Port": 8080,
-    "Server": "http://localhost:8080",   // 对外访问地址（影响 OAuth 回调等），按实际域名/IP 修改
-    "WebUI":  "http://localhost:8080",   // 前端地址（同源部署与 Server 相同）
-    "AES":    "please-change-this-aes-key", // 生产必须改为随机串
+    "Server": "http://__MOAI_HOST__:__MOAI_PORT__",   // 对外访问地址（OAuth 回调/静态资源前缀）
+    "WebUI":  "http://__MOAI_HOST__:__MOAI_PORT__",   // 前端地址（同源部署与 Server 相同）
+    "AES":    "please-change-this-aes-key",           // 生产建议改为随机串（不改也能跑）
     "Database": "Database=moai;Host=postgres;Password=moai123456;Port=5432;Username=postgres;Search Path=public",
     "Redis":    "redis:6379",
     "RabbitMQ": "amqp://guest:guest@rabbitmq:5672",
     "OpenSandBox": {
-      "Address": "http://opensandbox-server:8090", // 单容器部署改为 http://<host>:18123
+      "Address": "http://opensandbox-server:8090",    // 单容器部署改为 http://<host>:18123
       "ApiKey":  "",
       "Image":   "opensandbox/code-interpreter:v1.1.0",
       "TimeoutSeconds": 900,
       "RenewThresholdSeconds": 300
     },
     "Storage": {
-      "Endpoint": "http://rustfs:9000",    // 见下方「存储端点」说明
+      "Endpoint": "http://__MOAI_HOST__:__S3_PORT__", // 见 3.1；自动解析为浏览器可达地址
       "ForcePathStyle": true,
       "Bucket": "moai",
       "AccessKeyId": "moaiadmin",
@@ -63,12 +69,15 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 }
 ```
 
-### 3.1 存储端点（重要）
+> 若把占位符换成写死的值，请自行保证该地址对「容器与浏览器」都可达。
 
-对象存储为**纯 S3 实现**，`Storage.Endpoint` 的 host 会直接出现在**预签名上传/下载 URL** 中，因此该地址必须**同时被 MoAI 容器和浏览器（上传客户端）可达**：
+### 3.1 存储端点与访问主机（重要）
 
-- 浏览器直传场景：把 `Endpoint` 改为宿主机对外的 IP/域名，如 `http://192.168.1.100:9000`（不能写 `rustfs:9000`，浏览器解析不了；也不能写 `127.0.0.1`，容器访问的是自身）。
-- 仅服务端读写（无浏览器直传）：可用 compose 内网名 `http://rustfs:9000`。
+对象存储为**纯 S3 实现**，`Storage.Endpoint` 的 host 会直接出现在**预签名上传/下载 URL** 中，必须**同时被 MoAI 容器和浏览器（上传客户端）可达**；`Server` 同样会被前端用于拼接 `/static/{objectKey}` 访问地址。因此二者都应为「浏览器访问 MoAI 的地址」：
+
+- 默认（推荐）：保持占位符，`deploy-compose.sh` 自动探测本机 IP → 容器与浏览器都可达。
+- 从公网域名访问：在 `.env` 设 `MOAI_HOST=moai.example.com`（改过端口再加 `MOAI_PORT`）。
+- 不要写 `rustfs:9000`（浏览器解析不了）或 `127.0.0.1`（容器访问的是自身）。
 
 ### 3.2 单容器部署时的连接串
 
@@ -79,13 +88,15 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 只需部署 `moai` 一个容器：
 
 ```bash
-# 1) 准备配置（编辑 configs/system.json：Database/Redis/RabbitMQ/Storage/OpenSandBox 指向你的外部服务）
+# 1) 准备配置：Database/Redis/RabbitMQ/Storage/OpenSandBox 的 host 需指向你的外部服务
+#    （对外地址可保持模板占位符，由 -e MOAI_HOST 注入；也可直接改成具体值）
 # 2) 启动
 docker run -d \
   --name moai \
   --restart unless-stopped \
   -p 8080:8080 \
   -e MAI_FILE=/app/configs/system.json \
+  -e MOAI_HOST=<你的对外IP或域名> \
   -e TZ=Asia/Shanghai \
   --add-host host.docker.internal:host-gateway \
   -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
@@ -107,12 +118,14 @@ curl -fsS http://localhost:8080/api/common/serverinfo
 > **数据库镜像硬约束**：必须用 `pgvector/pgvector:pg16`（或自带 pgvector 的镜像），**不能用官方 `postgres` 镜像**。MoAI 依赖 `CREATE EXTENSION vector`（见 `init-pgvector.sql`），裸 `postgres` 镜像无该扩展，建库即失败。形态 A 使用外部数据库时同样要求已安装 pgvector 扩展。
 
 ```bash
-cp .env.example .env          # 按需修改基础设施账号/端口
-# 按需修改 configs/system.json（Server/WebUI/AES/Storage.Endpoint 等）
-bash deploy/deploy-compose.sh # 预拉沙箱镜像 → 拉取/构建镜像 → 启动
+cp .env.example .env          # 按需修改基础设施账号/端口（MOAI_HOST 留空会自动探测）
+# configs/system.json 默认即可（对外地址由 MOAI_HOST 自动注入）
+bash deploy/deploy-compose.sh # 自动探测主机 → 预拉沙箱镜像 → 拉取/构建 → 启动
 # 或手动：
 docker compose up -d
 ```
+
+> 直接用 `docker compose up -d` 时不会自动探测主机，请在 `.env` 手动设置 `MOAI_HOST=<对外IP或域名>`，否则对外地址回退为 `localhost`（容器访问 `localhost:9000` 会失败）。
 
 访问：`http://<host>:8080`。RustFS 控制台：`http://<host>:9001`（账号见 `.env` 的 `S3_ACCESS_KEY_ID/S3_ACCESS_KEY_SECRET`）。
 

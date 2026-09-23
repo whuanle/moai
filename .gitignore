@@ -387,3 +387,7 @@ local-dev/system.local.json
 local-dev/backend-dist/
 local-dev/backend-*.log
 /tmp/
+
+# Docker Compose 环境变量（含基础设施密码，勿提交）
+.env
+.env.local

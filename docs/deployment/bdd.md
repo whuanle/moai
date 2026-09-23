@@ -100,10 +100,11 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Then 幂等创建桶 S3_BUCKET（默认 moai），MoAI 存储可用
 
   @DEP-S15 @manual
-  Scenario: system.json 穿透映射
+  Scenario: system.json 穿透映射与对外地址占位符
     Given 宿主机存在 configs/system.json
     When 启动 moai 容器
     Then 容器内 /app/configs/system.json 为宿主机文件内容且 MAI_FILE 指向它
+    And 配置中的 __MOAI_HOST__/__MOAI_PORT__/__S3_PORT__ 按环境变量替换为运行时配置
     But 宿主机缺失该文件时容器启动失败并给出明确错误
 
   @DEP-S16 @manual

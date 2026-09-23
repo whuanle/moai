@@ -17,6 +17,7 @@
 ## 配置注入链（核心设计）
 
 - **统一机制：`configs/system.json` 穿透映射**（[docker.md 第 3 节](./docker.md)）。后端加载器读 `MAI_FILE`（默认 `/app/configs/system.json`）；compose/`docker run` 把宿主机文件 bind-mount 进容器（[@DEP-S15](./bdd.md#dep-s15)）。模板按最新 `appsettings.Development.json` 结构生成，覆盖 `OpenSandBox`/`Storage(S3)`/`OTLP` 等字段。
+- **对外地址占位符**：`Server`/`WebUI`/`Storage.Endpoint` 用 `__MOAI_HOST__`/`__MOAI_PORT__`/`__S3_PORT__`，entrypoint 按 `MOAI_HOST`/`MOAI_PORT`/`S3_PORT` 替换为运行时配置（`deploy-compose.sh` 自动探测本机 IP 写入 `.env`）。因预签名 URL 与前端 `/static` 前缀都用该 host，必须是「容器与浏览器都可达」的地址（[docker.md 3.1](./docker.md)）。
 - 未挂载时：镜像内置 `/app/configs/system.json.template`，entrypoint 复制为默认配置；宿主机缺失文件导致 docker 建目录时 entrypoint 明确报错退出。
 - **本地开发形态**：`MAI_FILE=<绝对路径>/system.local.json` 显式注入，绕过仓库内 `configs/system.json`（[@DEP-S11](./bdd.md#dep-s11)）。
 - as-built 记录：旧 entrypoint 用 heredoc 从 `.env` 生成配置（且 `Storage.LocalPath` 字段已不存在），**2026-09-23 改为 system.json 挂载 + 内置模板**，`MAI_FILE` 显式导出。

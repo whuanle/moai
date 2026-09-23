@@ -18,7 +18,7 @@
 | @DEP-S12 | `docker ps`：moai-postgres/redis/rabbitmq/minio 四容器 Up(healthy) + 前端 dev 联调 | PASS（2026-09-02） |
 | @DEP-S13 | `docker compose config -q` + `docker compose up -d` 后 `docker compose ps` 全服务 Up | 待执行（2026-09-23 新增） |
 | @DEP-S14 | `docker logs moai-rustfs-init` 出现 bucket ready + 上传链路（`local-dev/audit-storage.mjs`） | 待执行（2026-09-23 新增） |
-| @DEP-S15 | `docker exec moai cat /app/configs/system.json` 与宿主机一致；缺失文件时 entrypoint 报错退出 | 待执行（2026-09-23 新增） |
+| @DEP-S15 | `docker exec moai cat /app/configs/system.json` 与宿主机一致；占位符替换为 `MOAI_HOST` 运行时配置；缺失文件时 entrypoint 报错退出 | 待执行（2026-09-23 新增） |
 | @DEP-S16 | `docker compose --profile sandbox-images pull sandbox-image` + `docker pull opensandbox/execd|egress` 成功 | 待执行（2026-09-23 新增） |
 | @DEP-S17 | `docker run -v system.json ... whuanle/moai:latest` → `curl /api/common/serverinfo` 200 | 待执行（2026-09-23 新增） |
 | @DEP-S18 | `bash deploy/publish.sh` 推送成功后 `docker manifest inspect whuanle/moai:latest` | 待执行（2026-09-23 新增） |

@@ -75,9 +75,8 @@ MoAI 是一个功能丰富的开源 AI 应用平台，支持多种主流 AI 模�
 **方式一：Docker Compose 一体部署**（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
 
 ```bash
-cp .env.example .env          # 按需修改基础设施账号/端口
-vim configs/system.json       # 应用配置：Server/WebUI/AES/Storage.Endpoint 等
-bash deploy/deploy-compose.sh # 预拉沙箱镜像 + 拉取/构建 + 启动
+cp .env.example .env          # 按需修改基础设施账号/端口；MOAI_HOST 留空会自动探测
+bash deploy/deploy-compose.sh # 自动探测主机 + 预拉沙箱镜像 + 拉取/构建 + 启动
 ```
 
 **方式二：Docker 单容器**（仅前后端；外部提供 PostgreSQL/Redis/RabbitMQ/OSS）
