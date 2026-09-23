@@ -48,6 +48,10 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("'{}'::text")
             .HasComment("对话影响参数，JSON 对象文本（temperature/topP/maxTokens 等），空为 '{}'")
             .HasColumnName("execution_settings");
+        entity.Property(e => e.GraphIds)
+            .HasDefaultValueSql("'[]'::text")
+            .HasComment("绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 '[1,2]'")
+            .HasColumnName("graph_ids");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除，0=未删除（legacy bigint 约定）")
             .HasColumnName("is_deleted");

@@ -118,4 +118,9 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 绑定的流程应用ID列表（作为工具使用），JSON 数组文本，元素为 app.id（uuid 字符串，须为本团队已发布流程应用），空为&apos;[]&apos;.
     /// </summary>
     public string WorkflowApps { get; set; } = default!;
+
+    /// <summary>
+    /// 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 &apos;[1,2]&apos;.
+    /// </summary>
+    public string GraphIds { get; set; } = default!;
 }

@@ -80,7 +80,7 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("开放给用户选择的可选专家提示词ID列表，JSON int 数组文本，元素为 prompt.id，如 [1,2]")
             .HasColumnName("prompts");
         entity.Property(e => e.PublishedConfig)
-            .HasComment("发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/graphIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs），发布应用时写入，正式会话按此快照执行；null=从未发布")
+            .HasComment("发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs），发布应用时写入，正式会话按此快照执行；null=从未发布")
             .HasColumnName("published_config");
         entity.Property(e => e.QuickInputs)
             .HasDefaultValueSql("'[]'::text")

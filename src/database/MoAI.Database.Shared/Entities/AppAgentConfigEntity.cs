@@ -45,11 +45,6 @@ public partial class AppAgentConfigEntity : IFullAudited
     public string WikiIds { get; set; } = default!;
 
     /// <summary>
-    /// 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 &apos;[1,2]&apos;.
-    /// </summary>
-    public string GraphIds { get; set; } = default!;
-
-    /// <summary>
     /// 绑定的插件ID列表，JSON 数组文本，元素为 plugin.id（uuid 字符串），如 &apos;[&quot;...&quot;]&apos;.
     /// </summary>
     public string Plugins { get; set; } = default!;
@@ -105,7 +100,7 @@ public partial class AppAgentConfigEntity : IFullAudited
     public string Prompts { get; set; } = default!;
 
     /// <summary>
-    /// 发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/graphIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs），发布应用时写入，正式会话按此快照执行；null=从未发布.
+    /// 发布配置快照 JSON（camelCase：prompt/modelId/wikiIds/plugins/skills/executionSettings/openingStatement/openingStatementEnabled/quickInputs），发布应用时写入，正式会话按此快照执行；null=从未发布.
     /// </summary>
     public string? PublishedConfig { get; set; }
 
@@ -123,4 +118,9 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 绑定的流程应用ID列表（作为工具使用），JSON 数组文本，元素为 app.id（uuid 字符串，须为本团队已发布流程应用），空为&apos;[]&apos;.
     /// </summary>
     public string WorkflowApps { get; set; } = default!;
+
+    /// <summary>
+    /// 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 &apos;[1,2]&apos;.
+    /// </summary>
+    public string GraphIds { get; set; } = default!;
 }
