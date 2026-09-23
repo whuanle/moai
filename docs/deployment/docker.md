@@ -80,20 +80,23 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
 
 ### 3.3 浏览器直传跨域（CORS）
 
-前端是**直传对象存储**（预签名 PUT），当 MoAI 站点与对象存储域名不同源时，浏览器会先发 OPTIONS 预检，要求对象存储返回 `Access-Control-Allow-Origin` 等头，否则报：
+前端是**直传对象存储**（预签名 PUT/GET），当 MoAI 站点与对象存储域名不同源时，浏览器会先发 OPTIONS 预检并校验响应头，缺少或多出都会报错：
 
 ```
-Access to fetch at 'https://<oss-domain>/...' from origin 'https://<moai-domain>' has been blocked by CORS policy
+... has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present ...
+... The 'Access-Control-Allow-Origin' header contains multiple values '*, *', but only one is allowed ...
 ```
+
+> ⚠️ **CORS 头只能加一层**。RustFS 自带 CORS 与前置 Caddy/nginx 二选一；两层都加会出现 `*, *`（上传的 PUT 预检被反代短路看着正常，但 GET 下载会直接报错）。
 
 **方式一（推荐，RustFS 自带）**：给 RustFS 设允许源，重启即可。
 
 ```env
-# .env（compose 会传给 RustFS 的 RUSTFS_CORS_ALLOWED_ORIGINS）
-S3_CORS_ALLOWED_ORIGINS=https://moai.example.com
+# .env（compose 传给 RustFS 的 RUSTFS_CORS_ALLOWED_ORIGINS）
+RUSTFS_CORS_ALLOWED_ORIGINS=https://moai.example.com
 ```
 
-**方式二（对象存储前有 Caddy/nginx 反代时）**：在反代层放行预检并补响应头。Caddyfile 示例：
+**方式二（对象存储前有 Caddy/nginx 反代时）**：在反代层放行预检并补响应头；同时把 `.env` 的 `RUSTFS_CORS_ALLOWED_ORIGINS=` 置空，避免重复。Caddyfile 示例：
 
 ```caddyfile
 moaioss.example.com {

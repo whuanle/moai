@@ -85,8 +85,9 @@ services:
       RUSTFS_ADDRESS: ":9000"
       RUSTFS_CONSOLE_ADDRESS: ":9001"
       RUSTFS_CONSOLE_ENABLE: "true"
-      # 允许浏览器跨域直传（预签名 PUT 的预检）。生产建议填 MoAI 站点源，如 https://moai.example.com
-      RUSTFS_CORS_ALLOWED_ORIGINS: ${S3_CORS_ALLOWED_ORIGINS:-*}
+      # 允许浏览器跨域直传（预签名 PUT/GET）。生产建议填 MoAI 站点源，如 https://moai.example.com
+      # 若前置 Caddy/nginx 已加 CORS 头，请置空避免 Access-Control-Allow-Origin 重复（*, *）
+      RUSTFS_CORS_ALLOWED_ORIGINS: ${RUSTFS_CORS_ALLOWED_ORIGINS:-*}
       RUSTFS_OBS_LOGGER_LEVEL: error
       RUSTFS_OBS_LOG_DIRECTORY: /var/log/rustfs/
     volumes:
